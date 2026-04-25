@@ -1,0 +1,113 @@
+/**
+ * Seat Preferences API
+ * GET /api/commander/seat-preferences?player_id=X — Get preferences
+ * POST /api/commander/seat-preferences — Save/update preferences
+ */
+import { createClient } from '../../src/lib/supabaseServerClient';
+import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
+import { reportApiError } from '../../src/lib/sentryWrap';
+
+let _supabase = null;
+function getSupabase() {
+    if (!_supabase) {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbkmacvwxktbh.supabase.co';
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        _supabase = createClient(url, key);
+    }
+    return _supabase;
+}
+
+// Auth: STAFF_WRITE — requires manager or owner role
+export default async function handler(req, res) {
+  try {
+    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+      if (!applyRateLimit(req, res, LIMITS.write)) return;
+    }
+
+    // Auth guard
+    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+      const _staff = await guardWriteStaff(req, res);
+      if (!_staff) return;
+    }
+
+
+    // Auth guard: require user auth for writes
+    if (req.method === 'GET') return getPreferences(req, res);
+    if (req.method === 'POST') return savePreferences(req, res);
+    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
+
+  } catch (err) {
+    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    console.warn('[API Error]', err);
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+}
+
+async function getPreferences(req, res) {
+  const { player_id, venue_id } = req.query;
+
+  if (!player_id) {
+    return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'player_id required' } });
+  }
+
+  try {
+    let query = getSupabase()
+      .from('commander_seat_preferences')
+      .select('*')
+      .eq('player_id', player_id)
+          .limit(100);
+
+    if (venue_id) query = query.eq('venue_id', venue_id);
+
+    const { data: prefs, error } = await query.maybeSingle();
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      data: { preferences: prefs || { preferred_seats: [], left_handed: false, near_tv: null, away_from_tv: null, notes: null } }
+    });
+  } catch (error) {
+    console.warn('Get preferences error:', error);
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+}
+
+async function savePreferences(req, res) {
+  const { player_id, venue_id, preferred_seats, left_handed, near_tv, away_from_tv, notes } = req.body;
+
+  if (!player_id) {
+    return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'player_id required' } });
+  }
+
+  try {
+    const data = {
+      player_id,
+      venue_id: venue_id || null,
+      preferred_seats: preferred_seats || [],
+      left_handed: left_handed || false,
+      near_tv: near_tv ?? null,
+      away_from_tv: away_from_tv ?? null,
+      notes: notes?.trim() || null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: pref, error } = await getSupabase()
+      .from('commander_seat_preferences')
+      .upsert(data, { onConflict: 'player_id,venue_id' })
+      .select()
+      .maybeSingle();
+
+    if (!pref) {
+      throw new Error('Failed to upsert preferences');
+    }
+
+    if (error) throw error;
+
+    return res.status(200).json({ success: true, data: { preferences: pref } });
+  } catch (error) {
+      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    console.warn('Save preferences error:', error);
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+}
