@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["iad1"],
+  "buildCommand": "NODE_OPTIONS='--max-old-space-size=7168' next build",
   "installCommand": "npm install --legacy-peer-deps",
   "headers": [
     {
