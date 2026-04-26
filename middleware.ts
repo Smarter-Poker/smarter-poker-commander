@@ -32,14 +32,20 @@ export async function middleware(req: NextRequest) {
 
   // Supabase cookie pre-check — populates res.cookies for downstream handlers
   try {
+    // @supabase/ssr ≥0.5 dropped the {get,set,remove} shape in favor of
+    // {getAll,setAll}. Map req/res cookies into that new shape so the
+    // session-refresh roundtrip survives the rewrite hop.
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
       {
         cookies: {
-          get: (name) => req.cookies.get(name)?.value,
-          set: (name, value, options) => res.cookies.set({ name, value, ...options }),
-          remove: (name, options) => res.cookies.set({ name, value: '', ...options }),
+          getAll: () => req.cookies.getAll(),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              res.cookies.set({ name, value, ...options });
+            });
+          },
         },
       },
     );
