@@ -1,0 +1,63 @@
+#!/bin/sh
+# Commander pre-commit hook — Phase 3.2 scaffold completion (2026-04-27)
+#
+# Mirrors the World Hub pre-commit pattern at a smaller surface area:
+#   1. Blocks commits with dangerous Supabase auth patterns
+#      (supabase.auth.getUser without a Bearer wrapper)
+#   2. Blocks commits with merge-conflict markers
+#   3. Blocks commits that re-introduce the client-side PIN gate
+#      (Phase 3.6 explicitly moved PIN validation server-side)
+
+set -e
+
+echo "[commander pre-commit] running checks..."
+
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx)$' || true)
+
+if [ -z "$FILES" ]; then
+  echo "[commander pre-commit] no relevant files staged — skipping"
+  exit 0
+fi
+
+FAIL=0
+
+# 1. Merge conflict markers (saved us once already; SWC error message is opaque)
+for f in $FILES; do
+  if git show ":$f" 2>/dev/null | grep -qE '^(<<<<<<< |>>>>>>> |={7,}$)'; then
+    echo "[commander pre-commit] BLOCKED: $f contains a merge conflict marker"
+    FAIL=1
+  fi
+done
+
+# 2. Dangerous Supabase auth patterns — never call .auth.getUser() directly
+#    without going through the validated Bearer wrapper.
+for f in $FILES; do
+  case "$f" in
+    *src/lib/auth/*) continue ;;
+    *src/lib/authUtils*) continue ;;
+  esac
+  if git show ":$f" 2>/dev/null | grep -qE 'supabase\.auth\.getUser\(\)'; then
+    echo "[commander pre-commit] BLOCKED: $f calls supabase.auth.getUser()"
+    echo "                      use validateBearer() from src/lib/auth instead"
+    FAIL=1
+  fi
+done
+
+# 3. Client-side PIN-gate regression — Phase 3.6 forbids reintroducing this.
+for f in $FILES; do
+  case "$f" in
+    *src/lib/auth/pinSession*) continue ;;
+  esac
+  if git show ":$f" 2>/dev/null | grep -qE "localStorage\.(set|get)Item\(['\"]commanderAdminPin|localStorage\.(set|get)Item\(['\"]admin_pin"; then
+    echo "[commander pre-commit] BLOCKED: $f reintroduces client-side PIN storage"
+    echo "                      Phase 3.6 moved PIN validation server-side; do not regress"
+    FAIL=1
+  fi
+done
+
+if [ "$FAIL" -ne 0 ]; then
+  echo "[commander pre-commit] FAILED — fix the issues above or use --no-verify if certain"
+  exit 1
+fi
+
+echo "[commander pre-commit] OK"
