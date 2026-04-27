@@ -1,0 +1,44 @@
+name: Manual Vercel Deploy (commander)
+
+# Phase 3.2 scaffold completion (2026-04-27)
+# Lets Dan/AG trigger a Vercel production deploy without a code push,
+# mirroring how the World Hub uses a deploy-hook pattern.
+#
+# Required secrets (configured at repo level):
+#   VERCEL_DEPLOY_HOOK — production deploy hook URL from Vercel project settings
+#                        (Vercel → Project → Settings → Git → Deploy Hooks)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you triggering a manual deploy?'
+        required: true
+        default: 'Manual redeploy'
+
+jobs:
+  trigger:
+    name: Trigger Vercel deploy hook
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate secret is set
+        run: |
+          if [ -z "${{ secrets.VERCEL_DEPLOY_HOOK }}" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK secret not set on this repository"
+            exit 1
+          fi
+
+      - name: Fire deploy hook
+        run: |
+          echo "Triggering deploy — reason: ${{ inputs.reason }}"
+          HTTP_CODE=$(curl -s -o /tmp/resp.json -w '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            "${{ secrets.VERCEL_DEPLOY_HOOK }}")
+          echo "Vercel responded HTTP $HTTP_CODE"
+          cat /tmp/resp.json || true
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+            echo "::error::Vercel deploy hook returned $HTTP_CODE"
+            exit 1
+          fi
