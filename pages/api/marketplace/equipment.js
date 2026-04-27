@@ -82,17 +82,31 @@ async function listEquipment(req, res) {
 
     const { data, error, count } = await query;
 
-    if (error) throw error;
+    if (error) {
+      // Missing-table guard — commander_equipment_rentals migration archived at
+      // supabase/migrations/archive/20260127_commander_remaining_tables.sql,
+      // never applied. Return empty list with feature_disabled flag.
+      if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
+        console.warn('[marketplace/equipment] commander_equipment_rentals table not provisioned; returning empty list');
+        return res.status(200).json({
+          success: true,
+          data: { equipment: [], categories: [], total: 0, limit: parseInt(limit), offset: parseInt(offset) },
+          feature_disabled: true,
+          reason: 'commander_equipment_rentals table not provisioned in this Supabase project',
+        });
+      }
+      throw error;
+    }
 
     // Get unique categories for filtering
     const { data: categories } = await getSupabase()
       .from('commander_equipment_rentals')
       .select('category')
       .eq('available', true)
-          .limit(100);
+      .limit(100);
 
-    const uniqueCategories = [...new Set(categories?.map(c => c.category).filter(Boolean))]
-        .limit(100);
+    // Array.prototype has no .limit() — slice to cap, in case the dataset is huge
+    const uniqueCategories = [...new Set(categories?.map(c => c.category).filter(Boolean))].slice(0, 100);
 
     return res.status(200).json({
       success: true,

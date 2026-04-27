@@ -67,20 +67,13 @@ const endDate = new Date().toISOString().split('T')[0];
     setRefreshing(true);
     try {
 // Trigger cron for yesterday
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-      const res = await fetch('/api/cron/commander-daily-aggregate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ manual: true, date: yesterday })
-      });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) {
-        setToast({ type: 'success', msg: `Analytics refreshed for ${yesterday}` });
-        fetchAnalytics();
-      } else {
-        setToast({ type: 'error', msg: json.error || 'Refresh failed' });
-      }
+      // Manual aggregate trigger removed 2026-04-27 (Phase 2B.3 cleanup).
+      // Aggregation now runs automatically every day at 03:00 UTC via Open Claw
+      // → workers VM (10.0.0.3:8081/cron/commander-daily-aggregate). Manual
+      // refresh just re-fetches current data; if yesterday's aggregate hasn't
+      // run yet, it'll appear after the next scheduled fire.
+      setToast({ type: 'info', msg: 'Aggregation runs automatically daily at 03:00 UTC. Re-fetching current data…' });
+      fetchAnalytics();
     } catch (err) {
       setLoading(false);
       setToast({ type: 'error', msg: 'Network error' });

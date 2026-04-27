@@ -74,6 +74,18 @@ async function listFreerolls(req, res) {
         const { data: freerolls, error } = await query;
 
         if (error) {
+            // Handle missing-table cleanly — feature not provisioned in this Supabase project.
+            // Migration archived at supabase/migrations/archive/20260225_freerolls.sql,
+            // never applied to production. Return empty list + clear flag instead of 500.
+            if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
+                console.warn('[freerolls] commander_freerolls table not provisioned; returning empty list');
+                return res.status(200).json({
+                    success: true,
+                    data: { freerolls: [] },
+                    feature_disabled: true,
+                    reason: 'commander_freerolls table not provisioned in this Supabase project',
+                });
+            }
             console.warn('Freerolls fetch error:', error);
             throw error;
         }

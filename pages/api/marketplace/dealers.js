@@ -87,7 +87,21 @@ async function listDealers(req, res) {
 
     const { data, error, count } = await query;
 
-    if (error) throw error;
+    if (error) {
+      // Missing-table guard — migration archived at
+      // supabase/migrations/archive/20260127_commander_remaining_tables.sql,
+      // never applied to production. Return empty list with clear flag.
+      if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
+        console.warn('[marketplace/dealers] commander_dealer_marketplace table not provisioned; returning empty list');
+        return res.status(200).json({
+          success: true,
+          data: { dealers: [], total: 0, limit: parseInt(limit), offset: parseInt(offset) },
+          feature_disabled: true,
+          reason: 'commander_dealer_marketplace table not provisioned in this Supabase project',
+        });
+      }
+      throw error;
+    }
 
     return res.status(200).json({
       success: true,

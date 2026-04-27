@@ -290,24 +290,15 @@ export default function LeaguesAndFreerollsManagement() {
   const handleSyncQualifications = async (freerollId) => {
     setSyncingFreeroll(freerollId);
     try {
-      const res = await fetch('/api/cron/freeroll-qualification-sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ freeroll_id: freerollId, manual: true })
-      });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) {
-        const synced = json.results?.[0];
-        showToast('success', `Synced: ${synced?.players_processed || 0} players processed, ${synced?.players_qualified || 0} qualified`);
-        fetchQualifications(freerollId);
-        broadcastChange('settings'); // notify other tabs
-      } else {
-        showToast('error', json.error || 'Sync failed');
-      }
-    } catch { showToast('error', 'Network error during sync'); }
+      // Manual qualification-sync trigger removed 2026-04-27 (Phase 2B.3 cleanup).
+      // Sync now runs automatically every 6 hours via Open Claw → workers VM
+      // (10.0.0.3:8081/cron/freeroll-qualification-sync). Manual refresh just
+      // re-fetches the latest qualification snapshot — fresher data appears
+      // after the next scheduled fire.
+      showToast('info', 'Qualification sync runs automatically every 6 hours. Re-fetching latest snapshot…');
+      fetchQualifications(freerollId);
+      broadcastChange('settings'); // notify other tabs
+    } catch { showToast('error', 'Network error during refresh'); }
     finally { setSyncingFreeroll(null); }
   };
 
