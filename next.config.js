@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  transpilePackages: ['@smarter-poker/commander-shared'],
   experimental: {
     // Match Phase 1.1 of World Hub — exclude heavy deps from lambda traces
     outputFileTracingExcludes: {
