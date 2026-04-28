@@ -2,7 +2,7 @@
   "name": "smarter-poker-commander",
   "version": "0.1.0",
   "private": true,
-  "description": "Commander — poker venue/club operator dashboard. Extracted from Smarter-Poker-World-Hub per Phase 3 of the optimization plan. Hosted on Vercel as a separate project; URL preserved via Vercel rewrites at smarter.poker/commander/*.",
+  "description": "Commander \u2014 poker venue/club operator dashboard. Extracted from Smarter-Poker-World-Hub per Phase 3 of the optimization plan. Hosted on Vercel as a separate project; URL preserved via Vercel rewrites at smarter.poker/commander/*.",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",
+    "@smarter-poker/commander-shared": "^0.1.1",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "^2.103.3",

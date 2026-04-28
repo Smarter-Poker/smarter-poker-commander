@@ -55,6 +55,21 @@ for f in $FILES; do
   fi
 done
 
+# 4. transpilePackages guard — @smarter-poker/commander-shared ships raw JSX.
+#    If transpilePackages is removed or the entry is dropped from next.config.js,
+#    the Vercel build will crash with "Module parse failed: Unexpected token".
+#    See failed deploys 4xJcGVy2N / DWyP5RYRT (April 2026).
+if echo "$FILES" | grep -q 'next.config'; then
+  STAGED_CONFIG=$(git show ":next.config.js" 2>/dev/null || git show ":next.config.mjs" 2>/dev/null || true)
+  if [ -n "$STAGED_CONFIG" ]; then
+    if ! echo "$STAGED_CONFIG" | grep -q '@smarter-poker/commander-shared'; then
+      echo "[commander pre-commit] BLOCKED: next.config.js is missing @smarter-poker/commander-shared"
+      echo "                      in transpilePackages — build will crash. See deploy 4xJcGVy2N."
+      FAIL=1
+    fi
+  fi
+fi
+
 if [ "$FAIL" -ne 0 ]; then
   echo "[commander pre-commit] FAILED — fix the issues above or use --no-verify if certain"
   exit 1

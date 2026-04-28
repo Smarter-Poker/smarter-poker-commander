@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // ⚠️  CRITICAL — DO NOT REMOVE. @smarter-poker/commander-shared ships raw
+  // JSX source (no pre-compilation). Without this line the build crashes:
+  //   "Module parse failed: Unexpected token" on any .jsx in node_modules.
+  // See failed deploys 4xJcGVy2N / DWyP5RYRT (April 2026).
+  transpilePackages: ['@smarter-poker/commander-shared'],
   experimental: {
     // Match Phase 1.1 of World Hub — exclude heavy deps from lambda traces
     outputFileTracingExcludes: {
