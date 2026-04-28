@@ -95,10 +95,12 @@ async function listFreerolls(req, res) {
         let qualCounts = {};
 
         if (freerollIds.length > 0) {
+            // ASI fix 2026-04-28: missing semicolon caused next line `(quals||[])`
+            // to be parsed as `chain(quals||[])`, throwing TypeError. Added explicit ;.
             const { data: quals } = await getSupabase()
                 .from('commander_freeroll_qualifications')
                 .select('freeroll_id, is_qualified')
-                .in('freeroll_id', freerollIds)
+                .in('freeroll_id', freerollIds);
 
             (quals || []).forEach(q => {
                 if (!qualCounts[q.freeroll_id]) {

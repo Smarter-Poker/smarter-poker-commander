@@ -58,12 +58,14 @@ async function listDealers(req, res) {
       offset = 0
     } = req.query;
 
+    // 2026-04-28 fix: PostgREST embedded select `profiles:dealer_id (...)` requires
+    // a foreign key from commander_dealer_marketplace.dealer_id → profiles.id.
+    // That FK doesn't exist in production schema (verified via information_schema),
+    // so the embed throws PGRST200 / "Could not find a relationship" → 500.
+    // Dropped the embed; consumers can fetch profile metadata separately if needed.
     let query = getSupabase()
       .from('commander_dealer_marketplace')
-      .select(`
-        *,
-        profiles:dealer_id (id, display_name, avatar_url)
-      `, { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('status', 'active')
       .order('rating', { ascending: false, nullsFirst: false })
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
