@@ -57,12 +57,12 @@ async function listEquipment(req, res) {
       offset = 0
     } = req.query;
 
+    // 2026-04-28 fix: PostgREST embedded select `profiles:vendor_id (...)` requires
+    // a FK from commander_equipment_rentals.vendor_id → profiles.id, which doesn't
+    // exist in production schema. The embed throws PGRST200 → 500. Removed.
     let query = getSupabase()
       .from('commander_equipment_rentals')
-      .select(`
-        *,
-        profiles:vendor_id (id, display_name, avatar_url)
-      `, { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('available', true)
       .order('daily_rate', { ascending: true })
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
