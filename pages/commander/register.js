@@ -182,7 +182,10 @@ export default function RegisterPage() {
         setStep(2);
         finish();
       })
-      .catch(e => { console.warn('[App] Handled promise rejection:', e?.message || e); });
+      .catch(e => { 
+        console.warn('[App] Handled promise rejection:', e?.message || e); 
+        finish();
+      });
 
     return () => { cancelled = true; };
   }, [router.isReady, queryReturn]); // eslint-disable-line react-hooks/exhaustive-deps
