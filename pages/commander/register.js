@@ -164,12 +164,19 @@ export default function RegisterPage() {
     let cancelled = false;
     const finish = () => { if (!cancelled) setPreCheckDone(true); };
 
-    fetch('/api/commander/check-access', {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-    })
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(`status ${r.status}`)))
+    // Hard 8-second timeout — if the API is down or slow, we MUST unblock the UI.
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('check-access timeout')), 8000)
+    );
+
+    Promise.race([
+      fetch('/api/commander/check-access', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        credentials: 'include',
+      }).then(r => r.ok ? r.json() : Promise.reject(new Error(`status ${r.status}`))),
+      timeoutPromise,
+    ])
       .then(data => {
         if (cancelled) return;
         if (data?.hasAccess && queryReturn) {
@@ -182,8 +189,8 @@ export default function RegisterPage() {
         setStep(2);
         finish();
       })
-      .catch(e => { 
-        console.warn('[App] Handled promise rejection:', e?.message || e); 
+      .catch(e => {
+        console.warn('[Commander] check-access failed, unblocking UI:', e?.message || e);
         finish();
       });
 
