@@ -20,6 +20,7 @@ export default function CommanderLogin() {
   const [error, setError] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [showReset, setShowReset] = useState(false);
 
   // Pre-fill email from stored staff data if available (remember me)
   useEffect(() => {
@@ -39,19 +40,36 @@ export default function CommanderLogin() {
 
   // Auto-restore session — if user has valid Supabase session + remember flag, skip login
   useEffect(() => {
+    // Show a manual reset button if stuck for > 4s
+    const stuckTimeout = setTimeout(() => setShowReset(true), 4000);
+    // Force stop checking if stuck for > 8s
+    const safetyTimeout = setTimeout(() => setCheckingSession(false), 8000);
+
     async function checkExistingSession() {
-      // HARDENED: 8-second timeout prevents infinite loading screen if Supabase hangs
-      const safetyTimeout = setTimeout(() => setCheckingSession(false), 8000);
       try {
         const remembered = localStorage.getItem('commander_remember');
-        const staffData = localStorage.getItem('commander_staff');
-        if (!remembered || !staffData) { clearTimeout(safetyTimeout); setCheckingSession(false); return; }
+        const staffDataRaw = localStorage.getItem('commander_staff');
+        
+        // Ensure there is actually a user payload, not just an empty object
+        let validStaff = false;
+        try {
+          const parsed = JSON.parse(staffDataRaw || '{}');
+          if (parsed.id || parsed.user_id) validStaff = true;
+        } catch { }
+
+        if (!remembered || !validStaff) { 
+          clearTimeout(safetyTimeout); 
+          clearTimeout(stuckTimeout);
+          setCheckingSession(false); 
+          return; 
+        }
 
         // Verify Supabase session is still valid
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           clearTimeout(safetyTimeout);
-          // Session valid — go straight to dashboard
+          clearTimeout(stuckTimeout);
+          // Session valid AND staff data is valid — go straight to dashboard
           window.location.href = '/commander/dashboard';
           return;
         }
@@ -60,6 +78,7 @@ export default function CommanderLogin() {
         const { data: { session: refreshed } } = await supabase.auth.refreshSession();
         if (refreshed) {
           clearTimeout(safetyTimeout);
+          clearTimeout(stuckTimeout);
           window.location.href = '/commander/dashboard';
           return;
         }
@@ -68,10 +87,17 @@ export default function CommanderLogin() {
         localStorage.removeItem('commander_venue');
         localStorage.removeItem('commander_subscription');
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+      
       clearTimeout(safetyTimeout);
+      clearTimeout(stuckTimeout);
       setCheckingSession(false);
     }
+    
     checkExistingSession();
+    return () => {
+      clearTimeout(safetyTimeout);
+      clearTimeout(stuckTimeout);
+    };
   }, [router]);
 
   // Handle OAuth sign in (Google)
@@ -193,11 +219,24 @@ export default function CommanderLogin() {
 
   // Show loading while checking for existing session
   if (checkingSession) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
-      <div className="text-[#8A8D91] text-sm flex items-center gap-2">
+    <div className="min-h-screen bg-[#18191A] flex flex-col items-center justify-center p-4">
+      <div className="text-[#8A8D91] text-sm flex items-center gap-2 mb-4">
         <Loader2 className="w-5 h-5 animate-spin" />
         Restoring Session...
       </div>
+      {showReset && (
+        <button
+          onClick={() => {
+            localStorage.removeItem('commander_staff');
+            localStorage.removeItem('commander_remember');
+            localStorage.removeItem('commander-auth');
+            setCheckingSession(false);
+          }}
+          className="text-xs text-[#EF4444] border border-[#EF444440] rounded px-4 py-2 hover:bg-[#EF444410] transition-colors"
+        >
+          Reset Session & Sign In
+        </button>
+      )}
     </div>
   );
 
