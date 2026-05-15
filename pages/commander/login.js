@@ -116,7 +116,7 @@ export default function CommanderLogin() {
 
       // Check if user has a commander subscription (server-side to bypass RLS)
       // CRITICAL FIX: Send JWT Bearer token — check-subscription requires auth (BUG #260)
-      const subRes = await fetch('/api/commander/check-subscription', {
+      const subRes = await fetch('/api/check-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
