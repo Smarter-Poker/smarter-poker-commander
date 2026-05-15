@@ -20,6 +20,23 @@ const nextConfig = {
   // Cookie domain — shared with World Hub for cross-subdomain auth
   // Supabase SSR sets cookies with domain=.smarter.poker in prod
   poweredByHeader: false,
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // API PATH COMPATIBILITY REWRITE
+  // All Commander pages call /api/commander/* (World Hub path convention).
+  // In this standalone repo, API files live at /api/* (no commander prefix).
+  // This rewrite transparently maps the old paths to the real handlers so
+  // all 70+ pages work without modifying a single fetch call.
+  // ─────────────────────────────────────────────────────────────────────────
+  async rewrites() {
+    return [
+      {
+        source: '/api/commander/:path*',
+        destination: '/api/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
+
