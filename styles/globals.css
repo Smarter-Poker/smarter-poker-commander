@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Commander Design System ────────────────────────────────── */
+:root {
+  --cmd-bg: #18191A;
+  --cmd-surface: #242526;
+  --cmd-surface-2: #2D2E30;
+  --cmd-border: #3A3B3C;
+  --cmd-border-2: #4E4F50;
+  --cmd-text: #E4E6EB;
+  --cmd-muted: #B0B3B8;
+  --cmd-subtle: #8A8D91;
+  --cmd-accent: #1877F2;
+  --cmd-accent-hover: #1664D9;
+  --cmd-danger: #F02849;
+  --cmd-success: #42B72A;
+  --cmd-gold: #F5A623;
+  --cmd-cyan: #22D3EE;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--cmd-bg);
+  color: var(--cmd-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Commander component primitives ─────────────────────────── */
+.cmd-card {
+  background: var(--cmd-surface);
+  border: 1px solid var(--cmd-border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.cmd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.cmd-btn-primary {
+  background: var(--cmd-accent);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+}
+
+.cmd-btn-primary:hover {
+  background: var(--cmd-accent-hover);
+}
+
+.cmd-btn-primary:disabled {
+  background: var(--cmd-border);
+  cursor: not-allowed;
+}
+
+.cmd-input {
+  width: 100%;
+  background: var(--cmd-surface-2);
+  border: 1px solid var(--cmd-border-2);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: var(--cmd-text);
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.cmd-input:focus {
+  outline: none;
+  border-color: var(--cmd-accent);
+}
+
+.cmd-input::placeholder {
+  color: var(--cmd-subtle);
+}
+
+.cmd-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--cmd-text);
+  margin-bottom: 0.5rem;
+}
+
+/* ── Scrollbar styling ──────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cmd-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cmd-border-2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cmd-subtle);
+}
+
+/* ── Utility overrides ──────────────────────────────────────── */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
