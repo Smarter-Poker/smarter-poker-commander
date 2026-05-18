@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["iad1"],
+  "ignoreCommand": "git diff HEAD~1 HEAD --name-only | grep -qE '\\.(ts|tsx|js|jsx|json|css|scss)$|^(src|pages|public)/' && exit 1 || exit 0",
   "buildCommand": "NODE_OPTIONS='--max-old-space-size=7168' next build",
   "installCommand": "npm install --legacy-peer-deps",
   "headers": [
