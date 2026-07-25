@@ -3,8 +3,13 @@
  * GET /api/commander/incidents - List incidents
  * POST /api/commander/incidents - Create incident (floor call, dispute, etc)
  */
+// 2026-07-25 audit fix: rewritten to match the real commander_incidents schema
+// (incident_type/severity/players_involved/incident_status — the old code wrote
+// nonexistent type/priority/status/table_number columns) and to authenticate
+// via verifyStaffSession so PIN-terminal staff are not locked out by the
+// Bearer-JWT-only path. Response shape now { success, data: { incidents } }.
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { verifyStaffSession } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -18,33 +23,24 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF — verified staff session (PIN terminal or owner login)
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-07-25 audit fix: staff-session auth for reads AND writes; identity
+    // and venue scope come from the verified session, never the request body.
+    const sessionResult = await verifyStaffSession(req);
+    if (sessionResult.error) {
+      return res.status(sessionResult.error.status || 401).json({ success: false, error: sessionResult.error });
+    }
+    const staff = sessionResult.staff;
 
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
-      const token = authHeader.replace('Bearer ', '');
-      const { data: authData } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
-
-      const { data: staff } = await getSupabase()
-        .from('commander_staff')
-        .select('venue_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
-
       if (req.method === 'GET') {
-        const { status = 'open', limit: rawLimit = '50' } = req.query;
+        const { status = 'all', limit: rawLimit = '50' } = req.query;
         const limit = Math.min(parseInt(rawLimit) || 50, 500);
         let query = getSupabase()
           .from('commander_incidents')
@@ -53,29 +49,51 @@ export default async function handler(req, res) {
           .order('created_at', { ascending: false })
           .limit(limit);
 
-        if (status !== 'all') query = query.eq('status', status);
+        // 2026-07-25 audit fix: real column is incident_status, not status
+        if (status !== 'all') query = query.eq('incident_status', status);
 
         const { data, error } = await query;
         if (error) {
           console.warn('[Incidents] Query error:', error.message);
           return res.status(500).json({ success: false, error: 'Failed to fetch incidents' });
         }
-        return res.status(200).json({ success: true, data: data || [] });
+
+        // 2026-07-25 audit fix: derive the convenience fields the page renders
+        // (resolved boolean, resolution text) from the real columns.
+        const incidents = (data || []).map((row) => ({
+          ...row,
+          resolved: row.incident_status === 'resolved',
+          resolution: row.resolution_notes || null,
+        }));
+
+        return res.status(200).json({ success: true, data: { incidents } });
       }
 
       if (req.method === 'POST') {
-        const { type, table_number, description, priority = 'normal' } = req.body;
+        // 2026-07-25 audit fix: read the fields the page actually sends and
+        // insert into the real columns. table_number has no dedicated column
+        // (table_id is a table reference, not a number) so it is recorded in
+        // the description. venue_id/reported_by come from the session.
+        const { incident_type, severity = 'medium', players_involved, table_number, description } = req.body || {};
+
+        if (!description) {
+          return res.status(400).json({ success: false, error: 'Description is required' });
+        }
+
+        const fullDescription = table_number
+          ? `[Table ${String(table_number).slice(0, 20)}] ${description}`
+          : description;
 
         const { data, error } = await getSupabase()
           .from('commander_incidents')
           .insert({
             venue_id: staff.venue_id,
-            type: type || 'floor_call',
-            table_number: table_number || null,
-            description: description || '',
-            priority,
-            status: 'open',
-            reported_by: user.id,
+            incident_type: incident_type || 'other',
+            severity,
+            players_involved: Array.isArray(players_involved) ? players_involved : [],
+            description: fullDescription,
+            incident_status: 'open',
+            reported_by: staff.id,
             created_at: new Date().toISOString()
           })
           .select()
