@@ -3,6 +3,7 @@
  * Uses service role key to bypass RLS
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
+import { signStaffSession } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
@@ -71,7 +72,17 @@ export default async function handler(req, res) {
               return res.status(404).json({ error: 'No active subscription found' });
           }
 
-          return res.status(200).json({ subscription });
+          // 2026-07-25 audit fix: issue the HMAC-signed owner staff session
+          // here (the only server round-trip during owner login). login.js
+          // stores this as `commander_staff`; unsigned sessions are rejected
+          // by verifyStaffSession.
+          const staff_session = signStaffSession({
+              user_id: userId,
+              venue_id: subscription.venue_id,
+              role: 'owner',
+          });
+
+          return res.status(200).json({ subscription, staff_session });
       } catch (err) {
           console.warn('check-subscription error:', err);
           return res.status(500).json({ error: 'Internal server error' });

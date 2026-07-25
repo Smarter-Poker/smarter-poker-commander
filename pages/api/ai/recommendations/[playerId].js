@@ -46,11 +46,15 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Get player's session history
+      // 2026-07-25 audit fix: scope all player-history queries to the staff
+      // member's own venue — any staff could previously read a player's
+      // cross-venue history. Also fixed the nonexistent total_minutes column
+      // (real column: total_time_minutes).
       const { data: sessions, error: sessionsError } = await getSupabase()
         .from('commander_player_sessions')
-        .select('venue_id, games_played, total_minutes, check_in_at')
+        .select('venue_id, games_played, total_time_minutes, check_in_at')
         .eq('player_id', playerId)
+        .eq('venue_id', staff.venue_id)
         .order('check_in_at', { ascending: false })
         .limit(50);
 
@@ -58,16 +62,26 @@ export default async function handler(req, res) {
         console.warn('Sessions fetch error:', sessionsError);
       }
 
-      // Get player's waitlist history
+      // Get player's waitlist history (this venue only)
       const { data: waitlistHistory, error: waitlistError } = await getSupabase()
         .from('commander_waitlist_history')
         .select('venue_id, game_type, stakes, wait_time_minutes, was_seated')
         .eq('player_id', playerId)
+        .eq('venue_id', staff.venue_id)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (waitlistError) {
         console.warn('Waitlist history error:', waitlistError);
+      }
+
+      // 2026-07-25 audit fix: 404 when the player has no activity at this venue
+      // rather than generating recommendations from empty data.
+      if ((sessions || []).length === 0 && (waitlistHistory || []).length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'No player activity at this venue' }
+        });
       }
 
       // Get player preferences if they exist
@@ -87,7 +101,8 @@ export default async function handler(req, res) {
       // Process session data
       (sessions || []).forEach(session => {
         totalSessions++;
-        totalMinutes += session.total_minutes || 0;
+        // 2026-07-25 audit fix: real column is total_time_minutes.
+        totalMinutes += session.total_time_minutes || 0;
 
         if (session.venue_id) {
           venueCount[session.venue_id] = (venueCount[session.venue_id] || 0) + 1;

@@ -44,6 +44,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id required' } });
     }
 
+    // 2026-07-25 audit fix: staff can only read operational data for their own venue.
+    if (String(staff.venue_id) !== String(venue_id)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+    }
+
     try {
       const now = new Date();
       const dayOfWeek = now.getDay(); // 0=Sun

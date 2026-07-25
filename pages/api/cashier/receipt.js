@@ -36,9 +36,11 @@ export default async function handler(req, res) {
 
       if (transaction_id) {
         // Single transaction receipt
+        // 2026-07-25 audit fix: select the fields the receipt actually renders —
+        // the old .select('id') left every rendered field undefined.
         const { data: tx } = await getSupabase()
           .from('commander_cash_transactions')
-          .select('id')
+          .select('id, venue_id, type, player_name, table_number, seat_number, amount, payment_method, created_at')
           .eq('id', transaction_id)
           .maybeSingle();
 
@@ -71,9 +73,13 @@ export default async function handler(req, res) {
 
       if (session_id) {
         // Full session summary receipt (cash-out receipt with all transactions)
+        // 2026-07-25 audit fix: select the real columns used below (the old
+        // .select('id') left them undefined). commander_table_sessions has no
+        // total_charge column — the time charge is computed from the session's
+        // 'time_purchase' cash transactions instead (see pages/api/cashier.js).
         const { data: session } = await getSupabase()
           .from('commander_table_sessions')
-          .select('id')
+          .select('id, venue_id, player_name, table_number, seat_number, started_at, ended_at')
           .eq('id', session_id)
           .maybeSingle();
 
@@ -81,7 +87,7 @@ export default async function handler(req, res) {
 
         const { data: txns } = await getSupabase()
           .from('commander_cash_transactions')
-          .select('id')
+          .select('id, type, amount, payment_method, created_at, voided_at')
           .eq('session_id', session_id)
           .order('created_at', { ascending: true });
 
@@ -89,9 +95,13 @@ export default async function handler(req, res) {
         const { data: venue } = await getSupabase().from('poker_venues').select('name').eq('id', session.venue_id).maybeSingle();
         if (venue?.name) venueName = venue.name;
 
-        const transactions = txns || [];
+        // 2026-07-25 audit fix: exclude voided transactions from receipt totals
+        // (matches cashier.js) and compute the time charge from recorded
+        // 'time_purchase' transactions instead of the nonexistent total_charge column.
+        const transactions = (txns || []).filter(t => !t.voided_at && t.type !== 'void');
         const totalBought = transactions.filter(t => t.type === 'buy_in' || t.type === 'add_on').reduce((s, t) => s + parseFloat(t.amount), 0);
         const totalCashed = transactions.filter(t => t.type === 'cash_out').reduce((s, t) => s + parseFloat(t.amount), 0);
+        const timeCharge = transactions.filter(t => t.type === 'time_purchase').reduce((s, t) => s + parseFloat(t.amount), 0);
         const duration = session.ended_at
           ? Math.round((new Date(session.ended_at) - new Date(session.started_at)) / 60000)
           : Math.round((Date.now() - new Date(session.started_at)) / 60000);
@@ -110,7 +120,7 @@ export default async function handler(req, res) {
             total_bought: totalBought,
             total_cashed: totalCashed,
             net_result: totalCashed - totalBought,
-            time_charge: parseFloat(session.total_charge || 0),
+            time_charge: timeCharge,
             transactions: transactions.map(t => ({
               type: t.type,
               type_label: t.type === 'buy_in' ? 'Buy-in' : t.type === 'add_on' ? 'Add-on' : 'Cash-out',

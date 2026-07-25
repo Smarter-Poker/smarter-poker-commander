@@ -113,6 +113,21 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ success: false, error: 'id required' });
 
       try {
+        // 2026-07-25 audit fix: venue-scope — the announcement must belong to
+        // the staff member's venue (was updatable purely by id).
+        const { data: existing, error: loadError } = await getSupabase()
+          .from('commander_club_announcements')
+          .select('id, venue_id')
+          .eq('id', id)
+          .maybeSingle();
+        if (loadError) throw loadError;
+        if (!existing) {
+          return res.status(404).json({ success: false, error: 'Announcement not found' });
+        }
+        if (String(existing.venue_id) !== String(staff.venue_id)) {
+          return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+        }
+
         const updates = {};
         if (title !== undefined) updates.title = title;
         if (message !== undefined) updates.message = message;
@@ -146,6 +161,21 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ success: false, error: 'id required' });
 
       try {
+        // 2026-07-25 audit fix: venue-scope — the announcement must belong to
+        // the staff member's venue (was deletable purely by id).
+        const { data: existing, error: loadError } = await getSupabase()
+          .from('commander_club_announcements')
+          .select('id, venue_id')
+          .eq('id', id)
+          .maybeSingle();
+        if (loadError) throw loadError;
+        if (!existing) {
+          return res.status(404).json({ success: false, error: 'Announcement not found' });
+        }
+        if (String(existing.venue_id) !== String(staff.venue_id)) {
+          return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+        }
+
         const { error } = await getSupabase()
           .from('commander_club_announcements')
           .delete()

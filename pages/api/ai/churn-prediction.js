@@ -56,8 +56,9 @@ export default async function handler(req, res) {
         .select('player_id, check_in_at, total_time_minutes, total_buyin')
         .eq('venue_id', venue_id)
         .gte('check_in_at', ninetyDaysAgo)
+        // 2026-07-25 audit fix: removed .limit(100) — the cap silently truncated
+        // the 90-day aggregation this prediction is computed from.
         .order('check_in_at', { ascending: false })
-            .limit(100)
 
       if (error) throw error;
 
