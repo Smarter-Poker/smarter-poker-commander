@@ -61,15 +61,18 @@ export default async function handler(req, res) {
       if (error) throw error;
 
       // Fetch group details for each membership
-      const groupIds = [...new Set((memberships || []).map(m => m.group_id).filter(Boolean))]
-          .limit(100);
+      // 2026-07-25 audit fix: removed stray .limit(100) chained onto a JS array
+      // (arrays have no .limit — it crashed the endpoint).
+      const groupIds = [...new Set((memberships || []).map(m => m.group_id).filter(Boolean))];
 
       let groupsMap = {};
       if (groupIds.length > 0) {
+        // 2026-07-25 audit fix: real column is group_status (aliased to status);
+        // prefer_same_table/accept_split do not exist on this table.
         const { data: groups } = await getSupabase()
           .from('commander_waitlist_groups')
           .select(`
-            id, game_type, stakes, status, prefer_same_table, accept_split, created_at,
+            id, game_type, stakes, status:group_status, created_at,
             poker_venues:venue_id (id, name, city, state),
             profiles:leader_id (id, display_name, avatar_url)
           `)

@@ -245,7 +245,7 @@ async function handlePut(req, res, venueId, staffUserId) {
     await getSupabase().from('commander_games').insert({
       venue_id: venueId,
       table_id: table_id,
-      game_type: game_type,
+      game_type: game_type ? String(game_type).toLowerCase() : game_type, // 2026-07-25 audit fix: commander_games.game_type is stored lowercase
       stakes: stakes,
       max_players: table.max_seats || 9,
       status: 'waiting',
