@@ -22,11 +22,25 @@ export default async function handler(req, res) {
 
     if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
 
-    const { summary } = req.query;
-    const select = summary === 'true' ? 'id, name, city, state, status, created_at' : '*';
-    const { data, error } = await getSupabase().from('venues').select(select).order('name');
+    // 2026-07-25 audit fix: the table is poker_venues (there is no 'venues'
+    // table) filtered to commander-enabled rooms, and the response includes a
+    // server-computed summary the admin page reads at data.data.summary.
+    const { data, error } = await getSupabase()
+      .from('poker_venues')
+      .select('id, name, city, state, commander_tier, commander_activated_at')
+      .eq('commander_enabled', true)
+      .order('name');
     if (error) return res.status(500).json({ success: false, error: error.message });
-    return res.json({ success: true, data: { venues: data } });
+
+    const venues = data || [];
+    const by_tier = {};
+    for (const v of venues) {
+      const tier = v.commander_tier || 'unknown';
+      by_tier[tier] = (by_tier[tier] || 0) + 1;
+    }
+    const summary = { total: venues.length, by_tier };
+
+    return res.json({ success: true, data: { venues, summary } });
     } catch (err) {
       console.warn('[pages/api/commander/admin/venues.js]', err);
       return res.status(500).json({ success: false, error: 'Internal server error' });

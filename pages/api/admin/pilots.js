@@ -1,6 +1,7 @@
 /**
  * Commander Admin Pilots API
  * GET /api/commander/admin/pilots - List pilot venues with metrics
+ * POST /api/commander/admin/pilots - Add a pilot venue
  * Reference: Phase 6 - Scale & Polish
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
@@ -26,6 +27,74 @@ export default async function handler(req, res) {
     // Auth guard: require manager auth
     const _staff = await guardManager(req, res);
     if (!_staff) return;
+
+    // 2026-07-25 audit fix: POST branch — the page's Add Pilot flow had no
+    // API to call (endpoint was GET-only).
+    if (req.method === 'POST') {
+      try {
+        const { venue_id, notes } = req.body || {};
+        if (!venue_id) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'venue_id is required' }
+          });
+        }
+
+        const { data: existing } = await getSupabase()
+          .from('commander_pilot_venues')
+          .select('id')
+          .eq('venue_id', venue_id)
+          .maybeSingle();
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            error: { code: 'ALREADY_EXISTS', message: 'Venue is already a pilot' }
+          });
+        }
+
+        const insertRow = {
+          venue_id,
+          status: 'active',
+          pilot_start_date: new Date().toISOString()
+        };
+        if (notes) insertRow.notes = notes;
+
+        let { data, error } = await getSupabase()
+          .from('commander_pilot_venues')
+          .insert(insertRow)
+          .select()
+          .maybeSingle();
+
+        // Retry without notes if the column does not exist in this schema
+        if (error && insertRow.notes && /notes/i.test(error.message || '')) {
+          delete insertRow.notes;
+          ({ data, error } = await getSupabase()
+            .from('commander_pilot_venues')
+            .insert(insertRow)
+            .select()
+            .maybeSingle());
+        }
+
+        if (error) {
+          console.warn('Commander admin pilots insert error:', error);
+          return res.status(500).json({
+            success: false,
+            error: { code: 'DATABASE_ERROR', message: 'Failed to create pilot' }
+          });
+        }
+
+        return res.status(201).json({ success: true, data: { pilot: data } });
+      } catch (error) {
+        captureException(error, {
+          action: 'admin_pilots_create',
+          endpoint: '/api/commander/admin/pilots'
+        });
+        return res.status(500).json({
+          success: false,
+          error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        });
+      }
+    }
 
     if (req.method !== 'GET') {
       return res.status(405).json({
