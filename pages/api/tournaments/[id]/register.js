@@ -90,6 +90,16 @@ async function handleRegister(req, res, tournamentId, staff) {
       });
     }
 
+    // 2026-07-25 audit fix: enforce late-registration cutoff (current_level is 0-indexed)
+    if (tournament.status === 'running' && tournament.late_registration_levels != null) {
+      if ((tournament.current_level + 1) > tournament.late_registration_levels) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'LATE_REG_CLOSED', message: 'Late registration is closed' }
+        });
+      }
+    }
+
     // Parallel validation: existing registration, capacity, exclusions, and spending limits
     const [existingResult, capacityResult, exclusionResult, limitsResult] = await Promise.all([
       getSupabase()
@@ -196,9 +206,11 @@ async function handleRegister(req, res, tournamentId, staff) {
     // This prevents a split-brain vulnerability where the client tab closes after creating the registration
     // but before logging the cash drawer transaction.
     const totalAmount = (tournament.buyin_amount || 0) + (tournament.buyin_fee || 0);
+    // 2026-07-25 audit fix: hoist pName so the audit log below can also see it
+    let pName = null;
     if (totalAmount > 0) {
       const { data: profile } = await getSupabase().from('profiles').select('display_name, first_name, last_name').eq('id', player_id).maybeSingle();
-      const pName = req.body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
+      pName = req.body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
 
       await getSupabase().from('commander_cash_transactions').insert({
         venue_id: tournament.venue_id,
@@ -206,7 +218,8 @@ async function handleRegister(req, res, tournamentId, staff) {
         type: 'buy_in',
         amount: totalAmount,
         payment_method: 'cash',
-        processed_by: _staff.id || null,
+        // 2026-07-25 audit fix: _staff is out of scope here; use the staff param
+        processed_by: staff.id || null,
         notes: `Tournament: ${tournament.name || 'Tournament'} (Buy-In: $${tournament.buyin_amount || 0}, Fee: $${tournament.buyin_fee || 0})`
       });
     }

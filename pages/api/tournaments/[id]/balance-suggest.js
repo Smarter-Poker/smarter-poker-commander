@@ -66,8 +66,9 @@ export default async function handler(req, res) {
       }
 
       // Get unique table numbers from entries
-      const tableNumbers = [...new Set(entries.map(e => e.table_number).filter(Boolean))]
-          .limit(100);
+      // 2026-07-25 audit fix: .limit() is a query-builder method, not an Array
+      // method — calling it on this array threw a TypeError.
+      const tableNumbers = [...new Set(entries.map(e => e.table_number).filter(Boolean))];
       if (tableNumbers.length < 2) {
         return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'Only one table active' } });
       }

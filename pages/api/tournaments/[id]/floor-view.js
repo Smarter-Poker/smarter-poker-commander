@@ -143,10 +143,12 @@ export default async function handler(req, res) {
       const totalAddons = entries.filter(e => e.addon_taken).length;
       const totalChips = activeEntries.reduce((sum, e) => sum + (e.current_chips || 0), 0);
       const avgStack = activeEntries.length > 0 ? Math.round(totalChips / activeEntries.length) : 0;
+      // 2026-07-25 audit fix: rebuy_cost/addon_cost are not real columns —
+      // use rebuy_amount/addon_amount so rebuys and add-ons count in the pool.
       const prizePool = tournament.actual_prizepool || tournament.prize_pool ||
         (entries.length * (tournament.buyin_amount || 0)) +
-        (totalRebuys * (tournament.rebuy_cost || 0)) +
-        (totalAddons * (tournament.addon_cost || 0));
+        (totalRebuys * (tournament.rebuy_amount || 0)) +
+        (totalAddons * (tournament.addon_amount || 0));
 
       // Check late registration
       const lateRegOpen = tournament.status === 'running' &&
@@ -183,9 +185,11 @@ export default async function handler(req, res) {
 
       // Auto-initialize clock_state for running tournaments that were never properly started
       if (!clockState && ['running', 'break', 'final_table'].includes(tournament.status)) {
+        // 2026-07-25 audit fix: when backfilling mid-tournament use now as
+        // levelStartedAt — using actual_start made the level appear long expired.
         clockState = {
           isRunning: tournament.status === 'running',
-          levelStartedAt: tournament.actual_start || tournament.scheduled_start || new Date().toISOString(),
+          levelStartedAt: new Date().toISOString(),
           pausedAt: null,
           pausedDuration: 0
         };
@@ -193,7 +197,7 @@ export default async function handler(req, res) {
         const updatedSettings = { ...tournamentSettings, clock_state: clockState };
         await getSupabase()
           .from('commander_tournaments')
-          .update({ settings: updatedSettings, actual_start: clockState.levelStartedAt })
+          .update({ settings: updatedSettings, actual_start: tournament.actual_start || clockState.levelStartedAt })
           .eq('id', tournamentId);
       }
 
@@ -220,12 +224,13 @@ export default async function handler(req, res) {
             buyin_fee: tournament.buyin_fee,
             starting_chips: tournament.starting_chips,
             allows_rebuys: tournament.allows_rebuys,
-            rebuy_cost: tournament.rebuy_cost,
+            // 2026-07-25 audit fix: alias keys kept for clients, sourced from real columns
+            rebuy_cost: tournament.rebuy_amount,
             rebuy_chips: tournament.rebuy_chips,
-            rebuy_levels: tournament.rebuy_levels,
+            rebuy_levels: tournament.rebuy_end_level,
             rebuy_end_level: tournament.rebuy_end_level,
             allows_addon: tournament.allows_addon,
-            addon_cost: tournament.addon_cost,
+            addon_cost: tournament.addon_amount,
             addon_chips: tournament.addon_chips,
             late_registration_levels: tournament.late_registration_levels,
             guaranteed_pool: tournament.guaranteed_pool,
