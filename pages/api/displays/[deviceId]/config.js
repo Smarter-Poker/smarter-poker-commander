@@ -35,9 +35,10 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       return handleGet(req, res, deviceId);
     } else if (req.method === 'PATCH') {
-      return handlePatch(req, res, deviceId);
+      // 2026-07-25 audit fix: pass the verified staff for venue scoping
+      return handlePatch(req, res, deviceId, _staff);
     } else if (req.method === 'DELETE') {
-      return handleDelete(req, res, deviceId);
+      return handleDelete(req, res, deviceId, _staff);
     }
 
     return res.status(405).json({
@@ -87,16 +88,7 @@ async function handleGet(req, res, deviceId) {
   }
 }
 
-async function handlePatch(req, res, deviceId) {
-  // Verify staff authentication
-  const staffSession = req.headers['x-staff-session'];
-  if (!staffSession) {
-    return res.status(401).json({
-      success: false,
-      error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-    });
-  }
-
+async function handlePatch(req, res, deviceId, staff) {
   const {
     table_id,
     device_name,
@@ -108,7 +100,30 @@ async function handlePatch(req, res, deviceId) {
   } = req.body;
 
   try {
-    const updates = { updated_at: new Date().toISOString() };
+    // 2026-07-25 audit fix: the display must belong to the staff member's
+    // venue — a valid session at any venue could previously edit any display.
+    const { data: existing, error: loadError } = await getSupabase()
+      .from('commander_table_displays')
+      .select('id, venue_id')
+      .eq('device_id', deviceId)
+      .maybeSingle();
+
+    if (loadError || !existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Display not found' }
+      });
+    }
+    if (String(existing.venue_id) !== String(staff.venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+      });
+    }
+
+    // 2026-07-25 audit fix: dropped updated_at — commander_table_displays has
+    // no such column and the write errored against production.
+    const updates = {};
 
     if (table_id !== undefined) updates.table_id = table_id;
     if (device_name !== undefined) updates.device_name = device_name;
@@ -117,6 +132,13 @@ async function handlePatch(req, res, deviceId) {
     if (rotation_screens !== undefined) updates.rotation_screens = rotation_screens;
     if (rotation_interval !== undefined) updates.rotation_interval = rotation_interval;
     if (config !== undefined) updates.config = config;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'No fields to update' }
+      });
+    }
 
     const { data: display, error } = await getSupabase()
       .from('commander_table_displays')
@@ -145,17 +167,28 @@ async function handlePatch(req, res, deviceId) {
   }
 }
 
-async function handleDelete(req, res, deviceId) {
-  // Verify staff authentication
-  const staffSession = req.headers['x-staff-session'];
-  if (!staffSession) {
-    return res.status(401).json({
-      success: false,
-      error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-    });
-  }
-
+async function handleDelete(req, res, deviceId, staff) {
   try {
+    // 2026-07-25 audit fix: the display must belong to the staff member's venue
+    const { data: existing, error: loadError } = await getSupabase()
+      .from('commander_table_displays')
+      .select('id, venue_id')
+      .eq('device_id', deviceId)
+      .maybeSingle();
+
+    if (loadError || !existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Display not found' }
+      });
+    }
+    if (String(existing.venue_id) !== String(staff.venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+      });
+    }
+
     const { error } = await getSupabase()
       .from('commander_table_displays')
       .delete()

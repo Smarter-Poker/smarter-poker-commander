@@ -5,7 +5,9 @@
  * GET /api/commander/comps/redeem - List redemptions
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+// 2026-07-25 audit fix: import verifyStaffSession + getUser so redemptions can be
+// authorized by a verified staff session OR a Bearer player redeeming their own balance.
+import { verifyStaffSession, getUser } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -26,7 +28,9 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-07-25 audit fix: auth is handled per-method below — POST accepts either
+    // a verified staff session or a Bearer player redeeming their own balance, so
+    // the blanket guardWriteStaff (staff-only) gate was removed.
 
     if (req.method === 'POST') {
       return redeemComps(req, res);
@@ -48,19 +52,6 @@ export default async function handler(req, res) {
 
 async function redeemComps(req, res) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-    const user = authData?.user;
-
-    if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
     const {
       venue_id,
       player_id,
@@ -75,17 +66,24 @@ async function redeemComps(req, res) {
       });
     }
 
-    // Check if user is staff at this venue
-    const { data: staff } = await getSupabase()
-      .from('commander_staff')
-      .select('id, role')
-      .eq('venue_id', venue_id)
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!staff) {
-      return res.status(403).json({ error: 'Staff access required to process redemptions' });
+    // 2026-07-25 audit fix: authorize via EITHER a verified (HMAC-signed) staff
+    // session at this venue, OR an authenticated Bearer player redeeming their
+    // OWN balance (p_staff_id null for self-service redemptions).
+    let staffId = null;
+    const sessionResult = await verifyStaffSession(req);
+    if (sessionResult.staff) {
+      if (String(sessionResult.staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({ error: 'Not authorized for this venue' });
+      }
+      staffId = sessionResult.staff.id;
+    } else {
+      const user = await getUser(req, res);
+      if (!user) {
+        return res.status(401).json({ error: 'Authorization required' });
+      }
+      if (String(user.id) !== String(player_id)) {
+        return res.status(403).json({ error: 'Staff access required to redeem comps for another player' });
+      }
     }
 
     // Use the database function to redeem
@@ -95,7 +93,7 @@ async function redeemComps(req, res) {
       p_amount: parseFloat(amount),
       p_redemption_type: redemption_type,
       p_description: description || `${redemption_type} redemption`,
-      p_staff_id: staff.id
+      p_staff_id: staffId
     });
 
     if (error) {
@@ -131,7 +129,8 @@ async function redeemComps(req, res) {
     return res.status(200).json({
       redemption,
       balance,
-      message: `$${amount.toFixed(2)} comps redeemed successfully`
+      // 2026-07-25 audit fix: amount may arrive as a string; coerce before toFixed.
+      message: `$${parseFloat(amount).toFixed(2)} comps redeemed successfully`
     });
   } catch (error) {
     console.warn('Redeem comps error:', error);

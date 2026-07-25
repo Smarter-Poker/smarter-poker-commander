@@ -18,7 +18,14 @@ function getSupabase() {
     return _supabase;
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// 2026-07-25 audit fix: lazy, guarded Stripe construction. `new Stripe(undefined)`
+// throws at import, 500ing the whole registration route even in free mode
+// where Stripe is never used.
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+
+// 2026-07-25 audit fix: single trial-length constant — UI copy promises a
+// 14-day trial but this file previously hardcoded 30 days in three places.
+const TRIAL_DAYS = 14;
 
 const TIER_PRICES = {
   home_game: {
@@ -174,25 +181,41 @@ export default async function handler(req, res) {
       let userId = null;
 
       if (existingAccount) {
-        // ─── Path A: Existing account — look up user, skip createUser ──
-        const existingUser = await findUserByEmail(email);
-        if (existingUser) {
-          userId = existingUser.id;
-          // Update their metadata to include venue_owner role
-          try {
-            await getSupabase().auth.admin.updateUserById(userId, {
-              user_metadata: {
-                full_name: ownerInfo.name,
-                phone: ownerInfo.phone,
-                role: 'venue_owner',
-              }
-            });
-          } catch (e) { console.warn('[create-subscription] Metadata update non-critical error:', e.message); }
-        } else {
-          return res.status(400).json({
-            error: 'No Smarter.Poker account found with this email. Please uncheck "I already have a Smarter.Poker account" and create a new account instead.'
+        // ─── Path A: Existing account ──────────────────────────────────
+        // 2026-07-25 audit fix (P1): this path previously linked a venue,
+        // subscription, and owner-staff role to ANY account by email — and
+        // overwrote that account's user_metadata — with zero authentication.
+        // It now requires a valid Supabase session for that same account.
+        const authHeader = req.headers.authorization || '';
+        const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+        if (!bearer) {
+          return res.status(401).json({
+            error: 'Please sign in to your Smarter.Poker account first, then complete Commander registration.',
+            code: 'AUTH_REQUIRED'
           });
         }
+        const { data: authData, error: authErr } = await getSupabase().auth.getUser(bearer);
+        const authedUser = authData?.user;
+        if (authErr || !authedUser) {
+          return res.status(401).json({ error: 'Your session has expired. Please sign in again.', code: 'AUTH_REQUIRED' });
+        }
+        if ((authedUser.email || '').toLowerCase().trim() !== email) {
+          return res.status(403).json({
+            error: 'The signed-in account does not match the email entered. Sign in with that account or use its email.',
+            code: 'EMAIL_MISMATCH'
+          });
+        }
+        userId = authedUser.id;
+        // Update their metadata to include venue_owner role
+        try {
+          await getSupabase().auth.admin.updateUserById(userId, {
+            user_metadata: {
+              full_name: ownerInfo.name,
+              phone: ownerInfo.phone,
+              role: 'venue_owner',
+            }
+          });
+        } catch (e) { console.warn('[create-subscription] Metadata update non-critical error:', e.message); }
       } else {
         // ─── Path B: New account — create user ─────────────────────────
         const password = ownerInfo.password || ('Tmp' + require('crypto').randomBytes(12).toString('base64url') + 'X1!');
@@ -213,24 +236,14 @@ export default async function handler(req, res) {
         } else if (authError?.message?.toLowerCase().includes('already') ||
           authError?.message?.toLowerCase().includes('exists') ||
           authError?.message?.toLowerCase().includes('registered')) {
-          // User already exists — look them up
-          const existingUser = await findUserByEmail(email);
-          if (existingUser) {
-            userId = existingUser.id;
-            try {
-              await getSupabase().auth.admin.updateUserById(userId, {
-                user_metadata: {
-                  full_name: ownerInfo.name,
-                  phone: ownerInfo.phone,
-                  role: 'venue_owner',
-                }
-              });
-            } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
-          } else {
-            return res.status(400).json({
-              error: 'An account with this email already exists. Please check "I already have a Smarter.Poker account" and try again.'
-            });
-          }
+          // 2026-07-25 audit fix (P1): do NOT silently link the existing
+          // account here — that let anyone claim a venue under a victim's
+          // email by "registering" with it. Route them through the
+          // authenticated existing-account path instead.
+          return res.status(400).json({
+            error: 'An account with this email already exists. Please check "I already have a Smarter.Poker account", sign in, and try again.',
+            code: 'ACCOUNT_EXISTS'
+          });
         } else {
           // Unexpected error
           console.warn('createUser error:', authError?.message);
@@ -422,7 +435,7 @@ export default async function handler(req, res) {
             monthly_price: TIER_PRICES[tier].price,
             billing_email: email,
             billing_name: ownerInfo.name,
-            trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
           })
           .eq('id', existingSub.id)
           .select()
@@ -442,7 +455,7 @@ export default async function handler(req, res) {
             billing_email: email,
             billing_name: ownerInfo.name,
             billing_address: { city: venueCity || '', state: venueState || '', country: 'US' },
-            trial_ends_at: (stripeSubscriptionId || !requiresPaymentNow) ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+            trial_ends_at: (stripeSubscriptionId || !requiresPaymentNow) ? new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString() : null,
           })
           .select()
           .maybeSingle();
@@ -458,24 +471,38 @@ export default async function handler(req, res) {
       }
 
       // ─── 5. Staff record (owner role) ────────────────────────────────
+      // 2026-07-25 audit fix: the previous insert used columns that don't
+      // exist on commander_staff (name/status, and permissions as an array),
+      // so it silently failed and owners never got a staff row. Write the
+      // real columns and populate BOTH user link columns (user_id and
+      // linked_user_id) so every auth helper finds the row.
       const { data: existingStaff } = await getSupabase()
         .from('commander_staff')
-        .select('id')
+        .select('id, linked_user_id')
         .eq('venue_id', venueId)
-        .eq('user_id', userId)
+        .or(`user_id.eq.${userId},linked_user_id.eq.${userId}`)
+        .limit(1)
         .maybeSingle();
 
       if (!existingStaff) {
-        await getSupabase().from('commander_staff').insert({
+        const { error: staffInsertError } = await getSupabase().from('commander_staff').insert({
           venue_id: venueId,
           user_id: userId,
-          name: ownerInfo.name,
+          linked_user_id: userId,
+          display_name: ownerInfo.name,
           email,
           phone: ownerInfo.phone,
           role: 'owner',
-          permissions: ['all'],
-          status: 'active',
+          permissions: {},
+          is_active: true,
         });
+        if (staffInsertError) {
+          console.warn('[create-subscription] owner staff insert failed:', staffInsertError.message);
+        }
+      } else if (!existingStaff.linked_user_id) {
+        await getSupabase().from('commander_staff')
+          .update({ linked_user_id: userId })
+          .eq('id', existingStaff.id);
       }
 
       // ─── 5.5 Auto-provision tables ─────────────────────────────────
@@ -543,7 +570,7 @@ export default async function handler(req, res) {
         });
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
-      // ─── Done ────────────────────────────────────────────────────────
+      // ─── Done ──────────────────────────────────────────────────────
       return res.status(200).json({
         success: true,
         venueId,
@@ -551,7 +578,7 @@ export default async function handler(req, res) {
         subscriptionId: subscriptionData?.id,
         stripeCustomerId,
         stripeSubscriptionId,
-        trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
       });
 
     } catch (error) {

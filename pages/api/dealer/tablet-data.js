@@ -43,7 +43,7 @@ export default async function handler(req, res) {
           // 1. Get table details
           let tableQuery = getSupabase()
               .from('commander_tables')
-              .select('id, venue_id, table_number, table_name, max_seats, status, mode, game_type, stakes')
+              .select('id, venue_id, table_number, table_name, max_seats, status, mode, game_type, stakes, tournament_id') // 2026-07-25 audit fix: tournament branch reads tableData.tournament_id
               .eq('table_number', tableNum);
 
           if (venue_id) {

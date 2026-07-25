@@ -5,7 +5,8 @@
  * POST /api/commander/comps/transactions - Issue manual comp or adjustment
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+// 2026-07-25 audit fix: import verifyStaffSession for the preferred x-staff-session path.
+import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -139,33 +140,47 @@ async function listTransactions(req, res) {
 
 async function createTransaction(req, res) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-    const user = authData?.user;
-
-    if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
-    }
-
     const { venue_id, player_id, amount, description, transaction_type = 'bonus' } = req.body;
 
     if (!venue_id || !player_id || amount === undefined) {
       return res.status(400).json({ success: false, error: 'Venue ID, player ID, and amount are required' });
     }
 
-    // Check if user is staff at this venue
-    const { data: staff } = await getSupabase()
-      .from('commander_staff')
-      .select('id, role')
-      .eq('venue_id', venue_id)
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle();
+    // 2026-07-25 audit fix: prefer the verified (HMAC-signed) x-staff-session;
+    // fall back to Bearer JWT with an .or() lookup matching user_id OR
+    // linked_user_id (the old user_id-only lookup locked out linked staff).
+    let staff = null;
+    const sessionResult = await verifyStaffSession(req);
+    if (sessionResult.staff) {
+      if (String(sessionResult.staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+      }
+      staff = sessionResult.staff;
+    } else {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ success: false, error: 'Authorization required' });
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
+      const user = authData?.user;
+
+      if (authError || !user) {
+        return res.status(401).json({ success: false, error: 'Invalid token' });
+      }
+
+      const { data: staffRow } = await getSupabase()
+        .from('commander_staff')
+        .select('id, role')
+        .eq('venue_id', venue_id)
+        .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      staff = staffRow;
+    }
 
     if (!staff) {
       return res.status(403).json({ success: false, error: 'Staff access required to issue comps' });
@@ -209,9 +224,10 @@ async function createTransaction(req, res) {
     return res.status(201).json({
       transaction,
       balance,
-      message: amount >= 0
-        ? `$${amount.toFixed(2)} comp issued successfully`
-        : `$${Math.abs(amount).toFixed(2)} adjustment applied`
+      // 2026-07-25 audit fix: amount may arrive as a string; coerce before toFixed.
+      message: parseFloat(amount) >= 0
+        ? `$${parseFloat(amount).toFixed(2)} comp issued successfully`
+        : `$${Math.abs(parseFloat(amount)).toFixed(2)} adjustment applied`
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
