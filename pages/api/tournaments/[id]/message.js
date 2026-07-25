@@ -56,8 +56,11 @@ export default async function handler(req, res) {
       const msgType = type || 'announcement'; // announcement, alert, info, break_table, hand_for_hand
       const duration = duration_seconds || 30;
 
-      // Store message in clock_state so display screens can read it
-      const clockState = tournament.clock_state || {};
+      // Store message in clock state so display screens can read it
+      // 2026-07-25 audit fix: there is no clock_state column — clock state lives
+      // in the settings jsonb (settings.clock_state), same as clock.js.
+      const settings = tournament.settings || {};
+      const clockState = settings.clock_state || {};
       const messages = clockState.messages || [];
       const newMessage = {
         id: `msg_${Date.now()}`,
@@ -72,13 +75,17 @@ export default async function handler(req, res) {
       // Keep only last 20 messages
       const trimmedMessages = messages.slice(-20);
 
+      // 2026-07-25 audit fix: persist under settings.clock_state (real column)
       const { error: uErr } = await getSupabase()
         .from('commander_tournaments')
         .update({
-          clock_state: {
-            ...clockState,
-            messages: trimmedMessages,
-            current_message: newMessage
+          settings: {
+            ...settings,
+            clock_state: {
+              ...clockState,
+              messages: trimmedMessages,
+              current_message: newMessage
+            }
           }
         })
         .eq('id', tournamentId);

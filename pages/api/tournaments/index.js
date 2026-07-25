@@ -54,8 +54,26 @@ async function listTournaments(req, res) {
     const { venue_id, status, from_date, to_date, limit: rawLimit = '50' } = req.query;
     const limit = Math.min(parseInt(rawLimit) || 50, 500);
 
+    // 2026-07-25 audit fix: the player hub needs a cross-venue list — when
+    // venue_id is absent, return upcoming/active tournaments across venues
+    // (public fields only) instead of a 400.
     if (!venue_id) {
-      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'venue_id is required' } });
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await getSupabase()
+        .from('commander_tournaments')
+        .select(`
+          id, venue_id, name, tournament_type, buyin_amount, guaranteed_pool,
+          scheduled_start, status, current_entries, max_entries,
+          poker_venues (id, name, city, state)
+        `)
+        .in('status', ['scheduled', 'registering', 'running'])
+        .gte('scheduled_start', since)
+        .order('scheduled_start', { ascending: true })
+        .limit(50);
+
+      if (error) throw error;
+
+      return res.status(200).json({ success: true, data: { tournaments: data } });
     }
 
     let query = getSupabase()

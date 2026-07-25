@@ -41,9 +41,11 @@ export default async function handler(req, res) {
     try {
       // Staff is already validated by guardWriteStaff at the handler level
 
+      // 2026-07-25 audit fix: addon_cost/addon_level are not real columns —
+      // use addon_amount; starting_chips is referenced in the fallback below.
       const { data: tournament } = await getSupabase()
         .from('commander_tournaments')
-        .select('id, venue_id, allows_addon, addon_cost, addon_chips, addon_level')
+        .select('id, venue_id, allows_addon, addon_amount, addon_chips, starting_chips')
         .eq('id', tournamentId)
         .maybeSingle();
       if (!tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
@@ -90,12 +92,13 @@ export default async function handler(req, res) {
 
       // --- FINANCIAL FRAUD PROTECTION ---
       // Log the cash collected by the TD into the cashier vault
-      if (tournament.addon_cost > 0) {
+      // 2026-07-25 audit fix: use the real addon_amount column
+      if (tournament.addon_amount > 0) {
         await getSupabase().from('commander_cash_transactions').insert({
           venue_id: tournament.venue_id,
           player_name: entry.player_name,
           type: 'buy_in',
-          amount: tournament.addon_cost,
+          amount: tournament.addon_amount,
           payment_method: 'cash',
           processed_by: _g.id || null, // staff ID from guardWriteStaff
           notes: `Tournament Add-on: ${entry.player_name} (ID: ${entryId})`
@@ -109,7 +112,7 @@ export default async function handler(req, res) {
           player_name: entry.player_name,
           chips_added: addonChips,
           total_chips: newChips,
-          cost: tournament.addon_cost || 0
+          cost: tournament.addon_amount || 0 // 2026-07-25 audit fix: real column
         }
       });
     } catch (err) {
