@@ -342,7 +342,7 @@ export default function CommanderSettingsPage() {
                   {!settings.security_gate_enabled && (
                     <div className="px-4 py-3 bg-[#F59E0B]/5">
                       <p className="text-xs text-[#F59E0B] flex items-center gap-1.5">
-                        ⚠️ Security gate is OFF — restricted pages are accessible without PIN verification
+                        Security gate is OFF — restricted pages are accessible without PIN verification
                       </p>
                     </div>
                   )}

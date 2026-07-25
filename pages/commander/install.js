@@ -48,7 +48,7 @@ export default function CommanderInstall() {
                 num: 5,
                 title: 'Tap "Add" to Confirm',
                 desc: 'Tap "Add" in the top-right corner. The Club Commander icon now appears on your home screen.',
-                icon: '✅',
+                icon: '✓',
                 highlight: 'Tap Add'
             },
             {
@@ -92,7 +92,7 @@ export default function CommanderInstall() {
                 num: 5,
                 title: 'Confirm Installation',
                 desc: 'Tap "Install" or "Add" to confirm. The app will appear on your home screen and app drawer.',
-                icon: '✅',
+                icon: '✓',
                 highlight: 'Tap Install'
             },
             {
