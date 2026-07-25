@@ -75,11 +75,13 @@ async function listEntries(req, res, leaderboardId) {
     const playerIds = (entries || []).map(e => e.player_id).filter(Boolean);
     let memberMap = {};
     if (playerIds.length > 0) {
+      // 2026-07-25 audit fix: missing semicolon made the next line parse as a
+      // call on the query builder (`.limit(100)(members || [])...`), crashing.
       const { data: members } = await getSupabase()
         .from('commander_members')
         .select('id, first_name, last_name, photo_url, membership_tier')
         .in('id', playerIds)
-            .limit(100)
+        .limit(100);
       (members || []).forEach(m => { memberMap[m.id] = m; });
     }
 
@@ -275,13 +277,14 @@ async function updateRankings(leaderboardId) {
 
   if (!rpcErr) return; // RPC succeeded
 
-  // Fallback: manual ranking via JS (RPC may not exist or may have failed)
+  // Fallback: manual ranking via JS (RPC may have failed)
+  // 2026-07-25 audit fix: removed the 100-row cap — it silently left entries
+  // beyond the first 100 unranked.
   const { data: entries } = await getSupabase()
     .from('commander_leaderboard_entries')
     .select('id, score')
     .eq('leaderboard_id', leaderboardId)
-    .order('score', { ascending: false })
-        .limit(100);
+    .order('score', { ascending: false });
 
   if (!entries || entries.length === 0) return;
 

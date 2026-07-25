@@ -36,22 +36,47 @@ export default async function handler(req, res) {
     }
 
     const { id } = req.query;
-    const { resolved_by, resolution_notes, follow_up_required = false } = req.body;
+    // 2026-07-25 audit fix: page sends { resolution }; resolved_by comes from
+    // the verified staff session, never the request body.
+    const { resolution, resolution_notes, follow_up_required = false } = req.body || {};
+    const notes = resolution || resolution_notes;
 
-    if (!resolved_by || !resolution_notes) {
+    if (!notes) {
       return res.status(400).json({
         success: false,
-        error: { code: 'MISSING_FIELDS', message: 'resolved_by and resolution_notes required' }
+        error: { code: 'MISSING_FIELDS', message: 'resolution required' }
       });
     }
 
     try {
+      // 2026-07-25 audit fix: venue-scope — the incident must belong to the
+      // staff member's venue.
+      const { data: existing, error: loadError } = await getSupabase()
+        .from('commander_incidents')
+        .select('id, venue_id')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (loadError) throw loadError;
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Incident not found' }
+        });
+      }
+      if (String(existing.venue_id) !== String(_staff.venue_id)) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+        });
+      }
+
       const { data: incident, error } = await getSupabase()
         .from('commander_incidents')
         .update({
           incident_status: 'resolved',
-          resolved_by,
-          resolution_notes,
+          resolved_by: _staff.id,
+          resolution_notes: notes,
           follow_up_required,
           resolved_at: new Date().toISOString()
         })

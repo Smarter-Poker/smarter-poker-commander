@@ -4,7 +4,6 @@
  * Per API_REFERENCE.md
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardOwnerStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -18,18 +17,17 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: OWNER — requires owner role
+// Auth: USER — players join leagues with their own Bearer JWT
+// 2026-07-25 audit fix: removed the guardOwnerStaff gate — it required an
+// owner/manager staff session, so no player could ever join a league. The
+// handler body below already authenticates the Bearer user and joins them
+// as themselves (identity from the verified token, never the body).
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardOwnerStaff(req, res);
-      if (!_staff) return;
-    }
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,

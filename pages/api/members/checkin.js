@@ -52,19 +52,28 @@ export default async function handler(req, res) {
         .select()
         .maybeSingle();
 
+      // 2026-07-25 audit fix: if the update matched no row the member doesn't exist —
+      // previously fell through and returned member_name 'undefined undefined'.
+      if (memberError || !member) {
+        return res.status(404).json({ success: false, error: 'Member not found' });
+      }
+
       // Also log the check-in event
       await getSupabase().from('commander_checkins').insert({
         member_id,
-        venue_id: member?.venue_id,
+        venue_id: member.venue_id,
         checked_in_at: new Date().toISOString()
       }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); // Non-fatal if table doesn't exist
+
+      // 2026-07-25 audit fix: commander_members has first_name/last_name, not name
+      const memberName = [member.first_name, member.last_name].filter(Boolean).join(' ') || 'Member';
 
       return res.status(200).json({
         success: true,
         data: {
           member_id,
           checked_in_at: new Date().toISOString(),
-          member_name: member?.name || `${member?.first_name} ${member?.last_name}`
+          member_name: memberName
         }
       });
     } catch (err) {

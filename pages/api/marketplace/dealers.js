@@ -193,10 +193,10 @@ async function registerDealer(req, res) {
         status: 'active',
         verified: false
       })
-      .select(`
-        *,
-        profiles:dealer_id (id, display_name, avatar_url)
-      `)
+      // 2026-07-25 audit fix: dropped the `profiles:dealer_id (...)` embed — the
+      // FK it requires doesn't exist (PGRST200 after the row was inserted; same
+      // issue as the listDealers fix above). Plain select of the inserted row.
+      .select()
       .maybeSingle();
 
     if (error) throw error;
