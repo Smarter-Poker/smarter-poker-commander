@@ -77,6 +77,14 @@ export default async function handler(req, res) {
           await handleRefund(event.data.object);
           break;
 
+        case 'checkout.session.completed':
+          // 2026-07-25 audit fix: without this handler, a paid Checkout
+          // never wrote stripe_customer_id / stripe_subscription_id back to
+          // commander_subscriptions — customers paid while the platform still
+          // saw them as trialing/unlinked.
+          await handleCheckoutCompleted(event.data.object);
+          break;
+
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
           await handleSubscriptionUpdate(event.data.object);
@@ -160,6 +168,26 @@ async function handleRefund(charge) {
     }
   }
 
+}
+
+async function handleCheckoutCompleted(session) {
+  const { customer, subscription, metadata, mode } = session;
+  if (mode !== 'subscription' || !metadata?.venue_id) return;
+
+  const { error } = await getSupabase()
+    .from('commander_subscriptions')
+    .update({
+      stripe_customer_id: customer || null,
+      stripe_subscription_id: subscription || null,
+      status: 'active',
+      last_payment_date: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('venue_id', metadata.venue_id);
+
+  if (error) {
+    console.warn('checkout.session.completed update error:', error);
+  }
 }
 
 async function handleSubscriptionUpdate(subscription) {

@@ -40,7 +40,9 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       return handleGet(req, res, id);
     } else if (req.method === 'PATCH') {
-      return handlePatch(req, res, id);
+      // 2026-07-25 audit fix: pass the guardManager staff object through instead
+      // of re-authenticating inside handlePatch.
+      return handlePatch(req, res, id, _staff);
     } else {
       return res.status(405).json({
         success: false,
@@ -120,38 +122,15 @@ async function handleGet(req, res, venueId) {
   }
 }
 
-async function handlePatch(req, res, venueId) {
+async function handlePatch(req, res, venueId, staff) {
   try {
-    // Verify manager authentication
-    const staffSession = req.headers['x-staff-session'];
-    if (!staffSession) {
+    // 2026-07-25 audit fix: staff comes from guardManager in the handler — the
+    // old re-auth looked up commander_staff by sessionData.id, which is
+    // undefined for owner sessions.
+    if (!staff) {
       return res.status(401).json({
         success: false,
         error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-      });
-    }
-
-    let sessionData;
-    try {
-      sessionData = JSON.parse(staffSession);
-    } catch {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_SESSION', message: 'Invalid session format' }
-      });
-    }
-
-    const { data: staff, error: staffError } = await getSupabase()
-      .from('commander_staff')
-      .select('id, venue_id, role, is_active')
-      .eq('id', sessionData.id)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (staffError || !staff) {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_STAFF', message: 'Staff member not found or inactive' }
       });
     }
 

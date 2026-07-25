@@ -4,7 +4,7 @@
  * GET /api/commander/table-ratings — Get aggregated vibes for venue tables
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardUser } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -18,16 +18,21 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: PLAYER — verified user submits their own rating; GET is public aggregates
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
-
-    if (req.method === 'POST') return submitRating(req, res);
+    // 2026-07-25 audit fix: POST was gated by guardWriteStaff, but this is the
+    // player rating submission endpoint — require a verified player user and
+    // derive the rater from the session, not the body.
+    if (req.method === 'POST') {
+      const user = await guardUser(req, res);
+      if (!user) return;
+      return submitRating(req, res, user);
+    }
     if (req.method === 'GET') return getVibes(req, res);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
 
@@ -38,8 +43,10 @@ export default async function handler(req, res) {
   }
 }
 
-async function submitRating(req, res) {
-  const { venue_id, table_number, action_level, friendliness, pace, game_type, stakes, comment, player_id, session_id } = req.body;
+async function submitRating(req, res, user) {
+  // 2026-07-25 audit fix: body player_id is ignored — the rater is the
+  // verified session user.
+  const { venue_id, table_number, action_level, friendliness, pace, game_type, stakes, comment, session_id } = req.body;
 
   if (!venue_id || !table_number || !action_level || !friendliness || !pace) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id, table_number, action_level, friendliness, pace required' } });
@@ -53,14 +60,7 @@ async function submitRating(req, res) {
   }
 
   try {
-    let userId = player_id || null;
-    const authHeader = req.headers.authorization;
-    if (authHeader && !userId) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: authData } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-      userId = user?.id || null;
-    }
+    const userId = user.id;
 
     const { data: rating, error } = await getSupabase()
       .from('commander_table_ratings')

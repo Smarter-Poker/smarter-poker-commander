@@ -234,9 +234,18 @@ async function updateEvent(req, res, id) {
       }
 
       // Update member stats
-      await getSupabase().rpc('increment_home_game_stats', {
-        p_game_id: id
-      }).catch(e => { console.warn('[App] Handled promise rejection:', e?.message || e); });
+      // 2026-07-25 audit fix: supabase rpc() reports failures via the returned
+      // error, not a rejection — log it (non-fatal) instead of swallowing.
+      try {
+        const { error: statsError } = await getSupabase().rpc('increment_home_game_stats', {
+          p_game_id: id
+        });
+        if (statsError) {
+          console.warn(`increment_home_game_stats failed for game ${id}:`, statsError.message || statsError);
+        }
+      } catch (e) {
+        console.warn(`increment_home_game_stats failed for game ${id}:`, e?.message || e);
+      }
 
       return res.status(200).json({ event: updated, message: 'Game completed' });
     }

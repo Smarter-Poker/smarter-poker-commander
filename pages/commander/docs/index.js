@@ -50,8 +50,8 @@ const DOCUMENTATION = [
   },
 ];
 
+// 2026-07-25 audit fix: removed the 'API Documentation' link — /commander/docs/api does not exist
 const QUICK_LINKS = [
-  { label: 'API Documentation', href: '/commander/docs/api', icon: FileText },
   { label: 'Status Page', href: 'https://status.smarter.poker', icon: ExternalLink, external: true },
   { label: 'Contact Support', href: 'mailto:support@smarter.poker', icon: ExternalLink, external: true },
 ];

@@ -9,7 +9,7 @@
  *   4-panel: clock+waitlist+promotions+tables
  * Auto-refreshes all panels, no interaction needed
  */
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
@@ -39,7 +39,10 @@ export default function CombinedDisplay() {
   const [clockSeconds, setClockSeconds] = useState(null);
   const wakeLockRef = useRef(null);
 
-  const panels = layout.split('+').filter(Boolean);
+  // 2026-07-25 audit fix: memoize so fetchData's identity is stable — a fresh
+  // array every render made fetchData change every render, re-arming the
+  // 30s poll effect in a render/fetch loop.
+  const panels = useMemo(() => layout.split('+').filter(Boolean), [layout]);
 
   const venueIdRef = useRef(null);
   try { venueIdRef.current = typeof window !== 'undefined' ? getStaffData().venue_id : null; } catch { venueIdRef.current = null; }
@@ -78,12 +81,14 @@ return { 'x-staff-session': staff };
       if (panels.includes('promotions') && vid) {
         fetches.push(
           fetch(`/api/commander/promotions?venue_id=${vid}`, { headers }).then(r => r.json()).catch(() => ({}))
-            .then(json => { if (json.success) setPromotions((json.data || []).filter(p => p.is_active !== false)); })
+            // 2026-07-25 audit fix: promotions API returns an object, not an array
+            .then(json => { if (json.success) setPromotions((json.data?.promotions || []).filter(p => p.is_active !== false)); })
         );
       }
       await Promise.allSettled(fetches);
     } catch (err) { console.warn(err); }
-    setNow(new Date());
+    // 2026-07-25 audit fix: removed setNow here — the 1s clock interval
+    // already updates it, and calling it from fetchData fed the render loop.
   }, [panels, tournament]);
 
   useEffect(() => {

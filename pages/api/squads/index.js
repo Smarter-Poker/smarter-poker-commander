@@ -26,9 +26,12 @@ export default async function handler(req, res) {
 
 
     // Auth guard: require user auth for writes
-    if (req.method !== "GET") { const _user = await guardUser(req, res); if (!_user) return; }
     if (req.method === 'POST') {
-      return handleCreate(req, res);
+      // 2026-07-25 audit fix: pass the verified user through so the leader is
+      // derived from the session, not the request body.
+      const user = await guardUser(req, res);
+      if (!user) return;
+      return handleCreate(req, res, user);
     } else if (req.method === 'GET') {
       return handleList(req, res);
     }
@@ -45,18 +48,24 @@ export default async function handler(req, res) {
   }
 }
 
-async function handleCreate(req, res) {
-  const { venue_id, game_type, stakes, leader_id, prefer_same_table = true, accept_split = false } = req.body;
+async function handleCreate(req, res, user) {
+  // 2026-07-25 audit fix: leader is the verified session user — body leader_id
+  // is ignored (it was forgeable). Also accept optional name and member_ids
+  // from the create-squad wizard.
+  const { venue_id, game_type, stakes, name, member_ids } = req.body || {};
+  const leader_id = user.id;
 
-  if (!venue_id || !game_type || !leader_id) {
+  if (!venue_id || !game_type) {
     return res.status(400).json({
       success: false,
-      error: { code: 'MISSING_FIELDS', message: 'venue_id, game_type, and leader_id required' }
+      error: { code: 'MISSING_FIELDS', message: 'venue_id and game_type required' }
     });
   }
 
   try {
     // Create squad (waitlist group)
+    // 2026-07-25 audit fix: write real columns — group_status (not status);
+    // prefer_same_table/accept_split do not exist on commander_waitlist_groups.
     const { data: squad, error } = await getSupabase()
       .from('commander_waitlist_groups')
       .insert({
@@ -64,9 +73,11 @@ async function handleCreate(req, res) {
         game_type,
         stakes,
         leader_id,
-        prefer_same_table,
-        accept_split,
-        status: 'waiting'
+        name: name || null,
+        group_status: 'waiting',
+        // 2026-07-25 audit fix: generate the invite code at creation — the
+        // join-by-code flow depends on it and nothing else populates it.
+        invite_code: require('crypto').randomBytes(4).toString('hex').toUpperCase().slice(0, 6)
       })
       .select()
       .maybeSingle();
@@ -78,8 +89,30 @@ async function handleCreate(req, res) {
       .from('commander_waitlist_group_members')
       .insert({
         group_id: squad.id,
-        player_id: leader_id
+        player_id: leader_id,
+        is_leader: true,
+        member_status: 'active'
       });
+
+    // 2026-07-25 audit fix: insert invited members from the wizard (best-effort).
+    if (Array.isArray(member_ids) && member_ids.length > 0) {
+      const inviteRows = [...new Set(member_ids.map(String))]
+        .filter(pid => pid && pid !== String(leader_id))
+        .map(pid => ({
+          group_id: squad.id,
+          player_id: pid,
+          is_leader: false,
+          member_status: 'invited'
+        }));
+      if (inviteRows.length > 0) {
+        const { error: inviteError } = await getSupabase()
+          .from('commander_waitlist_group_members')
+          .insert(inviteRows);
+        if (inviteError) {
+          console.warn('Create squad: failed to insert invited members:', inviteError);
+        }
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -113,7 +146,8 @@ async function handleList(req, res) {
           .limit(100);
 
     if (venue_id) query = query.eq('venue_id', venue_id);
-    if (status) query = query.eq('status', status);
+    // 2026-07-25 audit fix: real column is group_status.
+    if (status) query = query.eq('group_status', status);
 
     const { data: squads, error } = await query;
 

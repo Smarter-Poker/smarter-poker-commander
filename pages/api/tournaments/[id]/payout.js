@@ -86,7 +86,8 @@ async function handleGetPayouts(req, res, tournamentId) {
           percentage: percent,
           amount,
           player_name: null,
-          player_id: null
+          player_id: null,
+          entry_id: null
         };
       });
 
@@ -100,6 +101,25 @@ async function handleGetPayouts(req, res, tournamentId) {
         if (match) {
           slot.player_name = match.profiles?.display_name || match.player_name;
           slot.player_id = match.player_id;
+          // 2026-07-25 audit fix: carry entry_id so bulk saves can target the entry row
+          slot.entry_id = match.id;
+        }
+      });
+
+      // 2026-07-25 audit fix: project still-active players (chip-count order) into
+      // the unfilled top slots so deal/chop saves can identify their entries even
+      // though they have no finish_position (and possibly no player_id).
+      const activeEntries = (entries || [])
+        .filter(e => !e.finish_position && !['cancelled', 'eliminated'].includes(e.status))
+        .sort((a, b) => (b.current_chips || 0) - (a.current_chips || 0));
+      let activeIdx = 0;
+      calculated.forEach(slot => {
+        if (!slot.entry_id && !slot.player_id && activeIdx < activeEntries.length) {
+          const e = activeEntries[activeIdx++];
+          slot.player_name = e.profiles?.display_name || e.player_name;
+          slot.player_id = e.player_id || null;
+          slot.entry_id = e.id;
+          slot.is_projected = true;
         }
       });
 
@@ -225,7 +245,10 @@ async function handleBulkPayouts(req, res, tournamentId) {
     // Update each entry
     const results = [];
     for (const p of payouts) {
-      const { data: entry, error } = await getSupabase()
+      // 2026-07-25 audit fix: identify the entry by entry_id when provided
+      // (chop entries for still-active players may lack player_id); fallback
+      // to player_id, and skip rows with neither identifier.
+      let updateQuery = getSupabase()
         .from('commander_tournament_entries')
         .update({
           finish_position: p.position,
@@ -233,8 +256,17 @@ async function handleBulkPayouts(req, res, tournamentId) {
           payout_position: p.position,
           status: 'winner'
         })
-        .eq('tournament_id', tournamentId)
-        .eq('player_id', p.player_id)
+        .eq('tournament_id', tournamentId);
+
+      if (p.entry_id) {
+        updateQuery = updateQuery.eq('id', p.entry_id);
+      } else if (p.player_id) {
+        updateQuery = updateQuery.eq('player_id', p.player_id);
+      } else {
+        continue;
+      }
+
+      const { data: entry, error } = await updateQuery
         .select()
         .maybeSingle();
 

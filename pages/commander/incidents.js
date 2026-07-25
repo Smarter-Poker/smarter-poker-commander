@@ -17,7 +17,7 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 const INCIDENT_TYPES = [
   { value: 'dispute', label: 'Player Dispute', emoji: '⚔️' },
   { value: 'rules_violation', label: 'Rules Violation', emoji: '📋' },
-  { value: 'behavior', label: 'Behavior Issue', emoji: '🚨' },
+  { value: 'behavior', label: 'Behavior Issue', emoji: '' },
   { value: 'safety', label: 'Safety Concern', emoji: '🛡️' },
   { value: 'equipment', label: 'Equipment Issue', emoji: '🔧' },
   { value: 'other', label: 'Other', emoji: '📝' }
@@ -147,7 +147,7 @@ function CreateIncidentModal({ onSubmit, onClose }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
       <div style={{ width: '100%', maxWidth: 480, background: '#242526', borderRadius: 16, border: '2px solid #3A3B3C', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>🚨 Report Incident</h2>
+          <h2 style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>Report Incident</h2>
           <button onClick={onClose} style={{ background: '#3A3B3C', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer' }}>
             <X size={18} color="#B0B3B8" />
           </button>
@@ -392,10 +392,17 @@ export default function IncidentsPage() {
     setLoading(true);
     try {
 const data = await commanderFetchJSON(`/api/commander/incidents?venue_id=${venueId}`, {});
-      if (data.success) setIncidents(data.data?.incidents || []);
+      if (data.success) {
+        setIncidents(data.data?.incidents || []);
+      } else {
+        // 2026-07-25 audit fix: surface API-level failures via toast
+        setToast({ type: 'error', text: data.error?.message || data.error || 'Failed to load incidents.' });
+      }
     } catch (err) {
       console.warn('Fetch incidents failed:', err);
       setIncidents([]);
+      // 2026-07-25 audit fix: surface fetch failures via toast
+      setToast({ type: 'error', text: 'Failed to load incidents.' });
     } finally { setLoading(false); }
   }
 
@@ -413,7 +420,14 @@ const res = await commanderFetch('/api/commander/incidents', {
           fetchIncidents();
           broadcastChange('incidents');
           busEmit.screenShake('medium');
+        } else {
+          // 2026-07-25 audit fix: surface API-level failures via toast
+          setToast({ type: 'error', text: result.error?.message || result.error || 'Create incident failed. Please try again.' });
         }
+      } else {
+        // 2026-07-25 audit fix: surface non-OK responses via toast
+        const body = await res.json().catch(() => null);
+        setToast({ type: 'error', text: body?.error?.message || body?.error || `Create incident failed (${res.status}).` });
       }
     } catch (err) { console.warn('Create incident failed:', err); setToast({ type: 'error', text: 'Action failed: Create incident failed. Please try again.' }); }
   setLoading(false);
@@ -432,7 +446,14 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
           setSelectedIncident(null);
           fetchIncidents();
           broadcastChange('incidents');
+        } else {
+          // 2026-07-25 audit fix: surface API-level failures via toast
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Resolve incident failed. Please try again.' });
         }
+      } else {
+        // 2026-07-25 audit fix: surface non-OK responses via toast
+        const body = await res.json().catch(() => null);
+        setToast({ type: 'error', text: body?.error?.message || body?.error || `Resolve incident failed (${res.status}).` });
       }
     } catch (err) { console.warn('Resolve incident failed:', err); setToast({ type: 'error', text: 'Action failed: Resolve incident failed. Please try again.' }); }
   }

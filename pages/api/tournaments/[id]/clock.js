@@ -94,9 +94,11 @@ async function getClockState(req, res, tournamentId) {
 
     if (!clockState && ['running', 'paused', 'final_table'].includes(tournament.status)) {
       // Initialize clock state and persist it
+      // 2026-07-25 audit fix: when backfilling mid-tournament use now, not
+      // actual_start — actual_start would make the current level appear expired.
       clockState = {
         isRunning: true,
-        levelStartedAt: tournament.actual_start || new Date().toISOString(),
+        levelStartedAt: new Date().toISOString(),
         pausedAt: null,
         pausedDuration: 0
       };
@@ -143,6 +145,8 @@ async function getClockState(req, res, tournamentId) {
           levelDuration: currentBlind?.duration || 0, // in minutes
           levelStartedAt: clockState?.levelStartedAt
         },
+        // 2026-07-25 audit fix: expose the floor message stored in settings.clock_state
+        currentMessage: clockState?.current_message || null,
         currentBlind: currentBlind ? {
           level: currentLevel + 1,
           smallBlind: currentBlind.small_blind,
@@ -272,6 +276,16 @@ async function handleClockAction(req, res, tournamentId, staff) {
           return res.status(400).json({
             success: false,
             error: { code: 'VALIDATION_ERROR', message: 'Tournament is not active' }
+          });
+        }
+        // 2026-07-25 audit fix: optional optimistic-concurrency check so multiple
+        // displays auto-advancing simultaneously cannot double-advance the level.
+        const { from_level } = req.body;
+        if (from_level !== undefined && from_level !== null &&
+            Number(tournament.current_level || 0) !== Number(from_level)) {
+          return res.status(409).json({
+            success: false,
+            error: { code: 'LEVEL_CONFLICT', message: 'Level already advanced by another client' }
           });
         }
         const blindStructure = parseBlindStructure(tournament.blind_structure);

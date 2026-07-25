@@ -39,12 +39,13 @@ export default async function handler(req, res) {
 
       try {
           // ── 1. Try commander_player_sessions first ──
+          // 2026-07-25 audit fix: column is check_in_at (check_in_time does not exist),
+          // and the .limit(100) cap silently truncated the hours aggregation.
           let sessionQuery = getSupabase()
               .from('commander_player_sessions')
-              .select('player_id, total_time_minutes, check_in_time, status')
+              .select('player_id, total_time_minutes, check_in_at, status')
               .eq('venue_id', venue_id)
               .eq('status', 'completed')
-                  .limit(100)
 
           // Apply period filter
           if (period !== 'all') {
@@ -60,7 +61,8 @@ export default async function handler(req, res) {
                   startDate = new Date(now.getFullYear(), 0, 1);
               }
               if (startDate) {
-                  sessionQuery = sessionQuery.gte('check_in_time', startDate.toISOString());
+                  // 2026-07-25 audit fix: check_in_at is the real column name.
+                  sessionQuery = sessionQuery.gte('check_in_at', startDate.toISOString());
               }
           }
 

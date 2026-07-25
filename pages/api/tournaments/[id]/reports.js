@@ -148,10 +148,12 @@ async function cashierReport(req, res, tournamentId) {
         const cashierIds = [...new Set((entries || []).map(e => e.cashier_staff_id).filter(Boolean))]
         let staffMap = {};
         if (cashierIds.length > 0) {
+            // 2026-07-25 audit fix: missing semicolon made the next line parse as
+            // a call on the query builder (`.in(...)(staff || [])...`), crashing.
             const { data: staff } = await getSupabase()
                 .from('commander_staff')
                 .select('id, first_name, last_name')
-                .in('id', cashierIds)
+                .in('id', cashierIds);
             (staff || []).forEach(s => {
                 staffMap[s.id] = `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown';
             });

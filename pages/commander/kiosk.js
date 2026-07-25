@@ -217,7 +217,7 @@ export default function MembershipKiosk() {
       if (successCount > 0) {
         const playerName = titleCase(waitlistMatches[0]?.player_name || 'Player');
         const gameList = waitlistMatches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
-        setSuccessMsg(`✅ ${playerName} — Checked In!\n${gameList}`);
+        setSuccessMsg(`✓ ${playerName} — Checked In!\n${gameList}`);
         setMode('success');
         broadcastChange('waitlist');
       } else {
@@ -295,7 +295,7 @@ export default function MembershipKiosk() {
 
       setCheckinIsWaitlisted(foundOnWaitlist);
       broadcastChange('members'); // Push member check-in to Activity Feed globally
-      setSuccessMsg(`✅ ${titleCase(member.first_name || member.name || 'Player')} — Checked In!`);
+      setSuccessMsg(`✓ ${titleCase(member.first_name || member.name || 'Player')} — Checked In!`);
       setMode('success');
     } catch (err) {
       console.warn(err);
@@ -340,19 +340,19 @@ export default function MembershipKiosk() {
           }
           const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
           setCheckinIsWaitlisted(true);
-          setSuccessMsg(`✅ ${titleCase(matches[0]?.player_name || q)} — Checked In!\n${gameList}`);
+          setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || q)} — Checked In!\n${gameList}`);
           setMode('success');
           if (successCount > 0) broadcastChange('waitlist');
         } else {
           // Not on waitlist — still check in but show non-member popup
           setCheckinIsWaitlisted(false);
-          setSuccessMsg(`✅ ${titleCase(q)} — Checked In!`);
+          setSuccessMsg(`✓ ${titleCase(q)} — Checked In!`);
           setMode('success');
         }
       } else {
         // API failed — still allow check-in
         setCheckinIsWaitlisted(false);
-        setSuccessMsg(`✅ ${titleCase(q)} — Checked In!`);
+        setSuccessMsg(`✓ ${titleCase(q)} — Checked In!`);
         setMode('success');
       }
     } catch (err) {
@@ -390,18 +390,18 @@ export default function MembershipKiosk() {
           }
           const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
           setCheckinIsWaitlisted(true);
-          setSuccessMsg(`✅ ${titleCase(matches[0]?.player_name || 'Player')} — Checked In!\n${gameList}`);
+          setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || 'Player')} — Checked In!\n${gameList}`);
           setMode('success');
           if (successCount > 0) broadcastChange('waitlist');
         } else {
           // Not on waitlist — still check in but show non-member popup
           setCheckinIsWaitlisted(false);
-          setSuccessMsg(`✅ ${formatPhone(checkinPhone)} — Checked In!`);
+          setSuccessMsg(`✓ ${formatPhone(checkinPhone)} — Checked In!`);
           setMode('success');
         }
       } else {
         setCheckinIsWaitlisted(false);
-        setSuccessMsg(`✅ ${formatPhone(checkinPhone)} — Checked In!`);
+        setSuccessMsg(`✓ ${formatPhone(checkinPhone)} — Checked In!`);
         setMode('success');
       }
     } catch (err) {
@@ -468,7 +468,7 @@ export default function MembershipKiosk() {
       }
       if (successCount > 0) {
         const gameList = selectedGames.map(g => g.label).join(', ');
-        setSuccessMsg(`✅ ${titleCase(joinName.trim())} Added To Waitlist!\n${gameList}`);
+        setSuccessMsg(`✓ ${titleCase(joinName.trim())} Added To Waitlist!\n${gameList}`);
         setMode('success');
         broadcastChange('waitlist');
       }
@@ -483,7 +483,7 @@ export default function MembershipKiosk() {
 
   if (loadError) return (
     <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#fff' }}>
-      <span style={{ fontSize: 18 }}>⚠️ {loadError}</span>
+      <span style={{ fontSize: 18 }}>{loadError}</span>
       <button onClick={() => { setLoadError(null); }} style={{ padding: '8px 20px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Dismiss</button>
     </div>
   );

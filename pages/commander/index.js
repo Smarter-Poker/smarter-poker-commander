@@ -108,17 +108,19 @@ const PRICING = [
   }
 ];
 
+// 2026-07-25 audit fix: removed real-venue attributions (Texas Card House,
+// Bay 101) — testimonials are role-only.
 const TESTIMONIALS = [
   {
     quote: "We cut our waitlist chaos in half. Players love getting texts when their seat is ready.",
     author: "Mike R.",
-    role: "Floor Manager, Texas Card House",
+    role: "Floor Manager",
     rating: 5
   },
   {
     quote: "The tournament clock alone is worth it. Export to Hendon Mob with one click saved us hours.",
     author: "Sarah L.",
-    role: "Tournament Director, Bay 101",
+    role: "Tournament Director",
     rating: 5
   },
   {
@@ -337,23 +339,24 @@ export default function CommanderLanding() {
           </div>
         </section>
 
-        {/* Social Proof */}
+        {/* 2026-07-25 audit fix: replaced fabricated usage stats with neutral
+            product statements */}
         <section className="py-12 border-y border-[#3A3B3C] bg-[#0F1D32]">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">500+</p>
-                <p className="text-sm text-[#B0B3B8]">Poker Rooms</p>
+                <p className="text-3xl font-bold text-white">Real-Time</p>
+                <p className="text-sm text-[#B0B3B8]">Waitlist And Table Management</p>
               </div>
               <div className="hidden sm:block w-px h-10 bg-[#3A3B3C]" />
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">50,000+</p>
-                <p className="text-sm text-[#B0B3B8]">Players Served</p>
+                <p className="text-3xl font-bold text-white">SMS Alerts</p>
+                <p className="text-sm text-[#B0B3B8]">Players Notified When Seats Open</p>
               </div>
               <div className="hidden sm:block w-px h-10 bg-[#3A3B3C]" />
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">1M+</p>
-                <p className="text-sm text-[#B0B3B8]">Waitlist Entries</p>
+                <p className="text-3xl font-bold text-white">Full Suite</p>
+                <p className="text-sm text-[#B0B3B8]">Tournaments, Promotions, Analytics</p>
               </div>
             </div>
           </div>

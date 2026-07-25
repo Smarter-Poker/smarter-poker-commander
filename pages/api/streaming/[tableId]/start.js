@@ -61,25 +61,49 @@ export default async function handler(req, res) {
         });
       }
 
-      // Create or update stream record
-      const { data: stream, error } = await getSupabase()
+      // 2026-07-25 audit fix: the old upsert clobbered the saved config
+      // (platforms/delay_minutes/overlay_config) with defaults on every start.
+      // Now: update ONLY status/started_at on an existing row; insert with
+      // defaults only when no row exists for this table.
+      const { data: existingRow, error: existingError } = await getSupabase()
         .from('commander_streams')
-        .upsert({
-          venue_id,
-          table_id: tableId,
-          status: 'live',
-          platforms,
-          delay_minutes,
-          overlay_config: overlay_config || {},
-          started_at: new Date().toISOString(),
-          viewer_count: 0
-        }, {
-          onConflict: 'table_id'
-        })
-        .select()
+        .select('id')
+        .eq('table_id', tableId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (existingError) throw existingError;
+
+      let stream;
+      if (existingRow) {
+        const { data, error } = await getSupabase()
+          .from('commander_streams')
+          .update({
+            status: 'live',
+            started_at: new Date().toISOString()
+          })
+          .eq('id', existingRow.id)
+          .select()
+          .maybeSingle();
+        if (error) throw error;
+        stream = data;
+      } else {
+        const { data, error } = await getSupabase()
+          .from('commander_streams')
+          .insert({
+            venue_id,
+            table_id: tableId,
+            status: 'live',
+            platforms,
+            delay_minutes,
+            overlay_config: overlay_config || {},
+            started_at: new Date().toISOString(),
+            viewer_count: 0
+          })
+          .select()
+          .maybeSingle();
+        if (error) throw error;
+        stream = data;
+      }
 
       return res.status(200).json({
         success: true,

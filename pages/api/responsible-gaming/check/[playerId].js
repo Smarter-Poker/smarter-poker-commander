@@ -38,12 +38,15 @@ export default async function handler(req, res) {
 
     try {
       // Check for active exclusions (not yet expired + not lifted)
+      // 2026-07-25 audit fix: .gte('expires_at', now) silently missed permanent
+      // exclusions (null expires_at). Match the enforcement queries: not lifted
+      // AND (no expiry OR expiry in the future).
       let query = getSupabase()
         .from('commander_self_exclusions')
         .select('*')
         .eq('player_id', playerId)
         .is('lifted_at', null)
-        .gte('expires_at', new Date().toISOString())
+        .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
             .limit(100);
 
       // Check venue-specific or global exclusions

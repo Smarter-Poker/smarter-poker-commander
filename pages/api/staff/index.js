@@ -106,7 +106,17 @@ async function handlePost(req, res) {
   try {
     const { venue_id: bodyVenueId } = req.body;
 
-    // Redundant verification removed because _middleware.ts handles `guardWriteStaff()`
+    // 2026-07-25 audit fix (P0): this handler shipped with its auth deleted
+    // behind a comment claiming middleware covered it — middleware.ts only
+    // PIN-gates /api/admin/*, NOT /api/staff. Anyone could create an
+    // owner-role staff member with a chosen PIN and take over a venue.
+    const authResult = await verifyManagerSession(req, bodyVenueId);
+    if (authResult.error) {
+      return res.status(authResult.error.status).json({
+        success: false,
+        error: { code: authResult.error.code, message: authResult.error.message }
+      });
+    }
 
     const {
       venue_id,
@@ -301,8 +311,10 @@ async function handlePost(req, res) {
       });
     }
 
-    const authResult = await verifyManagerSession(req, venue_id);
-    if (!authResult.error && authResult.staff) {
+    // 2026-07-25 audit fix: reuse the manager session verified at the top of
+    // this handler (previously this was the ONLY auth call — used solely for
+    // audit logging, never to block the write).
+    if (authResult.staff) {
       await logAction(AuditActions.STAFF_CREATE, {
         venueId: venue_id,
         staffId: authResult.staff.id,

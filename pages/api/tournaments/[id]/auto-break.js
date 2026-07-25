@@ -248,6 +248,29 @@ async function handleExecute(req, res, tournament) {
     seatKeys.add(key);
   }
 
+  // 2026-07-25 audit fix: RACE CONDITION GUARD — re-query current occupied seats
+  // and 409 if any destination seat was taken since the assignments were
+  // generated (mirrors balance-execute.js's conflictingSeats guard).
+  const movingEntryIds = new Set(assignments.map(a => a.entry_id));
+  const { data: currentSeats } = await getSupabase()
+    .from('commander_tournament_entries')
+    .select('id, table_number, seat_number, player_name')
+    .eq('tournament_id', tournament.id)
+    .in('status', ['active', 'seated']);
+
+  const occupiedList = (currentSeats || []).filter(e =>
+    !movingEntryIds.has(e.id) &&
+    assignments.some(a => a.to_table === e.table_number && a.to_seat === e.seat_number)
+  );
+
+  if (occupiedList.length > 0) {
+    const e = occupiedList[0];
+    return res.status(409).json({
+      success: false,
+      error: `Break aborted: Seat ${e.seat_number} at Table ${e.table_number} is now occupied by ${e.player_name || 'another player'}`
+    });
+  }
+
   // Execute moves
   for (const a of assignments) {
     const { data: currentEntry } = await getSupabase()
@@ -270,7 +293,10 @@ async function handleExecute(req, res, tournament) {
           move_reason: 'table_break'
         }
       })
-      .eq('id', a.entry_id);
+      .eq('id', a.entry_id)
+      // 2026-07-25 audit fix: scope the update to this tournament so a stray
+      // entry_id from another tournament cannot be moved.
+      .eq('tournament_id', tournament.id);
 
     if (error) {
       errors.push({ entry_id: a.entry_id, error: error.message });

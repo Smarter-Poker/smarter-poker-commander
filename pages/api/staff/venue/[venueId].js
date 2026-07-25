@@ -4,6 +4,9 @@
  * Reference: API_REFERENCE.md - Staff Management section
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
+// 2026-07-25 audit fix: use the HMAC-verified session guard instead of parsing
+// the raw x-staff-session header locally.
+import { guardManager } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -38,69 +41,13 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Verify manager authentication
-      const staffSession = req.headers['x-staff-session'];
-      if (!staffSession) {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-        });
-      }
-
-      let sessionData;
-      try {
-        sessionData = JSON.parse(staffSession);
-      } catch {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'INVALID_SESSION', message: 'Invalid session format' }
-        });
-      }
-
-      // Auth: verify the session has owner/manager access to this venue
-      // The login flow stores { user_id, role, venue_id } without a commander_staff table ID,
-      // so we check multiple ways to authenticate.
-      let authRole = null;
-
-      // Method 1: Look up by staff record ID
-      if (sessionData.id) {
-        const { data } = await getSupabase()
-          .from('commander_staff')
-          .select('id, venue_id, role')
-          .eq('id', sessionData.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        if (data && String(data.venue_id) === String(venueId)) {
-          authRole = data.role;
-        }
-      }
-
-      // Method 2: Look up by Supabase user_id
-      if (!authRole && sessionData.user_id) {
-        const { data } = await getSupabase()
-          .from('commander_staff')
-          .select('id, venue_id, role')
-          .eq('user_id', sessionData.user_id)
-          .eq('venue_id', venueId)
-          .eq('is_active', true)
-          .limit(1);
-        if (data?.[0]) {
-          authRole = data[0].role;
-        }
-      }
-
-      // Method 3: Trust the session role if venue matches
-      // Safe because data returned is already scoped to venueId in the query below
-      if (!authRole && sessionData.role && String(sessionData.venue_id) === String(venueId)) {
-        authRole = sessionData.role;
-      }
-
-      if (!authRole || !['owner', 'manager'].includes(authRole)) {
-        return res.status(403).json({
-          success: false,
-          error: { code: 'FORBIDDEN', message: 'Owner or Manager role required' }
-        });
-      }
+      // 2026-07-25 audit fix: the old inline check parsed the raw x-staff-session
+      // JSON with no signature verification and (Method 3) trusted the client-
+      // supplied role outright — any caller could read staff PINs, ID numbers,
+      // and dates of birth. guardManager verifies the HMAC-signed session,
+      // requires owner/manager role, and enforces venue scoping.
+      const manager = await guardManager(req, res, venueId);
+      if (!manager) return;
 
       const { data: staff, error } = await getSupabase()
         .from('commander_staff')

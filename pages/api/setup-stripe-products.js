@@ -7,7 +7,9 @@ import { guardManager } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// 2026-07-25 audit fix: guarded construction — `new Stripe(undefined)` throws
+// at import and 500s the route before auth even runs.
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 const PRODUCTS = [
   {
@@ -39,14 +41,20 @@ export default async function handler(req, res) {
   const _staff = await guardManager(req, res);
   if (!_staff) return;
 
-  // Simple secret check (in production, use proper auth)
+  // 2026-07-25 audit fix: removed the hardcoded fallback secret that was
+  // committed to source ('commander-setup-2026') — the env secret is now
+  // required, and the route fails closed when it is unset.
   const { secret } = req.query;
-  if (secret !== process.env.ADMIN_SETUP_SECRET && secret !== 'commander-setup-2026') {
+  if (!process.env.ADMIN_SETUP_SECRET || secret !== process.env.ADMIN_SETUP_SECRET) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
+  if (!stripe) {
+    return res.status(503).json({ success: false, error: 'Stripe is not configured on this server.' });
   }
 
   try {

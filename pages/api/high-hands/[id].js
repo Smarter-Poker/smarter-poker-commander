@@ -40,11 +40,12 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      return updateHighHand(req, res, id);
+      // 2026-07-25 audit fix: _g is the verified staff session (guardWriteStaff)
+      return updateHighHand(req, res, id, _g);
     }
 
     if (req.method === 'DELETE') {
-      return deleteHighHand(req, res, id);
+      return deleteHighHand(req, res, id, _g);
     }
 
     res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
@@ -77,20 +78,11 @@ async function getHighHand(req, res, id) {
   }
 }
 
-async function updateHighHand(req, res, id) {
+async function updateHighHand(req, res, id, staff) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-    const user = authData?.user;
-
-    if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
-    }
+    // 2026-07-25 audit fix: identity comes from the verified x-staff-session
+    // (guardWriteStaff) — the Bearer-JWT + user_id lookup blocked PIN-terminal
+    // staff. Venue scoping is preserved against the record being written.
 
     // Get existing high hand
     const { data: existing, error: getError } = await getSupabase()
@@ -103,17 +95,8 @@ async function updateHighHand(req, res, id) {
       return res.status(404).json({ success: false, error: 'High hand not found' });
     }
 
-    // Check if user is staff at this venue
-    const { data: staff } = await getSupabase()
-      .from('commander_staff')
-      .select('id, role')
-      .eq('venue_id', existing.venue_id)
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!staff) {
-      return res.status(403).json({ success: false, error: 'You are not authorized to update high hands' });
+    if (!staff || String(staff.venue_id) !== String(existing.venue_id)) {
+      return res.status(403).json({ success: false, error: 'You are not authorized to update high hands for this venue' });
     }
 
     const {
@@ -173,20 +156,11 @@ async function updateHighHand(req, res, id) {
   }
 }
 
-async function deleteHighHand(req, res, id) {
+async function deleteHighHand(req, res, id, staff) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-    const user = authData?.user;
-
-    if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
-    }
+    // 2026-07-25 audit fix: identity comes from the verified x-staff-session
+    // (guardWriteStaff) — the Bearer-JWT + user_id lookup blocked PIN-terminal
+    // staff. Venue scoping and the manager/owner role check are preserved.
 
     // Get existing high hand
     const { data: existing, error: getError } = await getSupabase()
@@ -199,17 +173,11 @@ async function deleteHighHand(req, res, id) {
       return res.status(404).json({ success: false, error: 'High hand not found' });
     }
 
-    // Check if user is manager/owner at this venue
-    const { data: staff } = await getSupabase()
-      .from('commander_staff')
-      .select('id, role')
-      .eq('venue_id', existing.venue_id)
-      .eq('user_id', user.id)
-      .in('role', ['owner', 'manager'])
-      .eq('is_active', true)
-      .maybeSingle();
+    if (!staff || String(staff.venue_id) !== String(existing.venue_id)) {
+      return res.status(403).json({ success: false, error: 'You are not authorized to delete high hands for this venue' });
+    }
 
-    if (!staff) {
+    if (!['owner', 'manager'].includes(staff.role)) {
       return res.status(403).json({ success: false, error: 'Only managers can delete high hands' });
     }
 

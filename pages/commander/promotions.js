@@ -395,7 +395,8 @@ const res = await fetch('/api/promo/seed-premade', {
       if (!res.ok) throw new Error('Request failed');
       const data = await res.json();
       if (data.success) {
-        setToast({ type: 'error', text: `${data.message}` });
+        // 2026-07-25 audit fix: success message was shown with error styling
+        setToast({ type: 'success', text: `${data.message}` });
         fetchPromoCodes();
       } else {
         setToast({ type: 'error', text: data.error || 'Failed to seed promos' });

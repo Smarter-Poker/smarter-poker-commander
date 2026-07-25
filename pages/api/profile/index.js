@@ -4,7 +4,6 @@
  * PATCH /api/commander/profile - Update profile
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardOwnerStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -18,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: OWNER — requires owner role
+// Auth: PLAYER — verified Bearer user (own profile only)
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -43,12 +42,9 @@ export default async function handler(req, res) {
       });
     }
 
-
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardOwnerStaff(req, res);
-      if (!_staff) return;
-    }
+    // 2026-07-25 audit fix: removed guardOwnerStaff gate on writes — this is the
+    // player's own profile endpoint; the verified Bearer user above is sufficient
+    // and the handler only writes that user's rows.
 
     if (req.method === 'GET') {
       return getProfile(req, res, user);

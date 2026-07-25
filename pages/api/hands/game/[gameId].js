@@ -78,31 +78,49 @@ export default async function handler(req, res) {
         throw error;
       }
 
+      // 2026-07-25 audit fix: only participants of this game may read its hand
+      // list — gate by presence in any hand's player_seat_map or a seat record.
+      const inAnySeatMap = (hands || []).some(
+        h => h.player_seat_map && typeof h.player_seat_map === 'object' && h.player_seat_map[user.id] != null
+      );
+      if (!inAnySeatMap) {
+        const { count: seatCount } = await getSupabase()
+          .from('commander_seats')
+          .select('id', { count: 'exact', head: true })
+          .eq('game_id', gameId)
+          .eq('player_id', user.id);
+        if (!seatCount) {
+          return res.status(403).json({
+            success: false,
+            error: { code: 'FORBIDDEN', message: 'You did not play in this game' }
+          });
+        }
+      }
+
       // Format hands for player view
       const formattedHands = hands?.map(hand => {
-        // Determine player's seat and cards from player_cards or player_seat_map
+        // Determine player's seat and cards strictly from player_seat_map.
+        // 2026-07-25 audit fix: never fall back to the first seat's cards —
+        // that leaked other players' hole cards.
         let playerSeat = null;
         let playerCards = [];
 
-        if (hand.player_cards && typeof hand.player_cards === 'object') {
-          const seats = Object.keys(hand.player_cards || {});
-          if (seats.length > 0) {
-            // Check player_seat_map for user's seat
-            if (hand.player_seat_map && hand.player_seat_map[user.id]) {
-              playerSeat = hand.player_seat_map[user.id];
-              playerCards = hand.player_cards[playerSeat] || [];
-            } else {
-              // Fallback: use first available seat
-              playerSeat = parseInt(seats[0]) || 1;
-              playerCards = hand.player_cards[seats[0]] || [];
-            }
-          }
+        if (
+          hand.player_cards && typeof hand.player_cards === 'object' &&
+          hand.player_seat_map && typeof hand.player_seat_map === 'object' &&
+          hand.player_seat_map[user.id] != null
+        ) {
+          playerSeat = hand.player_seat_map[user.id];
+          playerCards = hand.player_cards[playerSeat] || [];
         }
 
-        // Calculate profit based on actual player seat
         const winners = hand.winners || [];
-        const isWinner = winners.some(w => w.seat === playerSeat || w.player_id === user.id);
-        const profit = isWinner ? Math.round(hand.pot_size / 2) : -Math.round(hand.pot_size / 4);
+        const isWinner = winners.some(
+          w => (playerSeat != null && w.seat === playerSeat) || w.player_id === user.id
+        );
+        // 2026-07-25 audit fix: profit was fabricated (pot/2 or -pot/4) and
+        // presented as real — actual per-player accounting is not available.
+        const profit = null;
 
         return {
           id: hand.id,

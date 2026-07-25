@@ -154,7 +154,8 @@ const headers = { };
       await Promise.all(activeTables.map(async (t) => {
         try {
           const tNum = t.table_number || t.number;
-          const json = await commanderFetchJSON(`/api/commander/dealer/sessions?table=${tNum}`, { headers });
+          // 2026-07-25 audit fix: sessions handler requires venue_id (400s without it)
+          const json = await commanderFetchJSON(`/api/commander/dealer/sessions?table=${tNum}&venue_id=${venueId}`, { headers });
           if (json.success) sessionData[tNum] = json.data || [];
         } catch (e) { console.warn("[tables.js]", e); }
       }));
@@ -354,7 +355,7 @@ const res = await commanderFetch('/api/commander/tables', {
   if (!staff || loading) {
     if (loadError) return (
       <div style={{ minHeight: '100vh', background: '#18191A', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#fff' }}>
-        <span style={{ fontSize: 16 }}>⚠️ {loadError}</span>
+        <span style={{ fontSize: 16 }}>{loadError}</span>
         <button onClick={() => { setLoadError(null); fetchTables(); }} style={{ padding: '8px 20px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Retry</button>
       </div>
     );

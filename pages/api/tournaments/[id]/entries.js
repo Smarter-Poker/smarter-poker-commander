@@ -6,7 +6,9 @@
  * DELETE /api/commander/tournaments/[id]/entries - Unregister player
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+// 2026-07-25 audit fix: POST supports player self-registration (Bearer JWT) in
+// addition to staff sessions; GET redacts PII for non-staff callers.
+import { guardStaff, verifyStaffSession, getUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -27,8 +29,6 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
-
     const { id: tournamentId } = req.query;
 
     if (!tournamentId) {
@@ -40,10 +40,32 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      return registerPlayer(req, res, tournamentId);
+      // 2026-07-25 audit fix: staff session OR Bearer user (self-registration only).
+      // Identity is derived from the verified session, never from the request body.
+      const sessionResult = await verifyStaffSession(req);
+      if (!sessionResult.error) {
+        return registerPlayer(req, res, tournamentId, { staff: sessionResult.staff });
+      }
+      const user = await getUser(req, res);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
+        });
+      }
+      const requestedPlayerId = req.body?.player_id;
+      if (requestedPlayerId && String(requestedPlayerId) !== String(user.id)) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'AUTH_REQUIRED', message: 'Only staff can register other players' }
+        });
+      }
+      return registerPlayer(req, res, tournamentId, { user });
     }
 
     if (req.method === 'DELETE') {
+      // 2026-07-25 audit fix: preserve prior write guard for DELETE
+      const _g = await guardStaff(req, res); if (!_g) return;
       return unregisterPlayer(req, res, tournamentId);
     }
 
@@ -59,7 +81,7 @@ export default async function handler(req, res) {
 
 async function listEntries(req, res, tournamentId) {
   try {
-    const { status } = req.query;
+    const { status, check_my_entry } = req.query;
 
     let query = getSupabase()
       .from('commander_tournament_entries')
@@ -78,24 +100,46 @@ async function listEntries(req, res, tournamentId) {
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, data: { entries: data } });
+    // 2026-07-25 audit fix: redact player_phone unless caller has a valid staff session
+    const staffResult = await verifyStaffSession(req);
+    const isStaff = !staffResult.error;
+    let entries = data || [];
+    if (!isStaff) {
+      entries = entries.map(({ player_phone, ...rest }) => rest);
+    }
+
+    const payload = { entries };
+
+    // 2026-07-25 audit fix: ?check_my_entry=true returns the Bearer user's own entry
+    if (check_my_entry === 'true') {
+      payload.my_entry = null;
+      const user = await getUser(req, res);
+      if (user) {
+        const { data: myEntry } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('*')
+          .eq('tournament_id', tournamentId)
+          .eq('player_id', user.id)
+          .neq('status', 'cancelled')
+          .limit(1)
+          .maybeSingle();
+        payload.my_entry = myEntry || null;
+      }
+    }
+
+    return res.status(200).json({ success: true, data: payload });
   } catch (error) {
     console.warn('List entries error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }
 
-async function registerPlayer(req, res, tournamentId) {
+async function registerPlayer(req, res, tournamentId, auth = {}) {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.replace('Bearer ', '');
-
-    let userId = null;
-    if (token) {
-      const { data: authData } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-      userId = user?.id;
-    }
+    // 2026-07-25 audit fix: identity comes from the handler-verified session
+    // (staff session or Bearer user), never re-derived from the request body.
+    const userId = auth.user?.id || null;
+    const isStaffCaller = Boolean(auth.staff);
 
     const {
       player_id,
@@ -123,8 +167,9 @@ async function registerPlayer(req, res, tournamentId) {
     }
 
     // Check late registration
-    if (tournament.status === 'running') {
-      if (tournament.current_level > tournament.late_registration_levels) {
+    // 2026-07-25 audit fix: current_level is 0-indexed, compare level number (current_level + 1)
+    if (tournament.status === 'running' && tournament.late_registration_levels != null) {
+      if ((tournament.current_level + 1) > tournament.late_registration_levels) {
         return res.status(400).json({ success: false, error: 'Late registration period has ended' });
       }
     }
@@ -142,20 +187,10 @@ async function registerPlayer(req, res, tournamentId) {
       }
     }
 
-    // If registering another player, verify staff access
+    // 2026-07-25 audit fix: staff callers may register anyone; Bearer users only themselves
     const effectivePlayerId = player_id || userId;
-    if (effectivePlayerId !== userId && registration_method !== 'app') {
-      const { data: staff, error: staffError } = await getSupabase()
-        .from('commander_staff')
-        .select('id')
-        .eq('venue_id', tournament.venue_id)
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (staffError || !staff) {
-        return res.status(403).json({ success: false, error: 'Only staff can register other players' });
-      }
+    if (!isStaffCaller && effectivePlayerId !== userId) {
+      return res.status(403).json({ success: false, error: 'Only staff can register other players' });
     }
 
     // Check for existing registration

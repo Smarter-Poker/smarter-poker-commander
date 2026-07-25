@@ -333,7 +333,7 @@ const headers = { 'Content-Type': 'application/json' };
         const json = await res.json();
         if (json.success) {
           const dealerName = json.data?.dealer?.name || json.data?.dealer_name || 'Dealer';
-          setToast({ type: 'success', text: `✅ ${dealerName} scanned in as dealer` });
+          setToast({ type: 'success', text: `✓ ${dealerName} scanned in as dealer` });
           fetchData(); fetchDealers();
           broadcastChange('dealers');
         } else {
@@ -349,7 +349,7 @@ const headers = { 'Content-Type': 'application/json' };
         if (!seatRes.ok) throw new Error('Request failed');
         const seatJson = await seatRes.json();
         if (seatJson.success) {
-          setToast({ type: 'success', text: `✅ ${seatJson.data.player_name} seated at S${seatNumber}` });
+          setToast({ type: 'success', text: `✓ ${seatJson.data.player_name} seated at S${seatNumber}` });
           fetchData();
           broadcastChange('tables');
         } else {
@@ -410,7 +410,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
     if (!movingPlayer) return;
     const json = await callSessionAction(movingPlayer.seat, 'move', { target_seat: targetSeatNumber });
     if (json.success) {
-      setToast({ type: 'success', text: `✅ ${json.data.player_name} moved S${json.data.from_seat} → S${json.data.to_seat}` });
+      setToast({ type: 'success', text: `✓ ${json.data.player_name} moved S${json.data.from_seat} → S${json.data.to_seat}` });
       fetchData();
     } else {
       setToast({ type: 'error', text: json.error || 'Move failed' });
@@ -438,7 +438,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         setToast({ type: 'error', text: `🚫 ${json.data.player_name} removed — 3 missed blinds` });
         await removePlayer(seat);
       } else {
-        setToast({ type: 'success', text: `⚠️ Missed blind #${count} for ${json.data.player_name}` });
+        setToast({ type: 'success', text: `Missed blind #${count} for ${json.data.player_name}` });
       }
       fetchData();
     } else {
@@ -791,12 +791,12 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
                     { label: '🪑 Move Player', color: '#1877F2', action: () => startMovePlayer(showPlayerMenu) },
-                    { label: '❌ Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
+                    { label: '✗ Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
                     ...(showPlayerMenu.player?.session_status === 'paused' || showPlayerMenu.player?.session_status === 'meal_break'
                       ? [{ label: '▶️ Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `▶️ ${json.data.player_name} resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchData(); } }]
                       : [{ label: '⏸️ Pause Timer', color: '#F59E0B', action: () => pausePlayer(showPlayerMenu) }]
                     ),
-                    { label: '⚠️ Missed Blinds', color: '#F97316', action: () => markMissedBlinds(showPlayerMenu) },
+                    { label: 'Missed Blinds', color: '#F97316', action: () => markMissedBlinds(showPlayerMenu) },
                     { label: '🍽️ 30-Min Meal Break', color: '#8B5CF6', action: () => addMealBreak(showPlayerMenu) },
                   ].map((btn, i) => (
                     <button key={i} onClick={btn.action} disabled={playerActionLoading}

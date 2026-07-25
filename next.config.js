@@ -76,6 +76,40 @@ const nextConfig = {
         source: '/api/commander/:path*',
         destination: '/api/:path*',
       },
+      // ── 2026-07-25 audit: cross-app API forwarding ────────────────────────
+      // Several Commander pages (and commander-shared components) call World
+      // Hub APIs with bare paths (/api/promo/*, /api/social/*, ...). Those
+      // routes only exist on smarter.poker, so on the commander origin they
+      // 404'd (register promo codes, promotions Promo Codes tab, club-page
+      // detection, social posting, /hub profile data). Forward them
+      // server-side to the main origin — no CORS involved, headers pass
+      // through.
+      { source: '/api/promo/:path*', destination: 'https://smarter.poker/api/promo/:path*' },
+      { source: '/api/social/:path*', destination: 'https://smarter.poker/api/social/:path*' },
+      { source: '/api/friends', destination: 'https://smarter.poker/api/friends' },
+      { source: '/api/friends/:path*', destination: 'https://smarter.poker/api/friends/:path*' },
+      { source: '/api/hub/:path*', destination: 'https://smarter.poker/api/hub/:path*' },
+      { source: '/api/public/:path*', destination: 'https://smarter.poker/api/public/:path*' },
+      { source: '/api/vip/:path*', destination: 'https://smarter.poker/api/vip/:path*' },
+      { source: '/api/training/:path*', destination: 'https://smarter.poker/api/training/:path*' },
+      { source: '/api/club-arena/:path*', destination: 'https://smarter.poker/api/club-arena/:path*' },
+    ];
+  },
+  async redirects() {
+    return [
+      // 2026-07-25 audit: /hub/* pages only exist on smarter.poker — staff
+      // clicking "Back To Hub" (or any club-page link) on the commander
+      // origin previously hit a 404. Send them to the real origin.
+      {
+        source: '/hub',
+        destination: 'https://smarter.poker/hub',
+        permanent: false,
+      },
+      {
+        source: '/hub/:path*',
+        destination: 'https://smarter.poker/hub/:path*',
+        permanent: false,
+      },
     ];
   },
 };

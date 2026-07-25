@@ -5,7 +5,8 @@
  */
 import crypto from 'crypto';
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+// 2026-07-25 audit fix: guardStaff — member list is PII and must not be public on GET
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -26,12 +27,13 @@ export default async function handler(req, res) {
           if (!applyRateLimit(req, res, LIMITS.write)) return;
       }
 
-      // Auth guard: require staff auth for write operations
-      const _authResult = await guardWriteStaff(req, res);
+      // 2026-07-25 audit fix: require staff auth on ALL methods (GET previously
+      // public via guardWriteStaff, returning full member PII).
+      const _authResult = await guardStaff(req, res);
       if (!_authResult) return;
 
       if (req.method === 'GET') {
-          return handleList(req, res);
+          return handleList(req, res, _authResult);
       } else if (req.method === 'POST') {
           return handleCreate(req, res);
       }
@@ -44,12 +46,17 @@ export default async function handler(req, res) {
   }
 }
 
-async function handleList(req, res) {
+async function handleList(req, res, staff) {
     const { venue_id, search, status, tier, page = 1, limit: rawLimit = '50' } = req.query;
     const limit = Math.min(parseInt(rawLimit) || 50, 500);
 
     if (!venue_id) {
         return res.status(400).json({ success: false, error: 'venue_id is required' });
+    }
+
+    // 2026-07-25 audit fix: staff can only list members of their own venue
+    if (String(staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
     }
 
     let query = getSupabase()
@@ -86,11 +93,15 @@ async function handleList(req, res) {
         return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    // 2026-07-25 audit fix: omit sensitive PII from the LIST payload (detail
+    // route keeps them) and cache privately — this is an authenticated response.
+    const sanitized = (members || []).map(({ id_number, date_of_birth, ...rest }) => rest);
+
+    res.setHeader('Cache-Control', 'private, max-age=30');
     return res.status(200).json({
         success: true,
         data: {
-            members: members || [],
+            members: sanitized,
             total: count || 0,
             page: parseInt(page),
             limit: parseInt(limit),

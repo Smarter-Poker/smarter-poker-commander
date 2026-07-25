@@ -34,7 +34,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      return createHighHand(req, res);
+      // 2026-07-25 audit fix: _g is the verified staff session (guardWriteStaff)
+      return createHighHand(req, res, _g);
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
@@ -106,21 +107,11 @@ async function listHighHands(req, res) {
   }
 }
 
-async function createHighHand(req, res) {
+async function createHighHand(req, res, staff) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-    const user = authData?.user;
-
-    if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
+    // 2026-07-25 audit fix: identity comes from the verified x-staff-session
+    // (guardWriteStaff at the handler) — requiring a Bearer JWT and a user_id
+    // staff lookup blocked PIN-terminal staff, who have no JWT.
     const {
       venue_id,
       promotion_id,
@@ -144,17 +135,10 @@ async function createHighHand(req, res) {
       return res.status(400).json({ error: 'player_id or player_name required' });
     }
 
-    // Check if user is staff at this venue
-    const { data: staff } = await getSupabase()
-      .from('commander_staff')
-      .select('id, role')
-      .eq('venue_id', venue_id)
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!staff) {
-      return res.status(403).json({ error: 'You are not authorized to record high hands' });
+    // 2026-07-25 audit fix: venue scoping — session staff must belong to the
+    // venue this high hand is being recorded for.
+    if (!staff || String(staff.venue_id) !== String(venue_id)) {
+      return res.status(403).json({ error: 'You are not authorized to record high hands for this venue' });
     }
 
     const insertData = {

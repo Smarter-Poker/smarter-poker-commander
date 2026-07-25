@@ -228,6 +228,8 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
     }
   });
   const [saving, setSaving] = useState(false);
+  // 2026-07-25 audit fix: error state was referenced by handleSave but never declared
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (venue) {
@@ -242,10 +244,13 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
 
   async function handleSave() {
     setSaving(true);
+    setError(null);
     try {
       const token = getToken();
+      // 2026-07-25 audit fix: the settings API accepts PATCH (PUT returned 405)
+      // and responds with { success, data: { settings } }
       const res = await commanderFetch(`/api/commander/admin/venues/${venue.id}/settings`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json' || ''
         },
@@ -254,9 +259,11 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
       if (!res.ok) throw new Error('Request failed');
       const data = await res.json();
       if (data.success) {
-        onSave?.(data.data?.venue || { ...venue, ...settings });
+        onSave?.({ ...venue, ...(data.data?.settings || settings) });
         onSuccess?.();
         onClose();
+      } else {
+        setError(data.error?.message || data.error || 'Failed to save venue settings. Please try again.');
       }
     } catch (err) {
       console.warn('Save venue settings error:', err);
@@ -279,6 +286,12 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
         </div>
 
         <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* 2026-07-25 audit fix: render save errors */}
+          {error && (
+            <div className="p-3 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg text-[#EF4444] text-sm">
+              {error}
+            </div>
+          )}
           {/* Comp Rate */}
           <div>
             <label className="block text-sm font-medium text-[#94A3B8] mb-2">Comp Rate ($/hr)</label>
@@ -442,6 +455,10 @@ export default function AdminDashboard() {
   const [summary, setSummary] = useState({});
   const [exports, setExports] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  // 2026-07-25 audit fix: audit-log total from the API + error state that
+  // handleCreateExport referenced but never declared
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [showApiKeysModal, setShowApiKeysModal] = useState(false);
@@ -459,7 +476,8 @@ export default function AdminDashboard() {
     try {
       const token = getToken();
       if (!token) {
-        router.push('/login');
+        // 2026-07-25 audit fix: commander login lives at /commander/login
+        router.push('/commander/login');
         return;
       }
 
@@ -468,9 +486,10 @@ export default function AdminDashboard() {
       const venuesRes = await commanderFetch('/api/commander/admin/venues?summary=true', fetchOpts());
       if (!venuesRes.ok) throw new Error(`Request failed (${venuesRes.status})`);
       const venuesData = await venuesRes.json();
-      if (venuesData.venues) {
-        setVenues(venuesData.venues);
-        setSummary(venuesData.summary || {});
+      // 2026-07-25 audit fix: the API nests under data — read data.venues/data.summary
+      if (venuesData.success && venuesData.data?.venues) {
+        setVenues(venuesData.data.venues);
+        setSummary(venuesData.data.summary || {});
       }
 
       // Load exports
@@ -491,17 +510,25 @@ export default function AdminDashboard() {
   const loadAuditLogs = async (filters = {}) => {
     try {
       const token = getToken();
-      const params = new URLSearchParams();
-      if (selectedVenue) params.set('venue_id', selectedVenue.id);
-      if (filters.category) params.set('action_category', filters.category);
-      if (filters.dateFrom) params.set('date_from', filters.dateFrom);
-      if (filters.dateTo) params.set('date_to', filters.dateTo);
+      // 2026-07-25 audit fix: the API requires venue_id (default to the first
+      // venue), only reads venue_id/page/limit/action/staff_id, and nests the
+      // payload under data (data.logs / data.total).
+      const venueId = selectedVenue?.id || venues[0]?.id;
+      if (!venueId) return;
 
-      const data = await commanderFetchJSON(`/api/commander/admin/audit-logs?${params}`, {
-        
+      const params = new URLSearchParams();
+      params.set('venue_id', venueId);
+      if (filters.page) params.set('page', filters.page);
+      if (filters.limit) params.set('limit', filters.limit);
+      if (filters.action) params.set('action', filters.action);
+      if (filters.staff_id) params.set('staff_id', filters.staff_id);
+
+      const body = await commanderFetchJSON(`/api/commander/admin/audit-logs?${params}`, {
+
       });
-      if (data.logs) {
-        setAuditLogs(data.logs);
+      if (body.success && body.data) {
+        setAuditLogs(body.data.logs || []);
+        setAuditTotal(body.data.total || 0);
       }
     } catch (err) {
       setIsLoading(false);
@@ -609,6 +636,13 @@ export default function AdminDashboard() {
 
         {/* Content */}
         <div className="max-w-7xl mx-auto px-4 py-6">
+          {/* 2026-07-25 audit fix: render dashboard-level errors */}
+          {error && (
+            <div className="mb-4 p-3 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg text-[#EF4444] text-sm flex items-center justify-between">
+              <span>{error}</span>
+              <button onClick={() => setError(null)} className="text-[#EF4444] hover:underline text-xs ml-3">Dismiss</button>
+            </div>
+          )}
           {activeTab === 'overview' && (
             <MultiVenueDashboard
               venues={venues}
@@ -649,7 +683,7 @@ export default function AdminDashboard() {
               )}
               <AuditLogViewer
                 logs={auditLogs}
-                total={auditLogs.length}
+                total={auditTotal || auditLogs.length}
                 isLoading={isLoading}
                 onFilterChange={loadAuditLogs}
               />

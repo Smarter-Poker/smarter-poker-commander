@@ -15,11 +15,18 @@ import { createServerClient } from '@supabase/ssr';
 import { verifyPinSession, readSessionCookieFromHeader } from './src/lib/auth/pinSession.js';
 
 const ADMIN_PATH_REGEX = /^\/commander\/admin(\/.*)?$/;
-const ADMIN_API_REGEX = /^\/api\/admin\/.+/;
+// 2026-07-25 audit fix: middleware runs BEFORE next.config rewrites, so the
+// same handlers are reachable at /api/commander/admin/* — the old regex only
+// matched /api/admin/* and the PIN gate was fully bypassable via the prefixed
+// path (which the admin UI itself uses).
+const ADMIN_API_REGEX = /^\/api\/(commander\/)?admin\/.+/;
 const PIN_PUBLIC_PATHS = new Set([
   '/api/admin/pin-verify',
   '/api/admin/pin-setup',
   '/api/admin/pin-logout',
+  '/api/commander/admin/pin-verify',
+  '/api/commander/admin/pin-setup',
+  '/api/commander/admin/pin-logout',
   '/commander/admin/pin-entry',
 ]);
 

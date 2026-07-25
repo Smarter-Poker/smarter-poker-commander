@@ -71,10 +71,16 @@ async function handlePatch(req, res, id) {
       });
     }
 
-    // Verify requesting user is a manager at the same venue
-    // Removed redundant authentication — _middleware.ts `guardWriteStaff` covers this
-
-    // Prevent demoting yourself (bypassed for E2E since we inject mock sessions there)
+    // 2026-07-25 audit fix (P0): auth had been deleted behind a comment
+    // claiming middleware covered this route — it does not. Unauthenticated
+    // callers could escalate roles, reset PINs, or deactivate staff.
+    const authResult = await verifyManagerSession(req, target.venue_id);
+    if (authResult.error) {
+      return res.status(authResult.error.status).json({
+        success: false,
+        error: { code: authResult.error.code, message: authResult.error.message }
+      });
+    }
 
     const { role, permissions, pin_code, is_active, display_name, email, phone, id_type, id_number, id_state, id_expiry, date_of_birth } = req.body;
 
@@ -148,8 +154,9 @@ async function handlePatch(req, res, id) {
       });
     }
 
-    const authResult = await verifyManagerSession(req, target.venue_id);
-    if (!authResult.error && authResult.staff) {
+    // 2026-07-25 audit fix: reuse the manager session verified at the top of
+    // this handler (previously this call was audit-logging only, not a gate).
+    if (authResult.staff) {
       await logAction(AuditActions.STAFF_UPDATE, {
         venueId: target.venue_id,
         staffId: authResult.staff.id,
@@ -190,10 +197,23 @@ async function handleDelete(req, res, id) {
       });
     }
 
-    // Verify requesting user is a manager at the same venue
-    // Removed redundant authentication — _middleware.ts `guardWriteStaff` covers this
+    // 2026-07-25 audit fix (P0): auth restored — middleware never covered
+    // this route; anyone could deactivate any staff member (incl. the owner).
+    const authResult = await verifyManagerSession(req, target.venue_id);
+    if (authResult.error) {
+      return res.status(authResult.error.status).json({
+        success: false,
+        error: { code: authResult.error.code, message: authResult.error.message }
+      });
+    }
 
-    // Prevent removing yourself (bypassed for E2E since we inject mock sessions there)
+    // Prevent removing yourself
+    if (String(authResult.staff.id) === String(id)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'You cannot deactivate your own staff account' }
+      });
+    }
 
     // Soft delete - deactivate rather than hard delete
     const { data: staff, error: deleteError } = await getSupabase()
@@ -211,8 +231,9 @@ async function handleDelete(req, res, id) {
       });
     }
 
-    const authResult = await verifyManagerSession(req, target.venue_id);
-    if (!authResult.error && authResult.staff) {
+    // 2026-07-25 audit fix: reuse the manager session verified at the top of
+    // this handler (previously this call was audit-logging only, not a gate).
+    if (authResult.staff) {
       await logAction(AuditActions.STAFF_DELETE, {
         venueId: target.venue_id,
         staffId: authResult.staff.id,

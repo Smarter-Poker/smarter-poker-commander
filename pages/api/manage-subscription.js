@@ -38,11 +38,22 @@ export default async function handler(req, res) {
       return res.status(503).json({ error: 'Stripe is not configured on this server.' });
     }
 
-    // Must be Owner or Admin
-    const authReq = await verifyStaffSession(req, res, ['all', 'admin', 'manage_billing']);
-    if (!authReq.allow) return;
-
-    const { venue_id, user_id, user } = authReq;
+    // Must be Owner or Manager.
+    // 2026-07-25 audit fix (P0): this previously called verifyStaffSession
+    // with a signature it never had ({allow, venue_id, user_id, user}) — the
+    // real return shape is {staff}/{error}, so `authReq.allow` was always
+    // undefined and the handler exited WITHOUT responding: the billing portal
+    // hung on every request.
+    const authReq = await verifyStaffSession(req);
+    if (authReq.error) {
+      return res.status(authReq.error.status || 401).json({ error: authReq.error.message });
+    }
+    if (!['owner', 'manager'].includes(authReq.staff.role)) {
+      return res.status(403).json({ error: 'Owner or Manager role required to manage billing.' });
+    }
+    const venue_id = authReq.staff.venue_id;
+    const user_id = authReq.staff.linked_user_id || authReq.staff.user_id || authReq.staff.id;
+    const user = null;
     const returnUrl = req.body.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/commander/admin/billing`;
 
     // 1. Fetch Commander Subscription for this venue
@@ -56,15 +67,18 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Commander subscription not found for this venue.' });
     }
     
-    // Ensure only the original owner can manage billing (or those with equivalent perm)
-    if (sub.owner_id !== user_id && user?.user_metadata?.role !== 'admin') {
+    // Ensure only the billing owner (or a manager with billing permission)
+    // can manage the subscription. permissions is a jsonb object, not array.
+    if (String(sub.owner_id) !== String(user_id)) {
         const { data: staff } = await getSupabase()
           .from('commander_staff')
-          .select('permissions')
+          .select('permissions, role')
           .eq('venue_id', venue_id)
-          .eq('user_id', user_id)
+          .or(`user_id.eq.${user_id},linked_user_id.eq.${user_id}`)
+          .limit(1)
           .maybeSingle();
-        if (!staff?.permissions?.includes('all') && !staff?.permissions?.includes('manage_billing')) {
+        const perms = staff?.permissions || {};
+        if (staff?.role !== 'owner' && perms.manage_billing !== true && perms.all !== true) {
             return res.status(403).json({ error: 'Only the billing owner or staff with billing permissions can manage the subscription.' });
         }
     }
@@ -94,17 +108,25 @@ export default async function handler(req, res) {
         const checkoutSession = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
-            customer_email: user?.email,
             line_items: [{ price: priceId, quantity: 1 }],
             success_url: `${returnUrl}?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: returnUrl,
             metadata: {
                 venue_id: venue_id.toString(),
                 tier: sub.tier,
-                user_id: user_id.toString()
+                user_id: String(user_id)
+            },
+            // 2026-07-25 audit fix: metadata on the SESSION alone never
+            // reaches customer.subscription.* webhook events — the webhook
+            // could never link the paid subscription back to the venue.
+            // subscription_data.metadata lands on the Subscription object.
+            subscription_data: {
+                metadata: {
+                    venue_id: venue_id.toString(),
+                    tier: sub.tier,
+                }
             }
-            // Note: Since they already had their 30 free days locally tracked,
-            // we do NOT add `trial_period_days` here. They pay immediately.
+            // Note: trial already consumed locally — they pay immediately.
         });
 
         return res.status(200).json({ url: checkoutSession.url });

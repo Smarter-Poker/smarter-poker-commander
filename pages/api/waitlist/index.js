@@ -90,7 +90,8 @@ export default async function handler(req, res) {
         player_phone,
         signup_method = 'app'
       } = req.body;
-      const game_type = (rawGameType || '').toUpperCase();
+      // 2026-07-25 audit fix: commander_games.game_type is now lowercase — store lowercase, compare case-insensitively
+      const game_type = (rawGameType || '').toLowerCase();
 
       // Validation
       if (!venue_id || !game_type || !stakes) {
@@ -141,7 +142,7 @@ export default async function handler(req, res) {
           .from('commander_waitlist')
           .select('id')
           .eq('venue_id', venue_id)
-          .eq('game_type', game_type)
+          .ilike('game_type', game_type) // 2026-07-25 audit fix: case-insensitive match (older rows may be uppercase)
           .eq('stakes', stakes)
           .eq('player_id', player_id)
           .eq('status', 'waiting')
@@ -219,7 +220,7 @@ export default async function handler(req, res) {
         .from('commander_games')
         .select('id')
         .eq('venue_id', venue_id)
-        .eq('game_type', game_type)
+        .ilike('game_type', game_type) // 2026-07-25 audit fix: case-insensitive equality (no wildcards) against lowercase games
         .eq('stakes', stakes)
         .in('status', ['waiting', 'running'])
         .maybeSingle();

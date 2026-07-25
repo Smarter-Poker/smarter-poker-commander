@@ -42,9 +42,11 @@ export default async function handler(req, res) {
       // Staff is already validated by guardWriteStaff at the handler level
 
       // Get tournament
+      // 2026-07-25 audit fix: rebuy_cost/rebuy_levels/clock_state are not real
+      // columns — use rebuy_amount/rebuy_end_level; clock state lives in settings.
       const { data: tournament } = await getSupabase()
         .from('commander_tournaments')
-        .select('id, venue_id, status, allows_rebuys, rebuy_cost, rebuy_chips, rebuy_levels, max_rebuys, current_level, clock_state')
+        .select('id, venue_id, status, allows_rebuys, rebuy_amount, rebuy_chips, rebuy_end_level, max_rebuys, current_level, starting_chips')
         .eq('id', tournamentId)
         .maybeSingle();
       if (!tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
@@ -56,9 +58,11 @@ export default async function handler(req, res) {
       }
 
       // Check rebuy period
-      const currentLevel = tournament.clock_state?.current_level || tournament.current_level || 0;
-      if (tournament.rebuy_levels && currentLevel > tournament.rebuy_levels) {
-        return res.status(400).json({ success: false, error: `Rebuy period closed (ended at level ${tournament.rebuy_levels})` });
+      // 2026-07-25 audit fix: current_level is 0-indexed; the rebuy period runs
+      // while (current_level + 1) <= rebuy_end_level when a cutoff is set.
+      const currentLevel = tournament.current_level || 0;
+      if (tournament.rebuy_end_level && (currentLevel + 1) > tournament.rebuy_end_level) {
+        return res.status(400).json({ success: false, error: `Rebuy period closed (ended at level ${tournament.rebuy_end_level})` });
       }
 
       // Get entry
@@ -104,12 +108,13 @@ export default async function handler(req, res) {
 
       // --- FINANCIAL FRAUD PROTECTION ---
       // Log the cash collected by the TD into the cashier vault
-      if (tournament.rebuy_cost > 0) {
+      // 2026-07-25 audit fix: use the real rebuy_amount column
+      if (tournament.rebuy_amount > 0) {
         await getSupabase().from('commander_cash_transactions').insert({
           venue_id: tournament.venue_id,
           player_name: entry.player_name,
           type: 'buy_in',
-          amount: tournament.rebuy_cost,
+          amount: tournament.rebuy_amount,
           payment_method: 'cash',
           processed_by: _g.id || null, // staff ID from guardWriteStaff
           notes: `Tournament Rebuy: ${entry.player_name} (ID: ${entryId})`
@@ -124,7 +129,7 @@ export default async function handler(req, res) {
           rebuy_number: newRebuyCount,
           chips_added: rebuyChips,
           total_chips: newChips,
-          cost: tournament.rebuy_cost || 0,
+          cost: tournament.rebuy_amount || 0, // 2026-07-25 audit fix: real column
           rebuys_remaining: maxRebuys - newRebuyCount
         }
       });

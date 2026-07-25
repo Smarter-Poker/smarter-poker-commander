@@ -97,7 +97,10 @@ export default async function handler(req, res) {
       const staff = await guardStaff(req, res);
       if (!staff) return;
 
-      if (!supabaseUrl || !supabaseServiceKey) {
+      // 2026-07-25 audit fix: supabaseUrl/supabaseServiceKey were undefined
+      // identifiers — check the env vars getSupabase() actually uses.
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL ||
+          !(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
           return res.status(500).json({ success: false, error: 'Server configuration error' });
       }
 
@@ -110,7 +113,7 @@ export default async function handler(req, res) {
 
       try {
           // 1. Find the Club Page for this venue
-          const { data: pages } = await supabase
+          const { data: pages } = await getSupabase() // 2026-07-25 audit fix: `supabase` was an undefined identifier
               .from('social_pages')
               .select('id, owner_id')
               .eq('linked_venue_id', String(venue_id))
@@ -132,7 +135,7 @@ export default async function handler(req, res) {
           let existingPost = null;
 
           if (tournament.id) {
-              const { data: posts } = await supabase
+              const { data: posts } = await getSupabase() // 2026-07-25 audit fix: `supabase` was an undefined identifier
                   .from('social_page_posts')
                   .select('id')
                   .eq('page_id', clubPage.id)
@@ -164,7 +167,7 @@ export default async function handler(req, res) {
 
           if (existingPost) {
               // Update existing post
-              const { error } = await supabase
+              const { error } = await getSupabase() // 2026-07-25 audit fix: `supabase` was an undefined identifier
                   .from('social_page_posts')
                   .update({
                       content: postContent,
@@ -183,7 +186,7 @@ export default async function handler(req, res) {
               });
           } else {
               // Create new post
-              const { data: newPost, error } = await supabase
+              const { data: newPost, error } = await getSupabase() // 2026-07-25 audit fix: `supabase` was an undefined identifier
                   .from('social_page_posts')
                   .insert({
                       page_id: clubPage.id,

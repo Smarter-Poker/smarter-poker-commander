@@ -17,7 +17,7 @@ import { useRouter } from 'next/router';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { Shield, Timer, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
-import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+// 2026-07-25 audit fix: commanderFetch removed — its 401 redirect sent players to staff login
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 
 function formatCountdown(seconds) {
@@ -55,16 +55,17 @@ export default function PlayerCheckIn() {
   // fetchMember declared first — must precede useEffect/useCommanderSync that reference it
   const fetchMember = async () => {
     try {
-      // Use the dealer scan API to validate QR code
-      const res = await commanderFetch('/api/commander/dealer/scan', {
+      // 2026-07-25 audit fix: this is a player page with no staff session —
+      // the old staff-guarded /api/commander/dealer/scan call always 401'd and
+      // commanderFetch then hard-redirected players to staff login. Use the
+      // public self-check-in endpoint with plain fetch instead.
+      const res = await fetch('/api/checkin/self', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qr_code: code })
+        body: JSON.stringify({ code })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json = await res.json();
-
-      if (!json.success) {
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
         setError(json.error || 'Member not found');
         setLoading(false);
         return;
@@ -73,19 +74,8 @@ export default function PlayerCheckIn() {
       setMember(json.data.member);
       setMembershipActive(json.data.membership_active);
       setTimeBalance(json.data.time_balance_minutes || 0);
-
-      // Check for active session
-      if (json.data.already_seated) {
-        const sessionRes = await commanderFetch(`/api/commander/dealer/sessions?table=${json.data.already_seated.table_number}`);
-        if (!sessionRes.ok) throw new Error(`Session request failed (${sessionRes.status})`);
-        const sessionJson = await sessionRes.json();
-        if (sessionJson.success) {
-          const mySession = (sessionJson.data || []).find(s => s.member_id === json.data.member.id);
-          setActiveSession(mySession || null);
-        }
-      } else {
-        setActiveSession(null);
-      }
+      // already_seated now carries table/seat/time directly (no staff sessions call)
+      setActiveSession(json.data.already_seated || null);
     } catch (err) {
       setError('Failed to load member data');
     } finally {
@@ -161,7 +151,8 @@ useEffect(() => {
         {/* Header */}
         <div className="text-center mb-6 pt-2">
           <h1 className="text-2xl font-bold text-white">
-            {member?.first_name} {member?.last_name}
+            {/* 2026-07-25 audit fix: public endpoint returns first name only (no extra PII) */}
+            {member?.first_name}
           </h1>
           <div className="flex items-center justify-center gap-2 mt-1">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tierColor }} />

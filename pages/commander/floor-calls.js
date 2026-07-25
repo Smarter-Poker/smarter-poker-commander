@@ -186,14 +186,20 @@ export default function FloorCalls() {
       let respondedBy = '';
       try { const s = JSON.parse(staffSession); respondedBy = s.name || s.id || ''; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
-      const res = await commanderFetch(`/api/commander/floor-calls/${id}`, {
-        method: 'PATCH',
+      // 2026-07-25 audit fix: handler is flat PUT /api/commander/floor-calls with {id, status, ...} in body (no /[id] PATCH route exists)
+      const res = await commanderFetch(`/api/commander/floor-calls`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, responded_by: respondedBy, resolution })
+        body: JSON.stringify({ id, status, responded_by: respondedBy, resolution })
       });
       if (res.ok) {
         fetchCalls(); // Changed from fetchData() to fetchCalls() to match existing function name
         broadcastChange('floor_calls');
+      } else {
+        // 2026-07-25 audit fix: surface non-OK responses instead of failing silently
+        let msg = 'Update failed';
+        try { const j = await res.json(); msg = j?.error?.message || j?.error || msg; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+        setToast({ type: 'error', text: `Update failed (${res.status}): ${msg}` });
       }
       if (status === 'resolved') busEmit.celebration('confetti');
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }

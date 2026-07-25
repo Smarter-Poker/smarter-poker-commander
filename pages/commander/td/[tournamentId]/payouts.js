@@ -45,6 +45,15 @@ export default function TDPayouts() {
     const [overrides, setOverrides] = useState({});
     const [showICM, setShowICM] = useState(false);
 
+    // 2026-07-25 audit fix: toast state lived only in the ICMCalculator child but
+    // is rendered (and set) here; hoist it with an auto-dismiss effect.
+    const [toast, setToast] = useState(null);
+    useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(() => setToast(null), 4000);
+        return () => clearTimeout(t);
+    }, [toast]);
+
     const fetchPayouts = useCallback(async () => {
         if (!tournamentId) return;
         try {
@@ -82,11 +91,14 @@ export default function TDPayouts() {
         if (!calcData) return;
         setSaving(true);
         try {
+            // 2026-07-25 audit fix: pass entry_id so chop payouts for still-active
+            // players (player_id null) are saved per-entry instead of filtered out
             const payouts = (calcData.calculated_payouts || []).map(p => ({
+                entry_id: p.entry_id || null,
                 player_id: p.player_id,
                 position: p.position,
-                amount: overrides[p.position] || p.amount
-            })).filter(p => p.player_id);
+                amount: overrides[p.position] !== undefined ? overrides[p.position] : p.amount
+            })).filter(p => p.entry_id || p.player_id);
 
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/payout`, {
                 method: 'PUT',
@@ -345,11 +357,11 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
             // Approximate: equity = prob * 1st prize + weighted remaining
             let equity = 0;
             for (let i = 0; i < payoutAmounts.length; i++) {
-                const factor = Math.pow(prob, i + 1) / Math.pow(prob, i === 0 ? 1 : i);
                 equity += payoutAmounts[i] * (i === 0 ? prob : (1 - prob) * prob);
             }
-            // Fallback: chip-chop proportional
-            equity = Math.round(prizePool * prob);
+            // 2026-07-25 audit fix: use the ICM-adjusted equity computed above;
+            // it was being overwritten with a plain chip-chop proportional value.
+            equity = Math.round(equity);
             return { ...player, equity, percentage: (prob * 100).toFixed(1) };
         });
 
