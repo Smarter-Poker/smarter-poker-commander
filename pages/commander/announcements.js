@@ -73,19 +73,25 @@ const res = await commanderFetch('/api/commander/notifications/send', {
           type: 'announcement'
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      // 2026-07-25 audit fix: surface the server's error message on non-OK
+      // responses instead of a generic connection error
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error?.message || body?.error || `Failed to send announcement (${res.status})`);
+        return;
+      }
 
       const data = await res.json();
 
       if (data.success) {
-        setSuccess(`Sent to ${data.data.sent_count || 0} players`);
+        setSuccess(`Sent to ${data.data?.sent_count || 0} players`);
         setRecentAnnouncements(prev => [
           {
             id: Date.now(),
             message: message.trim(),
             target: sendTo,
             sent_at: new Date().toISOString(),
-            sent_count: data.data.sent_count || 0
+            sent_count: data.data?.sent_count || 0
           },
           ...prev
         ].slice(0, 10));
