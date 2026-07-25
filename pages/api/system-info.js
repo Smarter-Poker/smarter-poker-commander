@@ -35,11 +35,14 @@ export default async function handler(req, res) {
       const user = authData?.user;
       if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
 
+      // 2026-07-25 audit fix: staff rows link via user_id OR linked_user_id —
+      // matching only user_id locked out staff linked the other way.
       const { data: staff } = await getSupabase()
         .from('commander_staff')
-        .select('venue_id, role, name')
-        .eq('user_id', user.id)
+        .select('venue_id, role, display_name')
+        .or(`linked_user_id.eq.${user.id},user_id.eq.${user.id}`)
         .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
       if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
 

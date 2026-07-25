@@ -7,7 +7,7 @@
  * - Lockout after 10 consecutive failures (5 min cooldown)
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { DEFAULT_PERMISSIONS } from '../../../src/lib/commander/auth';
+import { DEFAULT_PERMISSIONS, signStaffSession } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -108,7 +108,17 @@ export default async function handler(req, res) {
         success: true,
         data: {
           valid: true,
-          staff: { id: staff.id, role: staff.role, user_id: staff.profiles?.id || null, display_name: name, avatar_url: staff.profiles?.avatar_url || null, session_ts: Date.now() },
+          // 2026-07-25 audit fix: staff sessions are now HMAC-signed
+          // server-side. verifyStaffSession rejects any x-staff-session
+          // without a valid `sig`, so forged headers no longer authenticate.
+          staff: signStaffSession({
+            id: staff.id,
+            role: staff.role,
+            venue_id: staff.venue_id,
+            user_id: staff.profiles?.id || null,
+            display_name: name,
+            avatar_url: staff.profiles?.avatar_url || null,
+          }),
           permissions
         }
       });

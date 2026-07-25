@@ -35,9 +35,11 @@ export default async function handler(req, res) {
     const _staff = await guardStaff(req, res);
     if (!_staff) return;
 
-    if (req.method === 'GET') return listTaxEvents(req, res);
-    if (req.method === 'POST') return generateW2G(req, res);
-    if (req.method === 'PATCH') return updateTaxEvent(req, res);
+    // 2026-07-25 audit fix: pass the verified staff identity into each handler
+    // so tax events can be venue-scoped; updates additionally require manager role.
+    if (req.method === 'GET') return listTaxEvents(req, res, _staff);
+    if (req.method === 'POST') return generateW2G(req, res, _staff);
+    if (req.method === 'PATCH') return updateTaxEvent(req, res, _staff);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
 
   } catch (err) {
@@ -47,11 +49,16 @@ export default async function handler(req, res) {
   }
 }
 
-async function listTaxEvents(req, res) {
+async function listTaxEvents(req, res, staff) {
   const { venue_id, year, w2g_generated, limit = 50 } = req.query;
 
   if (!venue_id) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id required' } });
+  }
+
+  // 2026-07-25 audit fix: staff can only list tax events for their own venue.
+  if (String(venue_id) !== String(staff.venue_id)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
   }
 
   try {
@@ -64,7 +71,7 @@ async function listTaxEvents(req, res) {
         gross_amount, buy_in, net_amount,
         withholding_required, withholding_amount, withholding_rate,
         w2g_generated, w2g_document_url,
-        player_ssn_last4, player_acknowledged, acknowledged_at,
+        player_acknowledged, acknowledged_at,
         notes, created_at
       `)
       .eq('venue_id', venue_id)
@@ -113,11 +120,16 @@ async function listTaxEvents(req, res) {
   }
 }
 
-async function generateW2G(req, res) {
-  const { tax_event_id, payer_name, payer_ein, payer_address, player_ssn_last4 } = req.body;
+async function generateW2G(req, res, staff) {
+  const { tax_event_id, payer_name, payer_ein, payer_address } = req.body;
 
   if (!tax_event_id) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'tax_event_id required' } });
+  }
+
+  // 2026-07-25 audit fix: generating a W-2G updates the tax event — manager role required.
+  if (!['owner', 'manager'].includes(staff.role)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager role required' } });
   }
 
   try {
@@ -130,6 +142,11 @@ async function generateW2G(req, res) {
 
     if (fetchErr || !event) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tax event not found' } });
+    }
+
+    // 2026-07-25 audit fix: staff can only act on tax events at their own venue.
+    if (String(event.venue_id) !== String(staff.venue_id)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
     }
 
     // Get player info
@@ -184,8 +201,9 @@ async function generateW2G(req, res) {
       payer_ein: payer_ein || '',
       payer_address: payer_address || venueAddress,
       // Winner info
+      // 2026-07-25 audit fix: commander_tax_events has no player_ssn_last4 column;
+      // SSN data is not stored or echoed by this API.
       winner_name: playerName,
-      winner_ssn_last4: player_ssn_last4 || event.player_ssn_last4 || '',
       // Meta
       tax_year: new Date(event.event_date).getFullYear(),
       generated_at: new Date().toISOString()
@@ -198,7 +216,7 @@ async function generateW2G(req, res) {
         w2g_generated: true,
         withholding_amount: withholdingAmount,
         withholding_rate: FEDERAL_WITHHOLDING_RATE,
-        player_ssn_last4: player_ssn_last4 || event.player_ssn_last4 || null,
+        // 2026-07-25 audit fix: removed player_ssn_last4 write — column does not exist.
         w2g_document_url: `w2g://${tax_event_id}` // Reference for retrieval
       })
       .eq('id', tax_event_id)
@@ -221,16 +239,36 @@ async function generateW2G(req, res) {
   }
 }
 
-async function updateTaxEvent(req, res) {
-  const { tax_event_id, player_ssn_last4, notes, player_acknowledged } = req.body;
+async function updateTaxEvent(req, res, staff) {
+  // 2026-07-25 audit fix: removed player_ssn_last4 handling — the column does not
+  // exist and SSN data must not be written through this API.
+  const { tax_event_id, notes, player_acknowledged } = req.body;
 
   if (!tax_event_id) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'tax_event_id required' } });
   }
 
+  // 2026-07-25 audit fix: updates require manager role.
+  if (!['owner', 'manager'].includes(staff.role)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager role required' } });
+  }
+
   try {
+    // 2026-07-25 audit fix: fetch first and enforce venue scoping.
+    const { data: existing, error: fetchErr } = await getSupabase()
+      .from('commander_tax_events')
+      .select('id, venue_id')
+      .eq('id', tax_event_id)
+      .maybeSingle();
+
+    if (fetchErr || !existing) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tax event not found' } });
+    }
+    if (String(existing.venue_id) !== String(staff.venue_id)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+    }
+
     const updates = {};
-    if (player_ssn_last4 !== undefined) updates.player_ssn_last4 = player_ssn_last4;
     if (notes !== undefined) updates.notes = notes;
     if (player_acknowledged) {
       updates.player_acknowledged = true;
