@@ -212,10 +212,13 @@ export default function AnnouncementsDisplay() {
     setSaving(true);
     try {
       const hdrs = { 'Content-Type': 'application/json' };
+      // 2026-07-25 audit fix: datetime-local values are local wall-clock
+      // strings; convert to ISO (UTC) before sending
       const body = {
         ...(editingAnnouncement ? { id: editingAnnouncement.id } : { venue_id: venueId }),
         title: formData.title, message: formData.message, priority: formData.priority, type: formData.type,
-        expires_at: formData.expires_at || null, starts_at: formData.starts_at || null };
+        expires_at: formData.expires_at ? new Date(formData.expires_at).toISOString() : null,
+        starts_at: formData.starts_at ? new Date(formData.starts_at).toISOString() : null };
       const res = await commanderFetch('/api/commander/announcements', {
         method: editingAnnouncement ? 'PATCH' : 'POST', headers: hdrs, body: JSON.stringify(body) });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);

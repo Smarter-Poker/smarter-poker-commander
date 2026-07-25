@@ -36,9 +36,12 @@ export default function VenueQRCodePage() {
         setVenue({ id: staffData.venue_id, name: staffData.venue_name });
       }
 
-      // Generate check-in URL
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const checkInUrl = `${baseUrl}/hub/commander/check-in/${staffData.venue_id}`;
+      // Generate check-in URL.
+      // 2026-07-25 audit fix: always use the canonical player origin — QR
+      // codes generated on commander.smarter.poker previously encoded
+      // commander.smarter.poker/hub/... which 404s (no /hub pages there),
+      // killing check-in for every printed code.
+      const checkInUrl = `https://smarter.poker/hub/commander/check-in/${staffData.venue_id}`;
       setQrUrl(checkInUrl);
     } catch (err) {
       router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
