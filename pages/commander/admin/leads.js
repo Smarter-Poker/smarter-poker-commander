@@ -57,10 +57,18 @@ export default function LeadManagementPage() {
       const token = getToken();
 const data = await commanderFetchJSON(`/api/commander/admin/leads?status=${statusFilter}`, {});
       if (data.success) {
-        setLeads(data.leads);
-        setStats(data.stats);
+        // 2026-07-25 audit fix: the API nests under data ({ data: { leads } });
+        // stats are computed client-side from the leads array.
+        const fetchedLeads = data.data?.leads || [];
+        setLeads(fetchedLeads);
+        const computedStats = {};
+        for (const lead of fetchedLeads) {
+          const s = lead.status || 'new';
+          computedStats[s] = (computedStats[s] || 0) + 1;
+        }
+        setStats(computedStats);
       } else {
-        setError(data.error || 'Failed to load leads');
+        setError(data.error?.message || data.error || 'Failed to load leads');
       }
     } catch (err) {
       setError('Failed to load leads');
@@ -71,10 +79,12 @@ const data = await commanderFetchJSON(`/api/commander/admin/leads?status=${statu
 
   async function updateLeadStatus(leadId, newStatus) {
     try {
+      // 2026-07-25 audit fix: the API updates the table selected by source
+      const lead = (leads || []).find((l) => l.id === leadId);
 const res = await commanderFetch('/api/commander/admin/leads', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: leadId, status: newStatus }) });
+        body: JSON.stringify({ id: leadId, status: newStatus, source: lead?.source }) });
       if (!res.ok) throw new Error('Request failed');
       const data = await res.json();
       if (data.success) {
@@ -91,15 +101,18 @@ const res = await commanderFetch('/api/commander/admin/leads', {
     }
   }
 
+  // 2026-07-25 audit fix: guard against undefined leads/fields — landing-page
+  // leads may lack venue_name/contact_name/city.
+  const safeLeads = Array.isArray(leads) ? leads : [];
   const filteredLeads = debouncedSearchTerm
-    ? leads.filter(
+    ? safeLeads.filter(
       (lead) =>
-        lead.venue_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        lead.contact_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        lead.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        lead.city.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        (lead.venue_name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (lead.contact_name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (lead.email || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (lead.city || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     )
-    : leads;
+    : safeLeads;
 
   const totalLeads = Object.values(stats || {}).reduce((a, b) => a + b, 0);
   const conversionRate =
@@ -236,8 +249,9 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                   <tbody className="divide-y divide-[#374151]">
                     {filteredLeads.map((lead) => {
                       const statusConfig = STATUS_CONFIG[lead.status] || STATUS_CONFIG.new;
+                      // 2026-07-25 audit fix: removed the per-row CommanderLayout
+                      // wrapper — a full layout inside <tbody> is invalid markup
                       return (
-                        <CommanderLayout title="Lead Management" backHref="/commander/dashboard?card=reports">
                           <tr
                             key={lead.id}
                             className="hover:bg-[#1E293B]/50 transition-colors cursor-pointer"
@@ -315,7 +329,6 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                               </button>
                             </td>
                           </tr>
-                        </CommanderLayout>
                       );
                     })}
                   </tbody>
