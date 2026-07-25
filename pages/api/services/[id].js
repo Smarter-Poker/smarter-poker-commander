@@ -4,7 +4,7 @@
  * Reference: Phase 2 - Service Requests
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff, guardUser } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -27,10 +27,6 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
-    if (!_authResult) return;
-
     const { id } = req.query;
 
     if (!id) {
@@ -43,8 +39,18 @@ export default async function handler(req, res) {
     switch (req.method) {
       case 'GET':
         return handleGet(req, res, id);
-      case 'PATCH':
-        return handlePatch(req, res, id);
+      case 'PATCH': {
+        // 2026-07-25 audit fix: use the staff object resolved by the guard —
+        // the old handlePatch re-queried commander_staff by sessionData.id,
+        // which is undefined for owner sessions.
+        const staff = await guardStaff(req, res);
+        if (!staff) return;
+        return handlePatch(req, res, id, staff);
+      }
+      case 'DELETE':
+        // 2026-07-25 audit fix: allow the requesting player to cancel their
+        // own service request (Bearer user), as the player UI expects.
+        return handleDelete(req, res, id);
       default:
         return res.status(405).json({
           success: false,
@@ -108,38 +114,14 @@ async function handleGet(req, res, requestId) {
   }
 }
 
-async function handlePatch(req, res, requestId) {
+async function handlePatch(req, res, requestId, staff) {
   try {
-    // Verify staff authentication
-    const staffSession = req.headers['x-staff-session'];
-    if (!staffSession) {
+    // 2026-07-25 audit fix: staff is the verified object from guardStaff —
+    // no re-query by sessionData.id (undefined for owner sessions).
+    if (!staff) {
       return res.status(401).json({
         success: false,
         error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-      });
-    }
-
-    let sessionData;
-    try {
-      sessionData = JSON.parse(staffSession);
-    } catch {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_SESSION', message: 'Invalid session format' }
-      });
-    }
-
-    const { data: staff, error: staffError } = await getSupabase()
-      .from('commander_staff')
-      .select('id, venue_id, role, is_active')
-      .eq('id', sessionData.id)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (staffError || !staff) {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_STAFF', message: 'Staff member not found or inactive' }
       });
     }
 
@@ -211,6 +193,69 @@ async function handlePatch(req, res, requestId) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Commander service PATCH error:', error);
+    return res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+    });
+  }
+}
+
+// 2026-07-25 audit fix: player cancels their own service request. Identity
+// comes from the verified Bearer/cookie user, never the request body.
+async function handleDelete(req, res, requestId) {
+  try {
+    const user = await guardUser(req, res);
+    if (!user) return;
+
+    const { data: request, error: fetchError } = await getSupabase()
+      .from('commander_service_requests')
+      .select('id, player_id, status')
+      .eq('id', requestId)
+      .maybeSingle();
+
+    if (fetchError || !request) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Service request not found' }
+      });
+    }
+
+    if (String(request.player_id) !== String(user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only cancel your own service requests' }
+      });
+    }
+
+    if (['completed', 'cancelled'].includes(request.status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATE', message: 'Request is already closed' }
+      });
+    }
+
+    const { data: updated, error: updateError } = await getSupabase()
+      .from('commander_service_requests')
+      .update({ status: 'cancelled' })
+      .eq('id', requestId)
+      .select()
+      .maybeSingle();
+
+    if (updateError) {
+      console.warn('Commander service DELETE error:', updateError);
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DATABASE_ERROR', message: 'Failed to cancel service request' }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { request: updated }
+    });
+  } catch (error) {
+    try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    console.warn('Commander service DELETE error:', error);
     return res.status(500).json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }

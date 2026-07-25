@@ -65,6 +65,7 @@ export default async function handler(req, res) {
           commander_waitlist_group_members (
             id,
             player_id,
+            member_status,
             joined_at,
             profiles (id, display_name, phone)
           )
@@ -88,15 +89,19 @@ export default async function handler(req, res) {
       }
 
       // Verify squad is in forming status (not yet submitted)
-      if (squad.status !== 'forming') {
+      // 2026-07-25 audit fix: real column is group_status — squad.status was
+      // always undefined, so every submit 400'd as ALREADY_SUBMITTED.
+      if (squad.group_status !== 'forming') {
         return res.status(400).json({
           success: false,
           error: { code: 'ALREADY_SUBMITTED', message: 'Squad already submitted to waitlist' }
         });
       }
 
-      // All members present in the group are confirmed (schema has no status column on members)
-      const members = squad.commander_waitlist_group_members || [];
+      // 2026-07-25 audit fix: members DO have member_status — only submit
+      // accepted members, not pending invitations.
+      const members = (squad.commander_waitlist_group_members || [])
+        .filter(m => !m.member_status || m.member_status === 'active');
 
       if (members.length < 2) {
         return res.status(400).json({
@@ -146,10 +151,14 @@ export default async function handler(req, res) {
       if (entriesError) throw entriesError;
 
       // Update squad status to waiting (submitted to waitlist)
+      // 2026-07-25 audit fix: real column is group_status; also record
+      // submitted_at and position (columns exist on the table).
       const { error: updateError } = await getSupabase()
         .from('commander_waitlist_groups')
         .update({
-          status: 'waiting'
+          group_status: 'waiting',
+          submitted_at: new Date().toISOString(),
+          position: position
         })
         .eq('id', id);
 

@@ -3,7 +3,7 @@
  * POST /api/commander/services/request - Submit a service request
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardOwnerStaff } from '../../../src/lib/commander/auth';
+import { guardUser } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -17,18 +17,13 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: OWNER — requires owner role
+// Auth: PLAYER — verified Bearer user submits their own service request
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardOwnerStaff(req, res);
-      if (!_staff) return;
-    }
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
@@ -36,24 +31,11 @@ export default async function handler(req, res) {
       });
     }
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
-      });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-    const user = authData?.user;
-
-    if (authError || !user) {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
-      });
-    }
+    // 2026-07-25 audit fix: this is the player in-seat service request endpoint;
+    // the guardOwnerStaff gate blocked players entirely. Require a verified
+    // player user instead — player_id below is derived from this user.
+    const user = await guardUser(req, res);
+    if (!user) return;
 
     try {
       const {
