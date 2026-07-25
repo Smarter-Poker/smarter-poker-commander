@@ -55,14 +55,24 @@ export default function TableSeating() {
 const venueId = getVenueId();
 const headers = { };
       const fo = signal ? { headers, signal } : { headers };
-      const [tableRes, sessionsRes, waitlistRes] = await Promise.all([
+      // 2026-07-25 audit fix: the sessions handler wants table=<number> and
+      // venue_id, not table_id (uuid) + status — load the table first, then
+      // query sessions by its table_number.
+      const [tableRes, waitlistRes] = await Promise.all([
         commanderFetch(`/api/commander/tables/${id}`, fo).then(r => r.json()).catch(() => ({ data: null })),
-        commanderFetch(`/api/commander/dealer/sessions?table_id=${id}&status=active`, fo).then(r => r.json()).catch(() => ({ data: [] })),
         commanderFetch(`/api/commander/waitlist?venue_id=${venueId}`, fo).then(r => r.json()).catch(() => ({ data: [] }))
       ]);
-      if (tableRes.data || tableRes.success) setTable(tableRes.data || tableRes);
-      const sessionsArr = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
-      setSessions(sessionsArr.filter(s => s.status === 'active'));
+      const tableData = tableRes.data || (tableRes.success ? tableRes : null);
+      if (tableData) setTable(tableData);
+      let sessionsArr = [];
+      const tableNumber = tableData?.table_number || tableData?.number;
+      if (tableNumber !== undefined && tableNumber !== null && venueId) {
+        const sessionsRes = await commanderFetch(`/api/commander/dealer/sessions?table=${tableNumber}&venue_id=${venueId}`, fo)
+          .then(r => r.json()).catch(() => ({ data: [] }));
+        sessionsArr = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
+      }
+      // 2026-07-25 audit fix: handler returns session_status (already filtered to active-ish states)
+      setSessions(sessionsArr.filter(s => (s.session_status || s.status) === 'active'));
       const waitlistArr = Array.isArray(waitlistRes.data) ? waitlistRes.data : [];
       setWaitlist(waitlistArr.filter(w => w.status === 'waiting'));
     } catch (err) { console.warn(err); }
