@@ -5,7 +5,9 @@
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { captureException } from '../../../src/lib/commander/errorMonitoring';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+// 2026-07-25 audit fix: per-identity auth (staff session OR Bearer player) replaces
+// guardWriteStaff, whose public GET returned venue-wide sessions to anyone.
+import { verifyStaffSession, getUser } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -26,15 +28,24 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
-    if (!_authResult) return;
+    // 2026-07-25 audit fix: resolve identity — verified staff session first,
+    // then authenticated player (Bearer/cookie). Anonymous callers get 401.
+    const staffResult = await verifyStaffSession(req);
+    const staff = staffResult.error ? null : staffResult.staff;
+    const user = staff ? null : await getUser(req, res);
+
+    if (!staff && !user) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
+      });
+    }
 
     switch (req.method) {
       case 'GET':
-        return handleGet(req, res);
+        return handleGet(req, res, staff, user);
       case 'POST':
-        return handlePost(req, res);
+        return handlePost(req, res, staff, user);
       default:
         return res.status(405).json({
           success: false,
@@ -49,9 +60,9 @@ export default async function handler(req, res) {
   }
 }
 
-async function handleGet(req, res) {
+async function handleGet(req, res, staff, user) {
   try {
-    const { venue_id, player_id, status = 'active', limit = 50 } = req.query;
+    const { player_id, status = 'active', limit = 50 } = req.query;
 
     let query = getSupabase()
       .from('commander_player_sessions')
@@ -66,12 +77,16 @@ async function handleGet(req, res) {
       .order('check_in_at', { ascending: false })
       .limit(Math.min(parseInt(limit) || 50, 500));
 
-    if (venue_id) {
-      query = query.eq('venue_id', venue_id);
-    }
-
-    if (player_id) {
-      query = query.eq('player_id', player_id);
+    // 2026-07-25 audit fix: scope by verified identity, never client input.
+    if (staff) {
+      // Staff see their own venue only (venue_id forced to the session's venue).
+      query = query.eq('venue_id', staff.venue_id);
+      if (player_id) {
+        query = query.eq('player_id', player_id);
+      }
+    } else {
+      // Authenticated player: their own sessions across venues, ignore client player_id.
+      query = query.eq('player_id', user.id);
     }
 
     if (status) {
@@ -101,15 +116,37 @@ async function handleGet(req, res) {
   }
 }
 
-async function handlePost(req, res) {
+async function handlePost(req, res, staff, user) {
   try {
-    const { venue_id, player_id, player_name } = req.body;
+    let { venue_id, player_id, player_name } = req.body;
+    // 2026-07-25 audit fix: allow authenticated player self-check-in when there
+    // is no staff session (World Hub posts {venue_id, check_in_type:'self_service'}
+    // with a Bearer token). Player identity comes from the verified token only.
+    const isSelfService = !staff;
 
     if (!venue_id) {
       return res.status(400).json({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'venue_id is required' }
       });
+    }
+
+    if (isSelfService) {
+      player_id = user.id; // ignore any client-supplied player_id
+      player_name = null;
+
+      // Validate the venue exists
+      const { data: venue } = await getSupabase()
+        .from('poker_venues')
+        .select('id')
+        .eq('id', venue_id)
+        .maybeSingle();
+      if (!venue) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Venue not found' }
+        });
+      }
     }
 
     if (!player_id && !player_name) {
@@ -137,15 +174,21 @@ async function handlePost(req, res) {
       }
     }
 
+    const insertRow = {
+      venue_id,
+      player_id: player_id || null,
+      player_name: player_name || null,
+      status: 'active',
+      check_in_at: new Date().toISOString()
+    };
+    // 2026-07-25 audit fix: tag self-service check-ins (metadata column exists; see waitlist XP flow)
+    if (isSelfService) {
+      insertRow.metadata = { check_in_type: 'self_service' };
+    }
+
     const { data: session, error } = await getSupabase()
       .from('commander_player_sessions')
-      .insert({
-        venue_id,
-        player_id: player_id || null,
-        player_name: player_name || null,
-        status: 'active',
-        check_in_at: new Date().toISOString()
-      })
+      .insert(insertRow)
       .select()
       .maybeSingle();
 

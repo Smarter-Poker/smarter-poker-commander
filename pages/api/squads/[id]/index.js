@@ -25,14 +25,16 @@ export default async function handler(req, res) {
     }
 
 
-    // Auth guard: require user auth for writes
-    if (req.method !== "GET") { const _user = await guardUser(req, res); if (!_user) return; }
     const { id } = req.query;
 
     if (req.method === 'GET') {
       return handleGet(req, res, id);
     } else if (req.method === 'DELETE') {
-      return handleDelete(req, res, id);
+      // 2026-07-25 audit fix: pass the verified user — the delete authorization
+      // must compare the session identity, not a forgeable body player_id.
+      const user = await guardUser(req, res);
+      if (!user) return;
+      return handleDelete(req, res, id, user);
     }
 
     return res.status(405).json({
@@ -84,9 +86,7 @@ async function handleGet(req, res, id) {
   }
 }
 
-async function handleDelete(req, res, id) {
-  const { player_id } = req.body;
-
+async function handleDelete(req, res, id, user) {
   try {
     // Check if player is the leader
     const { data: squad } = await getSupabase()
@@ -102,7 +102,8 @@ async function handleDelete(req, res, id) {
       });
     }
 
-    if (squad.leader_id !== player_id) {
+    // 2026-07-25 audit fix: compare against the verified user id, never req.body.
+    if (String(squad.leader_id) !== String(user.id)) {
       return res.status(403).json({
         success: false,
         error: { code: 'FORBIDDEN', message: 'Only leader can disband squad' }

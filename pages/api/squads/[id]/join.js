@@ -24,8 +24,6 @@ export default async function handler(req, res) {
     }
 
 
-    // Auth guard: require user auth for writes
-    if (req.method !== "GET") { const _user = await guardUser(req, res); if (!_user) return; }
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
@@ -33,15 +31,15 @@ export default async function handler(req, res) {
       });
     }
 
-    const { id } = req.query;
-    const { player_id, invite_code } = req.body;
+    // 2026-07-25 audit fix: the joining player is the verified session user —
+    // body player_id was forgeable and is now ignored. Body may be entirely
+    // absent (the accept-invitation flow sends none).
+    const user = await guardUser(req, res);
+    if (!user) return;
 
-    if (!player_id) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'MISSING_FIELDS', message: 'player_id required' }
-      });
-    }
+    const { id } = req.query;
+    const { invite_code } = req.body || {};
+    const player_id = user.id;
 
     try {
       // Get squad
@@ -49,7 +47,7 @@ export default async function handler(req, res) {
         .from('commander_waitlist_groups')
         .select(`
           *,
-          commander_waitlist_group_members (id, player_id)
+          commander_waitlist_group_members (id, player_id, member_status)
         `)
         .eq('id', id)
         .maybeSingle();
@@ -61,14 +59,46 @@ export default async function handler(req, res) {
         });
       }
 
-      // Check if already a member
-      const alreadyMember = squad.commander_waitlist_group_members?.some(
-        m => m.player_id === player_id
-      );
-      if (alreadyMember) {
+      const members = squad.commander_waitlist_group_members || [];
+      const existing = members.find(m => String(m.player_id) === String(player_id));
+
+      // Accept-invitation path: an 'invited' row for this user becomes active.
+      if (existing) {
+        if (existing.member_status === 'invited') {
+          const { data: member, error: acceptError } = await getSupabase()
+            .from('commander_waitlist_group_members')
+            .update({ member_status: 'active' })
+            .eq('id', existing.id)
+            .select()
+            .maybeSingle();
+          if (acceptError) throw acceptError;
+          return res.status(200).json({ success: true, data: { member } });
+        }
         return res.status(400).json({
           success: false,
           error: { code: 'ALREADY_MEMBER', message: 'Already in this squad' }
+        });
+      }
+
+      // 2026-07-25 audit fix: private squads require a matching invite code
+      // (case-insensitive) unless the user was explicitly invited above.
+      if (squad.is_private) {
+        const provided = String(invite_code || '').trim().toUpperCase();
+        const actual = String(squad.invite_code || '').trim().toUpperCase();
+        if (!actual || !provided || provided !== actual) {
+          return res.status(403).json({
+            success: false,
+            error: { code: 'INVITE_CODE_REQUIRED', message: 'Valid invite code required to join this squad' }
+          });
+        }
+      }
+
+      // Capacity check
+      const activeCount = members.filter(m => m.member_status !== 'removed' && m.member_status !== 'declined' && m.member_status !== 'left').length;
+      if (squad.max_size && activeCount >= squad.max_size) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'SQUAD_FULL', message: 'Squad is full' }
         });
       }
 
@@ -77,7 +107,8 @@ export default async function handler(req, res) {
         .from('commander_waitlist_group_members')
         .insert({
           group_id: id,
-          player_id
+          player_id,
+          member_status: 'active'
         })
         .select()
         .maybeSingle();

@@ -59,7 +59,8 @@ export default async function handler(req, res) {
       // Get squad
       const { data: squad, error: squadError } = await getSupabase()
         .from('commander_waitlist_groups')
-        .select('id, leader_id, status')
+        // 2026-07-25 audit fix: real column is group_status (aliased to status).
+        .select('id, leader_id, status:group_status')
         .eq('id', id)
         .maybeSingle();
 
