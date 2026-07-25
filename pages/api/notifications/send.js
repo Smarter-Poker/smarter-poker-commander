@@ -22,8 +22,10 @@ function getSupabase() {
     return _supabase;
 }
 
-const VALID_TYPES = ['seat_available', 'tournament_starting', 'called_for_seat', 'promotion', 'custom'];
+// 2026-07-25 audit fix: added 'announcement' for venue-wide broadcasts
+const VALID_TYPES = ['seat_available', 'tournament_starting', 'called_for_seat', 'promotion', 'custom', 'announcement'];
 const VALID_CHANNELS = ['sms', 'push', 'email', 'in_app'];
+const VALID_TARGETS = ['all', 'waitlist', 'seated'];
 
 // Auth: STAFF_WRITE — requires manager or owner role
 export default async function handler(req, res) {
@@ -48,67 +50,40 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Verify staff authentication
-      const staffSession = req.headers['x-staff-session'];
-      if (!staffSession) {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-        });
-      }
-
-      let sessionData;
-      try {
-        sessionData = JSON.parse(staffSession);
-      } catch {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'INVALID_SESSION', message: 'Invalid session format' }
-        });
-      }
-
-      const { data: staff, error: staffError } = await getSupabase()
-        .from('commander_staff')
-        .select('id, venue_id, role, is_active')
-        .eq('id', sessionData.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (staffError || !staff) {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'INVALID_STAFF', message: 'Staff member not found or inactive' }
-        });
-      }
+      // 2026-07-25 audit fix: use the staff object already verified by the
+      // guard — the legacy inline re-auth looked up commander_staff by
+      // sessionData.id, which 401'd owner sessions (no staff row).
+      const staff = _g;
 
       const {
         player_id,
         phone,
-        venue_id,
+        venue_id: bodyVenueId,
         type,
+        target,
         channels = ['in_app'],
         title,
         message,
         metadata = {}
       } = req.body;
 
-      // Validation
-      if (!venue_id || !type || !message) {
-        return res.status(400).json({
+      // 2026-07-25 audit fix: venue always comes from the verified session;
+      // an explicitly different body venue_id is rejected.
+      if (bodyVenueId && String(bodyVenueId) !== String(staff.venue_id)) {
+        return res.status(403).json({
           success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'venue_id, type, and message are required'
-          }
+          error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
         });
       }
+      const venue_id = staff.venue_id;
 
-      if (!player_id && !phone) {
+      // Validation
+      if (!type || !message) {
         return res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Either player_id or phone is required'
+            message: 'type and message are required'
           }
         });
       }
@@ -119,6 +94,115 @@ export default async function handler(req, res) {
           error: {
             code: 'VALIDATION_ERROR',
             message: `Invalid type. Must be one of: ${VALID_TYPES.join(', ')}`
+          }
+        });
+      }
+
+      // 2026-07-25 audit fix: broadcast announcements — recipients are
+      // resolved server-side from the venue's waitlist / active sessions.
+      if (type === 'announcement') {
+        const tgt = target || 'all';
+        if (!VALID_TARGETS.includes(tgt)) {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Invalid target. Must be one of: ${VALID_TARGETS.join(', ')}`
+            }
+          });
+        }
+
+        // Resolve recipients (deduped by player_id, or phone when anonymous)
+        const recipients = new Map();
+        if (tgt === 'waitlist' || tgt === 'all') {
+          const { data: wlRows, error: wlError } = await getSupabase()
+            .from('commander_waitlist')
+            .select('player_id, player_phone')
+            .eq('venue_id', venue_id)
+            .in('status', ['waiting', 'called']);
+          if (wlError) console.warn('Announcement waitlist query error:', wlError);
+          for (const row of wlRows || []) {
+            const key = row.player_id ? `p:${row.player_id}` : (row.player_phone ? `ph:${row.player_phone}` : null);
+            if (!key) continue;
+            if (!recipients.has(key)) recipients.set(key, { player_id: row.player_id || null, phone: row.player_phone || null });
+            else if (row.player_phone && !recipients.get(key).phone) recipients.get(key).phone = row.player_phone;
+          }
+        }
+        if (tgt === 'seated' || tgt === 'all') {
+          const { data: sessionRows, error: sessError } = await getSupabase()
+            .from('commander_player_sessions')
+            .select('player_id')
+            .eq('venue_id', venue_id)
+            .is('check_out_at', null);
+          if (sessError) console.warn('Announcement sessions query error:', sessError);
+          for (const row of sessionRows || []) {
+            if (!row.player_id) continue;
+            const key = `p:${row.player_id}`;
+            if (!recipients.has(key)) recipients.set(key, { player_id: row.player_id, phone: null });
+          }
+        }
+
+        let sent_count = 0;
+        let failed_count = 0;
+
+        for (const recipient of recipients.values()) {
+          const { data: notification, error: insertError } = await getSupabase()
+            .from('commander_notifications')
+            .insert({
+              venue_id,
+              player_id: recipient.player_id,
+              notification_type: 'announcement',
+              channel: 'in_app',
+              title: title || getDefaultTitle('announcement'),
+              message,
+              status: 'sent',
+              sent_at: new Date().toISOString(),
+              metadata: { ...metadata, target: tgt, phone: recipient.phone || null }
+            })
+            .select()
+            .maybeSingle();
+
+          if (insertError || !notification) {
+            if (insertError) console.warn('Announcement notification insert error:', insertError);
+            failed_count++;
+            continue;
+          }
+          sent_count++;
+
+          // Best-effort SMS via the existing path (separate sms row so its
+          // status tracking never clobbers the in_app record)
+          if (recipient.phone || recipient.player_id) {
+            try {
+              const { data: smsRow } = await getSupabase()
+                .from('commander_notifications')
+                .insert({
+                  venue_id,
+                  player_id: recipient.player_id,
+                  notification_type: 'announcement',
+                  channel: 'sms',
+                  title: title || getDefaultTitle('announcement'),
+                  message,
+                  status: 'pending',
+                  metadata: { ...metadata, target: tgt, phone: recipient.phone || null }
+                })
+                .select()
+                .maybeSingle();
+              if (smsRow) await sendSmsNotification(smsRow, recipient.phone);
+            } catch (smsError) {
+              console.warn('Announcement SMS best-effort failed:', smsError?.message || smsError);
+            }
+          }
+        }
+
+        return res.status(200).json({ success: true, data: { sent_count, failed_count } });
+      }
+
+      if (!player_id && !phone) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Either player_id or phone is required'
           }
         });
       }
@@ -196,6 +280,8 @@ function getDefaultTitle(type) {
     tournament_starting: 'Tournament Starting',
     called_for_seat: 'Your Seat is Ready',
     promotion: 'Promotion Alert',
+    // 2026-07-25 audit fix: title for broadcast announcements
+    announcement: 'Announcement',
     custom: 'Notification'
   };
   return titles[type] || 'Notification';

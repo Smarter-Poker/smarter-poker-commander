@@ -2,7 +2,11 @@
  * Player Notifications API
  * GET /api/commander/notifications/my
  */
+// 2026-07-25 audit fix: dual auth — a Bearer user sees their own rows, a
+// verified staff session (PIN terminal or owner) sees the venue's rows. The
+// old JWT-only path locked out PIN-terminal staff.
 import { createClient } from '../../../src/lib/supabaseServerClient';
+import { getUser, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -27,9 +31,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // Get player from auth header
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    // 2026-07-25 audit fix: accept a Bearer user OR a verified staff session
+    const user = await getUser(req, res);
+    let staff = null;
+    if (!user) {
+      const sessionResult = await verifyStaffSession(req);
+      if (sessionResult.staff) staff = sessionResult.staff;
+    }
+
+    if (!user && !staff) {
       return res.status(401).json({
         success: false,
         error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
@@ -37,17 +47,6 @@ export default async function handler(req, res) {
     }
 
     try {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-
-      if (authError || !user) {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Invalid token' }
-        });
-      }
-
       const { unread_only, limit = 50 } = req.query;
 
       let query = getSupabase()
@@ -56,9 +55,15 @@ export default async function handler(req, res) {
           *,
           poker_venues (id, name)
         `)
-        .eq('player_id', user.id)
         .order('created_at', { ascending: false })
         .limit(Math.min(parseInt(limit) || 50, 500));
+
+      // 2026-07-25 audit fix: players see their own rows, staff see the venue's
+      if (user) {
+        query = query.eq('player_id', user.id);
+      } else {
+        query = query.eq('venue_id', staff.venue_id);
+      }
 
       if (unread_only === 'true') {
         query = query.is('read_at', null);
@@ -68,12 +73,17 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
-      // Count unread
-      const { count: unreadCount } = await getSupabase()
+      // Count unread with the same scope
+      let countQuery = getSupabase()
         .from('commander_notifications')
         .select('id', { count: 'exact', head: true })
-        .eq('player_id', user.id)
-        .is('read_at', null)
+        .is('read_at', null);
+      if (user) {
+        countQuery = countQuery.eq('player_id', user.id);
+      } else {
+        countQuery = countQuery.eq('venue_id', staff.venue_id);
+      }
+      const { count: unreadCount } = await countQuery;
 
       return res.status(200).json({
         success: true,
