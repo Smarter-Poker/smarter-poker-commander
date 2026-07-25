@@ -31,7 +31,9 @@ export default async function handler(req, res) {
     if (!_authResult) return;
 
     if (req.method === 'GET') return getReputation(req, res);
-    if (req.method === 'POST') return submitReview(req, res);
+    // 2026-07-25 audit fix: pass the verified staff session so the reviewer
+    // identity is derived server-side instead of trusted from the body.
+    if (req.method === 'POST') return submitReview(req, res, _authResult);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
 
   } catch (err) {
@@ -115,11 +117,15 @@ async function getReputation(req, res) {
   }
 }
 
-async function submitReview(req, res) {
-  const { player_id, reviewer_id, reviewer_type, venue_id, reliability, sportsmanship, etiquette, communication, comment, context } = req.body;
+async function submitReview(req, res, staff) {
+  // 2026-07-25 audit fix: reviewer_id/reviewer_type are no longer accepted from
+  // the request body — any caller could impersonate another reviewer. The
+  // reviewer is the verified staff session; there is no player review path in
+  // this endpoint (POST is staff-gated), so reviewer_type is always 'staff'.
+  const { player_id, reliability, sportsmanship, etiquette, communication, comment, context } = req.body;
 
-  if (!player_id || !reviewer_id) {
-    return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'player_id and reviewer_id required' } });
+  if (!player_id) {
+    return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'player_id required' } });
   }
 
   // Validate ratings
@@ -136,9 +142,10 @@ async function submitReview(req, res) {
       .from('commander_player_reputation')
       .insert({
         player_id,
-        reviewer_id,
-        reviewer_type: reviewer_type || 'staff',
-        venue_id: venue_id || null,
+        // 2026-07-25 audit fix: identity from the verified staff session only.
+        reviewer_id: staff.id,
+        reviewer_type: 'staff',
+        venue_id: staff.venue_id || null,
         reliability: reliability || null,
         sportsmanship: sportsmanship || null,
         etiquette: etiquette || null,

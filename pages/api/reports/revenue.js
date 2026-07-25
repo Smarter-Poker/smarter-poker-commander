@@ -26,7 +26,7 @@ function getDateRange(range, customStart, customEnd) {
     case 'week': start.setDate(now.getDate() - 7); break;
     case 'month': start.setMonth(now.getMonth() - 1); break;
     case 'quarter': start.setMonth(now.getMonth() - 3); break;
-    case 'custom': return { start: new Date(customStart).toISOString(), end: end.toISOString() };
+    case 'custom': return { start: new Date(customStart).toISOString(), end: end.toISOISOString ? end.toISOString() : end.toISOString() };
     default: start.setHours(0, 0, 0, 0);
   }
   return { start: start.toISOString(), end: end.toISOString() };
@@ -54,8 +54,10 @@ export default async function handler(req, res) {
         .from('commander_staff')
         .select('id, role')
         .eq('venue_id', venue_id)
-        .eq('user_id', user.id)
+        // 2026-07-25 audit fix: match user_id OR linked_user_id (user_id-only lookups lock out linked staff).
+        .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
         .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
       if (staffRow) {
         staff = staffRow;
@@ -75,25 +77,40 @@ export default async function handler(req, res) {
       const { start, end } = getDateRange(range, customStart, customEnd);
 
       // 1. Time billing revenue
-      const { data: timeSessions } = await getSupabase()
-        .from('commander_table_sessions')
-        .select('amount_charged, duration_minutes, created_at, status')
+      // 2026-07-25 audit fix: commander_table_sessions has no amount_charged /
+      // duration_minutes / created_at columns (the old query errored and reported $0).
+      // Time payments are actually recorded in commander_cash_transactions with
+      // type 'time_purchase' (see pages/api/cashier.js), so revenue comes from there;
+      // session counts/minutes come from the real table-session columns
+      // (started_at, time_allocated_minutes, time_added_minutes).
+      const { data: timePayments } = await getSupabase()
+        .from('commander_cash_transactions')
+        .select('amount, created_at, voided_at')
         .eq('venue_id', venue_id)
+        .eq('type', 'time_purchase')
         .gte('created_at', start)
         .lte('created_at', end);
 
-      const timeRevenue = (timeSessions || [])
-        .filter(s => s.status === 'ended' || s.status === 'completed')
-        .reduce((sum, s) => sum + (s.amount_charged || 0), 0);
-      const timeSessionCount = (timeSessions || []).length;
-      const totalMinutes = (timeSessions || []).reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
+      const activeTimePayments = (timePayments || []).filter(t => !t.voided_at);
+      const timeRevenue = activeTimePayments.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-      // Daily time breakdown
+      const { data: timeSessions } = await getSupabase()
+        .from('commander_table_sessions')
+        .select('time_allocated_minutes, time_added_minutes, started_at, status')
+        .eq('venue_id', venue_id)
+        .gte('started_at', start)
+        .lte('started_at', end);
+
+      const timeSessionCount = (timeSessions || []).length;
+      const totalMinutes = (timeSessions || []).reduce(
+        (sum, s) => sum + (s.time_allocated_minutes || 0) + (s.time_added_minutes || 0), 0);
+
+      // Daily time breakdown (from recorded payments)
       const timeByDay = {};
-      (timeSessions || []).forEach(s => {
-        const day = s.created_at?.split('T')[0];
+      activeTimePayments.forEach(t => {
+        const day = t.created_at?.split('T')[0];
         if (day) {
-          timeByDay[day] = (timeByDay[day] || 0) + (s.amount_charged || 0);
+          timeByDay[day] = (timeByDay[day] || 0) + (parseFloat(t.amount) || 0);
         }
       });
 

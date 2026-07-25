@@ -17,6 +17,19 @@ function getSupabase() {
     return _supabase;
 }
 
+// 2026-07-25 audit fix: CSV cell escaping (mirrors pages/api/exports/index.js).
+// Quotes cells containing delimiters, doubles embedded quotes, and prefixes
+// leading =,+,-,@ with an apostrophe to block spreadsheet formula injection.
+function escapeCsvCell(value) {
+  if (value === null || value === undefined) return '';
+  let v = String(value);
+  if (/^[=+\-@]/.test(v)) v = `'${v}`;
+  if (v.includes(',') || v.includes('"') || v.includes('\n') || v.includes('\r') || v !== String(value)) {
+    return `"${v.replace(/"/g, '""')}"`;
+  }
+  return v;
+}
+
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -132,7 +145,11 @@ export default async function handler(req, res) {
           ]);
         });
 
-        const csvContent = csvRows.map(row => row.join(',')).join('\n');
+        // 2026-07-25 audit fix: escape each cell (replicates the exports/index.js
+        // helper) — quote cells, double embedded quotes, and guard leading
+        // =,+,-,@ against spreadsheet formula injection. Raw joins broke rows
+        // containing commas/quotes and allowed formula injection.
+        const csvContent = csvRows.map(row => row.map(escapeCsvCell).join(',')).join('\n');
 
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename=report-${date}.csv`);

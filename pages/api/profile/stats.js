@@ -78,10 +78,10 @@ export default async function handler(req, res) {
             .limit(100);
 
       const tournamentsPlayed = tournamentEntries?.length || 0;
-      const tournamentWins = tournamentEntries?.filter(e => e.finish_position === 1).length || 0
-          .limit(100);
-      const tournamentCashes = tournamentEntries?.filter(e => e.payout_amount > 0).length || 0
-          .limit(100);
+      // 2026-07-25 audit fix: removed stray .limit(100) chained onto number
+      // literals — it crashed the endpoint for anyone with 0 wins/cashes.
+      const tournamentWins = tournamentEntries?.filter(e => e.finish_position === 1).length || 0;
+      const tournamentCashes = tournamentEntries?.filter(e => e.payout_amount > 0).length || 0;
       const totalWinnings = tournamentEntries?.reduce((sum, e) => sum + (e.payout_amount || 0), 0) || 0;
 
       // Get home game stats
@@ -95,7 +95,10 @@ export default async function handler(req, res) {
         .from('commander_home_rsvps')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('response', 'going')
+        // 2026-07-25 audit fix: response values are yes/no/maybe — 'going' never
+        // matched; count confirmed 'yes' RSVPs.
+        .eq('response', 'yes')
+        .eq('is_confirmed', true)
             .limit(100);
 
       // Get waitlist stats
