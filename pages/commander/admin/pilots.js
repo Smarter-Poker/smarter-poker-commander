@@ -13,7 +13,8 @@ import { ChevronLeft, Building2, CheckCircle, XCircle, AlertTriangle, RefreshCw,
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
 import { getToken } from '../../../src/lib/commander/clientAuth';
 import { busEmit } from '../../../src/engine/EventBus';
-import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+// 2026-07-25 audit fix: commanderFetch needed for the Add Pilot POST
+import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 
 // Success criteria from IMPLEMENTATION_PHASES.md Step 6.6
 const SUCCESS_CRITERIA = {
@@ -29,6 +30,128 @@ const TARGET_REGIONS = [
   { id: 'nv-1', region: 'Nevada', target: 1, description: 'Las Vegas Room' },
   { id: 'fl-1', region: 'Florida', target: 1, description: 'Florida Room' },
 ];
+
+// 2026-07-25 audit fix: minimal Add Pilot modal — the button set showAddModal
+// but no modal existed.
+function AddPilotModal({ isOpen, onClose, onAdded }) {
+  const [venues, setVenues] = useState([]);
+  const [venueId, setVenueId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await commanderFetchJSON('/api/commander/admin/venues', {});
+        if (!cancelled && data.success) setVenues(data.data?.venues || []);
+      } catch (err) {
+        console.warn('Load venues failed:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!venueId) { setError('Select a venue'); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await commanderFetch('/api/commander/admin/pilots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId, notes: notes.trim() || undefined })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setVenueId('');
+        setNotes('');
+        onAdded?.();
+        onClose();
+      } else {
+        setError(data?.error?.message || data?.error || `Failed to add pilot (${res.status})`);
+      }
+    } catch (err) {
+      console.warn('Add pilot failed:', err);
+      setError('Failed to add pilot. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="cmd-panel w-full max-w-md">
+        <div className="flex items-center justify-between p-4 border-b border-[#374151]">
+          <h3 className="text-lg font-semibold text-white">Add Pilot Venue</h3>
+          <button onClick={onClose} className="text-[#B0B3B8] hover:text-white">
+            <XCircle className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm text-[#B0B3B8] mb-2">Venue</label>
+            {venues.length > 0 ? (
+              <select
+                value={venueId}
+                onChange={(e) => setVenueId(e.target.value)}
+                className="cmd-input w-full"
+              >
+                <option value="">Select a venue...</option>
+                {venues.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}{v.city ? ` (${v.city}, ${v.state})` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={venueId}
+                onChange={(e) => setVenueId(e.target.value)}
+                placeholder="Venue ID"
+                className="cmd-input w-full"
+              />
+            )}
+          </div>
+          <div>
+            <label className="block text-sm text-[#B0B3B8] mb-2">Notes (Optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Deployment notes..."
+              className="cmd-input w-full"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} className="cmd-btn flex-1">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !venueId}
+              className="cmd-btn cmd-btn-primary flex-1 flex items-center justify-center gap-2"
+            >
+              {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Add Pilot
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function PilotVenuesPage() {
   useEffect(() => { busEmit.sessionStart('commander-admin-pilots'); }, []);
@@ -190,8 +313,9 @@ export default function PilotVenuesPage() {
               {TARGET_REGIONS.map((region) => {
                 const current = pilotsByRegion[region.region.substring(0, 2).toUpperCase()] || 0;
                 const progress = (current / region.target) * 100;
+                // 2026-07-25 audit fix: removed the per-card CommanderLayout
+                // wrapper — a full layout inside the grid is invalid
                 return (
-                  <CommanderLayout title="Pilot Venues" backHref="/commander/dashboard?card=reports">
                     <div key={region.id} className="bg-[#1E293B] rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-white font-medium">{region.region}</span>
@@ -208,7 +332,6 @@ export default function PilotVenuesPage() {
                       </div>
                       <p className="text-xs text-[#B0B3B8] mt-2">{region.description}</p>
                     </div>
-                  </CommanderLayout>
                 );
               })}
             </div>
@@ -399,6 +522,13 @@ export default function PilotVenuesPage() {
             </div>
           </div>
         </div>
+
+        {/* 2026-07-25 audit fix: render the Add Pilot modal */}
+        <AddPilotModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onAdded={() => fetchPilots()}
+        />
       </div>
     </>
   );

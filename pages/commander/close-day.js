@@ -57,11 +57,14 @@ export default function CloseDay() {
 const venueId = getVenueId();
 const headers = { };
       const fetchOpts = signal ? { headers, signal } : { headers };
-      const [tablesRes, waitlistRes, sessionsRes, reportRes] = await Promise.all([
+      // 2026-07-25 audit fix: also fetch today's revenue report so the Day Summary
+      // shows real time/tournament/comp figures instead of always-zero placeholders.
+      const [tablesRes, waitlistRes, sessionsRes, reportRes, revenueRes] = await Promise.all([
         commanderFetch(`/api/commander/tables?venue_id=${venueId}`, fetchOpts).then(r => r.json()).catch(() => ({ data: [] })),
         commanderFetch(`/api/commander/waitlist?venue_id=${venueId}`, fetchOpts).then(r => r.json()).catch(() => ({ data: [] })),
         commanderFetch(`/api/commander/time-billing/sessions?status=active&venue_id=${venueId}`, fetchOpts).then(r => r.json()).catch(() => ({ data: [] })),
-        commanderFetch(`/api/commander/reports/daily?venue_id=${venueId}`, fetchOpts).then(r => r.json()).catch(() => ({ data: {} }))
+        commanderFetch(`/api/commander/reports/daily?venue_id=${venueId}`, fetchOpts).then(r => r.json()).catch(() => ({ data: {} })),
+        commanderFetch(`/api/commander/reports/revenue?venue_id=${venueId}&range=today`, fetchOpts).then(r => r.json()).catch(() => null)
       ]);
 
       // Tables: data may be {tables: []} or array directly
@@ -74,7 +77,22 @@ const headers = { };
       // Sessions
       const sessionsArr = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
       setActiveSessions(sessionsArr.filter(s => s.status === 'active'));
-      if (reportRes.data) setDayStats(reportRes.data);
+      // 2026-07-25 audit fix: the daily report returns {data:{report:{summary:{...}}}},
+      // not a flat object — map its real fields into dayStats. Revenue/comp figures
+      // come from the revenue report (range=today); they stay null when unavailable
+      // so the UI can drop those tiles instead of presenting fake zeros.
+      const summary = reportRes?.data?.report?.summary || {};
+      const revTotals = revenueRes?.data?.totals || null;
+      setDayStats({
+        total_sessions: summary.total_sessions ?? 0,
+        unique_players: summary.total_players ?? 0,
+        total_hours: summary.total_hours ?? 0,
+        peak_tables: summary.peak_tables ?? 0,
+        tournaments_run: summary.tournaments_run ?? 0,
+        time_revenue: revTotals ? (revTotals.time_revenue ?? 0) : null,
+        tournament_revenue: revTotals ? (revTotals.tournament_fees ?? 0) : null,
+        comps_awarded: revTotals ? (revTotals.comps_issued ?? 0) : null,
+      });
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, []);
@@ -221,19 +239,29 @@ const venueId = getVenueId();
             <>
               <h2 className="text-xl font-bold text-white">Day Summary</h2>
 
+              {/* 2026-07-25 audit fix: tiles now read the daily report's real summary
+                  fields; revenue/comp tiles render only when backed by real data
+                  (dropped the Incidents tile — no endpoint feeds it). */}
               <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Total Check-Ins" value={dayStats.total_checkins || dayStats.check_ins || 0} color="#1877F2" />
+                <StatCard label="Sessions Today" value={dayStats.total_sessions || 0} color="#1877F2" />
                 <StatCard label="Unique Players" value={dayStats.unique_players || 0} color="#31A24C" />
-                <StatCard label="Table Hours" value={`${dayStats.table_hours || 0}h`} color="#F59E0B" />
+                <StatCard label="Player Hours" value={`${dayStats.total_hours || 0}h`} color="#F59E0B" />
                 <StatCard label="Peak Tables" value={dayStats.peak_tables || openTables.length || 0} color="#A855F7" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Time Revenue" value={`$${(dayStats.time_revenue || 0).toLocaleString()}`} color="#31A24C" />
-                <StatCard label="Tournament Revenue" value={`$${(dayStats.tournament_revenue || 0).toLocaleString()}`} color="#F59E0B" />
-                <StatCard label="Comp Awarded" value={`$${(dayStats.comps_awarded || 0).toFixed(0)}`} color="#EF4444" />
-                <StatCard label="Incidents" value={dayStats.incident_count || 0} color="#EF4444" />
-              </div>
+              {(dayStats.time_revenue != null || dayStats.tournament_revenue != null || dayStats.comps_awarded != null) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {dayStats.time_revenue != null && (
+                    <StatCard label="Time Revenue" value={`$${dayStats.time_revenue.toLocaleString()}`} color="#31A24C" />
+                  )}
+                  {dayStats.tournament_revenue != null && (
+                    <StatCard label="Tournament Fees" value={`$${dayStats.tournament_revenue.toLocaleString()}`} color="#F59E0B" />
+                  )}
+                  {dayStats.comps_awarded != null && (
+                    <StatCard label="Comps Awarded" value={`$${dayStats.comps_awarded.toFixed(0)}`} color="#EF4444" />
+                  )}
+                </div>
+              )}
 
               {/* Notes */}
               <div>
