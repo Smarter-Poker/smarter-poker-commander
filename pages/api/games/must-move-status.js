@@ -78,7 +78,7 @@ async function handleGet(req, res) {
         .in('game_id', gameIds)
         .eq('status', 'occupied')
         .order('seated_at', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: true }); // 2026-07-25 audit fix: semicolon prevents ASI treating next line's ( as a call
 
       (seats || []).forEach(s => {
         if (!seatsMap[s.game_id]) seatsMap[s.game_id] = [];
@@ -93,7 +93,7 @@ async function handleGet(req, res) {
         .from('commander_waitlist')
         .select('game_type, stakes')
         .eq('venue_id', venue_id)
-        .in('status', ['waiting', 'called'])
+        .in('status', ['waiting', 'called']); // 2026-07-25 audit fix: semicolon prevents ASI treating next line's ( as a call
       (wlEntries || []).forEach(w => {
         const key = `${w.game_type}|${w.stakes}`;
         waitlistCounts[key] = (waitlistCounts[key] || 0) + 1;

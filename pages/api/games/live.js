@@ -58,7 +58,8 @@ export default async function handler(req, res) {
 
       // Filter by game type
       if (game_type) {
-        query = query.eq('game_type', game_type.toUpperCase());
+        // 2026-07-25 audit fix: commander_games.game_type is lowercase now — ilike (no wildcards) = case-insensitive equality
+        query = query.ilike('game_type', game_type);
       }
 
       // Filter by stakes
@@ -82,7 +83,7 @@ export default async function handler(req, res) {
           .from('commander_waitlist')
           .select('id', { count: 'exact', head: true })
           .eq('venue_id', game.venue_id)
-          .eq('game_type', game.game_type)
+          .ilike('game_type', game.game_type) // 2026-07-25 audit fix: waitlist rows may differ in case from lowercase games
           .eq('stakes', game.stakes)
           .eq('status', 'waiting')
 

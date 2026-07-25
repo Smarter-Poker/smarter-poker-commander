@@ -223,8 +223,9 @@ async function processExport(exportId) {
           .select('*, profiles:player_id(display_name)')
           .eq('venue_id', job.venue_id)
           .eq('status', 'completed');
-        if (job.date_from) query = query.gte('check_in_time', job.date_from);
-        if (job.date_to) query = query.lte('check_in_time', job.date_to + 'T23:59:59');
+        // 2026-07-25 audit fix: column is check_in_at (check_in_time does not exist).
+        if (job.date_from) query = query.gte('check_in_at', job.date_from);
+        if (job.date_to) query = query.lte('check_in_at', job.date_to + 'T23:59:59');
         break;
 
       case 'tournaments':
@@ -330,8 +331,14 @@ function convertToCSV(data) {
     return allKeys.map(key => {
       const value = row[key];
       if (value === null || value === undefined) return '';
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-        return `"${value.replace(/"/g, '""')}"`;
+      if (typeof value === 'string') {
+        // 2026-07-25 audit fix: guard leading =,+,-,@ against spreadsheet formula injection.
+        let v = value;
+        if (/^[=+\-@]/.test(v)) v = `'${v}`;
+        if (v.includes(',') || v.includes('"') || v.includes('\n') || v !== value) {
+          return `"${v.replace(/"/g, '""')}"`;
+        }
+        return v;
       }
       return value;
     }).join(',');

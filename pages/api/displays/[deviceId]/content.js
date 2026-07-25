@@ -46,14 +46,8 @@ export default async function handler(req, res) {
         });
       }
 
-      // Update heartbeat
-      await getSupabase()
-        .from('commander_table_displays')
-        .update({
-          is_online: true,
-          last_heartbeat: new Date().toISOString()
-        })
-        .eq('id', display.id);
+      // 2026-07-25 audit fix: removed the per-request last_heartbeat write —
+      // the heartbeat endpoint owns online-status tracking.
 
       // Determine which screen to show
       const currentScreen = screen || display.display_mode;
@@ -120,6 +114,15 @@ export default async function handler(req, res) {
   }
 }
 
+// 2026-07-25 audit fix: this is a public TV endpoint — redact player names to
+// "First L." so full names are never shown on shared displays.
+function redactName(name) {
+  if (!name || typeof name !== 'string' || !name.trim()) return 'Player';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
+}
+
 async function getWaitlistContent(venueId) {
   // Get active games with waitlists
   const { data: games } = await getSupabase()
@@ -147,7 +150,8 @@ async function getWaitlistContent(venueId) {
     }
     waitlistByGame[key].push({
       position: entry.position,
-      name: entry.player_name || 'Player',
+      // 2026-07-25 audit fix: redacted for public display
+      name: redactName(entry.player_name),
       wait_minutes: entry.estimated_wait_minutes
     });
   });
@@ -226,12 +230,18 @@ async function getHighHandContent(venueId) {
     .order('hand_rank', { ascending: false })
     .limit(10);
 
+  // 2026-07-25 audit fix: redact player names for public display
+  const redactedHands = (highHands || []).map(h => ({
+    ...h,
+    player_name: redactName(h.player_name)
+  }));
+
   // Get current high hand (best of day)
-  const currentHigh = highHands?.[0] || null;
+  const currentHigh = redactedHands[0] || null;
 
   return {
     current_high: currentHigh,
-    todays_winners: highHands || [],
+    todays_winners: redactedHands,
     last_updated: new Date().toISOString()
   };
 }
@@ -274,7 +284,8 @@ async function getLeaderboardContent(venueId) {
     prize_pool: leaderboard.prize_pool,
     top_players: (entries || []).map((e, i) => ({
       rank: i + 1,
-      name: e.profiles?.username || 'Player',
+      // 2026-07-25 audit fix: redacted for public display
+      name: redactName(e.profiles?.username),
       points: e.points,
       avatar: e.profiles?.avatar_url
     }))

@@ -5,7 +5,9 @@
  * DELETE /api/commander/freerolls/[id]/qualifications - Remove a player (pass ?player_id=)
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+// 2026-07-25 audit fix: verifyStaffSession/getUser imported so GET reads are
+// scoped — staff see the full list, players (Bearer) see only their own row.
+import { guardWriteStaff, verifyStaffSession, getUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -37,6 +39,28 @@ export default async function handler(req, res) {
           });
       }
 
+      // 2026-07-25 audit fix: writes are venue-scoped — staff may only manage
+      // qualifications for freerolls at their own venue.
+      if (req.method !== 'GET' && guard && guard.venue_id) {
+          const { data: freerollRow } = await getSupabase()
+              .from('commander_freerolls')
+              .select('id, venue_id')
+              .eq('id', freerollId)
+              .maybeSingle();
+          if (!freerollRow) {
+              return res.status(404).json({
+                  success: false,
+                  error: { code: 'NOT_FOUND', message: 'Freeroll not found' }
+              });
+          }
+          if (freerollRow.venue_id && String(freerollRow.venue_id) !== String(guard.venue_id)) {
+              return res.status(403).json({
+                  success: false,
+                  error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+              });
+          }
+      }
+
       if (req.method === 'GET') return listQualifications(req, res, freerollId);
       if (req.method === 'POST') return upsertQualification(req, res, freerollId);
       if (req.method === 'DELETE') return removeQualification(req, res, freerollId);
@@ -55,13 +79,34 @@ export default async function handler(req, res) {
 
 async function listQualifications(req, res, freerollId) {
     try {
-        const { data: quals, error } = await getSupabase()
+        // 2026-07-25 audit fix: guardWriteStaff passes GETs through, so this
+        // read was public. Verified staff sessions get the full list; otherwise
+        // an authenticated Bearer player sees only their own qualification row
+        // (identity derived from the verified session, never from query params).
+        let playerScope = null;
+        const sessionResult = await verifyStaffSession(req);
+        if (!sessionResult.staff) {
+            const user = await getUser(req, res);
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
+                });
+            }
+            playerScope = user.id;
+        }
+
+        let query = getSupabase()
             .from('commander_freeroll_qualifications')
             .select('*')
             .eq('freeroll_id', freerollId)
             .order('is_qualified', { ascending: false })
             .order('hours_logged', { ascending: false })
             .order('points_earned', { ascending: false })
+
+        if (playerScope) query = query.eq('player_id', playerScope);
+
+        const { data: quals, error } = await query;
 
         if (error) throw error;
 
