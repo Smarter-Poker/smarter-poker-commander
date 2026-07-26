@@ -120,43 +120,34 @@ export default function CommanderLogin() {
     }
   };
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!email || !password) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Sign in with Supabase
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (authError) throw authError;
-
+  // Shared post-auth completion: subscription check + signed staff session
+  // storage + redirect. Used by password login AND the OAuth return path.
+  async function completeLogin(user, accessToken) {
+      const data = { user, session: { access_token: accessToken } };
       // HARDENED: 15-second timeout on subscription check
       const abortController = new AbortController();
       const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
 
       // Check if user has a commander subscription (server-side to bypass RLS)
       // CRITICAL FIX: Send JWT Bearer token — check-subscription requires auth (BUG #260)
-      const subRes = await fetch('/api/check-subscription', {
+      // 2026-07-25 audit fix: use the /api/commander/* path so this works on
+      // BOTH origins (bare /api/check-subscription 404'd when the login page
+      // was served through the smarter.poker/commander proxy), and parse the
+      // response body before throwing so real error messages surface.
+      const subRes = await fetch('/api/commander/check-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${data.session.access_token}` },
         body: JSON.stringify({ userId: data.user.id }),
         signal: abortController.signal });
-      if (!subRes.ok) throw new Error('Request failed');
       clearTimeout(fetchTimeout);
-      const subData = await subRes.json();
+      const subData = await subRes.json().catch(() => ({}));
 
       if (!subRes.ok || !subData.subscription) {
-        setError('No active Club Commander subscription found for this account.');
+        setError(subData.error || 'No active Club Commander subscription found for this account.');
         setLoading(false);
-        return;
+        return false;
       }
 
       const subscription = subData.subscription;
@@ -165,13 +156,18 @@ export default function CommanderLogin() {
       localStorage.setItem('commander_venue', JSON.stringify(subscription.venue));
       localStorage.setItem('commander_subscription', JSON.stringify(subscription));
 
-      // Dashboard checks for commander_staff — set it with owner permissions
+      // Dashboard checks for commander_staff — the server now returns an
+      // HMAC-SIGNED owner session (2026-07-25 audit fix). Merge display
+      // extras locally but NEVER touch the signed fields
+      // (user_id/venue_id/role/session_ts/sig) or the signature breaks.
       const staffSession = {
-        user_id: data.user.id,
+        ...(subData.staff_session || {
+          user_id: data.user.id,
+          role: 'owner',
+          venue_id: subscription.venue_id,
+        }),
         email: data.user.email,
         display_name: subscription.billing_name || data.user.user_metadata?.full_name || data.user.user_metadata?.name || data.user.email,
-        role: 'owner',
-        venue_id: subscription.venue_id,
         venue_name: subscription.venue?.name || 'My Venue',
         permissions: {
           manage_games: true,
@@ -204,7 +200,26 @@ export default function CommanderLogin() {
         }
       } catch { /* sessionStorage may be unavailable */ }
       window.location.href = redirectTo;
+      return true;
+  }
 
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Sign in with Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError) throw authError;
+
+      await completeLogin(data.user, data.session.access_token);
     } catch (err) {
       console.warn('Login error:', err);
       if (err.name === 'AbortError') {
@@ -216,6 +231,29 @@ export default function CommanderLogin() {
       setLoading(false);
     }
   }
+
+  // OAuth return path (/auth/callback redirects here with ?oauth=1 once the
+  // Supabase session is established) — finish the subscription check.
+  useEffect(() => {
+    if (router.query.oauth !== '1') return;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await completeLogin(session.user, session.access_token);
+        } else {
+          setError('Sign-in could not be completed. Please try again.');
+        }
+      } catch (err) {
+        console.warn('OAuth completion error:', err);
+        setError(err.message || 'Sign-in could not be completed.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query.oauth]);
 
   // Show loading while checking for existing session
   if (checkingSession) return (

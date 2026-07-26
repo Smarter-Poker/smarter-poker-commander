@@ -58,20 +58,32 @@ async function handleCreate(req, res) {
   }
 
   try {
-    const start_date = new Date();
-    const end_date = new Date();
-    end_date.setDate(end_date.getDate() + parseInt(duration_days));
+    // 2026-07-25 audit fix: the table has no start_date/end_date/requested_by
+    // columns (the old insert failed). Write the real schema — exclusion_type,
+    // scope, venue_id, duration_days, expires_at (null for permanent), reason,
+    // exclusion_status — matching the enforcement queries in waitlist/index.js
+    // and tournaments/[id]/register.js, which treat scope 'network' as global
+    // and filter .is('lifted_at', null).or('expires_at.is.null,expires_at.gt.now()').
+    const days = parseInt(duration_days);
+    const isPermanent = !Number.isFinite(days) || days <= 0;
+    let expires_at = null;
+    if (!isPermanent) {
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + days);
+      expires_at = expiry.toISOString();
+    }
 
     const { data: exclusion, error } = await getSupabase()
       .from('commander_self_exclusions')
       .insert({
         player_id: user.id,
-        venue_id, // null for all venues
-        start_date: start_date.toISOString(),
-        end_date: end_date.toISOString(),
+        exclusion_type: 'self',
+        scope: venue_id ? 'venue' : 'network',
+        venue_id: venue_id || null, // null for all venues
+        duration_days: isPermanent ? null : days,
+        expires_at,
         reason,
-        exclusion_status: 'active',
-        requested_by: 'player'
+        exclusion_status: 'active'
       })
       .select()
       .maybeSingle();
@@ -121,10 +133,19 @@ async function handleRemove(req, res) {
       });
     }
 
+    // 2026-07-25 audit fix: already-lifted exclusions cannot be lifted again.
+    if (exclusion.lifted_at) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'ALREADY_LIFTED', message: 'Exclusion already lifted' }
+      });
+    }
+
     // Self-exclusions typically have cooling-off periods
+    // 2026-07-25 audit fix: start_date column does not exist — use created_at.
     const minCoolingDays = 7;
     const daysSinceStart = Math.floor(
-      (Date.now() - new Date(exclusion.start_date).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(exclusion.created_at).getTime()) / (1000 * 60 * 60 * 24)
     );
 
     if (daysSinceStart < minCoolingDays) {
@@ -141,7 +162,10 @@ async function handleRemove(req, res) {
       .from('commander_self_exclusions')
       .update({
         exclusion_status: 'lifted',
-        lifted_at: new Date().toISOString()
+        // 2026-07-25 audit fix: lifted_at is what enforcement queries check;
+        // also record who lifted it (the verified authenticated player).
+        lifted_at: new Date().toISOString(),
+        lifted_by: user.id
       })
       .eq('id', exclusion_id);
 

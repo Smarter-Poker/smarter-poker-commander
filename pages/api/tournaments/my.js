@@ -49,6 +49,8 @@ export default async function handler(req, res) {
     try {
       const { status, limit = 20, offset = 0 } = req.query;
 
+      // 2026-07-25 audit fix: select real columns payout_amount/rebuy_count
+      // (prize_amount/reentry_number do not exist and made the query fail)
       let query = getSupabase()
         .from('commander_tournament_entries')
         .select(`
@@ -56,8 +58,8 @@ export default async function handler(req, res) {
           status,
           registered_at,
           finish_position,
-          prize_amount,
-          reentry_number,
+          payout_amount,
+          rebuy_count,
           commander_tournaments:tournament_id (
             id,
             name,
@@ -89,8 +91,10 @@ export default async function handler(req, res) {
         status: r.status,
         registered_at: r.registered_at,
         finish_position: r.finish_position,
-        prize_amount: r.prize_amount,
-        reentry_number: r.reentry_number,
+        // 2026-07-25 audit fix: prize_amount/reentry_number are not real columns;
+        // select payout_amount/rebuy_count and keep the client-facing keys.
+        prize_amount: r.payout_amount,
+        reentry_number: r.rebuy_count,
         tournament_id: r.commander_tournaments?.id,
         tournament_name: r.commander_tournaments?.name,
         tournament_status: r.commander_tournaments?.status,
