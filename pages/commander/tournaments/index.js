@@ -36,7 +36,7 @@ const FILTER_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-/* ─── Helpers ────────────────────────────────────────────────── */
+/* ─── Helpers ───────────────────────────────────────────────── */
 function formatDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
