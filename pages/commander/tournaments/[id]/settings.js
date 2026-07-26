@@ -288,7 +288,8 @@ export default function TournamentSettings() {
       try {
 const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
         if (json.success) {
-          const t = json.data;
+          // 2026-07-25 audit fix: API payload is { data: { tournament } }
+          const t = json.data.tournament;
           setTournament(t);
           setName(t.name || '');
           setTournamentType(t.tournament_type || 'freezeout');
@@ -297,14 +298,16 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           setStartingChips(t.starting_chips || 15000);
           setMaxEntries(t.max_entries || '');
           setGuaranteedPool(t.guaranteed_pool || '');
+          // 2026-07-25 audit fix: read the real production columns
+          // (rebuy_amount / rebuy_end_level / addon_amount / late_registration_levels)
           setRebuyAllowed(t.allows_rebuys || t.rebuy_allowed || false);
-          setRebuyLevels(t.rebuy_levels || 4);
-          setRebuyCost(t.rebuy_cost || 100);
+          setRebuyLevels(t.rebuy_end_level || 4);
+          setRebuyCost(t.rebuy_amount || 100);
           setRebuyChips(t.rebuy_chips || 10000);
           setAddonAllowed(t.allows_addon || t.addon_allowed || false);
-          setAddonCost(t.addon_cost || 100);
+          setAddonCost(t.addon_amount || 100);
           setAddonChips(t.addon_chips || 15000);
-          setLateRegLevels(t.late_reg_levels || 6);
+          setLateRegLevels(t.late_registration_levels || 6);
           setClockColor(t.settings?.clock_color || t.clock_color || 'navy');
           setLevels(parseBlinds(t.blind_structure).length > 0 ? parseBlinds(t.blind_structure) : STRUCTURE_TEMPLATES.standard.levels);
           if (t.payout_structure) setPayoutStructure(t.payout_structure);
@@ -369,10 +372,12 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           starting_chips: startingChips,
           max_entries: maxEntries ? parseInt(maxEntries) : null,
           guaranteed_pool: guaranteedPool ? parseInt(guaranteedPool) : null,
-          allows_rebuys: rebuyAllowed, rebuy_levels: rebuyLevels,
-          rebuy_cost: rebuyCost, rebuy_chips: rebuyChips,
-          allows_addon: addonAllowed, addon_cost: addonCost, addon_chips: addonChips,
-          late_reg_levels: lateRegLevels,
+          // 2026-07-25 audit fix: PUT passes fields straight to the DB — use the
+          // real column names, not the drifted rebuy_cost/rebuy_levels/addon_cost
+          allows_rebuys: rebuyAllowed, rebuy_end_level: rebuyLevels,
+          rebuy_amount: rebuyCost, rebuy_chips: rebuyChips,
+          allows_addon: addonAllowed, addon_amount: addonCost, addon_chips: addonChips,
+          late_registration_levels: lateRegLevels,
           blind_structure: levels,
           payout_structure: payoutStructure,
           custom_payouts: customPayouts.length > 0 ? customPayouts : null,
