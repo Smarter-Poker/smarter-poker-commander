@@ -87,7 +87,7 @@ export default function RegisterPage() {
   const [registrationResult, setRegistrationResult] = useState(null);
   const [preCheckDone, setPreCheckDone] = useState(false);
 
-  // ─── Step 1: Account fields ──────────────────────────────────────
+  // ─── Step 1: Account fields ─────────────────────────────────────
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
@@ -101,13 +101,13 @@ export default function RegisterPage() {
   const [promoMessage, setPromoMessage] = useState('');
   const [promoData, setPromoData] = useState(null);
 
-  // ─── Step 2: Venue fields ────────────────────────────────────────
+  // ─── Step 2: Venue fields ───────────────────────────────────────
   const [clubInfo, setClubInfo] = useState({
     name: '', address: '', city: '', state: '', zip: '',
     phone: '', website: '', tables: '', gamesOffered: []
   });
 
-  // ─── Step 3: Plan ─────────────────────────────────────────────────
+  // ─── Step 3: Plan ───────────────────────────────────────────────
   const [selectedTier, setSelectedTier] = useState(lockedTier || 'charity');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
