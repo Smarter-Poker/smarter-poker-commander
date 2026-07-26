@@ -36,6 +36,7 @@ const STATUS_CONFIG = {
   scheduled: { bg: 'bg-[#64748B]/10', text: 'text-[#64748B]', label: 'Scheduled' },
   registering: { bg: 'bg-[#22D3EE]/10', text: 'text-[#22D3EE]', label: 'Registration Open' },
   running: { bg: 'bg-[#10B981]/10', text: 'text-[#10B981]', label: 'Running' },
+  paused: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'Paused' }, // 2026-07-25 audit fix
   break: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'On Break' },
   final_table: { bg: 'bg-[#8B5CF6]/10', text: 'text-[#8B5CF6]', label: 'Final Table' },
   completed: { bg: 'bg-[#64748B]/10', text: 'text-[#64748B]', label: 'Completed' },
@@ -65,6 +66,8 @@ export default function TournamentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [clockRunning, setClockRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  // 2026-07-25 audit fix: clock data comes from the clock API, not tournament columns
+  const [clockInfo, setClockInfo] = useState(null);
 
   const [showEliminateModal, setShowEliminateModal] = useState(false);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
@@ -112,9 +115,12 @@ export default function TournamentDetailPage() {
     try {
 const headers = { };
       const fo = signal ? { headers, signal } : { headers };
-      const [tournamentRes, entriesRes] = await Promise.all([
+      // 2026-07-25 audit fix: the tournament API never returns clock_status /
+      // time_remaining / current blinds — fetch the clock endpoint alongside.
+      const [tournamentRes, entriesRes, clockRes] = await Promise.all([
         commanderFetch(`/api/commander/tournaments/${id}`, fo).catch(() => ({ ok: false })),
-        commanderFetch(`/api/commander/tournaments/${id}/entries`, fo).catch(() => ({ ok: false }))
+        commanderFetch(`/api/commander/tournaments/${id}/entries`, fo).catch(() => ({ ok: false })),
+        commanderFetch(`/api/commander/tournaments/${id}/clock`, fo).catch(() => ({ ok: false }))
       ]);
 
       if (!tournamentRes.ok) throw new Error(`Request failed (${tournamentRes.status})`);
@@ -124,8 +130,15 @@ const headers = { };
 
       if (tournamentData.success) {
         setTournament(tournamentData.data.tournament);
-        setClockRunning(tournamentData.data.tournament?.clock_status === 'running');
-        setTimeRemaining(tournamentData.data.tournament?.time_remaining || 0);
+      }
+
+      if (clockRes.ok) {
+        const clockData = await clockRes.json();
+        if (clockData.success && clockData.data) {
+          setClockInfo(clockData.data);
+          setClockRunning(clockData.data.clock?.isRunning || false);
+          setTimeRemaining(clockData.data.clock?.timeRemaining || 0);
+        }
       }
 
       if (entriesData.success) {
@@ -335,31 +348,33 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
         {/* Main Content */}
         <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
           {/* Clock Section */}
-          {['running', 'break', 'final_table'].includes(tournament.status) && (
+          {/* 2026-07-25 audit fix: clock display driven by the clock API payload
+              (currentBlind/clock), and 'paused' status included so Resume is reachable */}
+          {['running', 'paused', 'break', 'final_table'].includes(tournament.status) && (
             <div className="bg-[#1F2937] rounded-xl p-6 text-white">
               <div className="text-center mb-6">
                 <p className="text-sm text-gray-400 mb-1">
-                  Level {tournament.current_level || 1}
+                  Level {clockInfo?.currentBlind?.level || (tournament.current_level || 0) + 1}
                 </p>
                 <p className="text-6xl font-bold font-mono">
                   {formatTime(timeRemaining)}
                 </p>
                 <p className="text-lg text-gray-300 mt-2">
-                  Blinds: {tournament.current_small_blind || 25}/{tournament.current_big_blind || 50}
-                  {tournament.current_ante > 0 && ` (${tournament.current_ante} ante)`}
+                  Blinds: {clockInfo?.currentBlind?.smallBlind ?? 25}/{clockInfo?.currentBlind?.bigBlind ?? 50}
+                  {(clockInfo?.currentBlind?.ante || 0) > 0 && ` (${clockInfo.currentBlind.ante} ante)`}
                 </p>
               </div>
 
               <div className="flex justify-center gap-3">
                 <button
-                  onClick={() => handleClockAction(clockRunning ? 'pause' : 'resume')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium ${clockRunning
+                  onClick={() => handleClockAction(tournament.status === 'paused' ? 'resume' : 'pause')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium ${tournament.status !== 'paused'
                     ? 'bg-[#F59E0B] hover:bg-[#D97706]'
                     : 'bg-[#10B981] hover:bg-[#059669]'
                     }`}
                 >
-                  {clockRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  {clockRunning ? 'Pause' : 'Resume'}
+                  {tournament.status !== 'paused' ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  {tournament.status !== 'paused' ? 'Pause' : 'Resume'}
                 </button>
                 <button
                   onClick={() => handleClockAction('next_level')}
