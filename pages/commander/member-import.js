@@ -114,12 +114,27 @@ export default function MemberImport() {
     let imported = 0, skipped = 0;
     const errors = [];
 
+    // 2026-07-25 audit fix: the members POST handler requires venue_id (every
+    // row 400'd without it) and expects address as an object — map the flat
+    // csv address/city/state/zip columns into that shape.
+    const venueId = getVenueId();
+
     for (let i = 0; i < rows.length; i++) {
       try {
+        const { address, city, state, zip, ...rest } = rows[i];
+        const payload = { ...rest, venue_id: venueId };
+        if (address || city || state || zip) {
+          payload.address = {
+            ...(address ? { street: address } : {}),
+            ...(city ? { city } : {}),
+            ...(state ? { state } : {}),
+            ...(zip ? { zip } : {}),
+          };
+        }
 const res = await commanderFetch('/api/commander/members', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' || '' },
-          body: JSON.stringify(rows[i])
+          body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const json = await res.json();
