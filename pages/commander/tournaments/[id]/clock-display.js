@@ -294,7 +294,9 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
       }
 
       // Always call next_level — the API handles both normal and final-level extension
-      clockAction('next_level', isLastLevel);
+      // 2026-07-25 audit fix: send from_level so concurrent displays cannot
+      // double-advance (the API 409s when the level already moved).
+      clockAction('next_level', isLastLevel, { from_level: currentLevelIdx });
     }
   }, [seconds, actionLoading, data?.clock?.clock_state?.status]);
 
@@ -314,15 +316,23 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
 
   // Clock action handler
   // skipSecondsOverride: true when we've already set seconds locally (final level reset)
-  const clockAction = async (action, skipSecondsOverride = false) => {
+  // 2026-07-25 audit fix: extraBody lets auto-advance pass from_level for the
+  // API's optimistic-concurrency check; a 409 just means another display won.
+  const clockAction = async (action, skipSecondsOverride = false, extraBody = {}) => {
     if (!id || actionLoading) return;
     setActionLoading(true);
     try {
 const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ action, ...extraBody })
       });
+      if (res.status === 409) {
+        // Another display already advanced the level — refresh state instead of erroring
+        fetchData();
+        setActionLoading(false);
+        return;
+      }
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -380,6 +390,10 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
   const nextBlinds = clock.next_blinds || {};
   const afterBreakBlinds = clock.after_break_blinds || null;
   const clockState = clock.clock_state || {};
+  // 2026-07-25 audit fix: surface staff floor messages (settings.clock_state.current_message)
+  const currentMessage = data?.currentMessage || clockState.current_message || null;
+  const messageActive = currentMessage && currentMessage.text &&
+    (!currentMessage.expires_at || new Date(currentMessage.expires_at).getTime() > Date.now());
   const displaySeconds = seconds ?? clockState.remaining_seconds ?? 0;
   const isBreak = alerts.on_break;
   const isH4H = alerts.hand_for_hand;
@@ -526,6 +540,11 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
             <div style={{ ...S.headerTitle, fontSize: 44, textTransform: 'uppercase' }}>{t.name || 'Tournament'}</div>
           </div>
         </div>
+
+        {/* 2026-07-25 audit fix: staff announcement banner */}
+        {messageActive && (
+          <div style={S.messageBanner}>{currentMessage.text}</div>
+        )}
 
         {/* ===== MAIN CONTENT — SCREEN SWITCHER ===== */}
         {activeScreen === SCREENS.CLOCK && (
@@ -1001,6 +1020,12 @@ const S = {
     border: '2px solid rgba(239,68,68,0.5)', padding: '8px 32px', borderRadius: 8,
     color: '#EF4444', fontSize: 28, fontWeight: 800, letterSpacing: 4, zIndex: 10,
     animation: 'pulse 1.5s infinite'
+  },
+  // 2026-07-25 audit fix: banner style for staff floor messages
+  messageBanner: {
+    flexShrink: 0, textAlign: 'center', padding: '10px 24px',
+    background: 'rgba(24,119,242,0.25)', borderBottom: '2px solid rgba(24,119,242,0.5)',
+    color: '#fff', fontSize: 28, fontWeight: 800, letterSpacing: 1
   },
   pausedBanner: {
     background: 'rgba(245,158,11,0.2)', border: '2px solid rgba(245,158,11,0.5)',
