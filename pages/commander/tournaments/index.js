@@ -15,7 +15,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 
-/* ─── Status Config ────────────────────────────────────────── */
+/* ─── Status Config ─────────────────────────────────────────── */
 const STATUS_CONFIG = {
   scheduled: { color: '#B0B3B8', bg: 'rgba(176,179,184,0.12)', label: 'Scheduled' },
   registration: { color: '#1877F2', bg: 'rgba(24,119,242,0.12)', label: 'Registration' },
@@ -36,7 +36,7 @@ const FILTER_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-/* ─── Helpers ────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────── */
 function formatDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -50,7 +50,7 @@ function isToday(dateStr) {
   return new Date(dateStr).toDateString() === new Date().toDateString();
 }
 
-/* ─── Inline styles ───────────────────────────────────────── */
+/* ─── Inline styles ─────────────────────────────────────────── */
 const S = {
   page: { minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), sans-serif" },
   panel: {
@@ -58,7 +58,7 @@ const S = {
     transition: 'border-color 0.18s' },
   label: { fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1 } };
 
-/* ─── Page ──────────────────────────────────────────────── */
+/* ─── Page ──────────────────────────────────────────────────── */
 export default function CommanderTournamentsPage() {
   useEffect(() => { busEmit.sessionStart('commander-tournaments-index'); }, []);
   const router = useRouter();
