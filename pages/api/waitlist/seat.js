@@ -46,6 +46,51 @@ export default async function handler(req, res) {
 
       if (!entry) return res.status(404).json({ success: false, error: 'Waitlist entry not found' });
 
+      // 2026-07-25 audit fix: acting staff must belong to the entry's venue
+      if (String(staff.venue_id) !== String(entry.venue_id)) {
+        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+      }
+
+      // 2026-07-25 audit fix: resolve the target game server-side when the
+      // entry has no game_id, and verify the seat is free — BEFORE deleting
+      // the waitlist entry (previously the entry was deleted even when no
+      // game could be resolved, silently dropping the player).
+      let gameId = entry.game_id || null;
+      if (!gameId) {
+        const { data: candidateGames } = await getSupabase()
+          .from('commander_games')
+          .select('id')
+          .eq('venue_id', entry.venue_id)
+          .ilike('game_type', entry.game_type || '')
+          .eq('stakes', entry.stakes)
+          .in('status', ['waiting', 'running'])
+          .order('created_at', { ascending: true })
+          .limit(1);
+        gameId = candidateGames?.[0]?.id || null;
+      }
+
+      if (!gameId) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'NO_MATCHING_GAME', message: 'No open game matches this waitlist entry (game type + stakes). Start the game first, then seat the player.' }
+        });
+      }
+
+      // Seat-occupancy check: 409 if the requested seat is already taken
+      const { data: existingSeat } = await getSupabase()
+        .from('commander_seats')
+        .select('id, status, player_name')
+        .eq('game_id', gameId)
+        .eq('seat_number', seat_number)
+        .maybeSingle();
+
+      if (existingSeat && existingSeat.status === 'occupied') {
+        return res.status(409).json({
+          success: false,
+          error: { code: 'SEAT_TAKEN', message: `Seat ${seat_number} is already occupied` }
+        });
+      }
+
       // Log to history (non-blocking)
       try {
         await getSupabase().from('commander_waitlist_history').insert({
@@ -67,20 +112,19 @@ export default async function handler(req, res) {
 
       if (wlError) return res.status(500).json({ success: false, error: wlError.message });
 
-      // Update actual seat in commander_seats (if game_id is available)
+      // Update actual seat in commander_seats
+      // 2026-07-25 audit fix: gameId is always resolved by this point (entry.game_id or server-side lookup)
       try {
-        if (entry.game_id) {
-          await getSupabase()
-            .from('commander_seats')
-            .upsert({
-              game_id: entry.game_id,
-              seat_number,
-              status: 'occupied',
-              player_name: entry.player_name,
-              player_id: entry.player_id || null,
-              seated_at: new Date().toISOString()
-            }, { onConflict: 'game_id,seat_number' });
-        }
+        await getSupabase()
+          .from('commander_seats')
+          .upsert({
+            game_id: gameId,
+            seat_number,
+            status: 'occupied',
+            player_name: entry.player_name,
+            player_id: entry.player_id || null,
+            seated_at: new Date().toISOString()
+          }, { onConflict: 'game_id,seat_number' });
       } catch { /* seat update is non-critical */ }
 
       // Audit log
