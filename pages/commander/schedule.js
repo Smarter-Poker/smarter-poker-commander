@@ -906,7 +906,7 @@ function BroadcastModal({ weekLabel, totalShifts, staffCount, broadcasting, resu
               <CheckCircle2 size={32} color="#31A24C" style={{ margin: '0 auto 8px' }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: '#31A24C', margin: '0 0 4px' }}>Schedule Sent!</p>
               <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>
-                ✅ {result.sent} sent | ⏭️ {result.skipped} skipped | ❌ {result.failed} failed
+                ✓ {result.sent} sent | - {result.skipped} skipped | ✗ {result.failed} failed
               </p>
             </div>
           ) : (
