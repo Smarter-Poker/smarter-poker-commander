@@ -118,9 +118,9 @@ export default function TournamentPublic() {
         });
       }
 
-      // Entries API returns { entries: [...] }
-      if (eRes.entries) setEntries(eRes.entries);
-      else if (eRes.data) setEntries(eRes.data);
+      // 2026-07-25 audit fix: entries API returns { success, data: { entries } };
+      // storing the whole data object made `entries` a non-array.
+      setEntries(eRes.data?.entries || eRes.entries || []);
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [id]);
@@ -221,6 +221,9 @@ export default function TournamentPublic() {
       if (res.ok) {
         setPosted(true);
         setTimeout(() => setPosted(false), 3000);
+      } else {
+        // 2026-07-25 audit fix: surface non-OK responses instead of failing silently
+        setToast({ type: 'error', text: 'Could not post to your page. Please try again.' });
       }
     } catch (err) { console.warn('Post error:', err); setToast({ type: 'error', text: 'Action failed: Post. Please try again.' }); }
     finally { setPosting(false); }

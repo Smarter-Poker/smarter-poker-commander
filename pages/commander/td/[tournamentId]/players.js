@@ -114,7 +114,9 @@ export default function TDPlayers() {
   });
 
   const apiCall = async (url, body) => {
-    const res = await fetch(url, {
+    // 2026-07-25 audit fix: bare fetch omitted auth headers (x-staff-session),
+    // so every action 401'd; use commanderFetch which injects them.
+    const res = await commanderFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
