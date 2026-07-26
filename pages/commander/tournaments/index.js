@@ -15,7 +15,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 
-/* ─── Status Config ─────────────────────────────────────────── */
+/* ─── Status Config ────────────────────────────────────────── */
 const STATUS_CONFIG = {
   scheduled: { color: '#B0B3B8', bg: 'rgba(176,179,184,0.12)', label: 'Scheduled' },
   registration: { color: '#1877F2', bg: 'rgba(24,119,242,0.12)', label: 'Registration' },
@@ -36,7 +36,7 @@ const FILTER_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-/* ─── Helpers ───────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────── */
 function formatDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -50,7 +50,7 @@ function isToday(dateStr) {
   return new Date(dateStr).toDateString() === new Date().toDateString();
 }
 
-/* ─── Inline styles ─────────────────────────────────────────── */
+/* ─── Inline styles ───────────────────────────────────────── */
 const S = {
   page: { minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), sans-serif" },
   panel: {
@@ -58,7 +58,7 @@ const S = {
     transition: 'border-color 0.18s' },
   label: { fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1 } };
 
-/* ─── Page ──────────────────────────────────────────────────── */
+/* ─── Page ──────────────────────────────────────────────── */
 export default function CommanderTournamentsPage() {
   useEffect(() => { busEmit.sessionStart('commander-tournaments-index'); }, []);
   const router = useRouter();
@@ -285,7 +285,8 @@ export default function CommanderTournamentsPage() {
               {paginated.map(t => {
                 const st = STATUS_CONFIG[t.status] || STATUS_CONFIG.scheduled;
                 const isActive = ['running', 'paused', 'break', 'final_table'].includes(t.status);
-                const prize = t.actual_prizepool || (t.entries_count || 0) * (t.buyin_amount || 0);
+                // 2026-07-25 audit fix: rows expose current_entries, not entries_count
+                const prize = t.actual_prizepool || (t.current_entries || 0) * (t.buyin_amount || 0);
 
                 return (
                   <button
@@ -322,7 +323,7 @@ export default function CommanderTournamentsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {[
                         { icon: Calendar, label: isToday(t.scheduled_start) ? 'Today' : formatDate(t.scheduled_start), sub: formatTime(t.scheduled_start), color: '#B0B3B8' },
-                        { icon: Users, label: `${t.entries_count || 0}${t.max_entries ? `/${t.max_entries}` : ''}`, sub: 'Entries', color: '#1877F2' },
+                        { icon: Users, label: `${t.current_entries || 0}${t.max_entries ? `/${t.max_entries}` : ''}`, sub: 'Entries', color: '#1877F2' }, // 2026-07-25 audit fix: current_entries
                         { icon: DollarSign, label: `$${(prize || 0).toLocaleString()}`, sub: 'Prize Pool', color: '#31A24C' },
                         { icon: Clock, label: t.starting_chips ? `${(t.starting_chips / 1000).toFixed(0)}K` : '--', sub: 'Chips', color: '#B0B3B8' },
                       ].map(({ icon: Icon, label, sub, color }, idx) => (
@@ -341,7 +342,7 @@ export default function CommanderTournamentsPage() {
                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #3A3B3C', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                           <span style={{ fontSize: 12, color: '#8A8D91' }}>Level {t.current_level || 1}</span>
-                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.entries_count || 0} remaining</span>
+                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.current_entries || 0} remaining</span>{/* 2026-07-25 audit fix: current_entries */}
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#31A24C', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#31A24C', display: 'inline-block', boxShadow: '0 0 6px #31A24C', animation: 'pulse 1.5s infinite' }} />
