@@ -44,7 +44,8 @@ export default function StructureDisplay() {
         fetch(`/api/commander/tournaments/${id}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
         fetch(`/api/commander/tournaments/${id}/clock`, { headers }).then(r => r.json()).catch(() => ({ success: false }))
       ]);
-      if (tRes.success) setTournament(tRes.data);
+      // 2026-07-25 audit fix: tournament API payload is { data: { tournament } }
+      if (tRes.success) setTournament(tRes.data?.tournament);
       if (cRes.success) setClockData(cRes.data);
     } catch (err) { console.warn(err); }
     setNow(new Date());
@@ -69,8 +70,17 @@ export default function StructureDisplay() {
 
 
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
-  const levels = parseBlinds(tournament?.blind_structure).length > 0 ? parseBlinds(tournament?.blind_structure) : (clockData?.levels || []);
-  const currentLevel = clockData?.current_level ?? -1;
+  // 2026-07-25 audit fix: clock API exposes data.blindStructure (camelCase fields)
+  // and data.tournament.current_level — not data.levels / data.current_level.
+  const clockLevels = (clockData?.blindStructure || []).map(b => ({
+    small_blind: b.smallBlind,
+    big_blind: b.bigBlind,
+    ante: b.ante || 0,
+    duration: b.duration,
+    is_break: b.isBreak
+  }));
+  const levels = parseBlinds(tournament?.blind_structure).length > 0 ? parseBlinds(tournament?.blind_structure) : clockLevels;
+  const currentLevel = clockData?.tournament?.current_level ?? -1;
 
   let levelNum = 0;
 
