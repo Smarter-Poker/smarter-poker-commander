@@ -48,7 +48,8 @@ export default function WaitlistStatus() {
       setEntry(json.data);
 
       // Get position in waitlist
-      const listRes = await commanderFetch('/api/commander/waitlist');
+      // 2026-07-25 audit fix: waitlist handler requires venue_id (400s without it) — scope to the entry's venue
+      const listRes = await commanderFetch(`/api/commander/waitlist?venue_id=${json.data.venue_id}`);
       // HIGH FIX #2c: Add response.ok check before .json()
       if (!listRes.ok) {
         const errorText = await listRes.text().catch(() => 'Unknown error');
