@@ -169,7 +169,7 @@ const staffData = getStaffData();
   const handleCall = async (entry) => {
     if (actionLock) return; // Optimistic lock — prevent double-tap
     if (!entry.player_phone) {
-      alert(`⚠️ NO PHONE NUMBER\n\n${titleCase(entry.player_name || '')} does not have a phone number on file. Please page them verbally in the room.`);
+      alert(`NO PHONE NUMBER\n\n${titleCase(entry.player_name || '')} does not have a phone number on file. Please page them verbally in the room.`);
     }
     setActionLock(entry.id); setCallLoading(entry.id); setSmsStatus(null);
     setSelectedPlayer(null);
@@ -541,7 +541,11 @@ const parts = gameLabel.split(' ');
   if (custom.tickerMessage) tickerParts.push(custom.tickerMessage);
   else tickerParts.push('Download the Smarter Poker App for live waitlist updates');
   tickerParts.push(`${totalWaiting} players currently waiting`);
-  const tickerMessage = tickerParts.join('   \u00A0\u00A0\u00A0-\u00A0\u00A0\u00A0   ');
+  // 2026-07-25 audit fix: build the non-breaking-space separator from a named
+  // constant instead of inline unicode escape sequences. Identical output,
+  // but keeps the source free of escapes that deploy tooling can mangle.
+  const NBSP = String.fromCharCode(160);
+  const tickerMessage = tickerParts.join(`   ${NBSP}${NBSP}${NBSP}-${NBSP}${NBSP}${NBSP}   `);
 
   // ── DYNAMIC STYLES ──────────────────────────────────────────────
   const c = custom;
