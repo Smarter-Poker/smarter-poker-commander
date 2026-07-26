@@ -204,6 +204,10 @@ export default function NotificationCenter() {
   const saveAnnouncement = async () => {
     if (!formData.message.trim()) return setToast({ type: 'error', text: 'Message is required' });
     setSavingAnnouncement(true);
+    // 2026-07-25 audit fix: datetime-local values are local wall-clock strings;
+    // convert to ISO (UTC) before sending
+    const startsAtIso = formData.starts_at ? new Date(formData.starts_at).toISOString() : null;
+    const expiresAtIso = formData.expires_at ? new Date(formData.expires_at).toISOString() : null;
     try {
       const venueId = getVenueId();
       if (editingAnnouncement) {
@@ -217,8 +221,8 @@ export default function NotificationCenter() {
             message: formData.message,
             priority: formData.priority,
             type: formData.type,
-            expires_at: formData.expires_at || null,
-            starts_at: formData.starts_at || null })
+            expires_at: expiresAtIso,
+            starts_at: startsAtIso })
         });
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const json = await res.json();
@@ -234,8 +238,8 @@ export default function NotificationCenter() {
             message: formData.message,
             priority: formData.priority,
             type: formData.type,
-            expires_at: formData.expires_at || null,
-            starts_at: formData.starts_at || null })
+            expires_at: expiresAtIso,
+            starts_at: startsAtIso })
         });
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const json = await res.json();
@@ -326,7 +330,8 @@ export default function NotificationCenter() {
                   Mark all read
                 </button>
               )}
-              <button onClick={fetchNotifications} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+              {/* 2026-07-25 audit fix: do not pass the click event as an AbortSignal */}
+              <button onClick={() => fetchNotifications()} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
             </div>
 
             <div className="px-4 py-3 flex gap-2">
