@@ -32,15 +32,17 @@ export default function TournamentMaintenance() {
     }, []);
 
     const fetchTournaments = useCallback(async () => {
+        // 2026-07-25 audit fix: the list API requires venue_id — omit and it 400s
+        if (!staff?.venue_id) return;
         setLoading(true);
         try {
-            const json = await commanderFetchJSON('/api/commander/tournaments?limit=100', {});
+            const json = await commanderFetchJSON(`/api/commander/tournaments?venue_id=${encodeURIComponent(staff.venue_id)}&limit=100`, {});
             if (json.success || json.data) {
                 setTournaments(json.data?.tournaments || json.data || []);
             }
         } catch (err) { console.warn(err); }
         finally { setLoading(false); }
-    }, []);
+    }, [staff]); // 2026-07-25 audit fix: re-create when the staff session loads
 
     useEffect(() => { if (staff) { const _c = new AbortController(); fetchTournaments(_c.signal); return () => _c.abort(); } }, [staff, fetchTournaments]);
 

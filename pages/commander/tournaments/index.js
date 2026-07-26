@@ -285,7 +285,8 @@ export default function CommanderTournamentsPage() {
               {paginated.map(t => {
                 const st = STATUS_CONFIG[t.status] || STATUS_CONFIG.scheduled;
                 const isActive = ['running', 'paused', 'break', 'final_table'].includes(t.status);
-                const prize = t.actual_prizepool || (t.entries_count || 0) * (t.buyin_amount || 0);
+                // 2026-07-25 audit fix: rows expose current_entries, not entries_count
+                const prize = t.actual_prizepool || (t.current_entries || 0) * (t.buyin_amount || 0);
 
                 return (
                   <button
@@ -322,7 +323,7 @@ export default function CommanderTournamentsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {[
                         { icon: Calendar, label: isToday(t.scheduled_start) ? 'Today' : formatDate(t.scheduled_start), sub: formatTime(t.scheduled_start), color: '#B0B3B8' },
-                        { icon: Users, label: `${t.entries_count || 0}${t.max_entries ? `/${t.max_entries}` : ''}`, sub: 'Entries', color: '#1877F2' },
+                        { icon: Users, label: `${t.current_entries || 0}${t.max_entries ? `/${t.max_entries}` : ''}`, sub: 'Entries', color: '#1877F2' }, // 2026-07-25 audit fix: current_entries
                         { icon: DollarSign, label: `$${(prize || 0).toLocaleString()}`, sub: 'Prize Pool', color: '#31A24C' },
                         { icon: Clock, label: t.starting_chips ? `${(t.starting_chips / 1000).toFixed(0)}K` : '--', sub: 'Chips', color: '#B0B3B8' },
                       ].map(({ icon: Icon, label, sub, color }, idx) => (
@@ -341,7 +342,7 @@ export default function CommanderTournamentsPage() {
                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #3A3B3C', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                           <span style={{ fontSize: 12, color: '#8A8D91' }}>Level {t.current_level || 1}</span>
-                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.entries_count || 0} remaining</span>
+                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.current_entries || 0} remaining</span>{/* 2026-07-25 audit fix: current_entries */}
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#31A24C', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#31A24C', display: 'inline-block', boxShadow: '0 0 6px #31A24C', animation: 'pulse 1.5s infinite' }} />
