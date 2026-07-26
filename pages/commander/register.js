@@ -87,7 +87,7 @@ export default function RegisterPage() {
   const [registrationResult, setRegistrationResult] = useState(null);
   const [preCheckDone, setPreCheckDone] = useState(false);
 
-  // ─── Step 1: Account fields ─────────────────────────────────────
+  // ─── Step 1: Account fields ──────────────────────────────────────
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
@@ -101,13 +101,13 @@ export default function RegisterPage() {
   const [promoMessage, setPromoMessage] = useState('');
   const [promoData, setPromoData] = useState(null);
 
-  // ─── Step 2: Venue fields ───────────────────────────────────────
+  // ─── Step 2: Venue fields ────────────────────────────────────────
   const [clubInfo, setClubInfo] = useState({
     name: '', address: '', city: '', state: '', zip: '',
     phone: '', website: '', tables: '', gamesOffered: []
   });
 
-  // ─── Step 3: Plan ───────────────────────────────────────────────
+  // ─── Step 3: Plan ─────────────────────────────────────────────────
   const [selectedTier, setSelectedTier] = useState(lockedTier || 'charity');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
@@ -339,9 +339,28 @@ export default function RegisterPage() {
       const abortController = new AbortController();
       const fetchTimeout = setTimeout(() => abortController.abort(), 30000);
 
+      // 2026-07-25 audit fix: the existing-account path now REQUIRES the
+      // caller's Supabase session (server verifies the signed-in user matches
+      // the email) — attach the token whenever we have one.
+      let sessionToken = null;
+      try {
+        const blob = JSON.parse(window.localStorage.getItem('smarter-poker-auth') || '{}');
+        sessionToken = blob?.session?.access_token || blob?.access_token || blob?.currentSession?.access_token || null;
+      } catch { /* no session */ }
+
+      if (existingAccount && !sessionToken) {
+        clearTimeout(fetchTimeout);
+        setError('Please sign in to your Smarter.Poker account first, then return here to finish registration.');
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch('/api/commander/create-subscription', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+        },
         body: JSON.stringify({
           clubInfo: {
             ...clubInfo,
@@ -360,9 +379,11 @@ export default function RegisterPage() {
         }),
         signal: abortController.signal,
       });
-      if (!res.ok) throw new Error('Request failed');
       clearTimeout(fetchTimeout);
-      const data = await res.json();
+      // 2026-07-25 audit fix: parse the body BEFORE throwing so the server's
+      // descriptive errors (duplicate account, address in use, sign-in
+      // required) reach the user instead of a generic "Request failed".
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) throw new Error(data.error || 'Registration failed');
 
       // Redeem promo code if one was validated
