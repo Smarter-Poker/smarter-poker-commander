@@ -15,12 +15,17 @@ if (!supabaseAnonKey) {
   console.error('[Commander] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set — auth will fail.');
 }
 
+// 2026-07-25 audit fix: use the platform-wide storage key. The old
+// 'commander-auth' key was invisible to clientAuth.getToken() and
+// premiumFeatureGate (both read 'smarter-poker-auth' / sb-*), so users who
+// logged in on the commander origin sent no Authorization header and were
+// bounced by Bearer-authenticated APIs.
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'commander-auth',
+    storageKey: 'smarter-poker-auth',
   },
 });
 
