@@ -26,7 +26,7 @@ function getDateRange(range, customStart, customEnd) {
     case 'week': start.setDate(now.getDate() - 7); break;
     case 'month': start.setMonth(now.getMonth() - 1); break;
     case 'quarter': start.setMonth(now.getMonth() - 3); break;
-    case 'custom': return { start: new Date(customStart).toISOString(), end: end.toISOISOString ? end.toISOString() : end.toISOString() };
+    case 'custom': return { start: new Date(customStart).toISOString(), end: end.toISOString() };
     default: start.setHours(0, 0, 0, 0);
   }
   return { start: start.toISOString(), end: end.toISOString() };
