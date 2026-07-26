@@ -34,7 +34,10 @@ export default function TournamentDirector() {
 
     const fetchTournaments = useCallback(async (signal) => {
         try {
-const data = await commanderFetchJSON('/api/commander/tournaments', { });
+            // 2026-07-25 audit fix: the list API requires venue_id — omit and it 400s
+            const venueId = getVenueId();
+            if (!venueId) return;
+            const data = await commanderFetchJSON(`/api/commander/tournaments?venue_id=${encodeURIComponent(venueId)}`, { });
             if (data.success) {
                 const active = (data.data?.tournaments || [])
                     .filter(t => !['completed', 'cancelled'].includes(t.status));
