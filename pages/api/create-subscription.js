@@ -570,7 +570,7 @@ export default async function handler(req, res) {
         });
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
-      // ─── Done ──────────────────────────────────────────────────────
+      // ─── Done ────────────────────────────────────────────────────────
       return res.status(200).json({
         success: true,
         venueId,
