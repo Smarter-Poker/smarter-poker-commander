@@ -37,8 +37,9 @@ export default function SeatingDisplay() {
         fetch(`/api/commander/tournaments/${id}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
         fetch(`/api/commander/tournaments/${id}/entries`, { headers }).then(r => r.json()).catch(() => ({ success: false }))
       ]);
-      if (tRes.success) setTournament(tRes.data);
-      if (eRes.success) setEntries(eRes.data || []);
+      // 2026-07-25 audit fix: unwrap API payloads — data is { tournament } / { entries }
+      if (tRes.success) setTournament(tRes.data?.tournament || null);
+      if (eRes.success) setEntries(eRes.data?.entries || []);
     } catch (err) { console.warn(err); }
     setNow(new Date());
   }, [id]);
