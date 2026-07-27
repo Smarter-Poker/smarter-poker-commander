@@ -20,9 +20,15 @@ jobs:
       - name: Lint
         run: npm run lint
         continue-on-error: true
+      # 2026-07-27 (audit hardening): this step used to carry
+      # `continue-on-error: true` while the repo contained no unit tests at all,
+      # so it could never fail and never reported anything. There is now a real
+      # suite covering the audit's highest-risk fixes — ICM payout math,
+      # rate-limit identity, and staff-session forgery — and this step gates on
+      # it. Lint stays advisory for now; that is pre-existing debt, not a
+      # regression, and blocking on it would stall unrelated work.
       - name: Test
         run: npm test
-        continue-on-error: true
       - name: Build
         run: npm run build
         env:
