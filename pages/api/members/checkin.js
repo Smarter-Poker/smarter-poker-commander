@@ -36,21 +36,39 @@ export default async function handler(req, res) {
       if (!member_id) return res.status(400).json({ success: false, error: 'member_id required' });
 
       // Increment visit count (two-step since getSupabase().raw() is not supported in JS v2)
-      const { data: currentMember } = await getSupabase()
+      // 2026-07-28 audit fix: commander_members has total_visits/last_visit —
+      // visit_count/last_checkin do not exist, so every check-in silently wrote
+      // nothing (PostgREST rejected the update and the error was discarded).
+      const nowIso = new Date().toISOString();
+      const { data: currentMember, error: readError } = await getSupabase()
         .from('commander_members')
-        .select('visit_count')
+        .select('total_visits')
         .eq('id', member_id)
         .maybeSingle();
+
+      if (readError) {
+        console.error('[members/checkin] read commander_members.total_visits failed', {
+          member_id, code: readError.code, message: readError.message, details: readError.details,
+        });
+        throw readError;
+      }
 
       const { data: member, error: memberError } = await getSupabase()
         .from('commander_members')
         .update({
-          last_checkin: new Date().toISOString(),
-          visit_count: (currentMember?.visit_count || 0) + 1
+          last_visit: nowIso,
+          total_visits: (currentMember?.total_visits || 0) + 1,
+          updated_at: nowIso
         })
         .eq('id', member_id)
         .select()
         .maybeSingle();
+
+      if (memberError) {
+        console.error('[members/checkin] update commander_members failed', {
+          member_id, code: memberError.code, message: memberError.message, details: memberError.details,
+        });
+      }
 
       // 2026-07-25 audit fix: if the update matched no row the member doesn't exist —
       // previously fell through and returned member_name 'undefined undefined'.
