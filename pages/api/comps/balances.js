@@ -4,7 +4,7 @@
  * GET /api/commander/comps/balances - List player balances (staff) or get own balance
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -339,23 +339,18 @@ async function getBalances(req, res) {
       });
     }
 
-    // Auth: prefer x-staff-session, fallback to Bearer token
+    // Auth: prefer x-staff-session, fallback to Bearer token.
+    // 2026-07-28 audit fix: the header used to be JSON.parse'd and trusted with
+    // no signature, no TTL and no venue scoping, so a forged { "user_id": "..." }
+    // let any caller read another user's comp balances. verifyStaffSession checks
+    // the HMAC and the session TTL and returns the real staff row; it already
+    // selects user_id/linked_user_id, so it covers the PIN path the old lookup
+    // handled by hand. An unverified session simply leaves userId null and falls
+    // through to the Bearer check below, which is the pre-existing 401 path.
     let userId = null;
-    const staffSessionHeader = req.headers['x-staff-session'];
-    if (staffSessionHeader) {
-      try {
-        const session = JSON.parse(staffSessionHeader);
-        if (session.user_id) userId = session.user_id;
-        else if (session.id) {
-          // PIN-based session — look up user_id from commander_staff
-          const { data: staffRow } = await getSupabase()
-            .from('commander_staff')
-            .select('user_id')
-            .eq('id', session.id)
-            .maybeSingle();
-          if (staffRow?.user_id) userId = staffRow.user_id;
-        }
-      } catch { /* invalid session */ }
+    if (req.headers['x-staff-session']) {
+      const { staff } = await verifyStaffSession(req);
+      if (staff) userId = staff.user_id || staff.linked_user_id || null;
     }
 
     if (!userId) {
@@ -489,9 +484,9 @@ async function getBalances(req, res) {
   }
 }
 
-// ═══════════════════════════════════════════
+// ═══════════════════════════════
 // PATCH — Void / Revoke a comp
-// ═══════════════════════════════════════════
+// ═══════════════════════════════
 async function voidComp(req, res, staffAuth) {
   try {
     const { comp_log_id, authorized_by, authorized_pin, void_reason } = req.body;

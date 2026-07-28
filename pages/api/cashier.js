@@ -21,6 +21,8 @@ function getSupabase() {
 }
 
 const VALID_TYPES = ['buy_in', 'cash_out', 'add_on', 'time_purchase', 'membership', 'void'];
+// Upper bound on a single cashier transaction (column is numeric(10,2)).
+const MAX_TXN_AMOUNT = 1000000;
 
 // Auth: STAFF — requires valid staff session
 export default async function handler(req, res) {
@@ -109,9 +111,18 @@ async function handlePost(req, res, staff) {
     if (!VALID_TYPES.includes(type)) {
       return res.status(400).json({ success: false, error: `type must be one of: ${VALID_TYPES.join(', ')}` });
     }
-    const parsedAmount = parseFloat(amount) || 0;
-    if (parsedAmount < 0) {
-      return res.status(400).json({ success: false, error: 'amount cannot be negative' });
+    // 2026-07-28 audit fix: `parseFloat(amount) || 0` recorded $0 for a garbled
+    // amount instead of rejecting it — parseFloat('abc') is NaN which `|| 0`
+    // turned into a silent zero-dollar transaction, and parseFloat('12abc')
+    // silently became 12. Coerce strictly with Number() and reject anything that
+    // is not a finite, in-range value. amount stays optional (it is not required
+    // above); only a supplied-but-unparseable amount is rejected.
+    const amountProvided = amount !== undefined && amount !== null && amount !== '';
+    const parsedAmount = amountProvided
+      ? ((typeof amount === 'number' || typeof amount === 'string') ? Number(amount) : NaN)
+      : 0;
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0 || parsedAmount > MAX_TXN_AMOUNT) {
+      return res.status(400).json({ success: false, error: `amount must be a number between 0 and ${MAX_TXN_AMOUNT}` });
     }
 
     const { data, error } = await getSupabase()
