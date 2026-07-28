@@ -73,16 +73,19 @@ export default async function handler(req, res) {
         });
       }
 
-      // Add time to session
-      const newAddedMinutes = (session.time_added_minutes || 0) + parseInt(minutes);
+      // 2026-07-28 audit fix: this used to select time_added_minutes, add in JS
+      // and write the sum back. Two concurrent add-time calls both read the old
+      // value and the second write erased the first, so the player paid for two
+      // blocks of time and got one on the clock.
+      // commander_adjust_session_added_minutes does the read and the write in
+      // one statement and returns the new total.
+      const requestedMinutes = parseInt(minutes);
 
-      const { error: updateError } = await getSupabase()
-        .from('commander_table_sessions')
-        .update({
-          time_added_minutes: newAddedMinutes,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      const { data: newAddedMinutes, error: updateError } = await getSupabase()
+        .rpc('commander_adjust_session_added_minutes', {
+          p_session_id: id,
+          p_delta: requestedMinutes
+        });
 
       if (updateError) throw updateError;
 
@@ -92,45 +95,62 @@ export default async function handler(req, res) {
       const elapsedSeconds = Math.floor((now - new Date(session.started_at)) / 1000);
       const timeRemaining = Math.max(0, totalAllocatedSeconds - elapsedSeconds);
 
-      // Deduct from member's prepaid balance if available
+      // Deduct from member's prepaid balance if available.
+      // 2026-07-28 audit fix: this read time_balance_minutes, compared it to the
+      // requested minutes and wrote `memberBalance - minutes` back. Two
+      // concurrent deductions both read the same balance and the second write
+      // erased the first, so the member was charged once for two blocks of
+      // time; the "can they afford it" check had the same stale read, so two
+      // racing calls could each pass it against a balance that only covered
+      // one.
+      // The RPC applies time_balance_minutes = time_balance_minutes - delta in a
+      // single statement and RAISES (errcode P0001) rather than writing a
+      // negative balance, so the affordability test and the deduction are now
+      // the same operation. A raise means the member could not cover it, which
+      // is exactly the old `else` branch: fall back to cash at the table.
       let paymentMethod = 'cash_at_table';
       if (session.member_id) {
-        const { data: member } = await getSupabase()
-          .from('commander_members')
-          .select('time_balance_minutes')
-          .eq('id', session.member_id)
-          .maybeSingle();
+        const { error: deductError } = await getSupabase()
+          .rpc('commander_adjust_member_balances', {
+            p_member_id: session.member_id,
+            p_comp_delta: 0,
+            p_time_delta: -requestedMinutes,
+            p_earned_delta: 0,
+            p_redeemed_delta: 0
+          });
 
-        const memberBalance = member?.time_balance_minutes || 0;
-        if (memberBalance >= parseInt(minutes)) {
-          // Deduct from prepaid balance
-          await getSupabase()
-            .from('commander_members')
-            .update({
-              time_balance_minutes: memberBalance - parseInt(minutes),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', session.member_id);
+        if (!deductError) {
           paymentMethod = 'from_balance';
+        } else if (deductError.code !== 'P0001' && deductError.code !== 'P0002') {
+          // Not "insufficient balance" / "no such member" — a real failure.
+          throw deductError;
         }
 
         // Log the time purchase
-        await getSupabase()
+        const { error: purchaseLogError } = await getSupabase()
           .from('commander_time_purchases')
           .insert({
             venue_id: session.venue_id,
             member_id: session.member_id,
-            minutes_purchased: parseInt(minutes),
+            minutes_purchased: requestedMinutes,
             payment_method: paymentMethod,
             purchased_by: 'dealer'
           });
+        if (purchaseLogError) {
+          console.error('[dealer/add-time] FAILED to record time purchase — time was added but no ledger row was written:', {
+            session_id: id,
+            member_id: session.member_id,
+            minutes_purchased: requestedMinutes,
+            error: purchaseLogError.message || purchaseLogError
+          });
+        }
       }
 
       return res.status(200).json({
         success: true,
         data: {
           session_id: id,
-          minutes_added: parseInt(minutes),
+          minutes_added: requestedMinutes,
           total_added_minutes: newAddedMinutes,
           time_remaining_seconds: timeRemaining
         }
