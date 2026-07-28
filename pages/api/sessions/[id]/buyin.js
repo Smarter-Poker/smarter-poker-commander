@@ -69,65 +69,57 @@ export default async function handler(req, res) {
         });
       }
 
-      // Get current session
-      const { data: session, error: fetchError } = await getSupabase()
-        .from('commander_player_sessions')
-        .select('id, status, total_buyin, venue_id, player_id')
-        .eq('id', id)
-        .maybeSingle();
+      // 2026-07-28 audit fix: this used to select total_buyin, add the amount in
+      // JS and write the sum back. Two concurrent buy-ins both read the old
+      // total and the second write erased the first, so a double-tapped button
+      // took the cash twice and recorded it once. commander_txn_session_buyin
+      // does the read and the write in one statement (total_buyin = total_buyin
+      // + delta) and writes the ledger row in the same transaction.
+      //
+      // idempotency_key is optional. When supplied, a resubmission of the same
+      // buy-in returns the ORIGINAL transaction with success instead of adding
+      // the amount a second time, so a retry is indistinguishable from the
+      // first call.
+      const idempotencyKey = typeof req.body?.idempotency_key === 'string' && req.body.idempotency_key.trim()
+        ? req.body.idempotency_key.trim().slice(0, 200)
+        : null;
 
-      if (fetchError || !session) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'NOT_FOUND', message: 'Session not found' }
+      const { data: result, error: rpcError } = await getSupabase()
+        .rpc('commander_txn_session_buyin', {
+          p_session_id: id,
+          p_amount: parsedAmount,
+          p_idempotency_key: idempotencyKey
         });
-      }
 
-      if (session.status !== 'active') {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'SESSION_ENDED', message: 'Cannot add buy-in to ended session' }
-        });
-      }
-
-      const newTotal = (session.total_buyin || 0) + parsedAmount;
-
-      // Update session total
-      const { data: updated, error: updateError } = await getSupabase()
-        .from('commander_player_sessions')
-        .update({ total_buyin: newTotal })
-        .eq('id', id)
-        .select()
-        .maybeSingle();
-
-      if (updateError) {
-        console.warn('Session buy-in error:', updateError);
+      if (rpcError) {
+        // P0002 = row not found, P0001 = precondition failed (session not active).
+        if (rpcError.code === 'P0002') {
+          return res.status(404).json({
+            success: false,
+            error: { code: 'NOT_FOUND', message: 'Session not found' }
+          });
+        }
+        if (rpcError.code === 'P0001') {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'SESSION_ENDED', message: 'Cannot add buy-in to ended session' }
+          });
+        }
+        console.warn('Session buy-in error:', rpcError);
         return res.status(500).json({
           success: false,
           error: { code: 'DATABASE_ERROR', message: 'Failed to add buy-in' }
         });
       }
 
-      // Log the buy-in transaction (if table exists)
-      try {
-        await getSupabase()
-          .from('commander_buyin_transactions')
-          .insert({
-            session_id: id,
-            venue_id: session.venue_id,
-            player_id: session.player_id,
-            amount: parsedAmount,
-            transaction_type: 'buyin',
-            created_at: new Date().toISOString()
-          });
-      } catch (logError) { console.warn('[App] Handled exception:', logError?.message || logError); }
-
+      // Response shape is unchanged: { session, added_amount, new_total }.
       return res.status(200).json({
         success: true,
         data: {
-          session: updated,
+          session: result?.session || null,
           added_amount: parsedAmount,
-          new_total: newTotal
+          new_total: result?.new_total ?? null,
+          replayed: result?.replayed === true
         }
       });
     } catch (error) {
