@@ -40,25 +40,25 @@ export default async function handler(req, res) {
       const { amount } = req.body;
       if (!amount || amount <= 0) return res.status(400).json({ success: false, error: 'Valid amount required' });
 
-      const { data: session } = await getSupabase()
-        .from('commander_table_sessions')
-        .select('amount_paid')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
-
-      const newTotal = (session.amount_paid || 0) + parseFloat(amount);
-
+      // 2026-07-28 audit fix: this selected amount_paid, added the payment in JS
+      // and wrote the sum back. Two concurrent payments both read the old total
+      // and the second write erased the first, so the room recorded one payment
+      // for two collected. commander_adjust_table_session_payment does the read
+      // and the write in one statement (amount_paid = amount_paid + delta) and
+      // raises rather than writing a negative total.
       const { data: updated, error } = await getSupabase()
-        .from('commander_table_sessions')
-        .update({ amount_paid: Math.round(newTotal * 100) / 100 })
-        .eq('id', id)
-        .select()
-        .maybeSingle();
+        .rpc('commander_adjust_table_session_payment', {
+          p_session_id: id,
+          p_delta: parseFloat(amount)
+        });
 
-      if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+      if (error) {
+        if (error.code === 'P0002') return res.status(404).json({ success: false, error: 'Session not found' });
+        console.warn('Payment error:', error);
+        return res.status(500).json({ success: false, error: 'Internal server error' });
+      }
       if (!updated) return res.status(404).json({ success: false, error: 'Session not found' });
+      // Response shape unchanged: the full updated commander_table_sessions row.
       return res.status(200).json({ success: true, data: updated });
     } catch (err) {
       console.warn('Payment error:', err);
