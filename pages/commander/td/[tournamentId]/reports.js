@@ -75,7 +75,10 @@ export default function TDReports() {
             csv = 'Player,Status,Table,Seat,Payment,Rebuys,Add-on,Payout,Registered\n';
             (reportData.entries || []).forEach(e => {
                 const name = e.profiles?.display_name || e.player_name || 'Unknown';
-                csv += `"${name}",${e.status},${e.table_number || ''},${e.seat_number || ''},${e.payment_method || 'cash'},${e.rebuy_count || 0},${e.addon_taken ? 'Yes' : 'No'},${e.payout_amount || ''},${e.registered_at}\n`;
+                // 2026-07-28 audit fix: this printed "cash" for every row even
+                // when no payment method was recorded — a fabricated value in a
+                // document that gets reconciled. Render 'unknown' instead.
+                csv += `"${name}",${e.status},${e.table_number || ''},${e.seat_number || ''},${e.payment_method || 'unknown'},${e.rebuy_count || 0},${e.addon_taken ? 'Yes' : 'No'},${e.payout_amount || ''},${e.registered_at}\n`;
             });
             filename = `registration_report_${tournamentId}.csv`;
         } else if (tab === 'cashier') {
@@ -170,7 +173,7 @@ export default function TDReports() {
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm text-[#E4E6EB] truncate">{e.profiles?.display_name || e.player_name || 'Unknown'}</p>
                                                         <p className="text-[10px] text-[#B0B3B8]">
-                                                            T{e.table_number || '?'}-S{e.seat_number || '?'} | {e.payment_method || 'cash'} | {e.rebuy_count || 0}R
+                                                            T{e.table_number || '?'}-S{e.seat_number || '?'} | {e.payment_method || 'unknown'} | {e.rebuy_count || 0}R
                                                             {e.addon_taken ? ' +A' : ''}
                                                         </p>
                                                     </div>
