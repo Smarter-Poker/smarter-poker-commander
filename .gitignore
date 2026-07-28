@@ -4,6 +4,13 @@ node_modules/
 .env
 .env.local
 .env.production.local
+# Generated/pulled env files must never be committed. .env.commander.prod and
+# .env.vercel.local slipped past the rules above and are already tracked; their
+# values happen to be blank today, but the next `vercel env pull` would write
+# real secrets straight into a tracked file. These patterns cover every such
+# variant (.env.example stays tracked — it matches neither).
+.env*.local
+.env.commander.*
 *.log
 .DS_Store
 test-results/

@@ -61,7 +61,14 @@ const TABLE_TO_ENTITY = {
     commander_waitlist: 'waitlist',
     commander_floor_calls: 'floor_calls',
     // commander_seats excluded — lacks venue_id column (changes propagate via commander_games/commander_tables)
-    commander_settings: 'settings',
+    // 2026-07-28 fix: this key was `commander_settings`, a table that has never
+    // existed in the database (to_regclass('public.commander_settings') is NULL).
+    // The Realtime binding therefore targeted a nonexistent relation: settings
+    // changes never propagated, and because channelManager opens ONE shared
+    // channel per venue over the union of all subscribers' tables, the bad
+    // binding put every other subscription on that channel at risk too.
+    // The real table is commander_venue_settings (not commander_admin_settings).
+    commander_venue_settings: 'settings',
     commander_staff: 'staff',
     commander_staff_shifts: 'staff', // Shift schedule changes affect staff views
     commander_time_clock: 'staff',   // Time clock changes affect staff views
@@ -89,7 +96,7 @@ const ENTITY_TO_TABLES = {
     games: ['commander_games'],
     waitlist: ['commander_waitlist'],
     floor_calls: ['commander_floor_calls'],
-    settings: ['commander_settings'],
+    settings: ['commander_venue_settings'],
     staff: ['commander_staff', 'commander_staff_shifts', 'commander_time_clock'],
     members: ['commander_members'],
     dealers: ['commander_dealers', 'commander_dealer_rotations'],

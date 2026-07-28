@@ -33,45 +33,50 @@ export default async function handler(req, res) {
 
     // ── Twilio Signature Validation ───────────────────────────────────────────
     // Prevents unauthenticated callers from spoofing SMS delivery statuses.
-    // If TWILIO_AUTH_TOKEN is not set, we log a warning but still process
-    // (backwards-compat for venues not yet configured with Twilio).
+    //
+    // SECURITY: Signature verification is REQUIRED.
+    // If the auth token is not configured, reject all events. This previously
+    // failed OPEN: an unset TWILIO_AUTH_TOKEN only logged a warning and the
+    // handler carried on, so any unsigned POST to this endpoint was accepted
+    // as genuine Twilio traffic and could forge SMS delivery statuses.
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-    if (twilioAuthToken) {
-      const twilioSignature = req.headers['x-twilio-signature'];
-      if (!twilioSignature) {
-        console.warn('[twilio-webhook] Missing X-Twilio-Signature header — rejecting');
-        return res.status(403).json({ error: 'Missing webhook signature' });
-      }
+    if (!twilioAuthToken) {
+      console.warn('TWILIO_AUTH_TOKEN not configured — rejecting webhook');
+      return res.status(500).json({ error: 'Webhook auth token not configured' });
+    }
 
-      // Reconstruct the URL as Twilio sees it
-      const proto = req.headers['x-forwarded-proto'] || 'https';
-      const host = req.headers['x-forwarded-host'] || req.headers.host;
-      const webhookUrl = `${proto}://${host}/api/commander/webhooks/twilio/status`;
+    const twilioSignature = req.headers['x-twilio-signature'];
+    if (!twilioSignature) {
+      console.warn('[twilio-webhook] Missing X-Twilio-Signature header — rejecting');
+      return res.status(403).json({ error: 'Missing webhook signature' });
+    }
 
-      // Build the validation string: URL + sorted form params
-      const params = req.body || {};
-      const sortedKeys = Object.keys(params || {}).sort();
-      const paramString = sortedKeys.reduce((acc, key) => acc + key + params[key], '');
-      const validationString = webhookUrl + paramString;
+    // Reconstruct the URL as Twilio sees it
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const webhookUrl = `${proto}://${host}/api/commander/webhooks/twilio/status`;
 
-      // Compute HMAC-SHA1
-      const expectedSignature = crypto
-        .createHmac('sha1', twilioAuthToken)
-        .update(Buffer.from(validationString, 'utf-8'))
-        .digest('base64');
+    // Build the validation string: URL + sorted form params
+    const params = req.body || {};
+    const sortedKeys = Object.keys(params || {}).sort();
+    const paramString = sortedKeys.reduce((acc, key) => acc + key + params[key], '');
+    const validationString = webhookUrl + paramString;
 
-      // Constant-time comparison to prevent timing attacks
-      const expected = Buffer.from(expectedSignature);
-      const received = Buffer.from(twilioSignature);
-      const valid = expected.length === received.length &&
-        crypto.timingSafeEqual(expected, received);
+    // Compute HMAC-SHA1
+    const expectedSignature = crypto
+      .createHmac('sha1', twilioAuthToken)
+      .update(Buffer.from(validationString, 'utf-8'))
+      .digest('base64');
 
-      if (!valid) {
-        console.warn('[twilio-webhook] Invalid signature — possible spoofed request');
-        return res.status(403).json({ error: 'Invalid webhook signature' });
-      }
-    } else {
-      console.warn('[twilio-webhook] TWILIO_AUTH_TOKEN not set — signature validation DISABLED');
+    // Constant-time comparison to prevent timing attacks
+    const expected = Buffer.from(expectedSignature);
+    const received = Buffer.from(twilioSignature);
+    const valid = expected.length === received.length &&
+      crypto.timingSafeEqual(expected, received);
+
+    if (!valid) {
+      console.warn('[twilio-webhook] Invalid signature — possible spoofed request');
+      return res.status(403).json({ error: 'Invalid webhook signature' });
     }
     // ─────────────────────────────────────────────────────────────────────────
 
