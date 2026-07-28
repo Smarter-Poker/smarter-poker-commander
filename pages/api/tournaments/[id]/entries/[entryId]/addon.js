@@ -72,39 +72,47 @@ export default async function handler(req, res) {
       }
 
       const addonChips = tournament.addon_chips || tournament.starting_chips || 10000;
-      const newChips = (entry.current_chips || 0) + addonChips;
 
-      const { data: updated, error: uErr } = await getSupabase()
-        .from('commander_tournament_entries')
-        .update({
-          current_chips: newChips,
-          addon_taken: true,
-          metadata: {
-            ...(entry.metadata || {}),
-            addon_at: new Date().toISOString()
-          }
-        })
-        .eq('id', entryId)
-        .select()
-        .maybeSingle();
+      // 2026-07-28 audit fix: addon_taken is a one-time flag, but it was tested
+      // in JS and set in a later statement. Two concurrent add-ons both read
+      // addon_taken = false, both passed the check and both added chips, while
+      // the vault was charged twice. current_chips had the same read-modify-write
+      // race on top of that.
+      //
+      // commander_txn_tournament_addon moves the flag test into the UPDATE
+      // predicate (... AND addon_taken = false) and adds the chips with
+      // current_chips = current_chips + delta, writing the cash ledger row in
+      // the same transaction. Exactly one of two racing calls can win.
+      //
+      // idempotency_key is optional; on a resubmission the ORIGINAL cash
+      // transaction is returned with success and nothing moves again.
+      const idempotencyKey = typeof req.body?.idempotency_key === 'string' && req.body.idempotency_key.trim()
+        ? req.body.idempotency_key.trim().slice(0, 200)
+        : null;
 
-      if (uErr) return res.status(500).json({ success: false, error: 'Failed to process add-on' });
-
-      // --- FINANCIAL FRAUD PROTECTION ---
-      // Log the cash collected by the TD into the cashier vault
-      // 2026-07-25 audit fix: use the real addon_amount column
-      if (tournament.addon_amount > 0) {
-        await getSupabase().from('commander_cash_transactions').insert({
-          venue_id: tournament.venue_id,
-          player_name: entry.player_name,
-          type: 'buy_in',
-          amount: tournament.addon_amount,
-          payment_method: 'cash',
-          processed_by: _g.id || null, // staff ID from guardWriteStaff
-          notes: `Tournament Add-on: ${entry.player_name} (ID: ${entryId})`
+      const { data: result, error: uErr } = await getSupabase()
+        .rpc('commander_txn_tournament_addon', {
+          p_entry_id: entryId,
+          p_tournament_id: tournamentId,
+          p_chips: addonChips,
+          p_venue_id: tournament.venue_id,
+          p_amount: tournament.addon_amount || 0,
+          p_player_name: entry.player_name,
+          p_processed_by: _g.id || null, // staff ID from guardWriteStaff
+          p_idempotency_key: idempotencyKey
         });
+
+      if (uErr) {
+        if (uErr.code === 'P0002') return res.status(404).json({ success: false, error: 'Entry not found' });
+        if (uErr.code === 'P0001') return res.status(400).json({ success: false, error: uErr.message || 'Add-on rejected' });
+        console.warn('Addon RPC error:', uErr);
+        return res.status(500).json({ success: false, error: 'Failed to process add-on' });
       }
 
+      const updatedEntry = result?.entry || {};
+      const newChips = updatedEntry.current_chips ?? ((entry.current_chips || 0) + addonChips);
+
+      // Response shape unchanged.
       return res.status(200).json({
         success: true,
         data: {
@@ -112,7 +120,8 @@ export default async function handler(req, res) {
           player_name: entry.player_name,
           chips_added: addonChips,
           total_chips: newChips,
-          cost: tournament.addon_amount || 0 // 2026-07-25 audit fix: real column
+          cost: tournament.addon_amount || 0, // 2026-07-25 audit fix: real column
+          replayed: result?.replayed === true
         }
       });
     } catch (err) {
