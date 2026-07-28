@@ -66,12 +66,38 @@ export default async function handler(req, res) {
         .order('table_number');
 
       // Get all time sessions in range per table
-      const { data: sessions } = await getSupabase()
+      // 2026-07-28 audit fix: commander_table_sessions has no duration_minutes
+      // column — selecting it errored the whole query (error was discarded), so
+      // this report showed zero hours for every table. Duration is derived from
+      // started_at/ended_at instead (an open session is measured only to the
+      // end of the reporting window; see below).
+      const { data: sessions, error: sessionsError } = await getSupabase()
         .from('commander_table_sessions')
-        .select('table_number, started_at, ended_at, duration_minutes, status')
+        .select('table_number, started_at, ended_at, status')
         .eq('venue_id', venue_id)
         .gte('created_at', start)
         .lte('created_at', end)
+
+      if (sessionsError) {
+        console.error('[reports/table-utilization] commander_table_sessions read failed', {
+          venue_id, code: sessionsError.code,
+          message: sessionsError.message, details: sessionsError.details,
+        });
+        throw sessionsError;
+      }
+
+      // A session still marked open is measured only up to the end of the
+      // reporting window (never past it), so a stale 'active' row cannot inflate
+      // table hours with time it did not actually occupy.
+      const windowEndMs = Math.min(Date.now(), new Date(end).getTime());
+      const sessionMinutes = (s) => {
+        if (!s?.started_at) return 0;
+        const startMs = new Date(s.started_at).getTime();
+        const rawEndMs = s.ended_at ? new Date(s.ended_at).getTime() : windowEndMs;
+        const endMs = Math.min(rawEndMs, windowEndMs);
+        if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return 0;
+        return (endMs - startMs) / 60000;
+      };
 
       // Get tournament entries (for tournament table usage)
       const { data: tEntries } = await getSupabase()
@@ -83,7 +109,7 @@ export default async function handler(req, res) {
       // Build per-table stats
       const tableStats = (tables || []).map(table => {
         const tSessions = (sessions || []).filter(s => s.table_number === table.table_number)
-        const totalMinutes = tSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
+        const totalMinutes = tSessions.reduce((sum, s) => sum + sessionMinutes(s), 0);
         const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
         const sessionCount = tSessions.length;
 
