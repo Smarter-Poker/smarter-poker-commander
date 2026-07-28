@@ -56,34 +56,46 @@ export default async function handler(req, res) {
       const unusedSeconds = Math.max(0, totalAllocatedSeconds - elapsedSeconds);
       const unusedMinutes = Math.floor(unusedSeconds / 60);
 
-      // End the session
-      const { error: endError } = await getSupabase()
-        .from('commander_table_sessions')
-        .update({
-          status: 'ended',
-          ended_at: now.toISOString(),
-          updated_at: now.toISOString()
-        })
-        .eq('id', id);
+      // End the session.
+      // 2026-07-28 audit fix: this wrote status='ended' unconditionally, so two
+      // concurrent end requests both saw an active session, both ended it and
+      // BOTH ran the refund and auto-comp below — the member got the unused
+      // minutes back twice and was comped twice for one session. Atomic
+      // arithmetic alone does not fix that; the payout has to belong to
+      // whichever caller actually performs the active -> ended transition.
+      // commander_end_table_session claims that transition
+      // (UPDATE ... WHERE status <> 'ended' RETURNING *) and returns NULL to
+      // everyone else, so the loser falls through to the same 404 a sequential
+      // second call has always received, and pays nothing out.
+      const { data: endedSession, error: endError } = await getSupabase()
+        .rpc('commander_end_table_session', { p_session_id: id, p_ended_by: null });
 
       if (endError) throw endError;
+      if (!endedSession || !endedSession.id) {
+        return res.status(404).json({ success: false, error: 'Active session not found' });
+      }
 
-      // Return unused time to member's balance
+      // Return unused time to member's balance.
+      // 2026-07-28 audit fix: was select time_balance_minutes -> add in JS ->
+      // write the sum back, so a concurrent write between the read and the write
+      // was erased. commander_adjust_member_balances applies
+      // time_balance_minutes = time_balance_minutes + delta in one statement.
       if (session.member_id && unusedMinutes > 0) {
-        const { data: member } = await getSupabase()
-          .from('commander_members')
-          .select('time_balance_minutes')
-          .eq('id', session.member_id)
-          .maybeSingle();
-
-        if (member) {
-          await getSupabase()
-            .from('commander_members')
-            .update({
-              time_balance_minutes: (member.time_balance_minutes || 0) + unusedMinutes,
-              updated_at: now.toISOString()
-            })
-            .eq('id', session.member_id);
+        const { error: refundError } = await getSupabase()
+          .rpc('commander_adjust_member_balances', {
+            p_member_id: session.member_id,
+            p_comp_delta: 0,
+            p_time_delta: unusedMinutes,
+            p_earned_delta: 0,
+            p_redeemed_delta: 0
+          });
+        if (refundError) {
+          console.error('[dealer/sessions/end] FAILED to refund unused minutes:', {
+            session_id: id,
+            member_id: session.member_id,
+            unused_minutes: unusedMinutes,
+            error: refundError.message || refundError
+          });
         }
       }
 
@@ -103,34 +115,38 @@ export default async function handler(req, res) {
             compEarned = Math.round((elapsedMinutes / 60) * rate * 100) / 100;
 
             if (compEarned > 0) {
-              // Update member comp balance
-              const { data: member } = await getSupabase()
-                .from('commander_members')
-                .select('comp_balance, comp_lifetime_earned')
-                .eq('id', session.member_id)
-                .maybeSingle();
+              // Update member comp balance.
+              // 2026-07-28 audit fix: was select comp_balance/comp_lifetime_earned
+              // -> add in JS -> write the sums back, losing any concurrent write.
+              // commander_txn_award_comp writes the comp_log row and applies
+              // comp_balance = comp_balance + delta in one transaction, and
+              // stamps balance_after from the balance the increment actually
+              // produced rather than from the stale read.
+              //
+              // The idempotency key is derived from the session id, so the
+              // auto-comp for a given session can only ever be granted once,
+              // however many times this route runs for it.
+              const { data: compResult, error: compRpcErr } = await getSupabase()
+                .rpc('commander_txn_award_comp', {
+                  p_member_id: session.member_id,
+                  p_venue_id: session.venue_id,
+                  p_log_amount: compEarned,
+                  p_comp_delta: compEarned,
+                  p_time_delta: 0,
+                  p_earned_delta: compEarned,
+                  p_redeemed_delta: 0,
+                  p_type: 'auto_hourly',
+                  p_reason: `Auto comp: ${elapsedMinutes} min × $${rate}/hr`,
+                  p_comp_category: 'auto_hourly',
+                  p_idempotency_key: `auto_hourly:${id}`
+                });
 
-              if (member) {
-                await getSupabase()
-                  .from('commander_members')
-                  .update({
-                    comp_balance: Math.round(((member.comp_balance || 0) + compEarned) * 100) / 100,
-                    comp_lifetime_earned: Math.round(((member.comp_lifetime_earned || 0) + compEarned) * 100) / 100,
-                    updated_at: now.toISOString()
-                  })
-                  .eq('id', session.member_id);
-
-                // Log the auto-comp transaction
-                await getSupabase()
-                  .from('commander_member_comp_log')
-                  .insert({
-                    venue_id: session.venue_id,
-                    member_id: session.member_id,
-                    amount: compEarned,
-                    type: 'auto_hourly',
-                    reason: `Auto comp: ${elapsedMinutes} min × $${rate}/hr`,
-                    balance_after: Math.round(((member.comp_balance || 0) + compEarned) * 100) / 100
-                  });
+              if (compRpcErr) {
+                console.warn('Auto-comp award error (non-fatal):', compRpcErr.message || compRpcErr);
+                compEarned = 0;
+              } else if (compResult?.replayed === true) {
+                // Already comped for this session; do not report it twice.
+                compEarned = 0;
               }
             }
           }
