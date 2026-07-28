@@ -76,19 +76,29 @@ export default async function handler(req, res) {
 
     // Record the check-in (mirrors the staff flow in members/checkin.js),
     // deduped so the page's 30s polling doesn't inflate visit counts.
+    // 2026-07-28 audit fix: last_checkin/visit_count are NOT columns of
+    // commander_members (the real ones are last_visit/total_visits). Including
+    // them made PostgREST reject the whole UPDATE, so self check-ins recorded
+    // nothing at all. The error was also discarded — now surfaced.
     const now = new Date().toISOString();
-    const lastCheckinMs = member.last_checkin ? new Date(member.last_checkin).getTime() : 0;
-    if (!lastCheckinMs || (Date.now() - lastCheckinMs) > CHECKIN_DEDUP_MS) {
-      await getSupabase()
+    const lastVisitMs = member.last_visit ? new Date(member.last_visit).getTime() : 0;
+    if (!lastVisitMs || (Date.now() - lastVisitMs) > CHECKIN_DEDUP_MS) {
+      const { error: visitError } = await getSupabase()
         .from('commander_members')
         .update({
-          last_checkin: now,
           last_visit: now,
-          visit_count: (member.visit_count || 0) + 1,
           total_visits: (member.total_visits || 0) + 1,
           updated_at: now,
         })
         .eq('id', member.id);
+
+      if (visitError) {
+        console.error('[api/checkin/self] commander_members visit update failed', {
+          member_id: member.id, code: visitError.code,
+          message: visitError.message, details: visitError.details,
+        });
+        throw visitError;
+      }
 
       await getSupabase().from('commander_checkins').insert({
         member_id: member.id,
@@ -98,13 +108,36 @@ export default async function handler(req, res) {
     }
 
     // Already seated? (table/seat only — no PII)
-    const { data: existingSessions } = await getSupabase()
+    // 2026-07-28 audit fix: commander_table_sessions has no time_remaining
+    // column — selecting it errored the query and the error was dropped, so
+    // already_seated was always null. time_remaining is DERIVED, using the same
+    // formula as pages/api/dealer/sessions/index.js (seconds, floored at 0).
+    const { data: existingSessions, error: sessionError } = await getSupabase()
       .from('commander_table_sessions')
-      .select('table_number, seat_number, time_remaining, status')
+      .select('table_number, seat_number, status, started_at, time_allocated_minutes, time_added_minutes')
       .eq('member_id', member.id)
       .eq('status', 'active')
       .limit(1);
-    const alreadySeated = existingSessions?.[0] || null;
+
+    if (sessionError) {
+      console.error('[api/checkin/self] commander_table_sessions read failed', {
+        member_id: member.id, code: sessionError.code,
+        message: sessionError.message, details: sessionError.details,
+      });
+      throw sessionError;
+    }
+
+    const seatedRow = existingSessions?.[0] || null;
+    const alreadySeated = seatedRow ? {
+      table_number: seatedRow.table_number,
+      seat_number: seatedRow.seat_number,
+      status: seatedRow.status,
+      time_remaining: Math.max(
+        0,
+        ((seatedRow.time_allocated_minutes || 0) + (seatedRow.time_added_minutes || 0)) * 60
+          - Math.floor((Date.now() - new Date(seatedRow.started_at).getTime()) / 1000)
+      ),
+    } : null;
 
     // Venue name (public info)
     let venue = null;
