@@ -57,8 +57,61 @@ export default async function handler(req, res) {
   }
 }
 
+// 2026-07-28: commander_tournament_entries.payment_method is CHECK-constrained.
+const ENTRY_PAYMENT_METHODS = ['cash', 'card', 'credit', 'comp', 'chips', 'transfer', 'other'];
+// commander_cash_transactions.payment_method has a NARROWER CHECK — passing an
+// entry-only value ('credit'/'chips'/'transfer'/'other') would make the whole
+// cash-drawer insert fail, so it is only forwarded when it is legal there.
+const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'comp', 'marker'];
+
+/**
+ * Resolve the verified staff session to a real commander_staff.id.
+ * verifyStaffSession can return a SYNTHETIC owner object whose `id` is an auth
+ * user id, not a commander_staff row — writing that into cashier_staff_id would
+ * violate the FK and reject the entire registration insert. Returns null when
+ * the session does not map to a real staff row (attribution left NULL rather
+ * than faked).
+ */
+async function resolveCashierStaffId(staff) {
+  if (!staff?.id) return null;
+  const { data, error } = await getSupabase()
+    .from('commander_staff')
+    .select('id')
+    .eq('id', staff.id)
+    .maybeSingle();
+  if (error) {
+    console.error('[tournaments/register] commander_staff lookup failed', {
+      staff_id: staff.id, code: error.code, message: error.message, details: error.details,
+    });
+    return null;
+  }
+  if (!data) {
+    console.warn('[tournaments/register] staff session did not resolve to a commander_staff row; leaving cashier_staff_id NULL', { staff_id: staff.id });
+    return null;
+  }
+  return data.id;
+}
+
 async function handleRegister(req, res, tournamentId, staff) {
   const { player_id } = req.body;
+
+  // payment_method is optional. Reject an unknown value outright rather than
+  // silently coercing it — a wrong payment method on a money row is worse than
+  // a missing one.
+  const rawPaymentMethod = req.body?.payment_method;
+  let paymentMethod = null;
+  if (rawPaymentMethod !== undefined && rawPaymentMethod !== null && rawPaymentMethod !== '') {
+    if (!ENTRY_PAYMENT_METHODS.includes(rawPaymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_PAYMENT_METHOD',
+          message: `payment_method must be one of: ${ENTRY_PAYMENT_METHODS.join(', ')}`,
+        },
+      });
+    }
+    paymentMethod = rawPaymentMethod;
+  }
 
   if (!player_id) {
     return res.status(400).json({
@@ -187,6 +240,11 @@ async function handleRegister(req, res, tournamentId, staff) {
       }
     }
 
+    // 2026-07-28: cashier attribution comes ONLY from the verified staff session
+    // (guardStaff -> verifyStaffSession). It is never read from the request body,
+    // which would make the control forgeable.
+    const cashierStaffId = await resolveCashierStaffId(staff);
+
     // Create entry (total_invested is auto-calculated by DB trigger)
     const { data: entry, error } = await getSupabase()
       .from('commander_tournament_entries')
@@ -194,12 +252,21 @@ async function handleRegister(req, res, tournamentId, staff) {
         tournament_id: tournamentId,
         player_id,
         registration_method: 'app',
-        status: 'registered'
+        status: 'registered',
+        cashier_staff_id: cashierStaffId,
+        payment_method: paymentMethod
       })
       .select()
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[tournaments/register] commander_tournament_entries insert failed', {
+        tournamentId, player_id, cashier_staff_id: cashierStaffId,
+        payment_method: paymentMethod,
+        code: error.code, message: error.message, details: error.details,
+      });
+      throw error;
+    }
 
     // --- FINANCIAL FRAUD PROTECTION ---
     // Record the cash liability atomically with the registration.
@@ -212,16 +279,33 @@ async function handleRegister(req, res, tournamentId, staff) {
       const { data: profile } = await getSupabase().from('profiles').select('display_name, first_name, last_name').eq('id', player_id).maybeSingle();
       pName = req.body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
 
-      await getSupabase().from('commander_cash_transactions').insert({
+      // 2026-07-28 audit fix: link the cash-drawer row to the tournament
+      // (commander_cash_transactions.tournament_id), and surface the insert
+      // error — this write previously discarded it, so a rejected buy_in row
+      // left the registration recorded with no matching cash liability.
+      const { error: cashTxError } = await getSupabase().from('commander_cash_transactions').insert({
         venue_id: tournament.venue_id,
+        tournament_id: tournamentId,
         player_name: pName,
         type: 'buy_in',
         amount: totalAmount,
-        payment_method: 'cash',
+        // Only forward a method this table's CHECK constraint accepts; otherwise
+        // keep the column's existing default behaviour.
+        payment_method: (paymentMethod && CASH_TX_PAYMENT_METHODS.includes(paymentMethod))
+          ? paymentMethod
+          : 'cash',
         // 2026-07-25 audit fix: _staff is out of scope here; use the staff param
         processed_by: staff.id || null,
         notes: `Tournament: ${tournament.name || 'Tournament'} (Buy-In: $${tournament.buyin_amount || 0}, Fee: $${tournament.buyin_fee || 0})`
       });
+
+      if (cashTxError) {
+        console.error('[tournaments/register] commander_cash_transactions buy_in insert failed', {
+          tournamentId, player_id, amount: totalAmount,
+          code: cashTxError.code, message: cashTxError.message, details: cashTxError.details,
+        });
+        throw cashTxError;
+      }
     }
 
     // Note: current_entries is auto-updated by the update_tournament_stats trigger
