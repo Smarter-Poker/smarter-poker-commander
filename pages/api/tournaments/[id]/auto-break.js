@@ -76,13 +76,26 @@ async function getTableData(tournamentId, venueId) {
   if (!tables || tables.length < 2) return { tables: tables || [], entries: [], tableMap: {} };
 
   // Get active entries with their seats
-  const { data: entries } = await getSupabase()
+  // 2026-07-28 audit fix: commander_tournament_entries has no member_id column
+  // (entries are keyed to profiles via player_id). Selecting it errored the
+  // whole query and the error was discarded, so auto-break saw zero players and
+  // never suggested a break. There is no venue-member id on this table, so the
+  // field is dropped rather than substituted.
+  const { data: entries, error: entriesError } = await getSupabase()
     .from('commander_tournament_entries')
-    .select('id, player_name, table_number, seat_number, current_chips, member_id')
+    .select('id, player_name, table_number, seat_number, current_chips, player_id')
     .eq('tournament_id', tournamentId)
     .in('status', ['active', 'seated'])
     .order('table_number')
     .order('seat_number');
+
+  if (entriesError) {
+    console.error('[tournaments/auto-break] commander_tournament_entries read failed', {
+      tournamentId, code: entriesError.code,
+      message: entriesError.message, details: entriesError.details,
+    });
+    throw entriesError;
+  }
 
   // Build table occupancy map
   const tableMap = {};
@@ -204,7 +217,7 @@ function generateAssignments(playersToMove, destinationTables) {
     assignments.push({
       entry_id: player.id,
       player_name: player.player_name,
-      member_id: player.member_id,
+      player_id: player.player_id,
       from_table: player.table_number,
       from_seat: player.seat_number,
       to_table: dests[destIdx].table_number,
@@ -306,19 +319,28 @@ async function handleExecute(req, res, tournament) {
   }
 
   // Release the broken table back to inactive (ONLY if all players successfully moved)
+  // 2026-07-28 audit fix: commander_tables has no updated_at column — including
+  // it made PostgREST reject this UPDATE, so the broken table was never released
+  // back to the pool. The discarded error is now surfaced.
   if (errors.length === 0) {
-    await getSupabase()
+    const { error: releaseError } = await getSupabase()
       .from('commander_tables')
       .update({
         mode: 'inactive',
         tournament_id: null,
         status: 'available',
-        assigned_at: null,
-        updated_at: new Date().toISOString()
+        assigned_at: null
       })
       .eq('venue_id', tournament.venue_id)
       .eq('table_number', break_table);
-  } else {
+
+    if (releaseError) {
+      console.error('[tournaments/auto-break] commander_tables release failed', {
+        venue_id: tournament.venue_id, table_number: break_table,
+        code: releaseError.code, message: releaseError.message, details: releaseError.details,
+      });
+      errors.push({ table_number: break_table, error: releaseError.message });
+    }
   }
 
   // Build receipt data for printing (full venue-level identity)
