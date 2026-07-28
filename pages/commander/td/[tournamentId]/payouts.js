@@ -17,6 +17,7 @@ import {
     ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
+import { calculateICM } from '../../../../src/lib/commander/icm-utils';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -347,23 +348,29 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
 
         if (players.length < 2) return;
 
-        const totalChips = players.reduce((sum, p) => sum + p.chips, 0);
         const payoutAmounts = payouts.filter(p => p.position <= players.length).map(p => p.amount);
 
-        // Simplified ICM: each player's equity = weighted average of remaining payouts
-        // (Full ICM is computationally expensive; this is the Malmuth-Harville approximation)
-        const icmEquities = players.map(player => {
-            const prob = player.chips / totalChips;
-            // Approximate: equity = prob * 1st prize + weighted remaining
-            let equity = 0;
-            for (let i = 0; i < payoutAmounts.length; i++) {
-                equity += payoutAmounts[i] * (i === 0 ? prob : (1 - prob) * prob);
-            }
-            // 2026-07-25 audit fix: use the ICM-adjusted equity computed above;
-            // it was being overwritten with a plain chip-chop proportional value.
-            equity = Math.round(equity);
-            return { ...player, equity, percentage: (prob * 100).toFixed(1) };
-        });
+        // 2026-07-28 audit fix. What stood here was labelled "the Malmuth-Harville
+        // approximation" but was not one: it paid 1st place at chip share `prob`
+        // and EVERY later place at `(1 - prob) * prob`. Those terms are not a
+        // probability distribution and do not sum to 1, so the allocated equity
+        // never summed to the prize pool. Heads-up 80/20 on a $10,000 pool paying
+        // 6000/4000 produced 5440 / 1840 — it handed the short stack $1,840 where
+        // true ICM gives $4,400, and left $2,720 of real money assigned to nobody.
+        // Three-way equal stacks on $10,000 produced 2778 each, totalling $8,334.
+        // Every deal struck off this screen mis-allocated the pool.
+        //
+        // Replaced with the exact Malmuth-Harville subset DP in
+        // src/lib/commander/icm-utils.js, whose reconciled cent-level values sum
+        // to the prize pool exactly (commander_tournament_entries.payout_amount
+        // is numeric(12,2), so the cents persist).
+        const icm = calculateICM(players.map(p => p.chips), payoutAmounts);
+
+        const icmEquities = players.map((player, i) => ({
+            ...player,
+            equity: icm[i].equity,
+            percentage: (icm[i].percentage || 0).toFixed(1)
+        }));
 
         setResults(icmEquities);
     };

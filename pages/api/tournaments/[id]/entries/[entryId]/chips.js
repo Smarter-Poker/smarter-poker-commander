@@ -9,6 +9,10 @@ import { guardWriteStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 
+// Chip counts feed ICM equity, i.e. money. Bound them below the integer
+// current_chips column so a hostile value cannot overflow it.
+const MAX_CHIPS = 2000000000;
+
 let _supabase = null;
 function getSupabase() {
     if (!_supabase) {
@@ -50,8 +54,15 @@ export default async function handler(req, res) {
 
 
       const { chips } = req.body;
-      if (chips === undefined || chips < 0) {
-        return res.status(400).json({ success: false, error: 'Valid chip count required (>= 0)' });
+      // 2026-07-28 audit fix: `chips === undefined || chips < 0` let non-numeric
+      // values through — "abc" < 0 is false — and the raw value was written to
+      // current_chips, which feeds the ICM equity calculation, i.e. money.
+      // Coerce explicitly and require a finite, non-negative integer in range.
+      const parsedChips = (typeof chips === 'number' || typeof chips === 'string')
+        ? Number(chips)
+        : NaN;
+      if (!Number.isFinite(parsedChips) || !Number.isInteger(parsedChips) || parsedChips < 0 || parsedChips > MAX_CHIPS) {
+        return res.status(400).json({ success: false, error: `Valid chip count required (a whole number from 0 to ${MAX_CHIPS})` });
       }
 
       const { data: entry } = await getSupabase()
@@ -67,7 +78,7 @@ export default async function handler(req, res) {
       const { data: updated, error: uErr } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
-          current_chips: chips,
+          current_chips: parsedChips,
           metadata: {
             ...(entry.metadata || {}),
             chip_updated_at: new Date().toISOString(),
@@ -87,7 +98,7 @@ export default async function handler(req, res) {
           entry_id: entryId,
           player_name: entry.player_name,
           previous_chips: previousChips,
-          current_chips: chips
+          current_chips: parsedChips
         }
       });
     } catch (err) {

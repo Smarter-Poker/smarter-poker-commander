@@ -8,6 +8,10 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
+// Upper bound on a single buy-in. Guards against fat-fingered and hostile
+// amounts, and against overflowing the integer total_buyin column.
+const MAX_BUYIN = 1000000;
+
 let _supabase = null;
 function getSupabase() {
     if (!_supabase) {
@@ -48,10 +52,20 @@ export default async function handler(req, res) {
     try {
       const { amount } = req.body;
 
-      if (!amount || amount <= 0) {
+      // 2026-07-28 audit fix: `!amount || amount <= 0` passed strings straight
+      // through — "50" is truthy and "50" <= 0 is false — and the total below was
+      // then computed with `+`, which concatenates. Posting {"amount":"50"} to a
+      // session with total_buyin 100 produced "10050", which Postgres accepted
+      // for the integer column: a $100 buy-in recorded as $10,050. Coerce
+      // explicitly and reject anything that is not a finite positive number in
+      // range, rather than letting garbage coerce to 0.
+      const parsedAmount = (typeof amount === 'number' || typeof amount === 'string')
+        ? Number(amount)
+        : NaN;
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > MAX_BUYIN) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Valid amount required' }
+          error: { code: 'VALIDATION_ERROR', message: `Valid amount required (a positive number up to ${MAX_BUYIN})` }
         });
       }
 
@@ -76,7 +90,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const newTotal = (session.total_buyin || 0) + amount;
+      const newTotal = (session.total_buyin || 0) + parsedAmount;
 
       // Update session total
       const { data: updated, error: updateError } = await getSupabase()
@@ -102,7 +116,7 @@ export default async function handler(req, res) {
             session_id: id,
             venue_id: session.venue_id,
             player_id: session.player_id,
-            amount: amount,
+            amount: parsedAmount,
             transaction_type: 'buyin',
             created_at: new Date().toISOString()
           });
@@ -112,7 +126,7 @@ export default async function handler(req, res) {
         success: true,
         data: {
           session: updated,
-          added_amount: amount,
+          added_amount: parsedAmount,
           new_total: newTotal
         }
       });
