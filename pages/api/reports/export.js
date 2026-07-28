@@ -73,24 +73,50 @@ export default async function handler(req, res) {
       const endOfDay = `${date}T23:59:59`;
 
       // Fetch games for the day
-      const { data: games } = await getSupabase()
+      // 2026-07-28 audit fix: commander_games has closed_at, not ended_at.
+      // The bad column errored this query too (error discarded), so the games
+      // section of every exported report was empty.
+      const { data: games, error: gamesError } = await getSupabase()
         .from('commander_games')
         .select(`
           id, game_type, stakes, status, current_players, max_players,
-          started_at, ended_at,
+          started_at, closed_at,
           commander_tables:table_id (id, table_number)
         `)
         .eq('venue_id', venue_id)
         .gte('started_at', startOfDay)
         .lte('started_at', endOfDay)
 
+      if (gamesError) {
+        console.error('[reports/export] commander_games read failed', {
+          venue_id, date, code: gamesError.code,
+          message: gamesError.message, details: gamesError.details,
+        });
+        throw gamesError;
+      }
+
       // Fetch sessions for the day
-      const { data: sessions } = await getSupabase()
+      // 2026-07-28 audit fix: commander_sessions has no player_id/check_in_time/
+      // check_out_time columns — the real ones are user_id/started_at/ended_at.
+      // The bad names errored the query and the error was discarded, so
+      // "Unique Players" silently printed 0 on every exported report.
+      // NOTE (unresolved, reported to the owner): commander_sessions.venue_id is
+      // uuid while poker_venues.id is integer, so this venue filter can still
+      // never match. That is now a LOUD failure instead of a silent zero.
+      const { data: sessions, error: sessionsError } = await getSupabase()
         .from('commander_sessions')
-        .select('id, player_id, check_in_time, check_out_time')
+        .select('id, user_id, started_at, ended_at')
         .eq('venue_id', venue_id)
-        .gte('check_in_time', startOfDay)
-        .lte('check_in_time', endOfDay)
+        .gte('started_at', startOfDay)
+        .lte('started_at', endOfDay)
+
+      if (sessionsError) {
+        console.error('[reports/export] commander_sessions read failed', {
+          venue_id, date, code: sessionsError.code,
+          message: sessionsError.message, details: sessionsError.details,
+        });
+        throw sessionsError;
+      }
 
       // Fetch comp transactions (from the actual comp log table)
       const { data: comps } = await getSupabase()
@@ -102,10 +128,10 @@ export default async function handler(req, res) {
 
       // Calculate summary
       const totalGames = games?.length || 0;
-      const uniquePlayers = new Set(sessions?.map(s => s.player_id) || []).size;
+      const uniquePlayers = new Set(sessions?.map(s => s.user_id) || []).size;
       const totalHours = games?.reduce((sum, g) => {
-        if (g.ended_at) {
-          const hours = (new Date(g.ended_at) - new Date(g.started_at)) / (1000 * 60 * 60);
+        if (g.closed_at) {
+          const hours = (new Date(g.closed_at) - new Date(g.started_at)) / (1000 * 60 * 60);
           return sum + hours;
         }
         return sum;
@@ -131,8 +157,8 @@ export default async function handler(req, res) {
         ];
 
         games?.forEach(g => {
-          const duration = g.ended_at
-            ? ((new Date(g.ended_at) - new Date(g.started_at)) / (1000 * 60 * 60)).toFixed(1)
+          const duration = g.closed_at
+            ? ((new Date(g.closed_at) - new Date(g.started_at)) / (1000 * 60 * 60)).toFixed(1)
             : 'Running';
           csvRows.push([
             g.game_type?.toUpperCase() || 'NLHE',
