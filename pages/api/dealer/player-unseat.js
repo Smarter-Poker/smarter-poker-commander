@@ -40,23 +40,35 @@ export default async function handler(req, res) {
           });
       }
 
-      // 2026-07-28 audit fix: table_number/seat_number are NOT globally unique, so
-      // an unscoped lookup could end a DIFFERENT club's session — and this route has
-      // financial side effects (credits time_balance_minutes, awards comps, writes
-      // commander_member_comp_log). Every lookup below is now venue-scoped.
+      // 2026-07-28 audit fix (revised): venue_id is OPTIONAL, deliberately.
+      //
+      // Making it mandatory would buy no security here: this route is
+      // unauthenticated, so an attacker simply supplies whatever venue_id they
+      // like and reaches any venue either way. The real defect is the ACCIDENTAL
+      // case — table_number/seat_number are not globally unique, so two clubs
+      // both have a table 1 seat 1 and an unscoped match silently ends whichever
+      // session the planner happened to return first. That matters here because
+      // this route has financial side effects (credits time_balance_minutes,
+      // awards comps, writes commander_member_comp_log).
+      //
+      // So: scope by venue when we are given one, and otherwise require the
+      // table+seat pair to resolve to exactly ONE session — refusing with 409 if
+      // it genuinely collides across venues. That fails loudly in precisely the
+      // case that used to be silently wrong, and breaks no caller. (An earlier
+      // revision today made this a hard 400 and broke three callers that had
+      // never sent venue_id.)
       const venueId = Number(venue_id);
-      if (!Number.isInteger(venueId) || venueId < 1) {
-          return res.status(400).json({ success: false, error: 'venue_id required' });
-      }
+      const hasVenueId = Number.isInteger(venueId) && venueId >= 1;
 
       try {
           // Find the active session
           let sessionQuery = getSupabase()
               .from('commander_table_sessions')
               .select('*')
-              .eq('venue_id', venueId)
               .in('status', ['active', 'paused', 'meal_break'])
                   .limit(100);
+
+          if (hasVenueId) sessionQuery = sessionQuery.eq('venue_id', venueId);
 
           if (session_id) {
               sessionQuery = sessionQuery.eq('id', session_id)
@@ -68,22 +80,45 @@ export default async function handler(req, res) {
                       .limit(100);
           }
 
-          const { data: sessions, error: fetchError } = await sessionQuery.limit(1);
+          // Fetch 2, not 1, so a genuine cross-venue collision is detectable.
+          const { data: sessions, error: fetchError } = await sessionQuery.limit(2);
           if (fetchError) throw fetchError;
+
+          // Ambiguity guard. Only reachable on the unscoped table+seat path:
+          // session_id is a primary key, so it can never match twice.
+          if (!hasVenueId && !session_id && sessions?.length > 1) {
+              return res.status(409).json({
+                  success: false,
+                  error: 'table_number/seat_number matches sessions at more than one venue — supply venue_id to disambiguate'
+              });
+          }
 
           const session = sessions?.[0];
           if (!session) {
               // Fallback: no session record, but seat might still be occupied (legacy/seeded data)
               if (table_number && seat_number) {
                   try {
-                      const { data: seatRows } = await getSupabase()
+                      // Follow-up A: this fallback CLEARS the seat it finds, so an
+                      // unscoped table+seat match here is a cross-venue WRITE — it can
+                      // empty another club's occupied seat. Same rule as above: scope
+                      // when we have a venue, otherwise demand an unambiguous match.
+                      let seatQuery = getSupabase()
                           .from('commander_table_seats')
                           .select('*')
-                          .eq('venue_id', venueId)
                           .eq('table_number', parseInt(table_number))
                           .eq('seat_number', parseInt(seat_number))
-                          .eq('status', 'occupied')
-                          .limit(1);
+                          .eq('status', 'occupied');
+
+                      if (hasVenueId) seatQuery = seatQuery.eq('venue_id', venueId);
+
+                      const { data: seatRows } = await seatQuery.limit(2);
+
+                      if (!hasVenueId && seatRows?.length > 1) {
+                          return res.status(409).json({
+                              success: false,
+                              error: 'table_number/seat_number matches occupied seats at more than one venue — supply venue_id to disambiguate'
+                          });
+                      }
 
                       if (seatRows?.[0]) {
                           const seatRow = seatRows[0];

@@ -38,14 +38,22 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, error: 'action required' });
       }
 
-      // 2026-07-28 audit fix: table_number/seat_number are NOT globally unique —
-      // two venues both have a table 1. With no venue filter this route could act
-      // on a DIFFERENT club's live session. venue_id is now required, validated,
-      // and applied to every lookup below.
+      // 2026-07-28 audit fix (revised): venue_id is OPTIONAL, deliberately.
+      //
+      // Making it mandatory would buy no security here: this route is
+      // unauthenticated, so an attacker just supplies whatever venue_id they like
+      // and reaches any venue either way. The real defect is the ACCIDENTAL case —
+      // table_number/seat_number are not globally unique, so two clubs both have a
+      // table 1 seat 1 and an unscoped match silently acts on whichever session the
+      // planner returned first.
+      //
+      // So: scope by venue when we are given one, and otherwise require the
+      // table+seat pair to resolve to exactly ONE session — refusing with 409 if it
+      // genuinely collides across venues. That fails loudly in exactly the case that
+      // used to be silently wrong, and breaks no caller. (An earlier revision today
+      // made this a hard 400 and broke three callers that never sent venue_id.)
       const venueId = Number(venue_id);
-      if (!Number.isInteger(venueId) || venueId < 1) {
-          return res.status(400).json({ success: false, error: 'venue_id required' });
-      }
+      const hasVenueId = Number.isInteger(venueId) && venueId >= 1;
 
       // ── Tournament chip update — bypasses session lookup ──
       if (action === 'tournament_chip_update') {
@@ -55,18 +63,25 @@ export default async function handler(req, res) {
           }
           try {
               // 2026-07-28 audit fix: this branch skips the session lookup, so it
-              // previously wrote chip counts for ANY entry_id + tournament_id with
-              // no venue check at all. commander_tournament_entries has no venue_id
-              // of its own; ownership is resolved through commander_tournaments.
-              const { data: tourney, error: tErr } = await getSupabase()
-                  .from('commander_tournaments')
-                  .select('id')
-                  .eq('id', tournament_id)
-                  .eq('venue_id', venueId)
-                  .maybeSingle();
-              if (tErr) throw tErr;
-              if (!tourney) {
-                  return res.status(404).json({ success: false, error: 'Tournament not found' });
+              // previously wrote chip counts for ANY entry_id + tournament_id with no
+              // venue check at all. commander_tournament_entries has no venue_id of
+              // its own; ownership resolves through commander_tournaments.
+              //
+              // No ambiguity guard is needed when venue_id is absent: tournament_id
+              // and entry_id are UUIDs, so they already identify exactly one row
+              // globally — unlike table_number/seat_number, which collide across
+              // venues. We only assert ownership when a venue was actually supplied.
+              if (hasVenueId) {
+                  const { data: tourney, error: tErr } = await getSupabase()
+                      .from('commander_tournaments')
+                      .select('id')
+                      .eq('id', tournament_id)
+                      .eq('venue_id', venueId)
+                      .maybeSingle();
+                  if (tErr) throw tErr;
+                  if (!tourney) {
+                      return res.status(404).json({ success: false, error: 'Tournament not found' });
+                  }
               }
 
               const { data: entry, error: eErr } = await getSupabase()
@@ -90,16 +105,27 @@ export default async function handler(req, res) {
 
       try {
           // Find the active session
-          const { data: sessions, error: fetchError } = await getSupabase()
+          let sessionQuery = getSupabase()
               .from('commander_table_sessions')
               .select('*')
-              .eq('venue_id', venueId)
               .eq('table_number', parseInt(table_number))
               .eq('seat_number', parseInt(seat_number))
-              .in('status', ['active', 'paused', 'meal_break'])
-              .limit(1);
+              .in('status', ['active', 'paused', 'meal_break']);
+
+          if (hasVenueId) sessionQuery = sessionQuery.eq('venue_id', venueId);
+
+          // Fetch 2, not 1, so a genuine cross-venue collision is detectable.
+          const { data: sessions, error: fetchError } = await sessionQuery.limit(2);
 
           if (fetchError) throw fetchError;
+
+          if (!hasVenueId && sessions?.length > 1) {
+              return res.status(409).json({
+                  success: false,
+                  error: 'table_number/seat_number matches sessions at more than one venue — supply venue_id to disambiguate'
+              });
+          }
+
           const session = sessions?.[0];
 
           if (!session) {
@@ -214,7 +240,13 @@ export default async function handler(req, res) {
 
                   const targetSeatNum = parseInt(target_seat);
 
-                  // Check target seat is empty
+                  // Check target seat is empty.
+                  // Follow-up A: scoped to the venue of the session we actually found.
+                  // Unscoped, an unrelated club's table N seat M could make this seat
+                  // look occupied — and worse, the error below interpolates that other
+                  // venue's player_name into a string returned to an unauthenticated
+                  // caller, leaking a name across venues. session.venue_id is always
+                  // known here, so this needs no conditional.
                   const { data: occupied } = await getSupabase()
                       .from('commander_table_sessions')
                       .select('id, player_name')
