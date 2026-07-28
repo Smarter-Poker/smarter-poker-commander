@@ -118,6 +118,7 @@ export default async function handler(req, res) {
               isTournamentTable = tableRow?.mode === 'tournament' || tableRow?.table_purpose === 'tournament';
           }
 
+
           // Final billing decision: time-billed only if venue is texas AND table is NOT tournament
           const isTimeBilled = isTimeBilledVenue && !isTournamentTable;
 
@@ -231,7 +232,37 @@ export default async function handler(req, res) {
           // ── 6. Create session ──
           const playerName = `${member.first_name} ${member.last_name}`.trim();
           // Tournament tables: allocate 0 time (no clock). Cash: allocate full balance.
-          const timeToAllocate = isTimeBilled ? (member.time_balance_minutes || 0) : 0;
+          //
+          // 2026-07-28 audit fix: this read member.time_balance_minutes — fetched
+          // several statements earlier — allocated it onto the new session, and
+          // then in a separate write set the balance to 0. Two concurrent
+          // scan-ins for the same member both read the same balance, both
+          // created a session carrying the full balance, and both zeroed it, so
+          // the player got the minutes twice for one payment.
+          // commander_claim_member_time_minutes locks the member row, reads the
+          // balance and zeroes it in one transaction, returning exactly what it
+          // took, so a block of minutes can only be claimed once.
+          let timeToAllocate = 0;
+          if (isTimeBilled) {
+              const { data: claimedMinutes, error: claimError } = await getSupabase()
+                  .rpc('commander_claim_member_time_minutes', { p_member_id: member.id });
+
+              if (claimError) {
+                  console.warn('Time claim error:', claimError);
+                  return res.status(500).json({ success: false, error: 'Failed to reserve time from card' });
+              }
+              if (!claimedMinutes || claimedMinutes <= 0) {
+                  // Another request claimed the balance since the check above.
+                  return res.status(400).json({
+                      success: false,
+                      error: 'No time remaining. Player must purchase time first.',
+                      error_code: 'NO_TIME',
+                      member_name: playerName,
+                      member_id: member.id
+                  });
+              }
+              timeToAllocate = claimedMinutes;
+          }
 
           const { data: session, error: sessionError } = await getSupabase()
               .from('commander_table_sessions')
@@ -251,30 +282,42 @@ export default async function handler(req, res) {
               .select()
               .maybeSingle();
 
-          if (sessionError) throw sessionError;
-
-          // ── 7. Deduct time from member balance (Texas cash games ONLY — NEVER tournaments) ──
-          if (isTimeBilled && timeToAllocate > 0) {
-              await getSupabase()
-                  .from('commander_members')
-                  .update({
-                      time_balance_minutes: 0,
-                      last_visit: new Date().toISOString(),
-                      total_visits: (member.total_visits || 0) + 1,
-                      updated_at: new Date().toISOString()
-                  })
-                  .eq('id', member.id);
-          } else {
-              // Tournament or charity/home: just update visit tracking, NO time deduction
-              await getSupabase()
-                  .from('commander_members')
-                  .update({
-                      last_visit: new Date().toISOString(),
-                      total_visits: (member.total_visits || 0) + 1,
-                      updated_at: new Date().toISOString()
-                  })
-                  .eq('id', member.id);
+          if (sessionError) {
+              // The minutes are already off the card. Put them back rather than
+              // leaving the player short for a session that does not exist.
+              if (timeToAllocate > 0) {
+                  const { error: rollbackError } = await getSupabase()
+                      .rpc('commander_adjust_member_balances', {
+                          p_member_id: member.id,
+                          p_comp_delta: 0,
+                          p_time_delta: timeToAllocate,
+                          p_earned_delta: 0,
+                          p_redeemed_delta: 0
+                      });
+                  if (rollbackError) {
+                      console.error('[dealer/player-scan-in] CRITICAL: session insert failed AND the claimed minutes could not be returned:', {
+                          member_id: member.id,
+                          claimed_minutes: timeToAllocate,
+                          error: rollbackError.message || rollbackError
+                      });
+                  }
+              }
+              throw sessionError;
           }
+
+          // ── 7. Visit tracking ──
+          // The time deduction that used to live in this update is now done
+          // atomically by commander_claim_member_time_minutes above (and only
+          // for time-billed tables — tournaments still deduct nothing). These
+          // columns are not money and are left as a plain update.
+          await getSupabase()
+              .from('commander_members')
+              .update({
+                  last_visit: new Date().toISOString(),
+                  total_visits: (member.total_visits || 0) + 1,
+                  updated_at: new Date().toISOString()
+              })
+              .eq('id', member.id);
 
           // ── 8. Update table seat status ──
           try {
