@@ -61,6 +61,14 @@ async function awardComp(req, res, staffAuth) {
     const { member_id, amount, reason, type, authorized_by, authorized_pin, comp_category, notes, membership_days } = req.body;
     if (!member_id) return res.status(400).json({ success: false, error: 'member_id required' });
 
+    // 2026-07-28 audit fix: optional client-supplied idempotency key. When
+    // present, a resubmitted comp returns the ORIGINAL ledger row with success
+    // instead of awarding the comp a second time, so a retry is
+    // indistinguishable from the first call. Absent, behaviour is unchanged.
+    const idempotencyKey = typeof req.body?.idempotency_key === 'string' && req.body.idempotency_key.trim()
+      ? req.body.idempotency_key.trim().slice(0, 200)
+      : null;
+
     // Membership comps need duration, other comps need amount
     if (!membership_days && !amount) {
       return res.status(400).json({ success: false, error: 'amount or membership_days required' });
@@ -168,34 +176,48 @@ async function awardComp(req, res, staffAuth) {
       const newExpiry = new Date(startDate);
       newExpiry.setDate(newExpiry.getDate() + days);
 
-      // Update membership status + expiry, and track expense in lifetime_earned
-      const updateFields = { membership_status: 'active', membership_expires: newExpiry.toISOString() };
-      if (compCost > 0) {
-        updateFields.comp_lifetime_earned = (member.comp_lifetime_earned || 0) + compCost;
-      }
-
+      // Update membership status + expiry. These are absolute values, not
+      // accumulators, so a plain update is correct for them.
       const { error: updateErr } = await getSupabase()
         .from('commander_members')
-        .update(updateFields)
+        .update({ membership_status: 'active', membership_expires: newExpiry.toISOString() })
         .eq('id', member.id);
 
       if (updateErr) throw updateErr;
 
-      const { error: logErr1 } = await getSupabase().from('commander_member_comp_log').insert({
-        venue_id: member.venue_id, member_id: member.id, amount: compCost,
-        type: type || 'award', reason: reason || `Free Membership — ${days} days`,
-        authorized_by: authorized_by || 'Staff', authorized_pin: authorized_pin || false,
-        processed_by: staffRecord.id, balance_after: member.comp_balance || 0,
-        comp_category: 'free_membership', notes: notes || null
-      });
-      if (logErr1) console.warn('Comp log insert failed:', logErr1);
+      // 2026-07-28 audit fix: comp_lifetime_earned was read, added to in JS and
+      // written back, so a concurrent comp between the read and the write was
+      // erased. commander_txn_award_comp applies the delta atomically and writes
+      // the ledger row in the same transaction.
+      const { data: compResult, error: compErr } = await getSupabase()
+        .rpc('commander_txn_award_comp', {
+          p_member_id: member.id,
+          p_venue_id: member.venue_id,
+          p_log_amount: compCost,
+          p_comp_delta: 0,
+          p_time_delta: 0,
+          p_earned_delta: compCost > 0 ? compCost : 0,
+          p_redeemed_delta: 0,
+          p_type: type || 'award',
+          p_reason: reason || `Free Membership — ${days} days`,
+          p_authorized_by: authorized_by || 'Staff',
+          p_authorized_pin: authorized_pin || false,
+          p_processed_by: staffRecord.id,
+          p_comp_category: 'free_membership',
+          p_notes: notes || null,
+          p_idempotency_key: idempotencyKey
+        });
+      if (compErr) console.warn('Comp log insert failed:', compErr);
 
+      // Response shape unchanged.
       return res.json({
         success: true,
         data: {
           member_id: member.id, amount: compCost, membership_days: days,
-          membership_expires: newExpiry.toISOString(), new_balance: member.comp_balance || 0,
-          authorized_by: authorized_by || 'Staff'
+          membership_expires: newExpiry.toISOString(),
+          new_balance: compResult?.member?.comp_balance ?? (member.comp_balance || 0),
+          authorized_by: authorized_by || 'Staff',
+          replayed: compResult?.replayed === true
         }
       });
     }
@@ -207,42 +229,46 @@ async function awardComp(req, res, staffAuth) {
 
       const dollarValue = parseFloat(amount) || 0;
 
-      // Update time_balance_minutes and comp tracking
-      const updateFields = {
-        time_balance_minutes: (member.time_balance_minutes || 0) + timeMinutes,
-      };
-      if (dollarValue > 0) {
-        updateFields.comp_balance = Math.round(((member.comp_balance || 0) + dollarValue) * 100) / 100;
-        updateFields.comp_lifetime_earned = (member.comp_lifetime_earned || 0) + dollarValue;
-      }
-
-      const { error: updateErr } = await getSupabase()
-        .from('commander_members')
-        .update(updateFields)
-        .eq('id', member.id);
-
-      if (updateErr) throw updateErr;
-
       const hrs = Math.floor(timeMinutes / 60);
       const mins = timeMinutes % 60;
       const timeLabel = hrs > 0 ? `${hrs}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`;
 
-      const { error: logErr2 } = await getSupabase().from('commander_member_comp_log').insert({
-        venue_id: member.venue_id, member_id: member.id, amount: dollarValue,
-        type: type || 'award', reason: reason || `Free Time — ${timeLabel}`,
-        authorized_by: authorized_by || 'Staff', authorized_pin: authorized_pin || false,
-        processed_by: staffRecord.id, balance_after: updateFields.comp_balance || member.comp_balance || 0,
-        comp_category: 'free_time', notes: `${timeMinutes} minutes${notes ? ' — ' + notes : ''}`
-      });
-      if (logErr2) console.warn('Comp log insert failed:', logErr2);
+      // 2026-07-28 audit fix: time_balance_minutes, comp_balance and
+      // comp_lifetime_earned were all read, added to in JS and written back in a
+      // single update, so a concurrent write to ANY of them between the read and
+      // the write was erased — and a partial failure could move some columns and
+      // not others. commander_txn_award_comp applies all three deltas and writes
+      // the ledger row in one transaction.
+      const { data: compResult, error: updateErr } = await getSupabase()
+        .rpc('commander_txn_award_comp', {
+          p_member_id: member.id,
+          p_venue_id: member.venue_id,
+          p_log_amount: dollarValue,
+          p_comp_delta: dollarValue > 0 ? dollarValue : 0,
+          p_time_delta: timeMinutes,
+          p_earned_delta: dollarValue > 0 ? dollarValue : 0,
+          p_redeemed_delta: 0,
+          p_type: type || 'award',
+          p_reason: reason || `Free Time — ${timeLabel}`,
+          p_authorized_by: authorized_by || 'Staff',
+          p_authorized_pin: authorized_pin || false,
+          p_processed_by: staffRecord.id,
+          p_comp_category: 'free_time',
+          p_notes: `${timeMinutes} minutes${notes ? ' — ' + notes : ''}`,
+          p_idempotency_key: idempotencyKey
+        });
 
+      if (updateErr) throw updateErr;
+
+      // Response shape unchanged.
       return res.json({
         success: true,
         data: {
           member_id: member.id, amount: dollarValue, time_minutes: timeMinutes,
-          new_balance: updateFields.comp_balance || member.comp_balance || 0,
-          new_time_balance: updateFields.time_balance_minutes,
-          authorized_by: authorized_by || 'Staff'
+          new_balance: compResult?.member?.comp_balance ?? (member.comp_balance || 0),
+          new_time_balance: compResult?.member?.time_balance_minutes ?? ((member.time_balance_minutes || 0) + timeMinutes),
+          authorized_by: authorized_by || 'Staff',
+          replayed: compResult?.replayed === true
         }
       });
     }
@@ -257,44 +283,50 @@ async function awardComp(req, res, staffAuth) {
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return res.status(400).json({ success: false, error: 'Amount must be a positive number' });
     }
-    const newBalance = (member.comp_balance || 0) + parsedAmount;
+    // 2026-07-28 audit fix: this was the ONE write path in this file that
+    // guarded itself, with an optimistic lock (.eq('comp_balance', <value read
+    // earlier>)) that turned a lost update into a 409 the operator had to retry
+    // by hand. That is a correct guard but the wrong shape for a comp desk: it
+    // fails a legitimate concurrent award rather than composing it. The RPC does
+    // comp_balance = comp_balance + delta in one statement, so both awards land
+    // and neither is lost — no retry, no 409 — and it writes the ledger row in
+    // the same transaction rather than as a separate insert whose failure was
+    // only logged.
+    const { data: compResult, error: updateErr } = await getSupabase()
+      .rpc('commander_txn_award_comp', {
+        p_member_id: member.id,
+        p_venue_id: member.venue_id,
+        p_log_amount: parsedAmount,
+        p_comp_delta: parsedAmount,
+        p_time_delta: 0,
+        p_earned_delta: parsedAmount > 0 ? parsedAmount : 0,
+        p_redeemed_delta: parsedAmount > 0 ? 0 : Math.abs(parsedAmount),
+        p_type: type || 'award',
+        p_reason: reason || 'Manual comp award',
+        p_authorized_by: authorized_by || 'Staff',
+        p_authorized_pin: authorized_pin || false,
+        p_processed_by: staffRecord.id,
+        p_comp_category: comp_category || 'cash_bonus',
+        p_notes: notes || null,
+        p_idempotency_key: idempotencyKey
+      });
 
-    const updateFields = { comp_balance: Math.round(newBalance * 100) / 100 };
-    if (parsedAmount > 0) {
-      updateFields.comp_lifetime_earned = (member.comp_lifetime_earned || 0) + parsedAmount;
-    } else {
-      updateFields.comp_lifetime_redeemed = (member.comp_lifetime_redeemed || 0) + Math.abs(parsedAmount);
+    if (updateErr) {
+      // P0001 is the balance-would-go-negative guard inside the function.
+      if (updateErr.code === 'P0001') {
+        return res.status(400).json({ success: false, error: updateErr.message || 'Comp rejected' });
+      }
+      throw updateErr;
     }
 
-    // Optimistic locking: ensure balance hasn't changed since we read it
-    const { data: updated, error: updateErr } = await getSupabase()
-      .from('commander_members')
-      .update(updateFields)
-      .eq('id', member.id)
-      .eq('comp_balance', member.comp_balance || 0)
-      .select('id')
-      .maybeSingle();
-
-    if (updateErr) throw updateErr;
-    if (!updated) {
-      return res.status(409).json({ success: false, error: 'Balance changed concurrently — please retry' });
-    }
-
-    const { error: logErr3 } = await getSupabase().from('commander_member_comp_log').insert({
-      venue_id: member.venue_id, member_id: member.id, amount: parsedAmount,
-      type: type || 'award', reason: reason || 'Manual comp award',
-      authorized_by: authorized_by || 'Staff', authorized_pin: authorized_pin || false,
-      processed_by: staffRecord.id, balance_after: Math.round(newBalance * 100) / 100,
-      comp_category: comp_category || 'cash_bonus', notes: notes || null
-    });
-    if (logErr3) console.warn('Comp log insert failed:', logErr3);
-
+    // Response shape unchanged.
     return res.json({
       success: true,
       data: {
         member_id: member.id, amount: parsedAmount,
-        new_balance: Math.round(newBalance * 100) / 100,
-        authorized_by: authorized_by || 'Staff'
+        new_balance: compResult?.member?.comp_balance ?? null,
+        authorized_by: authorized_by || 'Staff',
+        replayed: compResult?.replayed === true
       }
     });
   } catch (error) {
@@ -536,79 +568,100 @@ async function voidComp(req, res, staffAuth) {
       return res.status(403).json({ success: false, error: 'Staff not authorized for this venue' });
     }
 
-    const updateFields = {};
     const compCategory = logEntry.comp_category || 'cash_bonus';
     const originalAmount = parseFloat(logEntry.amount) || 0;
 
-    // 5. Reverse based on comp category
+    // 5. Reverse based on comp category.
+    // 2026-07-28 audit fix: the reversal used to be computed as
+    // `Math.max(0, <value read earlier> - amount)` and written back. Two
+    // problems, both fixed by expressing the reversal as a delta applied by
+    // commander_txn_award_comp:
+    //   * read-modify-write — a concurrent comp between the read and the write
+    //     was erased, and the membership/time/dollar columns could half-apply.
+    //   * Math.max(0, ...) silently clamped. Voiding a $50 comp against a $20
+    //     balance quietly zeroed it and logged a $50 reversal, so the ledger and
+    //     the balance disagreed by $30 with nothing to show for it. The RPC
+    //     raises (P0001) instead, and the whole reversal rolls back.
+    let compDelta = 0;
+    let timeDelta = 0;
+    let redeemedDelta = 0;
+    let membershipUpdate = null;
+
     if (compCategory === 'free_membership') {
       // Revert membership: if comp extended it, we can't perfectly undo but we set to expired
-      updateFields.membership_status = 'expired';
-      updateFields.membership_expires = new Date().toISOString();
+      membershipUpdate = { membership_status: 'expired', membership_expires: new Date().toISOString() };
       // Also reverse the comp_lifetime_earned for the dollar cost
-      if (originalAmount > 0) {
-        updateFields.comp_lifetime_redeemed = (member.comp_lifetime_redeemed || 0) + originalAmount;
-      }
+      if (originalAmount > 0) redeemedDelta = originalAmount;
     } else if (compCategory === 'free_time') {
       // Reverse time_balance_minutes — parse from notes (e.g., "120 minutes")
       const minuteMatch = (logEntry.notes || '').match(/^(\d+)\s*minutes/);
-      if (minuteMatch) {
-        const mins = parseInt(minuteMatch[1]);
-        updateFields.time_balance_minutes = Math.max(0, (member.time_balance_minutes || 0) - mins);
-      }
+      if (minuteMatch) timeDelta = -parseInt(minuteMatch[1]);
       // Also reverse dollar comp_balance
       if (originalAmount > 0) {
-        updateFields.comp_balance = Math.max(0, Math.round(((member.comp_balance || 0) - originalAmount) * 100) / 100);
-        updateFields.comp_lifetime_redeemed = (member.comp_lifetime_redeemed || 0) + originalAmount;
+        compDelta = -originalAmount;
+        redeemedDelta = originalAmount;
       }
     } else {
       // Dollar-based comps: reverse comp_balance
       if (originalAmount > 0) {
-        updateFields.comp_balance = Math.max(0, Math.round(((member.comp_balance || 0) - originalAmount) * 100) / 100);
-        updateFields.comp_lifetime_redeemed = (member.comp_lifetime_redeemed || 0) + originalAmount;
+        compDelta = -originalAmount;
+        redeemedDelta = originalAmount;
       }
     }
 
-    // 6. Update the member record
-    if (Object.keys(updateFields || {}).length > 0) {
-      // Optimistic locking: ensure balance hasn't changed since we read it
-      const { data: updated, error: updateErr } = await getSupabase()
+    // 6. Membership status/expiry are absolute values, not accumulators.
+    if (membershipUpdate) {
+      const { error: membershipErr } = await getSupabase()
         .from('commander_members')
-        .update(updateFields)
-        .eq('id', member.id)
-        .eq('comp_balance', member.comp_balance || 0)
-        .select('id')
-        .maybeSingle();
-
-      if (updateErr) throw updateErr;
-      if (!updated) {
-        return res.status(409).json({ success: false, error: 'Balance changed concurrently — please retry' });
-      }
+        .update(membershipUpdate)
+        .eq('id', member.id);
+      if (membershipErr) throw membershipErr;
     }
 
-    // 7. Log the void with full audit trail
-    const { error: voidLogErr } = await getSupabase().from('commander_member_comp_log').insert({
-      venue_id: logEntry.venue_id,
-      member_id: logEntry.member_id,
-      amount: -originalAmount, // Negative to indicate reversal
-      type: 'void',
-      reason: `VOIDED: ${logEntry.reason || logEntry.comp_category || 'Comp'}`,
-      authorized_by: authorized_by || 'Staff',
-      authorized_pin: authorized_pin || false,
-      processed_by: staffAuth.id,
-      balance_after: updateFields.comp_balance !== undefined ? updateFields.comp_balance : (member.comp_balance || 0),
-      comp_category: compCategory,
-      notes: `VOID-REF:${comp_log_id} | ${void_reason || 'Voided by staff'}`,
-    });
-    if (voidLogErr) console.warn('Void comp log insert failed:', voidLogErr);
+    // 7. Apply the reversal and write the void ledger row in one transaction.
+    const { data: voidResult, error: voidErr } = await getSupabase()
+      .rpc('commander_txn_award_comp', {
+        p_member_id: member.id,
+        p_venue_id: logEntry.venue_id,
+        p_log_amount: -originalAmount, // Negative to indicate reversal
+        p_comp_delta: compDelta,
+        p_time_delta: timeDelta,
+        p_earned_delta: 0,
+        p_redeemed_delta: redeemedDelta,
+        p_type: 'void',
+        p_reason: `VOIDED: ${logEntry.reason || logEntry.comp_category || 'Comp'}`,
+        p_authorized_by: authorized_by || 'Staff',
+        p_authorized_pin: authorized_pin || false,
+        p_processed_by: staffAuth.id,
+        p_comp_category: compCategory,
+        p_notes: `VOID-REF:${comp_log_id} | ${void_reason || 'Voided by staff'}`,
+        // Keyed on the comp being voided, so a double-tapped void reverses once
+        // however many times it is submitted. This is the guard the
+        // notes LIKE 'VOID-REF:...' lookup above was meant to be — that lookup
+        // could never match, because commander_member_comp_log had no notes
+        // column until the 2026-07-28 migration.
+        p_idempotency_key: `void:${comp_log_id}`
+      });
 
+    if (voidErr) {
+      if (voidErr.code === 'P0001') {
+        return res.status(400).json({ success: false, error: voidErr.message || 'Void rejected' });
+      }
+      throw voidErr;
+    }
+
+    if (voidResult?.replayed === true) {
+      return res.status(400).json({ success: false, error: 'This comp has already been voided' });
+    }
+
+    // Response shape unchanged.
     return res.json({
       success: true,
       data: {
         voided_comp_id: comp_log_id,
         member_id: member.id,
         reversed_amount: originalAmount,
-        new_balance: updateFields.comp_balance !== undefined ? updateFields.comp_balance : (member.comp_balance || 0),
+        new_balance: voidResult?.member?.comp_balance ?? (member.comp_balance || 0),
         comp_category: compCategory,
         voided_by: authorized_by || 'Staff',
       }
