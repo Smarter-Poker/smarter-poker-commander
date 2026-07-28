@@ -484,9 +484,9 @@ async function getBalances(req, res) {
   }
 }
 
-// ═══════════════════════════════
+// ═══════════════════════════════════════════
 // PATCH — Void / Revoke a comp
-// ═══════════════════════════════
+// ═══════════════════════════════════════════
 async function voidComp(req, res, staffAuth) {
   try {
     const { comp_log_id, authorized_by, authorized_pin, void_reason } = req.body;
