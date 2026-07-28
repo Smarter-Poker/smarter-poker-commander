@@ -85,42 +85,52 @@ export default async function handler(req, res) {
       }
 
       const rebuyChips = tournament.rebuy_chips || tournament.starting_chips || 10000;
-      const newChips = (entry.current_chips || 0) + rebuyChips;
-      const newRebuyCount = (entry.rebuy_count || 0) + 1;
 
-      const { data: updated, error: uErr } = await getSupabase()
-        .from('commander_tournament_entries')
-        .update({
-          current_chips: newChips,
-          rebuy_count: newRebuyCount,
-          status: 'active',
-          metadata: {
-            ...(entry.metadata || {}),
-            last_rebuy_at: new Date().toISOString(),
-            last_rebuy_level: currentLevel
-          }
-        })
-        .eq('id', entryId)
-        .select()
-        .maybeSingle();
+      // 2026-07-28 audit fix: this used to read current_chips/rebuy_count, add
+      // in JS and write the sums back, with the max-rebuy check done against the
+      // value it had already read. Two concurrent rebuys — a double-tapped
+      // button is enough — both read the same counts, both passed the max check
+      // and the second write erased the first: the player got one lot of chips,
+      // the vault got charged twice, and rebuy_count advanced by one.
+      //
+      // commander_txn_tournament_rebuy does all of it in one transaction:
+      // current_chips = current_chips + delta, rebuy_count = rebuy_count + 1
+      // with the max-rebuy test moved into the UPDATE predicate, plus the cash
+      // ledger row. The checks above are kept because they produce the friendly
+      // messages the TD screen renders; the RPC is the authority.
+      //
+      // idempotency_key is optional; on a resubmission the ORIGINAL cash
+      // transaction is returned with success and no chips or cash move again.
+      const idempotencyKey = typeof req.body?.idempotency_key === 'string' && req.body.idempotency_key.trim()
+        ? req.body.idempotency_key.trim().slice(0, 200)
+        : null;
 
-      if (uErr) return res.status(500).json({ success: false, error: 'Failed to process rebuy' });
-
-      // --- FINANCIAL FRAUD PROTECTION ---
-      // Log the cash collected by the TD into the cashier vault
-      // 2026-07-25 audit fix: use the real rebuy_amount column
-      if (tournament.rebuy_amount > 0) {
-        await getSupabase().from('commander_cash_transactions').insert({
-          venue_id: tournament.venue_id,
-          player_name: entry.player_name,
-          type: 'buy_in',
-          amount: tournament.rebuy_amount,
-          payment_method: 'cash',
-          processed_by: _g.id || null, // staff ID from guardWriteStaff
-          notes: `Tournament Rebuy: ${entry.player_name} (ID: ${entryId})`
+      const { data: result, error: uErr } = await getSupabase()
+        .rpc('commander_txn_tournament_rebuy', {
+          p_entry_id: entryId,
+          p_tournament_id: tournamentId,
+          p_chips: rebuyChips,
+          p_max_rebuys: maxRebuys,
+          p_level: currentLevel,
+          p_venue_id: tournament.venue_id,
+          p_amount: tournament.rebuy_amount || 0,
+          p_player_name: entry.player_name,
+          p_processed_by: _g.id || null, // staff ID from guardWriteStaff
+          p_idempotency_key: idempotencyKey
         });
+
+      if (uErr) {
+        if (uErr.code === 'P0002') return res.status(404).json({ success: false, error: 'Entry not found' });
+        if (uErr.code === 'P0001') return res.status(400).json({ success: false, error: uErr.message || 'Rebuy rejected' });
+        console.warn('Rebuy RPC error:', uErr);
+        return res.status(500).json({ success: false, error: 'Failed to process rebuy' });
       }
 
+      const updatedEntry = result?.entry || {};
+      const newRebuyCount = updatedEntry.rebuy_count ?? ((entry.rebuy_count || 0) + 1);
+      const newChips = updatedEntry.current_chips ?? ((entry.current_chips || 0) + rebuyChips);
+
+      // Response shape unchanged.
       return res.status(200).json({
         success: true,
         data: {
@@ -130,7 +140,8 @@ export default async function handler(req, res) {
           chips_added: rebuyChips,
           total_chips: newChips,
           cost: tournament.rebuy_amount || 0, // 2026-07-25 audit fix: real column
-          rebuys_remaining: maxRebuys - newRebuyCount
+          rebuys_remaining: maxRebuys - newRebuyCount,
+          replayed: result?.replayed === true
         }
       });
     } catch (err) {
