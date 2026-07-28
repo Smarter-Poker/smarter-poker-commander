@@ -118,7 +118,6 @@ export default async function handler(req, res) {
               isTournamentTable = tableRow?.mode === 'tournament' || tableRow?.table_purpose === 'tournament';
           }
 
-
           // Final billing decision: time-billed only if venue is texas AND table is NOT tournament
           const isTimeBilled = isTimeBilledVenue && !isTournamentTable;
 
