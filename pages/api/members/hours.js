@@ -3,7 +3,8 @@
  * GET /api/commander/members/hours?venue_id=...
  * 
  * Aggregates total hours played per member from commander_player_sessions.
- * Falls back to visit_count * estimated average session length if no sessions exist.
+ * Falls back to the member's recorded total_hours_played, then to
+ * total_visits * an estimated average session length, if no sessions exist.
  * Returns ranked list of members by total play time.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
@@ -82,20 +83,32 @@ export default async function handler(req, res) {
           }
 
           // ── 2. Enrich with member data ──
-          const { data: members } = await getSupabase()
+          // 2026-07-28 audit fix: commander_members has no visit_count or
+          // last_checkin column. The real columns are total_visits, last_visit and
+          // total_hours_played. PostgREST rejected the whole select with 42703, so
+          // `members` came back null and this report always rendered empty.
+          // The error is now surfaced instead of being silently swallowed.
+          const { data: members, error: memberError } = await getSupabase()
               .from('commander_members')
-              .select('id, first_name, last_name, member_number, photo_url, visit_count, last_checkin, membership_tier, created_at')
+              .select('id, first_name, last_name, member_number, photo_url, total_visits, total_hours_played, last_visit, membership_tier, created_at')
               .eq('venue_id', venue_id)
               .eq('membership_status', 'active')
-              .order('visit_count', { ascending: false })
+              .order('total_visits', { ascending: false })
               .limit(Math.min(parseInt(limit) || 50, 500));
+          if (memberError) throw memberError;
 
           // ── 3. Build ranked list ──
           const ranked = (members || []).map(m => {
               const sess = playerHours[m.id] || null;
-              // If we have session data, use it. Otherwise estimate from visit count.
-              const totalMinutes = sess ? sess.totalMinutes : (m.visit_count || 0) * 180; // 3hr avg estimate
-              const sessionCount = sess ? sess.sessionCount : (m.visit_count || 0);
+              // Prefer real per-session data. Otherwise use the member's recorded
+              // total_hours_played (a real, directly-measured column), and only
+              // fall back to the visits * 3hr estimate when neither exists.
+              const recordedMinutes = Math.round((parseFloat(m.total_hours_played) || 0) * 60);
+              const hoursSource = sess ? 'sessions' : (recordedMinutes > 0 ? 'member_total' : 'visit_estimate');
+              const totalMinutes = sess
+                  ? sess.totalMinutes
+                  : (recordedMinutes > 0 ? recordedMinutes : (m.total_visits || 0) * 180); // 3hr avg estimate
+              const sessionCount = sess ? sess.sessionCount : (m.total_visits || 0);
               const totalHours = Math.round((totalMinutes / 60) * 10) / 10; // 1 decimal
 
               return {
@@ -105,13 +118,14 @@ export default async function handler(req, res) {
                   member_number: m.member_number,
                   photo_url: m.photo_url,
                   membership_tier: m.membership_tier,
-                  visit_count: m.visit_count || 0,
-                  last_checkin: m.last_checkin,
+                  visit_count: m.total_visits || 0,
+                  last_checkin: m.last_visit,
                   created_at: m.created_at,
                   total_hours: totalHours,
                   total_minutes: totalMinutes,
                   session_count: sessionCount,
                   has_session_data: !!sess,
+                  hours_source: hoursSource,
               };
           })
               .filter(m => m.total_hours > 0 || m.visit_count > 0)
@@ -130,30 +144,42 @@ export default async function handler(req, res) {
 
       } catch (err) {
           console.warn('[Hours API] Error:', err);
-          // If commander_player_sessions table doesn't exist, fall back to visit_count estimate
+          // If commander_player_sessions is unavailable, fall back to the member's
+          // own recorded totals. 2026-07-28 audit fix: same visit_count/last_checkin
+          // drift as above — real columns are total_visits / last_visit /
+          // total_hours_played.
           try {
               const { data: members } = await getSupabase()
                   .from('commander_members')
-                  .select('id, first_name, last_name, member_number, photo_url, visit_count, last_checkin, membership_tier, created_at')
+                  .select('id, first_name, last_name, member_number, photo_url, total_visits, total_hours_played, last_visit, membership_tier, created_at')
                   .eq('venue_id', venue_id)
                   .eq('membership_status', 'active')
-                  .gt('visit_count', 0)
-                  .order('visit_count', { ascending: false })
+                  .gt('total_visits', 0)
+                  .order('total_visits', { ascending: false })
                   .limit(Math.min(parseInt(limit) || 50, 500));
 
-              const ranked = (members || []).map((m, i) => ({
-                  member_id: m.id,
-                  first_name: m.first_name,
-                  last_name: m.last_name,
-                  photo_url: m.photo_url,
-                  membership_tier: m.membership_tier,
-                  visit_count: m.visit_count || 0,
-                  total_hours: Math.round(((m.visit_count || 0) * 3) * 10) / 10,
-                  total_minutes: (m.visit_count || 0) * 180,
-                  session_count: m.visit_count || 0,
-                  has_session_data: false,
-                  rank: i + 1,
-              }));
+              const ranked = (members || []).map((m, i) => {
+                  const recordedHours = parseFloat(m.total_hours_played) || 0;
+                  const totalHours = recordedHours > 0
+                      ? Math.round(recordedHours * 10) / 10
+                      : Math.round(((m.total_visits || 0) * 3) * 10) / 10;
+                  return {
+                      member_id: m.id,
+                      first_name: m.first_name,
+                      last_name: m.last_name,
+                      member_number: m.member_number,
+                      photo_url: m.photo_url,
+                      membership_tier: m.membership_tier,
+                      visit_count: m.total_visits || 0,
+                      last_checkin: m.last_visit,
+                      total_hours: totalHours,
+                      total_minutes: Math.round(totalHours * 60),
+                      session_count: m.total_visits || 0,
+                      has_session_data: false,
+                      hours_source: recordedHours > 0 ? 'member_total' : 'visit_estimate',
+                      rank: i + 1,
+                  };
+              });
 
               return res.status(200).json({
                   success: true,
