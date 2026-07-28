@@ -115,30 +115,41 @@ export default async function handler(req, res) {
       });
 
       // 2. Tournament revenue
-      const { data: tournaments } = await getSupabase()
+      // 2026-07-28 audit fix: commander_tournaments has no fee_amount column —
+      // the house fee column is buyin_fee. PostgREST rejected the select with
+      // 42703, so `tournaments` came back null and every tournament figure in
+      // this report (fees, prize pools, entry counts) silently reported $0.
+      // Errors are now surfaced rather than swallowed into a zero.
+      const { data: tournaments, error: tournamentsError } = await getSupabase()
         .from('commander_tournaments')
-        .select('id, name, buyin_amount, fee_amount, status, created_at')
+        .select('id, name, buyin_amount, buyin_fee, status, created_at')
         .eq('venue_id', venue_id)
         .gte('created_at', start)
-        .lte('created_at', end)
+        .lte('created_at', end);
+      if (tournamentsError) throw tournamentsError;
 
       let tournamentFees = 0;
       let tournamentBuyins = 0;
       let tournamentEntryCount = 0;
 
       for (const t of (tournaments || [])) {
-        const { data: entries } = await getSupabase()
+        // 2026-07-28 audit fix: commander_tournament_entries has no buyin_amount
+        // column (the per-entry money column is total_invested). It was never
+        // read here anyway — the amounts come from the tournament row — so the
+        // bad column simply broke the query and zeroed the entry count.
+        const { data: entries, error: entriesError } = await getSupabase()
           .from('commander_tournament_entries')
-          .select('id, buyin_amount, rebuy_count')
-          .eq('tournament_id', t.id)
+          .select('id, rebuy_count')
+          .eq('tournament_id', t.id);
+        if (entriesError) throw entriesError;
         const count = (entries || []).length;
         tournamentEntryCount += count;
         tournamentBuyins += count * (t.buyin_amount || 0);
-        tournamentFees += count * (t.fee_amount || 0);
+        tournamentFees += count * (t.buyin_fee || 0);
         // Rebuys
         const rebuys = (entries || []).reduce((s, e) => s + (e.rebuy_count || 0), 0);
         tournamentBuyins += rebuys * (t.buyin_amount || 0);
-        tournamentFees += rebuys * (t.fee_amount || 0);
+        tournamentFees += rebuys * (t.buyin_fee || 0);
       }
 
       // 3. Comp costs (from commander_member_comp_log — the actual comp log table)
@@ -180,11 +191,11 @@ export default async function handler(req, res) {
           const { data: entries } = await getSupabase()
             .from('commander_tournament_entries')
             .select('id, rebuy_count')
-            .eq('tournament_id', t.id)
+            .eq('tournament_id', t.id);
 
           const count = (entries || []).length;
           const rebuys = (entries || []).reduce((s, e) => s + (e.rebuy_count || 0), 0);
-          const dayFees = (count * (t.fee_amount || 0)) + (rebuys * (t.fee_amount || 0));
+          const dayFees = (count * (t.buyin_fee || 0)) + (rebuys * (t.buyin_fee || 0));
 
           tourneyFeesByDay[day] = (tourneyFeesByDay[day] || 0) + dayFees;
         }
@@ -233,7 +244,7 @@ export default async function handler(req, res) {
             fees: tournamentFees,
             prize_pools: tournamentBuyins,
             tournaments: (tournaments || []).map(t => ({
-              id: t.id, name: t.name, buyin: t.buyin_amount, fee: t.fee_amount, status: t.status
+              id: t.id, name: t.name, buyin: t.buyin_amount, fee: t.buyin_fee, status: t.status
             })),
           },
           comps: {
