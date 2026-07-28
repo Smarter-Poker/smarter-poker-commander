@@ -7,7 +7,7 @@
  * Self-generating + staff-managed leaderboard display.
  * 
  * AUTO-GENERATED BOARDS (from commander_members + sessions):
- *   Most Visits         — visit_count ranked
+ *   Most Visits         — commander_members.total_visits ranked
  *   Hours Played        — from commander_player_sessions or estimate
  *   Today's Check-Ins   — who's here today
  *   VIP Hall of Fame    — tier + lifetime visits
@@ -48,9 +48,9 @@ export default function LeaderboardDisplay() {
     try { const s = getStaffData(); return s.venue_id || null; } catch { return null; }
   });
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════
   // HELPERS
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════
   function mName(m) {
     const f = m.first_name || ''; const l = m.last_name || '';
     if (f && l) return `${f} ${l.charAt(0)}.`;
@@ -76,9 +76,9 @@ export default function LeaderboardDisplay() {
     weekly: { l: 'Weekly', i: '', c: '#10B981' }, daily: { l: 'Daily', i: '', c: '#6B7280' } };
   function ti(t) { return TIERS[(t || '').toLowerCase()] || { l: t || 'Member', i: '', c: '#6B7280' }; }
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════
   // FETCH & BUILD ALL BOARDS
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════
   const fetchData = useCallback(async (signal) => {
     if (!venueId) return;
     const staffSession = typeof window !== 'undefined' ? getStaffSession() || '' : '';
@@ -96,9 +96,9 @@ export default function LeaderboardDisplay() {
 
       const built = [];
 
-      // ════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
       // SECTION A: CUSTOM LEADERBOARDS (staff-created, first priority)
-      // ════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
       try {
         const lbRes = await commanderFetch(`/api/commander/leaderboards?venue_id=${venueId}&status=active`, fetchOpts);
         if (!lbRes.ok) throw new Error(`Request failed (${lbRes.status})`);
@@ -133,9 +133,9 @@ export default function LeaderboardDisplay() {
         }
       } catch (e) { console.warn("[leaderboard.js]", e); }
 
-      // ════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
       // SECTION B: LEAGUE STANDINGS
-      // ════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
       try {
         const lgRes = await commanderFetch(`/api/commander/leagues?venue_id=${venueId}&status=active`, fetchOpts);
         if (!lgRes.ok) throw new Error(`Request failed (${lgRes.status})`);
@@ -165,9 +165,9 @@ export default function LeaderboardDisplay() {
         }
       } catch (e) { console.warn("[leaderboard.js]", e); }
 
-      // ════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
       // SECTION C: AUTO-GENERATED BOARDS
-      // ════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
 
       // ── C1: Hours Played ──
       try {
@@ -192,45 +192,45 @@ export default function LeaderboardDisplay() {
       } catch (e) { console.warn("[leaderboard.js]", e); }
 
       // ── C2: Most Visits (All Time) ──
-      const byVisits = [...members].filter(m => (m.visit_count || 0) > 0).sort((a, b) => (b.visit_count || 0) - (a.visit_count || 0)).slice(0, 15);
+      const byVisits = [...members].filter(m => (m.total_visits || 0) > 0).sort((a, b) => (b.total_visits || 0) - (a.total_visits || 0)).slice(0, 15);
       if (byVisits.length > 0) {
-        const topV = byVisits[0].visit_count || 1;
+        const topV = byVisits[0].total_visits || 1;
         built.push({
           id: 'visits', icon: '', title: 'Most Visits — All Time',
           subtitle: `Top ${byVisits.length} by total check-ins | ${members.length} total members`,
           scoreHeader: 'VISITS', source: 'auto',
           entries: byVisits.map((m, i) => ({
-            rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.visit_count || 0,
-            scoreDisplay: String(m.visit_count), detail: m.last_checkin ? `Last seen ${tAgo(m.last_checkin)}` : 'Never checked in',
-            barPct: Math.round(((m.visit_count || 0) / topV) * 100), tier: m.membership_tier })) });
+            rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
+            scoreDisplay: String(m.total_visits), detail: m.last_visit ? `Last seen ${tAgo(m.last_visit)}` : 'Never checked in',
+            barPct: Math.round(((m.total_visits || 0) / topV) * 100), tier: m.membership_tier })) });
       }
 
       // ── C3: Today's Check-Ins ──
       const tStart = new Date(); tStart.setHours(0, 0, 0, 0);
-      const todayIn = [...members].filter(m => m.last_checkin && new Date(m.last_checkin) >= tStart).sort((a, b) => new Date(b.last_checkin) - new Date(a.last_checkin)).slice(0, 15);
+      const todayIn = [...members].filter(m => m.last_visit && new Date(m.last_visit) >= tStart).sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit)).slice(0, 15);
       if (todayIn.length > 0) {
         built.push({
           id: 'today', icon: '', title: "Today's Check-Ins",
           subtitle: `${todayIn.length} player${todayIn.length !== 1 ? 's' : ''} today | ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`,
           scoreHeader: 'CHECKED IN', source: 'auto',
           entries: todayIn.map((m, i) => ({
-            rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.visit_count || 0,
-            scoreDisplay: tAgo(m.last_checkin), detail: `${m.visit_count || 0} lifetime visits • ${ti(m.membership_tier).l}`,
+            rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
+            scoreDisplay: tAgo(m.last_visit), detail: `${m.total_visits || 0} lifetime visits • ${ti(m.membership_tier).l}`,
             barPct: 0, tier: m.membership_tier })) });
       }
 
       // ── C4: VIP Hall of Fame ──
       const vips = [...members].filter(m => m.membership_tier && m.membership_tier !== 'daily')
-        .sort((a, b) => { const o = { platinum: 0, gold: 1, vip: 2, silver: 3, annual: 4, monthly: 5, weekly: 6 }; return (o[(a.membership_tier || '').toLowerCase()] ?? 99) - (o[(b.membership_tier || '').toLowerCase()] ?? 99) || (b.visit_count || 0) - (a.visit_count || 0); })
+        .sort((a, b) => { const o = { platinum: 0, gold: 1, vip: 2, silver: 3, annual: 4, monthly: 5, weekly: 6 }; return (o[(a.membership_tier || '').toLowerCase()] ?? 99) - (o[(b.membership_tier || '').toLowerCase()] ?? 99) || (b.total_visits || 0) - (a.total_visits || 0); })
         .slice(0, 15);
-      if (vips.length > 0 && vips.some(m => (m.visit_count || 0) > 0)) {
+      if (vips.length > 0 && vips.some(m => (m.total_visits || 0) > 0)) {
         built.push({
           id: 'vip', icon: '', title: 'VIP Hall of Fame',
           subtitle: `${vips.length} premium members | Ranked by tier and activity`,
           scoreHeader: 'VISITS', source: 'auto',
           entries: vips.map((m, i) => ({
-            rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.visit_count || 0,
-            scoreDisplay: String(m.visit_count || 0), detail: `${ti(m.membership_tier).i} ${ti(m.membership_tier).l} • Member since ${mSince(m.created_at)}`,
+            rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
+            scoreDisplay: String(m.total_visits || 0), detail: `${ti(m.membership_tier).i} ${ti(m.membership_tier).l} • Member since ${mSince(m.created_at)}`,
             barPct: 0, tier: m.membership_tier, tierBadge: true })) });
       }
 
@@ -251,9 +251,9 @@ export default function LeaderboardDisplay() {
   const goFS = () => document.documentElement.requestFullscreen?.();
   const board = boards[activeIdx] || boards[0];
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════
   // RENDER
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════
   return (
     <CommanderLayout title="Leaderboard Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
