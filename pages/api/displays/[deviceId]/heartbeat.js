@@ -1,7 +1,13 @@
 /**
  * Display Heartbeat API
  * POST /api/commander/displays/:deviceId/heartbeat
- * Updates display online status and returns any config changes
+ *
+ * 2026-07-28 audit fix: brought in line with the already-hardened sibling
+ * pages/api/displays/heartbeat.js. This endpoint is unauthenticated, so it now
+ * scopes the row match by venue, bounds and validates its inputs, and returns
+ * only { success, timestamp }. It previously handed the display's display_mode,
+ * rotation_screens, rotation_interval and full `config` jsonb to ANY caller who
+ * could guess or read a device_id. It has never created rows, and still does not.
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
@@ -31,17 +37,37 @@ export default async function handler(req, res) {
     }
 
     const { deviceId } = req.query;
+    const { venue_id } = req.body || {};
+
+    // 2026-07-28 audit fix: bound and validate every input.
+    if (!deviceId || typeof deviceId !== 'string' || deviceId.length > 128) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'deviceId required' }
+      });
+    }
+
+    const venueId = Number(venue_id);
+    if (!Number.isInteger(venueId) || venueId < 1) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'venue_id required' }
+      });
+    }
 
     try {
-      // Update heartbeat
+      // Update heartbeat. UPDATE only — never creates rows — and scoped to the
+      // caller's venue so a device_id cannot be used against another club's row.
+      const now = new Date().toISOString();
       const { data: display, error } = await getSupabase()
         .from('commander_table_displays')
         .update({
           is_online: true,
-          last_heartbeat: new Date().toISOString()
+          last_heartbeat: now
         })
         .eq('device_id', deviceId)
-        .select('id, display_mode, rotation_screens, rotation_interval, config, updated_at')
+        .eq('venue_id', venueId)
+        .select('id')
         .maybeSingle();
 
       if (error || !display) {
@@ -51,19 +77,8 @@ export default async function handler(req, res) {
         });
       }
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          display_id: display.id,
-          config: {
-            display_mode: display.display_mode,
-            rotation_screens: display.rotation_screens,
-            rotation_interval: display.rotation_interval,
-            custom: display.config
-          },
-          last_config_update: display.updated_at
-        }
-      });
+      // Minimum the screen needs — no config, no rotation settings.
+      return res.status(200).json({ success: true, timestamp: now });
     } catch (error) {
       console.warn('Heartbeat error:', error);
       return res.status(500).json({

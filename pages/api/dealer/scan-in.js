@@ -139,34 +139,17 @@ export default async function handler(req, res) {
               if (matched) {
                   dealerId = matched.id;
               } else {
-                  // Create a new commander_dealers record
-                  const { data: newDealer, error: createErr } = await getSupabase()
-                      .from('commander_dealers')
-                      .insert({
-                          venue_id: venueId,
-                          name: dealerName,
-                          employee_id: member.member_number || `DLR-${Date.now()}`,
-                          is_active: true,
-                      })
-                      .select('id')
-                      .maybeSingle();
-
-                  if (createErr) {
-                      console.warn('Failed to create dealer record:', createErr.message);
-                      // Try without employee_id
-                      const { data: nd2 } = await getSupabase()
-                          .from('commander_dealers')
-                          .insert({
-                              venue_id: venueId,
-                              name: dealerName,
-                              is_active: true,
-                          })
-                          .select('id')
-                          .maybeSingle();
-                      dealerId = nd2?.id;
-                  } else {
-                      dealerId = newDealer.id;
-                  }
+                  // 2026-07-28 audit fix: this branch used to INSERT a commander_dealers
+                  // row from an unauthenticated request whenever name matching failed.
+                  // The 2026-07-25 hardening prohibits exactly that ("an unauthenticated
+                  // endpoint must not create display rows for arbitrary venues"), so an
+                  // unregistered dealer now gets a generic 404 — the same way the display
+                  // heartbeat 404s an unregistered device. Dealer records are created
+                  // through the authenticated dealers API.
+                  return res.status(404).json({
+                      success: false,
+                      error: 'Employee not found. QR code not recognized.'
+                  });
               }
           }
 
@@ -217,14 +200,12 @@ export default async function handler(req, res) {
           return res.status(200).json({
               success: true,
               data: {
+                  // 2026-07-28 audit fix: minimum the screen needs. Dropped id,
+                  // first_name, last_name, member_number and member_type — no caller
+                  // reads them. The tablets render only name, photo_url, started_at.
                   dealer: {
-                      id: member.id,
-                      first_name: member.first_name,
-                      last_name: member.last_name,
                       name: dealerName,
-                      member_number: member.member_number,
                       photo_url: member.photo_url,
-                      member_type: member.member_type,
                       started_at: rotation.started_at
                   },
                   rotation_id: rotation.id,

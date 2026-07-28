@@ -20,7 +20,15 @@
  * hash of the whole token if the payload cannot be decoded, then to IP.
  *
  * Public API (rateLimit, applyRateLimit, LIMITS) is unchanged.
+ *
+ * 2026-07-28 audit fix: the staff-session branch of getIdentifier trusted the
+ * raw x-staff-session JSON. On an unauthenticated route nothing validates that
+ * header, so an attacker could send a fresh {"id":"<random>"} on every request
+ * and mint a brand-new bucket each time — unlimited requests. The signature is
+ * now verified before the session is allowed to name its own bucket.
  */
+import crypto from 'crypto';
+import { signStaffSession } from './commander/auth';
 
 const store = new Map();
 
@@ -74,6 +82,29 @@ function hashToken(token) {
   return (h >>> 0).toString(36);
 }
 
+/**
+ * Is this x-staff-session genuinely signed by us?
+ *
+ * getIdentifier is SYNCHRONOUS (it runs on every request, before any await), so
+ * this cannot call the async verifyStaffSession. Instead it recomputes the HMAC
+ * through signStaffSession — the same helper that issues sessions — which keeps
+ * the canonical-string construction and secret resolution in exactly one place
+ * (src/lib/commander/auth.js) rather than duplicating them here.
+ */
+function staffSessionIsAuthentic(parsed) {
+  if (!parsed || typeof parsed !== 'object') return false;
+  if (!parsed.sig || !parsed.session_ts) return false;
+  try {
+    const expected = signStaffSession(parsed).sig;
+    const a = Buffer.from(String(parsed.sig), 'utf8');
+    const b = Buffer.from(String(expected), 'utf8');
+    // timingSafeEqual throws on unequal-length buffers — check length first.
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
 function getIdentifier(req) {
   const auth = req.headers?.authorization;
   if (auth?.startsWith('Bearer ')) {
@@ -85,12 +116,17 @@ function getIdentifier(req) {
   }
   // Staff terminals authenticate by signed session rather than JWT; key them
   // on the staff row so one terminal cannot starve the rest of the venue.
+  // 2026-07-28 audit fix: ONLY a session whose HMAC actually verifies may name
+  // its own bucket. Forged, unsigned and tampered sessions fall through to the
+  // IP key below, so they all share one bucket instead of minting new ones.
   const staffSession = req.headers?.['x-staff-session'];
   if (staffSession) {
     try {
       const parsed = JSON.parse(staffSession);
-      const staffKey = parsed.id || parsed.user_id;
-      if (staffKey) return 's:' + staffKey;
+      if (staffSessionIsAuthentic(parsed)) {
+        const staffKey = parsed.id || parsed.user_id;
+        if (staffKey) return 's:' + staffKey;
+      }
     } catch {
       /* fall through to IP */
     }

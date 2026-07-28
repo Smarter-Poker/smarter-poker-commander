@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
 
-      const { session_id, table_number, seat_number } = req.body;
+      const { session_id, table_number, seat_number, venue_id } = req.body;
 
       if (!session_id && (!table_number || !seat_number)) {
           return res.status(400).json({
@@ -40,11 +40,21 @@ export default async function handler(req, res) {
           });
       }
 
+      // 2026-07-28 audit fix: table_number/seat_number are NOT globally unique, so
+      // an unscoped lookup could end a DIFFERENT club's session — and this route has
+      // financial side effects (credits time_balance_minutes, awards comps, writes
+      // commander_member_comp_log). Every lookup below is now venue-scoped.
+      const venueId = Number(venue_id);
+      if (!Number.isInteger(venueId) || venueId < 1) {
+          return res.status(400).json({ success: false, error: 'venue_id required' });
+      }
+
       try {
           // Find the active session
           let sessionQuery = getSupabase()
               .from('commander_table_sessions')
               .select('*')
+              .eq('venue_id', venueId)
               .in('status', ['active', 'paused', 'meal_break'])
                   .limit(100);
 
@@ -69,6 +79,7 @@ export default async function handler(req, res) {
                       const { data: seatRows } = await getSupabase()
                           .from('commander_table_seats')
                           .select('*')
+                          .eq('venue_id', venueId)
                           .eq('table_number', parseInt(table_number))
                           .eq('seat_number', parseInt(seat_number))
                           .eq('status', 'occupied')

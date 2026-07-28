@@ -38,6 +38,15 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, error: 'action required' });
       }
 
+      // 2026-07-28 audit fix: table_number/seat_number are NOT globally unique —
+      // two venues both have a table 1. With no venue filter this route could act
+      // on a DIFFERENT club's live session. venue_id is now required, validated,
+      // and applied to every lookup below.
+      const venueId = Number(venue_id);
+      if (!Number.isInteger(venueId) || venueId < 1) {
+          return res.status(400).json({ success: false, error: 'venue_id required' });
+      }
+
       // ── Tournament chip update — bypasses session lookup ──
       if (action === 'tournament_chip_update') {
           const { tournament_id, entry_id, chip_count } = req.body;
@@ -45,6 +54,21 @@ export default async function handler(req, res) {
               return res.status(400).json({ success: false, error: 'tournament_id, entry_id, and chip_count required' });
           }
           try {
+              // 2026-07-28 audit fix: this branch skips the session lookup, so it
+              // previously wrote chip counts for ANY entry_id + tournament_id with
+              // no venue check at all. commander_tournament_entries has no venue_id
+              // of its own; ownership is resolved through commander_tournaments.
+              const { data: tourney, error: tErr } = await getSupabase()
+                  .from('commander_tournaments')
+                  .select('id')
+                  .eq('id', tournament_id)
+                  .eq('venue_id', venueId)
+                  .maybeSingle();
+              if (tErr) throw tErr;
+              if (!tourney) {
+                  return res.status(404).json({ success: false, error: 'Tournament not found' });
+              }
+
               const { data: entry, error: eErr } = await getSupabase()
                   .from('commander_tournament_entries')
                   .update({ current_chips: parseInt(chip_count) })
@@ -69,6 +93,7 @@ export default async function handler(req, res) {
           const { data: sessions, error: fetchError } = await getSupabase()
               .from('commander_table_sessions')
               .select('*')
+              .eq('venue_id', venueId)
               .eq('table_number', parseInt(table_number))
               .eq('seat_number', parseInt(seat_number))
               .in('status', ['active', 'paused', 'meal_break'])
@@ -193,6 +218,7 @@ export default async function handler(req, res) {
                   const { data: occupied } = await getSupabase()
                       .from('commander_table_sessions')
                       .select('id, player_name')
+                      .eq('venue_id', session.venue_id)
                       .eq('table_number', parseInt(table_number))
                       .eq('seat_number', targetSeatNum)
                       .in('status', ['active', 'paused', 'meal_break'])
@@ -217,7 +243,10 @@ export default async function handler(req, res) {
                   if (moveError) throw moveError;
 
                   // Update seat records
-                  const venueIdVal = venue_id || session.venue_id;
+                  // 2026-07-28 audit fix: was `venue_id || session.venue_id`, which
+                  // let the request body decide WHERE the seat writes landed. The body
+                  // value may only narrow the lookup — never redirect a write.
+                  const venueIdVal = session.venue_id;
                   // Clear old seat
                   await getSupabase()
                       .from('commander_table_seats')
