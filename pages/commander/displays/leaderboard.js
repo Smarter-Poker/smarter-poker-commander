@@ -48,9 +48,9 @@ export default function LeaderboardDisplay() {
     try { const s = getStaffData(); return s.venue_id || null; } catch { return null; }
   });
 
-  // ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // HELPERS
-  // ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   function mName(m) {
     const f = m.first_name || ''; const l = m.last_name || '';
     if (f && l) return `${f} ${l.charAt(0)}.`;
@@ -76,9 +76,9 @@ export default function LeaderboardDisplay() {
     weekly: { l: 'Weekly', i: '', c: '#10B981' }, daily: { l: 'Daily', i: '', c: '#6B7280' } };
   function ti(t) { return TIERS[(t || '').toLowerCase()] || { l: t || 'Member', i: '', c: '#6B7280' }; }
 
-  // ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // FETCH & BUILD ALL BOARDS
-  // ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   const fetchData = useCallback(async (signal) => {
     if (!venueId) return;
     const staffSession = typeof window !== 'undefined' ? getStaffSession() || '' : '';
@@ -96,9 +96,9 @@ export default function LeaderboardDisplay() {
 
       const built = [];
 
-      // ═══════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════
       // SECTION A: CUSTOM LEADERBOARDS (staff-created, first priority)
-      // ═══════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════
       try {
         const lbRes = await commanderFetch(`/api/commander/leaderboards?venue_id=${venueId}&status=active`, fetchOpts);
         if (!lbRes.ok) throw new Error(`Request failed (${lbRes.status})`);
@@ -133,9 +133,9 @@ export default function LeaderboardDisplay() {
         }
       } catch (e) { console.warn("[leaderboard.js]", e); }
 
-      // ═══════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════
       // SECTION B: LEAGUE STANDINGS
-      // ═══════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════
       try {
         const lgRes = await commanderFetch(`/api/commander/leagues?venue_id=${venueId}&status=active`, fetchOpts);
         if (!lgRes.ok) throw new Error(`Request failed (${lgRes.status})`);
@@ -165,9 +165,9 @@ export default function LeaderboardDisplay() {
         }
       } catch (e) { console.warn("[leaderboard.js]", e); }
 
-      // ═══════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════
       // SECTION C: AUTO-GENERATED BOARDS
-      // ═══════════════════════════════════════════════════════════
+      // ════════════════════════════════════════════════════════════
 
       // ── C1: Hours Played ──
       try {
@@ -251,9 +251,9 @@ export default function LeaderboardDisplay() {
   const goFS = () => document.documentElement.requestFullscreen?.();
   const board = boards[activeIdx] || boards[0];
 
-  // ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   // RENDER
-  // ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════
   return (
     <CommanderLayout title="Leaderboard Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
