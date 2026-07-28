@@ -87,74 +87,72 @@ export default async function handler(req, res) {
 
       const isSeated = activeSession?.length > 0;
 
-      // 2026-07-28 audit fix: the purchased minutes used to be added to the
+      // 2026-07-28 audit fix (1): the purchased minutes used to be added to the
       // member's time_balance_minutes AND to the active session's
       // time_added_minutes, with neither deducted. A seated player who bought 60
       // minutes got 60 minutes of table time AND kept 60 minutes of credit, so
       // the room gave the time away on every kiosk purchase made by a seated
       // player. The prepaid model is a strict transfer, exactly as
       // pages/api/dealer/sessions/[id]/add-time.js implements it: put the minutes
-      // on the session clock, then deduct the same minutes from the balance.
-      // Net effect for a seated buyer is balance unchanged, clock +minutes.
-      if (isSeated) {
-        const { error: sessionError } = await getSupabase()
-          .from('commander_table_sessions')
-          .update({
-            time_added_minutes: (activeSession[0].time_added_minutes || 0) + purchasedMinutes,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', activeSession[0].id);
+      // on the session clock, then leave the balance alone.
+      //
+      // 2026-07-28 audit fix (2): both writes were read-modify-write — select the
+      // value, add in JS, write the sum back — so two concurrent kiosk purchases
+      // both read the old value and the second write erased the first. Cash was
+      // taken twice and one lot of minutes was credited. The purchase-log insert
+      // was also a separate statement, so a crash between the two left cash
+      // collected with no ledger row.
+      //
+      // commander_txn_member_time_purchase does all of it in one transaction:
+      // the ledger row first, then the atomic
+      // `col = col + delta` against either the session clock or the member
+      // balance. idempotency_key is optional; on a resubmission the ORIGINAL
+      // purchase row is returned with success and no minutes are granted twice.
+      const idempotencyKey = typeof req.body?.idempotency_key === 'string' && req.body.idempotency_key.trim()
+        ? req.body.idempotency_key.trim().slice(0, 200)
+        : null;
 
-        if (sessionError) throw sessionError;
-      }
-
-      const newBalance = isSeated ? currentBalance : currentBalance + purchasedMinutes;
-
-      // Update member balance
-      const { error: updateError } = await getSupabase()
-        .from('commander_members')
-        .update({
-          time_balance_minutes: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', member_id);
-
-      if (updateError) throw updateError;
-
-      // Log the purchase. 2026-07-28 audit fix: this insert's result was
-      // discarded, so while commander_time_purchases.venue_id was typed uuid and
-      // rejected the integer venue ids callers pass, every kiosk sale was lost
-      // silently — cash collected, no record. The column is bigint now; keep the
-      // error and log it loudly so any future schema drift fails visibly.
-      const { error: purchaseLogError } = await getSupabase()
-        .from('commander_time_purchases')
-        .insert({
-          venue_id: member.venue_id,
-          member_id: member.id,
-          minutes_purchased: purchasedMinutes,
-          amount_paid: amount ? parseFloat(amount) : null,
-          payment_method: payment_method || 'kiosk',
-          purchased_by: 'kiosk_self_service'
+      const { data: result, error: purchaseError } = await getSupabase()
+        .rpc('commander_txn_member_time_purchase', {
+          p_member_id: member_id,
+          p_minutes: purchasedMinutes,
+          p_session_id: isSeated ? activeSession[0].id : null,
+          p_venue_id: member.venue_id,
+          p_amount_paid: amount ? parseFloat(amount) : null,
+          p_payment_method: payment_method || 'kiosk',
+          p_purchased_by: 'kiosk_self_service',
+          p_idempotency_key: idempotencyKey
         });
 
-      if (purchaseLogError) {
-        console.error('[kiosk/buy-time] FAILED to record time purchase — cash was collected but no ledger row was written:', {
-          member_id: member.id,
+      if (purchaseError) {
+        // Cash may already have been collected at the kiosk, so make this loud.
+        console.error('[kiosk/buy-time] FAILED to apply time purchase — no minutes granted and no ledger row written:', {
+          member_id,
           venue_id: member.venue_id,
           minutes_purchased: purchasedMinutes,
-          error: purchaseLogError.message || purchaseLogError
+          error: purchaseError.message || purchaseError
         });
+        if (purchaseError.code === 'P0002') {
+          return res.status(404).json({ success: false, error: 'Member not found' });
+        }
+        throw purchaseError;
       }
 
+      const newBalance = result?.new_balance ?? currentBalance;
+
+      // Response shape unchanged. purchase_logged is now always true on the
+      // success path: the ledger insert happens inside the same transaction as
+      // the balance change, so if it had failed we would not be here.
       return res.status(200).json({
         success: true,
         data: {
           member_id,
           minutes_added: purchasedMinutes,
-          previous_balance: currentBalance,
+          previous_balance: result?.previous_balance ?? currentBalance,
           new_balance: newBalance,
-          added_to_active_session: isSeated,
-          purchase_logged: !purchaseLogError
+          added_to_active_session: result?.added_to_active_session ?? isSeated,
+          purchase_logged: true,
+          replayed: result?.replayed === true
         }
       });
     } catch (err) {
