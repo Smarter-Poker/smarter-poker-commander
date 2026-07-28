@@ -59,11 +59,14 @@ async function registrationReport(req, res, tournamentId) {
             .eq('id', tournamentId)
             .maybeSingle();
 
+        // 2026-07-28 audit fix: commander_tournament_entries has no
+        // payment_method and no cashier_staff_id column. PostgREST rejected the
+        // whole select with 42703, so this report returned HTTP 500 on every call.
         const { data: entries, error } = await getSupabase()
             .from('commander_tournament_entries')
             .select(`
         id, player_id, player_name, status, table_number, seat_number,
-        registration_method, payment_method, cashier_staff_id,
+        registration_method,
         rebuy_count, addon_taken, payout_amount, finish_position,
         registered_at, eliminated_at, current_chips,
         profiles (id, display_name, avatar_url)
@@ -86,14 +89,11 @@ async function registrationReport(req, res, tournamentId) {
         const houseFees = totalEntries * buyinFee;
         const prizePool = totalRevenue - houseFees;
 
-        // Group by payment method
-        const paymentBreakdown = {};
-        (entries || []).forEach(e => {
-            const method = e.payment_method || 'cash';
-            if (!paymentBreakdown[method]) paymentBreakdown[method] = { count: 0, total: 0 };
-            paymentBreakdown[method].count += 1;
-            paymentBreakdown[method].total += (buyinAmount + buyinFee);
-        });
+        // Payment-method breakdown is NOT derivable: nothing on
+        // commander_tournament_entries records how an entry was tendered, and the
+        // tournament buy-in rows written to commander_cash_transactions carry no
+        // tournament_id to join back on. Reporting it as all-cash would be a
+        // fabricated money figure, so it is returned as null instead.
 
         return res.status(200).json({
             success: true,
@@ -110,7 +110,8 @@ async function registrationReport(req, res, tournamentId) {
                     prize_pool: prizePool,
                     buyin_amount: buyinAmount,
                     buyin_fee: buyinFee,
-                    payment_breakdown: paymentBreakdown
+                    payment_breakdown: null,
+                    payment_breakdown_note: 'Not recorded: commander_tournament_entries has no payment_method column.'
                 }
             }
         });
@@ -121,8 +122,20 @@ async function registrationReport(req, res, tournamentId) {
 }
 
 /**
- * Cashier Report — per-cashier reconciliation
- * Total entries handled, cash collected, fees, by cashier staff
+ * Cashier Report — tournament cash reconciliation
+ *
+ * 2026-07-28 audit fix: this report used to select payment_method and
+ * cashier_staff_id from commander_tournament_entries. Neither column exists, so
+ * PostgREST returned 42703 and the endpoint answered HTTP 500 on every call — a
+ * cash control that looked present but caught nothing.
+ *
+ * The per-cashier split cannot be restored from the current schema: no table
+ * attributes a tournament entry to the staff member who took the money.
+ * commander_cash_transactions does carry processed_by, but the buy-in rows it
+ * receives from tournament registration have no tournament_id — only a free-text
+ * note — so they cannot be joined back to a tournament reliably. Rather than
+ * invent an attribution, the report now returns the tournament-level totals that
+ * ARE derivable and flags cashier attribution as unavailable.
  */
 async function cashierReport(req, res, tournamentId) {
     try {
@@ -135,7 +148,7 @@ async function cashierReport(req, res, tournamentId) {
         const { data: entries, error } = await getSupabase()
             .from('commander_tournament_entries')
             .select(`
-        id, player_name, payment_method, cashier_staff_id,
+        id, player_name, registration_method,
         rebuy_count, addon_taken, registered_at,
         profiles (display_name)
       `)
@@ -144,62 +157,37 @@ async function cashierReport(req, res, tournamentId) {
 
         if (error) throw error;
 
-        // Get staff names for cashier IDs
-        const cashierIds = [...new Set((entries || []).map(e => e.cashier_staff_id).filter(Boolean))]
-        let staffMap = {};
-        if (cashierIds.length > 0) {
-            // 2026-07-25 audit fix: missing semicolon made the next line parse as
-            // a call on the query builder (`.in(...)(staff || [])...`), crashing.
-            const { data: staff } = await getSupabase()
-                .from('commander_staff')
-                .select('id, first_name, last_name')
-                .in('id', cashierIds);
-            (staff || []).forEach(s => {
-                staffMap[s.id] = `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown';
-            });
-        }
-
         const buyinAmount = tournament?.buyin_amount || 0;
         const buyinFee = tournament?.buyin_fee || 0;
         const entryTotal = buyinAmount + buyinFee;
 
-        // Group by cashier
-        const cashierBreakdown = {};
-        (entries || []).forEach(e => {
-            const cashierId = e.cashier_staff_id || 'unassigned';
-            const cashierName = staffMap[cashierId] || 'Unassigned';
-            if (!cashierBreakdown[cashierId]) {
-                cashierBreakdown[cashierId] = {
-                    cashier_id: cashierId,
-                    cashier_name: cashierName,
-                    entries_count: 0,
-                    rebuys_count: 0,
-                    addons_count: 0,
-                    total_cash: 0,
-                    total_fees: 0,
-                    payment_methods: {}
-                };
-            }
-            const cb = cashierBreakdown[cashierId];
-            cb.entries_count += 1;
-            cb.rebuys_count += (e.rebuy_count || 0);
-            if (e.addon_taken) cb.addons_count += 1;
-            cb.total_cash += entryTotal;
-            cb.total_fees += buyinFee;
-
-            const method = e.payment_method || 'cash';
-            if (!cb.payment_methods[method]) cb.payment_methods[method] = 0;
-            cb.payment_methods[method] += entryTotal;
-        });
+        const entryCount = (entries || []).length;
+        const totalRebuys = (entries || []).reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
+        const totalAddons = (entries || []).filter(e => e.addon_taken).length;
 
         return res.status(200).json({
             success: true,
             data: {
                 tournament_name: tournament?.name,
                 tournament_date: tournament?.scheduled_start,
-                cashiers: Object.values(cashierBreakdown || {}),
-                total_entries: (entries || []).length,
-                total_collected: (entries || []).length * entryTotal
+                // No cashier attribution exists in the schema — see the note above.
+                // An empty list is returned deliberately; the UI renders
+                // "No cashier data recorded" rather than a fabricated breakdown.
+                cashiers: [],
+                cashier_attribution_available: false,
+                reconciliation_note: 'Per-cashier attribution is not recorded: commander_tournament_entries has no cashier_staff_id or payment_method column. Tournament-level totals below are derived from the tournament buy-in and fee.',
+                total_entries: entryCount,
+                total_rebuys: totalRebuys,
+                total_addons: totalAddons,
+                buyin_amount: buyinAmount,
+                buyin_fee: buyinFee,
+                total_collected: entryCount * entryTotal,
+                total_fees: entryCount * buyinFee,
+                // Rebuy and add-on cash is deliberately excluded from
+                // total_collected: it is not derivable whether rebuy_amount /
+                // addon_amount are tendered with or without the house fee, and
+                // this figure is reconciled against a physical drawer.
+                rebuy_addon_cash_included: false
             }
         });
     } catch (error) {
