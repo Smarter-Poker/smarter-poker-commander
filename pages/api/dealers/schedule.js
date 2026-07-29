@@ -66,7 +66,6 @@ async function handleList(req, res) {
       .from('commander_dealer_rotations')
       .select(`
         *,
-        commander_dealers (id, name, skill_level, certified_games),
         commander_tables (id, table_number, status)
       `)
       .eq('venue_id', venue_id)
@@ -177,7 +176,6 @@ async function handleCreate(req, res) {
       })
       .select(`
         *,
-        commander_dealers (id, name, skill_level),
         commander_tables (id, table_number)
       `)
       .maybeSingle();
