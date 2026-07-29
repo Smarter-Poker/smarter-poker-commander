@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       .from('commander_league_standings')
       .select('*, commander_leagues!inner(id, name, venue_id, season, status)')
       .eq('player_id', _u.id)
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
           .limit(100);
 
     if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
