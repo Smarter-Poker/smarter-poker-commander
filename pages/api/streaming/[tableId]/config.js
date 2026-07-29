@@ -76,8 +76,7 @@ export default async function handler(req, res) {
           .update({
             platforms: platforms || [],
             delay_minutes: delay_minutes || 15,
-            overlay_config: overlay_config || {},
-            updated_at: new Date().toISOString()
+            overlay_config: overlay_config || {}
           })
           .eq('table_id', tableId)
           .select()
