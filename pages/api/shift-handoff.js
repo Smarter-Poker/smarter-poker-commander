@@ -62,7 +62,7 @@ async function createHandoff(req, res) {
     // written — tables are 'in_use' when occupied, games are 'waiting'/'running',
     // and incidents use the incident_status column (there is no status column).
     const [tablesRes, waitlistRes, incidentsRes, gamesRes] = await Promise.all([
-      getSupabase().from('commander_tables').select('id, table_number, table_name, status, current_game_type, current_stakes, max_seats').eq('venue_id', venue_id).eq('status', 'in_use'),
+      getSupabase().from('commander_tables').select('id, table_number, table_name, status, game_type, stakes, max_seats').eq('venue_id', venue_id).eq('status', 'in_use'),
       getSupabase().from('commander_waitlist').select('id').eq('venue_id', venue_id).eq('status', 'waiting'),
       getSupabase().from('commander_incidents').select('id').eq('venue_id', venue_id).eq('incident_status', 'open'),
       getSupabase().from('commander_games').select('id, table_number, game_type, stakes, current_players, max_players, status').eq('venue_id', venue_id).in('status', ['waiting', 'running'])
