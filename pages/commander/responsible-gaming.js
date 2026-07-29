@@ -38,7 +38,7 @@ export default function ResponsibleGaming() {
     setLoading(true);
     try {
       const json = await commanderFetchJSON(`/api/commander/members?venue_id=${venueId}&limit=200`);
-      if (json.success) setMembers(json.data || []);
+      if (json.success) setMembers(json.data?.members || []);
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [venueId]);
