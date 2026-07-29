@@ -95,8 +95,7 @@ async function listMembers(req, res, groupId) {
       .from('commander_home_members')
       .select(`
         *,
-        profiles:user_id (id, display_name, avatar_url),
-        invited_by_profile:invited_by (id, display_name)
+        profiles:user_id (id, display_name, avatar_url)
       `)
       .eq('group_id', groupId)
       .order('joined_at', { ascending: false })
