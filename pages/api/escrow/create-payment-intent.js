@@ -77,9 +77,12 @@ export default async function handler(req, res) {
       }
 
       // Verify escrow transaction exists and belongs to user
+      // 2026-07-29 fix: commander_home_games has no `name` column (the title column
+      // is `title`); the old embed `(id, name, host_id)` errored the whole query so
+      // every escrow deposit returned 404 and no Stripe PaymentIntent was created.
       const { data: escrow, error: escrowError } = await getSupabase()
         .from('commander_escrow_transactions')
-        .select('*, commander_home_games!inner(id, name, host_id)')
+        .select('*, commander_home_games!inner(id, title, host_id)')
         .eq('id', escrow_id)
         .eq('player_id', user.id)
         .eq('status', 'pending')
@@ -133,7 +136,7 @@ export default async function handler(req, res) {
           player_id: user.id,
           type: 'commander_escrow'
         },
-        description: `Escrow deposit for home game: ${escrow.commander_home_games?.name || 'Poker Game'}`,
+        description: `Escrow deposit for home game: ${escrow.commander_home_games?.title || 'Poker Game'}`,
         automatic_payment_methods: {
           enabled: true
         }
