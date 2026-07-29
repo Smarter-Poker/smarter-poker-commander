@@ -54,12 +54,25 @@ async function getLeaderboard(req, res, id) {
         if (error) throw error;
         if (!lb) return res.status(404).json({ success: false, error: { message: 'Leaderboard not found' } });
 
-        // Get all points with tournament info
+        // Get all points for this leaderboard. commander_tournament_points has no
+        // FK to commander_tournaments, so tournament name/date are fetched separately
+        // (a PostgREST embed here errors PGRST200).
         const { data: points } = await getSupabase()
             .from('commander_tournament_points')
-            .select('*, commander_tournaments(name, scheduled_start)')
+            .select('*')
             .eq('leaderboard_id', id)
             .order('created_at', { ascending: false });
+
+        // Build tournament_id -> { name, scheduled_start } map for enrichment
+        const tournamentIds = [...new Set((points || []).map(p => p.tournament_id).filter(Boolean))];
+        const tournamentMap = {};
+        if (tournamentIds.length > 0) {
+            const { data: tournaments } = await getSupabase()
+                .from('commander_tournaments')
+                .select('id, name, scheduled_start')
+                .in('id', tournamentIds);
+            (tournaments || []).forEach(t => { tournamentMap[t.id] = t; });
+        }
 
         // Aggregate standings
         const playerMap = {};
@@ -82,8 +95,8 @@ async function getLeaderboard(req, res, id) {
                 playerMap[key].best_finish = p.finish_position;
             }
             playerMap[key].results.push({
-                tournament_name: p.commander_tournaments?.name,
-                tournament_date: p.commander_tournaments?.scheduled_start,
+                tournament_name: tournamentMap[p.tournament_id]?.name,
+                tournament_date: tournamentMap[p.tournament_id]?.scheduled_start,
                 finish_position: p.finish_position,
                 points: totalPts
             });
