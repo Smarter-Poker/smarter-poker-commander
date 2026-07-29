@@ -58,18 +58,13 @@ export default async function handler(req, res) {
       }
 
       // Get squad with members
+      // 2026-07-29 wiring fix: commander_waitlist_group_members has no FK to
+      // commander_waitlist_groups, so members cannot be embedded off the group
+      // (errors PGRST200). Fetch the group, then members (the nested profiles
+      // embed off members is valid: player_id -> profiles FK), separately.
       const { data: squad, error: squadError } = await getSupabase()
         .from('commander_waitlist_groups')
-        .select(`
-          *,
-          commander_waitlist_group_members (
-            id,
-            player_id,
-            member_status,
-            joined_at,
-            profiles (id, display_name, phone)
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
@@ -79,6 +74,12 @@ export default async function handler(req, res) {
           error: { code: 'NOT_FOUND', message: 'Squad not found' }
         });
       }
+
+      const { data: squadMembers } = await getSupabase()
+        .from('commander_waitlist_group_members')
+        .select('id, player_id, member_status, joined_at, profiles (id, display_name, phone)')
+        .eq('group_id', id);
+      squad.commander_waitlist_group_members = squadMembers || [];
 
       // Verify user is the leader
       if (squad.leader_id !== user.id) {
