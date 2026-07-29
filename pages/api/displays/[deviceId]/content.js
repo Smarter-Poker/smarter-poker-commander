@@ -197,11 +197,11 @@ async function getPromotionsContent(venueId) {
 
   const { data: promotions } = await getSupabase()
     .from('commander_promotions')
-    .select('id, name, description, promotion_type, prize_type, prize_amount, starts_at, ends_at')
+    .select('id, name, description, promotion_type, prize_type, prize_amount:prize_value, starts_at:start_date, ends_at:end_date')
     .eq('venue_id', venueId)
     .eq('status', 'active')
-    .or(`starts_at.is.null,starts_at.lte.${now}`)
-    .or(`ends_at.is.null,ends_at.gte.${now}`)
+    .or(`start_date.is.null,start_date.lte.${now}`)
+    .or(`end_date.is.null,end_date.gte.${now}`)
     .limit(5);
 
   // Get progressive jackpots
