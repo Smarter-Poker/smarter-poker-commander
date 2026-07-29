@@ -63,8 +63,7 @@ async function getPromotion(req, res, id) {
       .from('commander_promotions')
       .select(`
         *,
-        poker_venues:venue_id (id, name, city, state, address),
-        commander_staff:created_by (id, display_name)
+        poker_venues:venue_id (id, name, city, state, address)
       `)
       .eq('id', id)
       .maybeSingle();
