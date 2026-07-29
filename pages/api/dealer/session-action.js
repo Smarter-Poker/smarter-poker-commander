@@ -1,13 +1,14 @@
 /**
  * Session Action API — Unified player action endpoint
  * POST /api/commander/dealer/session-action
- * 
+ *
  * Actions: pause, resume, meal_break, missed_blinds, move
  * Body: { table_number, seat_number, action, target_seat? }
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { guardStaff } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -28,6 +29,15 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') {
           return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
+
+      // 2026-07-29 (decision A): dealer tablets (Commander "Table Tablets" and the
+      // social-media pages) already ship a signed x-staff-session header, so this
+      // route can require staff auth with no UI change. guardStaff verifies the
+      // HMAC and resolves the staff row, sending 401 itself on failure. Anonymous
+      // callers can no longer pause billing timers, move players between seats, or
+      // read player names back off this endpoint.
+      const staff = await guardStaff(req, res);
+      if (!staff) return;
 
       const { table_number, seat_number, action, target_seat, venue_id } = req.body;
 
