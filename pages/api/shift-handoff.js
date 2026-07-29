@@ -82,7 +82,7 @@ async function createHandoff(req, res) {
       return {
         table_number: t.table_number,
         table_name: t.table_name,
-        game: game ? `${game.game_type} ${game.stakes || ''}`.trim() : (t.current_game_type ? `${t.current_game_type} ${t.current_stakes || ''}`.trim() : 'No game'),
+        game: game ? `${game.game_type} ${game.stakes || ''}`.trim() : (t.game_type ? `${t.game_type} ${t.stakes || ''}`.trim() : 'No game'),
         players: game ? (game.current_players || 0) : 0,
         max_seats: game ? (game.max_players || t.max_seats || 9) : (t.max_seats || 9)
       };
