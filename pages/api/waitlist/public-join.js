@@ -73,7 +73,7 @@ export default async function handler(req, res) {
 
       try {
           const { venue_id, game_type: rawGameType, stakes, player_phone, player_name } = req.body;
-          const game_type = (rawGameType || '').toUpperCase();
+          const game_type = (rawGameType || '').toLowerCase();
 
           // Validation
           if (!venue_id || !game_type || !stakes) {
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
               .from('commander_waitlist')
               .select('id')
               .eq('venue_id', venue_id)
-              .eq('game_type', game_type)
+              .ilike('game_type', game_type)
               .eq('stakes', stakes)
               .eq('player_id', user.id)
               .eq('status', 'waiting')
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
               .from('commander_games')
               .select('id')
               .eq('venue_id', venue_id)
-              .eq('game_type', game_type)
+              .ilike('game_type', game_type)
               .eq('stakes', stakes)
               .in('status', ['waiting', 'running'])
               .maybeSingle();
