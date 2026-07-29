@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       let staff = null;
       const { data: staffRow } = await getSupabase()
         .from('commander_staff')
-        .select('venue_id, role, name')
+        .select('venue_id, role, name:display_name')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
