@@ -122,7 +122,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
   }
 
   return (
-    <CommanderLayout title="Announcements | {venue?.name || 'Commander'}" backHref="/commander/dashboard?card=displays">
+    <CommanderLayout title={`Announcements | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=displays">
       <>
         <SEOHead
           title="Commander — Announcements"
