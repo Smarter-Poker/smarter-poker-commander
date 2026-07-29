@@ -92,10 +92,7 @@ export default async function handler(req, res) {
 
       let query = getSupabase()
         .from('commander_escrow_transactions')
-        .select(`
-          *,
-          profiles:player_id (id, display_name, avatar_url)
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('home_game_id', home_game_id)
         .order('created_at', { ascending: false })
         .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
@@ -108,10 +105,26 @@ export default async function handler(req, res) {
 
       if (error) throw error;
 
+      // 2026-07-29 schema-wiring fix: commander_escrow_transactions has no FK
+      // player_id -> profiles, so a PostgREST embed (profiles:player_id) errored
+      // PGRST200 and broke this entire list endpoint. Fetch the player profiles
+      // separately and map them in - same output shape as the old embed.
+      const playerIds = [...new Set((data || []).map(t => t.player_id).filter(Boolean))];
+      let profileMap = {};
+      if (playerIds.length > 0) {
+        const { data: profiles } = await getSupabase()
+          .from('profiles')
+          .select('id, display_name, avatar_url')
+          .in('id', playerIds)
+          .limit(500);
+        (profiles || []).forEach(p => { profileMap[p.id] = p; });
+      }
+
       // Map profile data to player_name for convenience
       const transactions = (data || []).map(t => ({
         ...t,
-        player_name: t.profiles?.display_name || 'Player'
+        profiles: profileMap[t.player_id] || null,
+        player_name: profileMap[t.player_id]?.display_name || 'Player'
       }));
 
       return res.status(200).json({
