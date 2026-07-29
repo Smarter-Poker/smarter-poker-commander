@@ -135,7 +135,9 @@ export default async function handler(req, res) {
                           await getSupabase()
                               .from('commander_table_seats')
                               .update({ status: 'empty', player_name: null, member_id: null, seated_at: null })
-                              .eq('id', seatRow.id);
+                              .eq('venue_id', seatRow.venue_id)
+                              .eq('table_number', seatRow.table_number)
+                              .eq('seat_number', seatRow.seat_number);
 
                           return res.status(200).json({
                               success: true,
