@@ -51,18 +51,13 @@ export default async function handler(req, res) {
 
 async function handleGet(req, res, id) {
   try {
+    // 2026-07-29 wiring fix: commander_waitlist_group_members has no FK to
+    // commander_waitlist_groups and the group has no FK to poker_venues, so
+    // neither can be PostgREST-embedded off the group (errors PGRST200). Fetch
+    // the group, then members and venue separately, and attach.
     const { data: squad, error } = await getSupabase()
       .from('commander_waitlist_groups')
-      .select(`
-        *,
-        commander_waitlist_group_members (
-          id,
-          player_id,
-          joined_at,
-          profiles (id, display_name, avatar_url)
-        ),
-        poker_venues (id, name, city, state)
-      `)
+      .select('*')
       .eq('id', id)
       .maybeSingle();
 
@@ -71,6 +66,25 @@ async function handleGet(req, res, id) {
         success: false,
         error: { code: 'NOT_FOUND', message: 'Squad not found' }
       });
+    }
+
+    // Members (the nested profiles embed off members is valid: player_id -> profiles FK)
+    const { data: members } = await getSupabase()
+      .from('commander_waitlist_group_members')
+      .select('id, player_id, joined_at, profiles (id, display_name, avatar_url)')
+      .eq('group_id', id);
+    squad.commander_waitlist_group_members = members || [];
+
+    // Venue
+    if (squad.venue_id) {
+      const { data: venue } = await getSupabase()
+        .from('poker_venues')
+        .select('id, name, city, state')
+        .eq('id', squad.venue_id)
+        .maybeSingle();
+      squad.poker_venues = venue || null;
+    } else {
+      squad.poker_venues = null;
     }
 
     return res.status(200).json({
