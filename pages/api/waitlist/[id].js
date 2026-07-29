@@ -225,7 +225,7 @@ export default async function handler(req, res) {
         const updates = {};
         for (const key of allowedFields) {
           if (req.body[key] !== undefined) {
-            updates[key] = key === 'game_type' ? (req.body[key] || '').toUpperCase() : req.body[key];
+            updates[key] = key === 'game_type' ? (req.body[key] || '').toLowerCase() : req.body[key];
           }
         }
 
