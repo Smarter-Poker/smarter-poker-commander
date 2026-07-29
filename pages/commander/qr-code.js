@@ -106,7 +106,7 @@ export default function VenueQRCodePage() {
   }
 
   return (
-    <CommanderLayout title="Check-In QR Code | {venue?.name || 'Commander'}" backHref="/commander/dashboard?card=waitlist">
+    <CommanderLayout title={`Check-In QR Code | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=waitlist">
       <>
         <SEOHead
                 title="Commander — QR Code"
