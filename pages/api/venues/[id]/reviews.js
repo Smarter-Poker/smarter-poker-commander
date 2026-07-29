@@ -180,8 +180,7 @@ export default async function handler(req, res) {
           await getSupabase()
             .from('poker_venues')
             .update({
-              trust_score: parseFloat(avgRating.toFixed(1)),
-              review_count: allReviews.length
+              trust_score: parseFloat(avgRating.toFixed(1))
             })
             .eq('id', id);
         }
