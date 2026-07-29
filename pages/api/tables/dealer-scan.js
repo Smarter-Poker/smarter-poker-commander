@@ -83,15 +83,25 @@ export default async function handler(req, res) {
           // Find the game to assign dealer to
           let gameQuery = getSupabase()
               .from('commander_games')
-              .select('id, table_number, game_type, stakes, status')
+              .select('id, table_id, game_type, stakes, status')
               .eq('venue_id', venue_id)
-              .eq('status', 'active')
+              .in('status', ['waiting', 'running', 'active'])
                   .limit(100)
 
           if (game_id) {
               gameQuery = gameQuery.eq('id', game_id);
           } else if (table_number) {
-              gameQuery = gameQuery.eq('table_number', parseInt(table_number));
+              // commander_games has no table_number — resolve it to a table_id
+              const { data: tableRow } = await getSupabase()
+                  .from('commander_tables')
+                  .select('id')
+                  .eq('venue_id', venue_id)
+                  .eq('table_number', parseInt(table_number))
+                  .maybeSingle();
+              if (!tableRow) {
+                  return res.status(404).json({ success: false, error: 'Table not found at this venue' });
+              }
+              gameQuery = gameQuery.eq('table_id', tableRow.id);
           } else {
               return res.status(400).json({ success: false, error: 'table_number or game_id required' });
           }
@@ -111,12 +121,23 @@ export default async function handler(req, res) {
 
           if (updateError) throw updateError;
 
+          // Resolve table number for the response from the game's table_id
+          let resolvedTableNumber = table_number ? parseInt(table_number) : null;
+          if (resolvedTableNumber == null && game.table_id) {
+              const { data: gameTable } = await getSupabase()
+                  .from('commander_tables')
+                  .select('table_number')
+                  .eq('id', game.table_id)
+                  .maybeSingle();
+              resolvedTableNumber = gameTable?.table_number ?? null;
+          }
+
           return res.status(200).json({
               success: true,
               data: {
                   dealer_name: staff.display_name,
                   dealer_role: staff.role,
-                  table_number: game.table_number,
+                  table_number: resolvedTableNumber,
                   game_type: game.game_type,
                   stakes: game.stakes,
               }
