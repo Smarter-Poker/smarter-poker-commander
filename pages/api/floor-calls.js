@@ -140,20 +140,12 @@ export default async function handler(req, res) {
 
         if (status === 'resolved') {
           updates.resolution = resolution || '';
-          updates.resolved_at = now;
           if (!existing?.responded_at) {
             updates.responded_at = now;
-          }
-          // Compute response time (seconds from creation to resolution)
-          if (existing?.created_at) {
-            updates.response_time_seconds = Math.round(
-              (new Date(now) - new Date(existing.created_at)) / 1000
-            );
           }
         }
 
         if (status === 'cancelled') {
-          updates.resolved_at = now;
           updates.resolution = resolution || 'Cancelled';
         }
 

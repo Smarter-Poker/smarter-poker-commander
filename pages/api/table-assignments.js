@@ -236,7 +236,7 @@ async function handlePut(req, res, venueId, staffUserId) {
     // Close any existing games on this table first
     await getSupabase()
       .from('commander_games')
-      .update({ status: 'closed', ended_at: new Date().toISOString() })
+      .update({ status: 'closed', closed_at: new Date().toISOString() })
       .eq('table_id', table_id)
       .eq('venue_id', venueId)
       .in('status', ['waiting', 'running', 'active']);
@@ -257,7 +257,7 @@ async function handlePut(req, res, venueId, staffUserId) {
   if (mode === 'inactive') {
     await getSupabase()
       .from('commander_games')
-      .update({ status: 'closed', ended_at: new Date().toISOString() })
+      .update({ status: 'closed', closed_at: new Date().toISOString() })
       .eq('table_id', table_id)
       .eq('venue_id', venueId)
       .in('status', ['waiting', 'running', 'active']);
@@ -295,7 +295,7 @@ async function handleClose(req, res, venueId, staffUserId) {
   // Close all active games on this table
   await getSupabase()
     .from('commander_games')
-    .update({ status: 'closed', ended_at: new Date().toISOString() })
+    .update({ status: 'closed', closed_at: new Date().toISOString() })
     .eq('table_id', table_id)
     .eq('venue_id', venueId)
     .in('status', ['waiting', 'running', 'active']);

@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       if (include_games === 'true') {
         selectQuery = `
           *,
-          commander_games (
+          commander_games!commander_games_table_id_fkey (
             id,
             game_type,
             stakes,

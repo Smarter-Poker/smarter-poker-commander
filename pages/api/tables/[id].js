@@ -72,7 +72,7 @@ async function handleGet(req, res, tableId) {
       .from('commander_tables')
       .select(`
         *,
-        commander_games (
+        commander_games!commander_games_table_id_fkey (
           id,
           game_type,
           stakes,
