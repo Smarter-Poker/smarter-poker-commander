@@ -467,8 +467,6 @@ async function handleClockAction(req, res, tournamentId, staff) {
         await getSupabase()
           .from('commander_tables')
           .update({
-            small_blind: sb,
-            big_blind: bb,
             stakes: stakesStr
           })
           .eq('tournament_id', tournamentId)

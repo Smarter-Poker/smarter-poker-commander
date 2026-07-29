@@ -160,7 +160,6 @@ export default async function handler(req, res) {
             tournament_id: null,
             status: 'available',
             assigned_at: null,
-            updated_at: new Date().toISOString()
           })
           .eq('venue_id', tournament.venue_id)
           .eq('table_number', table_number);
