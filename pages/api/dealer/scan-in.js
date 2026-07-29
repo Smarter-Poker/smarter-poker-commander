@@ -1,22 +1,24 @@
 /**
  * Dealer Scan-In API
  * POST /api/commander/dealer/scan-in
- * 
+ *
  * When a dealer scans their member card QR at a table tablet,
  * this endpoint assigns them to that table.
- * 
+ *
  * - Looks up the member by qr_code
  * - Verifies member_type = 'employee'
  * - Ends any current dealer rotation for this table
  * - Creates a new commander_dealer_rotations row
- * 
+ *
  * Body: { qr_code, table_number, venue_id }
- * 
- * No auth guard — tablet is unauthenticated (same as player view).
+ *
+ * Auth: STAFF — the tablet ships a signed x-staff-session header, so a dealer
+ * rotation can only be created from an authenticated tablet, never anonymously.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { guardStaff } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -39,6 +41,13 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') {
           return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
+
+      // 2026-07-29 (decision A): dealer scan-in assigns a dealer to a table from
+      // the tablet, which already ships a signed x-staff-session header. Require
+      // it so a commander_dealer_rotations row can no longer be created from an
+      // anonymous request. guardStaff verifies the HMAC and sends 401 on failure.
+      const staff = await guardStaff(req, res);
+      if (!staff) return;
 
       const { qr_code, table_number, venue_id } = req.body;
 
