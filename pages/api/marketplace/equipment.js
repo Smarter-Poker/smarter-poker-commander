@@ -166,6 +166,12 @@ async function listForRent(req, res) {
       });
     }
 
+    // 2026-07-29 fix: the insert wrote description/weekly_rate/service_area/images/
+    // deposit_required, none of which existed on commander_equipment_rentals (7-col
+    // stub), so every POST failed with PGRST204 — the "list for rent" feature never
+    // worked. The columns are added by migration 20260729_equipment_rentals_shape.sql.
+    // The `profiles:vendor_id (...)` embed also required a FK that does not exist
+    // (PGRST200), the same one already removed from the GET path above — dropped here.
     const { data: equipment, error } = await getSupabase()
       .from('commander_equipment_rentals')
       .insert({
@@ -180,10 +186,7 @@ async function listForRent(req, res) {
         deposit_required,
         available: true
       })
-      .select(`
-        *,
-        profiles:vendor_id (id, display_name, avatar_url)
-      `)
+      .select('*')
       .maybeSingle();
 
     if (error) throw error;
