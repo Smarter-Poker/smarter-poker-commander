@@ -43,12 +43,12 @@ export default async function handler(req, res) {
 
     try {
       // Get squad
+      // 2026-07-29 wiring fix: commander_waitlist_group_members has no FK to
+      // commander_waitlist_groups, so members cannot be embedded off the group
+      // (errors PGRST200). Fetch the group and its members separately.
       const { data: squad, error: squadError } = await getSupabase()
         .from('commander_waitlist_groups')
-        .select(`
-          *,
-          commander_waitlist_group_members (id, player_id, member_status)
-        `)
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
@@ -59,7 +59,11 @@ export default async function handler(req, res) {
         });
       }
 
-      const members = squad.commander_waitlist_group_members || [];
+      const { data: memberRows } = await getSupabase()
+        .from('commander_waitlist_group_members')
+        .select('id, player_id, member_status')
+        .eq('group_id', id);
+      const members = memberRows || [];
       const existing = members.find(m => String(m.player_id) === String(player_id));
 
       // Accept-invitation path: an 'invited' row for this user becomes active.

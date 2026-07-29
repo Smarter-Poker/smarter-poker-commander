@@ -133,15 +133,7 @@ async function handleList(req, res) {
   try {
     let query = getSupabase()
       .from('commander_waitlist_groups')
-      .select(`
-        *,
-        commander_waitlist_group_members (
-          id,
-          player_id,
-          joined_at,
-          profiles:player_id (id, display_name, avatar_url)
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
           .limit(100);
 
@@ -153,10 +145,30 @@ async function handleList(req, res) {
 
     if (error) throw error;
 
+    // 2026-07-29 wiring fix: commander_waitlist_group_members has no FK to
+    // commander_waitlist_groups, so members cannot be PostgREST-embedded off the
+    // group (errors PGRST200). Fetch them separately and attach. The nested
+    // profiles embed off members IS valid (player_id -> profiles FK exists).
+    const squadIds = (squads || []).map(s => s.id);
+    const membersByGroup = {};
+    if (squadIds.length > 0) {
+      const { data: members } = await getSupabase()
+        .from('commander_waitlist_group_members')
+        .select('id, group_id, player_id, joined_at, profiles:player_id (id, display_name, avatar_url)')
+        .in('group_id', squadIds);
+      (members || []).forEach(m => {
+        (membersByGroup[m.group_id] = membersByGroup[m.group_id] || []).push(m);
+      });
+    }
+    const enriched = (squads || []).map(s => ({
+      ...s,
+      commander_waitlist_group_members: membersByGroup[s.id] || []
+    }));
+
     // Filter by player if specified
-    let filtered = squads;
+    let filtered = enriched;
     if (player_id) {
-      filtered = squads.filter(s =>
+      filtered = enriched.filter(s =>
         s.commander_waitlist_group_members?.some(m => m.player_id === player_id)
       );
     }
