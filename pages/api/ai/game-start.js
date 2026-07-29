@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       // 2. Current open tables
       const { data: tables } = await getSupabase()
         .from('commander_tables')
-        .select('id, table_number, game_type, status, seats')
+        .select('id, table_number, game_type, status')
         .eq('venue_id', venue_id)
             .limit(100)
 
