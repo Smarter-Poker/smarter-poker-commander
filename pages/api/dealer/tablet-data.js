@@ -213,7 +213,7 @@ export default async function handler(req, res) {
               try {
                   const { data: promoData } = await getSupabase()
                       .from('commander_promotions')
-                      .select('id, title, name, description, type, status')
+                      .select('id, title:name, name, description, type:promotion_type, status')
                       .eq('venue_id', resolvedVenueId)
                       .eq('status', 'active')
                       .order('created_at', { ascending: false })
