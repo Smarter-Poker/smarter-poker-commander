@@ -158,7 +158,7 @@ async function createRotation(req, res) {
       const { data: tbl } = await getSupabase()
         .from('commander_tables')
         .select('table_number')
-        .eq('id', parseInt(table_id))
+        .eq('id', table_id)
         .maybeSingle();
       resolvedTableNumber = tbl?.table_number || null;
     }
@@ -187,9 +187,8 @@ async function createRotation(req, res) {
             venue_id: venue_id,
             dealer_id,
             dealer_name: dealer.name,
-            table_id: parseInt(table_id),
+            table_id: table_id,
             table_number: resolvedTableNumber,
-            game_id: game_id ? parseInt(game_id) : null,
             started_at: new Date().toISOString()
           })
           .select()
@@ -276,9 +275,8 @@ async function createRotation(req, res) {
         venue_id: venue_id,
         dealer_id,
         dealer_name: dealer.name,
-        table_id: parseInt(table_id),
+        table_id: table_id,
         table_number: resolvedTableNumber,
-        game_id: game_id ? parseInt(game_id) : null,
         started_at: new Date().toISOString()
       })
       .select()
