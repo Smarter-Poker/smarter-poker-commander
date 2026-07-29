@@ -86,14 +86,14 @@ export default async function handler(req, res) {
         .insert({
           player_id: user.id,
           venue_id: venue_id,
-          table_id: table_id ? parseInt(table_id) : null,
           request_type,
-          details,
-          status: 'pending',
-          metadata: {
+          details: {
+            ...(details || {}),
+            table_id: table_id ? parseInt(table_id) : null,
             table_number,
             seat_number
-          }
+          },
+          status: 'pending'
         })
         .select()
         .maybeSingle();
