@@ -136,7 +136,7 @@ const url = editingId
 
   async function handleToggleActive(gt) {
     try {
-const res = await commanderFetch(`/api/commander/game-types/${gt.id}`, {
+const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ venue_id: venueId, is_active: !gt.is_active })
@@ -151,7 +151,7 @@ const res = await commanderFetch(`/api/commander/game-types/${gt.id}`, {
   async function handleDelete(gt) {
     if (!confirm(`Remove "${gt.name} ${gt.stakes}" permanently?`)) return;
     try {
-const res = await commanderFetch(`/api/commander/game-types/${gt.id}?venue_id=${venueId}`, {
+const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id=${venueId}`, {
         method: 'DELETE'});
       if (res.ok) {
         fetchGameTypes();
