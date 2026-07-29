@@ -65,7 +65,7 @@ async function createHandoff(req, res) {
       getSupabase().from('commander_tables').select('id, table_number, table_name, status, game_type, stakes, max_seats').eq('venue_id', venue_id).eq('status', 'in_use'),
       getSupabase().from('commander_waitlist').select('id').eq('venue_id', venue_id).eq('status', 'waiting'),
       getSupabase().from('commander_incidents').select('id').eq('venue_id', venue_id).eq('incident_status', 'open'),
-      getSupabase().from('commander_games').select('id, table_number, game_type, stakes, current_players, max_players, status').eq('venue_id', venue_id).in('status', ['waiting', 'running'])
+      getSupabase().from('commander_games').select('id, table_id, game_type, stakes, current_players, max_players, status').eq('venue_id', venue_id).in('status', ['waiting', 'running'])
     ]);
 
     const tables = tablesRes.data || [];
@@ -78,7 +78,7 @@ async function createHandoff(req, res) {
 
     // Build table snapshot with player counts from games
     const tableSnapshot = tables.map(t => {
-      const game = games.find(g => String(g.table_number) === String(t.table_number));
+      const game = games.find(g => String(g.table_id) === String(t.id));
       return {
         table_number: t.table_number,
         table_name: t.table_name,
