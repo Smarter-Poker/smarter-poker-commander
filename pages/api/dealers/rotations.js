@@ -265,7 +265,7 @@ async function createRotation(req, res) {
     await getSupabase()
       .from('commander_dealer_rotations')
       .update({ ended_at: new Date().toISOString() })
-      .eq('table_id', parseInt(table_id))
+      .eq('table_id', table_id)
       .is('ended_at', null);
 
     // Create new assignment
