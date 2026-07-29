@@ -1,15 +1,16 @@
 /**
- * Player Unseat API — Unauthenticated tablet endpoint
+ * Player Unseat API — Staff-guarded tablet endpoint
  * POST /api/commander/dealer/player-unseat
- * 
+ *
  * Removes a player from a table. Returns unused time to member balance (Texas mode).
  * Awards auto-comps based on session duration.
- * 
+ *
  * Body: { session_id } OR { table_number, seat_number }
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { guardStaff } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -30,6 +31,15 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') {
           return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
+
+      // 2026-07-29 (decision A): dealer tablets (Commander "Table Tablets" and the
+      // social-media pages) already ship a signed x-staff-session header, so this
+      // route now requires staff auth. It matters most here: player-unseat credits
+      // unused minutes back to the member balance and writes comp rows, so an
+      // anonymous caller could seat/unseat-cycle it as a comp-farming primitive.
+      // guardStaff verifies the HMAC and sends 401 itself on failure.
+      const staff = await guardStaff(req, res);
+      if (!staff) return;
 
       const { session_id, table_number, seat_number, venue_id } = req.body;
 

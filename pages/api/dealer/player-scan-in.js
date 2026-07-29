@@ -1,17 +1,18 @@
 /**
- * Player Scan-In API — Unauthenticated tablet endpoint
+ * Player Scan-In API — QR self-scan open; member_number fallback is staff-only
  * POST /api/commander/dealer/player-scan-in
- * 
+ *
  * Combined scan + seat in one call for the tablet.
  * Dual mode:
  *   - Texas clubs: checks membership, checks time_balance, deducts time
  *   - Charity/Home games: just logs player + tracks duration (no time billing)
- * 
+ *
  * Body: { qr_code, table_number, seat_number?, venue_id? }
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { verifyStaffSession } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -59,14 +60,24 @@ export default async function handler(req, res) {
               .eq('qr_code', lookupCode)
               .limit(1);
 
-          // Fallback to member_number
+          // Fallback to member_number — 2026-07-29 (decision B): member numbers are
+          // sequential (JAQK-00001, 00002, ...), so an open member_number lookup would
+          // let anyone seat a member by guessing — and scanning a member in claims and
+          // zeroes their prepaid time balance. The QR path keeps its entropy and stays
+          // open for player self-scan; the typed-number fallback now requires a verified
+          // staff session (the "card won't scan, staff types the number" case). When no
+          // staff session is present and the QR did not match, we fall through to the
+          // generic 404 below and never reveal that a member_number lookup exists.
           if (!members?.length) {
-              const { data: byNumber } = await getSupabase()
-                  .from('commander_members')
-                  .select('*')
-                  .eq('member_number', lookupCode)
-                  .limit(1);
-              members = byNumber;
+              const staffCheck = await verifyStaffSession(req);
+              if (!staffCheck.error) {
+                  const { data: byNumber } = await getSupabase()
+                      .from('commander_members')
+                      .select('*')
+                      .eq('member_number', lookupCode)
+                      .limit(1);
+                  members = byNumber;
+              }
           }
 
           const member = members?.[0];
