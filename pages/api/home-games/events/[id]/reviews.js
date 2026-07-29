@@ -56,7 +56,7 @@ async function handleGet(req, res, eventId) {
       .from('commander_home_game_reviews')
       .select(`
         *,
-        profiles (id, display_name, avatar_url)
+        profiles:reviewer_id (id, display_name, avatar_url)
       `)
       .eq('game_id', eventId)
       .order('created_at', { ascending: false })
