@@ -127,8 +127,8 @@ async function updateHighHand(req, res, id, staff) {
       // Regular update
       if (player_id !== undefined) updates.player_id = player_id;
       if (player_name !== undefined) updates.player_name = player_name;
-      if (hand_description !== undefined) updates.hand_description = hand_description;
-      if (hand_cards !== undefined) updates.hand_cards = hand_cards;
+      if (hand_description !== undefined) updates.notes = hand_description;
+      if (hand_cards !== undefined) updates.cards = hand_cards;
       if (board_cards !== undefined) updates.board_cards = board_cards;
       if (hand_rank !== undefined) updates.hand_rank = hand_rank;
       if (prize_amount !== undefined) updates.prize_amount = prize_amount;
