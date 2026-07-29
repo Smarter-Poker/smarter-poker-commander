@@ -130,7 +130,7 @@ async function handlePatch(req, res, id) {
         updates.resolved_at = new Date().toISOString();
       }
     }
-    if (resolution !== undefined) updates.resolution = resolution;
+    if (resolution !== undefined) updates.resolution_notes = resolution;
 
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
