@@ -52,7 +52,7 @@ async function handleGetPayouts(req, res, tournamentId) {
     // Get tournament details
     const { data: tournament, error: tErr } = await getSupabase()
       .from('commander_tournaments')
-      .select('*, commander_tournament_leaderboards(*)')
+      .select('*')
       .eq('id', tournamentId)
       .maybeSingle();
 
