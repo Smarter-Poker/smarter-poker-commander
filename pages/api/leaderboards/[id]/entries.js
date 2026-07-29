@@ -207,8 +207,8 @@ async function calculateAllEntries(req, res, leaderboard) {
       .select('player_id, total_time_minutes, status')
       .eq('venue_id', leaderboard.venue_id)
       .eq('status', 'completed')
-      .gte('check_in_time', `${leaderboard.start_date}T00:00:00`)
-      .lte('check_in_time', `${leaderboard.end_date}T23:59:59`)
+      .gte('check_in_at', `${leaderboard.start_date}T00:00:00`)
+      .lte('check_in_at', `${leaderboard.end_date}T23:59:59`)
           .limit(100)
 
     // Aggregate by player
