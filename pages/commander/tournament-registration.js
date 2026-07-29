@@ -269,6 +269,8 @@ ${total > 0 ? `<div class="fin-total-row"><span class="fin-total-label">Total Bu
             setMessage({ type: 'error', text: 'Select a player and tournament' });
             return;
         }
+        const buyinAmount = selectedTournament.buyin_amount || 0;
+        const buyinFee = selectedTournament.buyin_fee || 0;
         setRegistering(true);
         try {
 const headers = { 'Content-Type': 'application/json' };
