@@ -52,6 +52,7 @@ export default function TDPlayers() {
   const [moveTable, setMoveTable] = useState('');
   const [moveSeat, setMoveSeat] = useState('');
   const [confirmAction, setConfirmAction] = useState(null); // { type, player, message }
+  const [eliminatorId, setEliminatorId] = useState('');
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -126,6 +127,7 @@ export default function TDPlayers() {
   };
 
   const confirmEliminate = (player) => {
+    setEliminatorId('');
     setConfirmAction({
       type: 'eliminate', player,
       message: `Eliminate ${player.player_name}?`,
@@ -229,7 +231,8 @@ ${receipts.map(r => `<div class="card">
     try {
       if (type === 'eliminate') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/eliminate`, {
-          entry_id: player.entry_id, finish_position: floor?.stats?.players_remaining || 0
+          entry_id: player.entry_id, finish_position: floor?.stats?.players_remaining || 0,
+          eliminated_by_id: eliminatorId || null
         });
         if (res.success) {
           success = true;
@@ -616,6 +619,18 @@ ${receipts.map(r => `<div class="card">
                 <h3 className="text-lg font-bold text-white">{confirmAction.message}</h3>
                 <p className="text-sm text-[#B0B3B8] mt-1">{confirmAction.detail}</p>
               </div>
+              {confirmAction.type === 'eliminate' && floor?.tournament?.bounty_amount > 0 && (
+                <div className="mb-4 text-left">
+                  <label className="text-xs text-[#B0B3B8] mb-1 block">Eliminated By — awards ${floor.tournament.bounty_amount} bounty</label>
+                  <select value={eliminatorId} onChange={e => setEliminatorId(e.target.value)}
+                    className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1877F2]">
+                    <option value="">Unknown — no bounty awarded</option>
+                    {allPlayers.filter(p => p.status === 'active' && p.entry_id !== confirmAction.player.entry_id).map(p => (
+                      <option key={p.entry_id} value={p.entry_id}>{p.player_name}{p.table_number ? ` (T${p.table_number})` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3">
                 <button onClick={() => setConfirmAction(null)}
                   className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
