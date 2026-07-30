@@ -11,7 +11,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText, Square } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 
@@ -34,6 +34,7 @@ export default function TDClock() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [showMessage, setShowMessage] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -391,6 +392,8 @@ ${receipts.map(r => `<div class="card">
                 disabled={stats.players_remaining > 10} />
               <ActionChip icon={Volume2} label="Announce" onClick={() => setShowMessage(true)} />
               <ActionChip icon={Maximize} label="Fullscreen" onClick={toggleFullscreen} />
+              <ActionChip icon={Square} label="End Event" onClick={() => setShowEndConfirm(true)}
+                active={true} activeColor="#EF4444" disabled={!!actionLoading} />
             </div>
           </div>
         )}
@@ -417,6 +420,31 @@ ${receipts.map(r => `<div class="card">
                 <button onClick={sendMessage} disabled={!messageText.trim()}
                   className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
                   <Volume2 className="w-4 h-4" /> Broadcast
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* End Tournament Confirmation */}
+        {showEndConfirm && (
+          <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4"
+            onClick={() => setShowEndConfirm(false)}>
+            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]" onClick={e => e.stopPropagation()}>
+              <div className="text-center mb-4">
+                <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: '#EF444420' }}>
+                  <Square className="w-7 h-7 text-[#EF4444]" />
+                </div>
+                <h3 className="text-lg font-bold text-white">End Tournament?</h3>
+                <p className="text-sm text-[#B0B3B8] mt-1">This marks the tournament completed and stops the clock. This cannot be undone.</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowEndConfirm(false)}
+                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                <button onClick={async () => { setShowEndConfirm(false); await clockAction('end'); }}
+                  disabled={actionLoading === 'end'}
+                  className="flex-1 py-3 rounded-xl bg-[#EF4444] text-white font-bold active:opacity-80 disabled:opacity-50">
+                  {actionLoading === 'end' ? 'Ending...' : 'End Tournament'}
                 </button>
               </div>
             </div>
