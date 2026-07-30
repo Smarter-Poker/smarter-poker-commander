@@ -239,7 +239,10 @@ export default async function handler(req, res) {
             scheduled_start: tournament.scheduled_start,
             game_type: tournament.game_type,
             payout_structure: tournament.payout_structure,
-            custom_payouts: tournament.custom_payouts,
+            custom_payouts: tournament.payout_structure,
+            bounty_amount: tournament.bounty_amount,
+            actual_prizepool: tournament.actual_prizepool,
+            paying_places: tournament.paying_places,
             clock_color: tournament.settings?.clock_color,
             max_entries: tournament.max_entries,
             blind_structure: blindStructure,
@@ -275,7 +278,7 @@ export default async function handler(req, res) {
               : 0,
             // True once the re-entry window closes — signals that auto-break is now active
             re_entry_period_over: currentLevel > Math.max(
-              tournament.rebuy_levels || 0,
+              tournament.rebuy_end_level || 0,
               tournament.late_registration_levels || 0
             ),
 
