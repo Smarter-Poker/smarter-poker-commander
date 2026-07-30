@@ -114,7 +114,11 @@ export default async function handler(req, res) {
           const now = new Date();
           const playersWithTime = (sessions || []).map(s => {
               const totalAllocatedSeconds = ((s.time_allocated_minutes || 0) + (s.time_added_minutes || 0)) * 60;
-              const elapsedSeconds = Math.floor((now - new Date(s.started_at)) / 1000);
+              // Billing freezes while paused/on meal break: subtract accumulated paused
+              // minutes plus any still-open paused span from wall-clock elapsed time.
+              const pausedSeconds = (s.total_paused_minutes || 0) * 60
+                  + (s.paused_at ? Math.floor((now - new Date(s.paused_at)) / 1000) : 0);
+              const elapsedSeconds = Math.max(0, Math.floor((now - new Date(s.started_at)) / 1000) - pausedSeconds);
               const timeRemaining = Math.max(0, totalAllocatedSeconds - elapsedSeconds);
 
               return {
