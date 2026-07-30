@@ -94,7 +94,6 @@ export default function TabletDisplay() {
     const [error, setError] = useState(null);
     const [now, setNow] = useState(Date.now());
     const lastFetchAt = useRef(Date.now());
-    const [tickerOffset, setTickerOffset] = useState(0);
 
     // Resolve venue_id from query or localStorage
     const venueId = venue || (() => {
@@ -143,12 +142,6 @@ export default function TabletDisplay() {
     useEffect(() => {
         const tick = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(tick);
-    }, []);
-
-    // Ticker animation for promotions
-    useEffect(() => {
-        const ticker = setInterval(() => setTickerOffset(o => o + 1), 50);
-        return () => clearInterval(ticker);
     }, []);
 
     /* ─── Screen Wake Lock ─────────────────────────────────────── */
@@ -445,7 +438,24 @@ export default function TabletDisplay() {
                     </div>
                 </div>
 
-                {/* Timer bar and promotion ticker removed — clean fullscreen view */}
+                {/* ── Promotion / announcement ticker (CSS marquee) ─────── */}
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    height: 44, display: 'flex', alignItems: 'center',
+                    background: 'rgba(20,20,20,0.92)', borderTop: '1px solid rgba(255,255,255,0.08)',
+                    overflow: 'hidden', whiteSpace: 'nowrap', zIndex: 15 }}>
+                    <div style={{
+                        display: 'inline-flex', flexShrink: 0, willChange: 'transform',
+                        animation: 'ticker-marquee 40s linear infinite' }}>
+                        {[...tickerItems, ...tickerItems].map((item, i) => (
+                            <span key={i} style={{
+                                display: 'inline-block', padding: '0 40px',
+                                fontSize: 16, fontWeight: 600, color: '#E4E6EB', letterSpacing: 0.3 }}>
+                                {item}
+                            </span>
+                        ))}
+                    </div>
+                </div>
 
                 {/* ── Error overlay ───────────────────────── */}
                 {error && (
@@ -468,6 +478,7 @@ export default function TabletDisplay() {
           0%, 100% { border-color: rgba(239,68,68,0.5); box-shadow: 0 0 0 0 rgba(239,68,68,0); }
           50% { border-color: rgba(239,68,68,0.9); box-shadow: 0 0 16px 0 rgba(239,68,68,0.2); }
         }
+        @keyframes ticker-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         ::-webkit-scrollbar { display: none; }
       `}</style>
         </>
