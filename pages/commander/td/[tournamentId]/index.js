@@ -189,6 +189,7 @@ export default function TDControlCenter() {
   }
 
   const { tournament, clock, stats, alerts, tables } = floor;
+  const chipLeader = (stats.player_stacks || []).reduce((top, p) => (!top || p.chips > top.chips) ? p : top, null);
   const statusConf = STATUS_CONFIG[tournament.status] || STATUS_CONFIG.scheduled;
 
   return (
@@ -270,6 +271,23 @@ export default function TDControlCenter() {
           </button>
         </div>
 
+        {/* ===== ADD PLAYER / REGISTER ===== */}
+        <div className="px-4 pb-1">
+          <button onClick={() => navigateTo('register')}
+            className="w-full bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center justify-between active:bg-[#3A3B3C] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-[#1877F2]" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-white font-semibold text-base">Add Player</span>
+                <span className="text-[#B0B3B8] text-xs">Register an entrant or re-entry</span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
+          </button>
+        </div>
+
         {/* ===== STATS GRID ===== */}
         <div className="px-4 py-2">
           <div className="grid grid-cols-3 gap-2">
@@ -281,6 +299,28 @@ export default function TDControlCenter() {
             <StatCard icon={DollarSign} label="Avg Stack" value={formatChips(stats.average_stack)} color="#B0B3B8" />
           </div>
         </div>
+
+        {/* ===== CHIP LEADER & PAYOUTS ===== */}
+        {(chipLeader || tournament.paying_places || tournament.actual_prizepool) && (
+          <div className="px-4 py-2 grid grid-cols-2 gap-2">
+            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+              <div className="flex items-center gap-1 mb-1">
+                <Trophy className="w-3.5 h-3.5" style={{ color: '#F59E0B' }} />
+                <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Chip Leader</span>
+              </div>
+              <p className="text-sm font-bold text-white truncate">{chipLeader ? chipLeader.name : '--'}</p>
+              <p className="text-xs text-[#31A24C] font-medium">{chipLeader ? `${formatChips(chipLeader.chips)} chips` : ''}</p>
+            </div>
+            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+              <div className="flex items-center gap-1 mb-1">
+                <DollarSign className="w-3.5 h-3.5" style={{ color: '#31A24C' }} />
+                <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Prize Pool / Paying</span>
+              </div>
+              <p className="text-sm font-bold text-white truncate">{formatMoney(tournament.actual_prizepool || stats.prize_pool)}</p>
+              <p className="text-xs text-[#B0B3B8] font-medium">{tournament.paying_places ? `${tournament.paying_places} places paid` : 'Places TBD'}</p>
+            </div>
+          </div>
+        )}
 
         {/* ===== TABLES OVERVIEW (compact) ===== */}
         <div className="px-4 py-2">
@@ -385,8 +425,8 @@ export default function TDControlCenter() {
                                 isAlternate ? 'Added to alternates' :
                                   isActive ? `Seated T${e.table_number || '?'}-S${e.seat_number || '?'}` :
                                     'Registered'}
-                              {e.rebuy_count > 0 ? ` \u2022 ${e.rebuy_count}R` : ''}
-                              {e.addon_taken ? ' \u2022 Add-on' : ''}
+                              {e.rebuy_count > 0 ? ` • ${e.rebuy_count}R` : ''}
+                              {e.addon_taken ? ' • Add-on' : ''}
                             </p>
                           </div>
                           <span className="text-xs text-[#B0B3B8] flex-shrink-0">{timeStr}</span>
