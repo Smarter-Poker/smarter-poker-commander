@@ -21,6 +21,33 @@ function getSupabase() {
     return _supabase;
 }
 
+// Shared structure validation — rejects obviously invalid tournament payloads
+// before they persist. `partial` mode only checks the fields actually provided.
+function validateTournamentPayload(body, { partial = false } = {}) {
+    const { blind_structure, payout_structure, paying_places, max_entries } = body || {};
+
+    if (blind_structure !== undefined) {
+        let bs = blind_structure;
+        if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = null; } }
+        if (!Array.isArray(bs) || bs.length === 0) return 'blind_structure must be a non-empty array of levels';
+        if (!bs.some(l => l && !l.is_break)) return 'blind_structure must contain at least one playing level';
+    } else if (!partial) {
+        return 'blind_structure is required and must be a non-empty array of levels';
+    }
+
+    if (Array.isArray(payout_structure) && payout_structure.length > 0) {
+        const sum = payout_structure.reduce((s, p) => s + (Number(p && (p.pct != null ? p.pct : p.percentage)) || 0), 0);
+        if (Math.abs(sum - 100) > 0.5) return `payout_structure percentages must total ~100% (got ${sum.toFixed(2)}%)`;
+    }
+
+    const cap = (max_entries !== undefined && max_entries !== null && max_entries !== '') ? parseInt(max_entries) : null;
+    if (cap && Number.isFinite(cap) && paying_places != null && parseInt(paying_places) > cap) {
+        return `paying_places (${paying_places}) cannot exceed max_entries (${cap})`;
+    }
+
+    return null;
+}
+
 // Auth: STAFF_WRITE — requires manager or owner role
 export default async function handler(req, res) {
   try {
@@ -105,7 +132,7 @@ async function updateTournament(req, res, id, staff) {
     // Get tournament to verify it exists
     const { data: existing, error: fetchError } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, status')
+      .select('venue_id, status, max_entries')
       .eq('id', id)
       .maybeSingle();
 
@@ -116,6 +143,16 @@ async function updateTournament(req, res, id, staff) {
     // Verify staff belongs to this venue
     if (staff.venue_id !== undefined && String(staff.venue_id) !== String(existing.venue_id)) {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You are not staff at this venue' } });
+    }
+
+    // Reject obviously invalid structures before persisting. Only provided
+    // fields are checked; the entries cap falls back to the stored max_entries.
+    const structErr = validateTournamentPayload(
+      { ...req.body, max_entries: (req.body.max_entries !== undefined ? req.body.max_entries : existing.max_entries) },
+      { partial: true }
+    );
+    if (structErr) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: structErr } });
     }
 
     const updates = { ...req.body, updated_at: new Date().toISOString() };
