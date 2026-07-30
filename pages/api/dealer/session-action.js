@@ -169,9 +169,11 @@ export default async function handler(req, res) {
                   if (session.status === 'meal_break') {
                       return res.status(400).json({ success: false, error: `${session.player_name} is on meal break — resume first` });
                   }
+                  // Stamp paused_at so billing freezes. Preserve an existing stamp if
+                  // one somehow survives, so we never restart an in-progress span.
                   const { error } = await getSupabase()
                       .from('commander_table_sessions')
-                      .update({ status: 'paused', updated_at: new Date().toISOString() })
+                      .update({ status: 'paused', paused_at: session.paused_at || new Date().toISOString(), updated_at: new Date().toISOString() })
                       .eq('id', session.id);
                   if (error) throw error;
                   return res.status(200).json({
@@ -185,9 +187,16 @@ export default async function handler(req, res) {
                   if (session.status === 'active') {
                       return res.status(200).json({ success: true, data: { action: 'resume', player_name: session.player_name, session_id: session.id, note: 'Already active' } });
                   }
+                  // Fold the just-ended paused span into total_paused_minutes and clear
+                  // paused_at, so the billing clock (which subtracts paused time) picks
+                  // up exactly where it froze.
+                  const pausedSpanMinutes = session.paused_at
+                      ? Math.max(0, Math.round((Date.now() - new Date(session.paused_at).getTime()) / 60000))
+                      : 0;
+                  const newTotalPaused = (session.total_paused_minutes || 0) + pausedSpanMinutes;
                   const { error } = await getSupabase()
                       .from('commander_table_sessions')
-                      .update({ status: 'active', updated_at: new Date().toISOString() })
+                      .update({ status: 'active', paused_at: null, total_paused_minutes: newTotalPaused, updated_at: new Date().toISOString() })
                       .eq('id', session.id);
                   if (error) throw error;
                   return res.status(200).json({
@@ -201,9 +210,11 @@ export default async function handler(req, res) {
                   if (session.status === 'meal_break') {
                       return res.status(200).json({ success: true, data: { action: 'meal_break', player_name: session.player_name, session_id: session.id, duration_minutes: 30, note: 'Already on meal break' } });
                   }
+                  // Meal break freezes billing too. If the seat was already paused,
+                  // keep the original paused_at so the running span is not reset.
                   const { error } = await getSupabase()
                       .from('commander_table_sessions')
-                      .update({ status: 'meal_break', updated_at: new Date().toISOString() })
+                      .update({ status: 'meal_break', paused_at: session.paused_at || new Date().toISOString(), updated_at: new Date().toISOString() })
                       .eq('id', session.id);
                   if (error) throw error;
                   return res.status(200).json({
@@ -318,31 +329,6 @@ export default async function handler(req, res) {
                           from_seat: parseInt(seat_number),
                           to_seat: targetSeatNum,
                           session_id: session.id
-                      }
-                  });
-              }
-
-              /* ─── UPDATE CHIP COUNT (Tournament) ─── */
-              case 'update_chip_count': {
-                  const chipCount = req.body?.chip_count;
-                  if (!chipCount && chipCount !== 0) {
-                      return res.status(400).json({ success: false, error: 'chip_count required' });
-                  }
-                  const { error } = await getSupabase()
-                      .from('commander_table_sessions')
-                      .update({
-                          chip_count: parseInt(chipCount),
-                          updated_at: new Date().toISOString(),
-                      })
-                      .eq('id', session.id);
-                  if (error) throw error;
-                  return res.status(200).json({
-                      success: true,
-                      data: {
-                          action: 'update_chip_count',
-                          player_name: session.player_name,
-                          session_id: session.id,
-                          chip_count: parseInt(chipCount),
                       }
                   });
               }
