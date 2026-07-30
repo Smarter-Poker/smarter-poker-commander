@@ -21,6 +21,36 @@ function getSupabase() {
     return _supabase;
 }
 
+// Shared structure validation — rejects/normalizes obviously invalid tournament
+// payloads before they persist. `partial` mode (update) only checks provided fields.
+export function validateTournamentPayload(body, { partial = false } = {}) {
+    const { blind_structure, payout_structure, paying_places, max_entries } = body || {};
+
+    // blind_structure must be a non-empty array with at least one playing level.
+    if (blind_structure !== undefined) {
+        let bs = blind_structure;
+        if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = null; } }
+        if (!Array.isArray(bs) || bs.length === 0) return 'blind_structure must be a non-empty array of levels';
+        if (!bs.some(l => l && !l.is_break)) return 'blind_structure must contain at least one playing level';
+    } else if (!partial) {
+        return 'blind_structure is required and must be a non-empty array of levels';
+    }
+
+    // payout_structure (canonical array of { place, pct }) must total ~100%.
+    if (Array.isArray(payout_structure) && payout_structure.length > 0) {
+        const sum = payout_structure.reduce((s, p) => s + (Number(p && (p.pct != null ? p.pct : p.percentage)) || 0), 0);
+        if (Math.abs(sum - 100) > 0.5) return `payout_structure percentages must total ~100% (got ${sum.toFixed(2)}%)`;
+    }
+
+    // paying_places cannot exceed the entries cap.
+    const cap = (max_entries !== undefined && max_entries !== null && max_entries !== '') ? parseInt(max_entries) : null;
+    if (cap && Number.isFinite(cap) && paying_places != null && parseInt(paying_places) > cap) {
+        return `paying_places (${paying_places}) cannot exceed max_entries (${cap})`;
+    }
+
+    return null;
+}
+
 // Auth: STAFF_WRITE — requires manager or owner role
 export default async function handler(req, res) {
   try {
@@ -148,6 +178,7 @@ async function createTournament(req, res, staff) {
       blind_structure,
       break_schedule,
       payout_structure,
+      paying_places,
       allows_rebuys,
       rebuy_amount,
       rebuy_chips,
@@ -168,6 +199,12 @@ async function createTournament(req, res, staff) {
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'Required fields: venue_id, name, tournament_type, buyin_amount, starting_chips, scheduled_start' }
       });
+    }
+
+    // Reject obviously invalid structures before persisting.
+    const structErr = validateTournamentPayload(req.body, { partial: false });
+    if (structErr) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: structErr } });
     }
 
     // Verify staff belongs to this venue
@@ -194,6 +231,7 @@ async function createTournament(req, res, staff) {
         blind_structure: blind_structure || [],
         break_schedule: break_schedule || [],
         payout_structure: payout_structure || [],
+        paying_places: paying_places != null ? paying_places : (Array.isArray(payout_structure) ? payout_structure.length : null),
         allows_rebuys: allows_rebuys || false,
         rebuy_amount,
         rebuy_chips,
