@@ -2,7 +2,7 @@
  * Session Action API — Unified player action endpoint
  * POST /api/commander/dealer/session-action
  *
- * Actions: pause, resume, meal_break, missed_blinds, move
+ * Actions: pause, resume, meal_break, missed_blinds, move, add_time
  * Body: { table_number, seat_number, action, target_seat? }
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
@@ -144,7 +144,7 @@ export default async function handler(req, res) {
 
           // TOURNAMENT GUARD: Block timer-based actions for tournament sessions
           // Move is still allowed — dealers need to move tournament players between tables
-          if (['pause', 'resume', 'meal_break', 'missed_blinds'].includes(action)) {
+          if (['pause', 'resume', 'meal_break', 'missed_blinds', 'add_time'].includes(action)) {
               const { data: tableRow } = await getSupabase()
                   .from('commander_tables')
                   .select('mode')
@@ -250,6 +250,25 @@ export default async function handler(req, res) {
                           session_id: session.id,
                           missed_blinds_count: currentMissed + 1
                       }
+                  });
+              }
+
+              /* --- ADD TIME (buy more banked minutes) --- */
+              case 'add_time': {
+                  const addMinutes = parseInt(req.body.minutes, 10);
+                  if (!Number.isInteger(addMinutes) || addMinutes <= 0) {
+                      return res.status(400).json({ success: false, error: 'minutes must be a positive integer' });
+                  }
+                  const { data: updated, error } = await getSupabase()
+                      .from('commander_table_sessions')
+                      .update({ time_added_minutes: (session.time_added_minutes || 0) + addMinutes, updated_at: new Date().toISOString() })
+                      .eq('id', session.id)
+                      .select('id, player_name, time_added_minutes')
+                      .maybeSingle();
+                  if (error) throw error;
+                  return res.status(200).json({
+                      success: true,
+                      data: { action: 'add_time', player_name: updated?.player_name || session.player_name, session_id: session.id, minutes_added: addMinutes, time_added_minutes: updated?.time_added_minutes }
                   });
               }
 
