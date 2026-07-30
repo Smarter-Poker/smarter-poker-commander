@@ -266,6 +266,12 @@ export default function TournamentSettings() {
   const [estimatedEntries, setEstimatedEntries] = useState(30);
   const [customPayouts, setCustomPayouts] = useState([]);
 
+  // Saved (venue-scoped) templates
+  const [templates, setTemplates] = useState([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateBusy, setTemplateBusy] = useState(false);
+
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
 
@@ -400,6 +406,86 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
     setCustomPayouts(customPayouts.filter((_, i) => i !== index).map((p, i) => ({ ...p, place: i + 1 })));
   };
 
+  // ===== SAVED TEMPLATES (venue-scoped) =====
+  const fetchTemplates = async () => {
+    if (!tournament?.venue_id) return;
+    try {
+      const json = await commanderFetchJSON(`/api/commander/tournaments/templates?venue_id=${tournament.venue_id}`);
+      if (json.success) setTemplates(json.data?.templates || []);
+    } catch (err) { console.warn(err); }
+  };
+
+  const openTemplatePicker = () => {
+    const next = !showTemplatePicker;
+    setShowTemplatePicker(next);
+    if (next) fetchTemplates();
+  };
+
+  const saveAsTemplate = async () => {
+    if (!tournament?.venue_id || !templateName.trim()) return;
+    setTemplateBusy(true);
+    const payoutPayload = customPayouts.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct) || 0 }));
+    try {
+      const res = await commanderFetch('/api/commander/tournaments/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: tournament.venue_id,
+          name: templateName.trim(),
+          tournament_type: tournamentType,
+          buyin_amount: buyinAmount,
+          buyin_fee: buyinFee,
+          starting_chips: startingChips,
+          blind_structure: levels,
+          payout_structure: payoutPayload,
+          late_registration_levels: lateRegLevels,
+          allows_rebuys: rebuyAllowed,
+          rebuy_amount: rebuyCost,
+          rebuy_chips: rebuyChips,
+          rebuy_end_level: rebuyLevels,
+          allows_addon: addonAllowed,
+          addon_amount: addonCost,
+          addon_chips: addonChips,
+          max_entries: maxEntries ? parseInt(maxEntries) : null,
+          settings: { clock_color: clockColor }
+        })
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      const json = await res.json();
+      if (json.success) {
+        setTemplateName('');
+        setToast({ type: 'success', text: 'Template saved.' });
+        fetchTemplates();
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed to save template.' }); }
+    finally { setTemplateBusy(false); }
+  };
+
+  const loadSavedTemplate = (tpl) => {
+    if (!tpl) return;
+    setName(tpl.name || name);
+    if (tpl.tournament_type) setTournamentType(tpl.tournament_type);
+    if (tpl.buyin_amount != null) setBuyinAmount(tpl.buyin_amount);
+    if (tpl.buyin_fee != null) setBuyinFee(tpl.buyin_fee);
+    if (tpl.starting_chips != null) setStartingChips(tpl.starting_chips);
+    const tplLevels = parseBlinds(tpl.blind_structure);
+    if (tplLevels.length > 0) setLevels(tplLevels);
+    if (tpl.late_registration_levels != null) setLateRegLevels(tpl.late_registration_levels);
+    setRebuyAllowed(tpl.allows_rebuys || false);
+    if (tpl.rebuy_amount != null) setRebuyCost(tpl.rebuy_amount);
+    if (tpl.rebuy_chips != null) setRebuyChips(tpl.rebuy_chips);
+    if (tpl.rebuy_end_level != null) setRebuyLevels(tpl.rebuy_end_level);
+    setAddonAllowed(tpl.allows_addon || false);
+    if (tpl.addon_amount != null) setAddonCost(tpl.addon_amount);
+    if (tpl.addon_chips != null) setAddonChips(tpl.addon_chips);
+    if (tpl.max_entries != null) setMaxEntries(tpl.max_entries);
+    if (Array.isArray(tpl.payout_structure) && tpl.payout_structure.length > 0) {
+      setCustomPayouts(tpl.payout_structure.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct != null ? p.pct : p.percentage) || 0 })));
+    }
+    setShowTemplatePicker(false);
+    setToast({ type: 'success', text: `Loaded template "${tpl.name}".` });
+  };
+
   // ===== SAVE =====
   const saveSettings = async () => {
     setSaving(true);
@@ -504,6 +590,40 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               <tab.icon className="w-4 h-4" /> {tab.label}
             </button>
           ))}
+        </div>
+
+        {/* Saved Templates toolbar */}
+        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-2 flex items-center gap-2 flex-wrap">
+          <button onClick={openTemplatePicker}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#3A3B3C] text-[#E4E6EB] active:bg-[#4A4B4C]">
+            {showTemplatePicker ? 'Hide Templates' : 'Load Template'}
+          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)}
+              placeholder="Template name"
+              className="px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-xs text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none w-40 placeholder-[#6A6B6D]" />
+            <button onClick={saveAsTemplate} disabled={templateBusy || !templateName.trim()}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1877F2] text-white disabled:opacity-50">
+              {templateBusy ? 'Saving...' : 'Save as Template'}
+            </button>
+          </div>
+          {showTemplatePicker && (
+            <div className="w-full mt-2 border-t border-[#3A3B3C] pt-2">
+              {templates.length === 0 ? (
+                <p className="text-xs text-[#64748B]">No saved templates for this venue yet.</p>
+              ) : (
+                <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  {templates.map(tpl => (
+                    <button key={tpl.id} onClick={() => loadSavedTemplate(tpl)}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0D192E] hover:bg-[#132240] text-left">
+                      <span className="text-sm text-[#E4E6EB]">{tpl.name}</span>
+                      <span className="text-[10px] text-[#64748B]">{parseBlinds(tpl.blind_structure).filter(l => !l.is_break).length} levels</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
