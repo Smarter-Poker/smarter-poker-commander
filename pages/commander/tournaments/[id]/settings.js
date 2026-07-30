@@ -310,9 +310,28 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           setLateRegLevels(t.late_registration_levels || 6);
           setClockColor(t.settings?.clock_color || t.clock_color || 'navy');
           setLevels(parseBlinds(t.blind_structure).length > 0 ? parseBlinds(t.blind_structure) : STRUCTURE_TEMPLATES.standard.levels);
-          if (t.payout_structure) setPayoutStructure(t.payout_structure);
-          if (t.custom_payouts) setCustomPayouts(t.custom_payouts);
           if (t.entry_count) setEstimatedEntries(t.entry_count);
+          else if (t.current_entries) setEstimatedEntries(t.current_entries);
+          // 2026-07-30: payout_structure is the canonical jsonb array of { place, pct }.
+          // Legacy rows may still hold a preset-key string (e.g. 'standard') — keep that
+          // as the generator selection. Older drafts used a `custom_payouts` field that is
+          // NOT a real column; fall back to it on read so saved payouts round-trip.
+          const savedPayouts = Array.isArray(t.payout_structure)
+            ? t.payout_structure
+            : (Array.isArray(t.custom_payouts) ? t.custom_payouts : null);
+          if (savedPayouts && savedPayouts.length > 0) {
+            setCustomPayouts(savedPayouts.map((p, i) => ({
+              place: p.place || i + 1,
+              pct: Number(p.pct != null ? p.pct : p.percentage) || 0
+            })));
+            if (typeof t.payout_structure === 'string' && t.payout_structure) setPayoutStructure(t.payout_structure);
+          } else {
+            if (typeof t.payout_structure === 'string' && t.payout_structure) setPayoutStructure(t.payout_structure);
+            const seedEntries = t.entry_count || t.current_entries || 30;
+            const seedKey = (typeof t.payout_structure === 'string' && t.payout_structure) || 'standard';
+            const seedStruct = PAYOUT_STRUCTURES[seedKey] || PAYOUT_STRUCTURES.standard;
+            setCustomPayouts(calculatePayouts(seedEntries, t.buyin_amount || 100, seedStruct).map(p => ({ place: p.place, pct: p.percentage })));
+          }
         }
       } catch (err) { console.warn(err); }
       finally { setLoading(false); }
@@ -359,9 +378,34 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
     setStartingChips(template.starting_chips);
   };
 
+  // ===== PAYOUT MANAGEMENT =====
+  // Canonical payout table is customPayouts: an array of { place, pct }.
+  const genPayoutsFromPreset = (key) => {
+    setPayoutStructure(key);
+    const struct = PAYOUT_STRUCTURES[key] || PAYOUT_STRUCTURES.standard;
+    setCustomPayouts(calculatePayouts(estimatedEntries, buyinAmount, struct).map(p => ({ place: p.place, pct: p.percentage })));
+  };
+
+  const updatePayoutPct = (index, value) => {
+    const updated = [...customPayouts];
+    updated[index] = { ...updated[index], pct: parseFloat(value) || 0 };
+    setCustomPayouts(updated);
+  };
+
+  const addPayoutPlace = () => {
+    setCustomPayouts([...customPayouts, { place: customPayouts.length + 1, pct: 0 }]);
+  };
+
+  const removePayoutPlace = (index) => {
+    setCustomPayouts(customPayouts.filter((_, i) => i !== index).map((p, i) => ({ ...p, place: i + 1 })));
+  };
+
   // ===== SAVE =====
   const saveSettings = async () => {
     setSaving(true);
+    // 2026-07-30: persist the canonical editable payout table as payout_structure
+    // (array of { place, pct }) + paying_places. `custom_payouts` is not a real column.
+    const payoutPayload = customPayouts.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct) || 0 }));
     try {
 const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
         method: 'PUT',
@@ -379,8 +423,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           allows_addon: addonAllowed, addon_amount: addonCost, addon_chips: addonChips,
           late_registration_levels: lateRegLevels,
           blind_structure: levels,
-          payout_structure: payoutStructure,
-          custom_payouts: customPayouts.length > 0 ? customPayouts : null,
+          payout_structure: payoutPayload,
+          paying_places: payoutPayload.length,
           settings: { clock_color: clockColor }
         })
       });
@@ -392,8 +436,15 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
   };
 
   // Calculate payouts
-  const payouts = calculatePayouts(estimatedEntries, buyinAmount, PAYOUT_STRUCTURES[payoutStructure] || PAYOUT_STRUCTURES.standard);
   const totalPool = estimatedEntries * buyinAmount;
+  // 2026-07-30: canonical editable payout table (array of { place, pct }) + live validation.
+  const payoutSum = customPayouts.reduce((s, p) => s + (Number(p.pct) || 0), 0);
+  const payoutSumOk = customPayouts.length > 0 && Math.abs(payoutSum - 100) <= 0.5;
+  const payoutRows = customPayouts.map((p, i) => ({
+    place: p.place || i + 1,
+    pct: Number(p.pct) || 0,
+    amount: Math.round(totalPool * (Number(p.pct) || 0) / 100)
+  }));
   const totalMinutes = levels.reduce((sum, l) => sum + (l.duration || 0), 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
   const levelCount = levels.filter(l => !l.is_break).length;
@@ -737,44 +788,63 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 </div>
                 <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
                   <p className="text-xs text-[#B0B3B8]">Paid Places</p>
-                  <p className="text-lg font-bold text-white">{payouts.length}</p>
+                  <p className="text-lg font-bold text-white">{payoutRows.length}</p>
                 </div>
               </div>
 
-              {/* Payout structure selector */}
+              {/* Generate from preset */}
               <div>
-                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Payout Structure</p>
+                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Generate From Preset</p>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(PAYOUT_STRUCTURES || {}).map(([key, struct]) => (
-                    <button key={key} onClick={() => setPayoutStructure(key)}
+                    <button key={key} onClick={() => genPayoutsFromPreset(key)}
                       className={`py-2.5 rounded-lg text-xs font-medium ${payoutStructure === key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
                         }`}>{struct.name.split('(')[0].trim()}</button>
                   ))}
                 </div>
+                <p className="text-[10px] text-[#64748B] mt-2">Presets seed the table below from your estimated entries. Every place and percentage stays editable afterwards.</p>
               </div>
 
-              {/* Payout table */}
+              {/* Total allocation validation */}
+              <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg border ${payoutSumOk
+                ? 'bg-[#31A24C]/10 border-[#31A24C]/30'
+                : 'bg-[#EF4444]/10 border-[#EF4444]/30'}`}>
+                <span className="text-xs text-[#B0B3B8] uppercase tracking-wider">Total Allocation</span>
+                <span className={`text-sm font-bold ${payoutSumOk ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>
+                  {payoutSum.toFixed(2)}%{payoutSumOk ? '' : ' — must total 100%'}
+                </span>
+              </div>
+
+              {/* Editable payout table */}
               <div className="space-y-1">
-                {payouts.map(p => (
-                  <div key={p.place}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg ${p.place === 1 ? 'bg-[#F59E0B]/10 border border-[#F59E0B]/30' :
+                <div className="grid grid-cols-[52px_1fr_1fr_40px] gap-2 px-2 text-[10px] text-[#B0B3B8] uppercase tracking-wider">
+                  <span>Place</span><span>Percent</span><span className="text-right">Payout</span><span></span>
+                </div>
+                {payoutRows.map((p, i) => (
+                  <div key={i}
+                    className={`grid grid-cols-[52px_1fr_1fr_40px] gap-2 items-center px-2 py-1.5 rounded-lg ${p.place === 1 ? 'bg-[#F59E0B]/10 border border-[#F59E0B]/30' :
                       p.place === 2 ? 'bg-white/5 border border-white/10' :
                         p.place === 3 ? 'bg-[#B87333]/10 border border-[#B87333]/30' :
                           'bg-[#242526] border border-[#3A3B3C]'
                       }`}>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${p.place === 1 ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
-                      p.place === 2 ? 'bg-white/10 text-white' :
-                        p.place === 3 ? 'bg-[#B87333]/20 text-[#B87333]' :
-                          'bg-[#3A3B3C] text-[#B0B3B8]'
-                      }`}>{p.place}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">{p.place === 1 ? '1st Place' : p.place === 2 ? '2nd Place' : p.place === 3 ? '3rd Place' : `${p.place}th Place`}</p>
-                      <p className="text-[10px] text-[#B0B3B8]">{p.percentage}%</p>
+                    <span className="text-sm font-bold text-white pl-1">{p.place}</span>
+                    <div className="flex items-center gap-1">
+                      <input type="number" step="0.01" min="0" value={p.pct}
+                        onChange={e => updatePayoutPct(i, e.target.value)}
+                        className="w-20 px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
+                      <span className="text-xs text-[#B0B3B8]">%</span>
                     </div>
-                    <span className="text-lg font-bold text-[#31A24C]">${p.amount.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-[#31A24C] text-right">${p.amount.toLocaleString()}</span>
+                    <button onClick={() => removePayoutPlace(i)} className="p-1 justify-self-end"><Trash2 className="w-3.5 h-3.5 text-[#EF4444]" /></button>
                   </div>
                 ))}
               </div>
+
+              {/* Add place */}
+              <button onClick={addPayoutPlace}
+                className="w-full py-3 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1877F2]/20">
+                <Plus className="w-4 h-4" /> Add Place
+              </button>
 
               {/* Guarantee check */}
               {guaranteedPool && totalPool < parseInt(guaranteedPool) && (
