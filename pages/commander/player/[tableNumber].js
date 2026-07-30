@@ -39,6 +39,13 @@ import { useCommanderSync, broadcastChange } from '../../../src/lib/commander/us
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import { createClient } from '@supabase/supabase-js';
+
+/* ─── Supabase client for Realtime (no auth needed for display) ── */
+/* GUARD: createClient must NOT run during SSG — localStorage doesn't exist on server */
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+const supabase = (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 function formatCountdown(seconds) {
   if (seconds === null || seconds === undefined) return '--:--';
@@ -338,7 +345,7 @@ export default function PlayerTableDisplay() {
   useEffect(() => {
     if (!tableNumber) return;
     fetchData();
-    const poll = setInterval(fetchData, 15000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback — Supabase Realtime handles instant updates
     return () => clearInterval(poll);
   }, [tableNumber, fetchData]);
 
@@ -362,6 +369,68 @@ export default function PlayerTableDisplay() {
     try { return getStaffData().venue_id; } catch { return table?.venue_id || null; }
   });
   useCommanderSync(syncVenueId || table?.venue_id || '', fetchData, { entities: ['tables', 'dealers'] });
+
+  /* ─── Supabase Realtime — mirrors tablet/[tableNumber].js ──────── */
+  // Coalesce bursts of change events into a single refetch.
+  const refetchTimer = useRef(null);
+  const scheduleRefetch = useCallback(() => {
+    if (refetchTimer.current) clearTimeout(refetchTimer.current);
+    refetchTimer.current = setTimeout(() => { fetchData(); }, 400);
+  }, [fetchData]);
+
+  const realtimeVenueId = table?.venue_id || syncVenueId || null;
+
+  useEffect(() => {
+    if (!supabase || !tableNumber) return;
+    let reconnects = 0;
+    const MAX_RECONNECT = 3;
+    let currentChannel = null;
+
+    function connectChannel() {
+      if (currentChannel) {
+        try { supabase.removeChannel(currentChannel); } catch { /* ignore */ }
+      }
+      let channel = supabase
+        .channel(`player-${tableNumber}-${Date.now()}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public',
+          table: 'commander_table_sessions',
+          filter: `table_number=eq.${tableNumber}` }, () => scheduleRefetch())
+        .on('postgres_changes', {
+          event: '*', schema: 'public',
+          table: 'commander_dealer_rotations',
+          filter: `table_number=eq.${tableNumber}` }, () => scheduleRefetch());
+      if (realtimeVenueId) {
+        channel = channel
+          .on('postgres_changes', {
+            event: '*', schema: 'public',
+            table: 'commander_games',
+            filter: `venue_id=eq.${realtimeVenueId}` }, () => scheduleRefetch())
+          .on('postgres_changes', {
+            event: '*', schema: 'public',
+            table: 'commander_floor_calls',
+            filter: `venue_id=eq.${realtimeVenueId}` }, () => scheduleRefetch());
+      }
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          reconnects = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[Player] Realtime channel error: ${status}`);
+          if (reconnects < MAX_RECONNECT) {
+            reconnects++;
+            setTimeout(connectChannel, 3000 * reconnects);
+          }
+        }
+      });
+      currentChannel = channel;
+    }
+
+    connectChannel();
+    return () => {
+      if (refetchTimer.current) clearTimeout(refetchTimer.current);
+      if (currentChannel) supabase.removeChannel(currentChannel);
+    };
+  }, [tableNumber, realtimeVenueId, scheduleRefetch]);
 
   // Wake lock
   useEffect(() => {
