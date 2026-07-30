@@ -4,7 +4,7 @@
  * UI: Dark industrial sci-fi gaming theme, no emojis, Inter font
  */
 import { useState } from 'react';
-import { Plus, Trash2, Coffee } from 'lucide-react';
+import { Plus, Trash2, Coffee, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function BlindStructureEditor({ structure, onChange, readOnly = false }) {
     const [editingIndex, setEditingIndex] = useState(null);
@@ -87,7 +87,7 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                             <th className="px-2 py-2 text-right text-[#64748B] font-medium">BB</th>
                             <th className="px-2 py-2 text-right text-[#64748B] font-medium">Ante</th>
                             <th className="px-2 py-2 text-right text-[#64748B] font-medium w-16">Min</th>
-                            {!readOnly && <th className="px-2 py-2 w-20"></th>}
+                            {!readOnly && <th className="px-2 py-2 w-28"></th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -115,12 +115,28 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                         </td>
                                         {!readOnly && (
                                             <td className="px-2 py-2 text-right">
-                                                <button
-                                                    onClick={() => removeLevel(idx)}
-                                                    className="p-1 hover:bg-[#EF4444]/20 rounded transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5 text-[#EF4444]" />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => moveLevel(idx, -1)}
+                                                        className="p-1 hover:bg-[#132240] rounded transition-colors"
+                                                        title="Move Up"
+                                                    >
+                                                        <ChevronUp className="w-3.5 h-3.5 text-[#94A3B8]" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => moveLevel(idx, 1)}
+                                                        className="p-1 hover:bg-[#132240] rounded transition-colors"
+                                                        title="Move Down"
+                                                    >
+                                                        <ChevronDown className="w-3.5 h-3.5 text-[#94A3B8]" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => removeLevel(idx)}
+                                                        className="p-1 hover:bg-[#EF4444]/20 rounded transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5 text-[#EF4444]" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         )}
                                     </tr>
@@ -191,6 +207,20 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                     {!readOnly && (
                                         <td className="px-2 py-2 text-right">
                                             <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={() => moveLevel(idx, -1)}
+                                                    className="p-1 hover:bg-[#132240] rounded transition-colors"
+                                                    title="Move Up"
+                                                >
+                                                    <ChevronUp className="w-3.5 h-3.5 text-[#94A3B8]" />
+                                                </button>
+                                                <button
+                                                    onClick={() => moveLevel(idx, 1)}
+                                                    className="p-1 hover:bg-[#132240] rounded transition-colors"
+                                                    title="Move Down"
+                                                >
+                                                    <ChevronDown className="w-3.5 h-3.5 text-[#94A3B8]" />
+                                                </button>
                                                 <button
                                                     onClick={() => addBreak(idx)}
                                                     className="p-1 hover:bg-[#F59E0B]/20 rounded transition-colors"
