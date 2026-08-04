@@ -59,7 +59,7 @@ export default function ShiftHandoff() {
   const fetchHandoffs = async (signal) => {
     setLoading(true);
     try {
-const res = await commanderFetch(`/api/commander/shift-handoff?venue_id=${staff.venue_id}&limit=30`, { ...(signal ? { signal } : {}) });
+const res = await commanderFetch(`/api/commander/shift-handoff?venue_id=${staff.venue_id}&limit=30`, { ...(signal instanceof AbortSignal ? { signal } : {}) });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) setHandoffs(json.data.handoffs);
