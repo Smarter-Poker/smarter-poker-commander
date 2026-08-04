@@ -60,7 +60,9 @@ export default function SeatingDisplay() {
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
 
   // Group active entries by table
-  const active = entries.filter(e => e.status === 'active' || e.status === 'playing');
+  // 2026-08-04 audit fix: entries use status 'seated' as well — include it so
+  // seated players appear on the chart.
+  const active = entries.filter(e => e.status === 'active' || e.status === 'seated' || e.status === 'playing');
   const byTable = {};
   active.forEach(e => {
     const t = e.table_number || 'Unassigned';
@@ -128,8 +130,8 @@ export default function SeatingDisplay() {
                         <span className="text-sm text-white flex-1 truncate">
                           {p.player_name || `${p.first_name || ''} ${p.last_name || ''}`.trim()}
                         </span>
-                        {p.chip_count > 0 && (
-                          <span className="text-xs text-white/30">{p.chip_count?.toLocaleString()}</span>
+                        {p.current_chips > 0 && (/* 2026-08-04 audit fix: entry rows expose current_chips, not chip_count */
+                          <span className="text-xs text-white/30">{p.current_chips?.toLocaleString()}</span>
                         )}
                       </div>
                     ))}
