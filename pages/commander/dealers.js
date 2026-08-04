@@ -461,6 +461,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
         if (json.success) {
           setRotatingDealer(null);
           fetchDealers();
+          fetchRotations();
           broadcastChange('dealers');
         }
       }
@@ -470,10 +471,25 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
     }
   }
 
-  const filteredDealers = dealers.filter(d =>
-    d.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-    d.employee_id?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-  );
+  // commander_dealers has no current_table/rotation_started columns — derive
+  // the active table from the open rotation rows (ended_at null) returned by
+  // the rotations API, otherwise every dealer always showed as "Available".
+  const activeRotationByDealer = {};
+  rotations.forEach(r => {
+    if (!r.ended_at && activeRotationByDealer[r.dealer_id] === undefined) {
+      activeRotationByDealer[r.dealer_id] = r;
+    }
+  });
+
+  const filteredDealers = dealers
+    .map(d => {
+      const rot = activeRotationByDealer[d.id];
+      return rot ? { ...d, current_table: rot.table_number, rotation_started: rot.started_at } : d;
+    })
+    .filter(d =>
+      (d.name || '').toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      d.employee_id?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
 
   const activeDealers = filteredDealers.filter(d => d.current_table);
   const availableDealers = filteredDealers.filter(d => !d.current_table);
@@ -625,8 +641,11 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
                   <div className="divide-y divide-[#3A3B3C]">
                     {rotations.map((rotation) => {
                       const dealer = dealers.find(d => d.id === rotation.dealer_id);
-                      const fromTable = tables.find(t => t.id === rotation.from_table_id);
-                      const toTable = tables.find(t => t.id === rotation.to_table_id);
+                      // Rotation rows store table_number/table_id (no from/to columns)
+                      const fromTable = null;
+                      const toTable = rotation.table_number != null
+                        ? { table_number: rotation.table_number }
+                        : tables.find(t => t.id === rotation.table_id);
 
                       return (
                         <div key={rotation.id} className="p-4 flex items-center gap-4">
@@ -651,13 +670,13 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
 
                           <div className="text-right">
                             <p className="text-sm text-white">
-                              {new Date(rotation.rotated_at || rotation.created_at).toLocaleTimeString('en-US', {
+                              {new Date(rotation.started_at || rotation.rotated_at || rotation.created_at).toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit'
                               })}
                             </p>
                             <p className="text-xs text-[#B0B3B8]">
-                              {new Date(rotation.rotated_at || rotation.created_at).toLocaleDateString()}
+                              {new Date(rotation.started_at || rotation.rotated_at || rotation.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
