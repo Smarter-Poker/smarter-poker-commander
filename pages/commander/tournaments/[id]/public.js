@@ -248,7 +248,8 @@ export default function TournamentPublic() {
   const blindStructure = parseBlinds(t.blind_structure);
   const payoutStructure = t.payout_structure || t.custom_payouts || [];
   const allEntries = entries.length || t.current_entries || 0;
-  const prizePool = allEntries * (t.buyin_amount || 0);
+  // 2026-08-04 audit fix: prefer the recorded prize pool over the buy-in estimate
+  const prizePool = t.actual_prizepool || allEntries * (t.buyin_amount || 0);
   const isCompleted = t.status === 'completed';
   const isLive = ['running', 'break', 'final_table'].includes(t.status);
 
@@ -375,16 +376,18 @@ export default function TournamentPublic() {
               <span className="text-sm font-bold text-white capitalize">{t.tournament_type}</span>
             </div>
           )}
-          {t.late_registration_level && (
+          {/* 2026-08-04 audit fix: real columns are late_registration_levels / guaranteed_pool —
+              the old field names never existed so these rows never rendered */}
+          {t.late_registration_levels && (
             <div className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
               <span className="text-sm text-[#B0B3B8]">Late Reg</span>
-              <span className="text-sm font-bold text-white">Through Level {t.late_registration_level}</span>
+              <span className="text-sm font-bold text-white">Through Level {t.late_registration_levels}</span>
             </div>
           )}
-          {t.guarantee_amount > 0 && (
+          {t.guaranteed_pool > 0 && (
             <div className="flex items-center justify-between px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl">
               <span className="text-sm text-[#F59E0B]">Guaranteed</span>
-              <span className="text-sm font-bold text-[#F59E0B]">${t.guarantee_amount?.toLocaleString()}</span>
+              <span className="text-sm font-bold text-[#F59E0B]">${t.guaranteed_pool?.toLocaleString()}</span>
             </div>
           )}
         </div>
