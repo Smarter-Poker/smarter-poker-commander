@@ -82,7 +82,9 @@ function haptic(intensity = 'medium') {
 }
 
 // Arc-length parameterized ellipse for equal visual spacing — matches tables.js
+const _seatPositionsCache = {};
 function computeSeatPositions(maxSeats) {
+    if (_seatPositionsCache[maxSeats]) return _seatPositionsCache[maxSeats];
     const rx = 47, ry = 22, cxE = 50, cyE = 50;
     const STEPS = 360;
     const startAngle = Math.PI / 2;
@@ -118,7 +120,9 @@ function computeSeatPositions(maxSeats) {
             seatPositions[idx].top = `${parseFloat(seatPositions[idx].top) + offset}%`;
         }
     });
-    return { dealerPos, seatPositions };
+    const _seatResult = { dealerPos, seatPositions };
+    _seatPositionsCache[maxSeats] = _seatResult;
+    return _seatResult;
 }
 
 export default function TableTabletsPage() {
@@ -1803,6 +1807,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     ),
                                     { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = json.data.missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: json.data.player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed blind #' + count + ' for ' + json.data.player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
                                     { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#8B5CF6', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + json.data.player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
+                                    { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes to add for ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (json.data.player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed to add time' }); } setShowPlayerMenu(null); fetchAll(); } },
                                 ];
                                 return actions.map((btn, i) => (
                                     React.createElement('button', {
