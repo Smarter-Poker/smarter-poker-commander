@@ -19,6 +19,7 @@ import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 const STATUS_COLORS = {
     running: { bg: 'bg-[#31A24C]/10', text: 'text-[#31A24C]', label: 'Running' },
     break: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'On Break' },
+    paused: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'Paused' }, // 2026-08-04 audit fix: paused tournaments were unstyled
     final_table: { bg: 'bg-[#8B5CF6]/10', text: 'text-[#8B5CF6]', label: 'Final Table' },
     registering: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', label: 'Registration' },
     scheduled: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', label: 'Scheduled' } };
@@ -60,7 +61,9 @@ export default function TournamentDirector() {
     const [syncVenueId] = useState(() => getVenueId());
     useCommanderSync(syncVenueId, fetchTournaments, { entities: ['tournaments'] });
 
-    const currentStatuses = ['running', 'break', 'final_table', 'registering'];
+    // 2026-08-04 audit fix: include 'paused' — the clock API sets status 'paused',
+    // and without it a paused tournament vanished from both tabs of this selector.
+    const currentStatuses = ['running', 'paused', 'break', 'final_table', 'registering'];
     const currentTournaments = tournaments.filter(t => currentStatuses.includes(t.status));
     const upcomingTournaments = tournaments.filter(t => t.status === 'scheduled');
     const displayList = tab === 'current' ? currentTournaments : upcomingTournaments;
@@ -137,9 +140,9 @@ export default function TournamentDirector() {
                                                                 {new Date(t.scheduled_start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                                             </span>
                                                         )}
-                                                        {t.player_count > 0 && (
+                                                        {t.current_entries > 0 && (/* 2026-08-04 audit fix: rows expose current_entries, not player_count */
                                                             <span className="text-xs text-[#B0B3B8] flex items-center gap-1">
-                                                                <Users className="w-3 h-3" /> {t.player_count}
+                                                                <Users className="w-3 h-3" /> {t.current_entries}
                                                             </span>
                                                         )}
                                                         {t.current_level > 0 && <span className="text-xs text-[#B0B3B8]">Level {t.current_level}</span>}
