@@ -26,7 +26,8 @@ const PURPOSE_COLORS = {
   cash_game: { bg: 'rgba(49,162,76,0.15)', border: '#31A24C', text: '#31A24C', label: 'Cash Game' },
   tournament: { bg: 'rgba(255,215,0,0.15)', border: '#FFD700', text: '#FFD700', label: 'Tournament' } };
 
-const GAME_TYPES = ['NLH', 'PLO', 'NLO8', 'PLO8', 'Mixed', 'Stud', 'Razz', 'Draw'];
+// 2026-08-04 audit fix: must match /api/games VALID_GAME_TYPES — NLO8/PLO8/Draw were rejected with 400
+const GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'Mixed', 'Limit', 'Stud', 'Razz'];
 const COMMON_STAKES = ['$1/$2', '$1/$3', '$2/$5', '$5/$10', '$10/$20', '$25/$50'];
 
 // Arc-length parameterized ellipse for equal visual spacing of seats
@@ -246,11 +247,11 @@ const res = await commanderFetch('/api/commander/games', {
     requestConfirm('Close this game? Players will be unseated.', async () => {
       setActionLoading(true);
       try {
+        // 2026-08-04 audit fix: use DELETE — it closes the game AND clears the
+        // table's current_game_id. PATCH {status:'closed'} left current_game_id
+        // set, so the follow-up table PATCH to 'available' always failed 400.
         const res1 = await commanderFetch(`/api/commander/games/${gameId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'closed' })
-        });
+          method: 'DELETE' });
         if (!res1.ok) throw new Error('Failed to close game');
         if (selectedTable) {
           const res2 = await commanderFetch(`/api/commander/tables/${selectedTable.id}`, {
