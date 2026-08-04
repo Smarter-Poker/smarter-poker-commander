@@ -69,6 +69,17 @@ function formatDuration(seconds) {
   return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
 
+// 2026-08-04 audit fix: commander_floor_calls has no response_time_seconds
+// column — derive it from responded_at/created_at.
+function responseSeconds(call) {
+  if (call?.response_time_seconds != null) return call.response_time_seconds;
+  if (call?.responded_at && call?.created_at) {
+    const s = Math.round((new Date(call.responded_at).getTime() - new Date(call.created_at).getTime()) / 1000);
+    return s > 0 ? s : 0;
+  }
+  return 0;
+}
+
 /* ─── Page ───────────────────────────────────────────────────── */
 
 export default function FloorCalls() {
@@ -184,7 +195,8 @@ export default function FloorCalls() {
     try {
       const { token, staffSession } = getAuth();
       let respondedBy = '';
-      try { const s = JSON.parse(staffSession); respondedBy = s.name || s.id || ''; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+      // 2026-08-04 audit fix: responded_by is a uuid column — a display name fails the cast
+      try { const s = JSON.parse(staffSession); respondedBy = s.id || s.user_id || ''; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
       // 2026-07-25 audit fix: handler is flat PUT /api/commander/floor-calls with {id, status, ...} in body (no /[id] PATCH route exists)
       const res = await commanderFetch(`/api/commander/floor-calls`, {
@@ -254,7 +266,7 @@ export default function FloorCalls() {
 
   // Stats for history
   const avgResponse = resolved.length > 0
-    ? Math.round(resolved.reduce((s, c) => s + (c.response_time_seconds || 0), 0) / resolved.length)
+    ? Math.round(resolved.reduce((s, c) => s + responseSeconds(c), 0) / resolved.length)
     : 0;
 
   /* ─── Render ───────────────────────────────────────────────── */
@@ -481,12 +493,12 @@ export default function FloorCalls() {
                             )}
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            {call.response_time_seconds > 0 && (
+                            {responseSeconds(call) > 0 && (
                               <span style={{ fontSize: 11, fontWeight: 600, color: '#1877F2', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <Timer size={10} /> {formatDuration(call.response_time_seconds)}
+                                <Timer size={10} /> {formatDuration(responseSeconds(call))}
                               </span>
                             )}
-                            <span style={{ fontSize: 10, color: '#6B7280' }}>{timeAgo(call.resolved_at || call.created_at)}</span>
+                            <span style={{ fontSize: 10, color: '#6B7280' }}>{timeAgo(call.responded_at || call.created_at)}</span>
                           </div>
                         </div>
                       );
