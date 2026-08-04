@@ -69,13 +69,15 @@ export default async function handler(req, res) {
               return res.status(400).json({ success: false, error: 'venue_id and table_number are required' });
           }
 
-          // Check for existing active call from same table (prevent spam)
+          // Check for existing open call from same table (prevent spam).
+          // The floor-calls queue (floor-calls.js) treats pending/acknowledged/
+          // en_route as open, so match those here.
           const { data: existing } = await getSupabase()
               .from('commander_floor_calls')
               .select('id, created_at')
               .eq('venue_id', venue_id)
               .eq('table_number', table_number)
-              .eq('status', 'active')
+              .in('status', ['pending', 'acknowledged', 'en_route'])
               .limit(1);
 
           if (existing && existing.length > 0) {
@@ -93,7 +95,9 @@ export default async function handler(req, res) {
                   .eq('id', existing[0].id);
           }
 
-          // Create new floor call
+          // Create new floor call. Status must be 'pending' — the floor-calls
+          // queue and commander UI only surface pending/acknowledged/en_route,
+          // so rows created as 'active' never appeared in the queue.
           const { data: call, error } = await getSupabase()
               .from('commander_floor_calls')
               .insert({
@@ -102,7 +106,7 @@ export default async function handler(req, res) {
                   reason: 'floor_request',
                   description: `Table ${table_number}${table_name ? ` (${table_name})` : ''} needs floor assistance`,
                   priority: 'normal',
-                  status: 'active',
+                  status: 'pending',
                   called_by: called_by || 'tablet',
               })
               .select()
