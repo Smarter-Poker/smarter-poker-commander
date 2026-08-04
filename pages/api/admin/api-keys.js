@@ -14,6 +14,15 @@ function getSupabase() {
     return _supabase;
 }
 
+// commander_api_keys stores key_hash + key_prefix only (verified against
+// information_schema) — raw keys are never persisted. No verifier for these
+// keys exists in this repo yet; sha256 hex of the full key is the canonical
+// hash, so any future verifier must compare sha256(presentedKey) against
+// key_hash.
+function hashApiKey(apiKey) {
+  return crypto.createHash('sha256').update(apiKey).digest('hex');
+}
+
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -30,7 +39,7 @@ export default async function handler(req, res) {
       if (!venue_id) return res.status(400).json({ success: false, error: 'venue_id required' });
       const { data, error } = await getSupabase()
         .from('commander_api_keys')
-        .select('id, venue_id, name, api_key, permissions, created_at, last_used_at, is_active')
+        .select('id, venue_id, name, key_prefix, permissions, rate_limit, is_active, last_used_at, use_count, created_at, expires_at')
         .eq('venue_id', venue_id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
@@ -40,15 +49,32 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { venue_id: vid, name, permissions } = req.body;
-      const apiKey = `cmd_${crypto.randomBytes(24).toString('hex')}`;
+      if (!vid) return res.status(400).json({ success: false, error: 'venue_id required' });
+      const apiKey = `cmd_live_${crypto.randomBytes(32).toString('hex')}`;
       const { data, error } = await getSupabase()
         .from('commander_api_keys')
-        .insert({ venue_id: vid, name: name || 'API Key', api_key: apiKey, permissions: permissions || {}, is_active: true })
-        .select()
+        .insert({
+          venue_id: vid,
+          name: name || 'API Key',
+          key_hash: hashApiKey(apiKey),
+          key_prefix: apiKey.slice(0, 12),
+          permissions: Array.isArray(permissions) ? permissions : [],
+          is_active: true
+        })
+        .select('id, venue_id, name, key_prefix, permissions, rate_limit, is_active, created_at, expires_at')
         .maybeSingle();
       if (error) return res.status(500).json({ success: false, error: error.message });
       if (!data) return res.status(500).json({ success: false, error: 'Failed to create API key' });
-      return res.json({ success: true, data: { key: data } });
+      // The raw key is returned exactly once and cannot be recovered later —
+      // only its sha256 hash is stored.
+      return res.json({
+        success: true,
+        data: {
+          key: data,
+          api_key: apiKey,
+          notice: 'Save this key now. It is shown only this once and cannot be retrieved again.'
+        }
+      });
     }
 
     return res.status(405).json({ success: false, error: 'Method not allowed' });
