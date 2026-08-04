@@ -79,13 +79,15 @@ export default function LeaderboardBuilder() {
     // ── Fetch boards ──
     const fetchBoards = useCallback(async (signal) => {
         try {
-            const res = await commanderFetch('/api/commander/leaderboards?status=all', { ...(signal ? { signal } : {}) });
+            // 2026-08-04 audit fix: without venue_id the list API returns every
+            // venue's leaderboards — scope the builder to this venue's boards.
+            const res = await commanderFetch(`/api/commander/leaderboards?status=all${venueId ? `&venue_id=${encodeURIComponent(venueId)}` : ''}`, { ...(signal ? { signal } : {}) });
             if (!res.ok) throw new Error(`Request failed (${res.status})`);
             const json = await res.json();
             setBoards(json?.leaderboards || json?.data || []);
         } catch (err) { console.warn(err); }
         setLoading(false);
-    }, []);
+    }, [venueId]);
 
     // ── Fetch members for dropdown ──
     const fetchMembers = useCallback(async (signal) => {
