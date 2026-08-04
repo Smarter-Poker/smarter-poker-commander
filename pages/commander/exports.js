@@ -57,9 +57,10 @@ export default function ExportsHub() {
         commanderFetch(`/api/commander/tournaments?venue_id=${venueId}&status=completed&limit=20`).catch(() => ({ ok: false })),
       ]);
       const expJson = await expRes.json().catch(() => ({ exports: [] }));
-      const tJson = await tRes.json().catch(() => ({ data: [] }));
+      const tJson = await tRes.json().catch(() => ({ data: { tournaments: [] } }));
       setExports(expJson.exports || []);
-      setTournaments(tJson.data || []);
+      // Tournaments API nests under data.tournaments — data itself is an object
+      setTournaments(tJson.data?.tournaments || (Array.isArray(tJson.data) ? tJson.data : []));
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [venueId]);
