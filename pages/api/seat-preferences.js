@@ -18,6 +18,13 @@ function getSupabase() {
     return _supabase;
 }
 
+// commander_seat_preferences.venue_id is a uuid column (verified against
+// information_schema) while app venue ids are integers, so passing a
+// non-uuid value straight through fails with 22P02 invalid uuid syntax.
+// Non-uuid values are treated as the venue-agnostic (null) preference row,
+// which matches all live rows in the table.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Auth: STAFF_WRITE — requires manager or owner role
 export default async function handler(req, res) {
   try {
@@ -58,7 +65,11 @@ async function getPreferences(req, res) {
       .eq('player_id', player_id)
           .limit(100);
 
-    if (venue_id) query = query.eq('venue_id', venue_id);
+    if (venue_id) {
+      query = UUID_RE.test(String(venue_id))
+        ? query.eq('venue_id', venue_id)
+        : query.is('venue_id', null);
+    }
 
     const { data: prefs, error } = await query.maybeSingle();
     if (error) throw error;
@@ -83,7 +94,7 @@ async function savePreferences(req, res) {
   try {
     const data = {
       player_id,
-      venue_id: venue_id || null,
+      venue_id: venue_id && UUID_RE.test(String(venue_id)) ? venue_id : null,
       preferred_seats: preferred_seats || [],
       left_handed: left_handed || false,
       near_tv: near_tv ?? null,
