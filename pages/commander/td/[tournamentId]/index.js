@@ -223,9 +223,21 @@ export default function TDControlCenter() {
                 )}
               </div>
             </div>
-            <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
-              <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* 2026-08-04 audit fix: the announcement modal and H4H handler existed
+                  but nothing opened/invoked them — surface both controls here */}
+              <button onClick={handleHandForHand} title="Toggle Hand-for-Hand"
+                className={`p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C] ${alerts.hand_for_hand ? 'bg-[#EF4444]/10' : ''}`}>
+                <AlertTriangle className={`w-5 h-5 ${alerts.hand_for_hand ? 'text-[#EF4444]' : 'text-[#B0B3B8]'}`} />
+              </button>
+              <button onClick={() => setMessageModal(true)} title="Broadcast Announcement"
+                className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+                <Volume2 className="w-5 h-5 text-[#B0B3B8]" />
+              </button>
+              <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+                <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+              </button>
+            </div>
           </div>
         </div>
 
