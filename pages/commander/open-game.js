@@ -125,9 +125,10 @@ const headers = { 'Content-Type': 'application/json' };
           max_players: selectedTable.max_seats || selectedTable.seats || 9
         })
       });
-      if (!gameRes.ok) throw new Error('Request failed');
-
-      const gameJson = await gameRes.json();
+      // 2026-08-04 audit fix: do not abort the flow when game creation fails —
+      // the block below already handles gameJson.success === false by falling
+      // back to updating the table only.
+      const gameJson = await gameRes.json().catch(() => ({ success: false }));
       if (!gameJson.success) {
         console.warn('Failed to create game:', gameJson.error);
         // Fallback: still update table even if game creation fails
