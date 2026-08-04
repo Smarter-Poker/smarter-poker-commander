@@ -163,7 +163,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
                 <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Current High Hand</p>
                 {currentHigh ? (
                   <>
-                    <p className="text-2xl font-bold text-white">{currentHigh.hand_description || currentHigh.hand_rank}</p>
+                    <p className="text-2xl font-bold text-white">{currentHigh.hand_description || currentHigh.notes || currentHigh.hand_rank}</p>
                     <p className="text-sm text-[#F59E0B] mt-1">
                       {currentHigh.player_name || currentHigh.profiles?.display_name || 'Unknown'}
                       {currentHigh.prize_amount > 0 && ` — $${currentHigh.prize_amount}`}
@@ -188,7 +188,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
                           <Star className="w-5 h-5 text-[#F59E0B]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">{h.hand_description || h.hand_rank}</p>
+                          <p className="text-sm font-medium text-white truncate">{h.hand_description || h.notes || h.hand_rank}</p>
                           <p className="text-xs text-[#B0B3B8]">
                             {h.player_name || h.profiles?.display_name || 'Unknown'}
                             {h.table_number && ` • T${h.table_number}`}
@@ -226,7 +226,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
                     {highHands.filter(h => !h.created_at?.startsWith(today)).slice(0, 20).map(h => (
                       <div key={h.id} className="px-4 py-2.5 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-[#E4E6EB] truncate">{h.hand_description || h.hand_rank}</p>
+                          <p className="text-sm text-[#E4E6EB] truncate">{h.hand_description || h.notes || h.hand_rank}</p>
                           <p className="text-xs text-[#6A6B6D]">
                             {h.player_name || h.profiles?.display_name || 'Unknown'} •{' '}
                             {h.created_at ? new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
