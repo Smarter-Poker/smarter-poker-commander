@@ -53,6 +53,13 @@ export default function useClubBranding() {
             const staffSession = localStorage.getItem('commander_staff') || '';
             if (!staffSession) { setIsLoading(false); return; }
 
+            // 2026-08-04 audit fix (ported from the src override): `staff` used
+            // to be read from an outer effect's local variable that was never in
+            // scope here, throwing a ReferenceError on every cache-cold fetch and
+            // making the cache write below unreachable.
+            let staff = {};
+            try { staff = JSON.parse(staffSession); } catch { staff = {}; }
+
             const res = await fetch('/api/commander/settings', {
                 headers: { 'x-staff-session': staffSession }
             });
