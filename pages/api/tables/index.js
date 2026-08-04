@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       case 'GET':
         return handleGet(req, res);
       case 'POST':
-        return handlePost(req, res);
+        return handlePost(req, res, _authResult);
       default:
         return res.status(405).json({
           success: false,
@@ -153,7 +153,7 @@ async function handleGet(req, res) {
   }
 }
 
-async function handlePost(req, res) {
+async function handlePost(req, res, _authResult) {
   try {
     // Note: guardWriteStaff is already called in the main handler (line 21)
     // so staff auth is already validated. No need for a redundant check here.
