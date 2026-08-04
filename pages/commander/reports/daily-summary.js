@@ -27,10 +27,11 @@ export default function DailySummaryReport() {
 const venueId = getVenueId();
 const headers = { };
 
-        // General summary
+        // General summary — commanderFetch attaches the Authorization and
+        // x-staff-session headers these APIs require (bare fetch 401'd)
         const [summaryRes, cashierRes] = await Promise.all([
-          fetch(`/api/commander/reports/summary?range=today&date=${date}`, { headers }).catch(() => ({ ok: false })),
-          fetch(`/api/commander/cashier?venue_id=${venueId}&date=${date}&limit=100`, { headers }).catch(() => ({ ok: false })),
+          commanderFetch(`/api/commander/reports/summary?range=today&date=${date}`, { headers }).catch(() => ({ ok: false })),
+          commanderFetch(`/api/commander/cashier?venue_id=${venueId}&date=${date}&limit=100`, { headers }).catch(() => ({ ok: false })),
         ]);
 
         if (!summaryRes.ok) throw new Error(`Request failed (${summaryRes.status})`);
