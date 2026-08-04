@@ -35,8 +35,9 @@ const headers = { };
       ]);
       if (!membersRes.ok) throw new Error(`Request failed (${membersRes.status})`);
       const [membersJson, sessionsJson] = await Promise.all([membersRes.json(), sessionsRes.json()]);
-      if (membersJson.success) setPlayers(membersJson.data || []);
-      if (sessionsJson.success) setSessions(sessionsJson.data || []);
+      // Members API nests under data.members — data itself is an object
+      if (membersJson.success) setPlayers(membersJson.data?.members || (Array.isArray(membersJson.data) ? membersJson.data : []));
+      if (sessionsJson.success) setSessions(Array.isArray(sessionsJson.data) ? sessionsJson.data : []);
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [sortBy]);
