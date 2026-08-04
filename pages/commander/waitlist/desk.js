@@ -23,6 +23,7 @@ const SkeletonDark = dynamic(() => import('../../../src/components/ui/SkeletonDa
 import DealerTicker from '../../../src/components/commander/shared/DealerTicker';
 import { getVenueId, getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import { supabase } from '../../../src/lib/supabase'; // 2026-08-04 audit fix: used by the settings logo upload
 import { useConfirmAction } from "../../../src/components/commander/shared/ConfirmModal";
 import { formatPhone, titleCase } from '../../../src/lib/commander/formatters';
 import { lighten, darken } from '../../../src/lib/commander/colorUtils';
@@ -77,6 +78,14 @@ export default function WaitlistDesk() {
   const [moveLoading, setMoveLoading] = useState(null);
   // ── Hardening: optimistic UI lock ──
   const [actionLock, setActionLock] = useState(null); // entry.id being processed
+  // 2026-08-04 audit fix: several catch blocks call setToast but no toast state
+  // existed in this component — error paths crashed with a ReferenceError.
+  const [toast, setToast] = useState(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
   const genIdempotencyKey = () => `wl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   // Load venue info + saved desk customization
@@ -118,7 +127,7 @@ const res = await commanderFetch('/api/commander/settings', {
 const staffData = getStaffData();
       const vid = staffData.venue_id || '';
       const headers = { };
-      const fetchOpts = signal ? { headers, signal } : { headers };
+      const fetchOpts = (signal instanceof AbortSignal) ? { headers, signal } : { headers }; // 2026-08-04 audit fix: useCommanderSync passes an entity string, not an AbortSignal
       const [tabRes, wlRes, mmRes] = await Promise.all([
         commanderFetch(`/api/commander/tables?venue_id=${vid}`, fetchOpts).then(r => { if (!r.ok) throw new Error(`tables ${r.status}`); return r; }).catch(() => ({ json: async () => ({ success: false }) })),
         commanderFetch(`/api/commander/waitlist?venue_id=${vid}`, fetchOpts).then(r => { if (!r.ok) throw new Error(`waitlist ${r.status}`); return r; }).catch(() => ({ json: async () => ({ success: false }) })),
@@ -1257,6 +1266,25 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
         )}
       </div>
 
+      {/* TOAST — error feedback for action handlers (2026-08-04 audit fix) */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+          padding: '12px 20px', borderRadius: 12,
+          background: toast.type === 'success' ? '#22C55E' : '#EF4444',
+          color: '#fff', fontSize: 13, fontWeight: 600,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          maxWidth: 360,
+        }}>
+          <span>{toast.text}</span>
+          <button onClick={() => setToast(null)} style={{
+            background: 'none', border: 'none', color: '#fff',
+            cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0, marginLeft: 8,
+          }}>×</button>
+        </div>
+      )}
+
       <style>{`
         @keyframes tickerScroll {
           0% { transform: translateX(0); }
@@ -1578,8 +1606,6 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
           }}>×</button>
         </div>
       )}
-      {/* eslint-disable-next-line react/jsx-no-undef */}
-      <ConfirmDialog />
     </div>
   );
 }
