@@ -297,7 +297,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                                     <Clock className="w-4 h-4 text-[#10B981]" />
                                     Today&apos;s Time Log
                                 </h3>
-                                <button onClick={fetchEntries} className="text-xs text-[#1877F2] hover:underline">
+                                <button onClick={() => fetchEntries()} className="text-xs text-[#1877F2] hover:underline">
                                     Refresh
                                 </button>
                             </div>
