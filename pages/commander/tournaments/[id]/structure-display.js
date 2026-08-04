@@ -65,7 +65,9 @@ export default function StructureDisplay() {
   // Scroll current level into view
   useEffect(() => {
     currentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [clockData?.current_level]);
+    // 2026-08-04 audit fix: the level lives at clockData.tournament.current_level —
+    // the old dependency never changed, so the view only scrolled on mount.
+  }, [clockData?.tournament?.current_level]);
 
 
 
@@ -171,9 +173,12 @@ export default function StructureDisplay() {
         {/* Footer with payout info if available */}
         <div className="border-t border-white/10 px-8 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex gap-6 text-sm text-white/40">
-            {tournament?.rebuy_allowed && <span>Rebuys thru Level {tournament.rebuy_levels}</span>}
-            {tournament?.addon_allowed && <span>Add-On Available At Break</span>}
-            {tournament?.late_reg_levels && <span>Late reg thru Level {tournament.late_reg_levels}</span>}
+            {/* 2026-08-04 audit fix: real columns are allows_rebuys / rebuy_end_level /
+                allows_addon / late_registration_levels — the old names never existed
+                so none of these chips ever rendered */}
+            {tournament?.allows_rebuys && <span>Rebuys thru Level {tournament.rebuy_end_level}</span>}
+            {tournament?.allows_addon && <span>Add-On Available At Break</span>}
+            {tournament?.late_registration_levels && <span>Late reg thru Level {tournament.late_registration_levels}</span>}
           </div>
           <p className="text-white/15 text-xs tracking-wider">Powered By Smarter.Poker</p>
         </div>
