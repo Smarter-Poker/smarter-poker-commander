@@ -246,7 +246,7 @@ export default function CommanderSettingsPage() {
   const canManageSettings = staff.permissions?.manage_settings !== false;
 
   return (
-    <CommanderLayout title="Settings | {venue?.name || 'Commander'}" backHref="/commander/dashboard?card=reports">
+    <CommanderLayout title={`Settings | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
           title="Commander — Settings"
