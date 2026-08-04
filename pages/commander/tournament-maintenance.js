@@ -207,7 +207,7 @@ export default function TournamentMaintenance() {
                                             </div>
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${STATUS_COLORS[t.status] || STATUS_COLORS.scheduled}`}>{t.status}</span>
                                             <button
-                                                onClick={() => router.push(`/commander/tournaments?edit=${t.id}`)}
+                                                onClick={() => router.push(`/commander/tournaments/${t.id}/settings`)} /* 2026-08-04 audit fix: tournaments list ignores ?edit= — open the settings editor directly */
                                                 className="p-2 rounded-lg hover:bg-[#1877F2]/10 text-[#64748B] hover:text-[#1877F2] transition-colors"
                                                 title="Edit tournament"
                                             >
