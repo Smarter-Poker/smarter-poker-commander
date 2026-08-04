@@ -396,6 +396,22 @@ const headers = { };
     }
   }, [showPlayerSearch, venueId, searchResults.length, searchQuery, executeSearch]);
 
+  // Print Card player search — wired to the debounced query (was previously dead)
+  useEffect(() => {
+    if (!showPrintCard || !venueId) return;
+    if (debouncedPrintCardSearchQuery.trim().length < 2) { setPrintCardSearchResults([]); return; }
+    let cancelled = false;
+    (async () => {
+      setPrintCardSearchLoading(true);
+      try {
+        const json = await commanderFetchJSON(`/api/commander/members/search?q=${encodeURIComponent(debouncedPrintCardSearchQuery.trim())}&venue_id=${venueId}&limit=15`, {});
+        if (!cancelled) setPrintCardSearchResults(json.data || []);
+      } catch { if (!cancelled) setPrintCardSearchResults([]); }
+      finally { if (!cancelled) setPrintCardSearchLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [debouncedPrintCardSearchQuery, showPrintCard, venueId]);
+
   // === PIN Logic ===
   const requestPinFor = async (action) => {
     if (isPinCached()) {
@@ -713,8 +729,8 @@ const headers = { 'Content-Type': 'application/json' };
           void_reason: `${actionLabel} by ${staff?.display_name || 'Staff'} — ${type}`
         })
       });
-      if (!patchRes.ok) throw new Error('Request failed');
-      const patchJson = await patchRes.json();
+      const patchJson = await patchRes.json().catch(() => ({}));
+      if (!patchRes.ok && patchJson.error !== 'Transaction already voided') throw new Error('Request failed');
       if (!patchJson.success) {
         // Handle already-voided gracefully
         if (patchJson.error === 'Transaction already voided') {
