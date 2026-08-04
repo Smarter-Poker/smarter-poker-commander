@@ -71,7 +71,12 @@ export default function PinEntry() {
       });
 
       if (r.ok) {
-        const next = (router.query.next as string) || '/commander/admin';
+        // Only allow same-origin relative paths — an absolute or
+        // protocol-relative ?next= would be an open redirect.
+        const rawNext = router.query.next as string;
+        const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+          ? rawNext
+          : '/commander/admin';
         router.replace(next);
         return;
       }
