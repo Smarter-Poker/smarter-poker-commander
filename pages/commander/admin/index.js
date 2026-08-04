@@ -27,6 +27,9 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
   const [showKey, setShowKey] = useState({});
   const [copiedKey, setCopiedKey] = useState(null);
   const [error, setError] = useState(null);
+  // The full key is only returned once at creation (the API stores a hash and
+  // lists only key_prefix afterwards) — hold it here for a one-time display.
+  const [newFullKey, setNewFullKey] = useState(null);
 
 
   useEffect(() => {
@@ -71,10 +74,15 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
       if (!res.ok) throw new Error('Request failed');
       const data = await res.json();
       if (data.success) {
-        setApiKeys([data.data.key, ...apiKeys]);
+        const created = data.data?.key || {};
+        setApiKeys([created, ...apiKeys]);
         setNewKeyName('');
-        // Show the new key briefly
-        setShowKey({ [data.data.key.id]: true });
+        // Capture the one-time full key from whichever field the API returns it in
+        const fullKey = created.api_key || data.data?.api_key || data.data?.full_key || created.full_key || null;
+        if (fullKey) {
+          setNewFullKey({ id: created.id, key: fullKey });
+          setShowKey({ [created.id]: true });
+        }
         onSuccess?.();
       } else {
         setError(data.error?.message || 'Failed to create API key');
@@ -109,8 +117,26 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
     }
   }
 
+  // Full key is only available on legacy rows (api_key still returned) or for
+  // the key just created in this session (newFullKey).
+  function getFullKey(key) {
+    if (key.api_key) return key.api_key;
+    if (newFullKey && newFullKey.id === key.id) return newFullKey.key;
+    return null;
+  }
+
+  function keyDisplay(key) {
+    const full = getFullKey(key);
+    if (showKey[key.id] && full) return full;
+    if (key.key_prefix) return `${key.key_prefix}...`;
+    if (full) return `${full.substring(0, 8)}...`;
+    return '········...';
+  }
+
   function handleCopyKey(key) {
-    navigator.clipboard.writeText(key.api_key);
+    const full = getFullKey(key);
+    if (!full) return;
+    navigator.clipboard.writeText(full);
     setCopiedKey(key.id);
     setTimeout(() => setCopiedKey(null), 2000);
   }
@@ -136,6 +162,15 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
           <p className="text-sm text-[#B0B3B8] mb-4">
             API keys allow external systems to access Commander data. Keep your keys secure.
           </p>
+
+          {newFullKey && (
+            <div className="mb-4 p-3 bg-[#31A24C]/10 border border-[#31A24C]/20 rounded-lg">
+              <p className="text-sm text-[#31A24C] font-medium mb-1">
+                Copy your new API key now — it will not be shown again.
+              </p>
+              <code className="text-xs text-white font-mono break-all">{newFullKey.key}</code>
+            </div>
+          )}
 
           {/* Create New Key */}
           <div className="flex gap-2 mb-4">
@@ -177,23 +212,27 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
                     <p className="font-medium text-white truncate">{key.name}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="text-xs text-[#B0B3B8] font-mono">
-                        {showKey[key.id] ? key.api_key : `${key.api_key?.substring(0, 8)}...`}
+                        {keyDisplay(key)}
                       </code>
-                      <button
-                        onClick={() => setShowKey(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                        className="text-[#B0B3B8] hover:text-white"
-                      >
-                        {showKey[key.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      </button>
+                      {getFullKey(key) && (
+                        <button
+                          onClick={() => setShowKey(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
+                          className="text-[#B0B3B8] hover:text-white"
+                        >
+                          {showKey[key.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
-                    <button
-                      onClick={() => handleCopyKey(key)}
-                      className="p-2 text-[#B0B3B8] hover:text-white hover:bg-[#3A3B3C] rounded"
-                    >
-                      {copiedKey === key.id ? <Check className="w-4 h-4 text-[#31A24C]" /> : <Copy className="w-4 h-4" />}
-                    </button>
+                    {getFullKey(key) && (
+                      <button
+                        onClick={() => handleCopyKey(key)}
+                        className="p-2 text-[#B0B3B8] hover:text-white hover:bg-[#3A3B3C] rounded"
+                      >
+                        {copiedKey === key.id ? <Check className="w-4 h-4 text-[#31A24C]" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeleteKey(key.id)}
                       className="p-2 text-[#B0B3B8] hover:text-[#EF4444] hover:bg-[#3A3B3C] rounded"
