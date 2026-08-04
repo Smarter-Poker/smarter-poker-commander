@@ -491,7 +491,8 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
                         )}
                       </div>
                       <span className="text-sm text-[#64748B]">
-                        {entry.total_chips?.toLocaleString() || tournament.starting_chips?.toLocaleString() || '10,000'}
+                        {/* 2026-08-04 audit fix: entries expose current_chips, not total_chips */}
+                        {entry.current_chips?.toLocaleString() || tournament.starting_chips?.toLocaleString() || '10,000'}
                       </span>
                     </div>
                   ))
@@ -570,8 +571,8 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
           background: toast.type === 'success' ? '#22C55E' : '#EF4444',
           color: '#fff', fontSize: 13, fontWeight: 600,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', gap: 8,
           animation: 'slideUp 0.3s ease',
+          display: 'flex', alignItems: 'center', gap: 8,
           maxWidth: 360,
         }}>
           <span>{toast.text}</span>
