@@ -65,7 +65,11 @@ const headers = { };
         commanderFetch(`/api/commander/time-billing/sessions?member_id=${id}&venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
         commanderFetch(`/api/commander/tournaments/player-results?member_id=${id}&venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] }))
       ]);
-      if (memberRes.data || memberRes.success) setMember(memberRes.data || memberRes);
+      // API returns { success, data: { member } } — unwrap the member row itself.
+      // Previously the whole data wrapper was stored, so every field read
+      // (first_name, time_balance_minutes, ...) was undefined and Add Time
+      // overwrote the real balance with just the added minutes.
+      if (memberRes.data || memberRes.success) setMember(memberRes.data?.member || memberRes.data || null);
       const sessionsArr = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
       setSessions(sessionsArr);
       const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [];
@@ -346,8 +350,8 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
           background: toast.type === 'success' ? '#22C55E' : '#EF4444',
           color: '#fff', fontSize: 13, fontWeight: 600,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', gap: 8,
           animation: 'slideUp 0.3s ease',
+          display: 'flex', alignItems: 'center', gap: 8,
           maxWidth: 360,
         }}>
           <span>{toast.text}</span>
