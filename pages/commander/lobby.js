@@ -57,7 +57,9 @@ const headers = { };
       });
       setWaitlists(grouped);
 
-      const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [];
+      // Tournaments API nests under data.tournaments — handle both shapes
+      const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data
+        : Array.isArray(tournamentsRes.data?.tournaments) ? tournamentsRes.data.tournaments : [];
       setTournaments(tournamentsArr.filter(t =>
         ['scheduled', 'registering', 'registration', 'running', 'break', 'final_table'].includes(t.status)
       ).slice(0, 4));
