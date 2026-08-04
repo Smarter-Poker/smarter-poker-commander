@@ -393,11 +393,14 @@ export default function DealerTablet() {
       if (!json.success && json.error) {
         setToast({ type: 'error', text: json.error || 'Bust out failed.' });
       }
-      // Also remove from table session if applicable
-      if (player.session_id) {
+      // Also remove from table session if applicable — non-fatal cleanup.
+      // In tournament mode session_id is just the entry_id (set in fetchTable),
+      // not a real table session, so skip it; and a failed cleanup must not
+      // report the whole bust-out as failed after eliminate already succeeded.
+      if (player.session_id && player.session_id !== (player.entry_id || player.id)) {
         const res = await commanderFetch(`/api/commander/dealer/sessions/${player.session_id}/end`, {
           method: 'POST'}).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
-        if (!res.ok) throw new Error('Request failed');
+        if (!res || !res.ok) console.warn('Session end after bust-out failed (non-fatal)');
       }
       await fetchTable();
       broadcastChange('tables');
