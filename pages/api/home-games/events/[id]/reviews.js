@@ -87,7 +87,7 @@ async function handleGet(req, res, eventId) {
 }
 
 async function handleCreate(req, res, eventId, _user) {
-  const { rating, comment, is_anonymous = false } = req.body;
+  const { rating, comment } = req.body;
   const player_id = _user.id;
 
   if (!rating) {
@@ -148,14 +148,16 @@ async function handleCreate(req, res, eventId, _user) {
       });
     }
 
+    // Live schema (information_schema verified): the column is review_text;
+    // there is no `comment` or `is_anonymous` column on
+    // commander_home_game_reviews.
     const { data: review, error } = await getSupabase()
       .from('commander_home_game_reviews')
       .insert({
         game_id: eventId,
         reviewer_id: player_id,
         rating,
-        comment,
-        is_anonymous
+        review_text: comment
       })
       .select()
       .maybeSingle();
@@ -167,7 +169,8 @@ async function handleCreate(req, res, eventId, _user) {
 
     return res.status(201).json({
       success: true,
-      data: { review }
+      // Keep the historical API response shape: clients read `comment`.
+      data: { review: review ? { ...review, comment: review.review_text } : review }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
