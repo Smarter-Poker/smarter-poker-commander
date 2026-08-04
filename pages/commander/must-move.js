@@ -56,7 +56,7 @@ export default function MustMoveManager() {
     if (!venueId) return;
     setLoading(true);
     try {
-      const res = await commanderFetch(`/api/commander/games/must-move-status?venue_id=${venueId}`, { ...(signal ? { signal } : {}) });
+      const res = await commanderFetch(`/api/commander/games/must-move-status?venue_id=${venueId}`, { ...(signal instanceof AbortSignal ? { signal } : {}) });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) setData(json.data);
@@ -148,7 +148,7 @@ export default function MustMoveManager() {
               {data?.total_active || 0} Active Games · {groups.length} Must-Move Group{groups.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button onClick={fetchData} style={{
+          <button onClick={() => fetchData()} style={{
             padding: 8, borderRadius: 8, background: '#3A3B3C', border: '1px solid #4E4F50',
             cursor: 'pointer', color: '#B0B3B8' }}>
             <RefreshCw size={16} />
