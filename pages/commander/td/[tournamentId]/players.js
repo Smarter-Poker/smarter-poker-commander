@@ -81,6 +81,19 @@ export default function TDPlayers() {
   useTournamentRealtime(tournamentId, fetchFloor);
   useEffect(() => { const _c = new AbortController(); fetchFloor(_c.signal); const i = setInterval(() => fetchFloor(_c.signal), 30000); return () => { _c.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
 
+  // 2026-08-04 audit fix: the tables page deep-links here with ?move=<entry_id>
+  // but the param was read and never used — open the move modal for that entry
+  // once floor data arrives.
+  useEffect(() => {
+    if (!moveEntryId || !floor?.entries?.length || moveModal) return;
+    const entry = floor.entries.find(e => e.entry_id === moveEntryId);
+    if (entry && ['active', 'seated'].includes(entry.status)) {
+      setMoveModal({ ...entry, status: entry.status === 'seated' ? 'active' : entry.status });
+    }
+    // Clear the param so closing the modal doesn't reopen it
+    router.replace(`/commander/td/${tournamentId}/players`, undefined, { shallow: true });
+  }, [moveEntryId, floor, moveModal, router, tournamentId]);
+
   // Build flat player list from full entries array (all statuses)
   const allPlayers = [];
   if (floor) {
