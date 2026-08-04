@@ -225,8 +225,11 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
         prevLevelRef.current = currentLevel;
 
         // Load preset if tournament has clock_preset_id
-        if (!preset && json.data.tournament?.clock_preset_id) {
-          fetchPreset(json.data.tournament.clock_preset_id);
+        // 2026-08-04 audit fix: the preset id is stored in settings.clock_preset_id
+        // (floor-view has no top-level clock_preset_id) — read both locations.
+        const presetId = json.data.tournament?.clock_preset_id || json.data.tournament?.settings?.clock_preset_id;
+        if (!preset && presetId) {
+          fetchPreset(presetId);
         }
       }
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
@@ -555,7 +558,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                 <StatCell label="Round" value={isBreak ? 'Break' : currentLevel} />
                 <StatCell label="Entries" value={totalEntries} />
                 <StatCell label="Players In" value={playersIn} />
-                {t.rebuy_allowed && <StatCell label="Rebuys" value={totalRebuys} />}
+                {t.allows_rebuys && <StatCell label="Rebuys" value={totalRebuys} />}{/* 2026-08-04 audit fix: floor-view exposes allows_rebuys, not rebuy_allowed */}
                 <StatCell label="Chip Count" value={formatChipCount(totalChips)} />
                 <StatCell label="Avg Stack" value={formatChipCount(avgStack)} />
                 <StatCell label="Total Pot" value={formatMoney(prizePool)} />
