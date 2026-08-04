@@ -41,8 +41,11 @@ const json = await commanderFetchJSON('/api/commander/tournaments?status=complet
     try {
 const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/entries?status=all`, {});
       if (json.success) {
+        // Entries API nests under data.entries — data itself is an object
+        const entries = Array.isArray(json.data?.entries) ? json.data.entries
+          : (Array.isArray(json.data) ? json.data : []);
         setTournaments(prev => prev.map(t =>
-          t.id === tournamentId ? { ...t, entries: json.data } : t
+          t.id === tournamentId ? { ...t, entries } : t
         ));
       }
     } catch (err) { console.warn(err); }
