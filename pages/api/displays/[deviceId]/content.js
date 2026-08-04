@@ -204,10 +204,11 @@ async function getPromotionsContent(venueId) {
     .or(`end_date.is.null,end_date.gte.${now}`)
     .limit(5);
 
-  // Get progressive jackpots
+  // Get progressive jackpots. Live schema (information_schema verified):
+  // commander_progressive_jackpots has no min_qualifying_hand column.
   const { data: jackpots } = await getSupabase()
     .from('commander_progressive_jackpots')
-    .select('id, name, current_amount, min_qualifying_hand')
+    .select('id, name, current_amount, seed_amount')
     .eq('venue_id', venueId)
     .eq('status', 'active');
 
@@ -220,10 +221,14 @@ async function getPromotionsContent(venueId) {
 async function getHighHandContent(venueId) {
   const today = new Date().toISOString().split('T')[0];
 
-  // Get today's high hands
+  // Get today's high hands. Live schema (information_schema verified):
+  // commander_high_hands has hand_rank, cards and board_cards — there is no
+  // hand_description or hand_cards column. The old field names are preserved
+  // for renderers via PostgREST aliases (hand_description:hand_rank,
+  // hand_cards:cards).
   const { data: highHands } = await getSupabase()
     .from('commander_high_hands')
-    .select('id, player_name, hand_description, hand_cards, prize_amount, verified_at, table_number')
+    .select('id, player_name, hand_rank, hand_description:hand_rank, hand_cards:cards, board_cards, table_number, prize_amount, verified_at, created_at')
     .eq('venue_id', venueId)
     .gte('created_at', today)
     .not('verified_at', 'is', null)
