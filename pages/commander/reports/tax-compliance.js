@@ -55,7 +55,8 @@ export default function TaxCompliance() {
 let url = `/api/commander/tax/w2g?venue_id=${staff.venue_id}&year=${year}`;
       if (filter === 'pending') url += '&w2g_generated=false';
       if (filter === 'generated') url += '&w2g_generated=true';
-      const res = await fetch(url, {});
+      // commanderFetch attaches the x-staff-session header guardStaff requires
+      const res = await commanderFetch(url, {});
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
