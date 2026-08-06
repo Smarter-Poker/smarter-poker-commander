@@ -46,6 +46,10 @@ export default function MembershipKiosk() {
   const [venueName, setVenueName] = useState('');
   const [venueId, setVenueId] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  // FIX D1: gate the kiosk when there is no usable staff session. Without one the
+  // check-in PATCHes silently 401 and no-op, so we must surface a clear state
+  // instead of pretending check-ins worked.
+  const [staffMissing, setStaffMissing] = useState(false);
 
   // Join waitlist fields
   const [joinName, setJoinName] = useState('');
@@ -90,8 +94,13 @@ export default function MembershipKiosk() {
         if (staffData.venue_name) setVenueName(staffData.venue_name);
         if (staffData.venue_id) setVenueId(staffData.venue_id);
         setStaffHeader(staffStr);
+        // FIX D1: a staff session with no venue cannot drive check-ins
+        if (!staffData.venue_id) setStaffMissing(true);
+      } else {
+        // FIX D1: no staff session at all — gate the kiosk
+        setStaffMissing(true);
       }
-    } catch (e) { console.warn("[kiosk.js]", e); }
+    } catch (e) { console.warn("[kiosk.js]", e); setStaffMissing(true); }
     return () => _ctrl.abort();
   }, []);
 
@@ -155,16 +164,10 @@ export default function MembershipKiosk() {
         }
       }
     } catch (e) { console.warn("[kiosk.js]", e); }
-    // Fallback if no games were fetched — use ref-safe check
-    setAvailableGames(prev => {
-      if (prev.length > 0) return prev; // Already have games from a previous fetch
-      return [
-        { game_type: 'NLH', stakes: '$1/$2', label: '$1/$2 NLH' },
-        { game_type: 'NLH', stakes: '$2/$5', label: '$2/$5 NLH' },
-        { game_type: 'PLO', stakes: '$1/$2', label: '$1/$2 PLO' },
-        { game_type: 'NLH', stakes: '$5/$10', label: '$5/$10 NLH' }
-      ];
-    });
+    // FIX D4: no fabricated game menu. If the waitlist has no active games, the
+    // kiosk must show "no games currently spread" — never a hardcoded list, which
+    // let players join waitlists for games that are not actually being spread.
+    setAvailableGames([]);
   };
 
   // ── CHECK IN: Search waitlist for player ──
@@ -338,11 +341,16 @@ export default function MembershipKiosk() {
             });
             if (patchRes.ok) successCount++;
           }
-          const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
-          setCheckinIsWaitlisted(true);
-          setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || q)} — Checked In!\n${gameList}`);
-          setMode('success');
-          if (successCount > 0) broadcastChange('waitlist');
+          // FIX D2: only show success if a check-in write actually succeeded
+          if (successCount > 0) {
+            const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
+            setCheckinIsWaitlisted(true);
+            setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || q)} — Checked In!\n${gameList}`);
+            setMode('success');
+            broadcastChange('waitlist');
+          } else {
+            setScanError('Check-in failed. Please try again.');
+          }
         } else {
           // Not on waitlist — still check in but show non-member popup
           setCheckinIsWaitlisted(false);
@@ -388,11 +396,16 @@ export default function MembershipKiosk() {
             });
             if (patchRes.ok) successCount++;
           }
-          const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
-          setCheckinIsWaitlisted(true);
-          setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || 'Player')} — Checked In!\n${gameList}`);
-          setMode('success');
-          if (successCount > 0) broadcastChange('waitlist');
+          // FIX D2: only show success if a check-in write actually succeeded
+          if (successCount > 0) {
+            const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
+            setCheckinIsWaitlisted(true);
+            setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || 'Player')} — Checked In!\n${gameList}`);
+            setMode('success');
+            broadcastChange('waitlist');
+          } else {
+            setScanError('Check-in failed. Please try again.');
+          }
         } else {
           // Not on waitlist — still check in but show non-member popup
           setCheckinIsWaitlisted(false);
@@ -481,6 +494,16 @@ export default function MembershipKiosk() {
     try { if (navigator.vibrate) navigator.vibrate(15); } catch (e) { console.warn("[kiosk.js]", e); }
   };
 
+  // FIX D1: no staff session — check-ins cannot be recorded, so block the kiosk
+  // and direct staff to sign in rather than accepting no-op check-ins.
+  if (staffMissing) return (
+    <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: '#fff', padding: 24, textAlign: 'center' }}>
+      <AlertTriangle style={{ width: 44, height: 44, color: '#F59E0B' }} />
+      <span style={{ fontSize: 20, fontWeight: 700 }}>Staff Sign-In Required</span>
+      <span style={{ fontSize: 15, color: '#B0B3B8', maxWidth: 360 }}>This kiosk must be started from a signed-in staff session before players can check in.</span>
+      <button onClick={() => router.push('/commander/login')} style={{ padding: '10px 24px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Go To Staff Sign-In</button>
+    </div>
+  );
   if (loadError) return (
     <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#fff' }}>
       <span style={{ fontSize: 18 }}>{loadError}</span>
@@ -983,28 +1006,36 @@ export default function MembershipKiosk() {
                   Joining as <span className="text-white font-bold">{titleCase(joinName)}</span>
                 </p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {availableGames.map(g => {
-                    const isSelected = selectedGames.some(s => s.label === g.label);
-                    return (
-                      <button key={g.label}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedGames(selectedGames.filter(s => s.label !== g.label));
-                          } else {
-                            setSelectedGames([...selectedGames, g]);
-                          }
-                        }}
-                        className={`py-5 rounded-2xl text-center border-2 ${isSelected
-                          ? 'bg-[#31A24C]/20 border-[#31A24C] text-[#31A24C]'
-                          : 'bg-[#242526] border-[#3A3B3C] text-[#E4E6EB] active:border-[#31A24C]'
-                          }`}>
-                        <p className="text-lg font-bold">{g.label}</p>
-                        {isSelected && <p className="text-sm mt-1">✓ Selected</p>}
-                      </button>
-                    );
-                  })}
-                </div>
+                {availableGames.length === 0 ? (
+                  /* FIX D4: no fabricated menu — reflect reality when nothing is running */
+                  <div className="text-center py-10">
+                    <p className="text-lg font-bold text-white">No Games Currently Spread</p>
+                    <p className="text-sm text-[#B0B3B8] mt-2">Please check with the floor for today&apos;s games.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {availableGames.map(g => {
+                      const isSelected = selectedGames.some(s => s.label === g.label);
+                      return (
+                        <button key={g.label}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedGames(selectedGames.filter(s => s.label !== g.label));
+                            } else {
+                              setSelectedGames([...selectedGames, g]);
+                            }
+                          }}
+                          className={`py-5 rounded-2xl text-center border-2 ${isSelected
+                            ? 'bg-[#31A24C]/20 border-[#31A24C] text-[#31A24C]'
+                            : 'bg-[#242526] border-[#3A3B3C] text-[#E4E6EB] active:border-[#31A24C]'
+                            }`}>
+                          <p className="text-lg font-bold">{g.label}</p>
+                          {isSelected && <p className="text-sm mt-1">✓ Selected</p>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {selectedGames.length > 0 && (
                   <button onClick={submitJoinWaitlist} disabled={submitting}
