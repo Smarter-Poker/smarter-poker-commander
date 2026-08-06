@@ -484,28 +484,31 @@ export default function PilotVenuesPage() {
               Phase 6 Completion Checklist
             </h2>
             <div className="space-y-3">
+              {/* 2026-08-06 fix: these items were hardcoded checked={true} with
+                  no backing data. commander_pilot_venues does not track them, so
+                  show them as pending rather than a fake check. */}
               <ChecklistItem
-                checked={true}
+                pending
                 label="Load Tests Pass"
                 description="K6 Tests Complete With Passing Thresholds"
               />
               <ChecklistItem
-                checked={true}
+                pending
                 label="Security Audit Complete"
                 description="All Security Checks Passing (90%+ Score)"
               />
               <ChecklistItem
-                checked={true}
+                pending
                 label="Error Monitoring Active"
                 description="Sentry Integration Configured"
               />
               <ChecklistItem
-                checked={true}
+                pending
                 label="Documentation Complete"
                 description="Staff Guide, Manager Guide, FAQ, Troubleshooting"
               />
               <ChecklistItem
-                checked={true}
+                pending
                 label="Onboarding Flow Tested"
                 description="Lead Capture And Pipeline Management Working"
               />
@@ -529,8 +532,127 @@ export default function PilotVenuesPage() {
           onClose={() => setShowAddModal(false)}
           onAdded={() => fetchPilots()}
         />
+
+        {/* 2026-08-06 fix: clicking a pilot set selectedPilot but nothing
+            rendered it — the detail click was dead. Show the real metrics. */}
+        <PilotDetailModal
+          pilot={selectedPilot}
+          onClose={() => setSelectedPilot(null)}
+        />
       </div>
     </>
+  );
+}
+
+function PilotDetailModal({ pilot, onClose }) {
+  if (!pilot) return null;
+
+  const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '—');
+  const fmtNum = (v, suffix, digits) =>
+    v === null || v === undefined || v === '' || Number.isNaN(Number(v))
+      ? 'pending'
+      : `${Number(v).toFixed(digits)}${suffix}`;
+  const weeklyReports = Array.isArray(pilot.weekly_reports) ? pilot.weekly_reports.length : 0;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="cmd-panel w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-[#374151]">
+          <div>
+            <h3 className="text-lg font-semibold text-white">{pilot.venue_name}</h3>
+            <p className="text-sm text-[#B0B3B8] flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {pilot.city}{pilot.city && pilot.state ? ', ' : ''}{pilot.state}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-[#B0B3B8] hover:text-white">
+            <XCircle className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-2 py-1 rounded text-xs font-medium ${pilot.status === 'active'
+                ? 'bg-green-500/20 text-green-400'
+                : pilot.status === 'completed'
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-gray-500/20 text-gray-400'
+                }`}
+            >
+              {pilot.status || 'unknown'}
+            </span>
+            {pilot.converted_to_paid && (
+              <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-400">
+                Converted To Paid
+              </span>
+            )}
+          </div>
+
+          {/* Real metrics from commander_pilot_venues */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[#1E293B] rounded-lg p-3">
+              <div className="text-xs text-[#B0B3B8] mb-1">Uptime</div>
+              <div className="text-white font-medium">
+                {pilot.uptime_percentage ? fmtNum(pilot.uptime_percentage, '%', 1) : 'pending'}
+              </div>
+            </div>
+            <div className="bg-[#1E293B] rounded-lg p-3">
+              <div className="text-xs text-[#B0B3B8] mb-1">Support Tickets</div>
+              <div className="text-white font-medium">
+                {pilot.support_tickets_count === null || pilot.support_tickets_count === undefined
+                  ? 'pending'
+                  : pilot.support_tickets_count}
+              </div>
+            </div>
+            <div className="bg-[#1E293B] rounded-lg p-3">
+              <div className="text-xs text-[#B0B3B8] mb-1">Staff Satisfaction</div>
+              <div className="text-white font-medium">
+                {pilot.staff_satisfaction_score ? fmtNum(pilot.staff_satisfaction_score, '/5', 1) : 'pending'}
+              </div>
+            </div>
+            <div className="bg-[#1E293B] rounded-lg p-3">
+              <div className="text-xs text-[#B0B3B8] mb-1">Player Adoption</div>
+              <div className="text-white font-medium">
+                {pilot.player_adoption_percentage ? fmtNum(pilot.player_adoption_percentage, '%', 0) : 'pending'}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-xs text-[#B0B3B8] mb-1">Pilot Start</div>
+              <div className="text-white text-sm">{fmtDate(pilot.pilot_start_date)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[#B0B3B8] mb-1">Pilot End</div>
+              <div className="text-white text-sm">{fmtDate(pilot.pilot_end_date)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[#B0B3B8] mb-1">Weekly Reports</div>
+              <div className="text-white text-sm">{weeklyReports}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[#B0B3B8] mb-1">Conversion Date</div>
+              <div className="text-white text-sm">{fmtDate(pilot.conversion_date)}</div>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs text-[#B0B3B8] mb-1">Final Assessment</div>
+            <div className="text-white text-sm bg-[#1E293B] rounded-lg p-3 whitespace-pre-wrap">
+              {pilot.final_assessment || 'pending'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -556,7 +678,7 @@ function MetricCard({ label, value, unit, target, status }) {
   );
 }
 
-function ChecklistItem({ checked, label, description }) {
+function ChecklistItem({ checked, pending, label, description }) {
   return (
     <div className="flex items-start gap-3">
       <div
@@ -565,6 +687,8 @@ function ChecklistItem({ checked, label, description }) {
       >
         {checked ? (
           <CheckCircle className="w-4 h-4 text-green-400" />
+        ) : pending ? (
+          <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
         ) : (
           <div className="w-2 h-2 rounded-full bg-[#B0B3B8]" />
         )}
@@ -572,6 +696,9 @@ function ChecklistItem({ checked, label, description }) {
       <div>
         <div className={`font-medium ${checked ? 'text-white' : 'text-[#B0B3B8]'}`}>{label}</div>
         <div className="text-sm text-[#B0B3B8]">{description}</div>
+        {!checked && pending && (
+          <div className="text-xs text-yellow-400 mt-0.5">Pending — not tracked in pilot data</div>
+        )}
       </div>
     </div>
   );
