@@ -252,34 +252,47 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
 
 // Venue Settings Modal
 function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
+  // 2026-08-06 fix: settings were keyed on columns that do not exist on
+  // commander_venue_settings (comp_rate, auto_text_enabled, waitlist_settings,
+  // display_settings) — every save 500'd. Use the real columns instead.
   const [settings, setSettings] = useState({
-    comp_rate: 1.0,
-    auto_text_enabled: true,
-    waitlist_settings: {
-      max_call_count: 3,
-      call_timeout_minutes: 5,
-      allow_remote_checkin: true
-    },
-    display_settings: {
-      show_waitlist_count: true,
-      show_game_stakes: true,
-      show_player_names: false
-    }
+    auto_comp_rate: 0,
+    sms_notifications_enabled: true,
+    max_waitlist_size: 50,
+    call_timeout_minutes: 5,
+    default_wait_time_per_player: 15,
+    show_player_names_on_display: true,
+    auto_refresh_interval: 30
   });
   const [saving, setSaving] = useState(false);
   // 2026-07-25 audit fix: error state was referenced by handleSave but never declared
   const [error, setError] = useState(null);
 
+  // 2026-08-06 fix: load the venue's current settings row from the API so the
+  // form reflects real stored values (the venue list prop carries no settings).
   useEffect(() => {
-    if (venue) {
-      setSettings({
-        comp_rate: venue.comp_rate || 1.0,
-        auto_text_enabled: venue.auto_text_enabled ?? true,
-        waitlist_settings: venue.waitlist_settings || settings.waitlist_settings,
-        display_settings: venue.display_settings || settings.display_settings
-      });
-    }
-  }, [venue]);
+    if (!isOpen || !venue) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await commanderFetchJSON(`/api/commander/admin/venues/${venue.id}/settings`, {});
+        const s = data?.data?.settings || {};
+        if (cancelled) return;
+        setSettings({
+          auto_comp_rate: s.auto_comp_rate ?? 0,
+          sms_notifications_enabled: s.sms_notifications_enabled ?? true,
+          max_waitlist_size: s.max_waitlist_size ?? 50,
+          call_timeout_minutes: s.call_timeout_minutes ?? 5,
+          default_wait_time_per_player: s.default_wait_time_per_player ?? 15,
+          show_player_names_on_display: s.show_player_names_on_display ?? true,
+          auto_refresh_interval: s.auto_refresh_interval ?? 30
+        });
+      } catch (err) {
+        console.warn('Load venue settings error:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, venue]);
 
   async function handleSave() {
     setSaving(true);
@@ -337,8 +350,8 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
             <input
               type="number"
               step="0.25"
-              value={settings.comp_rate}
-              onChange={(e) => setSettings(prev => ({ ...prev, comp_rate: parseFloat(e.target.value) || 0 }))}
+              value={settings.auto_comp_rate}
+              onChange={(e) => setSettings(prev => ({ ...prev, auto_comp_rate: parseFloat(e.target.value) || 0 }))}
               className="cmd-input w-full"
             />
           </div>
@@ -352,8 +365,8 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
             <label className="relative inline-flex cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.auto_text_enabled}
-                onChange={(e) => setSettings(prev => ({ ...prev, auto_text_enabled: e.target.checked }))}
+                checked={settings.sms_notifications_enabled}
+                onChange={(e) => setSettings(prev => ({ ...prev, sms_notifications_enabled: e.target.checked }))}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1877F2]"></div>
@@ -365,16 +378,13 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
             <p className="font-medium text-white mb-3">Waitlist Settings</p>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Max Call Attempts</span>
+                <span className="text-sm text-[#B0B3B8]">Max Waitlist Size</span>
                 <input
                   type="number"
                   min="1"
-                  max="10"
-                  value={settings.waitlist_settings?.max_call_count || 3}
-                  onChange={(e) => setSettings(prev => ({
-                    ...prev,
-                    waitlist_settings: { ...prev.waitlist_settings, max_call_count: parseInt(e.target.value) || 3 }
-                  }))}
+                  max="500"
+                  value={settings.max_waitlist_size}
+                  onChange={(e) => setSettings(prev => ({ ...prev, max_waitlist_size: parseInt(e.target.value) || 0 }))}
                   className="cmd-input w-20 h-8 px-3 text-sm"
                 />
               </div>
@@ -384,28 +394,21 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                   type="number"
                   min="1"
                   max="30"
-                  value={settings.waitlist_settings?.call_timeout_minutes || 5}
-                  onChange={(e) => setSettings(prev => ({
-                    ...prev,
-                    waitlist_settings: { ...prev.waitlist_settings, call_timeout_minutes: parseInt(e.target.value) || 5 }
-                  }))}
+                  value={settings.call_timeout_minutes}
+                  onChange={(e) => setSettings(prev => ({ ...prev, call_timeout_minutes: parseInt(e.target.value) || 0 }))}
                   className="cmd-input w-20 h-8 px-3 text-sm"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Allow Remote Check-In</span>
-                <label className="relative inline-flex cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.waitlist_settings?.allow_remote_checkin ?? true}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      waitlist_settings: { ...prev.waitlist_settings, allow_remote_checkin: e.target.checked }
-                    }))}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1877F2]"></div>
-                </label>
+                <span className="text-sm text-[#B0B3B8]">Default Wait Per Player (minutes)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={settings.default_wait_time_per_player}
+                  onChange={(e) => setSettings(prev => ({ ...prev, default_wait_time_per_player: parseInt(e.target.value) || 0 }))}
+                  className="cmd-input w-20 h-8 px-3 text-sm"
+                />
               </div>
             </div>
           </div>
@@ -415,49 +418,27 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
             <p className="font-medium text-white mb-3">Display Settings</p>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Show Waitlist Count Publicly</span>
-                <label className="relative inline-flex cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.display_settings?.show_waitlist_count ?? true}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      display_settings: { ...prev.display_settings, show_waitlist_count: e.target.checked }
-                    }))}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1877F2]"></div>
-                </label>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Show Game Stakes</span>
-                <label className="relative inline-flex cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.display_settings?.show_game_stakes ?? true}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      display_settings: { ...prev.display_settings, show_game_stakes: e.target.checked }
-                    }))}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1877F2]"></div>
-                </label>
-              </div>
-              <div className="flex items-center justify-between">
                 <span className="text-sm text-[#B0B3B8]">Show Player Names On Display</span>
                 <label className="relative inline-flex cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={settings.display_settings?.show_player_names ?? false}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      display_settings: { ...prev.display_settings, show_player_names: e.target.checked }
-                    }))}
+                    checked={settings.show_player_names_on_display ?? true}
+                    onChange={(e) => setSettings(prev => ({ ...prev, show_player_names_on_display: e.target.checked }))}
                     className="sr-only peer"
                   />
                   <div className="w-9 h-5 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1877F2]"></div>
                 </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#B0B3B8]">Auto Refresh Interval (seconds)</span>
+                <input
+                  type="number"
+                  min="5"
+                  max="300"
+                  value={settings.auto_refresh_interval}
+                  onChange={(e) => setSettings(prev => ({ ...prev, auto_refresh_interval: parseInt(e.target.value) || 0 }))}
+                  className="cmd-input w-20 h-8 px-3 text-sm"
+                />
               </div>
             </div>
           </div>
