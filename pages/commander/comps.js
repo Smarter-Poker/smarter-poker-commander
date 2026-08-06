@@ -99,6 +99,9 @@ export default function CompSystem() {
   // ─── Settings state ───
   const [autoCompRate, setAutoCompRate] = useState(1);
   const [membershipPlans, setMembershipPlans] = useState([]);
+  // 2026-08-06 fix: the Rates tab showed fabricated per-game multipliers —
+  // back it with real commander_comp_rates rows scoped to the venue.
+  const [compRates, setCompRates] = useState([]);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -140,6 +143,16 @@ export default function CompSystem() {
         .then(data => {
           if (data?.success && data.data?.plans) {
             setMembershipPlans(data.data.plans);
+          }
+        })
+        .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+
+      // 2026-08-06 fix: load real comp rates for the Rates tab
+      commanderFetch(`/api/commander/comps/rates?venue_id=${venueId}`, { headers: getHeaders() })
+        .then(r => r.json())
+        .then(data => {
+          if (data?.success && Array.isArray(data.data?.rates)) {
+            setCompRates(data.data.rates);
           }
         })
         .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
@@ -1121,21 +1134,26 @@ export default function CompSystem() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Rate Per Game Type</p>
-                  <div className="space-y-2">
-                    {[
-                      { game: '$1/$2 NLH', rate: autoCompRate },
-                      { game: '$2/$5 NLH', rate: autoCompRate * 1.5 },
-                      { game: '$5/$10 NLH', rate: autoCompRate * 2.5 },
-                      { game: '$1/$2 PLO', rate: autoCompRate * 1.2 },
-                      { game: '$2/$5 PLO', rate: autoCompRate * 2.0 },
-                    ].map((r, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-                        <p className="text-sm font-medium text-white">{r.game}</p>
-                        <span className="text-base font-bold text-[#1877F2]">${r.rate.toFixed(2)}/hr</span>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Configured Comp Rates</p>
+                  {compRates.length > 0 ? (
+                    <div className="space-y-2">
+                      {compRates.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{r.name}</p>
+                            {Array.isArray(r.game_types) && r.game_types.length > 0 && (
+                              <p className="text-[10px] text-[#6A6B6D] truncate">{r.game_types.join(', ')}</p>
+                            )}
+                          </div>
+                          <span className="text-base font-bold text-[#1877F2] whitespace-nowrap">${Number(r.comp_value || 0).toFixed(2)}{r.unit_label ? `/${r.unit_label}` : '/hr'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-6 bg-[#242526] border border-[#3A3B3C] rounded-xl text-center">
+                      <p className="text-xs text-[#6A6B6D]">No Custom Comp Rates Configured. The Auto Rake-Back Rate Of ${autoCompRate.toFixed(2)}/hr Applies To All Seated Players.</p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
