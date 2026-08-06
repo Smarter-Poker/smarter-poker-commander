@@ -24,10 +24,6 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require manager auth
-    const _staff = await guardManager(req, res);
-    if (!_staff) return;
-
     const { id } = req.query;
 
     if (!id) {
@@ -37,9 +33,19 @@ export default async function handler(req, res) {
       });
     }
 
+    // GET is PUBLIC — venue details, current games, waitlist summary, settings,
+    // today's tournaments and active promotions are all player-facing data
+    // rendered on the public venue page. Write methods below stay manager-gated
+    // (and were already rate-limited above).
     if (req.method === 'GET') {
       return handleGet(req, res, id);
-    } else if (req.method === 'PATCH') {
+    }
+
+    // Auth guard: all non-GET methods require manager auth.
+    const _staff = await guardManager(req, res);
+    if (!_staff) return;
+
+    if (req.method === 'PATCH') {
       // 2026-07-25 audit fix: pass the guardManager staff object through instead
       // of re-authenticating inside handlePatch.
       return handlePatch(req, res, id, _staff);
@@ -103,14 +109,44 @@ async function handleGet(req, res, venueId) {
       waitlistSummary[key].count++;
     });
 
+    // Public venue settings (comp rate, room open, house rules, display prefs).
+    // commander_venue_settings SELECT is public.
+    const { data: settings } = await getSupabase()
+      .from('commander_venue_settings')
+      .select('venue_id, auto_comp_rate, room_open, venue_type, show_player_names_on_display, house_rules, default_game_type, default_stakes, max_tables, hard_stop_enabled, hard_stop_time, club_logo_url')
+      .eq('venue_id', venueId)
+      .maybeSingle();
+
+    // Today's + upcoming tournaments (sanitized public fields only).
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const { data: todaysTournaments } = await getSupabase()
+      .from('commander_tournaments')
+      .select('id, name, description, tournament_type, variant, buyin_amount, buyin_fee, starting_chips, scheduled_start, registration_opens, late_registration_levels, guaranteed_pool, max_entries, current_entries, players_remaining, status')
+      .eq('venue_id', venueId)
+      .in('status', ['scheduled', 'registration', 'running'])
+      .gte('scheduled_start', startOfToday.toISOString())
+      .order('scheduled_start', { ascending: true })
+      .limit(50);
+
+    // Active promotions (sanitized public fields only).
+    const { data: activePromotions } = await getSupabase()
+      .from('commander_promotions')
+      .select('id, name, description, promotion_type, prize_type, prize_value, prize_description, start_date, end_date, days_of_week, start_time, end_time, is_recurring, image_url, is_featured, status')
+      .eq('venue_id', venueId)
+      .eq('status', 'active')
+      .order('is_featured', { ascending: false })
+      .limit(50);
+
     return res.status(200).json({
       success: true,
       data: {
         venue,
+        settings: settings || null,
         currentGames: currentGames || [],
         waitlists: Object.values(waitlistSummary || {}),
-        todaysTournaments: [], // Phase 3 feature
-        activePromotions: []  // Phase 5 feature
+        todaysTournaments: todaysTournaments || [],
+        activePromotions: activePromotions || []
       }
     });
   } catch (error) {
