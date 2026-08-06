@@ -17,6 +17,17 @@ function getSupabase() {
     return _supabase;
 }
 
+// Privacy-safe public alias — "First L." from a stored full name, else "Player".
+// Never expose the raw player_name (last name) or player_id on the public list.
+function publicAlias(name) {
+  const n = (name || '').trim();
+  if (!n) return 'Player';
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0];
+  const lastInitial = parts[parts.length - 1][0];
+  return `${parts[0]} ${lastInitial.toUpperCase()}.`;
+}
+
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -51,14 +62,15 @@ export default async function handler(req, res) {
           .lt('created_at', expiryTime);
       } catch (cleanupErr) { console.warn('[App] Handled exception:', cleanupErr?.message || cleanupErr); }
 
-      // Get all waiting entries at venue
+      // Get all waiting entries at venue. Sanitized column list — no player_id
+      // or player_phone. Ordered by created_at so positions are stable 1..N.
       const { data: entries, error } = await getSupabase()
         .from('commander_waitlist')
-        .select('*')
+        .select('id, game_type, stakes, status, signup_method, call_count, created_at, player_name')
         .eq('venue_id', venueId)
         .in('status', ['waiting', 'called'])
-        .order('position', { ascending: true })
-            .limit(100)
+        .order('created_at', { ascending: true })
+            .limit(200)
 
       if (error) {
         console.warn('Commander venue waitlist query error:', error);
@@ -68,7 +80,8 @@ export default async function handler(req, res) {
         });
       }
 
-      // Group by game type and stakes
+      // Group by game type and stakes, assigning a 1-based position within each
+      // group (entries already sorted by created_at ascending).
       const waitlistMap = {};
       (entries || []).forEach(entry => {
         const key = `${entry.game_type}-${entry.stakes}`;
@@ -81,27 +94,25 @@ export default async function handler(req, res) {
             estimated_wait: 0
           };
         }
-        waitlistMap[key].players.push({
+        const group = waitlistMap[key];
+        group.players.push({
           id: entry.id,
-          position: entry.position,
-          player_name: entry.player_name || 'Player',
+          position: group.players.length + 1,
+          alias: publicAlias(entry.player_name),
           status: entry.status,
           signup_method: entry.signup_method,
           call_count: entry.call_count,
           created_at: entry.created_at
         });
-        waitlistMap[key].count++;
+        group.count++;
       });
 
       // Calculate estimated wait for each waitlist
       const waitlists = Object.values(waitlistMap || {}).map(wl => {
-        // Estimate: last position * 15 minutes
-        const lastPosition = wl.players.length > 0
-          ? Math.max(...wl.players.map(p => p.position))
-          : 0;
+        // Estimate: number waiting in the group * 15 minutes
         return {
           ...wl,
-          estimated_wait: lastPosition * 15
+          estimated_wait: wl.count * 15
         };
       });
 
