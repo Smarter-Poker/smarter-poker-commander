@@ -1,7 +1,7 @@
 /**
  * Dealer Rotation Manager — Complete Rebuild
  * /commander/dealer-rotation
- * 
+ *
  * Floor managers use this to:
  * - See all active dealers grouped by status (Dealing / Break / Available)
  * - Push dealers to new tables with visual countdown timer
@@ -76,7 +76,7 @@ export default function DealerRotation() {
       const [dealersRes, tablesRes, rotationsRes, gamesRes] = await Promise.all([
         commanderFetch(`/api/commander/dealers?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({})),
         commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({})),
-        commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({})),
+        commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}&include_ended=1`, { headers }).then(r => r.json()).catch(() => ({})),
         commanderFetch(`/api/commander/games/venue/${venueId}`, { headers }).then(r => r.json()).catch(() => ({}))
       ]);
 
@@ -500,7 +500,7 @@ export default function DealerRotation() {
           </div>
         </div>
       </div>
-    
+
       {/* TOAST */}
       {toast && (
         <div style={{
