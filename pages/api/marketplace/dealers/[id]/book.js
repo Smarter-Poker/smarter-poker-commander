@@ -1,6 +1,6 @@
 /**
  * Book Dealer API
- * POST /api/commander/marketplace/dealers/[id]/book - Book a freelance dealer
+ * POST /api/commander/marketplace/dealers/[id]/book - Request to book a freelance dealer
  */
 import { createClient } from '../../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../../src/lib/commander/auth';
@@ -17,14 +17,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE — requires a signed staff session (owner/manager/floor)
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const staff = await guardWriteStaff(req, res); if (!staff) return;
 
     if (req.method !== 'POST') {
       return res.status(405).json({
@@ -36,38 +36,19 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
-        });
-      }
+      const { venue_id, date, start_time, hours, notes } = req.body;
 
-      const token = authHeader.replace('Bearer ', '');
-      const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-
-      if (authError || !user) {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
-        });
-      }
-
-      const { home_game_id, event_date, start_time, end_time, message } = req.body;
-
-      if (!home_game_id || !event_date) {
+      if (!date) {
         return res.status(400).json({
           success: false,
-          error: { code: 'MISSING_FIELDS', message: 'home_game_id and event_date required' }
+          error: { code: 'MISSING_FIELDS', message: 'date is required' }
         });
       }
 
       // Get dealer listing
       const { data: dealer, error: dealerError } = await getSupabase()
         .from('commander_dealer_marketplace')
-        .select('*, profiles:dealer_id (id, display_name, email)')
+        .select('*')
         .eq('id', id)
         .eq('status', 'active')
         .maybeSingle();
@@ -79,60 +60,73 @@ export default async function handler(req, res) {
         });
       }
 
-      // Verify home game exists and user is host
-      const { data: game, error: gameError } = await getSupabase()
-        .from('commander_home_games')
-        .select('id, host_id, name, scheduled_date')
-        .eq('id', home_game_id)
-        .maybeSingle();
+      const bookedHours = Number(hours) > 0 ? Number(hours) : 1;
+      const hourlyRate = dealer.hourly_rate != null ? Number(dealer.hourly_rate) : null;
+      const total = hourlyRate != null ? hourlyRate * bookedHours : null;
+      const requestedBy = staff.user_id || staff.linked_user_id || staff.id || null;
+      const bookingVenueId = staff.venue_id ?? venue_id ?? null;
 
-      if (gameError || !game) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'GAME_NOT_FOUND', message: 'Home game not found' }
-        });
-      }
-
-      if (game.host_id !== user.id) {
-        return res.status(403).json({
-          success: false,
-          error: { code: 'FORBIDDEN', message: 'Only the host can book dealers' }
-        });
-      }
-
-      // Create booking notification to dealer
-      const { data: notification, error: notifError } = await getSupabase()
-        .from('commander_notifications')
+      // Create the venue booking request
+      const { data: booking, error: bookingError } = await getSupabase()
+        .from('commander_dealer_bookings')
         .insert({
-          player_id: dealer.dealer_id,
-          notification_type: 'dealer_booking_request',
-          channel: 'in_app',
-          title: 'New Booking Request',
-          message: `${user.email} wants to book you for "${game.name}" on ${event_date}`,
-          metadata: {
-            home_game_id,
-            host_id: user.id,
-            event_date,
-            start_time,
-            end_time,
-            message,
-            dealer_listing_id: id
-          },
-          status: 'sent'
+          venue_id: bookingVenueId,
+          dealer_marketplace_id: id,
+          dealer_name: dealer.name,
+          requested_date: date,
+          hours: bookedHours,
+          hourly_rate: hourlyRate,
+          total,
+          notes: notes || null,
+          requested_by: requestedBy,
+          status: 'requested'
         })
         .select()
         .maybeSingle();
 
-      if (notifError) {
-        console.warn('Notification error:', notifError);
+      if (bookingError) {
+        console.warn('Dealer booking error:', bookingError);
+        return res.status(500).json({
+          success: false,
+          error: { code: 'SERVER_ERROR', message: 'Failed to send booking request' }
+        });
+      }
+
+      // Best-effort notification to the dealer (non-fatal)
+      if (dealer.dealer_id) {
+        const { error: notifError } = await getSupabase()
+          .from('commander_notifications')
+          .insert({
+            player_id: dealer.dealer_id,
+            notification_type: 'dealer_booking_request',
+            channel: 'in_app',
+            title: 'New Booking Request',
+            message: `A venue wants to book you for ${bookedHours} hour${bookedHours > 1 ? 's' : ''} on ${date}`,
+            metadata: {
+              booking_id: booking?.id,
+              dealer_marketplace_id: id,
+              venue_id: bookingVenueId,
+              requested_date: date,
+              start_time: start_time || null,
+              hours: bookedHours,
+              notes: notes || null
+            },
+            status: 'sent'
+          });
+
+        if (notifError) {
+          console.warn('Notification error:', notifError);
+        }
       }
 
       return res.status(200).json({
         success: true,
         data: {
+          booking: booking || null,
           message: 'Booking request sent to dealer',
           dealer_name: dealer.name,
-          notification_id: notification?.id
+          hours: bookedHours,
+          estimated_cost: total
         }
       });
     } catch (error) {
