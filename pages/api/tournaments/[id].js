@@ -6,7 +6,7 @@
  * DELETE /api/commander/tournaments/[id] - Cancel tournament
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { logAction } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -19,6 +19,16 @@ function getSupabase() {
         _supabase = createClient(url, key);
     }
     return _supabase;
+}
+
+// Privacy-safe public alias — "First L." from a stored full name, else "Player".
+function publicAlias(name) {
+  const n = (name || '').trim();
+  if (!n) return 'Player';
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0];
+  const lastInitial = parts[parts.length - 1][0];
+  return `${parts[0]} ${lastInitial.toUpperCase()}.`;
 }
 
 // Shared structure validation — rejects obviously invalid tournament payloads
@@ -48,7 +58,7 @@ function validateTournamentPayload(body, { partial = false } = {}) {
     return null;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: GET is PUBLIC (live clock page); writes require STAFF_WRITE.
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -115,7 +125,39 @@ async function getTournament(req, res, id) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament not found' } });
     }
 
-    return res.status(200).json({ success: true, data: { tournament } });
+    // The live clock page is PUBLIC. Only a signed staff session for THIS venue
+    // sees raw player identities; everyone else gets a sanitized payload.
+    const staffCheck = await verifyStaffSession(req);
+    const isVenueStaff = !!(staffCheck && staffCheck.staff &&
+      String(staffCheck.staff.venue_id) === String(tournament.venue_id));
+
+    if (isVenueStaff) {
+      return res.status(200).json({ success: true, data: { tournament } });
+    }
+
+    // Sanitized public payload — strip created_by and reduce entries to a
+    // privacy-safe alias with chip/finish summary (no player_id / full name).
+    const publicEntries = (tournament.commander_tournament_entries || []).map(e => {
+      const prof = e.profiles || {};
+      return {
+        id: e.id,
+        alias: prof.display_name || publicAlias(e.player_name),
+        avatar_url: prof.avatar_url || null,
+        status: e.status,
+        current_chips: e.current_chips,
+        rebuy_count: e.rebuy_count,
+        addon_taken: e.addon_taken,
+        finish_position: e.finish_position,
+        payout_amount: e.payout_amount
+      };
+    });
+
+    const { created_by, commander_tournament_entries, ...publicTournament } = tournament;
+
+    return res.status(200).json({
+      success: true,
+      data: { tournament: { ...publicTournament, entries: publicEntries } }
+    });
   } catch (error) {
     console.warn('Get tournament error:', error);
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
