@@ -33,6 +33,7 @@ export default function CloseDay() {
   const [verifying, setVerifying] = useState(false);
   const [notes, setNotes] = useState('');
   const [closing, setClosing] = useState(false);
+  const [lastClose, setLastClose] = useState(null);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -48,6 +49,16 @@ export default function CloseDay() {
     const ctrl = new AbortController();
     fetchStatus(ctrl.signal);
     return () => ctrl.abort();
+  }, []);
+
+  // Load the most recent close so managers can see when the day was last closed.
+  useEffect(() => {
+    const venueId = getVenueId();
+    if (!venueId) return;
+    commanderFetch(`/api/commander/close-day?venue_id=${venueId}&limit=1`)
+      .then(r => r.json())
+      .then(j => { const c = j?.data?.closes?.[0]; if (c) setLastClose(c); })
+      .catch(() => {});
   }, []);
 
   // fetchStatus declared first — must precede useEffect/useCommanderSync that reference it
@@ -149,14 +160,37 @@ const venueId = getVenueId();
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success && json.data?.valid && json.data?.staff) {
-        // Generate daily report
+        const staff = json.data.staff;
+        // Persist the close BEFORE celebrating — confetti fires only on a real save.
+        const saveRes = await commanderFetch('/api/commander/close-day', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            venue_id: venueId,
+            closed_by_name: staff.display_name || staff.name || null,
+            shift_notes: notes || null,
+            report_snapshot: {
+              day_stats: dayStats,
+              open_tables: openTables.length,
+              active_sessions: activeSessions.length,
+              waitlist: waitlistCount,
+            },
+            totals: dayStats,
+          })
+        });
+        const saveJson = await saveRes.json().catch(() => ({}));
+        if (!saveRes.ok || !saveJson.success) {
+          throw new Error(saveJson?.error?.message || `Save failed (${saveRes.status})`);
+        }
+        if (saveJson.data?.close) setLastClose(saveJson.data.close);
+        // Saved — advance to the confirmation step and celebrate.
         setStep(4);
         busEmit.sessionEnd('commander-close-day');
         busEmit.celebration('confetti');
       } else {
         setPin('');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Could not save the day close. Please check your connection and try again.' }); }
     finally { setVerifying(false); }
   };
 
@@ -238,6 +272,12 @@ const venueId = getVenueId();
           {step === 2 && (
             <>
               <h2 className="text-xl font-bold text-white">Day Summary</h2>
+
+              {lastClose && (
+                <p className="text-xs text-[#B0B3B8]">
+                  Last closed {new Date(lastClose.created_at).toLocaleString()}{lastClose.closed_by_name ? ` by ${lastClose.closed_by_name}` : ''} — re-closing will update that record.
+                </p>
+              )}
 
               {/* 2026-07-25 audit fix: tiles now read the daily report's real summary
                   fields; revenue/comp tiles render only when backed by real data
