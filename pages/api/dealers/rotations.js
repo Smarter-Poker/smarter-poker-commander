@@ -4,7 +4,7 @@
  * GET /api/commander/dealers/rotations - Get current rotations
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { requireStaff } from '../../../src/lib/commander/auth';
+import { guardWriteStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -79,12 +79,20 @@ async function getRotations(req, res) {
     });
   }
 
+  // History mode (?include_ended=1 or ?history=1) also returns ended rotations
+  // so "Rotation History" / "Total Rotations Today" can populate. It includes
+  // still-active rotations plus rotations that started today, without changing
+  // the default active-only response other callers rely on.
+  const includeEnded = ['1', 'true'].includes(String(req.query.include_ended))
+    || ['1', 'true'].includes(String(req.query.history));
+  const todayStart = `${new Date().toISOString().split('T')[0]}T00:00:00`;
+
   try {
     // Get active dealer assignments — only dealer_id FK exists in rotations table
     // table_number and dealer_name are stored directly as columns
     let rotations = [];
     try {
-      const result = await getSupabase()
+      let query = getSupabase()
         .from('commander_dealer_rotations')
         .select(`
           id,
@@ -95,21 +103,25 @@ async function getRotations(req, res) {
           dealer_id,
           commander_dealers:dealer_id (id, name, employee_id)
         `)
-        .eq('venue_id', venue_id)
-        .is('ended_at', null)
-        .order('started_at', { ascending: false })
+        .eq('venue_id', venue_id);
+      query = includeEnded
+        ? query.or(`ended_at.is.null,started_at.gte.${todayStart}`)
+        : query.is('ended_at', null);
+      const result = await query.order('started_at', { ascending: false });
 
       if (result.error) throw result.error;
       rotations = result.data || [];
     } catch (joinErr) {
       console.warn('[Rotations] FK join failed, falling back:', joinErr?.message || joinErr);
       // Fallback: query without FK join
-      const result = await getSupabase()
+      let query = getSupabase()
         .from('commander_dealer_rotations')
         .select('id, started_at, ended_at, dealer_name, table_number, dealer_id')
-        .eq('venue_id', venue_id)
-        .is('ended_at', null)
-        .order('started_at', { ascending: false });
+        .eq('venue_id', venue_id);
+      query = includeEnded
+        ? query.or(`ended_at.is.null,started_at.gte.${todayStart}`)
+        : query.is('ended_at', null);
+      const result = await query.order('started_at', { ascending: false });
 
       if (result.error) throw result.error;
       rotations = result.data || [];
@@ -138,9 +150,18 @@ async function createRotation(req, res) {
     });
   }
 
-  // Require floor staff or higher to manage rotations
-  const staff = await requireStaff(req, res, venue_id, ['owner', 'manager', 'floor']);
+  // Accept the dealer tablet's signed x-staff-session (like sibling dealer
+  // routes, e.g. /api/dealers) instead of a JWT-only guard — PIN terminals
+  // have no JWT and were previously blocked from managing rotations.
+  const staff = await guardWriteStaff(req, res);
   if (!staff) return;
+  // Preserve venue scoping — the session must belong to this venue.
+  if (String(staff.venue_id) !== String(venue_id)) {
+    return res.status(403).json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+    });
+  }
 
   try {
     // Verify dealer belongs to venue
