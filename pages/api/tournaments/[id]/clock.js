@@ -16,8 +16,19 @@ import {
 import { checkAndExecuteAutoBreak } from '../../../../src/lib/commander/tournamentAutoBreak';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
-import { parseBlindStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+
+// Inlined to avoid a broken CJS re-export shim (src/lib/parseBlindStructure ->
+// @smarter-poker/commander-shared) that resolved to undefined at runtime and
+// 500'd this route. Normalises a JSONB blind_structure (array or JSON string)
+// to an array of level objects.
+function parseBlindStructure(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string' && raw.length > 0) {
+    try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch (_e) { /* not JSON */ }
+  }
+  return [];
+}
 
 
 let _supabase = null;
@@ -112,7 +123,7 @@ async function getClockState(req, res, tournamentId) {
     // Calculate time remaining in level
     let timeRemaining = 0;
     if (currentBlind && clockState) {
-      const levelDuration = currentBlind.duration * 60 * 1000; // Convert to ms
+      const levelDuration = (currentBlind.duration ?? currentBlind.duration_minutes ?? 0) * 60 * 1000; // Convert to ms
       const elapsed = clockState.isRunning
         ? Date.now() - new Date(clockState.levelStartedAt).getTime() - clockState.pausedDuration
         : clockState.pausedAt
@@ -142,7 +153,7 @@ async function getClockState(req, res, tournamentId) {
           isRunning: clockState?.isRunning || false,
           isPaused: tournament.status === 'paused',
           timeRemaining: Math.floor(timeRemaining / 1000), // in seconds
-          levelDuration: currentBlind?.duration || 0, // in minutes
+          levelDuration: (currentBlind?.duration ?? currentBlind?.duration_minutes ?? 0), // in minutes
           levelStartedAt: clockState?.levelStartedAt
         },
         // 2026-07-25 audit fix: expose the floor message stored in settings.clock_state
@@ -152,21 +163,21 @@ async function getClockState(req, res, tournamentId) {
           smallBlind: currentBlind.small_blind,
           bigBlind: currentBlind.big_blind,
           ante: currentBlind.ante || 0,
-          duration: currentBlind.duration
+          duration: (currentBlind.duration ?? currentBlind.duration_minutes ?? 0)
         } : null,
         nextBlind: nextBlind ? {
           level: currentLevel + 2,
           smallBlind: nextBlind.small_blind,
           bigBlind: nextBlind.big_blind,
           ante: nextBlind.ante || 0,
-          duration: nextBlind.duration
+          duration: (nextBlind.duration ?? nextBlind.duration_minutes ?? 0)
         } : null,
         blindStructure: blindStructure.map((b, i) => ({
           level: i + 1,
           smallBlind: b.small_blind,
           bigBlind: b.big_blind,
           ante: b.ante || 0,
-          duration: b.duration,
+          duration: (b.duration ?? b.duration_minutes ?? 0),
           isBreak: b.is_break || false,
           isCurrent: i === currentLevel
         }))
