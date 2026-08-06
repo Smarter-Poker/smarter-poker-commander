@@ -177,7 +177,7 @@ async function handlePayout(req, res, tournamentId) {
   try {
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id')
+      .select('venue_id, buyin_amount, buyin_fee')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -211,8 +211,8 @@ async function handlePayout(req, res, tournamentId) {
     }
 
     // Auto-award leaderboard points for this finish
-    if (tournament?.leaderboard_id && entry) {
-      await awardLeaderboardPoints(tournament.leaderboard_id, tournamentId, entry);
+    if (tournament && entry) {
+      await awardTournamentPoints(tournament, tournamentId, entry);
     }
 
     return res.status(200).json({ success: true, data: { entry } });
@@ -238,7 +238,7 @@ async function handleBulkPayouts(req, res, tournamentId) {
     // Get tournament for leaderboard
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id')
+      .select('venue_id, buyin_amount, buyin_fee')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -273,17 +273,21 @@ async function handleBulkPayouts(req, res, tournamentId) {
       if (!error && entry) {
         results.push(entry);
         // Auto-award leaderboard points
-        if (tournament?.leaderboard_id) {
-          await awardLeaderboardPoints(tournament.leaderboard_id, tournamentId, entry);
+        if (tournament) {
+          await awardTournamentPoints(tournament, tournamentId, entry);
         }
       }
     }
 
-    // Save final_payouts to tournament record for reference
-    await getSupabase()
-      .from('commander_tournaments')
-      .update({ final_payouts: payouts })
-      .eq('id', tournamentId);
+    // Persist the total paid out as the actual prize pool (commander_tournaments
+    // has no final_payouts column — the per-player results live on the entries).
+    const actualPrizepool = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    if (actualPrizepool > 0) {
+      await getSupabase()
+        .from('commander_tournaments')
+        .update({ actual_prizepool: actualPrizepool })
+        .eq('id', tournamentId);
+    }
 
     return res.status(200).json({
       success: true,
@@ -295,39 +299,63 @@ async function handleBulkPayouts(req, res, tournamentId) {
   }
 }
 
+// Fallback finish-position -> points map used when the venue has no active
+// leaderboard with a point_structure. FLAG: confirm the intended points rule.
+const DEFAULT_FINISH_POINTS = { 1: 100, 2: 70, 3: 50, 4: 40, 5: 30, 6: 25, 7: 20, 8: 15, 9: 10 };
+
 /**
- * Auto-award leaderboard points when a player finishes
+ * Auto-award tournament leaderboard points when a player finishes.
+ * commander_tournaments has no leaderboard_id column, so we resolve the venue's
+ * active leaderboard (if any) for its point_structure, otherwise fall back to a
+ * default finish-position map. Rows are upserted into commander_tournament_points
+ * keyed on tournament_id + player_id (or player_name when player_id is absent).
  */
-async function awardLeaderboardPoints(leaderboardId, tournamentId, entry) {
+async function awardTournamentPoints(tournament, tournamentId, entry) {
   try {
-    // Get leaderboard point structure
-    const { data: lb } = await getSupabase()
-      .from('commander_tournament_leaderboards')
-      .select('point_for_entry, point_structure')
-      .eq('id', leaderboardId)
-      .maybeSingle();
+    // Resolve the venue's active leaderboard for its point structure, if one exists.
+    let leaderboardId = null;
+    let entryPts = 0;
+    let structure = [];
+    if (tournament?.venue_id != null) {
+      const { data: lb } = await getSupabase()
+        .from('commander_tournament_leaderboards')
+        .select('id, point_for_entry, point_structure')
+        .eq('venue_id', tournament.venue_id)
+        .eq('is_active', true)
+        .order('season_start', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lb) {
+        leaderboardId = lb.id;
+        entryPts = lb.point_for_entry || 0;
+        structure = lb.point_structure || [];
+      }
+    }
 
-    if (!lb) return;
-
-    const entryPts = lb.point_for_entry || 0;
-    const structure = lb.point_structure || [];
-    const positionPts = structure.find(s => s.position === entry.finish_position)?.points || 0;
+    const positionPts = leaderboardId
+      ? (structure.find(s => s.position === entry.finish_position)?.points || 0)
+      : (DEFAULT_FINISH_POINTS[entry.finish_position] || 0);
 
     if (entryPts === 0 && positionPts === 0) return;
 
-    // Upsert points (avoid duplicates)
-    const { data: existing } = await getSupabase()
+    // Skip rows we cannot key on.
+    if (!entry.player_id && !entry.player_name) return;
+
+    // Upsert points (avoid duplicates) keyed on tournament + player.
+    let existingQuery = getSupabase()
       .from('commander_tournament_points')
       .select('id')
-      .eq('leaderboard_id', leaderboardId)
-      .eq('tournament_id', tournamentId)
-      .eq('player_id', entry.player_id)
-      .maybeSingle();
+      .eq('tournament_id', tournamentId);
+    existingQuery = entry.player_id
+      ? existingQuery.eq('player_id', entry.player_id)
+      : existingQuery.eq('player_name', entry.player_name);
+    const { data: existing } = await existingQuery.maybeSingle();
 
     if (existing) {
       await getSupabase()
         .from('commander_tournament_points')
         .update({
+          leaderboard_id: leaderboardId,
           points: positionPts,
           entry_points: entryPts,
           finish_position: entry.finish_position
@@ -339,15 +367,14 @@ async function awardLeaderboardPoints(leaderboardId, tournamentId, entry) {
         .insert({
           leaderboard_id: leaderboardId,
           tournament_id: tournamentId,
-          player_id: entry.player_id,
-          player_name: entry.player_name,
+          player_id: entry.player_id || null,
+          player_name: entry.player_name || null,
           points: positionPts,
           entry_points: entryPts,
           finish_position: entry.finish_position
         });
     }
   } catch (err) {
-      try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Award points error:', err);
   }
 }
