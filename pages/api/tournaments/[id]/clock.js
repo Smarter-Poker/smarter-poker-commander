@@ -30,14 +30,12 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: GET is PUBLIC (live clock page); POST clock actions require STAFF_WRITE.
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
-
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
 
     const { id: tournamentId } = req.query;
 
@@ -53,6 +51,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      // Clock actions remain staff-gated.
+      const _g = await guardWriteStaff(req, res); if (!_g) return;
       return handleClockAction(req, res, tournamentId, _g);
     }
 
