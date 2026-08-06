@@ -33,12 +33,12 @@ export default async function handler(req, res) {
         // Public access - no auth required
         const { sort = 'recent', limit = 20, offset = 0 } = req.query;
 
+        // NOTE: commander_venue_reviews.reviewer_id has no FK to profiles, so a
+        // PostgREST embed (`reviewer:reviewer_id (...)`) errors and 500s. Select
+        // the review rows directly and join reviewer profiles in a second query.
         let query = getSupabase()
           .from('commander_venue_reviews')
-          .select(`
-            *,
-            reviewer:reviewer_id (id, display_name, avatar_url)
-          `, { count: 'exact' })
+          .select('*', { count: 'exact' })
           .eq('venue_id', id)
           .eq('is_published', true)
               .limit(100);
@@ -60,10 +60,26 @@ export default async function handler(req, res) {
 
         if (error) throw error;
 
+        // Batch-load reviewer display info (public: display_name + avatar only).
+        const reviewerIds = [...new Set((data || []).map(r => r.reviewer_id).filter(Boolean))];
+        const reviewerMap = {};
+        if (reviewerIds.length > 0) {
+          const { data: reviewers } = await getSupabase()
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .in('id', reviewerIds);
+          (reviewers || []).forEach(p => { reviewerMap[p.id] = p; });
+        }
+
+        const reviews = (data || []).map(r => ({
+          ...r,
+          reviewer: reviewerMap[r.reviewer_id] || null
+        }));
+
         return res.status(200).json({
           success: true,
           data: {
-            reviews: data || [],
+            reviews,
             total: count,
             limit: parseInt(limit),
             offset: parseInt(offset)
