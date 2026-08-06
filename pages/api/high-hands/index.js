@@ -82,17 +82,20 @@ async function listHighHands(req, res) {
 
     if (error) throw error;
 
-    // Get current high hand (highest rank today)
+    // Get current high hand (highest rank today). hand_rank is TEXT holding a
+    // numeric score, so ordering it in SQL sorts lexicographically ("10" < "2").
+    // Fetch today's verified hands and pick the max by numeric value in JS.
     const today = new Date().toISOString().split('T')[0];
-    const { data: currentHigh } = await getSupabase()
+    const { data: verifiedToday } = await getSupabase()
       .from('commander_high_hands')
       .select('*')
       .eq('venue_id', venue_id)
       .gte('created_at', `${today}T00:00:00`)
-      .not('verified_at', 'is', null)
-      .order('hand_rank', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .not('verified_at', 'is', null);
+    const currentHigh = (verifiedToday || []).reduce(
+      (best, h) => ((Number(h.hand_rank) || 0) > (Number(best?.hand_rank) || 0) ? h : best),
+      null
+    );
 
     return res.status(200).json({
       high_hands: data,
