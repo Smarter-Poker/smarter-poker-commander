@@ -17,14 +17,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE — requires a signed staff session (owner/manager/floor)
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const staff = await guardWriteStaff(req, res); if (!staff) return;
 
     if (req.method !== 'POST') {
       return res.status(405).json({
@@ -36,46 +36,8 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     try {
-      // Support both staff session and bearer token auth
-      const staffSession = req.headers['x-staff-session'];
-      const authHeader = req.headers.authorization;
-
-      let userId = null;
-      let venueId = null;
-
-      if (staffSession) {
-        try {
-          const staff = JSON.parse(staffSession);
-          userId = staff.user_id;
-          venueId = staff.venue_id;
-        } catch (e) {
-          return res.status(401).json({
-            success: false,
-            error: { code: 'INVALID_SESSION', message: 'Invalid staff session' }
-          });
-        }
-      } else if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
-        const user = authData?.user;
-
-        if (authError || !user) {
-          return res.status(401).json({
-            success: false,
-            error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
-          });
-        }
-        userId = user.id;
-      } else {
-        return res.status(401).json({
-          success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
-        });
-      }
-
       // Support both field naming conventions
       const {
-        home_game_id,
         rental_start, rental_end,
         start_date, end_date,
         message, notes,
@@ -85,7 +47,6 @@ export default async function handler(req, res) {
       const startDate = rental_start || start_date;
       const endDate = rental_end || end_date;
       const rentalNotes = message || notes;
-      const renterVenueId = venue_id || venueId;
 
       if (!startDate || !endDate) {
         return res.status(400).json({
@@ -97,7 +58,7 @@ export default async function handler(req, res) {
       // Get equipment listing
       const { data: equipment, error: equipError } = await getSupabase()
         .from('commander_equipment_rentals')
-        .select('*, owner:owner_id (id, display_name, email)')
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
@@ -120,62 +81,74 @@ export default async function handler(req, res) {
       const end = new Date(endDate);
       const days = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
 
-      let estimatedCost;
-      if (days >= 7 && equipment.weekly_rate) {
+      const dailyRate = equipment.daily_rate != null ? Number(equipment.daily_rate) : null;
+      const weeklyRate = equipment.weekly_rate != null ? Number(equipment.weekly_rate) : null;
+
+      let rentalType = 'daily';
+      let total;
+      if (days >= 7 && weeklyRate) {
+        rentalType = 'weekly';
         const weeks = Math.floor(days / 7);
         const remainingDays = days % 7;
-        estimatedCost = (weeks * equipment.weekly_rate) + (remainingDays * equipment.daily_rate);
+        total = (weeks * weeklyRate) + (remainingDays * (dailyRate || 0));
       } else {
-        estimatedCost = days * (equipment.daily_rate || 50);
+        total = days * (dailyRate != null ? dailyRate : 50);
       }
 
-      // Create rental record
-      const { data: rental, error: rentalError } = await getSupabase()
-        .from('commander_equipment_rentals')
+      const deposit = equipment.deposit_required != null ? Number(equipment.deposit_required) : 0;
+      const requestedBy = staff.user_id || staff.linked_user_id || staff.id || null;
+      const orderVenueId = staff.venue_id ?? venue_id ?? null;
+
+      // Create the venue rental order
+      const { data: order, error: orderError } = await getSupabase()
+        .from('commander_equipment_rental_orders')
         .insert({
+          venue_id: orderVenueId,
           equipment_id: id,
-          renter_user_id: userId,
-          renter_venue_id: renterVenueId,
-          owner_id: equipment.owner_id,
-          home_game_id: home_game_id || null,
+          equipment_name: equipment.name,
+          rental_type: rentalType,
           start_date: startDate,
           end_date: endDate,
-          days,
-          daily_rate: equipment.daily_rate,
-          total_cost: estimatedCost,
-          deposit_amount: equipment.deposit_required || 0,
+          quantity: 1,
+          daily_rate: dailyRate,
+          total,
+          deposit,
           notes: rentalNotes || null,
-          status: 'pending'
+          requested_by: requestedBy,
+          status: 'requested'
         })
         .select()
         .maybeSingle();
 
-      if (rentalError) {
-        console.warn('Rental record error:', rentalError);
+      if (orderError) {
+        console.warn('Rental order error:', orderError);
+        return res.status(500).json({
+          success: false,
+          error: { code: 'SERVER_ERROR', message: 'Failed to send rental request' }
+        });
       }
 
-      // Create rental request notification to equipment owner
-      if (equipment.owner_id) {
+      // Best-effort notification to the equipment owner (non-fatal)
+      if (equipment.vendor_id) {
         const { error: notifError } = await getSupabase()
           .from('commander_notifications')
           .insert({
-            user_id: equipment.owner_id,
-            venue_id: equipment.venue_id,
-            type: 'rental_request',
+            player_id: equipment.vendor_id,
+            notification_type: 'equipment_rental_request',
+            channel: 'in_app',
             title: 'New Equipment Rental Request',
-            message: `Someone wants to rent "${equipment.name}" from ${startDate} to ${endDate}`,
-            data: {
-              rental_id: rental?.id,
+            message: `A venue wants to rent "${equipment.name}" from ${startDate} to ${endDate}`,
+            metadata: {
+              order_id: order?.id,
               equipment_id: id,
-              renter_id: userId,
-              home_game_id,
+              venue_id: orderVenueId,
               start_date: startDate,
               end_date: endDate,
               estimated_days: days,
-              estimated_cost: estimatedCost,
-              notes: rentalNotes
+              estimated_cost: total,
+              notes: rentalNotes || null
             },
-            channel: 'in_app'
+            status: 'sent'
           });
 
         if (notifError) {
@@ -186,12 +159,12 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         data: {
-          rental: rental || null,
+          order: order || null,
           message: 'Rental request sent successfully',
           equipment_name: equipment.name,
           estimated_days: days,
-          estimated_cost: estimatedCost,
-          deposit_required: equipment.deposit_required
+          estimated_cost: total,
+          deposit_required: deposit
         }
       });
     } catch (error) {
