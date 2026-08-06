@@ -106,6 +106,11 @@ export default function Cashier() {
   const [timeBillingRate, setTimeBillingRate] = useState(0); // $/hour
   const [bulkTimePackages, setBulkTimePackages] = useState([]); // [{name, hours, price}]
   const [membershipPlans, setMembershipPlans] = useState([]); // from membership-plans API
+  // FIX A: when the membership-plans fetch fails (e.g. floor-role terminal whose
+  // GET is rejected), do NOT fall back to $0/"Free" tiers — that would let staff
+  // sell memberships at $0. Instead we flag pricing as unavailable and block the
+  // membership sell until pricing loads / a manager signs in.
+  const [pricingUnavailable, setPricingUnavailable] = useState(false);
 
   // PIN verification
   const [pinStep, setPinStep] = useState(false);
@@ -233,14 +238,17 @@ const headers = { };
           setBulkTimePackages(settingsJson.data.bulk_time_packages || []);
         }
 
-        // Membership plans
+        // Membership plans — FIX A: track load failure so we never sell at $0
         const plansRes = await commanderFetch(`/api/commander/membership-plans?venue_id=${venueId}`, { headers });
-        if (!plansRes.ok) throw new Error(`Plans fetch failed (${plansRes.status})`);
+        if (!plansRes.ok) { setPricingUnavailable(true); throw new Error(`Plans fetch failed (${plansRes.status})`); }
         const plansJson = await plansRes.json();
         if (plansJson.success && plansJson.data?.plans) {
           setMembershipPlans(plansJson.data.plans.filter(p => p.is_active !== false));
+          setPricingUnavailable(false);
+        } else {
+          setPricingUnavailable(true);
         }
-      } catch (err) { console.warn('Pricing load error:', err); }
+      } catch (err) { console.warn('Pricing load error:', err); setPricingUnavailable(true); }
     };
     loadPricing();
   }, [venueId]);
@@ -322,9 +330,26 @@ const headers = { };
 
   const handleScanResult = async (qrData) => {
     stopScan();
+    const code = (qrData || '').trim();
+    if (!code) return;
     try {
-const headers = { };
-      const res = await commanderFetch(`/api/commander/members?search=${encodeURIComponent(qrData)}&venue_id=${venueId}`, { headers });
+      // FIX B: printed club cards encode a qr_code/UUID payload that the free-text
+      // ?search= lookup cannot match. Try the dedicated scan endpoint first (matches
+      // on qr_code), then fall back to the legacy text search only if it finds nothing.
+      const scanRes = await commanderFetch('/api/commander/members/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_code: code, venue_id: venueId })
+      });
+      if (scanRes.ok) {
+        const scanJson = await scanRes.json();
+        if (scanJson.success && scanJson.data?.member) {
+          selectMember(scanJson.data.member);
+          return;
+        }
+      }
+      // Fallback: legacy name/phone/number search
+      const res = await commanderFetch(`/api/commander/members?search=${encodeURIComponent(code)}&venue_id=${venueId}`, { headers: {} });
       if (!res.ok) throw new Error(`Search failed (${res.status})`);
       const json = await res.json();
       const members = json.data?.members || json.data || [];
@@ -614,6 +639,9 @@ const headers = { 'Content-Type': 'application/json' };
   // Update Membership
   const doUpdateMembership = async (staff) => {
     if (actionLoading) return; // Double-click protection
+    // FIX A: refuse to sell membership when pricing failed to load — otherwise the
+    // $0 fallback tiers would let a membership be sold for free.
+    if (pricingUnavailable) { setMessage({ type: 'error', text: 'Pricing unavailable — manager sign-in required' }); return; }
     if (!selectedTier) { setMessage({ type: 'error', text: 'Select A Membership Tier' }); return; }
     if (!selectedPlayer?.id) { setMessage({ type: 'error', text: 'Select A Player First' }); return; }
     if (String(selectedPlayer.id).startsWith('wl-')) { setMessage({ type: 'error', text: 'This player is on the waitlist only — register them as a member first' }); return; }
@@ -1454,6 +1482,8 @@ const headers = { };
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-[#B0B3B8]" />
                       <span className="text-sm text-white font-medium">{selectedPlayer.player_name}</span>
+                      {/* FIX C: entry point for the (previously unreachable) Transaction History modal */}
+                      <button onClick={loadPlayerHistory} className="text-xs text-[#1877F2] font-semibold underline">History</button>
                     </div>
                     <span className="text-xs text-[#B0B3B8]">
                       Current: {selectedPlayer.membership_tier ? selectedPlayer.membership_tier.charAt(0).toUpperCase() + selectedPlayer.membership_tier.slice(1) : 'None'}
@@ -1515,9 +1545,15 @@ const headers = { };
                   </button>
                 </div>
 
+                {pricingUnavailable && (
+                  <div className="mb-3 px-4 py-3 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0" />
+                    <span className="text-xs text-[#EF4444] font-semibold">Pricing unavailable — manager sign-in required</span>
+                  </div>
+                )}
                 <PinSubmitButton action="membership" color="#1877F2"
-                  label={`Collect $${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.price || 0 : 0} — ${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.label : '...'}`}
-                  disabled={!selectedTier || !selectedPlayer?.id} />
+                  label={pricingUnavailable ? 'Pricing Unavailable' : `Collect $${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.price || 0 : 0} — ${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.label : '...'}`}
+                  disabled={pricingUnavailable || !selectedTier || !selectedPlayer?.id} />
 
                 {/* Recent Membership Transactions — Collapsed */}
                 {transactions.filter(tx => (tx.type === 'membership' || tx.notes?.includes('Membership')) && !tx.voided_at && tx.type !== 'void').length > 0 && (
