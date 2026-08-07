@@ -1,10 +1,12 @@
 /**
  * Call Waitlist Player
  * POST /api/commander/waitlist/call
- * Marks player as 'called' and sends SMS if phone number on file
+ * Marks player as 'called', sends an SMS when a phone number is on file, and
+ * fires a seat-ready push to app users (who frequently have no phone on file).
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { sendSeatNotification, isTwilioConfigured } from '../../../src/lib/commander/twilio';
+import { notifySeatReady } from '../../../src/lib/commander/pushNotifications';
 import { guardWriteStaff } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
@@ -62,22 +64,25 @@ export default async function handler(req, res) {
 
       if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
 
+      // Resolve venue name + game label ONCE — both the SMS and the push use them.
+      // (These used to live inside the phone-only branch, so the push path below
+      // could not reuse them.)
+      let venueName = 'Your poker room';
+      try {
+        const { data: venue } = await getSupabase()
+          .from('poker_venues')
+          .select('name')
+          .eq('id', entry.venue_id)
+          .maybeSingle();
+        if (venue?.name) venueName = venue.name;
+      } catch (e) { console.warn('[App] Handled exception:', e); }
+
+      const gameLabel = `${entry.stakes || ''} ${(entry.game_type || 'Cash Game').toUpperCase()}`.trim();
+      const tableInfo = table_number ? ` at Table ${table_number}` : '';
+
       // Send SMS notification if phone on file
       let smsResult = null;
       if (entry.player_phone) {
-        let venueName = 'Your poker room';
-        try {
-          const { data: venue } = await getSupabase()
-            .from('poker_venues')
-            .select('name')
-            .eq('id', entry.venue_id)
-            .maybeSingle();
-          if (venue?.name) venueName = venue.name;
-        } catch (e) { console.warn('[App] Handled exception:', e); }
-
-        const gameLabel = `${entry.stakes || ''} ${(entry.game_type || 'Cash Game').toUpperCase()}`.trim();
-        const tableInfo = table_number ? ` at Table ${table_number}` : '';
-
         if (isTwilioConfigured()) {
           smsResult = await sendSeatNotification(
             entry.player_phone,
@@ -87,6 +92,24 @@ export default async function handler(req, res) {
           );
         } else {
           smsResult = { success: false, reason: 'Twilio not configured' };
+        }
+      }
+
+      // Seat-ready push for app users. notifySeatReady already existed but was
+      // never called, so remote joiners without a phone number received nothing.
+      // Non-fatal: a push failure must never fail the call itself.
+      let pushResult = null;
+      if (entry.player_id) {
+        try {
+          pushResult = await notifySeatReady(
+            entry.player_id,
+            venueName,
+            gameLabel,
+            table_number || ''
+          );
+        } catch (pushErr) {
+          console.warn('[waitlist/call] push failed:', pushErr?.message || pushErr);
+          pushResult = { success: false, reason: 'push_error' };
         }
       }
 
@@ -107,6 +130,8 @@ export default async function handler(req, res) {
           ...data,
           sms_sent: smsResult?.success || false,
           sms_status: smsResult?.success ? 'sent' : (entry.player_phone ? (smsResult?.reason || 'no_config') : 'no_phone'),
+          push_sent: pushResult?.success || false,
+          push_status: pushResult?.success ? 'sent' : (entry.player_id ? (pushResult?.reason || 'no_config') : 'no_player_id'),
         }
       });
     } catch (err) {
