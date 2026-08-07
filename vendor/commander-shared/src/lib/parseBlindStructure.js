@@ -36,4 +36,5 @@ function parsePayoutStructure(raw) {
   return [];
 }
 
-module.exports = { parseBlindStructure, parsePayoutStructure };
+export { parseBlindStructure, parsePayoutStructure };
+export default { parseBlindStructure, parsePayoutStructure };
