@@ -25,7 +25,6 @@ import crypto from 'crypto';
 
 // Constants + pure helpers still come from the shared package (no behavior).
 export {
-  verifyPin,
   COMP_ROLES,
   DEFAULT_PERMISSIONS,
   SENSITIVE_ROUTES,
@@ -44,6 +43,49 @@ function getAdminClient() {
     _admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   }
   return _admin;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIN verification (bcrypt-hashed — local override)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Verify a staff PIN for a venue and return the staff row (or null).
+ *
+ * 2026-08-07: this was re-exported from the shared package, where it compared
+ * `commander_staff.pin_code` with a PLAINTEXT equality filter. PINs are now
+ * bcrypt-hashed into `pin_hash` (with a BEFORE INSERT/UPDATE trigger keeping
+ * future writes hashed). fn_verify_staff_pin checks the hash and falls back to
+ * the legacy plaintext column for any row not yet hashed, so a staff member can
+ * never be locked out mid-migration.
+ */
+export async function verifyPin(venueId, pinCode) {
+  if (venueId === undefined || venueId === null || !pinCode) return null;
+
+  const { data: staffId, error: rpcError } = await getAdminClient()
+    .rpc('fn_verify_staff_pin', { p_venue_id: String(venueId), p_pin: String(pinCode) });
+
+  if (rpcError) {
+    console.warn('[commander-auth] fn_verify_staff_pin failed:', rpcError.message || rpcError);
+    return null;
+  }
+  if (!staffId) return null;
+
+  const { data: staff, error } = await getAdminClient()
+    .from('commander_staff')
+    .select(`
+      *,
+      profiles (
+        id,
+        display_name,
+        avatar_url
+      )
+    `)
+    .eq('id', staffId)
+    .maybeSingle();
+
+  if (error || !staff) return null;
+  return staff;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
