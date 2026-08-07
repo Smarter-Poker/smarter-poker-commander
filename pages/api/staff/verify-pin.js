@@ -71,15 +71,26 @@ export default async function handler(req, res) {
         });
       }
 
-      const { data: staffRows, error } = await getSupabase()
-        .from('commander_staff')
-        .select('id, venue_id, role, is_active, display_name, permissions, profiles ( id, display_name, avatar_url )')
-        .eq('venue_id', venue_id)
-        .eq('pin_code', pin_code)
-        .eq('is_active', true)
-        .limit(1);
+      // 2026-08-07 security fix: this compared the PLAINTEXT `pin_code` column.
+      // PINs are now bcrypt-hashed into commander_staff.pin_hash (a BEFORE
+      // INSERT/UPDATE trigger keeps future writes hashed). fn_verify_staff_pin
+      // matches the hash and falls back to the legacy plaintext column for any
+      // row not yet hashed, so no staff member can be locked out mid-migration.
+      const { data: staffId, error: rpcError } = await getSupabase()
+        .rpc('fn_verify_staff_pin', { p_venue_id: String(venue_id), p_pin: String(pin_code) });
 
-      const staff = staffRows?.[0] || null;
+      let staff = null;
+      let error = rpcError;
+
+      if (!rpcError && staffId) {
+        const { data: staffRow, error: rowError } = await getSupabase()
+          .from('commander_staff')
+          .select('id, venue_id, role, is_active, display_name, permissions, profiles ( id, display_name, avatar_url )')
+          .eq('id', staffId)
+          .maybeSingle();
+        staff = staffRow || null;
+        error = rowError;
+      }
 
       if (error || !staff) {
         const e = attempts.get(key);
