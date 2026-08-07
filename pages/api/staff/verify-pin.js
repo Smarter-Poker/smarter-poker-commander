@@ -22,11 +22,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// In-memory rate limit store (resets on deploy — acceptable for PIN auth)
-const attempts = new Map();
+// Rate limiting lives in Postgres (commander_rate_limits, via fn_rate_limit_hit),
+// NOT in process memory. The previous in-memory Map gave every Vercel lambda
+// instance its own counter and reset on each deploy, so a burst spread across
+// instances was never throttled: 14 consecutive wrong-PIN attempts reached
+// production with zero lockouts. A shared counter closes that brute-force path.
 const MAX_PER_MINUTE = 5;
-const LOCKOUT_AFTER = 10;
-const LOCKOUT_MS = 5 * 60 * 1000;
+const WINDOW_MINUTES = 1;
+const LOCKOUT_MINUTES = 5;
 
 function getKey(req, venueId) {
   const fwd = req.headers['x-forwarded-for'];
@@ -34,14 +37,26 @@ function getKey(req, venueId) {
   return `${ip}:${venueId}`;
 }
 
-function checkRate(key) {
-  const now = Date.now();
-  let e = attempts.get(key);
-  if (!e) { e = { count: 0, start: now, fails: 0, lockUntil: 0 }; attempts.set(key, e); }
-  if (e.lockUntil > now) return { ok: false, retry: Math.ceil((e.lockUntil - now) / 1000), reason: 'LOCKED_OUT' };
-  if (now - e.start > 60000) { e.count = 0; e.start = now; }
-  if (e.count >= MAX_PER_MINUTE) return { ok: false, retry: Math.ceil((e.start + 60000 - now) / 1000), reason: 'RATE_LIMITED' };
-  e.count++;
+async function checkRate(key) {
+  const { data, error } = await getSupabase().rpc('fn_rate_limit_hit', {
+    p_identifier: key,
+    p_endpoint: 'staff/verify-pin',
+    p_max_requests: MAX_PER_MINUTE,
+    p_window_minutes: WINDOW_MINUTES,
+    p_lockout_minutes: LOCKOUT_MINUTES,
+  });
+
+  // Fail OPEN if the limiter itself errors: PIN verification depends on this same
+  // database, so a hard failure here would lock out every legitimate staff member
+  // without adding any protection. Log loudly instead.
+  if (error) {
+    console.warn('[verify-pin] rate limiter unavailable:', error.message || error);
+    return { ok: true };
+  }
+
+  if (data && data.allowed === false) {
+    return { ok: false, retry: data.retry_after || 60, reason: data.reason || 'RATE_LIMITED' };
+  }
   return { ok: true };
 }
 
@@ -62,7 +77,7 @@ export default async function handler(req, res) {
       }
 
       const key = getKey(req, venue_id);
-      const rl = checkRate(key);
+      const rl = await checkRate(key);
       if (!rl.ok) {
         res.setHeader('Retry-After', rl.retry);
         return res.status(429).json({
@@ -93,14 +108,8 @@ export default async function handler(req, res) {
       }
 
       if (error || !staff) {
-        const e = attempts.get(key);
-        if (e) { e.fails++; if (e.fails >= LOCKOUT_AFTER) { e.lockUntil = Date.now() + LOCKOUT_MS; e.fails = 0; } }
         return res.status(200).json({ success: true, data: { valid: false, staff: null, permissions: null } });
       }
-
-      // Success — reset failures
-      const e = attempts.get(key);
-      if (e) e.fails = 0;
 
       const permissions = { ...DEFAULT_PERMISSIONS[staff.role], ...(staff.permissions || {}) };
       const name = staff.profiles?.display_name || staff.display_name || staff.role.charAt(0).toUpperCase() + staff.role.slice(1);
