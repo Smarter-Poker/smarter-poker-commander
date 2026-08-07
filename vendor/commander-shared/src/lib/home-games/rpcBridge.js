@@ -23,9 +23,9 @@
  *    work as designed.
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const { applyRateLimit, LIMITS } = require('../apiRateLimit');
-const { getServerUserWithFallback } = require('../serverAuth');
+import { createClient } from '@supabase/supabase-js';
+import { applyRateLimit, LIMITS } from '../apiRateLimit';
+import { getServerUserWithFallback } from '../serverAuth';
 
 // Lazy-initialised service-role client used ONLY for the initial JWT
 // verification handshake when serverAuth falls back to supabase.auth.getUser.
@@ -164,4 +164,5 @@ async function bridgeRequest(req, res, { method = 'POST', limit } = {}) {
   return { ok: true, user, supabase, token };
 }
 
-module.exports = { bridgeRequest, mapRpcError, LIMITS, getUserScopedClient };
+export { bridgeRequest, mapRpcError, LIMITS, getUserScopedClient };
+export default { bridgeRequest, mapRpcError, LIMITS, getUserScopedClient };
