@@ -216,14 +216,18 @@ async function handlePost(req, res) {
     // Create staff record — user_id is optional for name-only employees
     // Check for duplicate PIN at this venue
     if (pin_code) {
-      const { data: existingPin } = await getSupabase()
-        .from('commander_staff')
-        .select('id')
-        .eq('venue_id', venue_id)
-        .eq('pin_code', pin_code)
-        .eq('is_active', true)
-        .limit(1);
-      if (existingPin?.length > 0) {
+      // Duplicate-PIN check happens in the database via fn_staff_pin_taken, which
+      // compares the bcrypt pin_hash rather than reading the plaintext pin_code column.
+      const { data: pinTaken, error: pinCheckError } = await getSupabase()
+        .rpc('fn_staff_pin_taken', {
+          p_venue_id: String(venue_id),
+          p_pin: String(pin_code),
+          p_exclude_id: null
+        });
+      if (pinCheckError) {
+        console.warn('[staff] duplicate-PIN check failed:', pinCheckError.message || pinCheckError);
+      }
+      if (pinTaken) {
         return res.status(400).json({
           success: false,
           error: { code: 'DUPLICATE_PIN', message: 'This PIN is already in use by another employee at this venue' }
