@@ -4,6 +4,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs';
+import crypto from 'crypto';
 
 // Lazy getter — prevents SSR crashes if client components import constants from this file.
 // Server-only env vars like SUPABASE_SERVICE_ROLE_KEY are undefined in the browser.
@@ -16,6 +17,47 @@ function getSupabase() {
     );
   }
   return _supabase;
+}
+
+// ── Staff-session signature verification ─────────────────────────────────────
+// This module used to trust the raw client-supplied `x-staff-session` JSON with
+// NO signature check, so any caller could forge a staff (or owner) identity just
+// by sending a staff row id. The Commander app shipped a hardened local copy,
+// but this shared copy stayed forgeable — a landmine for any consumer that
+// imports it. Sessions are HMAC-signed when issued, so verifying here rejects
+// forgeries without rejecting a single legitimate session.
+
+function sessionSecret() {
+  const secret = process.env.SUPABASE_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error('[commander-auth] no signing secret configured');
+  return secret;
+}
+
+function canonicalSessionString(s) {
+  return [s.id || '', s.user_id || '', s.venue_id ?? '', s.role || '', s.session_ts ?? ''].join('|');
+}
+
+export function signStaffSession(payload) {
+  const session_ts = payload.session_ts || Date.now();
+  const body = { ...payload, session_ts };
+  const sig = crypto.createHmac('sha256', sessionSecret())
+    .update(canonicalSessionString(body))
+    .digest('hex');
+  return { ...body, sig };
+}
+
+function verifySessionSignature(sessionData) {
+  if (!sessionData.sig || !sessionData.session_ts) return false;
+  try {
+    const expected = crypto.createHmac('sha256', sessionSecret())
+      .update(canonicalSessionString(sessionData))
+      .digest('hex');
+    const a = Buffer.from(String(sessionData.sig), 'utf8');
+    const b = Buffer.from(expected, 'utf8');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -213,6 +255,12 @@ export async function verifyStaffSession(req) {
     sessionData = JSON.parse(staffSession);
   } catch {
     return { error: { status: 401, code: 'INVALID_SESSION', message: 'Invalid Session Format' } };
+  }
+
+  // Signature gate — fail CLOSED. An unsigned or tampered session is a forgery
+  // attempt, not a legacy client: every issuer signs sessions at creation.
+  if (!verifySessionSignature(sessionData)) {
+    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired — Please Sign In Again' } };
   }
 
   // Path 1: PIN-based staff terminal — session contains staff row `id`
