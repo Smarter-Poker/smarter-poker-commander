@@ -15,6 +15,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      # Vendor drift guard — ported from World Hub build-safety-gate CHECK 14.
+      # Runs BEFORE npm install (dependency-free static analysis). Guards the
+      # two vendoring-drift classes behind the Aug 2026 prod incidents:
+      #   A. module.exports/require() inside the type:module vendor package
+      #      — the file silently exports NOTHING (parseBlindStructure,
+      #      home-games/rpcBridge).
+      #   B. Importing a vendor path directly when a real local src/ override
+      #      carries the fix — the forgeable-vendor-auth bug entered this repo
+      #      exactly that way.
+      - name: Vendor drift guard (CJS-under-ESM + override bypass)
+        run: node scripts/check-vendor-drift.mjs
       - name: Install
         run: npm install --legacy-peer-deps
       - name: Lint
