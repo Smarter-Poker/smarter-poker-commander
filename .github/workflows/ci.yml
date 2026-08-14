@@ -9,11 +9,14 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      driftlog: ${{ steps.drift.outputs.log }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,8 +31,23 @@ jobs:
       #   B. Importing a vendor path directly when a real local src/ override
       #      carries the fix — the forgeable-vendor-auth bug entered this repo
       #      exactly that way.
+      # Output is captured into a step output so notify-failure can embed it
+      # in the failure issue (private-repo run logs are unreachable from the
+      # MCP tooling agents use to verify pushes).
       - name: Vendor drift guard (CJS-under-ESM + override bypass)
-        run: node scripts/check-vendor-drift.mjs
+        id: drift
+        run: |
+          set +e
+          OUT=$(node scripts/check-vendor-drift.mjs 2>&1)
+          CODE=$?
+          echo "$OUT"
+          {
+            echo 'log<<DRIFT_EOF'
+            echo "$OUT" | head -c 60000
+            echo ''
+            echo 'DRIFT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit $CODE
       - name: Install
         run: npm install --legacy-peer-deps
       - name: Lint
@@ -54,7 +72,9 @@ jobs:
 
   # Auto-file a GitHub Issue when CI fails on main — ported from World Hub's
   # Build Safety Gate. Private-repo Actions results are otherwise invisible to
-  # the MCP tooling agents use to verify a push landed green.
+  # the MCP tooling agents use to verify a push landed green. The issue body
+  # embeds the vendor-drift guard output and per-step failure status so it is
+  # self-sufficient for diagnosis.
   notify-failure:
     name: Failure Notification
     needs: [build]
@@ -63,11 +83,40 @@ jobs:
     steps:
       - name: Create GitHub Issue on Failure
         uses: actions/github-script@v7
+        env:
+          DRIFT_LOG: ${{ needs.build.outputs.driftlog }}
         with:
           script: |
             const { owner, repo } = context.repo;
             const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
             const sha = context.sha.substring(0, 7);
+
+            // Collect per-job / per-step status for this run so the issue is
+            // self-sufficient (run logs are not reachable for private repos
+            // from the agent tooling).
+            let stepReport = '';
+            try {
+              const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                owner, repo, run_id: context.runId, per_page: 20
+              });
+              for (const job of jobs.data.jobs) {
+                stepReport += `\n**Job: ${job.name}** — ${job.conclusion || job.status}\n`;
+                for (const s of (job.steps || [])) {
+                  if (s.conclusion && s.conclusion !== 'success' && s.conclusion !== 'skipped') {
+                    stepReport += `- FAILED STEP: ${s.name}\n`;
+                  }
+                }
+              }
+            } catch (e) {
+              stepReport = `\n(step status unavailable: ${e.message})\n`;
+            }
+
+            const driftLog = process.env.DRIFT_LOG || '';
+            const driftSection = driftLog.trim()
+              ? `\n### Vendor drift guard output\n\n\`\`\`\n${driftLog.slice(0, 55000)}\n\`\`\`\n`
+              : '';
+
+            const body = `## CI Failure\n\n**Commit:** \`${sha}\`\n**Run:** [View details](${runUrl})\n${stepReport}${driftSection}\nAuto-created by the CI pipeline. Close when resolved.`;
 
             const issues = await github.rest.issues.listForRepo({
               owner, repo,
@@ -80,13 +129,13 @@ jobs:
               await github.rest.issues.createComment({
                 owner, repo,
                 issue_number: issues.data[0].number,
-                body: `Another CI failure on commit \`${sha}\`\n\n[View run](${runUrl})`
+                body: `Another CI failure on commit \`${sha}\`\n\n[View run](${runUrl})\n${stepReport}${driftSection}`
               });
             } else {
               await github.rest.issues.create({
                 owner, repo,
                 title: `CI failed on main — ${new Date().toISOString().split('T')[0]}`,
-                body: `## CI Failure\n\n**Commit:** \`${sha}\`\n**Run:** [View details](${runUrl})\n\nAuto-created by the CI pipeline. Close when resolved.`,
+                body,
                 labels: ['ci-failure']
               });
             }
