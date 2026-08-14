@@ -12,9 +12,13 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { supabase } from '../../src/lib/supabase';
 // Dashboard uses real-time sync primarily to instantly reflect hard stop or setting changes
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../src/lib/commander/tierConfig';
-// NOTE: import the client-safe shared module directly — src/lib/commander/auth
-// is server-only since the 2026-07-25 session-signing change (uses node crypto).
-import { canRoleAccessRoute } from '@smarter-poker/commander-shared/lib/commander/auth';
+// 2026-08-14 vendor-drift fix: import via the local override, which re-exports
+// canRoleAccessRoute from the shared package. The old "client-safe shared
+// module" rationale is obsolete — since the 2026-08-07 session-signing
+// hardening the vendor module itself imports node crypto, so both import
+// paths pull equivalent module graphs, and the direct vendor import bypassed
+// the override (the exact class the CI vendor drift guard now blocks).
+import { canRoleAccessRoute } from '../../src/lib/commander/auth';
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
