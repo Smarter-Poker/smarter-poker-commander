@@ -213,6 +213,21 @@ export async function getStaffVenues(userId) {
  * @returns {object|null} - Staff object or null
  */
 export async function verifyPin(venueId, pinCode) {
+  // 2026-08-14: PINs are bcrypt-hashed (commander_staff.pin_hash; a BEFORE
+  // trigger hashes and NULLs any plaintext write). This function previously
+  // compared the plaintext pin_code column directly — dead wrong post-hashing
+  // (the column is always NULL) and the last plaintext PIN comparison left in
+  // code. fn_verify_staff_pin checks the hash server-side and returns the
+  // staff id, or NULL for a bad PIN.
+  if (venueId === undefined || venueId === null || !pinCode) return null;
+
+  const { data: staffId, error: rpcError } = await getSupabase()
+    .rpc('fn_verify_staff_pin', { p_venue_id: String(venueId), p_pin: String(pinCode) });
+
+  if (rpcError || !staffId) {
+    return null;
+  }
+
   const { data: staff, error } = await getSupabase()
     .from('commander_staff')
     .select(`
@@ -223,9 +238,7 @@ export async function verifyPin(venueId, pinCode) {
         avatar_url
       )
     `)
-    .eq('venue_id', venueId)
-    .eq('pin_code', pinCode)
-    .eq('is_active', true)
+    .eq('id', staffId)
     .maybeSingle();
 
   if (error || !staff) {
