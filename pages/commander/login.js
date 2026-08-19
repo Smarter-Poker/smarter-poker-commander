@@ -2,13 +2,17 @@
  * Commander Owner/Manager Login Page
  * Email + Password for venue owners
  * SmarterPoker color scheme
+ *
+ * [2026-08-19] Added SSO bridge: if user is already signed in on smarter.poker
+ * (detected via shared 'smarter-poker-auth' localStorage key), a
+ * "Continue as [email]" button appears so they never need to re-enter credentials.
  */
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import SEOHead from '../../src/components/seo/SEOHead';
 import Link from 'next/link';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 
 export default function CommanderLogin() {
@@ -21,6 +25,10 @@ export default function CommanderLogin() {
   const [rememberMe, setRememberMe] = useState(true);
   const [checkingSession, setCheckingSession] = useState(true);
   const [showReset, setShowReset] = useState(false);
+
+  // SSO bridge state — set when smarter.poker session detected in localStorage
+  const [ssoEmail, setSsoEmail] = useState(null);
+  const [ssoLoading, setSsoLoading] = useState(false);
 
   // Pre-fill email from stored staff data if available (remember me)
   useEffect(() => {
@@ -36,7 +44,30 @@ export default function CommanderLogin() {
     if (router.query.no_sub === '1') {
       setError('No active Club Commander subscription found. Please sign up below to create your venue.');
     }
-  }, [router.query.expired, router.query.no_sub]);
+
+    // ── SSO Bridge Detection ──────────────────────────────────────────
+    // Check if the user is already logged into smarter.poker. Both apps
+    // use the storage key 'smarter-poker-auth' on Supabase's SDK, so if
+    // this Commander tab was opened from within smarter.poker, the shared
+    // localStorage key should already have the session.
+    // NOTE: This only works when both origins share a parent domain AND
+    // the browser allows cross-origin localStorage sharing — which it doesn't.
+    // For the common case (cross-origin), the hub passes ?hub_token= in the
+    // URL when navigating to Commander, which we use below.
+    //
+    // Same-origin path (works when Commander is served via smarter.poker/commander/* rewrite):
+    try {
+      const authRaw = localStorage.getItem('smarter-poker-auth');
+      if (authRaw) {
+        const auth = JSON.parse(authRaw);
+        const userEmail = auth?.user?.email;
+        if (userEmail) {
+          setSsoEmail(userEmail);
+        }
+      }
+    } catch (e) { /* localStorage may be unavailable */ }
+  }, [router.query.expired, router.query.no_sub]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Auto-restore session — if user has valid Supabase session + remember flag, skip login
   useEffect(() => {
@@ -232,6 +263,81 @@ export default function CommanderLogin() {
     }
   }
 
+  // ── SSO Continue handler ─────────────────────────────────────────────
+  // Called when the user clicks "Continue as [email]". Reads their current
+  // smarter.poker JWT from localStorage, calls the hub SSO endpoint to get
+  // a one-time bridge token, then redirects to /auth/sso on Commander to
+  // finish the session transfer.
+  const handleSSOContinue = async () => {
+    setError(null);
+    setSsoLoading(true);
+    try {
+      // Read the current smarter.poker session token
+      let accessToken = null;
+      try {
+        const authRaw = localStorage.getItem('smarter-poker-auth');
+        if (authRaw) {
+          const auth = JSON.parse(authRaw);
+          accessToken = auth?.access_token;
+        }
+        // Fallback: check Supabase default storage keys
+        if (!accessToken) {
+          const sbKeys = Object.keys(localStorage || {}).filter(
+            k => k.startsWith('sb-') && k.endsWith('-auth-token')
+          );
+          if (sbKeys.length > 0) {
+            const raw = localStorage.getItem(sbKeys[0]);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              accessToken = parsed?.access_token;
+            }
+          }
+        }
+      } catch (e) { /* localStorage unavailable */ }
+
+      if (!accessToken) {
+        // No local token — fall back to supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
+      }
+
+      if (!accessToken) {
+        setError('Could not read your Smarter.Poker session. Please sign in manually.');
+        setSsoLoading(false);
+        return;
+      }
+
+      // Call the hub SSO endpoint — this works when Commander is accessed via
+      // smarter.poker/commander/* rewrite. When accessed directly at
+      // commander.smarter.poker, this URL hits the main hub API.
+      const hubOrigin = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
+      const ssoRes = await fetch(`${hubOrigin}/api/auth/commander-sso`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        credentials: 'include',
+      });
+
+      const ssoData = await ssoRes.json().catch(() => ({}));
+
+      if (!ssoRes.ok || !ssoData.url) {
+        setError(ssoData.error || 'SSO failed. Please sign in with your email and password below.');
+        setSsoLoading(false);
+        return;
+      }
+
+      // Redirect to Commander SSO landing page with the one-time token
+      window.location.href = ssoData.url;
+    } catch (err) {
+      console.warn('[SSO] Continue error:', err);
+      setError('SSO sign-in failed. Please use email and password below.');
+      setSsoLoading(false);
+    }
+  };
+
+
   // OAuth return path (/auth/callback redirects here with ?oauth=1 once the
   // Supabase session is established) — finish the subscription check.
   useEffect(() => {
@@ -294,6 +400,40 @@ export default function CommanderLogin() {
 
         {/* Login Form */}
         <div className="bg-[#242526] rounded-xl p-8 border border-[#3A3B3C]">
+
+          {/* ── SSO Bridge Button ── */}
+          {/* Shown when user is already logged into smarter.poker (same-origin/rewrite case)
+              or when navigator from the hub passes their session via localStorage sharing. */}
+          {ssoEmail && (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={handleSSOContinue}
+                disabled={ssoLoading || loading}
+                className="w-full bg-gradient-to-r from-[#1877F2] to-[#0d6ae0] hover:from-[#1664d9] hover:to-[#0a5ec0] disabled:opacity-60 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-500/20"
+              >
+                {ssoLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Signing In…</span>
+                  </>
+                ) : (
+                  <>
+                    {/* Smarter.Poker logo mark */}
+                    <span className="text-lg font-bold tracking-tight">SP</span>
+                    <span className="flex flex-col text-left leading-tight">
+                      <span className="text-xs text-blue-200 font-normal">Continue as</span>
+                      <span className="truncate max-w-[220px]">{ssoEmail}</span>
+                    </span>
+                    <ArrowRight className="w-4 h-4 ml-auto flex-shrink-0" />
+                  </>
+                )}
+              </button>
+              <p className="text-center text-[#8A8D91] text-xs mt-2">
+                Using your Smarter.Poker account
+              </p>
+            </div>
+          )}
 
           {/* Social Sign-In Buttons */}
           <div className="mb-6">
