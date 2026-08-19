@@ -525,7 +525,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
         }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
     };
 
-    // Auto-refresh every 10s
+    // Auto-refresh every 30s (fallback; realtime sync handles instant updates)
     useEffect(() => {
         if (!venueId) return;
         const interval = setInterval(fetchAll, 30000); // fallback — real-time sync handles instant updates
@@ -535,11 +535,84 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     // Commander Data Bus — instant cross-tab sync for tables, games, dealers
     useCommanderSync(venueId, fetchAll, { entities: ['tables', 'games', 'dealers'] });
 
-    // 1-second tick for live countdown display
+    // 1-second tick for live countdown display.
+    // 2026-08-19: the tick now pauses while the page is hidden (tablet screen off
+    // or app backgrounded). This component is ~2,000 lines with no memoisation, so
+    // every tick re-renders the entire table grid; on a tablet left running for a
+    // whole shift that burned CPU and battery animating a display nobody could see.
+    // Nothing is lost on resume — adjustTime() recomputes every countdown from
+    // lastFetchAt, and we force one immediate tick when the screen comes back.
     useEffect(() => {
-        const tick = setInterval(() => setTickCounter(c => c + 1), 1000);
-        return () => clearInterval(tick);
+        let tick = null;
+        const start = () => { if (tick == null) tick = setInterval(() => setTickCounter(c => c + 1), 1000); };
+        const stop = () => { if (tick != null) { clearInterval(tick); tick = null; } };
+        const onVisibility = () => {
+            if (typeof document !== 'undefined' && document.hidden) { stop(); }
+            else { setTickCounter(c => c + 1); start(); }
+        };
+        if (typeof document === 'undefined' || !document.hidden) start();
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            stop();
+            if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, []);
+
+    // 2026-08-19: hold a screen Wake Lock for the length of the shift.
+    // A dealer tablet must stay readable at the table — seat timers, the floor-call
+    // button and the scan flow are useless behind a sleeping screen, and a dealer
+    // having to wake and unlock the device mid-hand is a real operational cost.
+    // The lock is released by the browser whenever the page is hidden, so it is
+    // re-acquired on visibilitychange. Wrapped in try/catch and feature-detected:
+    // on a browser without the API (or if the request is refused) this is a no-op
+    // and the tablet behaves exactly as it does today.
+    useEffect(() => {
+        if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+        let sentinel = null;
+        let cancelled = false;
+        const acquire = async () => {
+            try {
+                if (typeof document !== 'undefined' && document.hidden) return;
+                if (sentinel) return;
+                sentinel = await navigator.wakeLock.request('screen');
+                if (cancelled) { try { await sentinel.release(); } catch (e) { /* ignore */ } sentinel = null; return; }
+                sentinel.addEventListener('release', () => { sentinel = null; });
+            } catch (e) {
+                // Refused (battery saver, permissions policy, unsupported) — non-fatal.
+                console.warn('[table-tablets] wake lock unavailable:', e?.message || e);
+            }
+        };
+        const onVisibility = () => { if (typeof document !== 'undefined' && !document.hidden) acquire(); };
+        acquire();
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            cancelled = true;
+            if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+            if (sentinel) { try { sentinel.release(); } catch (e) { /* ignore */ } sentinel = null; }
+        };
+    }, []);
+
+    // 2026-08-19: connectivity awareness.
+    // Club Wi-Fi drops. Previously every fetch failure was swallowed by a
+    // console.warn, so the tablet kept showing the last-known grid with no
+    // indication it had gone stale — a dealer could unseat a player, or read a
+    // seat as open, from data minutes out of date. Now the dealer is told, and the
+    // grid is refetched the moment the connection returns. Feedback reuses the
+    // existing toast channel rather than adding UI, so the render tree is untouched.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const onOffline = () => setToast({ type: 'error', text: 'Offline — table data may be out of date' });
+        const onOnline = () => {
+            setToast({ type: 'success', text: 'Back online — refreshing tables' });
+            if (venueId) { try { fetchAll(); } catch (e) { console.warn('[table-tablets] reconnect refresh failed:', e?.message || e); } }
+        };
+        window.addEventListener('offline', onOffline);
+        window.addEventListener('online', onOnline);
+        return () => {
+            window.removeEventListener('offline', onOffline);
+            window.removeEventListener('online', onOnline);
+        };
+    }, [venueId, fetchAll]);
 
     // Compute adjusted time_remaining accounting for seconds elapsed since last API fetch
     const adjustTime = useCallback((apiTimeRemaining) => {
