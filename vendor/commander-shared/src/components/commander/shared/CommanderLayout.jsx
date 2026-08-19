@@ -16,7 +16,8 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
   Monitor, DollarSign, Gift, Calendar, Tv, Activity, BarChart3,
-  AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle
+  AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle,
+  Check, Home, Building2, Loader2
 } from 'lucide-react';
 import CommanderErrorBoundary from './CommanderErrorBoundary';
 import FloorCallAlert from './FloorCallAlert';
@@ -68,6 +69,11 @@ export default function CommanderLayout({ children, title, backHref = '/commande
   const [clubPageId, setClubPageId] = useState(null); // Set when venue has an existing club page
   const [showUpgradeModal, setShowUpgradeModal] = useState(null); // null or { label, requiredTier }
   const [currentTier, setCurrentTier] = useState('home_game');
+
+  // ── MULTI-CLUB / HOME-GAME SWITCHER STATE ──
+  const [accounts, setAccounts] = useState(null); // null=not loaded, { clubs, home_groups }
+  const [switchingVenueId, setSwitchingVenueId] = useState(null);
+  const [switchError, setSwitchError] = useState('');
 
   // ── PIN SECURITY GATE STATE ──
   const [routeBlocked, setRouteBlocked] = useState(true); // Default BLOCKED until verified
@@ -251,11 +257,12 @@ export default function CommanderLayout({ children, title, backHref = '/commande
     localStorage.removeItem('commander_security_gate');
     localStorage.removeItem('commander_login_origin');
     localStorage.removeItem('commander_branding');
-    // Clear all PIN unlock grants from this session
+    // Clear all PIN unlock grants + account-switcher cache from this session
     try {
       Object.keys(sessionStorage || {}).forEach(k => {
         if (k.startsWith('pin_unlock_')) sessionStorage.removeItem(k);
       });
+      sessionStorage.removeItem('commander_accounts_cache');
     } catch (e) { console.warn('[App] Handled exception:', e); }
     // Bulletproof redirect
     window.location.href = '/commander/login';
@@ -341,6 +348,123 @@ export default function CommanderLayout({ children, title, backHref = '/commande
       });
     }
   };
+
+  // ── MULTI-CLUB / HOME-GAME SWITCHER ──
+  // Lazily load the user's Commander contexts (owned club subscriptions +
+  // owned home-game groups) the first time the hamburger menu opens.
+  // 5-minute sessionStorage cache avoids refetching on every open.
+  useEffect(() => {
+    if (!menuOpen || accounts !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const CACHE_KEY = 'commander_accounts_cache';
+        try {
+          const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+          if (cached && cached.fetched_at && (Date.now() - cached.fetched_at) < 5 * 60 * 1000) {
+            if (!cancelled) setAccounts({ clubs: cached.clubs || [], home_groups: cached.home_groups || [] });
+            return;
+          }
+        } catch (e) { console.warn('[App] Handled exception:', e); }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          // PIN-only staff session — no Supabase auth, no switcher
+          if (!cancelled) setAccounts({ clubs: [], home_groups: [] });
+          return;
+        }
+        const res = await fetch('/api/commander/my-commander-accounts', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) {
+          if (!cancelled) setAccounts({ clubs: [], home_groups: [] });
+          return;
+        }
+        const json = await res.json();
+        const payload = { clubs: json.clubs || [], home_groups: json.home_groups || [] };
+        if (!cancelled) setAccounts(payload);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ...payload, fetched_at: Date.now() }));
+        } catch (e) { console.warn('[App] Handled exception:', e); }
+      } catch (e) {
+        console.warn('[Commander] account switcher load error:', e);
+        if (!cancelled) setAccounts({ clubs: [], home_groups: [] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [menuOpen, accounts]);
+
+  const handleSwitchClub = async (venueId) => {
+    if (switchingVenueId) return; // one switch at a time
+    if (String(venueId) === String(staff?.venue_id)) { setMenuOpen(false); return; }
+    setSwitchError('');
+    setSwitchingVenueId(venueId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setSwitchError('Sign in as the owner to switch clubs');
+        return;
+      }
+      const res = await fetch('/api/commander/my-commander-accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ venue_id: venueId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.subscription || !json.staff_session) {
+        setSwitchError(json.error || 'Could not switch clubs — try again');
+        return;
+      }
+      const subscription = json.subscription;
+
+      // Rebuild the exact localStorage state login.js creates, for the new
+      // venue. NEVER touch the signed fields (user_id/venue_id/role/
+      // session_ts/sig) or the HMAC signature breaks.
+      localStorage.setItem('commander_venue', JSON.stringify(subscription.venue));
+      localStorage.setItem('commander_subscription', JSON.stringify(subscription));
+      const staffSession = {
+        ...json.staff_session,
+        email: staff?.email,
+        display_name: staff?.display_name,
+        venue_name: subscription.venue?.name || 'My Venue',
+        permissions: {
+          manage_games: true,
+          manage_waitlist: true,
+          manage_staff: true,
+          manage_tables: true,
+          manage_tournaments: true,
+          manage_settings: true,
+          view_analytics: true,
+          view_reports: true,
+          send_announcements: true },
+      };
+      localStorage.setItem('commander_staff', JSON.stringify(staffSession));
+      // Remember the choice so future logins land on this venue
+      try { localStorage.setItem('commander_active_venue_id', String(subscription.venue_id)); } catch (e) { console.warn('[App] Handled exception:', e); }
+      // Per-venue caches must not leak across the switch
+      localStorage.removeItem('commander_branding');
+      try {
+        Object.keys(sessionStorage || {}).forEach(k => {
+          if (k.startsWith('pin_unlock_')) sessionStorage.removeItem(k);
+        });
+        sessionStorage.removeItem('commander_accounts_cache');
+      } catch (e) { console.warn('[App] Handled exception:', e); }
+
+      // Full reload so every provider, cache, and realtime subscription
+      // rebinds to the new venue
+      window.location.href = '/commander/dashboard';
+    } catch (e) {
+      console.warn('[Commander] switch club error:', e);
+      setSwitchError('Could not switch clubs — try again');
+    } finally {
+      setSwitchingVenueId(null);
+    }
+  };
+
+  const totalContexts = (accounts?.clubs?.length || 0) + (accounts?.home_groups?.length || 0);
 
   const venueName = staff?.venue_name || 'Poker Room';
   const currentTierConfig = getTierConfig(currentTier);
@@ -470,18 +594,18 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         .cmd-menu-panel {
           position: fixed;
           top: 0;
-          right: 0;
+          left: 0;
           z-index: 201;
           width: 280px;
           max-height: 100vh;
           overflow-y: auto;
           background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
-          border-left: 2px solid #444;
+          border-right: 2px solid #444;
           padding: 16px 0;
           animation: cmdMenuSlide 0.2s ease;
         }
         @keyframes cmdMenuSlide {
-          from { transform: translateX(100%); }
+          from { transform: translateX(-100%); }
           to { transform: translateX(0); }
         }
         .cmd-menu-header {
@@ -565,6 +689,76 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+        }
+        .cmd-switcher-section {
+          padding: 4px 0 2px;
+          border-bottom: 2px solid #333;
+          margin-bottom: 8px;
+        }
+        .cmd-switcher-label {
+          font-family: 'Orbitron', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          color: #666;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          padding: 4px 16px 6px;
+        }
+        .cmd-switcher-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 9px 16px;
+          background: none;
+          border: none;
+          color: #ccc;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s;
+          text-align: left;
+        }
+        .cmd-switcher-item:hover {
+          background: rgba(255,255,255,0.05);
+          color: #fff;
+        }
+        .cmd-switcher-item.current {
+          color: #22D3EE;
+          background: rgba(34,211,238,0.05);
+          cursor: default;
+        }
+        .cmd-switcher-item:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+        .cmd-switcher-name {
+          flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .cmd-switcher-type {
+          font-size: 10px;
+          font-weight: 600;
+          color: #777;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          flex-shrink: 0;
+        }
+        .cmd-switcher-error {
+          color: #EF4444;
+          font-size: 11px;
+          padding: 2px 16px 6px;
+          font-family: 'Inter', sans-serif;
+        }
+        .cmd-switcher-spin {
+          animation: cmdSwitcherSpin 0.8s linear infinite;
+        }
+        @keyframes cmdSwitcherSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .cmd-menu-tier-badge {
           padding: 4px 10px 6px;
@@ -816,6 +1010,46 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                   <X size={18} />
                 </button>
               </div>
+              {/* ── MULTI-CLUB / HOME-GAME SWITCHER ── */}
+              {totalContexts > 1 && (
+                <div className="cmd-switcher-section">
+                  <div className="cmd-switcher-label">My Clubs &amp; Games</div>
+                  {accounts.clubs.map((club) => {
+                    const isCurrent = String(club.venue_id) === String(staff?.venue_id);
+                    const isSwitching = switchingVenueId === club.venue_id;
+                    return (
+                      <button
+                        key={`club-${club.venue_id}`}
+                        className={`cmd-switcher-item ${isCurrent ? 'current' : ''}`}
+                        disabled={!!switchingVenueId}
+                        onClick={() => handleSwitchClub(club.venue_id)}
+                      >
+                        <Building2 size={16} />
+                        <span className="cmd-switcher-name">{club.venue?.name || 'My Venue'}</span>
+                        <span className="cmd-switcher-type">{getTierConfig(club.tier)?.name || 'Club'}</span>
+                        {isCurrent && <Check size={15} />}
+                        {isSwitching && <Loader2 size={15} className="cmd-switcher-spin" />}
+                      </button>
+                    );
+                  })}
+                  {accounts.home_groups.map((group) => (
+                    <button
+                      key={`hg-${group.id}`}
+                      className="cmd-switcher-item"
+                      disabled={!!switchingVenueId}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        window.location.href = `/hub/commander/home-games/${group.id}`;
+                      }}
+                    >
+                      <Home size={16} />
+                      <span className="cmd-switcher-name">{group.name}</span>
+                      <span className="cmd-switcher-type">Home Game</span>
+                    </button>
+                  ))}
+                  {switchError && <div className="cmd-switcher-error">{switchError}</div>}
+                </div>
+              )}
               {/* Tier badge */}
               <div className="cmd-menu-tier-badge">
                 {currentTierLabel} Plan

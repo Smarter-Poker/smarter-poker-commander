@@ -53,17 +53,44 @@ export default async function handler(req, res) {
       const userId = user.id;
 
       try {
-          const { data: subs, error } = await getSupabase()
+          // Multi-club support (2026-08-19): a user may own several active
+          // subscriptions. If the client passes preferred_venue_id (the venue
+          // they last switched to via the hamburger switcher), log them into
+          // THAT venue — still filtered by owner_id, so it can never resolve
+          // to a venue they don't own. Otherwise fall back to the newest sub.
+          const preferredVenueId = req.body?.preferred_venue_id;
+
+          let query = getSupabase()
               .from('commander_subscriptions')
               .select('*, venue:poker_venues(*)')
               .eq('owner_id', userId)
-              .in('status', ['active', 'trialing'])
+              .in('status', ['active', 'trialing']);
+          if (preferredVenueId !== undefined && preferredVenueId !== null && preferredVenueId !== '') {
+              query = query.eq('venue_id', preferredVenueId);
+          }
+          let { data: subs, error } = await query
               .order('created_at', { ascending: false })
               .limit(1);
 
           if (error) {
               console.warn('Subscription check error:', error.message);
               return res.status(500).json({ error: 'Failed to check subscription' });
+          }
+
+          // Preferred venue no longer valid (sub canceled, etc.) — fall back
+          if (!subs?.length && preferredVenueId) {
+              const fallback = await getSupabase()
+                  .from('commander_subscriptions')
+                  .select('*, venue:poker_venues(*)')
+                  .eq('owner_id', userId)
+                  .in('status', ['active', 'trialing'])
+                  .order('created_at', { ascending: false })
+                  .limit(1);
+              if (fallback.error) {
+                  console.warn('Subscription check error:', fallback.error.message);
+                  return res.status(500).json({ error: 'Failed to check subscription' });
+              }
+              subs = fallback.data;
           }
 
           const subscription = subs?.[0] || null;

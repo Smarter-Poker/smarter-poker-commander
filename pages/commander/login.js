@@ -78,6 +78,23 @@ export default function CommanderLogin() {
 
     async function checkExistingSession() {
       try {
+        // FIX: Break infinite redirect loop!
+        // If the server rejected the session (e.g. JWT secret rotated), dashboard redirects here with ?expired=1.
+        // We must NOT auto-restore, otherwise the client (which only checks local expiry) will bounce them back.
+        if (router.query.expired === '1') {
+          clearTimeout(safetyTimeout);
+          clearTimeout(stuckTimeout);
+          // Force clear local sessions so they must sign in again
+          localStorage.removeItem('commander_staff');
+          localStorage.removeItem('commander_venue');
+          localStorage.removeItem('commander_subscription');
+          localStorage.removeItem('smarter-poker-auth');
+          try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
+          
+          setCheckingSession(false);
+          return;
+        }
+
         const remembered = localStorage.getItem('commander_remember');
         const staffDataRaw = localStorage.getItem('commander_staff');
         
@@ -165,12 +182,18 @@ export default function CommanderLogin() {
       // BOTH origins (bare /api/check-subscription 404'd when the login page
       // was served through the smarter.poker/commander proxy), and parse the
       // response body before throwing so real error messages surface.
+      // Multi-club support: pass the last venue the user switched to (set by
+      // the hamburger club switcher) so login restores that club, not just
+      // the newest subscription. Server validates ownership.
+      let preferredVenueId = null;
+      try { preferredVenueId = localStorage.getItem('commander_active_venue_id') || null; } catch { /* ignore */ }
+
       const subRes = await fetch('/api/commander/check-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${data.session.access_token}` },
-        body: JSON.stringify({ userId: data.user.id }),
+        body: JSON.stringify({ userId: data.user.id, preferred_venue_id: preferredVenueId }),
         signal: abortController.signal });
       clearTimeout(fetchTimeout);
       const subData = await subRes.json().catch(() => ({}));
