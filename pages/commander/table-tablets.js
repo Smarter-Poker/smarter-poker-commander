@@ -8,7 +8,7 @@
  * - Fullscreen popup when a table is clicked
  * Tapping a table opens a fullscreen overlay with real-time seat data.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { Monitor, Users, Loader2, Trophy, Clock, Timer, Armchair, ScanLine, Camera, X, CheckCircle, Maximize2, Copy, ExternalLink, ChevronDown, ChevronUp, Link2, Lock, Unlock, ShieldCheck, AlertTriangle, ArrowRightLeft, Coins, Skull, XCircle } from 'lucide-react';
@@ -40,6 +40,27 @@ function getFullGameName(type) {
     if (!type) return 'Cash Game';
     return GAME_TYPE_MAP[type.toLowerCase()] || type.toUpperCase();
 }
+// 2026-08-19: surface the server's real message instead of "Network error".
+// Every handler below used to `throw` on !res.ok BEFORE reading the response
+// body, so a 400 ("Insufficient time balance"), a 401 (staff session expired)
+// or a 409 (ambiguous venue) all reached the dealer as a generic "Network
+// error" — the actionable detail the API had already sent was discarded one
+// line too early. This reads the body regardless of status and normalises the
+// two error shapes the Commander APIs use (`error: 'text'` and
+// `error: { code, message }`).
+async function parseApiResponse(res) {
+    let json = null;
+    try { json = await res.json(); } catch (e) { /* empty or non-JSON body */ }
+    if (!res.ok) {
+        const msg = (json && (json.error?.message || (typeof json.error === 'string' ? json.error : null) || json.message))
+            || (res.status === 401 ? 'Session expired — sign in again'
+            :  res.status === 403 ? 'Not permitted for this venue'
+            :  `Request failed (${res.status})`);
+        return { ...(json || {}), success: false, error: msg, httpStatus: res.status };
+    }
+    return { ...(json || {}), httpStatus: res.status };
+}
+
 function isTournamentTable(table) {
     const mode = table.mode || table.table_purpose || 'cash';
     return mode === 'tournament';
@@ -354,8 +375,7 @@ export default function TableTabletsPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' || '' },
                 body: JSON.stringify({ pin_code: pinValue, venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success && json.data?.staff) {
                 const role = json.data.staff.role;
                 if (role === 'owner' || role === 'manager') {
@@ -633,23 +653,40 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
         return Math.max(0, apiTimeRemaining - elapsed);
     }, [tickCounter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Helper: get game + player info from table data
-    const getTableGame = (table) => {
+    // Helper: get game + player info from table data.
+    // 2026-08-19: wrapped in useCallback so their identity is stable across
+    // renders — otherwise anything downstream that depends on them is
+    // invalidated on every tick.
+    const getTableGame = useCallback((table) => {
         const games = Array.isArray(table.commander_games) ? table.commander_games : [];
         return games.find(g => g.status !== 'closed') || games[0] || null;
-    };
+    }, []);
 
-    const getSeatedCount = (table) => {
+    const getSeatedCount = useCallback((table) => {
         const game = getTableGame(table);
         if (game && game.current_players) return game.current_players;
         if (table.seats && table.seats.length > 0) return table.seats.length;
         return 0;
-    };
+    }, [getTableGame]);
 
-    const activeCashTables = tables.filter(t => t.status === 'in_use' && !isTournamentTable(t));
-    const activeTournamentTables = tables.filter(t => t.status === 'in_use' && isTournamentTable(t));
-    const activeTables = [...activeCashTables, ...activeTournamentTables];
-    const idleTables = tables.filter(t => t.status !== 'in_use');
+    // 2026-08-19: these four derived lists previously ran three .filter() passes
+    // and a spread on EVERY render — including each 1-second countdown tick, and
+    // every keystroke in an unrelated input. Beyond the wasted work, they handed
+    // back a brand-new array identity each time, which defeats memoisation for
+    // anything consuming them. They only change when `tables` changes, so they
+    // are memoised on that.
+    const activeCashTables = useMemo(
+        () => tables.filter(t => t.status === 'in_use' && !isTournamentTable(t)),
+        [tables]);
+    const activeTournamentTables = useMemo(
+        () => tables.filter(t => t.status === 'in_use' && isTournamentTable(t)),
+        [tables]);
+    const activeTables = useMemo(
+        () => [...activeCashTables, ...activeTournamentTables],
+        [activeCashTables, activeTournamentTables]);
+    const idleTables = useMemo(
+        () => tables.filter(t => t.status !== 'in_use'),
+        [tables]);
 
     // Dealer scan functions
     const openDealerScan = (tableNumber) => {
@@ -727,8 +764,7 @@ const res = await commanderFetch('/api/commander/dealer/scan-in', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ venue_id: venueId, qr_code: qrCode, table_number: scanningTable }) });
-            if (!res.ok) throw new Error('Request failed');
-            const data = await res.json();
+            const data = await parseApiResponse(res);
             if (data.success) {
                 setScanResult({
                     dealer_name: data.data?.dealer?.name || data.data?.dealer_name || 'Dealer',
@@ -760,8 +796,7 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId, action, ...extra }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) broadcastChange('tables'); // <== NEW FIX: Sync player actions across floor
             setPlayerActionLoading(false);
             return json;
@@ -783,8 +818,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
                 setToast({ type: 'success', text: `${json.data.player_name} removed · ${json.data.unused_minutes_returned}m returned` });
                 setShowPlayerMenu(null);
@@ -806,8 +840,7 @@ const headers = { 'Content-Type': 'application/json' };
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/eliminate`, {
                 method: 'POST', headers,
                 body: JSON.stringify({ entry_id: entryId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.entry || json.success) {
                 const pos = json.finishPosition ? ` — finished ${json.finishPosition}${['st', 'nd', 'rd'][json.finishPosition - 1] || 'th'}` : '';
                 const payout = json.payoutAmount ? ` · $${json.payoutAmount.toLocaleString()}` : '';
@@ -843,8 +876,7 @@ const headers = { 'Content-Type': 'application/json' };
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/move-player`, {
                 method: 'POST', headers,
                 body: JSON.stringify({ entry_id: entryId, to_table: toTable, to_seat: toSeat }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
                 const move = json.data?.move;
                 setToast({ type: 'success', text: `${playerName} moved T${move?.from_table}S${move?.from_seat} → T${move?.to_table}S${move?.to_seat}` });
@@ -870,8 +902,7 @@ const headers = { 'Content-Type': 'application/json' };
                     entry_id: entryId,
                     chip_count: chipCount,
                     venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
                 setToast({ type: 'success', text: `Chip count updated: ${chipCount.toLocaleString()} — ${playerName}` });
                 broadcastChange('tables');
@@ -894,8 +925,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ qr_code: qrData, table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
                 setToast({ type: 'success', text: `${json.data.player_name} seated at S${seatNumber}` });
                 broadcastChange('tables'); // <== NEW FIX: Realtime sync across the floor
@@ -1249,7 +1279,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
 
     return (
         <CommanderLayout title="Table Tablets | Commander" backHref="/commander/dashboard?card=floor">
-            <SEOHead title="Commander — Table Tablets" description="Dealer tablet view for all tables." noindex={true} />
+            <SEOHead title="Commander - Table Tablets" description="Dealer tablet view for all tables." noindex={true} />
             <div style={{ minHeight: '100vh', background: '#1a1f22', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px' }}>
 
