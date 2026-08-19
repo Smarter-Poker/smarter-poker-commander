@@ -624,26 +624,24 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
         };
     }, []);
 
-    // 2026-08-19: connectivity awareness.
-    // Club Wi-Fi drops. Previously every fetch failure was swallowed by a
-    // console.warn, so the tablet kept showing the last-known grid with no
-    // indication it had gone stale — a dealer could unseat a player, or read a
-    // seat as open, from data minutes out of date. Now the dealer is told, and the
-    // grid is refetched the moment the connection returns. Feedback reuses the
-    // existing toast channel rather than adding UI, so the render tree is untouched.
+    // 2026-08-19: refetch the grid the moment connectivity returns.
+    // CommanderLayout already owns the *visual* offline state — it listens for
+    // online/offline and renders the *You are offline* banner — so this
+    // deliberately does NOT toast, which would give the dealer two
+    // notifications for one event. What the layout does not do is recover the
+    // data: previously a Wi-Fi drop left the grid showing seats and countdowns
+    // from before the outage, with no refresh until the next 30s poll happened
+    // to land. A dealer could unseat a player, or read a seat as open, from a
+    // stale grid. This closes that window by refreshing immediately on
+    // reconnect.
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        const onOffline = () => setToast({ type: 'error', text: 'Offline — table data may be out of date' });
         const onOnline = () => {
-            setToast({ type: 'success', text: 'Back online — refreshing tables' });
-            if (venueId) { try { fetchAll(); } catch (e) { console.warn('[table-tablets] reconnect refresh failed:', e?.message || e); } }
+            if (!venueId) return;
+            try { fetchAll(); } catch (e) { console.warn('[table-tablets] reconnect refresh failed:', e?.message || e); }
         };
-        window.addEventListener('offline', onOffline);
         window.addEventListener('online', onOnline);
-        return () => {
-            window.removeEventListener('offline', onOffline);
-            window.removeEventListener('online', onOnline);
-        };
+        return () => window.removeEventListener('online', onOnline);
     }, [venueId, fetchAll]);
 
     // Compute adjusted time_remaining accounting for seconds elapsed since last API fetch
