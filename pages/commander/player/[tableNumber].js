@@ -525,7 +525,7 @@ export default function PlayerTableDisplay() {
       const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: player.session_id })
+        body: JSON.stringify({ session_id: player.session_id, venue_id: table?.venue_id })
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
@@ -545,7 +545,7 @@ export default function PlayerTableDisplay() {
     }
 
     setTimeout(() => setScanStatus(null), 5000);
-  }, []);
+  }, [table?.venue_id]);
 
   // Open scanner
   const openDealerScanner = (e) => {

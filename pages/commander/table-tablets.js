@@ -688,7 +688,7 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
 const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber }) });
+                body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
             if (!res.ok) throw new Error(`Request failed (${res.status})`);
             const json = await res.json();
             if (json.success) {
