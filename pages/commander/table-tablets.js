@@ -146,6 +146,18 @@ export default function TableTabletsPage() {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const scanIntervalRef = useRef(null);
+    // 2026-08-19: synchronous single-submit guards.
+    // detector.detect() is async and the scan interval fires every 300ms
+    // regardless, so clearInterval() stops future ticks but CANNOT cancel a
+    // detect() already in flight. A second detection resolving after the
+    // scanner closed would call the handler again with the same card —
+    // double-seating the player and deducting their time balance twice.
+    // These are refs, not state: a ref flips synchronously, so a rapid
+    // double-tap or a duplicate frame cannot slip through the window before
+    // React re-renders and disables the button.
+    const seatSubmitRef = useRef(false);
+    const dealerScanSubmitRef = useRef(false);
+    const unseatSubmitRef = useRef(false);
     // Live countdown tick — tracks when API data was last fetched
     const lastFetchAt = useRef(Date.now());
     const [tickCounter, setTickCounter] = useState(0);
@@ -654,6 +666,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     };
 
     const startDealerCamera = async () => {
+        dealerScanSubmitRef.current = false; // fresh scan session
         setScanError('');
         // Mount the video element FIRST by setting camera active before acquiring stream
         setScanCameraActive(true);
@@ -682,6 +695,8 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
                         try {
                             const barcodes = await detector.detect(videoRef.current);
                             if (barcodes.length > 0) {
+                                if (dealerScanSubmitRef.current) return;
+                                dealerScanSubmitRef.current = true;
                                 stopDealerCamera();
                                 handleDealerScan(barcodes[0].rawValue);
                             }
@@ -704,6 +719,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     };
 
     const handleDealerScan = async (qrCode) => {
+        dealerScanSubmitRef.current = false; // allow a retry after this attempt resolves
         setScanError('');
         setScanResult(null);
         try {
@@ -756,6 +772,11 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
     };
 
     const removePlayer = async (tableNumber, seatNumber) => {
+        // Unseating credits unused minutes back to the member and writes a comp
+        // row, so a double-tap is a real money event. setPlayerActionLoading is
+        // React state and does not flip until the next render; this ref does.
+        if (unseatSubmitRef.current) return;
+        unseatSubmitRef.current = true;
         setPlayerActionLoading(true);
         try {
 const res = await commanderFetch('/api/commander/dealer/player-unseat', {
@@ -773,6 +794,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 setToast({ type: 'error', text: json.error || 'Failed to remove player' });
             }
         } catch { setToast({ type: 'error', text: 'Network error' }); }
+        unseatSubmitRef.current = false;
         setPlayerActionLoading(false);
     };
 
@@ -862,6 +884,10 @@ const headers = { 'Content-Type': 'application/json' };
     };
 
     const handleSeatScan = async (qrData, tableNumber, seatNumber) => {
+        // Previously this cleared playerActionLoading at the end without ever
+        // setting it, so seat-in showed no busy state and could re-enable
+        // buttons belonging to a different in-flight action.
+        setPlayerActionLoading(true);
         closeSeatScanner();
         try {
 const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
@@ -878,12 +904,15 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 setToast({ type: 'error', text: json.error || 'Could not seat player' });
             }
         } catch { setToast({ type: 'error', text: 'Network error' }); }
+        // Release the scan guard so a declined/failed scan can be retried.
+        seatSubmitRef.current = false;
     setPlayerActionLoading(false);
     };
 
     const seatScanIntervalRef = useRef(null);
 
     const openSeatScanner = (tableNumber, seatNumber) => {
+        seatSubmitRef.current = false; // fresh scan session
         setSeatScanner({ tableNumber, seatNumber });
         setShowPlayerMenu(null);
         // Wait for the modal + video element to mount before acquiring camera
@@ -913,6 +942,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             try {
                                 const barcodes = await detector.detect(seatScannerVideoRef.current);
                                 if (barcodes.length > 0) {
+                                    if (seatSubmitRef.current) return;
+                                    seatSubmitRef.current = true;
                                     handleSeatScan(barcodes[0].rawValue, tableNumber, seatNumber);
                                 }
                             } catch (e) { console.warn("[table-tablets.js]", e); }
