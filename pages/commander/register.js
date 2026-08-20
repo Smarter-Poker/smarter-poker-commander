@@ -129,6 +129,9 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showCalib, setShowCalib] = useState(false);
 
   useEffect(() => {
+    if (router.isReady && router.query.calibrate === 'true') {
+      setShowCalib(true);
+    }
     const handleKeyDown = (e) => {
       if (e.key === 'c' && e.shiftKey && e.altKey) {
         setShowCalib(prev => !prev);
@@ -136,7 +139,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [router.isReady, router.query.calibrate]);
   // ------------------------------
 
   // Address is required only for the club tier. Home games + charity: optional.
@@ -520,6 +523,15 @@ const CalibrationPanel = () => {
         )}
         
         <textarea readOnly value={JSON.stringify(calib, null, 2)} style={{width: '100%', height: 150, color: 'black', marginTop: 10, fontSize: 10, fontFamily: 'monospace'}} />
+        <button 
+          onClick={() => {
+            navigator.clipboard.writeText(JSON.stringify(calib, null, 2));
+            alert("Settings copied to clipboard! Paste them to the AI.");
+          }}
+          style={{marginTop: 10, width: '100%', padding: '10px', background: '#1877F2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
+        >
+          Save & Copy Settings
+        </button>
       </div>
     );
   };
