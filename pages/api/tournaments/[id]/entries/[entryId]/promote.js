@@ -149,6 +149,22 @@ export default async function handler(req, res) {
       req
     });
 
+
+    // Upgrade to the max: Send an SMS notification if the player has a phone number
+    if (promoted.player_phone) {
+      try {
+        const venueName = 'Your Poker Room'; // Optional enhancement: fetch venue name
+        await sendSeatNotification(
+          promoted.player_phone,
+          venueName,
+          `Tournament (Table ${tableNumber}, Seat ${seatNumber})`,
+          { timeout: 5 }
+        );
+      } catch (err) {
+        console.warn('Failed to send SMS notification', err);
+      }
+    }
+    
     return res.status(200).json({
       success: true,
       data: {
