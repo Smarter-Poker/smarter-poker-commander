@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { busEmit } from '../../src/engine/EventBus';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
-import { Trophy, Users, Loader2, Play, Monitor, Settings } from 'lucide-react';
+import { Trophy, Users, Loader2, Play, Monitor, Settings, UserPlus } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
@@ -191,25 +191,43 @@ export default function TournamentDirector() {
                                             </div>
                                         </div>
 
-                                        {/* Action Buttons */}
-                                        <div className="border-t border-[#3A3B3C] grid grid-cols-3 divide-x divide-[#3A3B3C]">
+                                        {/* Action Buttons.
+                                            2026-08-20: a fourth action, Register,
+                                            was added when the standalone cashier
+                                            screen (/commander/tournament-registration)
+                                            was retired. That screen existed only
+                                            because it let a cashier CHOOSE the
+                                            event; this list already does that, so
+                                            the choice now lands directly on the
+                                            modern register screen.
+                                            2x2 rather than a 4-across row: four
+                                            across drops every target under 44px
+                                            at 375px. */}
+                                        <div className="border-t border-[#3A3B3C] grid grid-cols-2 divide-x divide-y divide-[#3A3B3C]">
                                             <button
                                                 onClick={() => router.push(`/commander/td/${t.id}`)}
-                                                className="flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
                                             >
                                                 <Play className="w-4 h-4 text-[#1877F2]" />
                                                 <span className="text-[#E4E6EB] font-medium">TD Controls</span>
                                             </button>
                                             <button
+                                                onClick={() => router.push(`/commander/td/${t.id}/register`)}
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                            >
+                                                <UserPlus className="w-4 h-4 text-[#31A24C]" />
+                                                <span className="text-[#E4E6EB] font-medium">Register</span>
+                                            </button>
+                                            <button
                                                 onClick={() => window.open(`/commander/tournaments/${t.id}/clock-display`, '_blank')}
-                                                className="flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
                                             >
                                                 <Monitor className="w-4 h-4 text-[#F59E0B]" />
                                                 <span className="text-[#E4E6EB] font-medium">Launch Clock</span>
                                             </button>
                                             <button
                                                 onClick={() => router.push(`/commander/tournaments/${t.id}/settings`)}
-                                                className="flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
                                             >
                                                 <Settings className="w-4 h-4 text-[#B0B3B8]" />
                                                 <span className="text-[#E4E6EB] font-medium">Settings</span>

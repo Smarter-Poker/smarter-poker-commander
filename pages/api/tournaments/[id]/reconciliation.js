@@ -252,7 +252,18 @@ export async function buildReconciliation(tournamentId, staff) {
   const expectedBountyWinnings = money(
     hasBounties(tournament) ? live.reduce((s, e) => s + entryBountyWinnings(e), 0) : 0
   );
-  const expectedOutTotal = money(expectedPayouts + expectedBountyWinnings);
+  // 2026-08-22: bounty money is handed over AT THE TABLE from the dealer's
+  // rack the moment a knockout happens, not from the cage drawer at the end,
+  // so no cash_out row is ever written for it and none should be. Including it
+  // in the drawer's expected-out made every bounty and PKO event report as
+  // permanently short by exactly the bounty total, which trains the cage to
+  // ignore the variance, which is worse than not showing one.
+  //
+  // The drawer therefore balances on CAGE payouts only. Bounty cash is
+  // reported alongside as its own reconciliation line so it is still visible
+  // and still checked against the bounty pool below.
+  const expectedOutTotal = money(expectedPayouts);
+  const expectedOutIncludingBounties = money(expectedPayouts + expectedBountyWinnings);
 
   // ── Variance ─────────────────────────────────────────────────────────────
   // Sign convention, stated once: variance = ACTUAL - EXPECTED.
@@ -309,9 +320,22 @@ export async function buildReconciliation(tournamentId, staff) {
   }
 
   // An entry the cage has marked paid must have money leaving the drawer.
-  // Payouts are matched by player name, which is what the ledger stores.
+  //
+  // 2026-08-20: matched by ENTRY ID first. entries/[entryId]/pay.js is now the
+  // only thing that pays a finisher, and it writes the entry id into the ledger
+  // row's notes in the format ENTRY_ID_IN_NOTES parses, so the link is exact.
+  // The name match is kept as the fallback for any cash_out row written by hand
+  // at the cashier screen, which carries a name and no entry id. Name matching
+  // alone mis-attributed money whenever one player held two entries (a re-entry
+  // that also cashed) or two players shared a normalized name.
+  const outByEntryId = new Map();
   const outByName = new Map();
   for (const t of outRows) {
+    if (t.entry_id && entryById.has(String(t.entry_id))) {
+      const id = String(t.entry_id);
+      outByEntryId.set(id, (outByEntryId.get(id) || 0) + t.amount);
+      continue;
+    }
     const key = normName(t.player_name);
     if (!key) continue;
     outByName.set(key, (outByName.get(key) || 0) + t.amount);
@@ -319,7 +343,8 @@ export async function buildReconciliation(tournamentId, staff) {
   for (const e of live) {
     const owed = Number(e.payout_amount) || 0;
     if (owed <= 0 || !isPaidOut(e)) continue;
-    const paid = entryNameKeys(e).reduce((s, key) => Math.max(s, outByName.get(key) || 0), 0);
+    const paid = (outByEntryId.get(String(e.id)) || 0) +
+      entryNameKeys(e).reduce((s, key) => Math.max(s, outByName.get(key) || 0), 0);
     if (paid + VARIANCE_EPSILON < owed) {
       add('PAID_ENTRY_NO_CASH_TX', 'error',
         `${nameOf(e)} Is Marked Paid For ${owed.toLocaleString()} But Only ${paid.toLocaleString()} Was Recorded Leaving The Drawer.`,
@@ -472,7 +497,12 @@ export async function buildReconciliation(tournamentId, staff) {
       expected_out: {
         payouts: expectedPayouts,
         bounty_winnings: expectedBountyWinnings,
-        total: expectedOutTotal
+        // The drawer total deliberately EXCLUDES bounty winnings: that cash
+        // leaves the dealer's rack at the table, not the cage, so it never
+        // produces a cash_out row and must not make the drawer look short.
+        total: expectedOutTotal,
+        total_including_bounties: expectedOutIncludingBounties,
+        bounty_paid_at_table: expectedBountyWinnings > 0
       },
       actual_out: actualOut,
       variance: {

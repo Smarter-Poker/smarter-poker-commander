@@ -49,13 +49,20 @@ const CARDS = [
     image: '/images/commander/card-tournaments.webp',
     glow: '#F59E0B',
     features: [
+      // 2026-08-20 consolidation. Two labels here were flatly wrong and sent
+      // staff to the opposite screen from the one they read:
+      //   "Tournament Clock" pointed at the retired multi-clock hub, not the
+      //   clock. It now points at Display Management, which launches every TV
+      //   board including the clock.
+      //   "Tournament Controls" pointed at the month calendar. It is now
+      //   labelled Tournament Calendar, which is what that page is.
       { label: 'Tournament Manager', href: '/commander/tournaments', icon: '/images/commander/icons/tn-registration.png' },
       { label: 'Tournament Templates', href: '/commander/tournament-settings', icon: '/images/commander/icons/tn-settings.png?v=3' },
-      { label: 'Tournament Clock', href: '/commander/tournament-clocks', icon: '/images/commander/icons/tn-clock.png' },
+      { label: 'TV Displays', href: '/commander/displays', icon: '/images/commander/icons/tn-clock.png' },
       { label: 'Leagues', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
       { label: 'Clock Setup', href: '/commander/clock-setup', icon: '/images/commander/icons/tn-clock-setup.png' },
       { label: 'Free Rolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-freerolls.webp' },
-      { label: 'Tournament Controls', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-controls-new.webp' },
+      { label: 'Tournament Calendar', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-controls-new.webp' },
       { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-director.webp' },
     ] },
   {

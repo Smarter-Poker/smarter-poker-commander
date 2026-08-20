@@ -1216,9 +1216,13 @@ const headers = { };
                 aria-label="Update Membership"
               />
 
-              {/* Hotspot 4: Tournament Registration */}
+              {/* Hotspot 4: Tournament Registration.
+                  2026-08-20: /commander/tournament-registration was retired.
+                  The cashier picks the event on the Tournament Director list,
+                  then registers on the modern screen. Same endpoints, same
+                  receipt, one registration UI instead of two. */}
               <button
-                onClick={() => router.push('/commander/tournament-registration')}
+                onClick={() => router.push('/commander/tournament-controls')}
                 style={{
                   position: 'absolute', top: '54%', left: '8%', width: '84%', height: '12.5%',
                   background: 'transparent', border: 'none', cursor: 'pointer',

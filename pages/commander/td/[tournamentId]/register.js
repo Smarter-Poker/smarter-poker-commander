@@ -15,6 +15,11 @@ import useDebounce from '../../../../src/hooks/useDebounce';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
+// Ported from the retired cashier screen (tournament-registration.js, 2026-08-20).
+// A cage workstation has a wired printer and wants the paper NOW, not in a queue
+// somebody has to walk to. Same template as the queued job, so the two are
+// byte-identical.
+import { buildBuyinReceiptHtml, printHtml } from '../../../../src/lib/commander/receiptTemplates';
 
 export default function TDRegisterPlayer() {
     const router = useRouter();
@@ -189,6 +194,67 @@ export default function TDRegisterPlayer() {
         }
     };
 
+    /**
+     * Print the 3-copy buy-in receipt from THIS browser, right now.
+     *
+     * Ported from the retired cashier screen. The queue path above is still the
+     * default because a TD tablet has no printer, but a cage workstation does,
+     * and walking to the print station with a player waiting is not a workflow.
+     *
+     * Copies are staggered 800ms apart: browsers block a burst of print windows
+     * opened in the same tick, and a blocked window is a receipt that silently
+     * never existed. printHtml returns false when it was blocked, so the cashier
+     * is told rather than left guessing.
+     */
+    const printBuyinReceiptsHere = (result) => {
+        if (!result) return;
+        const cfg = tournament?.settings?.receipts || { player: true, dealer: true, cage: true };
+        const copies = [];
+        if (cfg.player !== false) copies.push('PLAYER COPY');
+        if (cfg.dealer !== false) copies.push('DEALER COPY');
+        if (cfg.cage !== false) copies.push('CASHIER COPY');
+        if (copies.length === 0) {
+            setMessage({ type: 'error', text: 'No Receipt Copies Are Enabled For This Tournament.' });
+            return;
+        }
+
+        let staff = {};
+        try { staff = getStaffData() || {}; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+        let venue = {};
+        try { venue = JSON.parse(localStorage.getItem('commander_venue') || '{}') || {}; }
+        catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+
+        const receiptNum = String(Date.now()).slice(-4);
+        let blocked = false;
+
+        copies.forEach((copyLabel, index) => {
+            setTimeout(() => {
+                const html = buildBuyinReceiptHtml({
+                    copyLabel,
+                    venueName: staff.venue_name || venue.name || '',
+                    venueCity: staff.venue_city || venue.city || '',
+                    venueState: staff.venue_state || venue.state || '',
+                    tournamentName: tournament?.name || 'Tournament',
+                    scheduledStart: tournament?.scheduled_start || null,
+                    playerName: result.playerName,
+                    playerId: result.playerId || '',
+                    buyinAmount: tournament?.buyin_amount || 0,
+                    buyinFee: tournament?.buyin_fee || 0,
+                    startingChips: tournament?.starting_chips,
+                    tableNumber: result.tableNumber || '',
+                    seatNumber: result.seatNumber || '',
+                    staffName: staff.name || staff.display_name || '',
+                    receiptNum
+                }, copyLabel);
+                const printed = printHtml(html, { title: copyLabel });
+                if (!printed && !blocked) {
+                    blocked = true;
+                    setMessage({ type: 'error', text: 'Popup Blocked. Allow Popups To Print Receipts Here, Or Use The Print Station.' });
+                }
+            }, index * 800);
+        });
+    };
+
     const registerPlayer = async () => {
         if (!selectedPlayer) { setMessage({ type: 'error', text: 'Select A Player First' }); return; }
         setRegistering(true);
@@ -223,7 +289,7 @@ export default function TDRegisterPlayer() {
             const buyin = tournament?.buyin_amount || 0;
 
             setLastResult({
-                playerName, isAlternate, tableNumber, seatNumber,
+                playerName, playerId, isAlternate, tableNumber, seatNumber,
                 reentry: !!reentryName,
                 printed: false
             });
@@ -240,6 +306,9 @@ export default function TDRegisterPlayer() {
             setLastResult(prev => (prev ? { ...prev, printed: !!printed } : prev));
 
             broadcastChange('tournaments');
+            // Ported from the retired cashier screen. Small thing, but the cage
+            // liked it and there is no reason to lose it.
+            try { busEmit.celebration('confetti'); } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
             setSelectedPlayer(null);
             setReentryName(null);
             setReentryOf(null);
@@ -397,6 +466,19 @@ export default function TDRegisterPlayer() {
                                     : 'Receipt Could Not Be Queued. Reprint From The Print Station.'}
                             </span>
                         </div>
+
+                        {/* Ported from the retired cashier screen: a wired cage
+                            workstation prints the 3 copies here and now. */}
+                        <button
+                            onClick={() => printBuyinReceiptsHere(lastResult)}
+                            style={{
+                                width: '100%', minHeight: 44, marginTop: 10, borderRadius: 10,
+                                background: '#3A3B3C', border: '1px solid #4A4B4C', color: '#E4E6EB',
+                                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                            <Printer size={15} color="#1877F2" />
+                            Print Receipts Here
+                        </button>
                     </div>
                 )}
 

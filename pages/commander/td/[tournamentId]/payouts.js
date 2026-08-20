@@ -4,7 +4,7 @@
  * Auto-calculates payouts from payout structure, allows live override for deals/chops
  * UI: Dark theme, SmarterPoker colors, Inter font, 44px+ touch targets
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
@@ -18,6 +18,11 @@ import {
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { calculateICM } from '../../../../src/lib/commander/icm-utils';
+// Recording a payout and PAYING it are different events. This screen records
+// them; the Cage Payouts card is where the money actually leaves the drawer,
+// and it is the same component the Results screen renders.
+import CagePayoutsCard from '../../../../src/components/commander/tournaments/CagePayoutsCard';
+import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/payoutPayments';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -51,6 +56,10 @@ export default function TDPayouts() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [calcData, setCalcData] = useState(null);
+    // Entry rows, needed for the cage window: what has been RECORDED against
+    // each entry (payout_amount) and whether it has been PAID (payout_status /
+    // paid_at). The calculated table cannot answer either question.
+    const [entries, setEntries] = useState([]);
     // Drives whether Save records money only (deal) or finalizes the finishing
     // order. The payout route does not return the tournament status, so it is
     // read from the clock route alongside the payout calculation.
@@ -80,11 +89,15 @@ export default function TDPayouts() {
             // re-renders instantly. It is persisted separately by
             // applyDenomination below, which is what eliminate.js reads.
             const denomParam = denomination === null ? '' : `&denomination=${denomination}`;
-            const [json, clockJson] = await Promise.all([
+            const [json, clockJson, entriesJson] = await Promise.all([
                 commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate${denomParam}`, {}),
-                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/clock`, {}).catch(() => null)
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/clock`, {}).catch(() => null),
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/entries`, {}).catch(() => null)
             ]);
             if (clockJson?.success) setTournamentStatus(clockJson.data?.tournament?.status || null);
+            if (entriesJson?.success) {
+                setEntries(Array.isArray(entriesJson.data?.entries) ? entriesJson.data.entries : []);
+            }
             if (json.success) {
                 setCalcData(json.data);
                 // Adopt the tournament's own setting the first time through.
@@ -206,6 +219,29 @@ export default function TDPayouts() {
     const navigateTo = (path) => {
         router.push(`/commander/td/${tournamentId}${path}`);
     };
+
+    /**
+     * The cage window's rows.
+     *
+     * Built from the ENTRIES, not from the calculated table, because that is
+     * what the pay endpoint reads: it refuses to pay an entry whose
+     * payout_amount has not been recorded, so a place that has only been
+     * calculated (or typed into an override box and not saved) is deliberately
+     * not payable yet. Save the payouts first, then pay them.
+     */
+    const cageRows = useMemo(() => (entries || [])
+        .filter(e => e.status !== 'cancelled' && Number(e.payout_amount) > 0)
+        .map(e => ({
+            entry_id: e.id,
+            player_name: e.profiles?.display_name || e.player_name || 'Player',
+            position: Number(e.payout_position) || Number(e.finish_position) || null,
+            amount: Number(e.payout_amount) || 0,
+            paid: isEntryPaid(e),
+            paid_at: e.paid_at || null,
+            payout_status: entryPayoutStatus(e),
+            projected: false
+        }))
+        .sort((a, b) => (a.position || 9999) - (b.position || 9999)), [entries]);
 
     const totalOverridden = Object.values(overrides || {}).reduce((sum, v) => sum + (v || 0), 0);
     const totalCalc = calcData?.calculated_payouts?.reduce((sum, p) => sum + p.amount, 0) || 0;
@@ -425,6 +461,14 @@ export default function TDPayouts() {
                             )}
                         </div>
                     </div>
+
+                    {/* Cage window: money actually leaving the drawer */}
+                    <CagePayoutsCard
+                        tournamentId={tournamentId}
+                        rows={cageRows}
+                        setToast={setToast}
+                        onRefresh={async () => { await fetchPayouts(); broadcastChange('tournaments'); }}
+                    />
 
                     {/* Deal Calculator */}
                     <button onClick={() => setShowDealCalc(true)}

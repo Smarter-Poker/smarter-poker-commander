@@ -123,11 +123,11 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     'plan_home': { l: 14.8, t: 40.5, w: 70.4, h: 7.1 },
     'plan_charity': { l: 14.8, t: 49.9, w: 70.4, h: 7.1 },
     'plan_club': { l: 14.8, t: 59.3, w: 70.4, h: 7.1 },
-    'dot_home': { l: 4.3, t: 51 },
-    'dot_charity': { l: 4.3, t: 51 },
-    'dot_club': { l: 4.3, t: 51 },
+    'dot_home': { l: 4.3, t: 51, w: 2, h: 10 },
+    'dot_charity': { l: 4.3, t: 51, w: 2, h: 10 },
+    'dot_club': { l: 4.3, t: 51, w: 2, h: 10 },
     'checkbox_agree': { l: 14.9, t: 75.2, w: 2.5, h: 2.5 },
-    'checkmark': { l: 15.3, t: 75.7 }
+    'checkmark': { l: 15.3, t: 75.7, w: 2, h: 10 }
   });
   const [activeCalib, setActiveCalib] = useState('NLH');
   const [showCalib, setShowCalib] = useState(false);
@@ -1259,8 +1259,8 @@ const CalibrationPanel = () => {
                  left: `${calib.dot_home.l}%`,
                  ...(showCalib ? getDraggableProps('dot_home').style : {}),
                  transform: 'translateY(-50%)',
-                 width: '12px',
-                 height: '12px',
+                 width: `${calib.dot_home.w}%`,
+                 height: `${calib.dot_home.h}%`,
                  backgroundColor: '#1877F2',
                  borderRadius: '50%',
                  pointerEvents: showCalib ? 'auto' : 'none'
@@ -1294,8 +1294,8 @@ const CalibrationPanel = () => {
                  left: `${calib.dot_charity.l}%`,
                  ...(showCalib ? getDraggableProps('dot_charity').style : {}),
                  transform: 'translateY(-50%)',
-                 width: '12px',
-                 height: '12px',
+                 width: `${calib.dot_charity.w}%`,
+                 height: `${calib.dot_charity.h}%`,
                  backgroundColor: '#1877F2',
                  borderRadius: '50%',
                  pointerEvents: showCalib ? 'auto' : 'none'
@@ -1329,8 +1329,8 @@ const CalibrationPanel = () => {
                  left: `${calib.dot_club.l}%`,
                  ...(showCalib ? getDraggableProps('dot_club').style : {}),
                  transform: 'translateY(-50%)',
-                 width: '12px',
-                 height: '12px',
+                 width: `${calib.dot_club.w}%`,
+                 height: `${calib.dot_club.h}%`,
                  backgroundColor: '#1877F2',
                  borderRadius: '50%',
                  pointerEvents: showCalib ? 'auto' : 'none'
@@ -1363,15 +1363,15 @@ const CalibrationPanel = () => {
               position: 'absolute',
               top: `${calib.checkmark.t}%`,
               left: `${calib.checkmark.l}%`,
-              width: '2.2%',
-              height: '2.2%',
+              width: `${calib.checkmark.w}%`,
+              height: `${calib.checkmark.h}%`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               pointerEvents: showCalib ? 'auto' : 'none',
               zIndex: 9
             }}>
-              <span className="text-[#1877F2] font-bold" style={{ fontSize: 'min(18px, 2vw)' }}>✓</span>
+              <span className="text-[#1877F2] font-bold" style={{ fontSize: `${calib.checkmark.w}vw` }}>✓</span>
             </div>
           )}
 

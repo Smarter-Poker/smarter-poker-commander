@@ -369,9 +369,13 @@ export default function CommanderTournamentsPage() {
                 const prize = t.actual_prizepool || (t.current_entries || 0) * (t.buyin_amount || 0);
 
                 return (
+                  // 2026-08-20: the card used to open
+                  // /commander/tournaments/[id], the retired first-generation
+                  // detail screen. Straight to the modern console now, rather
+                  // than through a redirect hop.
                   <button
                     key={t.id}
-                    onClick={() => router.push(`/commander/tournaments/${t.id}`)}
+                    onClick={() => router.push(`/commander/td/${t.id}`)}
                     style={{
                       ...S.panel,
                       width: '100%', padding: '16px 18px', textAlign: 'left', cursor: 'pointer',

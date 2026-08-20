@@ -32,6 +32,11 @@ import {
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
+// Paying a finisher is a money-out-of-the-drawer event with its own endpoint,
+// its own ledger row and its own idempotency. The whole cage window lives in
+// one shared component so this screen and the Payouts screen cannot drift.
+import CagePayoutsCard from '../../../../src/components/commander/tournaments/CagePayoutsCard';
+import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/payoutPayments';
 // W-2G is assessed on NET winnings (payout minus that entry's own buy-in).
 // Same helper the server uses, so this screen and the filed tax event can
 // never disagree about who needs a form.
@@ -221,7 +226,12 @@ export default function TDResults() {
                 knockouts: Number(e.bounties_collected) || 0,
                 bounty_winnings: Number(e.bounty_winnings ?? e.metadata?.bounty_winnings) || 0,
                 is_seat: wonSeatAt(e.finish_position, e),
-                projected: false
+                projected: false,
+                // Has the money physically left the drawer for this entry?
+                // Written only by entries/[entryId]/pay.js.
+                paid: isEntryPaid(e),
+                paid_at: e.paid_at || null,
+                payout_status: entryPayoutStatus(e)
             }));
 
         const takenPositions = new Set(finished.map(r => r.position));
@@ -242,7 +252,12 @@ export default function TDResults() {
                     knockouts: Number(entry.bounties_collected) || 0,
                     bounty_winnings: Number(entry.bounty_winnings ?? entry.metadata?.bounty_winnings) || 0,
                     is_seat: wonSeatAt(slot.position, entry),
-                    projected: true
+                    projected: true,
+                    // A provisional place has not finished, so it can never
+                    // have been paid.
+                    paid: false,
+                    paid_at: null,
+                    payout_status: 'unpaid'
                 };
             });
 
@@ -292,9 +307,19 @@ export default function TDResults() {
     const totalBountyWinnings = bountyStandings.reduce((s, r) => s + r.winnings, 0);
 
     const winner = standings.find(r => r.position === 1) || null;
+    // Money AWARDED across the finishing order. Not the same thing as money
+    // that has left the drawer: the Cage Payouts card below reports that.
     const totalPaid = standings.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
     const isCompleted = tournament?.status === 'completed';
     const hasProjected = standings.some(r => r.projected);
+
+    // ── Cage payouts ──────────────────────────────────────────────────────
+    // Every place that is owed money. CagePayoutsCard does the rest: paid /
+    // still owed totals, per-place Pay, Pay All Remaining and the void path.
+    const cageRows = useMemo(
+        () => standings.filter(r => Number(r.amount) > 0),
+        [standings]
+    );
 
     // ── Finalize ──────────────────────────────────────────────────────────
     const finalize = async () => {
@@ -570,7 +595,10 @@ export default function TDResults() {
                         {/* Money summary */}
                         <div className="grid grid-cols-2 gap-3">
                             <SummaryCard label="Prize Pool" value={formatMoney(payoutData?.prize_pool)} color="#31A24C" />
-                            <SummaryCard label="Total Paid" value={formatMoney(totalPaid)} color="#31A24C" />
+                            {/* AWARDED, not handed over. The Cage Payouts card
+                                below is the one that says what actually left
+                                the drawer. */}
+                            <SummaryCard label="Total Awarded" value={formatMoney(totalPaid)} color="#31A24C" />
                             <SummaryCard label="Collected" value={formatMoney(payoutData?.collected_pool)} />
                             <SummaryCard
                                 label="Overlay"
@@ -631,6 +659,14 @@ export default function TDResults() {
                                 </p>
                             </div>
                         )}
+
+                        {/* Cage payouts: who has actually been handed money */}
+                        <CagePayoutsCard
+                            tournamentId={tournamentId}
+                            rows={cageRows}
+                            setToast={setToast}
+                            onRefresh={async () => { broadcastChange('tournaments'); await fetchAll(); }}
+                        />
 
                         {/* Bounty winnings, whole field */}
                         {bountyStandings.length > 0 && (
@@ -708,6 +744,7 @@ export default function TDResults() {
                                                 {r.knockouts > 0 ? `, ${r.knockouts} KO` : ''}
                                                 {r.bounty_winnings > 0 ? `, ${formatMoney(r.bounty_winnings)} Bounty` : ''}
                                                 {r.is_seat && Number(r.amount) > 0 ? `, Seat Worth ${formatMoney(r.amount)}` : ''}
+                                                {r.paid ? ', Paid' : ''}
                                                 {r.projected ? ', Provisional' : ''}
                                             </p>
                                         </div>

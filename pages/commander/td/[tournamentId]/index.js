@@ -19,7 +19,7 @@ import {
   AlertTriangle, ChevronRight, RefreshCw, Loader2,
   LayoutGrid, UserPlus, Monitor,
   Star, Volume2, X, FileText, Coins, Layers,
-  Package, Play, Calendar, ArrowRightLeft
+  Package, Play, Calendar, ArrowRightLeft, DoorOpen, Ban, Settings
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 
@@ -77,6 +77,15 @@ export default function TDControlCenter() {
   const [assignModal, setAssignModal] = useState(false);
   const [assignCount, setAssignCount] = useState('4');
   const [assigning, setAssigning] = useState(false);
+
+  // ── Lifecycle controls ──
+  // Ported 2026-08-20 from the retired /commander/tournaments/[id] screen, which
+  // was the ONLY place a tournament could be moved from scheduled to open
+  // registration, or cancelled at all. The modern console could start a clock
+  // but not open the doors and not close the event, so a room still had to keep
+  // the old screen bookmarked.
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   // ── Multi-day state ──
   // 'bag'    -> close the current day, bag every surviving stack
@@ -263,6 +272,94 @@ export default function TDControlCenter() {
     }
   };
 
+  /**
+   * Open registration on a scheduled tournament.
+   *
+   * 'registration' is the value commander_tournaments_status_check actually
+   * allows. The legacy screen sent 'registering', which is not in the CHECK and
+   * never matched, so a room that used it silently stayed 'scheduled'.
+   */
+  const openRegistration = async () => {
+    setLifecycleBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'registration' })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Open Registration.' });
+        return;
+      }
+      setToast({ type: 'success', text: 'Registration Is Open.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Open registration failed:', err);
+      setToast({ type: 'error', text: 'Failed To Open Registration.' });
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
+  /**
+   * Start the event.
+   *
+   * Goes through the clock route rather than a bare status PATCH (which is what
+   * the legacy screen did): the clock action also stamps actual_start, resets
+   * the level, clears any stale break flag and fires the "we are underway" push.
+   * A status-only write left every display showing a paused clock on level 0.
+   */
+  const startTournament = async () => {
+    setLifecycleBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/clock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Start The Tournament.' });
+        return;
+      }
+      setToast({ type: 'success', text: 'Tournament Started. Cards Are In The Air.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Start tournament failed:', err);
+      setToast({ type: 'error', text: 'Failed To Start The Tournament.' });
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
+  /**
+   * Cancel the event. Soft: status 'cancelled' plus ended_at, nothing deleted.
+   * Owner / manager / dual rate only, enforced server side.
+   */
+  const cancelTournament = async () => {
+    setLifecycleBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Cancel The Tournament.' });
+        return;
+      }
+      setToast({ type: 'success', text: 'Tournament Cancelled.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Cancel tournament failed:', err);
+      setToast({ type: 'error', text: 'Failed To Cancel The Tournament.' });
+    } finally {
+      setLifecycleBusy(false);
+      setConfirmCancel(false);
+    }
+  };
+
   const navigateTo = (screen) => {
     if (screen === 'control') return;
     router.push(`/commander/td/${tournamentId}/${screen}`);
@@ -350,6 +447,15 @@ export default function TDControlCenter() {
                 className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
                 <Volume2 className="w-5 h-5 text-[#B0B3B8]" />
               </button>
+              {/* Pop the TV clock into its own window. Ported from the retired
+                  /commander/tournaments/[id] screen: the modern Clock screen
+                  only mirrors it in an iframe, so there was no way to throw the
+                  board onto a second monitor from the console. */}
+              <button onClick={() => window.open(`/commander/tournaments/${tournamentId}/clock-display`, '_blank')}
+                title="Open The Clock Display In A New Window"
+                className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+                <Monitor className="w-5 h-5 text-[#B0B3B8]" />
+              </button>
               <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
                 <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
               </button>
@@ -400,6 +506,60 @@ export default function TDControlCenter() {
                   Table Assignments
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== TOURNAMENT LIFECYCLE =====
+            Open the doors, start the event, cancel it. Ported from the retired
+            /commander/tournaments/[id] screen. Only rendered while there is an
+            action to take, so a running event does not carry a dead panel. */}
+        {!['completed', 'cancelled'].includes(tournament.status) && (
+          <div className="px-4 pt-3">
+            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 space-y-3">
+              <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Tournament Status</h3>
+
+              {tournament.status === 'scheduled' && (
+                <button onClick={openRegistration} disabled={lifecycleBusy}
+                  className="w-full h-12 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                  {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
+                  Open Registration
+                </button>
+              )}
+
+              {['registration', 'registering'].includes(tournament.status) && (
+                <button onClick={startTournament} disabled={lifecycleBusy}
+                  className="w-full h-12 rounded-xl bg-[#31A24C] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                  {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
+                  Start Tournament
+                </button>
+              )}
+
+              {!['completed', 'cancelled'].includes(tournament.status) && (
+                !confirmCancel ? (
+                  <button onClick={() => setConfirmCancel(true)} disabled={lifecycleBusy}
+                    className="w-full h-11 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+                    <Ban className="w-4 h-4" /> Cancel Tournament
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-[#E4E6EB]">
+                      Cancel {tournament.name}? The Event Is Marked Cancelled And Ended. Entries And Cash Records Are Kept.
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setConfirmCancel(false)} disabled={lifecycleBusy}
+                        className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50">
+                        Keep It
+                      </button>
+                      <button onClick={cancelTournament} disabled={lifecycleBusy}
+                        className="flex-1 h-12 rounded-xl bg-[#EF4444] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                        {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Ban className="w-5 h-5" />}
+                        Yes, Cancel
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}
@@ -614,6 +774,19 @@ export default function TDControlCenter() {
             </div>
             <span className="text-white font-semibold text-sm">Dealer Rotation</span>
             <span className="text-[#B0B3B8] text-xs text-left">Who Is Down, For How Long, Who Is Next</span>
+          </button>
+          {/* The structure / configuration / payout editor. It is deliberately
+              NOT part of the td console (it is a long-form desk screen, not a
+              floor tablet screen), but it was only reachable from the retired
+              /commander/tournaments/[id] page and from the selector, so the TD
+              had no way to reach it from the console. */}
+          <button onClick={() => router.push(`/commander/tournaments/${tournamentId}/settings`)}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#B0B3B8]/20 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-[#B0B3B8]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Event Settings</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Blind Structure, Prices, Payout Table</span>
           </button>
         </div>
 
