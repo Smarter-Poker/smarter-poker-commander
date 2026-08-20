@@ -32,7 +32,7 @@ const CARDS = [
     id: 'waitlist',
     title: 'Waitlist',
     subtitle: 'Players, Memberships, Kiosk',
-    image: '/images/commander/card-waitlist.jpg',
+    image: '/images/commander/card-waitlist.webp',
     glow: '#22D3EE',
     features: [
       { label: 'Desk View', href: '/commander/waitlist/desk', icon: '/images/commander/icons/wl-desk-view.png' },
@@ -46,7 +46,7 @@ const CARDS = [
     id: 'tournaments',
     title: 'Tournaments & Events',
     subtitle: 'Tournaments, Leagues & Free Rolls, Clock',
-    image: '/images/commander/card-tournaments.jpg',
+    image: '/images/commander/card-tournaments.webp',
     glow: '#F59E0B',
     features: [
       { label: 'Tournament Manager', href: '/commander/tournaments', icon: '/images/commander/icons/tn-registration.png' },
@@ -62,7 +62,7 @@ const CARDS = [
     id: 'floor',
     title: 'Tables & Floor',
     subtitle: 'Tables, Dealers, Floor Ops',
-    image: '/images/commander/card-floor.jpg?v=4',
+    image: '/images/commander/card-floor.webp',
     glow: '#10B981',
     features: [
       { label: 'Tables & Floor', href: '/commander/tables', icon: '/images/commander/icons/mg-tables.png' },
@@ -78,7 +78,7 @@ const CARDS = [
     id: 'staff',
     title: 'Staff & Operations',
     subtitle: 'Employees, Schedule, Config',
-    image: '/images/commander/card-staff.jpg',
+    image: '/images/commander/card-staff.webp',
     glow: '#EF4444',
     features: [
       { label: 'Cashier', href: '/commander/cashier', icon: '/images/commander/icons/mg-cashier.png' },
@@ -95,7 +95,7 @@ const CARDS = [
     id: 'displays',
     title: 'Promotions & Displays',
     subtitle: 'TV Screens, Streaming, Alerts',
-    image: '/images/commander/card-displays.jpg',
+    image: '/images/commander/card-displays.webp',
     glow: '#22D3EE',
     features: [
       { label: 'TV Displays', href: '/commander/displays', icon: '/images/commander/icons/mg-tv-displays.png' },
@@ -115,7 +115,7 @@ const CARDS = [
     id: 'reports',
     title: 'Reports & System',
     subtitle: 'Analytics, Configuration, Data',
-    image: '/images/commander/card-reports.jpg',
+    image: '/images/commander/card-reports.webp',
     glow: '#94A3B8',
     features: [
       { label: 'Reports Hub', href: '/commander/reports', icon: '/images/commander/icons/rp-player.png' },
