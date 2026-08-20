@@ -27,7 +27,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import {
     Trophy, Users, DollarSign, LayoutGrid, Monitor, FileText,
-    Download, Loader2, Printer, CheckCircle2, AlertTriangle, Clock
+    Download, Loader2, Printer, CheckCircle2, AlertTriangle, Clock, Ticket, Coins
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
@@ -173,6 +173,28 @@ export default function TDResults() {
      * still-unassigned paid places from the current chip order so the TD can
      * see (and finalize) what the sheet will say.
      */
+    // Satellite: which places win a SEAT rather than a cash prize. Taken from
+    // the calculated table, which is built by the same shared helper the busts
+    // use, so the sheet says "Seat" for exactly the places that were paid one.
+    const seatPositions = useMemo(() => {
+        const set = new Set();
+        (payoutData?.calculated_payouts || []).forEach(slot => {
+            if (slot.is_seat) set.add(Number(slot.position));
+        });
+        return set;
+    }, [payoutData]);
+
+    const isSatellite = !!payoutData?.is_satellite;
+    const seatValue = Number(payoutData?.seat_value) || 0;
+
+    // A recorded deal replaces the seat schedule with cash, so a dealt place is
+    // never labelled as a seat.
+    const wonSeatAt = useCallback((position, entry) => {
+        if (dealTable && dealTable[position] !== undefined) return false;
+        if (entry?.metadata?.won_seat) return true;
+        return seatPositions.has(Number(position));
+    }, [dealTable, seatPositions]);
+
     const standings = useMemo(() => {
         const finished = liveEntries
             .filter(e => e.finish_position)
@@ -187,6 +209,9 @@ export default function TDResults() {
                 addon: !!e.addon_taken,
                 invested: Number(e.total_invested) || 0,
                 eliminated_at: e.eliminated_at || null,
+                knockouts: Number(e.bounties_collected) || 0,
+                bounty_winnings: Number(e.bounty_winnings ?? e.metadata?.bounty_winnings) || 0,
+                is_seat: wonSeatAt(e.finish_position, e),
                 projected: false
             }));
 
@@ -205,12 +230,32 @@ export default function TDResults() {
                     addon: !!entry.addon_taken,
                     invested: Number(entry.total_invested) || 0,
                     eliminated_at: null,
+                    knockouts: Number(entry.bounties_collected) || 0,
+                    bounty_winnings: Number(entry.bounty_winnings ?? entry.metadata?.bounty_winnings) || 0,
+                    is_seat: wonSeatAt(slot.position, entry),
                     projected: true
                 };
             });
 
         return [...finished, ...projected].sort((a, b) => a.position - b.position);
-    }, [liveEntries, payoutData, dealTable]);
+    }, [liveEntries, payoutData, dealTable, wonSeatAt]);
+
+    // Bounty winnings, whole field (not just the money places): a player can
+    // take five bounties and still bust on the bubble.
+    const bountyStandings = useMemo(() => {
+        if (!(Number(payoutData?.bounty_pool) > 0)) return [];
+        return liveEntries
+            .map(e => ({
+                entry_id: e.id,
+                player_name: e.profiles?.display_name || e.player_name || 'Player',
+                knockouts: Number(e.bounties_collected) || 0,
+                winnings: Number(e.bounty_winnings ?? e.metadata?.bounty_winnings) || 0
+            }))
+            .filter(r => r.knockouts > 0 || r.winnings > 0)
+            .sort((a, b) => b.winnings - a.winnings || b.knockouts - a.knockouts);
+    }, [liveEntries, payoutData]);
+
+    const totalBountyWinnings = bountyStandings.reduce((s, r) => s + r.winnings, 0);
 
     const winner = standings.find(r => r.position === 1) || null;
     const totalPaid = standings.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
@@ -316,12 +361,21 @@ export default function TDResults() {
             // The paper sheet lists the money places plus the final table, not
             // every one of a 150-runner field. The CSV export carries the full
             // finishing order for anyone who needs it.
+            // Satellites pay seats, so the sheet has to say so or the cage
+            // hands over cash for a place that won a tournament entry.
+            is_satellite: isSatellite,
+            seat_value: seatValue,
+            seats_awarded: Number(payoutData?.seats_awarded) || 0,
+            bounty_pool: Number(payoutData?.bounty_pool) || 0,
+            total_bounty_winnings: totalBountyWinnings,
             results: standings
                 .filter(r => Number(r.amount) > 0 || r.position <= 9)
                 .map(r => ({
                     position: r.position,
                     player_name: r.player_name,
-                    amount: Number(r.amount) || 0
+                    amount: Number(r.amount) || 0,
+                    is_seat: !!r.is_seat,
+                    bounty_winnings: Number(r.bounty_winnings) || 0
                 }))
         };
 
@@ -355,11 +409,14 @@ export default function TDResults() {
     // ── CSV ───────────────────────────────────────────────────────────────
     const exportCSV = () => {
         if (standings.length === 0) return;
-        const header = 'Position,Player,Payout,Rebuys,Add-On,Total Invested,Eliminated At,Provisional\n';
+        const header = 'Position,Player,Payout,Prize Type,Knockouts,Bounty Winnings,Rebuys,Add-On,Total Invested,Eliminated At,Provisional\n';
         const rows = standings.map(r => [
             r.position,
             csvCell(r.player_name),
             Number(r.amount) || 0,
+            csvCell(Number(r.amount) > 0 ? (r.is_seat ? 'Seat' : 'Cash') : ''),
+            r.knockouts || 0,
+            Number(r.bounty_winnings) || 0,
             r.rebuys,
             r.addon ? 'Yes' : 'No',
             r.invested,
@@ -423,7 +480,13 @@ export default function TDResults() {
                                 {winner ? winner.player_name : 'Not Decided Yet'}
                             </p>
                             {winner && Number(winner.amount) > 0 && (
-                                <p className="text-lg font-bold text-[#31A24C] mt-1">{formatMoney(winner.amount)}</p>
+                                winner.is_seat ? (
+                                    <p className="text-lg font-bold text-[#1877F2] mt-1 flex items-center justify-center gap-2">
+                                        <Ticket className="w-5 h-5" /> Seat, {formatMoney(winner.amount)} Value
+                                    </p>
+                                ) : (
+                                    <p className="text-lg font-bold text-[#31A24C] mt-1">{formatMoney(winner.amount)}</p>
+                                )
                             )}
                             {winner?.projected && (
                                 <p className="text-[11px] text-[#F59E0B] mt-2">
@@ -446,7 +509,49 @@ export default function TDResults() {
                             <SummaryCard label="House Fees" value={formatMoney(payoutData?.house_fees)} color="#F59E0B" />
                             <SummaryCard label="Rebuys" value={formatCount(payoutData?.total_rebuys)} />
                             <SummaryCard label="Add-Ons" value={formatCount(payoutData?.total_addons)} />
+                            {isSatellite && (
+                                <>
+                                    <SummaryCard label="Seats Awarded" value={formatCount(payoutData?.seats_awarded)} color="#1877F2" />
+                                    <SummaryCard label="Seat Value" value={formatMoney(seatValue)} color="#1877F2" />
+                                </>
+                            )}
+                            {Number(payoutData?.bounty_pool) > 0 && (
+                                <>
+                                    <SummaryCard label="Bounty Pool" value={formatMoney(payoutData?.bounty_pool)} color="#F59E0B" />
+                                    <SummaryCard label="Bounties Paid" value={formatMoney(totalBountyWinnings)} color="#F59E0B" />
+                                </>
+                            )}
                         </div>
+
+                        {/* Bounty winnings, whole field */}
+                        {bountyStandings.length > 0 && (
+                            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
+                                <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Coins className="w-4 h-4 text-[#F59E0B]" />
+                                        <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Bounty Winnings</h3>
+                                    </div>
+                                    <span className="text-[10px] text-[#B0B3B8]">
+                                        {formatMoney(totalBountyWinnings)} Paid On Knockouts
+                                    </span>
+                                </div>
+                                <div className="divide-y divide-[#3A3B3C]">
+                                    {bountyStandings.map(r => (
+                                        <div key={r.entry_id} className="px-4 py-3 flex items-center gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-[#E4E6EB] truncate">{r.player_name}</p>
+                                                <p className="text-[10px] text-[#B0B3B8]">
+                                                    {formatCount(r.knockouts)} Knockout{r.knockouts === 1 ? '' : 's'}
+                                                </p>
+                                            </div>
+                                            <span className="text-sm font-bold text-[#F59E0B] flex-shrink-0">
+                                                {formatMoney(r.winnings)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Timing */}
                         <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-2">
@@ -491,11 +596,16 @@ export default function TDResults() {
                                                 {ordinal(r.position)}
                                                 {r.rebuys > 0 ? `, ${r.rebuys}R` : ''}
                                                 {r.addon ? ', Add-On' : ''}
+                                                {r.knockouts > 0 ? `, ${r.knockouts} KO` : ''}
+                                                {r.bounty_winnings > 0 ? `, ${formatMoney(r.bounty_winnings)} Bounty` : ''}
+                                                {r.is_seat && Number(r.amount) > 0 ? `, Seat Worth ${formatMoney(r.amount)}` : ''}
                                                 {r.projected ? ', Provisional' : ''}
                                             </p>
                                         </div>
-                                        <span className={`text-sm font-bold flex-shrink-0 ${Number(r.amount) > 0 ? 'text-[#31A24C]' : 'text-[#B0B3B8]'}`}>
-                                            {Number(r.amount) > 0 ? formatMoney(r.amount) : '--'}
+                                        <span className={`text-sm font-bold flex-shrink-0 ${Number(r.amount) <= 0
+                                            ? 'text-[#B0B3B8]'
+                                            : r.is_seat ? 'text-[#1877F2]' : 'text-[#31A24C]'}`}>
+                                            {Number(r.amount) <= 0 ? '--' : (r.is_seat ? 'Seat' : formatMoney(r.amount))}
                                         </span>
                                     </div>
                                 ))}

@@ -7,6 +7,14 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+// Shared money math so the reports reconcile with the payouts screen.
+import {
+  collectedPrizePool,
+  collectedBountyPool,
+  bountyPortionPerEntry,
+  effectivePrizePool
+} from './payout';
+import { entryBountyValue, entryBountyWinnings, hasBounties } from '../../../../src/lib/commander/tournamentBounty';
 
 let _supabase = null;
 function getSupabase() {
@@ -55,24 +63,41 @@ async function registrationReport(req, res, tournamentId) {
     try {
         const { data: tournament } = await getSupabase()
             .from('commander_tournaments')
-            .select('name, buyin_amount, buyin_fee, rebuy_amount, addon_amount, guaranteed_pool, actual_prizepool, scheduled_start')
+            // tournament_type, bounty_amount and settings are needed for the
+            // bounty slice that is held out of the prize pool.
+            .select('name, tournament_type, buyin_amount, buyin_fee, bounty_amount, rebuy_amount, addon_amount, guaranteed_pool, actual_prizepool, settings, scheduled_start')
             .eq('id', tournamentId)
             .maybeSingle();
 
         // payment_method and cashier_staff_id ARE real columns on
         // commander_tournament_entries (verified against the live schema
         // 2026-08-19); registration writes them, so the report surfaces them.
-        const { data: entries, error } = await getSupabase()
-            .from('commander_tournament_entries')
-            .select(`
+        //
+        // bounty_value/bounty_winnings arrive with migration
+        // 20260821130000_commander_entry_bounty_columns.sql. Selected optionally so
+        // this report keeps working on a deploy that lands before it, in which
+        // case the numbers come out of metadata instead.
+        const BASE_ENTRY_COLUMNS = `
         id, player_id, player_name, status, table_number, seat_number,
         registration_method, payment_method, cashier_staff_id,
         rebuy_count, addon_taken, payout_amount, finish_position,
         registered_at, eliminated_at, current_chips,
-        profiles (id, display_name, avatar_url)
-      `)
+        bounties_collected, metadata,
+        profiles (id, display_name, avatar_url)`;
+
+        const entriesQuery = (columns) => getSupabase()
+            .from('commander_tournament_entries')
+            .select(columns)
             .eq('tournament_id', tournamentId)
             .order('registered_at', { ascending: true });
+
+        let { data: entries, error } = await entriesQuery(
+            `${BASE_ENTRY_COLUMNS}, bounty_value, bounty_winnings`
+        );
+        if (error && (error.code === '42703' || error.code === 'PGRST204' ||
+            /column .* does not exist/i.test(String(error.message || '')))) {
+            ({ data: entries, error } = await entriesQuery(BASE_ENTRY_COLUMNS));
+        }
 
         if (error) throw error;
 
@@ -92,12 +117,35 @@ async function registrationReport(req, res, tournamentId) {
         const totalAddonRevenue = totalAddons * addonAmount;
         const totalRevenue = totalBuyins + totalRebuyRevenue + totalAddonRevenue;
         const houseFees = totalEntries * buyinFee;
-        const collectedPool = (totalEntries * buyinAmount) + totalRebuyRevenue + totalAddonRevenue;
-        const actualPool = Number(tournament?.actual_prizepool) || 0;
-        const prizePool = actualPool > 0
-            ? actualPool
-            : Math.max(collectedPool, Number(tournament?.guaranteed_pool) || 0);
+        // 2026-08-21 fix: the bounty slice of a bounty/PKO buy-in funds the
+        // bounties, not the prize pool. It used to be counted as prize money,
+        // so a $50 + $50 bounty event reported twice the prize pool it had.
+        const collectedPool = collectedPrizePool(tournament, {
+            entries: totalEntries, rebuys: totalRebuys, addons: totalAddons
+        });
+        const bountyPool = collectedBountyPool(tournament, {
+            entries: totalEntries, rebuys: totalRebuys
+        });
+        const prizePool = effectivePrizePool(tournament, collectedPool);
         const overlay = Math.max(0, (Number(tournament?.guaranteed_pool) || 0) - collectedPool);
+
+        // Bounty winnings per player, for the cage sheet. In a PKO this is the
+        // cash half of every head that player knocked out; in a standard
+        // bounty event it is knockouts * bounty_amount.
+        const bountyLeaderboard = hasBounties(tournament)
+            ? nonCancelled
+                .map(e => ({
+                    player_name: e.profiles?.display_name || e.player_name || 'Player',
+                    player_id: e.player_id || null,
+                    entry_id: e.id,
+                    knockouts: Number(e.bounties_collected) || 0,
+                    bounty_winnings: entryBountyWinnings(e),
+                    bounty_value: entryBountyValue(tournament, e)
+                }))
+                .filter(r => r.knockouts > 0 || r.bounty_winnings > 0)
+                .sort((a, b) => b.bounty_winnings - a.bounty_winnings || b.knockouts - a.knockouts)
+            : [];
+        const totalBountyWinnings = bountyLeaderboard.reduce((s, r) => s + r.bounty_winnings, 0);
 
         // Payment-method breakdown of ENTRY buy-ins (recorded per entry at
         // registration; entries registered before the column was populated
@@ -127,8 +175,17 @@ async function registrationReport(req, res, tournamentId) {
                     overlay,
                     buyin_amount: buyinAmount,
                     buyin_fee: buyinFee,
-                    payment_breakdown: paymentBreakdown
-                }
+                    payment_breakdown: paymentBreakdown,
+                    // Bounty accounting. bounty_pool is collected but held out
+                    // of prize_pool; total_bounty_winnings is what has been
+                    // paid out of it so far.
+                    tournament_type: tournament?.tournament_type || null,
+                    bounty_amount: tournament?.bounty_amount || 0,
+                    bounty_per_entry: bountyPortionPerEntry(tournament),
+                    bounty_pool: bountyPool,
+                    total_bounty_winnings: totalBountyWinnings
+                },
+                bounty_leaderboard: bountyLeaderboard
             }
         });
     } catch (error) {

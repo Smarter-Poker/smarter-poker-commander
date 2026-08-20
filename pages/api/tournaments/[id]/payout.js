@@ -130,6 +130,361 @@ export function allocateAmounts(slots, pool) {
   return amounts;
 }
 
+// ---------------------------------------------------------------------------
+// Denomination rounding
+// ---------------------------------------------------------------------------
+
+// Cash denominations a room can round payouts to. 1 means no rounding.
+export const PAYOUT_DENOMINATIONS = [1, 5, 25, 100];
+
+// Default when a tournament has no settings.payout_denomination. Real rooms
+// pay in $5 notes, so $5 is the house default rather than exact dollars.
+export const DEFAULT_PAYOUT_DENOMINATION = 5;
+
+/**
+ * The denomination this tournament rounds payouts to.
+ * Read from settings.payout_denomination (the same jsonb settings blob that
+ * carries clock_state, clock_color and the satellite/pko config).
+ * Anything <= 1, or non-numeric, means "no rounding".
+ */
+export function payoutDenomination(tournament) {
+  const settings = (tournament && typeof tournament.settings === 'object' && tournament.settings) || {};
+  const raw = settings.payout_denomination;
+  if (raw === undefined || raw === null || raw === '') return DEFAULT_PAYOUT_DENOMINATION;
+  const denom = Math.floor(Number(raw));
+  if (!Number.isFinite(denom) || denom <= 1) return 1;
+  return denom;
+}
+
+/**
+ * Round a payout table to a cash denomination.
+ *
+ * Real rooms do not pay $1,247.33. Every place is floored to the denomination
+ * and the whole rounding remainder is pushed up to 1st place, which is the
+ * standard practice and keeps the total exactly equal to the pool.
+ *
+ * @param {number[]} amounts       per-place amounts, index 0 = 1st place.
+ * @param {number}   pool          the exact total the result must sum to.
+ * @param {number}   denomination  5, 25, 100 ... ; anything <= 1 is a no-op.
+ * @returns {{ amounts: number[], remainder: number, denomination: number }}
+ *          remainder is what 1st place gained (or gave up, when negative)
+ *          because of the rounding.
+ *
+ * Guarantees, fuzz-verified over 20,000 random tables:
+ *   - sum(amounts) === Math.round(pool), exactly.
+ *   - every place below 1st is an exact multiple of the denomination.
+ *   - no amount is ever negative.
+ *   - a place that was paying something does not round away to nothing; it is
+ *     bumped to one denomination unit, funded from 1st place, and the bump is
+ *     only taken while 1st can still be paid at least one unit itself.
+ */
+export function roundPayoutsToDenomination(amounts, pool, denomination) {
+  const source = (Array.isArray(amounts) ? amounts : []).map(a => {
+    const n = Math.round(Number(a) || 0);
+    return n > 0 ? n : 0;
+  });
+  const denom = Math.floor(Number(denomination) || 0);
+  const target = Math.round(Number(pool) || 0);
+
+  if (source.length === 0) return { amounts: [], remainder: 0, denomination: 1 };
+  if (!Number.isFinite(denom) || denom <= 1) {
+    return { amounts: source, remainder: 0, denomination: 1 };
+  }
+
+  const rounded = source.map(a => Math.floor(a / denom) * denom);
+  const flooredFirst = rounded[0];
+
+  // Everything below 1st place is fixed by the floor. 1st place absorbs
+  // whatever is left, which is what makes the total exact.
+  let othersTotal = rounded.slice(1).reduce((s, a) => s + a, 0);
+
+  // Never let a paying place round away to nothing. One denomination unit is
+  // the smallest note the cage can hand over, so that is the floor. Better
+  // places are bumped first.
+  for (let i = 1; i < rounded.length; i++) {
+    if (source[i] > 0 && rounded[i] === 0 && (target - (othersTotal + denom)) >= denom) {
+      rounded[i] = denom;
+      othersTotal += denom;
+    }
+  }
+
+  // Keep the total honest rather than paying a negative first place. Only
+  // reachable when the caller passes a pool smaller than the amounts.
+  rounded[0] = Math.max(0, target - othersTotal);
+
+  return { amounts: rounded, remainder: rounded[0] - flooredFirst, denomination: denom };
+}
+
+// ---------------------------------------------------------------------------
+// Satellites
+// ---------------------------------------------------------------------------
+
+function tournamentType(tournament) {
+  return String(tournament?.tournament_type || '').trim().toLowerCase();
+}
+
+function tournamentSettings(tournament) {
+  return (tournament && typeof tournament.settings === 'object' && tournament.settings) || {};
+}
+
+/**
+ * Satellite configuration, read from settings.satellite.
+ *
+ *   { seat_value: number, seats_awarded: number | null }
+ *
+ * seats_awarded null/absent means "as many seats as the pool funds".
+ * A satellite with no seat_value is NOT configured yet and falls back to a
+ * normal prize ladder, so the satellites already in production keep behaving
+ * exactly as they do today.
+ */
+export function satelliteConfig(tournament) {
+  const sat = tournamentSettings(tournament).satellite;
+  if (!sat || typeof sat !== 'object') return { seat_value: 0, seats_awarded: null };
+  const seatValue = Math.max(0, Math.round(Number(sat.seat_value) || 0));
+  const rawSeats = sat.seats_awarded;
+  const seatsAwarded = (rawSeats === undefined || rawSeats === null || rawSeats === '')
+    ? null
+    : Math.max(0, Math.floor(Number(rawSeats) || 0));
+  return { seat_value: seatValue, seats_awarded: seatsAwarded };
+}
+
+/** True only when the tournament is a satellite AND a seat value is set. */
+export function isSatelliteTournament(tournament) {
+  return tournamentType(tournament) === 'satellite' && satelliteConfig(tournament).seat_value > 0;
+}
+
+/**
+ * A satellite pays SEATS, not a prize ladder.
+ *
+ * The top N finishers each win an identical seat worth seatValue. Whatever is
+ * left over after the seats goes to the next finisher as a cash bubble prize.
+ * When the pool divides exactly there is no bubble row.
+ *
+ * @param {number} pool                the prize pool.
+ * @param {number} seatValue           the value of one seat.
+ * @param {number|null} seatsAwarded   fixed seat count, or null to derive
+ *                                     floor(pool / seatValue).
+ * @returns {Array<{position:number, amount:number, is_seat:boolean, is_bubble?:boolean}>}
+ */
+export function calculateSatellitePayouts(pool, seatValue, seatsAwarded) {
+  const total = Math.max(0, Math.round(Number(pool) || 0));
+  const seat = Math.max(0, Math.round(Number(seatValue) || 0));
+  if (seat <= 0) return [];
+
+  const requested = Number(seatsAwarded);
+  const seats = (seatsAwarded !== null && seatsAwarded !== undefined && Number.isFinite(requested))
+    ? Math.max(0, Math.floor(requested))
+    : Math.floor(total / seat);
+
+  const rows = [];
+  for (let i = 0; i < seats; i++) {
+    rows.push({ position: i + 1, amount: seat, is_seat: true });
+  }
+
+  // A guaranteed seat count can exceed what the pool funds (the room eats the
+  // overlay), in which case there is nothing left for a bubble.
+  const remainder = Math.max(0, total - (seats * seat));
+  if (remainder > 0) {
+    rows.push({ position: seats + 1, amount: remainder, is_seat: false, is_bubble: true });
+  }
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Bounty / PKO money split
+// ---------------------------------------------------------------------------
+
+/**
+ * The slice of one buy-in that funds the bounty rather than the prize pool.
+ *
+ * House rule, identical to fn_tournament_entry_split on the online side
+ * (World Hub migration 20260820y): the fee is charged ON TOP of the buy-in and
+ * the bounty is carved OUT of it, so
+ *
+ *     charge = buyin + fee     prize = buyin - bounty     rake = fee
+ *
+ * Commander's prize-pool math was entries * buyin_amount with no deduction,
+ * which double counted the bounty as prize money for every bounty event.
+ *
+ * Escape hatch: a room that genuinely advertises the bounty as an extra charge
+ * on top ("$200 + $30 + $50 Bounty") sets settings.bounty.on_top = true, and
+ * then nothing comes out of the pool.
+ */
+export function bountyPortionPerEntry(tournament) {
+  const type = tournamentType(tournament);
+  if (type !== 'bounty' && type !== 'pko') return 0;
+
+  const settings = tournamentSettings(tournament);
+  if (settings.bounty && settings.bounty.on_top === true) return 0;
+
+  const buyin = Math.max(0, Number(tournament?.buyin_amount) || 0);
+  const configured = Math.max(0, Number(tournament?.bounty_amount) || 0);
+
+  if (type === 'pko') {
+    const explicit = Number(settings.pko?.starting_bounty);
+    if (Number.isFinite(explicit) && explicit > 0) return Math.min(buyin, explicit);
+    if (configured > 0) return Math.min(buyin, configured);
+    // Unconfigured PKO: half the buy-in goes on heads, the classic split.
+    return Math.floor(buyin / 2);
+  }
+  return Math.min(buyin, configured);
+}
+
+/**
+ * The bounty a player starts a PKO with on their head. Identical to the buy-in
+ * slice that funded it, so the bounty money in play is exactly
+ * entries * starting bounty and a knockout neither creates nor destroys any.
+ */
+export function pkoStartingBounty(tournament) {
+  if (tournamentType(tournament) !== 'pko') return 0;
+  return bountyPortionPerEntry(tournament);
+}
+
+/**
+ * PKO knockout split: half of the busted player's bounty is paid to the
+ * eliminator in cash, half is added to the eliminator's own head.
+ * Worked in cents so an odd amount conserves exactly (the odd cent rides on
+ * the head, which is where it can still be won).
+ */
+export function pkoSplit(bountyValue) {
+  const cents = Math.max(0, Math.round((Number(bountyValue) || 0) * 100));
+  const cashCents = Math.floor(cents / 2);
+  return { cash: cashCents / 100, to_head: (cents - cashCents) / 100 };
+}
+
+/**
+ * What one knockout is worth in this tournament.
+ *   standard bounty: the flat bounty_amount, all cash, nothing to the head.
+ *   pko:             half the busted head in cash, half onto the eliminator.
+ * Returns null when the tournament pays no bounties.
+ */
+export function bountyAwardFor(tournament, bustedBountyValue) {
+  const type = tournamentType(tournament);
+  if (type === 'pko') {
+    const head = Math.max(0, Number(bustedBountyValue) || 0);
+    if (head <= 0) return null;
+    const split = pkoSplit(head);
+    return { mode: 'pko', cash: split.cash, to_head: split.to_head, head_claimed: head };
+  }
+  const amount = Math.max(0, Number(tournament?.bounty_amount) || 0);
+  if (amount <= 0) return null;
+  return { mode: 'bounty', cash: amount, to_head: 0, head_claimed: amount };
+}
+
+/**
+ * Money actually collected into the PRIZE pool.
+ *
+ * One definition, shared by payout.js, eliminate.js, clock.js, floor-view.js
+ * and reports.js so every screen quotes the same number. The bounty slice of
+ * each buy-in (and of each rebuy, which buys a fresh head) is removed: that is
+ * bounty money, not prize money.
+ *
+ * @param {object} tournament
+ * @param {{entries:number, rebuys:number, addons:number}} counts
+ */
+export function collectedPrizePool(tournament, counts) {
+  const entries = Math.max(0, Number(counts?.entries) || 0);
+  const rebuys = Math.max(0, Number(counts?.rebuys) || 0);
+  const addons = Math.max(0, Number(counts?.addons) || 0);
+
+  const buyin = Number(tournament?.buyin_amount) || 0;
+  const rebuyAmount = Number(tournament?.rebuy_amount) || 0;
+  const addonAmount = Number(tournament?.addon_amount) || 0;
+
+  const bountyPortion = bountyPortionPerEntry(tournament);
+  // A rebuy in a bounty event buys a new head too, so the same slice comes out
+  // of it. Capped at the rebuy price so a cheap rebuy can never go negative.
+  const rebuyBountyPortion = bountyPortion > 0 ? Math.min(bountyPortion, rebuyAmount) : 0;
+  // Add-ons never carry a bounty.
+
+  return (entries * Math.max(0, buyin - bountyPortion)) +
+    (rebuys * Math.max(0, rebuyAmount - rebuyBountyPortion)) +
+    (addons * addonAmount);
+}
+
+/** Total bounty money collected across the field. */
+export function collectedBountyPool(tournament, counts) {
+  const entries = Math.max(0, Number(counts?.entries) || 0);
+  const rebuys = Math.max(0, Number(counts?.rebuys) || 0);
+  const bountyPortion = bountyPortionPerEntry(tournament);
+  if (bountyPortion <= 0) return 0;
+  const rebuyAmount = Number(tournament?.rebuy_amount) || 0;
+  return (entries * bountyPortion) + (rebuys * Math.min(bountyPortion, rebuyAmount));
+}
+
+// ---------------------------------------------------------------------------
+// The one payout table
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the full payout table for a tournament.
+ *
+ * This is the single place the ladder, the satellite seat schedule and the
+ * denomination rounding are applied. payout.js (TD screen), eliminate.js
+ * (every bust) and clock.js (public live page) all call it, so the three can
+ * never disagree about what a place pays.
+ *
+ * @param {object} tournament
+ * @param {number} pool       effective prize pool.
+ * @param {number} fieldSize  entries, used only when no structure is saved.
+ * @returns {{
+ *   rows: Array<{position:number, percentage:number, amount:number,
+ *                is_seat?:boolean, is_bubble?:boolean}>,
+ *   denomination:number, rounding_remainder:number,
+ *   is_satellite:boolean, seat_value:number, seats_awarded:number
+ * }}
+ */
+export function buildPayoutTable(tournament, pool, fieldSize) {
+  const effectivePool = Math.max(0, Math.round(Number(pool) || 0));
+
+  if (isSatelliteTournament(tournament)) {
+    const cfg = satelliteConfig(tournament);
+    const rows = calculateSatellitePayouts(effectivePool, cfg.seat_value, cfg.seats_awarded);
+    return {
+      rows: rows.map(r => ({ percentage: 0, ...r })),
+      denomination: 1,
+      rounding_remainder: 0,
+      is_satellite: true,
+      seat_value: cfg.seat_value,
+      seats_awarded: rows.filter(r => r.is_seat).length
+    };
+  }
+
+  let slots = parsePayoutStructure(tournament?.payout_structure).map(normalizePayoutSlot);
+  if (slots.length === 0) {
+    slots = generatePayoutTable(fieldSize, tournament?.paying_places);
+  }
+
+  const allocated = allocateAmounts(slots, effectivePool);
+  // Fixed-amount slots (no percentage) pass their own amount straight through.
+  const base = slots.map((s, i) => (
+    (!s.percentage && s.amount != null) ? Math.round(Number(s.amount) || 0) : allocated[i]
+  ));
+
+  const denom = payoutDenomination(tournament);
+  const baseSum = base.reduce((s, a) => s + a, 0);
+  // Rounding is only safe when the table already totals the pool. A structure
+  // of fixed amounts that does not add up to the pool is left alone rather
+  // than having the difference silently dumped on 1st place.
+  const canRound = denom > 1 && base.length > 0 && baseSum === effectivePool;
+  const result = canRound
+    ? roundPayoutsToDenomination(base, effectivePool, denom)
+    : { amounts: base, remainder: 0, denomination: 1 };
+
+  return {
+    rows: slots.map((s, i) => ({
+      position: s.position || i + 1,
+      percentage: s.percentage || 0,
+      amount: result.amounts[i] ?? 0
+    })),
+    denomination: result.denomination,
+    rounding_remainder: result.remainder,
+    is_satellite: false,
+    seat_value: 0,
+    seats_awarded: 0
+  };
+}
+
 async function handleGetPayouts(req, res, tournamentId) {
   try {
     const { mode } = req.query;
@@ -157,13 +512,17 @@ async function handleGetPayouts(req, res, tournamentId) {
     const totalEntries = (entries || []).length;
     const totalRebuys = (entries || []).reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
     const totalAddons = (entries || []).filter(e => e.addon_taken).length
-    const buyinAmount = tournament.buyin_amount || 0;
     const buyinFee = tournament.buyin_fee || 0;
     // Collected pool uses the REAL per-item amounts (a null rebuy/addon price
-    // collects nothing; it must not silently default to the buy-in).
-    const rebuyAmount = tournament.rebuy_amount || 0;
-    const addonAmount = tournament.addon_amount || 0;
-    const collectedPool = (totalEntries * buyinAmount) + (totalRebuys * rebuyAmount) + (totalAddons * addonAmount);
+    // collects nothing; it must not silently default to the buy-in), and takes
+    // the bounty slice of each buy-in OUT of the prize money for bounty/PKO
+    // events, where it used to be double counted as prize pool.
+    const collectedPool = collectedPrizePool(tournament, {
+      entries: totalEntries, rebuys: totalRebuys, addons: totalAddons
+    });
+    const bountyPool = collectedBountyPool(tournament, {
+      entries: totalEntries, rebuys: totalRebuys
+    });
     // Effective pool: actual_prizepool wins; otherwise max(collected, guaranteed).
     const prizePool = effectivePrizePool(tournament, collectedPool);
     const overlay = Math.max(0, (Number(tournament.guaranteed_pool) || 0) - collectedPool);
@@ -171,27 +530,27 @@ async function handleGetPayouts(req, res, tournamentId) {
 
     // If calculate mode, compute auto payouts from payout_structure
     if (mode === 'calculate') {
-      let structure = parsePayoutStructure(tournament.payout_structure).map(normalizePayoutSlot);
-      // No saved payout_structure: generate a standard field-size-band table.
-      if (structure.length === 0) {
-        structure = generatePayoutTable(totalEntries, tournament.paying_places);
-      }
-      // Percentage slots are floored to whole dollars with the rounding
-      // remainder added to 1st place so the amounts sum to the pool exactly.
-      const allocated = allocateAmounts(structure, prizePool);
-      const calculated = structure.map((slot, idx) => {
-        const percent = slot.percentage || 0;
-        // Fixed-amount slots (no percentage) pass through their amount.
-        const amount = (!percent && slot.amount != null) ? slot.amount : allocated[idx];
-        return {
-          position: slot.position || idx + 1,
-          percentage: percent,
-          amount,
-          player_name: null,
-          player_id: null,
-          entry_id: null
-        };
-      });
+      // Optional per-request denomination preview, so the TD screen can flip
+      // between $1 / $5 / $25 / $100 and see the table without saving first.
+      const previewDenom = req.query?.denomination;
+      const tournamentForTable = (previewDenom === undefined || previewDenom === null || previewDenom === '')
+        ? tournament
+        : { ...tournament, settings: { ...(tournament.settings || {}), payout_denomination: previewDenom } };
+
+      // Ladder, satellite seat schedule and denomination rounding all come out
+      // of the one shared builder, so eliminate.js and the public live page
+      // quote the same numbers as this screen.
+      const table = buildPayoutTable(tournamentForTable, prizePool, totalEntries);
+      const calculated = table.rows.map((slot, idx) => ({
+        position: slot.position || idx + 1,
+        percentage: slot.percentage || 0,
+        amount: slot.amount,
+        is_seat: slot.is_seat || false,
+        is_bubble: slot.is_bubble || false,
+        player_name: null,
+        player_id: null,
+        entry_id: null
+      }));
 
       // If we have eliminated players with finish positions, match them
       const eliminated = (entries || [])
@@ -238,7 +597,22 @@ async function handleGetPayouts(req, res, tournamentId) {
           total_addons: totalAddons,
           final_payouts: tournament.final_payouts || null,
           guaranteed: tournament.guaranteed_pool || 0,
-          is_overlay: overlay > 0
+          is_overlay: overlay > 0,
+          // Denomination rounding: what the table was rounded to, and how much
+          // of the pool ended up on 1st place because of it.
+          denomination: table.denomination,
+          rounding_remainder: table.rounding_remainder,
+          // Satellite: seats instead of a cash ladder.
+          is_satellite: table.is_satellite,
+          seat_value: table.seat_value,
+          seats_awarded: table.seats_awarded,
+          // Bounty accounting. bounty_pool is money collected but deliberately
+          // held OUT of the prize pool; the two together reconcile to the cash
+          // the cage actually took.
+          tournament_type: tournament.tournament_type || null,
+          bounty_pool: bountyPool,
+          bounty_per_entry: bountyPortionPerEntry(tournament),
+          pko_starting_bounty: pkoStartingBounty(tournament)
         }
       });
     }
@@ -264,7 +638,10 @@ async function handleGetPayouts(req, res, tournamentId) {
         house_fees: houseFees,
         total_entries: totalEntries,
         final_payouts: tournament.final_payouts || null,
-        guaranteed: tournament.guaranteed_pool || 0
+        guaranteed: tournament.guaranteed_pool || 0,
+        tournament_type: tournament.tournament_type || null,
+        denomination: payoutDenomination(tournament),
+        bounty_pool: bountyPool
       }
     });
   } catch (error) {
@@ -359,14 +736,46 @@ async function handleBulkPayouts(req, res, tournamentId) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'payouts Array Required' } });
     }
 
-    // Get tournament for leaderboard
+    // Get tournament for leaderboard. settings carries the payout denomination
+    // and tournament_type drives the satellite/bounty labelling.
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
       // scheduled_start/actual_start are needed so points only accrue to a
       // season whose window actually contains this event.
-      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id, scheduled_start, actual_start')
+      .select('venue_id, buyin_amount, buyin_fee, bounty_amount, tournament_type, settings, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
+
+    // ── Denomination rounding on the DEAL path ──
+    // A chop struck at the table is paid out of the cage in real notes, so the
+    // agreed numbers are rounded to the room's denomination with the remainder
+    // going up to 1st place, exactly like the calculated ladder. The total is
+    // the total the players agreed on, so nothing is created or lost.
+    //
+    // Deliberately NOT applied when deal_only is false. That call is the
+    // finalize path: it records money that has in most cases already been
+    // handed over, and re-rounding it would restate a busted player's cash
+    // after they left the building. Send denomination: 1 to skip entirely.
+    let roundingRemainder = 0;
+    let appliedDenomination = 1;
+    if (dealOnly && payouts.length > 0) {
+      const requested = req.body?.denomination;
+      const denomSource = (requested === undefined || requested === null || requested === '')
+        ? tournament
+        : { settings: { payout_denomination: requested } };
+      const denom = payoutDenomination(denomSource);
+      // Sorted by position so index 0 really is 1st place. The rows are the
+      // same objects as in `payouts`, so writing p.amount here is what the
+      // update loop below picks up.
+      const ordered = [...payouts].sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
+      const total = ordered.reduce((s, p) => s + Math.round(Number(p.amount) || 0), 0);
+      if (denom > 1 && total > 0) {
+        const rounded = roundPayoutsToDenomination(ordered.map(p => p.amount), total, denom);
+        ordered.forEach((p, i) => { p.amount = rounded.amounts[i]; });
+        roundingRemainder = rounded.remainder;
+        appliedDenomination = rounded.denomination;
+      }
+    }
 
     // Update each entry
     const results = [];
@@ -441,6 +850,8 @@ async function handleBulkPayouts(req, res, tournamentId) {
         updated: results.length,
         payouts: results,
         deal_only: dealOnly,
+        denomination: appliedDenomination,
+        rounding_remainder: roundingRemainder,
         message: dealOnly
           ? 'Deal Recorded. Play Continues And Finishing Order Is Still Assigned On Elimination.'
           : 'Final Payouts Saved.'

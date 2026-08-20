@@ -17,10 +17,11 @@ import { checkAndExecuteAutoBreak } from '../../../../src/lib/commander/tourname
 import { logAction } from '../../../../src/lib/commander/audit';
 // Shared payout math so the public Payouts tab always matches the TD screen.
 import {
-  generatePayoutTable,
-  normalizePayoutSlot,
   effectivePrizePool,
-  allocateAmounts
+  collectedPrizePool,
+  collectedBountyPool,
+  buildPayoutTable,
+  bountyPortionPerEntry
 } from './payout';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
@@ -83,7 +84,10 @@ const CLOCK_TOURNAMENT_COLUMNS = [
   'players_remaining', 'average_stack', 'total_chips_in_play', 'blind_structure',
   'settings', 'updated_at', 'buyin_amount', 'rebuy_amount', 'addon_amount',
   'guaranteed_pool', 'actual_prizepool', 'payout_structure', 'paying_places',
-  'final_payouts'
+  // tournament_type + bounty_amount drive the satellite seat schedule and the
+  // bounty slice that is held out of the prize pool. Without them the public
+  // payouts tab quoted a different pool from the TD screen.
+  'final_payouts', 'tournament_type', 'bounty_amount'
 ].join(', ');
 
 // See floor-view.js: the same clock_state backfill used to fire from this
@@ -282,38 +286,51 @@ async function getClockState(req, res, tournamentId) {
       if (include.includes('payouts')) {
         const totalRebuys = entries.reduce((s, e) => s + (e.rebuy_count || 0), 0);
         const totalAddons = entries.filter(e => e.addon_taken).length;
-        const collected = (entries.length * (tournament.buyin_amount || 0)) +
-          (totalRebuys * (tournament.rebuy_amount || 0)) +
-          (totalAddons * (tournament.addon_amount || 0));
+        // Shared pool math: the bounty slice of a bounty/PKO buy-in is bounty
+        // money, not prize money, so it is taken out here exactly as it is on
+        // the TD payouts screen and in eliminate.js.
+        const collected = collectedPrizePool(tournament, {
+          entries: entries.length, rebuys: totalRebuys, addons: totalAddons
+        });
         const pool = effectivePrizePool(tournament, collected);
 
-        // Deal overrides win; otherwise the saved structure; otherwise the
-        // standard field-size-band table.
-        let table;
-        if (Array.isArray(tournament.final_payouts) && tournament.final_payouts.length > 0) {
-          table = tournament.final_payouts.map((p, i) => ({
-            position: p.position || i + 1,
-            amount: Math.round(Number(p.amount) || 0)
-          }));
-        } else {
-          let slots = Array.isArray(tournament.payout_structure)
-            ? tournament.payout_structure.map(normalizePayoutSlot)
-            : [];
-          if (slots.length === 0) slots = generatePayoutTable(entries.length, tournament.paying_places);
-          const amounts = allocateAmounts(slots, pool);
-          table = slots.map((s, i) => ({
-            position: s.position || i + 1,
-            percentage: s.percentage,
-            amount: s.amount != null && !s.percentage ? Math.round(Number(s.amount)) : amounts[i]
-          }));
-        }
+        // Deal overrides win; otherwise the shared builder, which applies the
+        // saved structure (or the standard field-size band), the satellite
+        // seat schedule and the room's denomination rounding.
+        const isDeal = Array.isArray(tournament.final_payouts) && tournament.final_payouts.length > 0;
+        const built = isDeal ? null : buildPayoutTable(tournament, pool, entries.length);
+        const table = isDeal
+          ? tournament.final_payouts.map((p, i) => ({
+              position: p.position || i + 1,
+              amount: Math.round(Number(p.amount) || 0)
+            }))
+          : built.rows.map(r => ({
+              position: r.position,
+              percentage: r.percentage,
+              amount: r.amount,
+              // Satellites pay seats, and the live page labels them "Seat"
+              // rather than a dollar prize.
+              is_seat: r.is_seat || false,
+              is_bubble: r.is_bubble || false
+            }));
 
         publicPayouts = {
           prize_pool: pool,
           collected_pool: collected,
           overlay_amount: Math.max(0, (tournament.guaranteed_pool || 0) - collected),
           guaranteed_pool: tournament.guaranteed_pool || 0,
-          is_deal: Array.isArray(tournament.final_payouts) && tournament.final_payouts.length > 0,
+          is_deal: isDeal,
+          // Satellite display data. seat_value is what one seat is worth, and
+          // seats_awarded how many are being played for.
+          is_satellite: built ? built.is_satellite : false,
+          seat_value: built ? built.seat_value : 0,
+          seats_awarded: built ? built.seats_awarded : 0,
+          // Denomination rounding applied to the ladder above.
+          denomination: built ? built.denomination : 1,
+          // Bounty money, deliberately held out of prize_pool.
+          tournament_type: tournament.tournament_type || null,
+          bounty_pool: collectedBountyPool(tournament, { entries: entries.length, rebuys: totalRebuys }),
+          bounty_per_entry: bountyPortionPerEntry(tournament),
           places: table
         };
       }

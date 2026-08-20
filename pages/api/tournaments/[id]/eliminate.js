@@ -14,14 +14,14 @@ import {
 } from '../../../../src/lib/commander/pushNotifications';
 import { checkAndExecuteAutoBreak } from '../../../../src/lib/commander/tournamentAutoBreak';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
-import { parsePayoutStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
 import { isUniqueViolation, conflictError, conflictMessage } from '../../../../src/lib/commander/dbErrors';
 // Shared pure payout-math helpers (same math the payout screen uses, so the
 // winner's payout here always matches position 1 there).
-import { generatePayoutTable, normalizePayoutSlot } from './payout';
+import { buildPayoutTable, collectedPrizePool, effectivePrizePool as poolFor } from './payout';
+import { applyKnockoutBounty } from '../../../../src/lib/commander/tournamentBounty';
 
 
 let _supabase = null;
@@ -154,27 +154,31 @@ export default async function handler(req, res) {
         getTotalRebuys(tournamentId),
         getTotalAddons(tournamentId)
       ]);
-      const collectedPool = (totalEntries * (tournament.buyin_amount || 0)) +
-        (totalRebuys * (tournament.rebuy_amount || 0)) +
-        (totalAddons * (tournament.addon_amount || 0));
-      const actualPool = Number(tournament.actual_prizepool) || 0;
-      const effectivePrizePool = actualPool > 0
-        ? actualPool
-        : Math.max(collectedPool, Number(tournament.guaranteed_pool) || 0);
+      // The bounty slice of each buy-in is NOT prize money (house rule:
+      // charge = buyin + fee, prize = buyin - bounty), so collectedPrizePool
+      // takes it out for bounty and PKO events.
+      const collectedPool = collectedPrizePool(tournament, {
+        entries: totalEntries, rebuys: totalRebuys, addons: totalAddons
+      });
+      const effectivePool = poolFor(tournament, collectedPool);
 
-      let payoutStructure = parsePayoutStructure(tournament.payout_structure).map(normalizePayoutSlot);
-      if (payoutStructure.length === 0) {
-        // No saved structure: use the standard field-size-band table so busts
-        // and the payout screen agree.
-        payoutStructure = generatePayoutTable(totalEntries, tournament.paying_places);
-      }
+      // ONE payout table, built by the shared helper: the saved structure (or
+      // the standard field-size band), the satellite seat schedule, and the
+      // room's denomination rounding. The TD payouts screen and the public
+      // live page build theirs the same way, so a bust can never be paid a
+      // different number from the one on the display.
+      const payoutTable = buildPayoutTable(tournament, effectivePool, totalEntries);
 
       const payoutForPosition = (position) => {
-        const slot = payoutStructure.find(p => p.position === position);
+        const slot = payoutTable.rows.find(p => p.position === position);
         if (!slot) return 0;
-        if (slot.percentage) return Math.floor(effectivePrizePool * slot.percentage / 100);
-        if (slot.amount) return slot.amount;
-        return 0;
+        return Math.max(0, Number(slot.amount) || 0);
+      };
+      // A satellite seat winner is paid the seat value, which is exactly what
+      // the table above holds for those places, so the money reconciles.
+      const seatForPosition = (position) => {
+        const slot = payoutTable.rows.find(p => p.position === position);
+        return !!(slot && slot.is_seat);
       };
 
       // Calculate payout if in the money.
@@ -195,6 +199,11 @@ export default async function handler(req, res) {
         ? dealAmount
         : (preRecordedAmount > 0 ? preRecordedAmount : payoutForPosition(finishPosition));
       const payoutPosition = payoutAmount > 0 ? finishPosition : null;
+      // Satellite: this finish won a SEAT, not cash. payout_amount still holds
+      // the seat value so the money reconciles against the prize pool, and the
+      // flag is what the results sheet and the live page label "Seat" from.
+      // A recorded deal always wins, so it turns the seat flag off.
+      const wonSeat = dealAmount == null && preRecordedAmount <= 0 && seatForPosition(finishPosition);
 
       // Update eliminated player. The status predicate makes a double-tap
       // safe: only an entry still in the tournament can be eliminated, so of
@@ -208,7 +217,14 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .update({
           payout_amount: payoutAmount,
-          payout_position: payoutPosition
+          payout_position: payoutPosition,
+          ...(wonSeat ? {
+            metadata: {
+              ...(entry.metadata || {}),
+              won_seat: true,
+              seat_value: payoutAmount
+            }
+          } : {})
         })
         .eq('id', entry_id)
         .eq('tournament_id', tournamentId)
@@ -231,30 +247,29 @@ export default async function handler(req, res) {
       // update so the losing side of a double-tap can never award a second
       // bounty. Scoped to this tournament so a stray entry id from another
       // tournament can never collect it.
+      //
+      // 2026-08-21: this used to be a bare bounties_collected += 1, which
+      // recorded that a knockout happened but never what it was WORTH, so the
+      // cage had no figure to pay against and a PKO head never grew.
+      //   bounty : the eliminator is paid the flat tournament.bounty_amount.
+      //   pko    : the eliminator is paid HALF the busted player's head in
+      //            cash and the other HALF is added to their own head.
+      // The whole transfer lives in tournamentBounty.js, which shares its
+      // money math with the payout screens.
       let bountiesCollected = 0;
-      if (tournament.bounty_amount && eliminated_by_id) {
-        const { data: eliminator } = await getSupabase()
-          .from('commander_tournament_entries')
-          .select('bounties_collected, metadata')
-          .eq('id', eliminated_by_id)
-          .eq('tournament_id', tournamentId)
-          .maybeSingle();
-
-        if (eliminator) {
-          await getSupabase()
-            .from('commander_tournament_entries')
-            .update({
-              bounties_collected: (eliminator.bounties_collected || 0) + 1,
-              metadata: {
-                ...(eliminator.metadata || {}),
-                last_bounty_at: new Date().toISOString()
-              }
-            })
-            .eq('id', eliminated_by_id)
-            .eq('tournament_id', tournamentId);
-
-          bountiesCollected = 1;
-        }
+      let bountyAward = null;
+      try {
+        bountyAward = await applyKnockoutBounty(getSupabase(), {
+          tournament,
+          tournamentId,
+          bustedEntry: eliminated || entry,
+          eliminatorEntryId: eliminated_by_id || null
+        });
+        if (bountyAward?.awarded) bountiesCollected = 1;
+      } catch (bountyErr) {
+        // The elimination itself already stands. A failed bounty transfer is
+        // reported, never allowed to roll the bust back.
+        console.warn('[eliminate.js] Bounty transfer failed:', bountyErr?.message || bountyErr);
       }
 
       // Award XP if player cashed
@@ -324,7 +339,11 @@ export default async function handler(req, res) {
               metadata: {
                 ...(winner.metadata || {}),
                 won_at: new Date().toISOString(),
-                prize_amount: winnerAmount
+                prize_amount: winnerAmount,
+                // Satellite: 1st place wins a seat, not a cash first prize.
+                ...(winnerDealRow == null && seatForPosition(1)
+                  ? { won_seat: true, seat_value: winnerAmount }
+                  : {})
               }
             })
             .eq('id', winner.id);
@@ -426,7 +445,20 @@ export default async function handler(req, res) {
           finishPosition,
           payoutAmount,
           inTheMoney: payoutAmount > 0,
+          // Satellite: this finish won a seat worth payoutAmount.
+          wonSeat,
           bountiesAwarded: bountiesCollected,
+          // Bounty / PKO detail so the TD can read the knockout out loud and
+          // the cage knows what to hand over.
+          bounty: bountyAward ? {
+            mode: bountyAward.mode,
+            awarded: bountyAward.awarded,
+            cash: bountyAward.cash,
+            to_head: bountyAward.to_head,
+            head_claimed: bountyAward.head_claimed,
+            eliminator_bounty_value: bountyAward.eliminator_bounty_value,
+            eliminator_bounty_winnings: bountyAward.eliminator_bounty_winnings
+          } : undefined,
           remainingPlayers: remainingCount - 1,
           // Present only when the last player could not be recorded as the
           // winner. The tournament is deliberately left open in that case.

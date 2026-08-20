@@ -13,6 +13,10 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parseBlindStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+// Shared pool math so the floor console quotes the same prize pool as the
+// payouts screen, the public live page and every bust.
+import { collectedPrizePool, collectedBountyPool, bountyPortionPerEntry } from './payout';
+import { entryBountyValue, entryBountyWinnings } from '../../../../src/lib/commander/tournamentBounty';
 
 let _supabase = null;
 function getSupabase() {
@@ -45,8 +49,31 @@ const TOURNAMENT_COLUMNS = [
 const ENTRY_COLUMNS = [
   'id', 'player_id', 'player_name', 'status', 'table_number', 'seat_number',
   'current_chips', 'rebuy_count', 'addon_taken', 'finish_position', 'eliminated_at',
-  'payout_amount', 'registered_at', 'created_at', 'metadata'
+  'payout_amount', 'registered_at', 'created_at', 'metadata', 'bounties_collected'
 ].join(', ');
+
+// bounty_value/bounty_winnings arrive with migration
+// 20260821130000_commander_entry_bounty_columns.sql. This is the hottest route
+// in the room, so the column presence is probed ONCE per process and the
+// answer reused: a deploy landing before the migration costs exactly one
+// failed select, then falls back to the metadata copy the bounty writer keeps.
+const ENTRY_COLUMNS_WITH_BOUNTY = `${ENTRY_COLUMNS}, bounty_value, bounty_winnings`;
+let _entriesHaveBountyColumns = null;
+function isMissingColumn(error) {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' ||
+    /column .* does not exist/i.test(String(error.message || ''));
+}
+
+function selectEntries(tournamentId, columns) {
+  return getSupabase()
+    .from('commander_tournament_entries')
+    .select(columns)
+    .eq('tournament_id', tournamentId)
+    .order('table_number', { ascending: true })
+    .order('seat_number', { ascending: true })
+    .limit(5000);
+}
 
 /**
  * Last manual chip correction for an entry, or undefined when the stack has
@@ -138,19 +165,23 @@ export default async function handler(req, res) {
           .eq('id', tournamentId)
           .maybeSingle(),
         // Get ALL entries (active + eliminated + registered) - Up to 5000 to prevent cutoff on massive fields
-        getSupabase()
-          .from('commander_tournament_entries')
-          .select(ENTRY_COLUMNS)
-          .eq('tournament_id', tournamentId)
-          .order('table_number', { ascending: true })
-          .order('seat_number', { ascending: true })
-          .limit(5000)
+        selectEntries(tournamentId, _entriesHaveBountyColumns === false ? ENTRY_COLUMNS : ENTRY_COLUMNS_WITH_BOUNTY)
       ]);
 
       const { data: tournament, error: tErr } = tournamentRes;
       if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
 
-      const entries = entriesRes.data || [];
+      let entriesResult = entriesRes;
+      if (entriesResult.error && isMissingColumn(entriesResult.error)) {
+        // Pre-migration deploy: retry once without the bounty columns and
+        // remember, so this costs one failed select per process, not per poll.
+        _entriesHaveBountyColumns = false;
+        entriesResult = await selectEntries(tournamentId, ENTRY_COLUMNS);
+      } else if (!entriesResult.error) {
+        _entriesHaveBountyColumns = true;
+      }
+
+      const entries = entriesResult.data || [];
       // TWO different questions, two different lists. Conflating them is what
       // made a bagged player vanish from the field.
       //   activeEntries  = "who is physically holding a chair right now"
@@ -265,10 +296,19 @@ export default async function handler(req, res) {
       // TableCaptain-style, so overlays display correctly.
       // Cancelled entries never paid (their money row is reversed), so they
       // must not count toward the pool. Alternates DID pay at sign-up.
+      // 2026-08-21 fix: the bounty slice of a bounty/PKO buy-in is bounty
+      // money, never prize money (house rule: charge = buyin + fee,
+      // prize = buyin - bounty). Counting the whole buy-in as prize pool
+      // double counted every bounty event. collectedPrizePool is the one
+      // definition shared with payout.js, eliminate.js and clock.js.
       const paidEntryCount = entries.filter(e => e.status !== 'cancelled').length;
-      const collectedPool = (paidEntryCount * (tournament.buyin_amount || 0)) +
-        (totalRebuys * (tournament.rebuy_amount || 0)) +
-        (totalAddons * (tournament.addon_amount || 0));
+      const collectedPool = collectedPrizePool(tournament, {
+        entries: paidEntryCount, rebuys: totalRebuys, addons: totalAddons
+      });
+      const bountyPool = collectedBountyPool(tournament, {
+        entries: paidEntryCount, rebuys: totalRebuys
+      });
+      const bountyPerEntry = bountyPortionPerEntry(tournament);
       const prizePool = tournament.actual_prizepool ||
         Math.max(collectedPool, tournament.guaranteed_pool || 0);
       const overlayAmount = Math.max(0, (tournament.guaranteed_pool || 0) - collectedPool);
@@ -502,6 +542,10 @@ export default async function handler(req, res) {
             prize_pool: prizePool,
             collected_pool: collectedPool,
             overlay_amount: overlayAmount,
+            // Bounty money collected, held OUT of the prize pool. Together the
+            // two reconcile to what the cage actually took (plus fees).
+            bounty_pool: bountyPool,
+            bounty_per_entry: bountyPerEntry,
             total_chips: totalChips,
             average_stack: avgStack,
             tables_active: tableNumbers.length,
@@ -562,6 +606,17 @@ export default async function handler(req, res) {
             registered_at: e.registered_at || e.created_at,
             queue_position: alternatePositions.get(e.id),
             avatar_url: avatarMap[e.player_id]?.avatar_url || undefined,
+            // Bounty state, only for tournaments that actually pay knockouts.
+            // The TD needs the head value to read a PKO knockout out loud, and
+            // the winnings to reconcile the cage.
+            ...(bountyPerEntry > 0 ? {
+              knockouts: e.bounties_collected || 0,
+              // A player who is out has no head left to win.
+              bounty_value: ['eliminated', 'cancelled', 'winner', 'cashed'].includes(e.status)
+                ? 0
+                : entryBountyValue(tournament, e),
+              bounty_winnings: entryBountyWinnings(e)
+            } : {}),
             // Most recent manual chip correction, so the Players tab can show
             // that a stack was overwritten and by how much without anyone
             // opening the audit log. The full capped history lives on

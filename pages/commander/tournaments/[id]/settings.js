@@ -259,6 +259,19 @@ export default function TournamentSettings() {
   const [addonChips, setAddonChips] = useState(15000);
   const [lateRegLevels, setLateRegLevels] = useState(6);
   const [clockColor, setClockColor] = useState('navy');
+  // The whole stored settings jsonb. Saving used to send { clock_color } only,
+  // which silently wiped every other key in the blob (payout denomination,
+  // satellite seat schedule, PKO config) on any save from this screen.
+  const [settingsBlob, setSettingsBlob] = useState({});
+  // Cash denomination payouts are rounded to. 1 means exact dollars.
+  const [payoutDenomination, setPayoutDenomination] = useState(5);
+  // Bounty portion of the buy-in. Carved OUT of buyin_amount, never added on
+  // top (house rule: charge = buyin + fee, prize = buyin - bounty).
+  const [bountyAmount, setBountyAmount] = useState('');
+  // Satellite: what one seat is worth, and how many are being played for.
+  // Blank seats means "as many as the prize pool funds".
+  const [seatValue, setSeatValue] = useState('');
+  const [seatsAwarded, setSeatsAwarded] = useState('');
   // Season points board this event scores into. Empty string means "use the
   // venue's active season", which is what awardTournamentPoints falls back to.
   const [leaderboardId, setLeaderboardId] = useState('');
@@ -318,7 +331,21 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           setAddonCost(t.addon_amount || 100);
           setAddonChips(t.addon_chips || 15000);
           setLateRegLevels(t.late_registration_levels || 6);
-          setClockColor(t.settings?.clock_color || t.clock_color || 'navy');
+          const blob = (t.settings && typeof t.settings === 'object') ? t.settings : {};
+          setSettingsBlob(blob);
+          setClockColor(blob.clock_color || t.clock_color || 'navy');
+          setPayoutDenomination(
+            blob.payout_denomination === undefined || blob.payout_denomination === null
+              ? 5
+              : (Number(blob.payout_denomination) || 1)
+          );
+          setBountyAmount(t.bounty_amount != null ? String(t.bounty_amount) : '');
+          setSeatValue(blob.satellite?.seat_value != null ? String(blob.satellite.seat_value) : '');
+          setSeatsAwarded(
+            blob.satellite?.seats_awarded === undefined || blob.satellite?.seats_awarded === null
+              ? ''
+              : String(blob.satellite.seats_awarded)
+          );
           setLeaderboardId(t.leaderboard_id || '');
           setLevels(parseBlinds(t.blind_structure).length > 0 ? parseBlinds(t.blind_structure) : STRUCTURE_TEMPLATES.standard.levels);
           if (t.entry_count) setEstimatedEntries(t.entry_count);
@@ -439,6 +466,36 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
     if (next) fetchTemplates();
   };
 
+  /**
+   * The settings jsonb to save.
+   *
+   * MERGED onto whatever is already stored, never replaced. This screen used
+   * to send { clock_color } alone, so a save from here wiped every other key
+   * in the blob. clock_state is additionally re-applied server-side by the
+   * tournament route, so a live clock is safe either way.
+   */
+  const buildSettings = () => {
+    const next = { ...(settingsBlob || {}), clock_color: clockColor };
+
+    const denom = Number(payoutDenomination) || 1;
+    next.payout_denomination = denom > 1 ? denom : 1;
+
+    if (tournamentType === 'satellite') {
+      const value = seatValue === '' ? 0 : parseInt(seatValue, 10) || 0;
+      next.satellite = {
+        seat_value: value,
+        // null means "award as many seats as the prize pool funds".
+        seats_awarded: seatsAwarded === '' ? null : Math.max(0, parseInt(seatsAwarded, 10) || 0)
+      };
+    } else if (next.satellite) {
+      // Type changed away from satellite: drop the seat schedule so the payout
+      // engine cannot keep paying seats for a cash tournament.
+      delete next.satellite;
+    }
+
+    return next;
+  };
+
   const saveAsTemplate = async () => {
     if (!tournament?.venue_id || !templateName.trim()) return;
     setTemplateBusy(true);
@@ -465,7 +522,10 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           addon_amount: addonCost,
           addon_chips: addonChips,
           max_entries: maxEntries ? parseInt(maxEntries) : null,
-          settings: { clock_color: clockColor }
+          bounty_amount: ['bounty', 'pko'].includes(tournamentType)
+            ? (bountyAmount === '' ? null : parseInt(bountyAmount, 10))
+            : null,
+          settings: buildSettings()
         })
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
@@ -532,7 +592,15 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           // null means "score into the venue's active season" rather than
           // pinning this event to one board.
           leaderboard_id: leaderboardId || null,
-          settings: { clock_color: clockColor }
+          // Bounty portion of the buy-in. Only meaningful for bounty and PKO
+          // events; cleared otherwise so a type change cannot leave a stale
+          // slice being carved out of the prize pool.
+          bounty_amount: ['bounty', 'pko'].includes(tournamentType)
+            ? (bountyAmount === '' ? null : parseInt(bountyAmount, 10))
+            : null,
+          // MERGED, never replaced: the blob also carries clock_state (kept
+          // server-side) and anything a future screen adds.
+          settings: buildSettings()
         })
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
@@ -766,14 +834,87 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Type */}
               <div>
                 <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Tournament Type</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {['freezeout', 'rebuy', 'bounty', 'satellite'].map(type => (
-                    <button key={type} onClick={() => setTournamentType(type)}
-                      className={`py-2.5 rounded-lg text-sm font-medium capitalize ${tournamentType === type ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
-                        }`}>{type}</button>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'freezeout', label: 'Freezeout' },
+                    { key: 'rebuy', label: 'Rebuy' },
+                    { key: 'bounty', label: 'Bounty' },
+                    { key: 'pko', label: 'PKO' },
+                    { key: 'satellite', label: 'Satellite' },
+                    { key: 'turbo', label: 'Turbo' },
+                  ].map(type => (
+                    <button key={type.key} onClick={() => setTournamentType(type.key)}
+                      className={`h-11 rounded-lg text-sm font-medium ${tournamentType === type.key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                        }`}>{type.label}</button>
                   ))}
                 </div>
               </div>
+
+              {/* Payout Rounding */}
+              <div>
+                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Round Payouts To</label>
+                <p className="text-[10px] text-[#64748B] mb-2">
+                  Every Place Is Floored To This Denomination And The Remainder Goes To 1st Place, So The Total Still Equals The Prize Pool
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { value: 1, label: 'Exact' },
+                    { value: 5, label: '$5' },
+                    { value: 25, label: '$25' },
+                    { value: 100, label: '$100' },
+                  ].map(d => (
+                    <button key={d.value} onClick={() => setPayoutDenomination(d.value)}
+                      className={`h-11 rounded-lg text-sm font-medium ${Number(payoutDenomination) === d.value ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                        }`}>{d.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bounty / PKO */}
+              {['bounty', 'pko'].includes(tournamentType) && (
+                <div>
+                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">
+                    {tournamentType === 'pko' ? 'Starting Bounty' : 'Bounty Per Knockout'}
+                  </label>
+                  <p className="text-[10px] text-[#64748B] mb-2">
+                    Taken Out Of The Buy-In, Not Added On Top. A ${Number(buyinAmount || 0).toLocaleString()} Buy-In
+                    With A ${Number(bountyAmount || 0).toLocaleString()} Bounty Puts
+                    ${Math.max(0, Number(buyinAmount || 0) - Number(bountyAmount || 0)).toLocaleString()} Into The Prize Pool.
+                    {tournamentType === 'pko'
+                      ? ' On A Knockout The Eliminator Takes Half In Cash And Adds Half To Their Own Bounty.'
+                      : ' Every Knockout Pays This Amount In Cash.'}
+                  </p>
+                  <input type="number" inputMode="numeric" value={bountyAmount}
+                    onChange={e => setBountyAmount(e.target.value)}
+                    placeholder={tournamentType === 'pko' ? String(Math.floor(Number(buyinAmount || 0) / 2)) : '25'}
+                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                </div>
+              )}
+
+              {/* Satellite */}
+              {tournamentType === 'satellite' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Seat Value</label>
+                    <p className="text-[10px] text-[#64748B] mb-2">
+                      What One Seat Is Worth. Leave At 0 To Pay A Normal Cash Ladder Instead Of Seats.
+                    </p>
+                    <input type="number" inputMode="numeric" value={seatValue}
+                      onChange={e => setSeatValue(e.target.value)} placeholder="500"
+                      className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Seats Awarded</label>
+                    <p className="text-[10px] text-[#64748B] mb-2">
+                      Leave Blank To Award As Many Seats As The Prize Pool Funds. Any Money Left Over Is Paid To The
+                      Next Finisher As A Cash Bubble Prize.
+                    </p>
+                    <input type="number" inputMode="numeric" value={seatsAwarded}
+                      onChange={e => setSeatsAwarded(e.target.value)} placeholder="Auto"
+                      className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                  </div>
+                </div>
+              )}
 
               {/* Clock Color */}
               <div>

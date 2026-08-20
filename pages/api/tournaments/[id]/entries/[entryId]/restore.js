@@ -16,6 +16,7 @@ import { logAction } from '../../../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
+import { reverseKnockoutBounty } from '../../../../../../src/lib/commander/tournamentBounty';
 
 let _supabase = null;
 function getSupabase() {
@@ -46,7 +47,9 @@ export default async function handler(req, res) {
     const [{ data: tournament }, { data: entry }] = await Promise.all([
       getSupabase()
         .from('commander_tournaments')
-        .select('id, venue_id, name, status, bounty_amount')
+        // tournament_type/buyin_amount/settings are needed so the bounty
+        // claw-back can work out what a knockout was worth in this format.
+        .select('id, venue_id, name, status, tournament_type, buyin_amount, bounty_amount, settings')
         .eq('id', tournamentId)
         .maybeSingle(),
       getSupabase()
@@ -160,25 +163,56 @@ export default async function handler(req, res) {
     }
 
     // Claw back the bounty that the eliminator collected for this bust.
+    //
+    // 2026-08-21, two fixes:
+    //  1. This matched the eliminator on player_id, but eliminate.js writes an
+    //     ENTRY id into eliminated_by (the claim RPC takes p_eliminated_by =
+    //     the eliminator's entry_id and the bounty award looks it up with
+    //     .eq('id', ...)). Matching on player_id therefore found nobody and
+    //     NO bounty was ever clawed back on an undo. Resolved by entry id
+    //     first, with a player_id fallback for any historic row.
+    //  2. Only the knockout COUNT was reversed. The cash and, in a PKO, the
+    //     half-head added to the eliminator's own bounty stayed with them, so
+    //     an undo left money in the system that nobody had won.
+    //     reverseKnockoutBounty puts all three back.
     let bountyReversed = false;
-    if ((tournament.bounty_amount || 0) > 0 && entry.eliminated_by) {
-      const { data: eliminator } = await getSupabase()
+    let bountyReversal = null;
+    if (entry.eliminated_by) {
+      let eliminatorEntryId = null;
+      const { data: byEntryId } = await getSupabase()
         .from('commander_tournament_entries')
-        .select('id, bounties_collected')
+        .select('id')
         .eq('tournament_id', tournamentId)
-        .eq('player_id', entry.eliminated_by)
-        // Still-in-the-event statuses. 'bagged' included: the eliminator may
-        // have bagged since taking the bounty, and their bounty count still
-        // has to be clawed back when the bust is undone.
-        .in('status', ['seated', 'active', 'registered', 'bagged'])
+        .eq('id', entry.eliminated_by)
         .maybeSingle();
-      if (eliminator && (eliminator.bounties_collected || 0) > 0) {
-        const { error: bountyError } = await getSupabase()
+      if (byEntryId) {
+        eliminatorEntryId = byEntryId.id;
+      } else {
+        const { data: byPlayerId } = await getSupabase()
           .from('commander_tournament_entries')
-          .update({ bounties_collected: (eliminator.bounties_collected || 0) - 1 })
-          .eq('id', eliminator.id);
-        if (!bountyError) bountyReversed = true;
-        else console.warn('[restore.js] Bounty claw-back failed:', bountyError.message);
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .eq('player_id', entry.eliminated_by)
+          // Still-in-the-event statuses. 'bagged' included: the eliminator may
+          // have bagged since taking the bounty, and their bounty still has to
+          // be clawed back when the bust is undone.
+          .in('status', ['seated', 'active', 'registered', 'bagged'])
+          .maybeSingle();
+        eliminatorEntryId = byPlayerId?.id || null;
+      }
+
+      try {
+        bountyReversal = await reverseKnockoutBounty(getSupabase(), {
+          tournament,
+          tournamentId,
+          restoredEntry: restored || entry,
+          eliminatorEntryId
+        });
+        bountyReversed = !!bountyReversal?.reversed;
+      } catch (bountyErr) {
+        // The restore itself already stands; a failed claw-back is reported,
+        // never allowed to undo the undo.
+        console.warn('[restore.js] Bounty claw-back failed:', bountyErr?.message || bountyErr);
       }
     }
 
@@ -203,6 +237,7 @@ export default async function handler(req, res) {
       data: {
         entry: restored,
         bounty_reversed: bountyReversed,
+        bounty_reversal: bountyReversal || undefined,
         seat_assignment: seatAssignment || undefined,
         message: seatAssignment
           ? `Elimination Undone. Player Is Back In At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`

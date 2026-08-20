@@ -14,7 +14,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import {
     Trophy, Users, DollarSign, LayoutGrid, Monitor,
     Calculator, Save, RefreshCw, Loader2, FileText,
-    ChevronDown, ChevronUp, AlertTriangle, Handshake, X
+    ChevronDown, ChevronUp, AlertTriangle, Handshake, X, Coins, Ticket
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { calculateICM } from '../../../../src/lib/commander/icm-utils';
@@ -35,6 +35,14 @@ function formatMoney(n) {
     return '$' + Number(n).toLocaleString();
 }
 
+// Cash denominations the cage can actually pay in. 1 means exact dollars.
+const DENOMINATIONS = [
+    { value: 1, label: 'Exact' },
+    { value: 5, label: '$5' },
+    { value: 25, label: '$25' },
+    { value: 100, label: '$100' },
+];
+
 export default function TDPayouts() {
 
     useEffect(() => { busEmit.sessionStart('commander-td-tournamentId-payouts'); }, []);
@@ -50,6 +58,11 @@ export default function TDPayouts() {
     const [overrides, setOverrides] = useState({});
     const [showICM, setShowICM] = useState(false);
     const [showDealCalc, setShowDealCalc] = useState(false);
+    // Denomination the table is rounded to. null means "not chosen yet on this
+    // screen", so the tournament's own settings.payout_denomination is used and
+    // adopted into state on the first load.
+    const [denomination, setDenomination] = useState(null);
+    const [savingDenom, setSavingDenom] = useState(false);
 
     // 2026-07-25 audit fix: toast state lived only in the ICMCalculator child but
     // is rendered (and set) here; hoist it with an auto-dismiss effect.
@@ -63,13 +76,21 @@ export default function TDPayouts() {
     const fetchPayouts = useCallback(async () => {
         if (!tournamentId) return;
         try {
+            // The denomination is sent as a preview parameter so the table
+            // re-renders instantly. It is persisted separately by
+            // applyDenomination below, which is what eliminate.js reads.
+            const denomParam = denomination === null ? '' : `&denomination=${denomination}`;
             const [json, clockJson] = await Promise.all([
-                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate`, {}),
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate${denomParam}`, {}),
                 commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/clock`, {}).catch(() => null)
             ]);
             if (clockJson?.success) setTournamentStatus(clockJson.data?.tournament?.status || null);
             if (json.success) {
                 setCalcData(json.data);
+                // Adopt the tournament's own setting the first time through.
+                if (denomination === null && json.data?.denomination != null) {
+                    setDenomination(Number(json.data.denomination) || 1);
+                }
                 // Initialize overrides from calculated amounts
                 const initial = {};
                 (json.data.calculated_payouts || []).forEach(p => {
@@ -88,13 +109,50 @@ export default function TDPayouts() {
         } finally {
             setLoading(false);
         }
-    }, [tournamentId]);
+    }, [tournamentId, denomination]);
 
     useTournamentRealtime(tournamentId, fetchPayouts);
     useEffect(() => { const _c = new AbortController(); fetchPayouts(_c.signal); return () => _c.abort(); }, [fetchPayouts]);
 
     const handleOverride = (position, value) => {
         setOverrides(prev => ({ ...prev, [position]: parseInt(value) || 0 }));
+    };
+
+    /**
+     * Change the denomination the payouts round to.
+     *
+     * The table re-renders immediately off the preview parameter, and the
+     * choice is persisted to settings.payout_denomination so that every bust
+     * (eliminate.js) and the public live page round the same way. The clock
+     * state inside settings is preserved server-side by the tournament route.
+     */
+    const applyDenomination = async (value) => {
+        const next = Number(value) || 1;
+        setDenomination(next);
+        if (!tournamentId) return;
+        setSavingDenom(true);
+        try {
+            const current = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}`, {}).catch(() => null);
+            const existingSettings = current?.data?.tournament?.settings;
+            const settings = (existingSettings && typeof existingSettings === 'object') ? existingSettings : {};
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: { ...settings, payout_denomination: next } })
+            });
+            const json = await res.json().catch(() => null);
+            if (!res.ok || !json?.success) {
+                setToast({
+                    type: 'error',
+                    text: 'Denomination Previewed But Not Saved. Busts Will Still Use The Old Setting.'
+                });
+            }
+        } catch (err) {
+            console.warn('Save denomination error:', err);
+            setToast({ type: 'error', text: 'Denomination Previewed But Not Saved.' });
+        } finally {
+            setSavingDenom(false);
+        }
     };
 
     const handleSave = async () => {
@@ -153,6 +211,12 @@ export default function TDPayouts() {
     const totalCalc = calcData?.calculated_payouts?.reduce((sum, p) => sum + p.amount, 0) || 0;
     const prizePool = calcData?.prize_pool || 0;
     const diff = totalOverridden - prizePool;
+    const activeDenom = denomination === null ? (calcData?.denomination ?? 1) : denomination;
+    const roundingRemainder = Number(calcData?.rounding_remainder) || 0;
+    const isSatellite = !!calcData?.is_satellite;
+    const seatValue = Number(calcData?.seat_value) || 0;
+    const seatsAwarded = Number(calcData?.seats_awarded) || 0;
+    const bountyPool = Number(calcData?.bounty_pool) || 0;
 
     if (!router.isReady) return null;
 
@@ -218,10 +282,76 @@ export default function TDPayouts() {
                         </div>
                     )}
 
+                    {isSatellite && (
+                        <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <Ticket className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
+                            <div>
+                                <p className="text-sm font-medium text-[#1877F2]">Satellite, Paying Seats</p>
+                                <p className="text-xs text-[#B0B3B8]">
+                                    {seatsAwarded.toLocaleString()} Seat{seatsAwarded === 1 ? '' : 's'} At {formatMoney(seatValue)} Each.
+                                    Any Money Left Over Is Paid To The Next Finisher As A Cash Bubble Prize.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {bountyPool > 0 && (
+                        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <Coins className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+                            <div>
+                                <p className="text-sm font-medium text-[#F59E0B]">
+                                    Bounty Pool {formatMoney(bountyPool)}
+                                </p>
+                                <p className="text-xs text-[#B0B3B8]">
+                                    Held Out Of The Prize Pool And Paid On Knockouts, {formatMoney(calcData?.bounty_per_entry)} Per Entry.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Denomination Rounding */}
+                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <Coins className="w-4 h-4 text-[#B0B3B8]" />
+                                <span className="text-sm font-medium text-[#E4E6EB]">Round Payouts To</span>
+                            </div>
+                            {savingDenom && <Loader2 className="w-4 h-4 text-[#1877F2] animate-spin" />}
+                        </div>
+                        <div className="flex gap-2">
+                            {DENOMINATIONS.map(d => (
+                                <button key={d.value}
+                                    onClick={() => applyDenomination(d.value)}
+                                    disabled={savingDenom || isSatellite}
+                                    className={`flex-1 h-11 rounded-xl text-sm font-medium disabled:opacity-50 ${activeDenom === d.value
+                                        ? 'bg-[#1877F2] text-white'
+                                        : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>
+                                    {d.label}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-[#B0B3B8] mt-2">
+                            {isSatellite
+                                ? 'Satellites Pay Whole Seats, So There Is Nothing To Round.'
+                                : activeDenom > 1
+                                    ? `Every Place Is Floored To The Nearest $${activeDenom.toLocaleString()} And The Remainder Goes To 1st Place.`
+                                    : 'Places Are Paid To The Exact Dollar.'}
+                        </p>
+                        {!isSatellite && activeDenom > 1 && roundingRemainder !== 0 && (
+                            <p className="text-xs text-[#F59E0B] mt-1">
+                                {roundingRemainder > 0
+                                    ? `${formatMoney(roundingRemainder)} Of Rounding Went To 1st Place.`
+                                    : `1st Place Gave Up ${formatMoney(Math.abs(roundingRemainder))} So Every Paying Place Keeps At Least One $${activeDenom.toLocaleString()} Unit.`}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Payout Table */}
                     <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
                         <div className="px-4 py-3 border-b border-[#3A3B3C] flex items-center justify-between">
-                            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Payout Breakdown</h2>
+                            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                                {isSatellite ? 'Seat Breakdown' : 'Payout Breakdown'}
+                            </h2>
                             <button onClick={fetchPayouts} className="text-[#1877F2] text-xs flex items-center gap-1">
                                 <RefreshCw className="w-3 h-3" /> Recalculate
                             </button>
@@ -248,12 +378,18 @@ export default function TDPayouts() {
                                             <p className="text-sm text-[#E4E6EB] truncate">
                                                 {slot.player_name || <span className="text-[#B0B3B8] italic">TBD</span>}
                                             </p>
-                                            <p className="text-xs text-[#B0B3B8]">{slot.percentage}%</p>
+                                            <p className="text-xs text-[#B0B3B8]">
+                                                {slot.is_seat
+                                                    ? `Seat, ${formatMoney(slot.amount)} Value`
+                                                    : slot.is_bubble
+                                                        ? 'Bubble, Cash Prize'
+                                                        : `${slot.percentage}%`}
+                                            </p>
                                         </div>
 
                                         {/* Auto Amount */}
-                                        <div className="text-right text-xs text-[#B0B3B8] flex-shrink-0 w-16">
-                                            {formatMoney(slot.amount)}
+                                        <div className={`text-right text-xs flex-shrink-0 w-16 ${slot.is_seat ? 'text-[#1877F2] font-medium' : 'text-[#B0B3B8]'}`}>
+                                            {slot.is_seat ? 'Seat' : formatMoney(slot.amount)}
                                         </div>
 
                                         {/* Override Input */}

@@ -303,6 +303,21 @@ export default function TDPlayers() {
           if (res.data?.promoted_alternate) {
             const pa = res.data.promoted_alternate;
             setToast({ type: 'success', text: `Alternate ${pa.player_name || 'Player'} Seated At Table ${pa.table_number}, Seat ${pa.seat_number}` });
+          } else if (res.data?.bounty?.awarded) {
+            // Tell the TD exactly what the cage owes on this knockout, and in
+            // a PKO what the eliminator's own head is now worth.
+            const b = res.data.bounty;
+            setToast({
+              type: 'success',
+              text: b.mode === 'pko'
+                ? `Knockout Paid $${Number(b.cash).toLocaleString()} In Cash. $${Number(b.to_head).toLocaleString()} Added To The Eliminator, Their Bounty Is Now $${Number(b.eliminator_bounty_value).toLocaleString()}.`
+                : `Bounty Paid $${Number(b.cash).toLocaleString()}.`
+            });
+          } else if (res.data?.wonSeat) {
+            setToast({
+              type: 'success',
+              text: `${player.player_name || 'Player'} Won A Seat Worth $${Number(res.data.payoutAmount || 0).toLocaleString()}.`
+            });
           }
         } else {
           setToast({ type: 'error', text: res.error?.message || res.error || 'Elimination Failed.' });
@@ -851,9 +866,19 @@ export default function TDPlayers() {
                 <h3 className="text-lg font-bold text-white">{confirmAction.message}</h3>
                 <p className="text-sm text-[#B0B3B8] mt-1">{confirmAction.detail}</p>
               </div>
-              {confirmAction.type === 'eliminate' && floor?.tournament?.bounty_amount > 0 && (
+              {confirmAction.type === 'eliminate' && floor?.stats?.bounty_per_entry > 0 && (
                 <div className="mb-4 text-left">
-                  <label className="text-xs text-[#B0B3B8] mb-1 block">Eliminated By, Awards ${floor.tournament.bounty_amount} Bounty</label>
+                  {/* PKO: the head is worth whatever the busted player has
+                      accumulated, and half of it goes onto the eliminator. */}
+                  <label className="text-xs text-[#B0B3B8] mb-1 block">
+                    {String(floor?.tournament?.tournament_type || '').toLowerCase() === 'pko'
+                      ? `Eliminated By, Takes Half Of A $${(
+                          Number(confirmAction.player?.bounty_value) > 0
+                            ? Number(confirmAction.player.bounty_value)
+                            : Number(floor.stats.bounty_per_entry)
+                        ).toLocaleString()} Bounty In Cash And Adds The Other Half To Their Own`
+                      : `Eliminated By, Awards $${Number(floor.stats.bounty_per_entry).toLocaleString()} Bounty`}
+                  </label>
                   <select value={eliminatorId} onChange={e => setEliminatorId(e.target.value)}
                     className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1877F2]">
                     <option value="">Unknown, No Bounty Awarded</option>
