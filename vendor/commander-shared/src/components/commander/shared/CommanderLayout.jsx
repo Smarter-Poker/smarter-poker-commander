@@ -1,15 +1,15 @@
 /**
- * Commander Layout — Global Header Component
+ * Commander Layout - Global Header Component
  * Provides the consistent Club Commander top bar across ALL pages:
  *   [☰ Hamburger] [← Back] .............. [CLUB COMMANDER / Venue Name]
  * 
  * Tier-gated sidebar: items show 🔒 when locked for current tier.
  * 
  * Props:
- *   title       — page title for <Head> tag
- *   backHref    — where Back button navigates (default: /commander/dashboard)
- *   hideBack    — set true on dashboard to hide the back button
- *   children    — page content
+ *   title       - page title for <Head> tag
+ *   backHref    - where Back button navigates (default: /commander/dashboard)
+ *   hideBack    - set true on dashboard to hide the back button
+ *   children    - page content
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
@@ -225,7 +225,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         const res = await fetch(`/api/social/pages?linked_venue_id=${staff.venue_id}`);
         const json = await res.json();
         if (json.success && json.data && json.data.length > 0) {
-          // Already has a page, no need to remind — store the page ID for hamburger link
+          // Already has a page, no need to remind - store the page ID for hamburger link
           setClubPageId(json.data[0].id);
           return;
         }
@@ -365,7 +365,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
 
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
-          // PIN-only staff session — no Supabase auth, no switcher
+          // PIN-only staff session - no Supabase auth, no switcher
           if (!cancelled) setAccounts({ clubs: [], staff_venues: [], home_groups: [] });
           return;
         }
@@ -458,7 +458,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         permissions: json.permissions || {},
       };
       localStorage.setItem('commander_staff', JSON.stringify(staffSession));
-      // Remember the choice so future logins land on this venue (owner only —
+      // Remember the choice so future logins land on this venue (owner only -
       // check-subscription resolves preferred venue against owned subs)
       try {
         if (json.role === 'owner') {
@@ -758,12 +758,30 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           opacity: 0.6;
           cursor: wait;
         }
+        .cmd-switcher-text {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1px;
+        }
         .cmd-switcher-name {
           flex: 1;
           min-width: 0;
+          max-width: 100%;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        .cmd-switcher-sub {
+          font-size: 10px;
+          font-weight: 500;
+          color: #666;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
         }
         .cmd-switcher-type {
           font-size: 10px;
@@ -1001,7 +1019,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           <div className="cmd-global-center">
             {title && !hideBack && (
               <div className="cmd-global-page-title">
-                {title.replace(/\s*\|.*$/, '').replace(/^Commander\s*[—:|-]\s*/, '')}
+                {title.replace(/\s*\|.*$/, '').replace(/^Commander\s*[-:|\u2014]\s*/, '')}
               </div>
             )}
           </div>
@@ -1100,7 +1118,14 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                         ) : (
                           <Building2 size={16} />
                         )}
-                        <span className="cmd-switcher-name">{club.venue?.name || 'My Venue'}</span>
+                        <span className="cmd-switcher-text">
+                          <span className="cmd-switcher-name">{club.venue?.name || 'My Venue'}</span>
+                          {(club.venue?.city || club.venue?.state) && (
+                            <span className="cmd-switcher-sub">
+                              {[club.venue?.city, club.venue?.state].filter(Boolean).join(', ')}
+                            </span>
+                          )}
+                        </span>
                         <span className="cmd-switcher-type">{getTierConfig(club.tier)?.name || 'Club'}</span>
                         {isCurrent && <Check size={15} />}
                         {isSwitching && <Loader2 size={15} className="cmd-switcher-spin" />}
@@ -1126,7 +1151,14 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                         ) : (
                           <Users size={16} />
                         )}
-                        <span className="cmd-switcher-name">{sv.venue?.name || 'Venue'}</span>
+                        <span className="cmd-switcher-text">
+                          <span className="cmd-switcher-name">{sv.venue?.name || 'Venue'}</span>
+                          {(sv.venue?.city || sv.venue?.state) && (
+                            <span className="cmd-switcher-sub">
+                              {[sv.venue?.city, sv.venue?.state].filter(Boolean).join(', ')}
+                            </span>
+                          )}
+                        </span>
                         <span className="cmd-switcher-type">{roleLabel}</span>
                         {isCurrent && <Check size={15} />}
                         {isSwitching && <Loader2 size={15} className="cmd-switcher-spin" />}
@@ -1145,8 +1177,15 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                       aria-label={`Open home game ${group.name}`}
                     >
                       <Home size={16} />
-                      <span className="cmd-switcher-name">{group.name}</span>
-                      <span className="cmd-switcher-type">Home Game</span>
+                      <span className="cmd-switcher-text">
+                        <span className="cmd-switcher-name">{group.name}</span>
+                        {group.member_count > 0 && (
+                          <span className="cmd-switcher-sub">
+                            {group.member_count.toLocaleString()} {group.member_count === 1 ? 'member' : 'members'}
+                          </span>
+                        )}
+                      </span>
+                      <span className="cmd-switcher-type">{group.role === 'admin' ? 'Admin' : 'Home Game'}</span>
                     </button>
                   ))}
                   <button

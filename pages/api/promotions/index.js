@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -69,11 +69,14 @@ async function listPromotions(req, res) {
         const { data: authData } = await getSupabase().auth.getUser(token);
         const user = authData?.user;
         if (user) {
+          // MULTI-CLUB FIX: limit(1) — unscoped maybeSingle errors for
+          // users with staff rows at 2+ venues
           const { data: staff } = await getSupabase()
             .from('commander_staff')
             .select('venue_id')
-            .eq('user_id', user.id)
+            .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
             .eq('is_active', true)
+            .limit(1)
             .maybeSingle();
           if (staff) resolvedVenueId = staff.venue_id;
         }

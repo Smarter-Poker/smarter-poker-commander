@@ -4,7 +4,7 @@
  * PUT  /api/commander/table-assignments - Assign a table to a mode (inactive/cash/tournament)
  * POST /api/commander/table-assignments - Close a table (end all sessions, set inactive)
  *
- * Auth: guardManager — uses x-staff-session header for Commander staff PIN sessions.
+ * Auth: guardManager - uses x-staff-session header for Commander staff PIN sessions.
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardManager } from '../../src/lib/commander/auth';
@@ -58,11 +58,14 @@ export default async function handler(req, res) {
             const { data: authData } = await getSupabase().auth.getUser(token);
             const user = authData?.user;
             if (user) {
+              // MULTI-CLUB FIX: limit(1) — unscoped maybeSingle errors for
+              // users with staff rows at 2+ venues
               const { data: staff } = await getSupabase()
                 .from('commander_staff')
                 .select('venue_id')
-                .eq('user_id', user.id)
+                .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
                 .eq('is_active', true)
+                .limit(1)
                 .maybeSingle();
               venueId = staff?.venue_id;
             }
@@ -205,7 +208,7 @@ async function handlePut(req, res, venueId, staffUserId) {
     return res.status(400).json({ success: false, error: 'mode must be inactive, cash, or tournament' });
   }
   if (mode === 'cash' && game_type && !stakes) {
-    // stakes is optional — only validate if game_type is provided
+    // stakes is optional - only validate if game_type is provided
   }
 
   // Verify table belongs to venue
@@ -218,7 +221,7 @@ async function handlePut(req, res, venueId, staffUserId) {
 
   if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
 
-  // Build update — persist BOTH mode and table_purpose as source of truth
+  // Build update - persist BOTH mode and table_purpose as source of truth
   // mode values: 'cash', 'tournament', 'inactive'
   // table_purpose values: 'cash_game', 'tournament', null
   const tablePurpose = mode === 'cash' ? 'cash_game' : mode === 'tournament' ? 'tournament' : null;
@@ -315,7 +318,7 @@ async function handleClose(req, res, venueId, staffUserId) {
     .eq('venue_id', venueId)
     .eq('table_number', table.table_number);
 
-  // Set table to inactive — sync BOTH mode and table_purpose
+  // Set table to inactive - sync BOTH mode and table_purpose
   const { data: updated } = await getSupabase()
     .from('commander_tables')
     .update({

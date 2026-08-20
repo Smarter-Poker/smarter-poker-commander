@@ -61,11 +61,14 @@ export default async function handler(req, res) {
           const { data: authData } = await getSupabase().auth.getUser(token);
           const user = authData?.user;
           if (user) {
+            // MULTI-CLUB FIX: limit(1) — unscoped maybeSingle errors for
+            // users with staff rows at 2+ venues
             const { data: staff } = await getSupabase()
               .from('commander_staff')
               .select('venue_id')
-              .eq('user_id', user.id)
+              .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
               .eq('is_active', true)
+              .limit(1)
               .maybeSingle();
             if (staff) venueFilter = staff.venue_id;
           }
@@ -137,7 +140,7 @@ export default async function handler(req, res) {
               if (realMatch) {
                 memberByStaffId[s.id] = realMatch;
               } else {
-                // No match at all — safe to auto-create
+                // No match at all - safe to auto-create
                 const memberNum = `STAFF-${Date.now().toString(36).toUpperCase()}`;
                 const { data: newMember, error: createErr } = await getSupabase()
                   .from('commander_members')
@@ -224,7 +227,7 @@ export default async function handler(req, res) {
           }
         }
       } else {
-        // No search query — show recent members alongside staff
+        // No search query - show recent members alongside staff
         try {
           const { data: recentMembers } = await getSupabase()
             .from('commander_members')

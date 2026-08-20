@@ -137,7 +137,7 @@ export default function RegisterPage() {
     let authBlob = {};
     try {
       authBlob = JSON.parse(window.localStorage.getItem('smarter-poker-auth') || '{}');
-    } catch { /* corrupted blob — treat as signed-out */ }
+    } catch { /* corrupted blob - treat as signed-out */ }
 
     const user = authBlob?.user || null;
     const accessToken =
@@ -160,11 +160,11 @@ export default function RegisterPage() {
     setExistingAccount(true);
 
     // Probe commander access. If already activated and we have a return path,
-    // send them straight through — no need to re-register.
+    // send them straight through - no need to re-register.
     let cancelled = false;
     const finish = () => { if (!cancelled) setPreCheckDone(true); };
 
-    // Hard 8-second timeout — if the API is down or slow, we MUST unblock the UI.
+    // Hard 8-second timeout - if the API is down or slow, we MUST unblock the UI.
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('check-access timeout')), 8000)
     );
@@ -341,7 +341,7 @@ export default function RegisterPage() {
 
       // 2026-07-25 audit fix: the existing-account path now REQUIRES the
       // caller's Supabase session (server verifies the signed-in user matches
-      // the email) — attach the token whenever we have one.
+      // the email) - attach the token whenever we have one.
       let sessionToken = null;
       try {
         const blob = JSON.parse(window.localStorage.getItem('smarter-poker-auth') || '{}');
@@ -399,6 +399,10 @@ export default function RegisterPage() {
           console.warn('Promo redemption error:', e);
         }
       }
+
+      // New venue exists now — drop the hamburger switcher's cached club
+      // list so the new club appears immediately, not after the 5-min TTL
+      try { sessionStorage.removeItem('commander_accounts_cache'); } catch { /* ignore */ }
 
       setRegistrationResult(data);
       setStep(4);
@@ -465,7 +469,7 @@ export default function RegisterPage() {
         <div className="text-center mb-6">
           <Image src="/images/club-commander-logo.jpg" alt="Club Commander" width={1584} height={656} className="w-full max-w-md mx-auto rounded-lg" />
           <p className="text-[#B0B3B8] mt-4">{headerSubtitle}</p>
-          {/* Entry-port indicator — same signup screen is reached from
+          {/* Entry-port indicator - same signup screen is reached from
               Social Pages, Poker Near Me, and Club Commander. Surface the
               `from` query so users see continuity across surfaces. */}
           {isHomeGameFlow && router?.query?.from && (() => {

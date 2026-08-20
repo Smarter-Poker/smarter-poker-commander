@@ -59,11 +59,14 @@ export default async function handler(req, res) {
             const { data: authData } = await getSupabase().auth.getUser(token);
             const user = authData?.user;
             if (user) {
+              // MULTI-CLUB FIX: limit(1) — unscoped maybeSingle errors for
+              // users with staff rows at 2+ venues
               const { data: staff } = await getSupabase()
                 .from('commander_staff')
                 .select('venue_id')
-                .eq('user_id', user.id)
+                .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
                 .eq('is_active', true)
+                .limit(1)
                 .maybeSingle();
               venueId = staff?.venue_id;
             }
@@ -115,7 +118,7 @@ export default async function handler(req, res) {
       // POST - Create or Apply
       if (req.method === 'POST') {
         // ═══════════════════════════════════════════════════════════════
-        // APPLY PRESET — Opens tables, activates promotions, creates tournaments
+        // APPLY PRESET - Opens tables, activates promotions, creates tournaments
         // ═══════════════════════════════════════════════════════════════
         if (req.query.action === 'apply' && req.query.id) {
           const { data: rawPreset, error: fetchErr } = await getSupabase()
@@ -197,7 +200,7 @@ export default async function handler(req, res) {
               // Calculate scheduled start from offset or explicit time
               let scheduledStart;
               if (tmpl.start_time) {
-                // start_time is "HH:MM" format — combine with today's date
+                // start_time is "HH:MM" format - combine with today's date
                 const [h, m] = tmpl.start_time.split(':').map(Number);
                 scheduledStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
               } else if (tmpl.start_time_offset_minutes) {

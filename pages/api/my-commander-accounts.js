@@ -1,7 +1,7 @@
 /**
- * My Commander Accounts — multi-club / home-game switcher backend
+ * My Commander Accounts - multi-club / home-game switcher backend
  *
- * GET  — list every Commander context the authenticated user can operate:
+ * GET  - list every Commander context the authenticated user can operate:
  *          clubs:        active/trialing commander_subscriptions they OWN
  *                        (deduped per venue, newest sub wins, with joined
  *                        poker_venues row + club logo from venue settings)
@@ -12,7 +12,7 @@
  *                        (member role owner/admin, status approved), deduped
  *        Returns { clubs: [...], staff_venues: [...], home_groups: [...] }
  *
- * POST — switch the active venue context. Body: { venue_id }.
+ * POST - switch the active venue context. Body: { venue_id }.
  *        Owner path:  caller OWNS an active/trialing subscription for that
  *                     venue -> owner staff_session + full owner permissions.
  *        Staff path:  caller has an ACTIVE commander_staff row for that
@@ -23,7 +23,7 @@
  *        /api/check-subscription shape so the client can rebuild the
  *        commander_venue / commander_subscription / commander_staff
  *        localStorage state identically. staff_session is HMAC-signed
- *        server-side (signStaffSession) — never forgeable client-side.
+ *        server-side (signStaffSession) - never forgeable client-side.
  *
  * Called via /api/commander/my-commander-accounts (next.config rewrite).
  */
@@ -32,6 +32,7 @@ import { signStaffSession, DEFAULT_PERMISSIONS } from '../../src/lib/commander/a
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
+import { logAction, AuditActions } from '../../src/lib/commander/audit';
 
 let _supabase = null;
 function getSupabase() {
@@ -51,7 +52,7 @@ async function getAuthedUser(req) {
     return data.user;
 }
 
-// Owner permissions — mirrors the map login.js has always written for owners.
+// Owner permissions - mirrors the map login.js has always written for owners.
 const OWNER_PERMISSIONS = {
     manage_games: true,
     manage_waitlist: true,
@@ -186,7 +187,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ clubs, staff_venues, home_groups });
         }
 
-        // ── POST — switch active venue ──────────────────────────────────
+        // ── POST - switch active venue ──────────────────────────────────
         const venueId = req.body?.venue_id;
         if (venueId === undefined || venueId === null || venueId === '') {
             return res.status(400).json({ error: 'venue_id required' });
@@ -214,6 +215,19 @@ export default async function handler(req, res) {
                 venue_id: subscription.venue_id,
                 role: 'owner',
             });
+            // Audit trail: venue-context switches mint new sessions, so they
+            // are logged like logins (same category the PIN verifier uses)
+            try {
+                await logAction(AuditActions.AUTH_LOGIN, {
+                    venueId: subscription.venue_id,
+                    userId: user.id,
+                    targetType: 'poker_venue',
+                    targetId: subscription.venue_id,
+                    targetName: subscription.venue?.name || null,
+                    metadata: { via: 'club_switcher', role: 'owner' },
+                    req,
+                });
+            } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
             return res.status(200).json({
                 subscription,
                 staff_session,
@@ -222,7 +236,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // Path 2: ACTIVE STAFF at the venue — grant exactly what PIN login
+        // Path 2: ACTIVE STAFF at the venue - grant exactly what PIN login
         // would grant that staff member (their role + merged permissions).
         const { data: staffRow, error: staffErr } = await db
             .from('commander_staff')
@@ -265,6 +279,19 @@ export default async function handler(req, res) {
             role: staffRow.role,
             display_name: name,
         });
+
+        try {
+            await logAction(AuditActions.AUTH_LOGIN, {
+                venueId: staffRow.venue_id,
+                userId: user.id,
+                staffId: staffRow.id,
+                targetType: 'poker_venue',
+                targetId: staffRow.venue_id,
+                targetName: subscription.venue?.name || null,
+                metadata: { via: 'club_switcher', role: staffRow.role },
+                req,
+            });
+        } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
         return res.status(200).json({
             subscription,
