@@ -12,7 +12,7 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import SEOHead from '../../src/components/seo/SEOHead';
 import Link from 'next/link';
-import { Loader2, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ArrowRight, Mail, Lock, ChevronRight, UserPlus, ShieldCheck, AlertCircle, Check } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 
 export default function CommanderLogin() {
@@ -186,322 +186,79 @@ export default function CommanderLogin() {
     }
     
     checkExistingSession();
-    return () => {
-      clearTimeout(safetyTimeout);
-      clearTimeout(stuckTimeout);
-    };
-  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Handle OAuth sign in (Google)
-  const handleOAuthSignIn = async (provider) => {
-    setError(null);
-    setLoading(true);
-    try {
-      // Store flag so callback knows to redirect to commander
-      localStorage.setItem('commander_login_origin', 'true');
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback` } });
-      if (error) throw error;
-    } catch (err) {
-      console.warn(`${provider} sign in error:`, err);
-      setError(err.message || `Failed To Sign In With ${provider}`);
-      setLoading(false);
-    }
-  };
-
-  // Shared post-auth completion: subscription check + signed staff session
-  // storage + redirect. Used by password login AND the OAuth return path.
-  async function completeLogin(user, accessToken) {
-      const data = { user, session: { access_token: accessToken } };
-      // HARDENED: 15-second timeout on subscription check
-      const abortController = new AbortController();
-      const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
-
-      // Check if user has a commander subscription (server-side to bypass RLS)
-      // CRITICAL FIX: Send JWT Bearer token - check-subscription requires auth (BUG #260)
-      // 2026-07-25 audit fix: use the /api/commander/* path so this works on
-      // BOTH origins (bare /api/check-subscription 404'd when the login page
-      // was served through the smarter.poker/commander proxy), and parse the
-      // response body before throwing so real error messages surface.
-      // Multi-club support: pass the last venue the user switched to (set by
-      // the hamburger club switcher) so login restores that club, not just
-      // the newest subscription. Server validates ownership.
-      let preferredVenueId = null;
-      try { preferredVenueId = localStorage.getItem('commander_active_venue_id') || null; } catch { /* ignore */ }
-
-      const subRes = await fetch('/api/commander/check-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${data.session.access_token}` },
-        body: JSON.stringify({ userId: data.user.id, preferred_venue_id: preferredVenueId }),
-        signal: abortController.signal });
-      clearTimeout(fetchTimeout);
-      const subData = await subRes.json().catch(() => ({}));
-
-      if (!subRes.ok || !subData.subscription) {
-        setError(subData.error || 'No Active Club Commander Subscription Found For This Account.');
-        setLoading(false);
-        return false;
-      }
-
-      const subscription = subData.subscription;
-
-      // Store venue info and staff session for dashboard access
-      localStorage.setItem('commander_venue', JSON.stringify(subscription.venue));
-      localStorage.setItem('commander_subscription', JSON.stringify(subscription));
-
-      // Dashboard checks for commander_staff - the server now returns an
-      // HMAC-SIGNED owner session (2026-07-25 audit fix). Merge display
-      // extras locally but NEVER touch the signed fields
-      // (user_id/venue_id/role/session_ts/sig) or the signature breaks.
-      const staffSession = {
-        ...(subData.staff_session || {
-          user_id: data.user.id,
-          role: 'owner',
-          venue_id: subscription.venue_id,
-        }),
-        email: data.user.email,
-        display_name: subscription.billing_name || data.user.user_metadata?.full_name || data.user.user_metadata?.name || data.user.email,
-        venue_name: subscription.venue?.name || 'My Venue',
-        permissions: {
-          manage_games: true,
-          manage_waitlist: true,
-          manage_staff: true,
-          manage_tables: true,
-          manage_tournaments: true,
-          manage_settings: true,
-          view_analytics: true,
-          view_reports: true,
-          send_announcements: true }
-      };
-      localStorage.setItem('commander_staff', JSON.stringify(staffSession));
-
-      // Drop any previous user's cached club/home-game switcher list
-      try { sessionStorage.removeItem('commander_accounts_cache'); } catch { /* ignore */ }
-
-      // Persist session across browser restarts if "Remember Me" is checked
-      if (rememberMe) {
-        localStorage.setItem('commander_remember', 'true');
-      } else {
-        localStorage.removeItem('commander_remember');
-      }
-
-      // Use window.location for guaranteed redirect (router.replace can silently fail)
-      // Check for stored return URL (set by commanderFetch on 401 session expiry)
-      let redirectTo = '/commander/dashboard';
-      try {
-        const returnUrl = sessionStorage.getItem('commander_return_url');
-        if (returnUrl && returnUrl.startsWith('/commander/')) {
-          redirectTo = returnUrl;
-          sessionStorage.removeItem('commander_return_url');
-        }
-      } catch { /* sessionStorage may be unavailable */ }
-      window.location.href = redirectTo;
-      return true;
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!email || !password) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Sign in with Supabase
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (authError) throw authError;
-
-      await completeLogin(data.user, data.session.access_token);
-    } catch (err) {
-      console.warn('Login error:', err);
-      if (err.name === 'AbortError') {
-        setError('Login Timed Out. Please Check Your Connection And Try Again.');
-      } else {
-        setError(err.message || 'Invalid Email Or Password');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── SSO Continue handler ─────────────────────────────────────────────
-  // Called when the user clicks "Continue as [email]". Reads their current
-  // smarter.poker JWT from localStorage, calls the hub SSO endpoint to get
-  // a one-time bridge token, then redirects to /auth/sso on Commander to
-  // finish the session transfer.
-  const handleSSOContinue = async () => {
-    setError(null);
-    setSsoLoading(true);
-    try {
-      // Read the current smarter.poker session token
-      let accessToken = null;
-      try {
-        const authRaw = localStorage.getItem('smarter-poker-auth');
-        if (authRaw) {
-          const auth = JSON.parse(authRaw);
-          accessToken = auth?.access_token;
-        }
-        // Fallback: check Supabase default storage keys
-        if (!accessToken) {
-          const sbKeys = Object.keys(localStorage || {}).filter(
-            k => k.startsWith('sb-') && k.endsWith('-auth-token')
-          );
-          if (sbKeys.length > 0) {
-            const raw = localStorage.getItem(sbKeys[0]);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              accessToken = parsed?.access_token;
-            }
-          }
-        }
-      } catch (e) { /* localStorage unavailable */ }
-
-      if (!accessToken) {
-        // No local token - fall back to supabase.auth.getSession()
-        const { data: { session } } = await supabase.auth.getSession();
-        accessToken = session?.access_token;
-      }
-
-      if (!accessToken) {
-        setError('Could Not Read Your Smarter.Poker Session. Please Sign In Manually.');
-        setSsoLoading(false);
-        return;
-      }
-
-      // Call the hub SSO endpoint - this works when Commander is accessed via
-      // smarter.poker/commander/* rewrite. When accessed directly at
-      // commander.smarter.poker, this URL hits the main hub API.
-      const hubOrigin = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
-      const ssoRes = await fetch(`${hubOrigin}/api/auth/commander-sso`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        credentials: 'include',
-      });
-
-      const ssoData = await ssoRes.json().catch(() => ({}));
-
-      if (!ssoRes.ok || !ssoData.url) {
-        setError(ssoData.error || 'SSO Failed. Please Sign In With Your Email And Password Below.');
-        setSsoLoading(false);
-        return;
-      }
-
-      // Redirect to Commander SSO landing page with the one-time token
-      window.location.href = ssoData.url;
-    } catch (err) {
-      console.warn('[SSO] Continue error:', err);
-      setError('SSO Sign-In Failed. Please Use Email And Password Below.');
-      setSsoLoading(false);
-    }
-  };
-
-
-  // OAuth return path (/auth/callback redirects here with ?oauth=1 once the
-  // Supabase session is established) - finish the subscription check.
-  useEffect(() => {
-    if (router.query.oauth !== '1') return;
-    (async () => {
-      try {
-        setLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          await completeLogin(session.user, session.access_token);
-        } else {
-          setError('Sign-In Could Not Be Completed. Please Try Again.');
-        }
-      } catch (err) {
-        console.warn('OAuth completion error:', err);
-        setError(err.message || 'Sign-In Could Not Be Completed.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.query.oauth]);
-
-  // Show loading while checking for existing session
-  if (checkingSession) return (
-    <div className="min-h-screen bg-[#18191A] flex flex-col items-center justify-center p-4">
-      <div className="text-[#8A8D91] text-sm flex items-center gap-2 mb-4">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        Restoring Session...
+    return (
+    <div className="min-h-screen bg-[#050914] flex flex-col items-center justify-center p-4 relative overflow-hidden font-rajdhani">
+      {/* Dynamic Background Effects */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle,rgba(0,120,255,0.05)_0%,rgba(0,0,0,0)_70%)]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] rounded-full bg-[radial-gradient(circle,rgba(0,212,255,0.02)_0%,rgba(0,0,0,0)_60%)]"></div>
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: 0.2 }}></div>
       </div>
-      {showReset && (
-        <button
-          onClick={() => {
-            localStorage.removeItem('commander_staff');
-            localStorage.removeItem('commander_remember');
-            localStorage.removeItem('commander-auth');
-            setCheckingSession(false);
-          }}
-          className="text-xs text-[#EF4444] border border-[#EF444440] rounded px-4 py-2 hover:bg-[#EF444410] transition-colors"
-        >
-          Reset Session & Sign In
-        </button>
-      )}
-    </div>
-  );
 
-  return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
       <SEOHead
         title="Club Commander - Sign In"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
 
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Image src="/images/club-commander-logo.jpg" alt="Club Commander" width={1584} height={656} className="w-full max-w-sm mx-auto rounded-lg" />
+      <div className="relative z-10 w-full max-w-md flex flex-col items-center">
+        {/* Futuristic Metal Logo */}
+        <div className="mb-8 w-full relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#00D4FF]/0 via-[#00D4FF]/20 to-[#00D4FF]/0 blur-lg opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+          <div className="relative w-full border-[3px] border-[#2a3a4a] bg-gradient-to-b from-[#1a2332] to-[#0d1117] p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1),inset_0_0_20px_rgba(0,212,255,0.1)] flex flex-col items-center justify-center overflow-hidden" style={{ clipPath: 'polygon(5% 0, 95% 0, 100% 15%, 100% 85%, 95% 100%, 5% 100%, 0 85%, 0 15%)' }}>
+            {/* Corner Accents */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-[#00D4FF]/50"></div>
+            <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-[#00D4FF]/50"></div>
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-[#00D4FF]/50"></div>
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-[#00D4FF]/50"></div>
+            
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-300 to-gray-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] text-center font-orbitron uppercase" style={{ filter: 'drop-shadow(0 0 10px rgba(0,212,255,0.3))' }}>
+              Club<br />Commander
+            </h1>
+            <div className="flex items-center gap-3 mt-3 w-full justify-center">
+              <div className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#00D4FF]/50"></div>
+              <p className="text-[10px] tracking-[0.2em] text-[#00D4FF] uppercase font-semibold">
+                Powered by Smarter.Poker
+              </p>
+              <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#00D4FF]/50"></div>
+            </div>
+          </div>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-[#242526] rounded-xl p-8 border border-[#3A3B3C]">
-
-          {/* ── SSO Bridge Button ── */}
-          {/* Shown when user is already logged into smarter.poker (same-origin/rewrite case)
-              or when navigator from the hub passes their session via localStorage sharing. */}
+        {/* Main Panel */}
+        <div className="w-full bg-[#030812]/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-[#00D4FF]/30 shadow-[0_0_40px_rgba(0,150,255,0.15),inset_0_0_20px_rgba(0,212,255,0.05)]">
+          
+          {/* SSO Bridge Button */}
           {ssoEmail && (
-            <div className="mb-4">
+            <div className="mb-6">
               <button
                 type="button"
                 onClick={handleSSOContinue}
                 disabled={ssoLoading || loading}
-                className="w-full bg-gradient-to-r from-[#1877F2] to-[#0d6ae0] hover:from-[#1664d9] hover:to-[#0a5ec0] disabled:opacity-60 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-500/20"
+                className="w-full bg-gradient-to-r from-[#071b36] to-[#041022] hover:from-[#0a2448] hover:to-[#06152d] border border-[#00D4FF]/40 disabled:opacity-60 text-white py-3 px-4 rounded-xl flex items-center justify-between transition-all shadow-[0_0_15px_rgba(0,212,255,0.1)] group"
               >
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-[#0070f3] flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(0,112,243,0.8)] group-hover:shadow-[0_0_15px_rgba(0,112,243,1)] transition-shadow">
+                    SP
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-xs text-[#00D4FF]/70 uppercase tracking-wider font-semibold">Continue As</span>
+                    <span className="text-sm font-medium truncate max-w-[180px]">{ssoEmail}</span>
+                  </div>
+                </div>
                 {ssoLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Signing In…</span>
-                  </>
+                  <Loader2 className="w-5 h-5 text-[#00D4FF] animate-spin" />
                 ) : (
-                  <>
-                    {/* Smarter.Poker logo mark */}
-                    <span className="text-lg font-bold tracking-tight">SP</span>
-                    <span className="flex flex-col text-left leading-tight">
-                      <span className="text-xs text-blue-200 font-normal">Continue As</span>
-                      <span className="truncate max-w-[220px]">{ssoEmail}</span>
-                    </span>
-                    <ArrowRight className="w-4 h-4 ml-auto flex-shrink-0" />
-                  </>
+                  <ChevronRight className="w-5 h-5 text-[#00D4FF] group-hover:translate-x-1 transition-transform" />
                 )}
               </button>
-              <p className="text-center text-[#8A8D91] text-xs mt-2">
-                Using Your Smarter.Poker Account
-              </p>
+              
+              <div className="relative my-6 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#1a3a5a] to-transparent"></div>
+                </div>
+                <span className="relative px-4 bg-[#030812] text-[#4a6a8a] text-xs font-semibold tracking-widest uppercase">Or</span>
+              </div>
             </div>
           )}
 
@@ -511,7 +268,7 @@ export default function CommanderLogin() {
               type="button"
               onClick={() => handleOAuthSignIn('google')}
               disabled={loading}
-              className="w-full bg-white hover:bg-gray-100 text-[#3c4043] font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors border border-gray-300"
+              className="w-full bg-white hover:bg-gray-100 text-[#3c4043] font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-colors border border-transparent hover:border-gray-300 shadow-md"
             >
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -523,73 +280,90 @@ export default function CommanderLogin() {
             </button>
           </div>
 
-          <div className="relative my-6">
+          <div className="relative my-6 flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#3A3B3C]"></div>
+              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#1a3a5a] to-transparent"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#242526] text-[#B0B3B8]">Or Sign In With Email</span>
-            </div>
+            <span className="relative px-4 bg-[#030812] text-[#4a6a8a] text-xs font-semibold tracking-widest uppercase">Or Sign In With Email</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-[#E4E6EB] text-sm font-medium mb-2">
-                Email
+              <label className="block text-[#E4E6EB] text-sm font-medium mb-2 pl-1">
+                Email Address
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#3A3B3C] border border-[#4E4F50] rounded-lg px-4 py-3 text-[#E4E6EB] placeholder-[#8A8D91] focus:outline-none focus:border-[#1877F2]"
-                placeholder="you@example.com"
-                required
-              />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className="w-5 h-5 text-[#4a6a8a] group-focus-within:text-[#00D4FF] transition-colors" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-[#050b14] border border-[#1a3a5a] rounded-xl pl-11 pr-4 py-3.5 text-[#E4E6EB] placeholder-[#3a5a7a] focus:outline-none focus:border-[#00D4FF] focus:shadow-[0_0_15px_rgba(0,212,255,0.2)] transition-all"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-[#E4E6EB] text-sm font-medium mb-2">
+              <label className="block text-[#E4E6EB] text-sm font-medium mb-2 pl-1">
                 Password
               </label>
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="w-5 h-5 text-[#4a6a8a] group-focus-within:text-[#00D4FF] transition-colors" />
+                </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#3A3B3C] border border-[#4E4F50] rounded-lg px-4 py-3 text-[#E4E6EB] placeholder-[#8A8D91] focus:outline-none focus:border-[#1877F2] pr-12"
+                  className="w-full bg-[#050b14] border border-[#1a3a5a] rounded-xl pl-11 pr-12 py-3.5 text-[#E4E6EB] placeholder-[#3a5a7a] focus:outline-none focus:border-[#00D4FF] focus:shadow-[0_0_15px_rgba(0,212,255,0.2)] transition-all"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8D91] hover:text-[#E4E6EB]"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4a6a8a] hover:text-[#00D4FF] transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-[#4E4F50] bg-[#3A3B3C] text-[#1877F2] focus:ring-[#1877F2] focus:ring-offset-0 cursor-pointer accent-[#1877F2]"
-              />
-              <label htmlFor="rememberMe" className="text-[#B0B3B8] text-sm cursor-pointer select-none">
-                Remember Me
-              </label>
+            {/* Extras Row */}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 opacity-0 absolute inset-0 cursor-pointer z-10"
+                  />
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${rememberMe ? 'bg-[#0070f3] border-[#0070f3]' : 'bg-[#050b14] border-[#1a3a5a]'}`}>
+                    {rememberMe && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                  </div>
+                </div>
+                <label htmlFor="rememberMe" className="text-[#B0B3B8] text-sm cursor-pointer select-none hover:text-white transition-colors">
+                  Remember Me
+                </label>
+              </div>
+              <a href="#" className="text-[#0070f3] hover:text-[#00D4FF] text-sm font-medium transition-colors">
+                Forgot Password?
+              </a>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="bg-[#F02849]/10 border border-[#F02849]/30 text-[#F02849] px-4 py-2 rounded-lg text-sm">
-                {error}
+              <div className="bg-[#F02849]/10 border border-[#F02849]/30 text-[#F02849] px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -597,12 +371,14 @@ export default function CommanderLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#1877F2] hover:bg-[#1664d9] disabled:bg-[#3A3B3C] text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full relative group overflow-hidden bg-gradient-to-b from-[#0a2540] to-[#041022] hover:from-[#0f3560] hover:to-[#081b36] border-[2px] border-[#0070f3] disabled:border-[#1a3a5a] disabled:opacity-70 text-white font-bold tracking-widest text-lg uppercase py-3.5 px-6 rounded-xl transition-all shadow-[0_0_20px_rgba(0,112,243,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] flex items-center justify-center gap-2 mt-4"
+              style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00D4FF]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out"></div>
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing In...
+                  <span>Authenticating...</span>
                 </>
               ) : (
                 'Sign In'
@@ -611,29 +387,40 @@ export default function CommanderLogin() {
           </form>
 
           {/* Divider */}
-          <div className="relative my-6">
+          <div className="relative my-8 flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#3A3B3C]"></div>
+              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#1a3a5a] to-transparent"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#242526] text-[#B0B3B8]">New To Club Commander?</span>
-            </div>
+            <span className="relative px-4 bg-[#030812] text-[#4a6a8a] text-xs font-semibold tracking-widest uppercase">New To Club Commander?</span>
           </div>
 
           {/* Sign Up Link */}
           <Link
             href="/commander/register"
-            className="block w-full bg-[#3A3B3C] hover:bg-[#4E4F50] text-[#E4E6EB] font-semibold py-3 px-6 rounded-lg text-center transition-colors"
+            className="w-full bg-[#050b14] hover:bg-[#0a1526] border border-[#1a3a5a] hover:border-[#2a5a8a] text-[#E4E6EB] font-semibold py-3.5 px-6 rounded-xl text-center transition-colors flex items-center justify-center gap-2"
           >
+            <UserPlus className="w-5 h-5 text-[#8A8D91]" />
             Sign Up
           </Link>
+          
+          <div className="mt-8 flex items-center justify-center gap-2 text-[#4a6a8a]">
+            <ShieldCheck className="w-4 h-4" />
+            <span className="text-xs font-medium tracking-wide">Secure. Encrypted. Trusted.</span>
+          </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[#65676B] text-xs mt-6">
-          Powered By SMARTER.POKER
+        <p className="text-center text-[#4a6a8a] text-xs font-medium tracking-widest uppercase mt-8 pb-4">
+          Powered By <span className="text-[#0070f3] font-bold">SMARTER.POKER</span>
         </p>
       </div>
+      
+      {/* Global Styles for specific fonts if not present */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+      `}</style>
     </div>
   );
 }
