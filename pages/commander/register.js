@@ -108,7 +108,7 @@ export default function RegisterPage() {
   });
 
   // ─── Step 3: Plan ───────────────────────────────────────────────
-  const [selectedTier, setSelectedTier] = useState(lockedTier || 'charity');
+  const [selectedTier, setSelectedTier] = useState(lockedTier || 'home_games');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Address is required only for the club tier. Home games + charity: optional.
@@ -563,8 +563,8 @@ export default function RegisterPage() {
                 onChange={(e) => setExistingAccount(e.target.checked)}
                 style={{
                   position: 'absolute',
-                  top: '67.3%',
-                  left: '19.4%',
+                  top: '66.9%',
+                  left: '19.1%',
                   width: '2%',
                   height: '1.8%',
                   cursor: 'pointer',
@@ -576,8 +576,8 @@ export default function RegisterPage() {
               {existingAccount && (
                 <div style={{
                   position: 'absolute',
-                  top: '67.3%',
-                  left: '19.4%',
+                  top: '66.9%',
+                  left: '19.1%',
                   width: '1.2%',
                   height: '1.8%',
                   display: 'flex',
@@ -586,7 +586,7 @@ export default function RegisterPage() {
                   pointerEvents: 'none',
                   zIndex: 9
                 }}>
-                  <span className="text-white">✓</span>
+                  <span className="text-[#1877F2] font-bold">✓</span>
                 </div>
               )}
 
@@ -1015,6 +1015,19 @@ export default function RegisterPage() {
                 }}
                 title="Continue"
               />
+              
+              {/* Sign In Link Bottom */}
+              <Link href="/commander/login" style={{
+                  position: 'absolute',
+                  top: '90.5%',
+                  left: '25%',
+                  width: '50%',
+                  height: '5%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+              }} title="Sign In" />
             </form>
           </div>
         </div>
@@ -1046,10 +1059,10 @@ export default function RegisterPage() {
             onClick={() => setSelectedTier('home_games')}
             style={{
               position: 'absolute',
-              top: '40.2%',
-              left: '14.5%',
-              width: '71%',
-              height: '7.7%',
+              top: '40.5%',
+              left: '14.8%',
+              width: '70.4%',
+              height: '7.1%',
               background: 'transparent',
               border: selectedTier === 'home_games' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
@@ -1081,10 +1094,10 @@ export default function RegisterPage() {
             onClick={() => setSelectedTier('charity')}
             style={{
               position: 'absolute',
-              top: '48.8%',
-              left: '14.5%',
-              width: '71%',
-              height: '7.7%',
+              top: '49.1%',
+              left: '14.8%',
+              width: '70.4%',
+              height: '7.1%',
               background: 'transparent',
               border: selectedTier === 'charity' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
@@ -1115,10 +1128,10 @@ export default function RegisterPage() {
             onClick={() => setSelectedTier('club')}
             style={{
               position: 'absolute',
-              top: '57.3%',
-              left: '14.5%',
-              width: '71%',
-              height: '7.7%',
+              top: '57.6%',
+              left: '14.8%',
+              width: '70.4%',
+              height: '7.1%',
               background: 'transparent',
               border: selectedTier === 'club' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
@@ -1151,7 +1164,7 @@ export default function RegisterPage() {
             style={{
               position: 'absolute',
               top: '75.6%',
-              left: '14.1%',
+              left: '14.6%',
               width: '2.2%',
               height: '2.2%',
               cursor: 'pointer',
@@ -1164,7 +1177,7 @@ export default function RegisterPage() {
             <div style={{
               position: 'absolute',
               top: '75.6%',
-              left: '14.1%',
+              left: '14.6%',
               width: '2.2%',
               height: '2.2%',
               display: 'flex',
@@ -1194,6 +1207,19 @@ export default function RegisterPage() {
             }}
             title="Back"
           />
+
+          {/* Sign In Link Bottom */}
+          <Link href="/commander/login" style={{
+              position: 'absolute',
+              top: '90.5%',
+              left: '25%',
+              width: '50%',
+              height: '5%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+          }} title="Sign In" />
 
           {/* Create Free Account Button */}
           <button
@@ -1309,6 +1335,19 @@ export default function RegisterPage() {
               cursor: 'pointer',
               zIndex: 10
           }} title="Sign In To Dashboard" />
+
+          {/* Sign In Link Bottom */}
+          <Link href="/commander/login" style={{
+              position: 'absolute',
+              top: '90.5%',
+              left: '25%',
+              width: '50%',
+              height: '5%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+          }} title="Sign In" />
         </div>
       </div>
     );
