@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Head from 'next/head';
@@ -494,38 +494,68 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
 
 const CalibrationPanel = () => {
     if (!showCalib) return null;
+
+    // Use a ref to store live values without triggering re-renders
+    const liveCalib = useRef(calib);
+
+    const handleSlide = (prop, e) => {
+      const val = parseFloat(e.target.value);
+      
+      // Update DOM immediately
+      const el = document.getElementById('calib-' + activeCalib);
+      if (el) {
+        if (prop === 'l') el.style.left = val + '%';
+        if (prop === 't') el.style.top = val + '%';
+        if (prop === 'w') el.style.width = val + '%';
+        if (prop === 'h') el.style.height = val + '%';
+      }
+      
+      // Update ref silently
+      liveCalib.current = {
+        ...liveCalib.current,
+        [activeCalib]: {
+          ...liveCalib.current[activeCalib],
+          [prop]: val
+        }
+      };
+      
+      // Update the little text label next to the slider manually
+      const labelEl = document.getElementById(`label-${prop}`);
+      if (labelEl) labelEl.innerText = val + '%';
+    };
+
     return (
       <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.9)', padding: 20, zIndex: 9999, color: 'white', border: '1px solid #1877F2', borderRadius: 8, width: 300}}>
-        <div style={{marginBottom: 10}}><b>UI Calibrator</b> (Alt+Shift+C to hide)</div>
-        <select value={activeCalib} onChange={e => setActiveCalib(e.target.value)} style={{color:'black', marginBottom:10, width: '100%', padding: 4}}>
+        <div style={{marginBottom: 10}}><b>UI Calibrator</b></div>
+        <select value={activeCalib} onChange={e => { setActiveCalib(e.target.value); setCalib(liveCalib.current); }} style={{color:'black', marginBottom:10, width: '100%', padding: 4}}>
           {Object.keys(calib).map(k => <option key={k} value={k}>{k}</option>)}
         </select>
         
         <div style={{marginBottom: 8}}>
-          Left: {calib[activeCalib]?.l}%
-          <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.l || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], l: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+          Left: <span id="label-l">{liveCalib.current[activeCalib]?.l}%</span>
+          <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.l || 0} onChange={e => handleSlide('l', e)} style={{width:'100%'}} key={`l-${activeCalib}`} />
         </div>
         <div style={{marginBottom: 8}}>
-          Top: {calib[activeCalib]?.t}%
-          <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.t || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], t: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+          Top: <span id="label-t">{liveCalib.current[activeCalib]?.t}%</span>
+          <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.t || 0} onChange={e => handleSlide('t', e)} style={{width:'100%'}} key={`t-${activeCalib}`} />
         </div>
-        {calib[activeCalib]?.w !== undefined && (
+        {liveCalib.current[activeCalib]?.w !== undefined && (
           <div style={{marginBottom: 8}}>
-            Width: {calib[activeCalib]?.w}%
-            <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.w || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], w: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+            Width: <span id="label-w">{liveCalib.current[activeCalib]?.w}%</span>
+            <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.w || 0} onChange={e => handleSlide('w', e)} style={{width:'100%'}} key={`w-${activeCalib}`} />
           </div>
         )}
-        {calib[activeCalib]?.h !== undefined && (
+        {liveCalib.current[activeCalib]?.h !== undefined && (
           <div style={{marginBottom: 8}}>
-            Height: {calib[activeCalib]?.h}%
-            <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.h || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], h: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+            Height: <span id="label-h">{liveCalib.current[activeCalib]?.h}%</span>
+            <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.h || 0} onChange={e => handleSlide('h', e)} style={{width:'100%'}} key={`h-${activeCalib}`} />
           </div>
         )}
         
-        <textarea readOnly value={JSON.stringify(calib, null, 2)} style={{width: '100%', height: 150, color: 'black', marginTop: 10, fontSize: 10, fontFamily: 'monospace'}} />
         <button 
           onClick={() => {
-            navigator.clipboard.writeText(JSON.stringify(calib, null, 2));
+            setCalib(liveCalib.current);
+            navigator.clipboard.writeText(JSON.stringify(liveCalib.current, null, 2));
             alert("Settings copied to clipboard! Paste them to the AI.");
           }}
           style={{marginTop: 10, width: '100%', padding: '10px', background: '#1877F2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
@@ -1009,6 +1039,7 @@ const CalibrationPanel = () => {
                 const w = c.w;
                 return (
                 <button
+                  id={`calib-${label}`}
                   key={label}
                   type="button"
                   onClick={() => {
@@ -1151,7 +1182,7 @@ const CalibrationPanel = () => {
           >
              {/* Optional circle fill */}
              {selectedTier === 'home_game' && (
-               <div style={{
+               <div id="calib-dot_home" style={{
                  position: 'absolute',
                  top: `${calib.dot_home.t}%`,
                  left: `${calib.dot_home.l}%`,
@@ -1185,7 +1216,7 @@ const CalibrationPanel = () => {
             title="Charity"
           >
              {selectedTier === 'charity' && (
-               <div style={{
+               <div id="calib-dot_charity" style={{
                  position: 'absolute',
                  top: `${calib.dot_charity.t}%`,
                  left: `${calib.dot_charity.l}%`,
@@ -1219,7 +1250,7 @@ const CalibrationPanel = () => {
             title="Clubs"
           >
              {selectedTier === 'club' && (
-               <div style={{
+               <div id="calib-dot_club" style={{
                  position: 'absolute',
                  top: `${calib.dot_club.t}%`,
                  left: `${calib.dot_club.l}%`,
