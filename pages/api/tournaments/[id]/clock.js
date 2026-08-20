@@ -263,8 +263,12 @@ async function getClockState(req, res, tournamentId) {
       if (include.includes('chips')) {
         publicChips = {
           updated_at: tournament.updated_at,
+          // Public chip counts board. FIELD list, not seat occupancy: a
+          // 'bagged' player still owns their stack and is still in the event,
+          // so they belong on the board (their table/seat serialise as null,
+          // which is correct - they are not sitting anywhere).
           players: entries
-            .filter(e => ['seated', 'active'].includes(e.status))
+            .filter(e => ['seated', 'active', 'bagged'].includes(e.status))
             .sort((a, b) => (b.current_chips || 0) - (a.current_chips || 0))
             .map(e => ({
               player_name: e.player_name || 'Player',
@@ -764,7 +768,10 @@ async function fireTournamentStartNotification(tournamentId, tournamentName) {
     .from('commander_tournament_entries')
     .select('player_id')
     .eq('tournament_id', tournamentId)
-    .in('status', ['registered', 'seated', 'active'])
+    // Everyone still in the event. 'bagged' included: on a multi-day event the
+    // players who need "the tournament is starting, take your seat" MOST are
+    // the ones who bagged the night before.
+    .in('status', ['registered', 'seated', 'active', 'bagged'])
     .limit(100);
 
   const playerIds = (entries || []).map(e => e.player_id).filter(Boolean);

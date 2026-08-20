@@ -190,7 +190,9 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
         .from('commander_tournament_entries')
         .select('id', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId)
-        .in('status', ['registered', 'seated', 'active'])
+        // Field size against max_entries, same rule as register.js: a 'bagged'
+        // player still holds an entry in the event and must count.
+        .in('status', ['registered', 'seated', 'active', 'bagged'])
 
       if (count >= tournament.max_entries) {
         if (req.body?.as_alternate === false) {

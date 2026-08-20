@@ -489,6 +489,110 @@ function isResultsReceipt(receipt) {
   return Array.isArray(receipt.results);
 }
 
+/* ── Bag And Tag Card (end of a multi-day flight) ─────────────── */
+
+/**
+ * The tag that goes into the bag with the player's chips overnight. It is the
+ * only record the room has that a stack belongs to a specific player, so it
+ * carries the name in the largest type on the card, the chip count, the day
+ * that just finished and the table/seat the stack was counted at (the floor
+ * verifies the count against that seat before the bag is sealed).
+ */
+const BAG_TAG_CSS = `
+@page { margin: 0; size: 80mm auto; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; font-size: 15px; }
+.tag { width: 72mm; margin: 0 auto; padding: 7mm 5mm 9mm; border-bottom: 2px dashed #000; page-break-after: always; }
+.tag:last-child { page-break-after: avoid; border-bottom: none; }
+.logo-wrap { text-align: center; margin-bottom: 3mm; }
+.logo-wrap img { max-width: 36mm; max-height: 20mm; object-fit: contain; }
+.venue-name { text-align: center; font-size: 22px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; margin-bottom: 1mm; }
+.venue-location { text-align: center; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; margin-bottom: 2mm; }
+.tag-type { text-align: center; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5mm; }
+.tourn-name { text-align: center; font-size: 17px; font-weight: bold; margin-bottom: 1mm; }
+.day-line { text-align: center; font-size: 15px; font-weight: bold; text-transform: uppercase; margin-bottom: 3mm; }
+.divider { border-top: 1px solid #000; margin: 4mm 0; }
+.name-label { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.name-val { font-size: 26px; font-weight: 900; text-transform: uppercase; line-height: 1.15; word-break: break-word; margin-top: 1mm; }
+.chip-label { text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.chip-val { text-align: center; border: 3px solid #000; font-size: 34px; font-weight: 900; padding: 3mm 2mm; margin-top: 1.5mm; line-height: 1.1; }
+.info-row { display: flex; justify-content: space-between; font-size: 14px; margin: 2.5mm 0; }
+.sign-label { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-top: 5mm; }
+.sign-line { border-bottom: 1px solid #000; height: 9mm; }
+.footer-line { font-size: 12px; margin: 1.5mm 0; }
+.copy-label { text-align: center; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin-top: 4mm; }
+`.trim();
+
+function bagTagFragment(r, copyLabel) {
+  const receipt = r || {};
+  const logo = safeImageUrl(receipt.venue_logo_url);
+  const location = [receipt.venue_city, receipt.venue_state].filter(Boolean).join(', ');
+  const chips = fmtNumber(receipt.chips);
+  const day = Number(receipt.day);
+  const totalDays = Number(receipt.total_days);
+  const dayLine = Number.isFinite(day) && day > 0
+    ? (Number.isFinite(totalDays) && totalDays > 0
+      ? `End Of Day ${day} Of ${totalDays}`
+      : `End Of Day ${day}`)
+    : 'End Of Day';
+  const hasSeat = receipt.table_number !== null && receipt.table_number !== undefined && receipt.table_number !== '';
+
+  return `<div class="tag">
+  ${logo ? `<div class="logo-wrap"><img src="${logo}" alt="${escapeHtml(receipt.venue_name || 'Club')}" loading="lazy" /></div>` : ''}
+  <div class="venue-name">${escapeHtml(receipt.venue_name || 'Club')}</div>
+  ${location ? `<div class="venue-location">${escapeHtml(location)}</div>` : ''}
+  <div class="tag-type">Chip Bag Tag</div>
+  <div class="tourn-name">${escapeHtml(receipt.tournament_name || 'Tournament')}</div>
+  <div class="day-line">${escapeHtml(dayLine)}${receipt.flight_label ? ` &nbsp; ${escapeHtml(receipt.flight_label)}` : ''}</div>
+  <div class="divider"></div>
+  <div class="name-label">Player</div>
+  <div class="name-val">${escapeHtml(receipt.player_name || 'Player')}</div>
+  <div class="divider"></div>
+  <div class="chip-label">Chip Count</div>
+  <div class="chip-val">${escapeHtml(chips || '0')}</div>
+  <div class="divider"></div>
+  <div class="info-row"><span>Counted At:</span><span><b>${hasSeat ? `Table ${escapeHtml(receipt.table_number)}, Seat ${escapeHtml(receipt.seat_number)}` : 'No Seat Recorded'}</b></span></div>
+  ${receipt.resume_time ? `<div class="info-row"><span>Returns:</span><span><b>${escapeHtml(fmtDate(receipt.resume_time))} ${escapeHtml(fmtTime(receipt.resume_time))}</b></span></div>` : ''}
+  <div class="sign-label">Player Signature</div>
+  <div class="sign-line"></div>
+  <div class="sign-label">Floor Signature</div>
+  <div class="sign-line"></div>
+  <div class="divider"></div>
+  <div class="footer-line">${escapeHtml(fmtDate(receipt.timestamp))}&nbsp;&nbsp;${escapeHtml(fmtTime(receipt.timestamp))}</div>
+  <div class="copy-label">${escapeHtml(copyLabel)}</div>
+</div>`;
+}
+
+/**
+ * Build the print document for a set of bag tags. TWO cards per player by
+ * default: one goes inside the sealed bag, one is the player's stub, which is
+ * how the room proves at the start of the next day that the stack in the bag
+ * is the stack the player bagged.
+ *
+ * @param {Array} receipts
+ * @param {object} [options]
+ * @param {string[]} [options.copies]
+ * @param {string} [options.title]
+ * @returns {string} HTML document
+ */
+export function buildBagTagsHtml(receipts, options = {}) {
+  const list = Array.isArray(receipts) ? receipts : [receipts].filter(Boolean);
+  const copies = Array.isArray(options.copies) && options.copies.length > 0
+    ? options.copies
+    : ['Bag Copy', "Player's Copy"];
+
+  const body = list
+    .map(r => copies.map(label => bagTagFragment(r, label)).join('\n'))
+    .join('\n');
+
+  return htmlDoc(options.title || 'Chip Bag Tags', BAG_TAG_CSS, body);
+}
+
+/** A custom job is a stack of bag tags only when its receipts say so. */
+function isBagTagReceipt(receipt) {
+  return !!receipt && receipt.receipt_kind === 'bag_tag';
+}
+
 /* ── Job Dispatcher ───────────────────────────────────────────── */
 
 const JOB_TYPE_LABELS = {
@@ -503,6 +607,7 @@ const JOB_TYPE_LABELS = {
 };
 
 const RESULTS_JOB_TITLE = 'Tournament Results';
+const BAG_TAG_JOB_TITLE = 'Chip Bag Tags';
 
 /**
  * Render a queued `commander_print_jobs` row into a single print document.
@@ -535,6 +640,21 @@ export function buildJobHtml(job) {
       }
       return buildActionReceiptsHtml(
         receipts.map(r => ({ actionType: 'payout', ...r })),
+        { title }
+      );
+    case 'custom':
+    case 'chip_race':
+      // Bag-and-tag files its tags under 'custom' (commander_print_jobs has no
+      // 'bag_tag' job_type and the CHECK constraint rejects one). The receipts
+      // carry receipt_kind 'bag_tag', so a genuine custom card is untouched.
+      if (receipts.some(isBagTagReceipt)) {
+        return buildBagTagsHtml(
+          receipts.filter(isBagTagReceipt),
+          { title: job?.title || BAG_TAG_JOB_TITLE }
+        );
+      }
+      return buildActionReceiptsHtml(
+        receipts.map(r => ({ actionType: job?.job_type || 'custom', ...r })),
         { title }
       );
     default:

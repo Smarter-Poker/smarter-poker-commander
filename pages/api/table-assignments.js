@@ -223,6 +223,10 @@ async function handlePut(req, res, venueId, staffUserId) {
       .select('player_name, seat_number')
       .eq('tournament_id', table.tournament_id)
       .eq('table_number', table.table_number)
+      // SEAT OCCUPANCY: this guard exists to stop a table being taken out
+      // from under people who are sitting at it. 'bagged' excluded on purpose
+      // - they hold no chair, and bag-and-tag deliberately frees these tables
+      // for the room overnight.
       .in('status', ['seated', 'active'])
       .limit(20);
 
@@ -332,6 +336,8 @@ async function handleClose(req, res, venueId, staffUserId) {
       .select('player_name, seat_number')
       .eq('tournament_id', table.tournament_id)
       .eq('table_number', table.table_number)
+      // SEAT OCCUPANCY, same rule as the assignment guard above: only a
+      // player physically at this table blocks the close.
       .in('status', ['seated', 'active'])
       .limit(20);
 

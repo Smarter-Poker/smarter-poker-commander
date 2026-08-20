@@ -82,6 +82,8 @@ export default async function handler(req, res) {
         .eq('tournament_id', tournamentId)
         .eq('table_number', to_table)
         .eq('seat_number', to_seat)
+        // SEAT OCCUPANCY: only a player physically in the chair blocks it.
+        // 'bagged' excluded on purpose (they hold no seat).
         .in('status', ['active', 'seated'])
         .neq('id', entry_id)
         .limit(1);

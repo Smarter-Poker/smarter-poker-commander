@@ -167,7 +167,10 @@ async function handleRegister(req, res, tournamentId, staff) {
         .from('commander_tournament_entries')
         .select('id', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId)
-        .in('status', ['registered', 'seated', 'active'])
+        // Field size against max_entries. A 'bagged' player still occupies an
+        // entry in the event, so they count: without this a multi-day field
+        // would appear to have room and the room could oversell Day 2.
+        .in('status', ['registered', 'seated', 'active', 'bagged'])
         .limit(100),
       getSupabase()
         .from('commander_self_exclusions')

@@ -148,7 +148,10 @@ export default async function handler(req, res) {
         .select('id, bounties_collected')
         .eq('tournament_id', tournamentId)
         .eq('player_id', entry.eliminated_by)
-        .in('status', ['seated', 'active', 'registered'])
+        // Still-in-the-event statuses. 'bagged' included: the eliminator may
+        // have bagged since taking the bounty, and their bounty count still
+        // has to be clawed back when the bust is undone.
+        .in('status', ['seated', 'active', 'registered', 'bagged'])
         .maybeSingle();
       if (eliminator && (eliminator.bounties_collected || 0) > 0) {
         const { error: bountyError } = await getSupabase()

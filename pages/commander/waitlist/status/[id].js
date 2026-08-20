@@ -47,22 +47,12 @@ export default function WaitlistStatus() {
       }
       setEntry(json.data);
 
-      // Get position in waitlist
-      // 2026-07-25 audit fix: waitlist handler requires venue_id (400s without it) - scope to the entry's venue
-      const listRes = await commanderFetch(`/api/commander/waitlist?venue_id=${json.data.venue_id}`);
-      // HIGH FIX #2c: Add response.ok check before .json()
-      if (!listRes.ok) {
-        const errorText = await listRes.text().catch(() => 'Unknown error');
-        throw new Error(`HTTP ${listRes.status}: ${errorText}`);
-      }
-      const listJson = await listRes.json();
-      if (listJson.success) {
-        const waiting = (listJson.data || [])
-          .filter(w => w.status === 'waiting' && w.game_type === json.data.game_type)
-          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        const pos = waiting.findIndex(w => w.id === id);
-        setPosition(pos >= 0 ? pos + 1 : null);
-      }
+      // 2026-08-20 fix: this used to read the whole venue waitlist to work out
+      // the place in line. That list is now staff-only (it carries every
+      // player's phone number), so it 401'd for the walk-in this page is built
+      // for and the position froze on "Calculating...". The entry endpoint
+      // computes queue_position server-side instead.
+      setPosition(typeof json.queue_position === 'number' ? json.queue_position : null);
     } catch (err) {
       setError('Failed to load status');
     } finally {

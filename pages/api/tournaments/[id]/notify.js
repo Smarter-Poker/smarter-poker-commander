@@ -104,7 +104,10 @@ export default async function handler(req, res) {
                   .from('commander_tournament_entries')
                   .select('player_id')
                   .eq('tournament_id', tournamentId)
-                  .in('status', ['registered', 'seated', 'active'])
+                  // Everyone still in the event, including 'bagged'. A bagged
+                  // player is between days, not out: the resume-time
+                  // announcement is aimed squarely at them.
+                  .in('status', ['registered', 'seated', 'active', 'bagged'])
                   .limit(5000);
 
               if (eErr) {

@@ -102,6 +102,8 @@ async function getTableData(tournamentId, venueId) {
     .from('commander_tournament_entries')
     .select('id, player_name, table_number, seat_number, current_chips, player_id')
     .eq('tournament_id', tournamentId)
+    // SEAT OCCUPANCY: a 'bagged' player (multi-day) holds no chair, so they
+    // never count toward a table's headcount and are never moved by a break.
     .in('status', ['active', 'seated'])
     .order('table_number')
     .order('seat_number');
@@ -290,6 +292,8 @@ async function handleExecute(req, res, tournament, staff) {
     .from('commander_tournament_entries')
     .select('id, table_number, seat_number, player_name, current_chips, status')
     .eq('tournament_id', tournament.id)
+    // SEAT OCCUPANCY, same rule: bagged players hold no seat and can never
+    // make a destination chair look taken.
     .in('status', ['active', 'seated']);
 
   // A discarded error here made the guard pass on an empty result and the break

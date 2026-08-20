@@ -107,6 +107,12 @@ async function getVibes(req, res) {
 
   // Aggregates are safe to cache 30s at the CDN edge only when no
   // session-dependent field is present in the response.
+  // Vary is mandatory here: without it an anonymous request warms a shared
+  // edge entry for this URL and the staff page (/commander/table-vibes) is
+  // then served that comment-less body for the next 30 seconds, so the
+  // comments the fix was written to protect silently stop appearing for the
+  // people who are supposed to see them.
+  res.setHeader('Vary', 'x-staff-session, Authorization');
   res.setHeader('Cache-Control', includeComments
     ? 'private, max-age=30'
     : 'public, s-maxage=30, stale-while-revalidate=120');

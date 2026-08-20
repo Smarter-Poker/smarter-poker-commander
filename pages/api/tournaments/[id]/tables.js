@@ -42,6 +42,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 // Entry statuses that mean a human is physically sitting at the table.
 // 'registered' players are not seated yet, so they never block a release.
+// 'bagged' players (multi-day, chips in a bag overnight) are not sitting
+// either - they are still in the tournament but hold no chair, and bag-and-tag
+// releases the room's tables precisely so cash games can use them. Counting
+// them here would make every table look occupied until the next day started.
 const SEATED_STATUSES = ['active', 'seated'];
 
 /** A table nobody is using: free of a tournament, not a live cash game. */

@@ -106,6 +106,8 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
+        // SEAT OCCUPANCY: only a player physically in a chair can conflict
+        // with a destination seat. 'bagged' excluded on purpose.
         .in('status', ['active', 'seated']);
 
       // A discarded error here made the guard pass on an empty result and the

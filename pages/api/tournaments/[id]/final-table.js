@@ -49,12 +49,16 @@ export default async function handler(req, res) {
       const { final_table_number } = req.body;
       const targetTable = final_table_number || 1;
 
-      // Get all active entries
+      // Everyone still in the tournament. FIELD list, not seat occupancy:
+      // this route GIVES seats rather than reading them, and on a multi-day
+      // event the final table is formed out of the bagged field. Excluding
+      // 'bagged' left returning players with no final-table seat while the
+      // response reported the final table as set.
       const { data: activeEntries, error: eErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('*')
         .eq('tournament_id', tournamentId)
-        .in('status', ['active', 'seated'])
+        .in('status', ['active', 'seated', 'bagged'])
         .order('current_chips', { ascending: false });
 
       // A discarded read error used to look identical to an empty field and the
@@ -89,6 +93,10 @@ export default async function handler(req, res) {
           .update({
             table_number: targetTable,
             seat_number: newSeat,
+            // A bagged player who is given a final-table seat is sitting in
+            // it. Leaving them 'bagged' would hide them from every occupancy
+            // check while they physically hold the chair.
+            ...(entry.status === 'bagged' ? { status: 'seated' } : {}),
             metadata: {
               ...(entry.metadata || {}),
               last_moved_at: timestamp,

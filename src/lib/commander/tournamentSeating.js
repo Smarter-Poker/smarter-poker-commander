@@ -28,6 +28,9 @@ export async function findOpenSeat(supabase, tournament) {
       .from('commander_tournament_entries')
       .select('table_number, seat_number')
       .eq('tournament_id', tournamentId)
+      // SEAT OCCUPANCY. 'bagged' excluded on purpose: a bagged player holds no
+      // chair, so their old seat must be offered to the next player. Counting
+      // them here would make findOpenSeat report a full floor overnight.
       .in('status', ['seated', 'active'])
       .limit(5000)
   ]);

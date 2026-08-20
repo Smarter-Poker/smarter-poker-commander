@@ -72,6 +72,8 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
+        // SEAT OCCUPANCY: balancing moves people between chairs, and a
+        // 'bagged' player is not in one. Excluded on purpose.
         .in('status', ['active', 'seated'])
         .in('table_number', destTables.length > 0 ? destTables : [-1]);
 
@@ -120,6 +122,8 @@ export default async function handler(req, res) {
         }
         // Only live players can be balanced. Moving an eliminated or cancelled
         // entry parks a dead player on a live seat that the floor then cannot fill.
+        // Only a player currently in a chair can be moved out of it. A
+        // 'bagged' player has no seat, so a balance move is meaningless.
         if (!['active', 'seated'].includes(entry.status)) {
           errors.push({ entry_id: move.entry_id, error: `Player Is Not Active (Status: ${entry.status})` });
           continue;

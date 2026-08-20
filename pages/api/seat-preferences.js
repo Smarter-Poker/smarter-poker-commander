@@ -37,6 +37,20 @@ export default async function handler(req, res) {
     const _staff = await guardStaff(req, res);
     if (!_staff) return;
 
+    // 2026-08-20 audit fix (second pass): guardStaff alone still let staff at
+    // ANY venue read and overwrite ANY player's preferences and staff notes,
+    // because the row cannot be venue-scoped - commander_seat_preferences.
+    // venue_id is a uuid column while app venue ids are integers, so every
+    // live row has venue_id null. Scope on the PLAYER instead: they must have
+    // a footprint at the caller's venue.
+    const _playerId = req.method === 'GET' ? req.query.player_id : req.body?.player_id;
+    if (!(await playerIsAtVenue(_playerId, _staff))) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'That Player Has No Record At This Venue' }
+      });
+    }
+
     if (req.method === 'GET') return getPreferences(req, res);
     if (req.method === 'POST') return savePreferences(req, res);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
@@ -46,6 +60,35 @@ export default async function handler(req, res) {
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
+}
+
+// True when the player has been seen at the caller's venue, so their seating
+// notes are that venue's business. Checked against the two tables a player
+// necessarily passes through: the desk waitlist and the cash session log.
+// A session with no venue (which verifyStaffSession now rejects for PIN
+// terminals) or a request with no player_id is left to the route's own
+// validation rather than being silently allowed through.
+async function playerIsAtVenue(playerId, staff) {
+  if (!playerId) return true; // handlers below return their own 400
+  const venueId = (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null)
+    ? staff.venue_id
+    : null;
+  if (venueId === null) return true;
+
+  const [sessionsRes, waitlistRes] = await Promise.all([
+    getSupabase()
+      .from('commander_player_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('venue_id', venueId)
+      .eq('player_id', playerId),
+    getSupabase()
+      .from('commander_waitlist')
+      .select('id', { count: 'exact', head: true })
+      .eq('venue_id', venueId)
+      .eq('player_id', playerId)
+  ]);
+
+  return (sessionsRes.count || 0) > 0 || (waitlistRes.count || 0) > 0;
 }
 
 async function getPreferences(req, res) {

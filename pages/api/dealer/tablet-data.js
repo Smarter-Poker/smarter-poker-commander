@@ -189,6 +189,9 @@ export default async function handler(req, res) {
                       .select('id, player_name, player_id, table_number, seat_number, current_chips, status')
                       .eq('tournament_id', tableData.tournament_id)
                       .eq('table_number', tableNum)
+                      // SEAT OCCUPANCY: the tablet shows who is sitting at
+                      // this table right now. 'bagged' excluded on purpose -
+                      // they are still in the event but hold no chair.
                       .in('status', ['active', 'seated'])
                       .order('seat_number', { ascending: true })
                   : Promise.resolve(noRows),

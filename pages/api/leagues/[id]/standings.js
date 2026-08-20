@@ -40,6 +40,41 @@ export default async function handler(req, res) {
     const { limit = 100 } = req.query;
 
     try {
+      // 2026-08-20 audit fix: any league id resolved for any staff member.
+      // Leagues are cross-venue by design, so scope is membership-based: the
+      // caller's venue must be the league's home venue or appear in its
+      // `venues` array.
+      const staffVenueId = (_authResult && _authResult.venue_id !== undefined && _authResult.venue_id !== null)
+        ? _authResult.venue_id
+        : null;
+
+      if (staffVenueId !== null) {
+        const { data: league } = await getSupabase()
+          .from('commander_leagues')
+          .select('id, venue_id, venues')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (!league) {
+          return res.status(404).json({
+            success: false,
+            error: { code: 'NOT_FOUND', message: 'League Not Found' }
+          });
+        }
+
+        const want = String(staffVenueId);
+        const inScope = (league.venue_id !== null && league.venue_id !== undefined
+            && String(league.venue_id) === want)
+          || (Array.isArray(league.venues) && league.venues.some(v => String(v) === want));
+
+        if (!inScope) {
+          return res.status(403).json({
+            success: false,
+            error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
+          });
+        }
+      }
+
       // Get standings with player info
       const { data: standings, error } = await getSupabase()
         .from('commander_league_standings')

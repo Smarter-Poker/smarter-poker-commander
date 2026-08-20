@@ -63,6 +63,9 @@ export default async function handler(req, res) {
         .maybeSingle();
       if (!entry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
 
+      // Only a player in a chair can take an add-on: add-ons are sold at the
+      // break, chips are pushed to the seat, and the add-on window has always
+      // closed before a multi-day day ends. 'bagged' excluded on purpose.
       if (!['active', 'seated'].includes(entry.status)) {
         return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: 'Player Must Be Active To Take Add-On' } });
       }

@@ -122,6 +122,11 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
         if (!tables || tables.length < 2) return null; // 1 table = final table, never auto-break
 
         // ── Fetch active entries with seat info ──
+        // SEAT OCCUPANCY. 'bagged' is deliberately excluded: a bagged player
+        // (multi-day, chips in a bag overnight) holds no chair, so they must
+        // not be counted into a table's occupancy and must not be "moved" by
+        // a break. bag-and-tag also nulls their table/seat, so counting them
+        // would only produce players with no from-seat on the receipts.
         const { data: entries, error: entriesErr } = await getSupabase()
             .from('commander_tournament_entries')
             .select('id, player_name, table_number, seat_number, current_chips')
@@ -183,6 +188,8 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
                 .select('seat_number')
                 .eq('tournament_id', tournamentId)
                 .eq('table_number', t.table_number)
+                // SEAT OCCUPANCY, same rule as above: bagged players hold no
+                // seat, so they never make a destination chair look taken.
                 .in('status', ['active', 'seated']);
             // A discarded error here made the guard treat every seat as free and
             // the break could double-seat a table. Abort instead.

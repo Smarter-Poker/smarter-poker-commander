@@ -46,7 +46,11 @@ const NAV_ICONS = {
     payouts: DollarSign, reports: FileText, clock: Monitor
 };
 
-const ACTIVE_STATUSES = ['seated', 'active'];
+// Still alive in the tournament, used for "players without a finish position
+// yet". 'bagged' (multi-day, chips in a bag overnight) belongs here: those
+// players have not finished, so leaving them out understated how many places
+// were still to be decided.
+const ACTIVE_STATUSES = ['seated', 'active', 'bagged'];
 
 function formatMoney(n) {
     const num = Number(n);

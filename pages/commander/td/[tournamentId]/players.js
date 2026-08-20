@@ -10,7 +10,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2 } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2, Package } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { buildActionReceiptsHtml, printHtml, printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
@@ -25,6 +25,9 @@ const NAV_ICONS = { control: Trophy, tables: LayoutGrid, players: Users, payouts
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
+  // Multi-day: players who bagged their chips at the end of a day. They are
+  // still in the tournament, they just hold no seat until the day resumes.
+  { key: 'bagged', label: 'Bagged' },
   { key: 'eliminated', label: 'Out' },
   { key: 'registered', label: 'Registered' },
   { key: 'alternate', label: 'Alternates' },
@@ -92,6 +95,9 @@ export default function TDPlayers() {
   useEffect(() => {
     if (!moveEntryId || !floor?.entries?.length || moveModal) return;
     const entry = floor.entries.find(e => e.entry_id === moveEntryId);
+    // Only a player who currently holds a seat can be "moved" to another one.
+    // 'bagged' excluded on purpose: they have no seat to move from, and the
+    // action sheet offers Assign Exact Seat for them instead.
     if (entry && ['active', 'seated'].includes(entry.status)) {
       setMoveMode('move');
       setMoveModal({ ...entry, status: entry.status === 'seated' ? 'active' : entry.status });
@@ -131,6 +137,7 @@ export default function TDPlayers() {
   }
 
   const alternateCount = allPlayers.filter(p => p.status === 'alternate').length;
+  const baggedCount = allPlayers.filter(p => p.status === 'bagged').length;
 
   const filtered = allPlayers.filter(p => {
     if (filter !== 'all' && p.status !== filter) return false;
@@ -140,6 +147,11 @@ export default function TDPlayers() {
     // Alternates are a queue, not a name list: first registered is next up.
     if (a.status === 'alternate' && b.status === 'alternate') {
       return (a.queue_position || 9999) - (b.queue_position || 9999);
+    }
+    // Bagged players are read as a chip-count sheet, biggest stack first,
+    // which is the order the overnight leader board is announced in.
+    if (a.status === 'bagged' && b.status === 'bagged') {
+      return (Number(b.current_chips) || 0) - (Number(a.current_chips) || 0);
     }
     if (a.status === 'active' && b.status !== 'active') return -1;
     if (a.status !== 'active' && b.status === 'active') return 1;
@@ -451,7 +463,11 @@ export default function TDPlayers() {
         {/* Header */}
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3">
           <h1 className="text-lg font-bold text-white">Players</h1>
-          <p className="text-xs text-[#B0B3B8]">{allPlayers.filter(p => p.status === 'active').length} Active, {allPlayers.length} Total</p>
+          <p className="text-xs text-[#B0B3B8]">
+            {allPlayers.filter(p => p.status === 'active').length} Active
+            {baggedCount > 0 ? `, ${baggedCount} Bagged` : ''}
+            , {allPlayers.length} Total
+          </p>
         </div>
 
         {/* Search */}
@@ -487,6 +503,11 @@ export default function TDPlayers() {
                   {alternateCount}
                 </span>
               )}
+              {f.key === 'bagged' && baggedCount > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
+                  {baggedCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -504,7 +525,7 @@ export default function TDPlayers() {
               ) : (
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${player.status === 'active' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
                   player.status === 'eliminated' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
-                    player.status === 'alternate' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
+                    player.status === 'alternate' || player.status === 'bagged' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
                       'bg-[#B0B3B8]/20 text-[#B0B3B8]'
                   }`}>
                   {player.player_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??'}
@@ -519,7 +540,11 @@ export default function TDPlayers() {
                       ? `Eliminated${player.finish_position ? ` #${player.finish_position}` : ''}`
                       : player.status === 'alternate'
                         ? 'Alternate, Waiting For Seat'
-                        : 'Registered'
+                        : player.status === 'bagged'
+                          // The bagged stack is the whole point of this row, so
+                          // it is spelled out in full rather than abbreviated.
+                          ? `Bagged ${(Number(player.current_chips) || 0).toLocaleString()} Chips`
+                          : 'Registered'
                   }
                 </p>
               </div>
@@ -547,8 +572,10 @@ export default function TDPlayers() {
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setSelectedPlayer(null)}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedPlayer.status === 'alternate' ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
-                  <Users className={`w-5 h-5 ${selectedPlayer.status === 'alternate' ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${['alternate', 'bagged'].includes(selectedPlayer.status) ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
+                  {selectedPlayer.status === 'bagged'
+                    ? <Package className="w-5 h-5 text-[#F59E0B]" />
+                    : <Users className={`w-5 h-5 ${selectedPlayer.status === 'alternate' ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -564,9 +591,11 @@ export default function TDPlayers() {
                       ? selectedPlayer.queue_position
                         ? `Alternate, Position ${selectedPlayer.queue_position} In Line`
                         : 'Alternate, Waiting For Seat'
-                      : selectedPlayer.table_number
-                        ? `Table ${selectedPlayer.table_number} Seat ${selectedPlayer.seat_number}`
-                        : 'No Seat Assigned'}
+                      : selectedPlayer.status === 'bagged'
+                        ? 'Bagged, No Seat Until The Day Resumes'
+                        : selectedPlayer.table_number
+                          ? `Table ${selectedPlayer.table_number} Seat ${selectedPlayer.seat_number}`
+                          : 'No Seat Assigned'}
                     {selectedPlayer.current_chips > 0 && ` - ${formatChips(selectedPlayer.current_chips)}`}
                   </p>
                 </div>
@@ -614,6 +643,23 @@ export default function TDPlayers() {
                   <ActionBtn icon={UserPlus} label="Seat Alternate" color="#31A24C"
                     loading={actionLoading === 'promote'}
                     onClick={() => performPromote(selectedPlayer)} />
+                )}
+                {/* Bagged (multi-day). The whole field is normally brought back
+                    by Start Day on the Control Center, which redraws seats and
+                    restores every bagged stack in one action. These two cover
+                    the exceptions: a late arrival who needs a specific chair,
+                    and a player who forfeits without returning. */}
+                {selectedPlayer.status === 'bagged' && (
+                  <>
+                    <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#31A24C"
+                      loading={actionLoading === 'move'}
+                      onClick={() => openAssignSeat(selectedPlayer)} />
+                    <ActionBtn icon={Coins} label="Correct Bagged Chips" color="#F59E0B"
+                      onClick={() => { setChipModal(selectedPlayer); setChipValue(String(selectedPlayer.current_chips || '')); }} />
+                    <ActionBtn icon={UserX} label="Eliminate" color="#EF4444" danger
+                      loading={actionLoading === 'eliminate'}
+                      onClick={() => handleEliminate(selectedPlayer)} />
+                  </>
                 )}
               </div>
 

@@ -25,16 +25,21 @@ function getSupabase() {
 }
 
 // Hot path. Every TD screen and every table tablet polls this route, so it
-// selects columns instead of `*`: the tournament row carries break_schedule,
-// day_end_chip_counts and a dozen multi-day columns nothing here reads, and an
-// entry row carries cashier/payment/notes columns that never reach the client.
+// selects columns instead of `*`: the tournament row carries break_schedule and
+// a pile of cashier columns nothing here reads, and an entry row carries
+// cashier/payment/notes columns that never reach the client.
+// The multi-day flags ARE read: the Control Center needs to know whether to
+// offer End Day / Resume Day at all. day_end_chip_counts is still excluded -
+// it is an unbounded per-player blob and the bagged stack already lives on
+// each entry's current_chips.
 const TOURNAMENT_COLUMNS = [
   'id', 'venue_id', 'name', 'status', 'tournament_type', 'buyin_amount', 'buyin_fee',
   'starting_chips', 'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'rebuy_end_level',
   'allows_addon', 'addon_amount', 'addon_chips', 'late_registration_levels',
   'guaranteed_pool', 'actual_start', 'scheduled_start', 'payout_structure',
   'bounty_amount', 'actual_prizepool', 'paying_places', 'max_entries',
-  'blind_structure', 'settings', 'current_level'
+  'blind_structure', 'settings', 'current_level',
+  'is_multi_day', 'total_days', 'current_day', 'flight_label', 'resume_time'
 ].join(', ');
 
 const ENTRY_COLUMNS = [
@@ -105,11 +110,23 @@ export default async function handler(req, res) {
       if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
 
       const entries = entriesRes.data || [];
+      // TWO different questions, two different lists. Conflating them is what
+      // made a bagged player vanish from the field.
+      //   activeEntries  = "who is physically holding a chair right now"
+      //                    -> table map, occupancy, imbalance, seat conflicts.
+      //   remainingEntries = "who is still alive in this tournament"
+      //                    -> players remaining, total chips, average stack.
+      // A 'bagged' player (multi-day, chips in a bag overnight) is in the
+      // second list and NOT the first: they are still in the event but they
+      // are not sitting anywhere.
       const activeEntries = entries.filter(e => ['active', 'seated'].includes(e.status));
+      const baggedEntries = entries.filter(e => e.status === 'bagged');
+      const remainingEntries = entries.filter(e => ['active', 'seated', 'bagged'].includes(e.status));
       const eliminatedEntries = entries.filter(e => e.status === 'eliminated');
       const registeredEntries = entries.filter(e => e.status === 'registered');
 
-      // Build table map - get real max_seats from commander_tables
+      // Build table map - get real max_seats from commander_tables.
+      // Seat occupancy: bagged players hold no seat, so activeEntries.
       const tableNumbers = [...new Set(activeEntries.map(e => e.table_number).filter(Boolean))].sort((a, b) => a - b);
 
       // Avatars and table configs are independent of each other, so the second
@@ -194,8 +211,12 @@ export default async function handler(req, res) {
       // Calculate stats
       const totalRebuys = entries.reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
       const totalAddons = entries.filter(e => e.addon_taken).length;
-      const totalChips = activeEntries.reduce((sum, e) => sum + (e.current_chips || 0), 0);
-      const avgStack = activeEntries.length > 0 ? Math.round(totalChips / activeEntries.length) : 0;
+      // Field maths: bagged players still own their chips and are still in the
+      // tournament, so they count toward total chips and the average stack.
+      // Excluding them made the average stack jump overnight and made the
+      // chip-leader board drop the overnight leader entirely.
+      const totalChips = remainingEntries.reduce((sum, e) => sum + (e.current_chips || 0), 0);
+      const avgStack = remainingEntries.length > 0 ? Math.round(totalChips / remainingEntries.length) : 0;
       // 2026-07-25 audit fix: rebuy_cost/addon_cost are not real columns,
       // use rebuy_amount/addon_amount so rebuys and add-ons count in the pool.
       // 2026-08-19 fix: dropped the dead tournament.prize_pool read (not a column)
@@ -251,7 +272,8 @@ export default async function handler(req, res) {
         });
       }
 
-      // Imbalance check
+      // Imbalance check. Occupancy question: activeEntries only. A bagged
+      // field would otherwise look like it needed a table broken.
       const imbalanced = tableNumbers.length >= 2 && (maxCount - minCount >= 2);
       const avgMaxSeats = tableNumbers.length > 0
         ? Math.round(tableNumbers.reduce((sum, tn) => sum + (tableConfigs[tn] || 9), 0) / tableNumbers.length)
@@ -389,6 +411,13 @@ export default async function handler(req, res) {
             max_entries: tournament.max_entries,
             blind_structure: blindStructure,
             settings: tournament.settings || {},
+            // Multi-day. The Control Center gates End Day / Resume Day on
+            // is_multi_day, and shows Day N Of M from these.
+            is_multi_day: tournament.is_multi_day || false,
+            total_days: tournament.total_days || 1,
+            current_day: tournament.current_day || 1,
+            flight_label: tournament.flight_label || null,
+            resume_time: tournament.resume_time || null,
           },
           clock: {
             current_level: currentLevel,
@@ -414,7 +443,16 @@ export default async function handler(req, res) {
           },
           stats: {
             total_entries: paidEntryCount,
-            players_remaining: activeEntries.length,
+            // Field count: bagged players are still in the tournament. This is
+            // the number the TD reads out, the number eliminate.js derives a
+            // finish position from, and the number the payout screen sizes the
+            // prize pool against, so it MUST include them.
+            players_remaining: remainingEntries.length,
+            // Of which are bagged (multi-day, no seat until the day resumes).
+            players_bagged: baggedEntries.length,
+            // Physically seated right now. Separate from players_remaining so
+            // a screen that needs seat occupancy does not have to guess.
+            players_seated: activeEntries.length,
             players_eliminated: eliminatedEntries.length,
             players_registered: registeredEntries.length,
             players_alternate: entries.filter(e => e.status === 'alternate').length,
@@ -440,7 +478,9 @@ export default async function handler(req, res) {
               lateRegLevels
             ),
 
-            player_stacks: activeEntries
+            // Chip counts board: a bagged stack is a real stack and the
+            // overnight chip leader is usually the headline of the day.
+            player_stacks: remainingEntries
               .filter(e => e.current_chips > 0)
               .map(e => ({ name: avatarMap[e.player_id]?.display_name || e.player_name, chips: e.current_chips }))
           },

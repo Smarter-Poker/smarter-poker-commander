@@ -64,6 +64,8 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, player_name, table_number, seat_number, status, current_chips, metadata')
         .eq('tournament_id', tournamentId)
+        // SEAT OCCUPANCY: balancing moves people between chairs, and a
+        // 'bagged' player is not in one. Excluded on purpose.
         .in('status', ['active', 'seated']);
 
       // A discarded read error here used to look identical to "no players" and

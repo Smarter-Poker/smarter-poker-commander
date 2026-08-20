@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
       const { data: tournament } = await getSupabase()
         .from('commander_tournaments')
-        .select('id, venue_id')
+        .select('id, venue_id, day_end_chip_counts')
         .eq('id', tournamentId)
         .maybeSingle();
       if (!tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
@@ -91,6 +91,32 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (uErr) return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Update Chips' } });
+
+      // Multi-day: a 'bagged' player's stack also lives in the tournament's
+      // day_end_chip_counts record, which is what the morning is reconciled
+      // against. Correcting the entry without correcting that record leaves
+      // two different numbers for the same bag, so keep them in step.
+      if (entry.status === 'bagged') {
+        const raw = tournament.day_end_chip_counts;
+        const counts = Array.isArray(raw)
+          ? Object.fromEntries((raw).filter(r => r?.entry_id).map(r => [String(r.entry_id), r]))
+          : (raw && typeof raw === 'object' ? { ...raw } : {});
+        const existing = counts[String(entryId)] || {};
+        counts[String(entryId)] = {
+          ...existing,
+          player_name: existing.player_name ?? entry.player_name ?? null,
+          chips: parsedChips,
+          corrected_at: new Date().toISOString(),
+          corrected_from: previousChips
+        };
+        const { error: syncErr } = await getSupabase()
+          .from('commander_tournaments')
+          .update({ day_end_chip_counts: counts })
+          .eq('id', tournamentId);
+        // Never fail the chip update over this: the entry is already correct
+        // and that is the number every screen reads.
+        if (syncErr) console.warn('[chips.js] day_end_chip_counts sync failed:', syncErr.message);
+      }
 
       return res.status(200).json({
         success: true,

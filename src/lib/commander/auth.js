@@ -292,6 +292,18 @@ export async function verifyStaffSession(req) {
     if (staffError || !staff) {
       return { error: { status: 401, code: 'INVALID_STAFF', message: 'Staff Member Not Found Or Inactive' } };
     }
+
+    // 2026-08-20 audit fix: every venue-ownership check added across the API
+    // is written as "if the session has a venue_id, it must match", so a staff
+    // row with a NULL venue_id would silently skip ALL of them. Such a row can
+    // never legitimately reach this point anyway - fn_verify_staff_pin filters
+    // on `s.venue_id::text = p_venue_id`, so a venueless row cannot produce a
+    // PIN session - but failing closed here means the downstream checks can
+    // never be defeated by a row that lost its venue.
+    if (staff.venue_id === undefined || staff.venue_id === null) {
+      return { error: { status: 403, code: 'NO_VENUE', message: 'This Staff Account Is Not Assigned To A Venue' } };
+    }
+
     return { staff };
   }
 

@@ -70,7 +70,11 @@ export default async function handler(req, res) {
 
       // Only live entries hold seats. Without this an eliminated or cancelled
       // player could be given a live seat that the floor then could not fill.
-      if (!['registered', 'seated', 'active', 'alternate'].includes(entry.status)) {
+      // 'bagged' is permitted: this is the only route that puts a NAMED
+      // returning player in a NAMED chair, which the floor needs when a Day 2
+      // player has an accessibility requirement or arrives after the resume
+      // draw has already run. The status is advanced to 'seated' below.
+      if (!['registered', 'seated', 'active', 'alternate', 'bagged'].includes(entry.status)) {
         return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Seat A Player With Status ${entry.status}` } });
       }
 
@@ -83,6 +87,10 @@ export default async function handler(req, res) {
         .eq('tournament_id', tournamentId)
         .eq('table_number', tableNum)
         .eq('seat_number', seatNum)
+        // SEAT OCCUPANCY: only a player physically in the chair blocks it.
+        // 'bagged' is deliberately excluded (bag-and-tag nulls their seat, so
+        // they could not match anyway, and including it would keep a released
+        // chair blocked forever).
         .in('status', ['active', 'seated'])
         .neq('id', entryId)
         .limit(1);
@@ -105,8 +113,11 @@ export default async function handler(req, res) {
       const fromTable = entry.table_number;
       const fromSeat = entry.seat_number;
 
-      // If the player is currently 'registered' but is given a seat, advance them to 'seated'
-      const newStatus = entry.status === 'registered' ? 'seated' : entry.status;
+      // A player who is given a seat is sitting in it. 'registered' (never
+      // seated) and 'bagged' (returning from an overnight break) both advance
+      // to 'seated'; leaving a seated player marked 'bagged' would hide them
+      // from every occupancy check while they physically hold the chair.
+      const newStatus = ['registered', 'bagged'].includes(entry.status) ? 'seated' : entry.status;
 
       const { error: uErr } = await getSupabase()
         .from('commander_tournament_entries')

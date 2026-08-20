@@ -30,9 +30,23 @@ export default async function handler(req, res) {
     // ── GET: Return a single waitlist entry ───────────────────────
     // 2026-08-20 audit fix: this GET was fully public and selected '*', which
     // includes player_name and player_phone - any entry id leaked a phone
-    // number. Access now mirrors the DELETE path below: verified venue staff
-    // see the full row, the entry's own player (Bearer) sees their own row,
-    // everyone else gets 401.
+    // number.
+    //
+    // 2026-08-20 regression fix: the first cut of that fix returned 401 to
+    // anyone who was neither venue staff nor the signed-in owner of the entry,
+    // which killed /commander/waitlist/status/[id] - the page a walk-in opens
+    // on their phone after joining at the desk. That player has no account and
+    // no staff session, and the page header has always said "no login required,
+    // the URL serves as auth token".
+    //
+    // Three tiers now:
+    //   verified venue staff  -> the full row
+    //   the entry's own player -> the full row (Bearer JWT matches player_id)
+    //   holder of the link     -> display fields only. No phone, no notes, no
+    //                             player_id, no staff-facing counters. The id
+    //                             is an unguessable uuid, which is the token.
+    // queue_position is computed server-side for every tier so the status page
+    // no longer needs the venue-wide list read (which is staff-only).
     if (req.method === 'GET') {
       try {
         const { data, error } = await getSupabase()
@@ -50,17 +64,48 @@ export default async function handler(req, res) {
         const isVenueStaff = !!(staff && (staff.venue_id === undefined || staff.venue_id === null
           || String(staff.venue_id) === String(data.venue_id)));
 
-        if (!isVenueStaff) {
+        let isOwnEntry = false;
+        if (!isVenueStaff && data.player_id) {
           const user = await getUser(req, res);
-          if (!user || !data.player_id || String(user.id) !== String(data.player_id)) {
-            return res.status(401).json({
-              success: false,
-              error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
-            });
-          }
+          isOwnEntry = !!(user && String(user.id) === String(data.player_id));
         }
 
-        return res.status(200).json({ success: true, data });
+        // Place in line among players still waiting for the same game.
+        let queuePosition = null;
+        if (data.status === 'waiting') {
+          const { data: queue } = await getSupabase()
+            .from('commander_waitlist')
+            .select('id, created_at')
+            .eq('venue_id', data.venue_id)
+            .eq('game_type', data.game_type)
+            .eq('status', 'waiting')
+            .order('created_at', { ascending: true })
+            .limit(500);
+          const idx = (queue || []).findIndex(w => String(w.id) === String(data.id));
+          if (idx >= 0) queuePosition = idx + 1;
+        }
+
+        if (isVenueStaff || isOwnEntry) {
+          return res.status(200).json({ success: true, data, queue_position: queuePosition });
+        }
+
+        return res.status(200).json({
+          success: true,
+          data: {
+            id: data.id,
+            venue_id: data.venue_id,
+            player_name: data.player_name,
+            game_type: data.game_type,
+            stakes: data.stakes,
+            status: data.status,
+            created_at: data.created_at,
+            checked_in_at: data.checked_in_at,
+            seated_at: data.seated_at,
+            last_called_at: data.last_called_at || data.last_called,
+            estimated_wait_minutes: data.estimated_wait_minutes
+          },
+          queue_position: queuePosition
+        });
       } catch (err) {
         console.warn('Waitlist entry error:', err);
         return res.status(500).json({ success: false, error: err.message });

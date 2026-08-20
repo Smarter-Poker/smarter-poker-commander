@@ -408,8 +408,13 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
                 if (cancelled) return;
                 let remaining = [];
                 if (json?.success) {
+                    // Remaining players for the chop calculator. FIELD list:
+                    // a 'bagged' player is still in the tournament and still
+                    // owns their stack, so they must be in any deal. Leaving
+                    // them out would have split the prize pool between fewer
+                    // players than were actually left.
                     remaining = (json.data?.entries || [])
-                        .filter(e => ['active', 'seated'].includes(e.status))
+                        .filter(e => ['active', 'seated', 'bagged'].includes(e.status))
                         .map(e => ({
                             entry_id: e.entry_id,
                             player_id: e.user_id || null,

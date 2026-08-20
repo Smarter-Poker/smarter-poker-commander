@@ -97,11 +97,16 @@ export default async function handler(req, res) {
 
       // Count remaining players to determine finish position (this entry
       // included, so with 5 left the bust takes 5th).
+      // FIELD COUNT, not seat occupancy: a 'bagged' player (multi-day, chips
+      // in a bag overnight) is still alive and MUST count. Leaving them out
+      // shortened the field and handed every subsequent bust a finish position
+      // that was already taken, corrupting the finishing order and the payouts
+      // derived from it.
       const { count: remainingCount } = await getSupabase()
         .from('commander_tournament_entries')
         .select('*', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId)
-        .in('status', ['seated', 'active'])
+        .in('status', ['seated', 'active', 'bagged'])
 
       let finishPosition = remainingCount;
 
@@ -187,7 +192,11 @@ export default async function handler(req, res) {
           seat_number: null,
         })
         .eq('id', entry_id)
-        .in('status', ['registered', 'seated', 'active'])
+        // Still-alive statuses. 'bagged' is included: a player who bagged and
+        // then forfeits (no-show on Day 2, or a floor ruling) has to be
+        // bustable, and without it the update matched zero rows and the TD was
+        // told the player "was already eliminated".
+        .in('status', ['registered', 'seated', 'active', 'bagged'])
         .select(`
           *,
           profiles (id, display_name, avatar_url)
@@ -252,11 +261,15 @@ export default async function handler(req, res) {
       // Check if tournament should end (only 1 player left)
       if (remainingCount <= 2) {
         // Mark the winner
+        // Same field definition as remainingCount above. If the last two
+        // players include one who is bagged, that bagged player is the winner
+        // when the other busts - searching only seated players would find
+        // nobody and the tournament would never be closed out.
         const { data: winner } = await getSupabase()
           .from('commander_tournament_entries')
           .select('*')
           .eq('tournament_id', tournamentId)
-          .in('status', ['seated', 'active'])
+          .in('status', ['seated', 'active', 'bagged'])
           .neq('id', entry_id)
           .maybeSingle();
 

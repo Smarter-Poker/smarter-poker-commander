@@ -73,6 +73,10 @@ export default async function handler(req, res) {
     }
 
     // Entries: seated players hold their seats; registered players get drawn.
+    // 'bagged' is deliberately NOT here. A bagged field belongs to a multi-day
+    // event and is brought back by resume-day.js, which restores each player's
+    // bagged chip count as it seats them. This route would seat them with
+    // whatever stack happened to be on the row and would not advance the day.
     const { data: allEntries, error: entriesErr } = await getSupabase()
       .from('commander_tournament_entries')
       .select('id, player_name, status, table_number, seat_number, current_chips')
@@ -221,6 +225,8 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
+        // SEAT OCCUPANCY: only a player physically in the chair can have
+        // taken it. 'bagged' excluded on purpose.
         .in('status', ['seated', 'active'])
         .in('table_number', drawnTables);
 

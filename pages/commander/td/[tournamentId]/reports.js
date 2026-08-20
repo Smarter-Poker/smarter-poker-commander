@@ -184,9 +184,11 @@ export default function TDReports() {
                                         <div className="divide-y divide-[#3A3B3C]">
                                             {(reportData.entries || []).map((e, i) => (
                                                 <div key={e.id || i} className="px-4 py-2.5 flex items-center gap-3">
+                                                    {/* Bagged gets its own colour: still in the event, but not playing right now. */}
                                                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${e.status === 'eliminated' ? 'bg-[#EF4444]' :
                                                         e.status === 'winner' ? 'bg-[#F59E0B]' :
-                                                            ['active', 'seated'].includes(e.status) ? 'bg-[#31A24C]' : 'bg-[#1877F2]'
+                                                            e.status === 'bagged' ? 'bg-[#F59E0B]' :
+                                                                ['active', 'seated'].includes(e.status) ? 'bg-[#31A24C]' : 'bg-[#1877F2]'
                                                         }`} />
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm text-[#E4E6EB] truncate">{e.profiles?.display_name || e.player_name || 'Unknown'}</p>

@@ -192,6 +192,18 @@ export default function CommanderLayout({ children, title, backHref = '/commande
     return () => window.removeEventListener('commander:session-expiring', handler);
   }, []);
 
+  // ── UNAUTHORIZED BANNER ──
+  // commanderFetch used to swallow every 401 and hand callers a fabricated
+  // HTTP 200, so an expired session painted a plausible but invented screen.
+  // It now passes the 401 through and announces it once; this turns that into
+  // something the floor can actually see and act on.
+  const [unauthorized, setUnauthorized] = useState(false);
+  useEffect(() => {
+    const onUnauthorized = () => setUnauthorized(true);
+    window.addEventListener('commander:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('commander:unauthorized', onUnauthorized);
+  }, []);
+
   // ── OFFLINE DETECTION ──
   const [isOffline, setIsOffline] = useState(false);
   useEffect(() => {
@@ -946,6 +958,32 @@ export default function CommanderLayout({ children, title, backHref = '/commande
             <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>
               You are offline - changes will not save until reconnected
             </span>
+          </div>
+        )}
+
+        {/* ── UNAUTHORIZED BANNER ── */}
+        {unauthorized && !isOffline && (
+          <div style={{
+            background: 'linear-gradient(90deg, #EF444422, #DC262622)',
+            borderBottom: '1px solid #EF444444',
+            padding: '8px 16px',
+            display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertCircle size={16} color="#EF4444" />
+              <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>
+                Your Session Is Not Valid For This Data. Some Panels May Be Empty.
+              </span>
+            </div>
+            <button
+              onClick={() => { window.location.href = '/commander/login?expired=1'; }}
+              style={{
+                background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6,
+                padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Sign In Again
+            </button>
           </div>
         )}
 

@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     // venues, prize pools) was public.
     const _g = await guardStaff(req, res); if (!_g) return;
 
-    if (req.method === 'POST') return createLeague(req, res);
+    if (req.method === 'POST') return createLeague(req, res, _g);
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       });
     }
 
-    return listLeagues(req, res);
+    return listLeagues(req, res, _g);
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
@@ -47,9 +47,24 @@ export default async function handler(req, res) {
   }
 }
 
-async function listLeagues(req, res) {
+// A league is in scope for a venue when it is stamped with that venue_id or
+// lists it in the cross-venue `venues` array. Both are checked because the
+// live rows carry only `venues` (venue_id is null on every existing row) while
+// createLeague below now writes both.
+export function leagueBelongsToVenue(league, venueId) {
+  if (venueId === undefined || venueId === null) return true;
+  const want = String(venueId);
+  if (league.venue_id !== undefined && league.venue_id !== null
+      && String(league.venue_id) === want) return true;
+  return Array.isArray(league.venues) && league.venues.some(v => String(v) === want);
+}
+
+async function listLeagues(req, res, staff) {
   try {
     const { status, limit = 50 } = req.query;
+    const staffVenueId = (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null)
+      ? staff.venue_id
+      : null;
 
     let query = getSupabase()
       .from('commander_leagues')
@@ -58,6 +73,7 @@ async function listLeagues(req, res) {
         name,
         description,
         organizer_id,
+        venue_id,
         venues,
         season_start,
         season_end,
@@ -73,12 +89,18 @@ async function listLeagues(req, res) {
       query = query.eq('status', status);
     }
 
-    const { data: leagues, error } = await query;
+    const { data: allLeagues, error } = await query;
 
     if (error) {
       console.warn('Leagues fetch error:', error);
       throw error;
     }
+
+    // 2026-08-20 audit fix: the list was unscoped, so every venue's staff saw
+    // every other venue's leagues (names, organizer ids, prize pools). Leagues
+    // ARE cross-venue by design, so the filter is membership-based rather than
+    // a flat venue_id equality.
+    const leagues = (allLeagues || []).filter(l => leagueBelongsToVenue(l, staffVenueId));
 
     // Get player counts for each league
     const leagueIds = (leagues || []).map(l => l.id);
@@ -113,7 +135,7 @@ async function listLeagues(req, res) {
   }
 }
 
-async function createLeague(req, res) {
+async function createLeague(req, res, staff) {
   const { name, description, scoring_system, season_start, season_end, prize_pool, venues, status } = req.body;
 
   if (!name) {
@@ -122,6 +144,23 @@ async function createLeague(req, res) {
       error: { code: 'MISSING_FIELDS', message: 'League name required' }
     });
   }
+
+  // 2026-08-20 audit fix: createLeague had no venue scoping at all - the new
+  // row was stamped with whatever `venues` array the body carried (or none),
+  // so a league could be created into another venue's list, or into nobody's.
+  // The caller's own venue is always stamped on the row and always present in
+  // the membership array; extra venues are still allowed (leagues are
+  // cross-venue by design) but the creator's venue can never be dropped.
+  const staffVenueId = (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null)
+    ? staff.venue_id
+    : null;
+
+  const requestedVenues = Array.isArray(venues) ? venues : [];
+  const venueList = staffVenueId === null
+    ? requestedVenues
+    : (requestedVenues.some(v => String(v) === String(staffVenueId))
+      ? requestedVenues
+      : [staffVenueId, ...requestedVenues]);
 
   try {
     const authHeader = req.headers.authorization;
@@ -139,11 +178,12 @@ async function createLeague(req, res) {
         name,
         description: description || null,
         organizer_id: organizerId,
+        venue_id: staffVenueId,
         scoring_system: scoring_system || 'points',
         season_start: season_start || null,
         season_end: season_end || null,
         prize_pool: prize_pool || null,
-        venues: venues || [],
+        venues: venueList,
         status: status || 'active'
       })
       .select()

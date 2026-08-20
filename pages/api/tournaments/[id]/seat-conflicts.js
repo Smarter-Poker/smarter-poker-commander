@@ -32,6 +32,8 @@ function getSupabase() {
   return _supabase;
 }
 
+// SEAT OCCUPANCY. Two players can only fight over a chair if both are IN one,
+// so 'bagged' (multi-day, chips in a bag, no seat) is deliberately excluded.
 const LIVE_STATUSES = ['seated', 'active'];
 
 async function loadConflicts(tournamentId) {

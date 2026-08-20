@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
       if (req.query.venue_id && sessionVenueId !== undefined && sessionVenueId !== null
           && String(req.query.venue_id) !== String(sessionVenueId)) {
-        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+        return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
       }
 
       if (!venueId) return res.status(400).json({ success: false, error: 'venue_id required' });
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
       const targetVenueId = staff.venue_id ?? vid;
       if (vid && staff.venue_id !== undefined && staff.venue_id !== null
           && String(vid) !== String(staff.venue_id)) {
-        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+        return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
       }
       if (!targetVenueId || !message) {
         return res.status(400).json({ success: false, error: 'venue_id and message required' });
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, error: 'Announcement not found' });
         }
         if (String(existing.venue_id) !== String(staff.venue_id)) {
-          return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
         }
 
         const updates = {};
@@ -185,7 +185,7 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, error: 'Announcement not found' });
         }
         if (String(existing.venue_id) !== String(staff.venue_id)) {
-          return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
         }
 
         const { error } = await getSupabase()

@@ -49,19 +49,39 @@ export async function commanderFetch(url, opts = {}) {
 
   const response = await fetch(url, { ...opts, headers: mergedHeaders });
 
-  // 401 = token expired or invalid → redirect to login
+  // 401 = token expired, invalid, or the route requires a session this client
+  // does not have.
+  //
+  // 2026-08-20 FIX: this used to swallow the 401 and return a FABRICATED
+  // HTTP 200 carrying a hardcoded club ("Club JAQK", venue_id 'v1'). Every
+  // caller in the app therefore believed an unauthenticated request had
+  // succeeded and rendered invented data. That was survivable while almost
+  // nothing was guarded; it became dangerous the moment ~48 routes started
+  // returning 401 correctly, because a signed-out or expired session now
+  // silently paints a plausible-looking screen instead of asking anyone to
+  // log in. Fabricated data on a poker floor is worse than an error.
+  //
+  // The real 401 is now passed through untouched so callers can handle it.
+  // We deliberately do NOT hard-redirect here: a previous change removed that
+  // because a spurious 401 could trap the user in a login redirect loop.
+  // Instead we announce it once and let CommanderLayout surface a banner.
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
-      // Store the current page so login can redirect back
-      // try { sessionStorage.setItem('commander_return_url', window.location.pathname); } catch (e) { console.warn('[App] Handled exception:', e); }
-      // window.location.href = '/commander/login?expired=1';
+      try {
+        sessionStorage.setItem('commander_return_url', window.location.pathname);
+      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // Throttle: one announcement per 10s, no matter how many polls 401.
+      const now = Date.now();
+      if (!window.__commander_401_at || now - window.__commander_401_at > 10000) {
+        window.__commander_401_at = now;
+        try {
+          window.dispatchEvent(new CustomEvent('commander:unauthorized', {
+            detail: { url: typeof url === 'string' ? url : String(url) }
+          }));
+        } catch (e) { console.warn('[App] Handled exception:', e); }
+      }
     }
-    // Still throw so the caller's catch block fires
-    // throw new Error('Session expired - redirecting to login');
-    return new Response(JSON.stringify({
-      clubs: [{ venue_id: 'v1', venue: { name: 'Club JAQK' }, role: 'owner' }],
-      staff_venues: []
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return response;
   }
 
   // Session expiry warning (non-blocking).

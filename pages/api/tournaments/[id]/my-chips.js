@@ -128,6 +128,11 @@ export default async function handler(req, res) {
               .select('id, player_id, current_chips, status, metadata')
               .eq('tournament_id', tournamentId)
               .eq('player_id', user.id)
+              // Player self-reported chip count. 'bagged' excluded on purpose:
+              // between days the bagged count recorded by the floor is the
+              // authoritative number and a player must not be able to type
+              // over it. (The route also gates on a running tournament, and
+              // bag-and-tag leaves the event 'paused'.)
               .in('status', ['active', 'seated', 'registered'])
               .maybeSingle();
 
