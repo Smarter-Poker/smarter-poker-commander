@@ -22,6 +22,22 @@ const NAV_ITEMS = [
 ];
 const NAV_ICONS = { control: Trophy, tables: LayoutGrid, players: Users, payouts: DollarSign, reports: FileText, clock: Monitor };
 
+// Approximate wall-clock time late registration closes: remaining seconds of
+// the current level plus the full duration of every structure row (breaks
+// included, since they delay it) up to and including the late-reg cutoff index.
+function lateRegCloseDate(blindStructure, currentLevelIdx, remainingSeconds, lateRegLevels) {
+  if (!Array.isArray(blindStructure) || blindStructure.length === 0) return null;
+  const cutoff = Math.min(Number(lateRegLevels) || 0, blindStructure.length - 1);
+  const idx = Number(currentLevelIdx) || 0;
+  if (idx > cutoff) return null;
+  let secs = Math.max(0, Number(remainingSeconds) || 0);
+  for (let i = idx + 1; i <= cutoff; i++) {
+    const row = blindStructure[i];
+    secs += ((row?.duration ?? row?.duration_minutes ?? 0) * 60);
+  }
+  return new Date(Date.now() + secs * 1000);
+}
+
 export default function TDClock() {
 
   useEffect(() => { busEmit.sessionStart('commander-td-tournamentId-clock'); }, []);
@@ -355,6 +371,25 @@ ${receipts.map(r => `<div class="card">
         {/* Controls Section */}
         {!isFullscreen && (
           <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center">
+            {/* Late Reg indicator + approximate wall-clock close time */}
+            {stats.late_reg_open && (() => {
+              const closeAt = lateRegCloseDate(
+                tournament.blind_structure,
+                clock.current_level || 0,
+                clockSeconds ?? clockState.remaining_seconds,
+                tournament.late_registration_levels
+              );
+              return (
+                <div className="mb-4 px-4 py-2 rounded-xl bg-[#31A24C]/10 border border-[#31A24C]/30 text-center">
+                  <p className="text-xs font-bold text-[#31A24C] uppercase tracking-wider">Late Reg Open</p>
+                  {closeAt && (
+                    <p className="text-[11px] text-[#B0B3B8] mt-0.5">
+                      Late Reg Closes ~{closeAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             {/* Controls */}
             <div className="flex items-center gap-3 mb-6">
               <button onClick={() => clockAction('prev_level')} disabled={!!actionLoading}

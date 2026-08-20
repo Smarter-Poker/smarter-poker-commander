@@ -6,14 +6,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../src/components/seo/SEOHead';
-import { Plus, Trophy, Clock, Users, DollarSign, Calendar, Play, ChevronRight, Filter, Loader2, RefreshCw, Sliders } from 'lucide-react';
+import { Plus, Trophy, Clock, Users, DollarSign, Calendar, Play, ChevronRight, Filter, Loader2, RefreshCw, Sliders, Copy, X } from 'lucide-react';
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
 import CreateTournamentModal from '../../../src/components/commander/modals/CreateTournamentModal';
 import Pagination from '../../../src/components/commander/shared/Pagination';
 import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
-import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 
 /* ─── Status Config ─────────────────────────────────────────── */
 const STATUS_CONFIG = {
@@ -85,7 +85,75 @@ export default function CommanderTournamentsPage() {
   const [showCreateModal, setShowCreate] = useState(false);
   const [page, setPage] = useState(1);
 
+  // Clone modal state
+  const [cloneModal, setCloneModal] = useState(null); // source tournament or null
+  const [cloneStart, setCloneStart] = useState('');
+  const [cloneName, setCloneName] = useState('');
+  const [cloneCount, setCloneCount] = useState(1);
+  const [cloning, setCloning] = useState(false);
+
+  // Toast state + auto-dismiss
+  const [toast, setToast] = useState(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   useEffect(() => { setPage(1); }, [filter]);
+
+  // Format a Date as a datetime-local input value (local time, minute precision)
+  const toDatetimeLocal = (d) => {
+    const pad = (num) => (num < 10 ? '0' + num : String(num));
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openCloneModal = (t) => {
+    // Default: same weekday next week at the same time
+    const base = t?.scheduled_start ? new Date(t.scheduled_start) : new Date();
+    const next = new Date((isNaN(base.getTime()) ? new Date() : base).getTime() + 7 * 24 * 60 * 60 * 1000);
+    setCloneStart(toDatetimeLocal(next));
+    setCloneName('');
+    setCloneCount(1);
+    setCloneModal(t);
+  };
+
+  const submitClone = async () => {
+    if (!cloneModal || !cloneStart || cloning) return;
+    const start = new Date(cloneStart);
+    if (isNaN(start.getTime())) {
+      setToast({ type: 'error', text: 'Enter A Valid Start Date And Time.' });
+      return;
+    }
+    setCloning(true);
+    try {
+      const body = {
+        scheduled_start: start.toISOString(),
+        count: cloneCount,
+        interval_days: 7
+      };
+      if (cloneName.trim()) body.name = cloneName.trim();
+      const res = await commanderFetch(`/api/commander/tournaments/${cloneModal.id}/clone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        const made = json.data?.tournaments?.length || cloneCount;
+        setToast({ type: 'success', text: json.data?.message || `${made} Tournament${made === 1 ? '' : 's'} Created.` });
+        setCloneModal(null);
+        fetchTournaments(true);
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Clone Failed.' });
+      }
+    } catch (err) {
+      console.warn('Clone error:', err);
+      setToast({ type: 'error', text: 'Clone Failed. Check Console.' });
+    } finally {
+      setCloning(false);
+    }
+  };
 
   /* ─── Init staff session ─── */
   useEffect(() => {
@@ -328,7 +396,24 @@ export default function CommanderTournamentsPage() {
                           {t.buyin_fee ? `+$${t.buyin_fee}` : ''}
                         </p>
                       </div>
-                      <ChevronRight size={18} style={{ color: '#3A3B3C', flexShrink: 0, marginTop: 2 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                        {/* Card root is a <button>, so the inner action is a span */}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          title="Clone Tournament"
+                          aria-label="Clone Tournament"
+                          onClick={e => { e.stopPropagation(); openCloneModal(t); }}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openCloneModal(t); } }}
+                          style={{
+                            width: 34, height: 34, borderRadius: 9, background: '#3A3B3C',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          <Copy size={15} style={{ color: '#B0B3B8' }} />
+                        </span>
+                        <ChevronRight size={18} style={{ color: '#3A3B3C', flexShrink: 0 }} />
+                      </div>
                     </div>
 
                     {/* Stats grid */}
@@ -395,6 +480,100 @@ export default function CommanderTournamentsPage() {
         onSubmit={() => fetchTournaments(true)}
         venueId={venueId}
       />
+
+      {/* ── Clone Tournament Modal ── */}
+      {cloneModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={() => !cloning && setCloneModal(null)}
+        >
+          <div style={{ ...S.panel, width: '100%', maxWidth: 420, padding: 20 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(24,119,242,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Copy size={17} style={{ color: '#1877F2' }} />
+                </div>
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: '#E4E6EB', margin: 0 }}>Clone Tournament</h2>
+              </div>
+              <button onClick={() => !cloning && setCloneModal(null)}
+                style={{ width: 34, height: 34, borderRadius: 9, background: '#3A3B3C', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={16} style={{ color: '#B0B3B8' }} />
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: '#8A8D91', margin: '0 0 16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Copies The Full Setup Of {cloneModal.name || 'This Tournament'}
+            </p>
+
+            <label style={{ ...S.label, display: 'block', marginBottom: 6 }}>New Start Date And Time</label>
+            <input
+              type="datetime-local"
+              value={cloneStart}
+              onChange={e => setCloneStart(e.target.value)}
+              style={{
+                width: '100%', boxSizing: 'border-box', background: '#3A3B3C', border: '1px solid #4A4B4C',
+                borderRadius: 10, padding: '12px 14px', color: '#E4E6EB', fontSize: 14,
+                fontFamily: 'inherit', marginBottom: 14, colorScheme: 'dark' }}
+            />
+
+            <label style={{ ...S.label, display: 'block', marginBottom: 6 }}>Name (Optional)</label>
+            <input
+              type="text"
+              value={cloneName}
+              onChange={e => setCloneName(e.target.value)}
+              placeholder={cloneModal.name || 'Same As Original'}
+              style={{
+                width: '100%', boxSizing: 'border-box', background: '#3A3B3C', border: '1px solid #4A4B4C',
+                borderRadius: 10, padding: '12px 14px', color: '#E4E6EB', fontSize: 14,
+                fontFamily: 'inherit', marginBottom: 14 }}
+            />
+
+            <label style={{ ...S.label, display: 'block', marginBottom: 6 }}>Repeat Weekly</label>
+            <select
+              value={cloneCount}
+              onChange={e => setCloneCount(Number(e.target.value) || 1)}
+              style={{
+                width: '100%', boxSizing: 'border-box', background: '#3A3B3C', border: '1px solid #4A4B4C',
+                borderRadius: 10, padding: '12px 14px', color: '#E4E6EB', fontSize: 14,
+                fontFamily: 'inherit', marginBottom: 18 }}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(c => (
+                <option key={c} value={c}>{c === 1 ? '1 Time (Single Event)' : `${c} Weekly Events`}</option>
+              ))}
+            </select>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setCloneModal(null)} disabled={cloning}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#3A3B3C', border: 'none', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={submitClone} disabled={cloning || !cloneStart}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#1877F2', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: cloning || !cloneStart ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {cloning ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Copy size={15} />}
+                {cloning ? 'Cloning...' : cloneCount > 1 ? `Create ${cloneCount} Events` : 'Clone'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+          padding: '12px 20px', borderRadius: 12,
+          background: toast.type === 'success' ? '#22C55E' : '#EF4444',
+          color: '#fff', fontSize: 13, fontWeight: 600,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          maxWidth: 360,
+        }}>
+          <span>{toast.text}</span>
+          <button onClick={() => setToast(null)} style={{
+            background: 'none', border: 'none', color: '#fff',
+            cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0, marginLeft: 8,
+          }}>×</button>
+        </div>
+      )}
     </CommanderLayout>
   );
 }

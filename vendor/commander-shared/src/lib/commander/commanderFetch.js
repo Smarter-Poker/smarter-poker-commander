@@ -60,24 +60,35 @@ export async function commanderFetch(url, opts = {}) {
     throw new Error('Session expired - redirecting to login');
   }
 
-  // Session expiry warning: check PIN session TTL (non-blocking)
+  // Session expiry warning (non-blocking).
+  // 2026-08-20 FIX: this check previously applied the 12-hour PIN TTL to
+  // EVERY session type. Owner sessions are valid for 7 DAYS server-side
+  // (OWNER_SESSION_TTL_MS in lib/commander/auth), so ~12h after login the
+  // client would dispatch minutesLeft:0, CommanderLayout would hard-redirect
+  // to /commander/login?expired=1, and owners were forced to re-log-in DAILY
+  // while their session was still perfectly valid. Match the server's TTLs:
+  // PIN terminal sessions carry a staff-row `id`; owner sessions carry
+  // `user_id` without `id`.
   if (typeof window !== 'undefined' && staffSession) {
     try {
       const parsed = JSON.parse(staffSession);
       if (parsed.session_ts) {
+        const isPinSession = !!parsed.id;
+        const TTL_MS = isPinSession
+          ? 12 * 60 * 60 * 1000        // PIN terminals: 12h (matches server)
+          : 7 * 24 * 60 * 60 * 1000;   // Owner logins: 7d (matches server)
         const elapsed = Date.now() - parsed.session_ts;
-        const TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-        const WARN_MS = TTL_MS - (15 * 60 * 1000); // warn at 11h45m
+        const WARN_MS = TTL_MS - (15 * 60 * 1000); // warn 15 min before expiry
         // Track WHICH session_ts we already warned about - resets on new login
         if (elapsed > WARN_MS && window.__commander_ttl_warned_ts !== parsed.session_ts) {
           window.__commander_ttl_warned_ts = parsed.session_ts;
           const minsLeft = Math.max(0, Math.round((TTL_MS - elapsed) / 60000));
-          console.warn(`[Commander] PIN session expires in ~${minsLeft} minutes`);
+          console.warn(`[Commander] ${isPinSession ? 'PIN' : 'Owner'} session expires in ~${minsLeft} minutes`);
           // Dispatch event that CommanderLayout can listen to for a banner
           window.dispatchEvent(new CustomEvent('commander:session-expiring', { detail: { minutesLeft: minsLeft } }));
         }
       }
-    } catch { /* not a PIN session or malformed - ignore */ }
+    } catch { /* not a staff session or malformed - ignore */ }
   }
 
   return response;

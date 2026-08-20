@@ -11,7 +11,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../../../src/components/commander/shared/ConfirmModal";
@@ -69,6 +69,7 @@ export default function TDTablesMap() {
   const [autoBreak, setAutoBreak] = useState(null);
   const [breakExecuting, setBreakExecuting] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [seatDrawResults, setSeatDrawResults] = useState(null);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -183,6 +184,11 @@ ${receipts.map(r => `<div class="card">
             if (elimJson.data?.auto_break?.executed) {
               printAutoBreakReceipts(elimJson.data.auto_break);
             }
+            // An alternate may have been auto-seated into the freed seat
+            if (elimJson.data?.promoted_alternate) {
+              const pa = elimJson.data.promoted_alternate;
+              setToast({ type: 'success', text: `Alternate ${pa.player_name || 'Player'} Seated At Table ${pa.table_number}, Seat ${pa.seat_number}` });
+            }
           } else {
             setToast({ type: 'error', text: elimJson.error || 'Elimination Failed.' });
           }
@@ -191,6 +197,36 @@ ${receipts.map(r => `<div class="card">
           // Close modal after elimination - fresh data shown on next open
           setSelectedTable(null);
         } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Elimination Failed. Check Console.' }); }
+        finally { setActionLoading(null); }
+      }
+    });
+  };
+
+  // Random seat draw for all unseated registered players
+  const handleSeatDraw = () => {
+    const count = floor?.stats?.players_registered || 0;
+    setConfirmAction({
+      type: 'seat_draw',
+      message: `Randomly Seat ${count} Registered Player${count === 1 ? '' : 's'}?`,
+      detail: 'Every Unseated Registered Player Will Be Assigned A Random Seat.',
+      color: '#1877F2',
+      onConfirm: async () => {
+        setActionLoading('seat_draw');
+        try {
+          const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/seat-draw`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          });
+          const json = await res.json().catch(() => null);
+          if (json?.success) {
+            setSeatDrawResults(json.data);
+            await fetchFloor();
+            broadcastChange('tournaments');
+          } else {
+            setToast({ type: 'error', text: json?.error?.message || 'Seat Draw Failed.' });
+          }
+        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Seat Draw Failed. Check Console.' }); }
         finally { setActionLoading(null); }
       }
     });
@@ -278,6 +314,22 @@ ${receipts.map(r => `<div class="card">
               {breakExecuting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Breaking Table...</>
                 : <><Printer className="w-4 h-4" /> Break Table & Print {(autoBreak.assignments || []).length} Receipts</>
+              }
+            </button>
+          </div>
+        )}
+
+        {/* Run Seat Draw */}
+        {(floor?.stats?.players_registered || 0) > 0 && (
+          <div className="mx-4 mt-3">
+            <button
+              onClick={handleSeatDraw}
+              disabled={actionLoading === 'seat_draw'}
+              className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+            >
+              {actionLoading === 'seat_draw'
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Drawing Seats...</>
+                : <><Shuffle className="w-4 h-4" /> Run Seat Draw ({floor.stats.players_registered} Registered)</>
               }
             </button>
           </div>
@@ -503,13 +555,75 @@ ${receipts.map(r => `<div class="card">
           </div>
         )}
 
+        {/* ===== SEAT DRAW RESULTS SHEET ===== */}
+        {seatDrawResults && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+            onClick={() => setSeatDrawResults(null)}>
+            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-[#3A3B3C]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center flex-shrink-0">
+                    <Shuffle className="w-5 h-5 text-[#31A24C]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Seat Draw Complete</h3>
+                    <p className="text-xs text-[#B0B3B8]">
+                      {seatDrawResults.message || `${seatDrawResults.players_drawn || 0} Players Seated`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                {(() => {
+                  const groups = {};
+                  (seatDrawResults.assignments || []).forEach(a => {
+                    const key = a.table_number ?? 0;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(a);
+                  });
+                  const tableNums = Object.keys(groups).map(Number).sort((a, b) => a - b);
+                  if (tableNums.length === 0) {
+                    return <p className="text-sm text-[#B0B3B8] text-center py-6">No Assignments Returned</p>;
+                  }
+                  return tableNums.map(tn => (
+                    <div key={tn}>
+                      <p className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider mb-2">Table {tn}</p>
+                      <div className="space-y-1">
+                        {groups[tn].sort((a, b) => (a.seat_number || 0) - (b.seat_number || 0)).map(a => (
+                          <div key={a.entry_id} className="flex items-center gap-3 px-3 py-2.5 bg-[#3A3B3C]/50 rounded-xl">
+                            <span className="w-7 h-7 rounded-full bg-[#1877F2]/20 text-[#1877F2] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                              {a.seat_number}
+                            </span>
+                            <span className="flex-1 text-sm font-medium text-[#E4E6EB] truncate">{a.player_name || 'Player'}</span>
+                            <span className="text-xs text-[#B0B3B8] font-mono">T{a.table_number}-S{a.seat_number}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+              <div className="px-5 pb-5 pt-2 border-t border-[#3A3B3C]">
+                <button onClick={() => setSeatDrawResults(null)}
+                  className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-base font-bold active:scale-[0.98] transition-transform">
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ===== CONFIRMATION MODAL ===== */}
         {confirmAction && (
           <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center px-4" onClick={() => setConfirmAction(null)}>
             <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]" onClick={e => e.stopPropagation()}>
               <div className="text-center mb-4">
                 <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: `${confirmAction.color}20` }}>
-                  <UserX className="w-7 h-7" style={{ color: confirmAction.color }} />
+                  {confirmAction.type === 'seat_draw'
+                    ? <Shuffle className="w-7 h-7" style={{ color: confirmAction.color }} />
+                    : <UserX className="w-7 h-7" style={{ color: confirmAction.color }} />
+                  }
                 </div>
                 <h3 className="text-lg font-bold text-white">{confirmAction.message}</h3>
                 <p className="text-sm text-[#B0B3B8] mt-1">{confirmAction.detail}</p>

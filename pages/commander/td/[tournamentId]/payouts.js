@@ -14,7 +14,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import {
     Trophy, Users, DollarSign, LayoutGrid, Monitor,
     Calculator, Save, RefreshCw, Loader2, FileText,
-    ChevronDown, ChevronUp, AlertTriangle
+    ChevronDown, ChevronUp, AlertTriangle, Handshake, X
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { calculateICM } from '../../../../src/lib/commander/icm-utils';
@@ -45,6 +45,7 @@ export default function TDPayouts() {
     const [calcData, setCalcData] = useState(null);
     const [overrides, setOverrides] = useState({});
     const [showICM, setShowICM] = useState(false);
+    const [showDealCalc, setShowDealCalc] = useState(false);
 
     // 2026-07-25 audit fix: toast state lived only in the ICMCalculator child but
     // is rendered (and set) here; hoist it with an auto-dismiss effect.
@@ -260,6 +261,16 @@ export default function TDPayouts() {
                         </div>
                     </div>
 
+                    {/* Deal Calculator */}
+                    <button onClick={() => setShowDealCalc(true)}
+                        className="w-full bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3 flex items-center justify-between active:bg-[#3A3B3C]">
+                        <div className="flex items-center gap-2">
+                            <Handshake className="w-4 h-4 text-[#31A24C]" />
+                            <span className="text-sm font-medium text-[#E4E6EB]">Deal Calculator</span>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-[#B0B3B8] rotate-[-90deg]" />
+                    </button>
+
                     {/* ICM Calculator Toggle */}
                     <button onClick={() => setShowICM(!showICM)}
                         className="w-full bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3 flex items-center justify-between active:bg-[#3A3B3C]">
@@ -282,6 +293,18 @@ export default function TDPayouts() {
                         />
                     )}
                 </div>
+
+                {/* ===== DEAL CALCULATOR SHEET ===== */}
+                {showDealCalc && (
+                    <DealCalculator
+                        tournamentId={tournamentId}
+                        calcData={calcData}
+                        overrides={overrides}
+                        setToast={setToast}
+                        onClose={() => setShowDealCalc(false)}
+                        onApplied={async () => { await fetchPayouts(); broadcastChange('tournaments'); }}
+                    />
+                )}
 
                 {/* Bottom Nav */}
                 <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
@@ -321,6 +344,238 @@ export default function TDPayouts() {
         </div>
       )}
     </CommanderLayout>
+    );
+}
+
+/**
+ * Deal Calculator - bottom sheet with Even Chop / Chip Chop / ICM modes.
+ * Operates on the remaining players (floor-view entries with current chips)
+ * and the remaining prize money (sum of unpaid payout places, editable).
+ * Per-player results are whole dollars summing exactly to the chopped amount
+ * (rounding remainder fixed on the largest stack). Optional Reserve For 1st
+ * is taken off the top and goes to the eventual 1st place finisher (added to
+ * the chip leader line when the deal is applied).
+ */
+const DEAL_MODES = [
+    { key: 'even', label: 'Even Chop' },
+    { key: 'chip', label: 'Chip Chop' },
+    { key: 'icm', label: 'ICM' },
+];
+
+function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, onApplied }) {
+    const [players, setPlayers] = useState(null); // null = loading
+    const [mode, setMode] = useState('icm');
+    const [moneyInput, setMoneyInput] = useState('');
+    const [reserveInput, setReserveInput] = useState('');
+    const [applying, setApplying] = useState(false);
+
+    // Load remaining players from floor-view (entries carry entry_id + chips)
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, {});
+                const json = await res.json().catch(() => null);
+                if (cancelled) return;
+                let remaining = [];
+                if (json?.success) {
+                    remaining = (json.data?.entries || [])
+                        .filter(e => ['active', 'seated'].includes(e.status))
+                        .map(e => ({
+                            entry_id: e.entry_id,
+                            player_id: e.user_id || null,
+                            name: e.player_name || 'Player',
+                            chips: Math.max(0, Number(e.current_chips) || 0)
+                        }));
+                    if (remaining.length === 0) {
+                        // Fallback: stacks only (cannot apply, but can still calculate)
+                        remaining = (json.data?.stats?.player_stacks || []).map(p => ({
+                            entry_id: null, player_id: null,
+                            name: p.name || 'Player',
+                            chips: Math.max(0, Number(p.chips) || 0)
+                        }));
+                    }
+                }
+                remaining.sort((a, b) => b.chips - a.chips);
+                setPlayers(remaining);
+                // Prefill Money To Chop: sum of the unpaid payout places, which
+                // are positions 1..N for the N remaining players.
+                const slots = (calcData?.calculated_payouts || []).filter(p => p.position <= remaining.length);
+                const prefill = slots.reduce((sum, p) => sum + (overrides?.[p.position] !== undefined ? overrides[p.position] : (p.amount || 0)), 0);
+                setMoneyInput(prefill > 0 ? String(Math.round(prefill)) : '');
+            } catch (err) {
+                console.warn('Deal calc floor fetch:', err);
+                if (!cancelled) setPlayers([]);
+            }
+        })();
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tournamentId]);
+
+    const n = players?.length || 0;
+    const money = Math.max(0, Math.round(Number(moneyInput) || 0));
+    const reserve = Math.min(money, Math.max(0, Math.round(Number(reserveInput) || 0)));
+    const chopAmount = money - reserve;
+
+    // Per-player whole-dollar amounts summing exactly to chopAmount
+    let amounts = [];
+    if (n > 0 && chopAmount >= 0) {
+        const chips = players.map(p => p.chips);
+        const totalChips = chips.reduce((s, c) => s + c, 0);
+        let raw;
+        if (mode === 'even') {
+            raw = players.map(() => chopAmount / n);
+        } else if (mode === 'chip') {
+            raw = chips.map(c => totalChips > 0 ? (c / totalChips) * chopAmount : chopAmount / n);
+        } else {
+            // ICM: scale the remaining payout places to the chopped amount
+            const baseSlots = (calcData?.calculated_payouts || []).filter(p => p.position <= n);
+            let prizes = baseSlots.map(p => (overrides?.[p.position] !== undefined ? overrides[p.position] : (p.amount || 0)));
+            const baseSum = prizes.reduce((s, a) => s + a, 0);
+            prizes = baseSum > 0 ? prizes.map(a => (a / baseSum) * chopAmount) : [chopAmount];
+            raw = totalChips > 0
+                ? calculateICM(chips, prizes).map(r => r.equity || 0)
+                : players.map(() => chopAmount / n);
+        }
+        amounts = raw.map(v => Math.round(v));
+        // Fix the rounding remainder on the largest stack (index 0, sorted desc)
+        const drift = chopAmount - amounts.reduce((s, a) => s + a, 0);
+        if (drift !== 0) amounts[0] += drift;
+    }
+
+    const canApply = n > 0 && money > 0 && !applying && players.every(p => p.entry_id);
+
+    const applyDeal = async () => {
+        if (!canApply) return;
+        setApplying(true);
+        try {
+            // Positions assigned by chip count; the reserve rides on the chip
+            // leader line (1st place) so the totals reconcile.
+            const payouts = players.map((p, i) => ({
+                entry_id: p.entry_id,
+                player_id: p.player_id,
+                position: i + 1,
+                amount: (amounts[i] || 0) + (i === 0 ? reserve : 0)
+            }));
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/payout`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payouts })
+            });
+            const json = await res.json().catch(() => null);
+            if (json?.success) {
+                setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved.` });
+                await onApplied();
+                onClose();
+            } else {
+                setToast({ type: 'error', text: json?.error?.message || 'Failed To Apply Deal.' });
+            }
+        } catch (err) {
+            console.warn('Apply deal error:', err);
+            setToast({ type: 'error', text: 'Failed To Apply Deal. Check Console.' });
+        } finally {
+            setApplying(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#3A3B3C]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
+                            <Handshake className="w-5 h-5 text-[#31A24C]" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Deal Calculator</h3>
+                            <p className="text-xs text-[#B0B3B8]">{n} Player{n === 1 ? '' : 's'} Remaining</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose}
+                        className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C]">
+                        <X className="w-5 h-5 text-[#E4E6EB]" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                    {players === null ? (
+                        <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin" /></div>
+                    ) : n === 0 ? (
+                        <p className="text-sm text-[#B0B3B8] text-center py-8">No Remaining Players Found</p>
+                    ) : (
+                        <>
+                            {/* Mode Tabs */}
+                            <div className="flex gap-2">
+                                {DEAL_MODES.map(m => (
+                                    <button key={m.key} onClick={() => setMode(m.key)}
+                                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${mode === m.key
+                                            ? 'bg-[#1877F2] text-white'
+                                            : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>
+                                        {m.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Inputs */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-[#B0B3B8] mb-1 block">Money To Chop</label>
+                                    <input type="number" value={moneyInput} onChange={e => setMoneyInput(e.target.value)}
+                                        placeholder="Amount"
+                                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-[#B0B3B8] mb-1 block">Reserve For 1st (Optional)</label>
+                                    <input type="number" value={reserveInput} onChange={e => setReserveInput(e.target.value)}
+                                        placeholder="0"
+                                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                                </div>
+                            </div>
+
+                            {/* Results */}
+                            <div className="bg-[#18191A] rounded-xl border border-[#3A3B3C] divide-y divide-[#3A3B3C]">
+                                {players.map((p, i) => (
+                                    <div key={p.entry_id || `${p.name}-${i}`} className="px-4 py-3 flex items-center gap-3">
+                                        <span className="w-7 h-7 rounded-full bg-[#3A3B3C] text-[#B0B3B8] flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-[#E4E6EB] truncate">{p.name}</p>
+                                            <p className="text-xs text-[#B0B3B8]">{p.chips.toLocaleString()} Chips</p>
+                                        </div>
+                                        <span className="text-base font-bold text-[#31A24C]">${(amounts[i] || 0).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {reserve > 0 && (
+                                <p className="text-xs text-[#F59E0B]">
+                                    Plus ${reserve.toLocaleString()} Reserved For 1st Place. It Goes To Whoever Finishes 1st (Added To The Chip Leader Line When Applied).
+                                </p>
+                            )}
+
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-sm text-[#B0B3B8]">Total{reserve > 0 ? ' (Chop + Reserve)' : ''}</span>
+                                <span className="text-base font-bold text-white">${money.toLocaleString()}</span>
+                            </div>
+
+                            {!players.every(p => p.entry_id) && (
+                                <p className="text-xs text-[#B0B3B8]">Entry Records Were Not Found For Every Player, So This Deal Can Be Calculated But Not Applied.</p>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-5 pb-5 pt-3 border-t border-[#3A3B3C] flex gap-3">
+                    <button onClick={onClose}
+                        className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Close</button>
+                    <button onClick={applyDeal} disabled={!canApply}
+                        className="flex-1 py-3.5 rounded-xl bg-[#31A24C] text-white font-bold active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+                        {applying ? <><Loader2 className="w-4 h-4 animate-spin" /> Applying...</> : 'Apply As Deal'}
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }
 

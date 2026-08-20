@@ -36,10 +36,9 @@ export default function CommanderLogin() {
       const staffData = JSON.parse(localStorage.getItem('commander_staff') || '{}');
       if (staffData.email) setEmail(staffData.email);
     } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
-    // Show 'session expired' message if redirected from expired session
-    if (router.query.expired === '1') {
-      setError('Your Session Has Expired. Please Sign In Again.');
-    }
+    // NOTE: the ?expired=1 message is set by checkExistingSession only when
+    // silent recovery fails - setting it here flashed 'Session Expired' at
+    // users who were about to be signed straight back in.
     // Show 'no subscription' message for OAuth users who signed in but don't have a Commander account
     if (router.query.no_sub === '1') {
       setError('No Active Club Commander Subscription Found. Please Sign Up Below To Create Your Venue.');
@@ -78,56 +77,93 @@ export default function CommanderLogin() {
 
     async function checkExistingSession() {
       try {
-        // FIX: Break infinite redirect loop!
-        // If the server rejected the session (e.g. JWT secret rotated), dashboard redirects here with ?expired=1.
-        // We must NOT auto-restore, otherwise the client (which only checks local expiry) will bounce them back.
+        // ── ?expired=1: the server rejected the commander staff session ──
+        // 2026-08-20 FIX: this handler previously wiped 'smarter-poker-auth'
+        // (the SHARED hub session on the smarter.poker/commander/* path) and
+        // called supabase.auth.signOut() (which revokes refresh tokens),
+        // logging the user out of the ENTIRE platform whenever the commander
+        // staff session lapsed. The staff session and the Supabase session
+        // are separate: only the staff session was rejected, so only the
+        // commander_* state should be cleared - then, if the Supabase
+        // session is still valid, silently mint a FRESH signed staff session
+        // via completeLogin instead of demanding credentials. This both
+        // breaks the original redirect loop (fresh session = dashboard stops
+        // bouncing) and never signs the user out of smarter.poker.
         if (router.query.expired === '1') {
-          clearTimeout(safetyTimeout);
-          clearTimeout(stuckTimeout);
-          // Force clear local sessions so they must sign in again
           localStorage.removeItem('commander_staff');
           localStorage.removeItem('commander_venue');
           localStorage.removeItem('commander_subscription');
-          localStorage.removeItem('smarter-poker-auth');
-          try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
-          
+
+          // Loop breaker: if a silent recovery was already attempted in the
+          // last 60s and we are back here, the server is rejecting even
+          // fresh sessions - stop retrying and show the form instead of
+          // bouncing dashboard<->login forever.
+          let recentAttempt = false;
+          try {
+            const last = Number(sessionStorage.getItem('commander_expired_recovery_ts') || 0);
+            recentAttempt = Date.now() - last < 60 * 1000;
+          } catch { /* ignore */ }
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && !recentAttempt) {
+            try { sessionStorage.setItem('commander_expired_recovery_ts', String(Date.now())); } catch { /* ignore */ }
+            clearTimeout(safetyTimeout);
+            clearTimeout(stuckTimeout);
+            const ok = await completeLogin(session.user, session.access_token).catch(() => false);
+            if (ok) return; // redirecting to dashboard with a fresh session
+          }
+          clearTimeout(safetyTimeout);
+          clearTimeout(stuckTimeout);
+          setError('Your Session Has Expired. Please Sign In Again.');
           setCheckingSession(false);
           return;
         }
 
-        const remembered = localStorage.getItem('commander_remember');
+        // ── Silent sign-in whenever a Supabase session exists ──
+        // 2026-08-20 FIX: previously this path required commander_remember
+        // AND commander_staff in localStorage, so a user who was already
+        // logged into smarter.poker (same-origin session via the
+        // smarter.poker/commander/* rewrite) was still shown the login form.
+        // If a valid Supabase session exists, complete the commander login
+        // automatically - the user should NEVER be asked to re-authenticate
+        // while their platform session is alive. completeLogin surfaces its
+        // own error (e.g. no commander subscription) and falls back to the
+        // form when it cannot proceed.
         const staffDataRaw = localStorage.getItem('commander_staff');
-        
-        // Ensure there is actually a user payload, not just an empty object
         let validStaff = false;
         try {
           const parsed = JSON.parse(staffDataRaw || '{}');
           if (parsed.id || parsed.user_id) validStaff = true;
         } catch { }
 
-        if (!remembered || !validStaff) { 
-          clearTimeout(safetyTimeout); 
-          clearTimeout(stuckTimeout);
-          setCheckingSession(false); 
-          return; 
-        }
-
-        // Verify Supabase session is still valid
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        if (session?.user) {
           clearTimeout(safetyTimeout);
           clearTimeout(stuckTimeout);
-          // Session valid AND staff data is valid - go straight to dashboard
-          window.location.href = '/commander/dashboard';
+          if (validStaff) {
+            // Staff state intact - straight to dashboard
+            window.location.href = '/commander/dashboard';
+            return;
+          }
+          // No commander state yet - mint it silently from the live session
+          const ok = await completeLogin(session.user, session.access_token).catch(() => false);
+          if (ok) return;
+          setCheckingSession(false);
           return;
         }
 
-        // Session expired - try to refresh
+        // No session - try to refresh (works when a refresh token survives)
         const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-        if (refreshed) {
+        if (refreshed?.user) {
           clearTimeout(safetyTimeout);
           clearTimeout(stuckTimeout);
-          window.location.href = '/commander/dashboard';
+          if (validStaff) {
+            window.location.href = '/commander/dashboard';
+            return;
+          }
+          const ok = await completeLogin(refreshed.user, refreshed.access_token).catch(() => false);
+          if (ok) return;
+          setCheckingSession(false);
           return;
         }
 
@@ -135,7 +171,7 @@ export default function CommanderLogin() {
         localStorage.removeItem('commander_venue');
         localStorage.removeItem('commander_subscription');
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
-      
+
       clearTimeout(safetyTimeout);
       clearTimeout(stuckTimeout);
       setCheckingSession(false);

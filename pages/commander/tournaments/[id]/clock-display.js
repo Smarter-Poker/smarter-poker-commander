@@ -62,6 +62,22 @@ function formatElapsed(startTime) {
 
 // Chip denominations removed - replaced by prize payouts + chip leaders in right panel
 
+// Approximate wall-clock time late registration closes: remaining seconds of
+// the current level plus the full duration of every structure row (breaks
+// included, since they delay it) up to and including the late-reg cutoff index.
+function lateRegCloseDate(blindStructure, currentLevelIdx, remainingSeconds, lateRegLevels) {
+  if (!Array.isArray(blindStructure) || blindStructure.length === 0) return null;
+  const cutoff = Math.min(Number(lateRegLevels) || 0, blindStructure.length - 1);
+  const idx = Number(currentLevelIdx) || 0;
+  if (idx > cutoff) return null;
+  let secs = Math.max(0, Number(remainingSeconds) || 0);
+  for (let i = idx + 1; i <= cutoff; i++) {
+    const row = blindStructure[i];
+    secs += ((row?.duration ?? row?.duration_minutes ?? 0) * 60);
+  }
+  return new Date(Date.now() + secs * 1000);
+}
+
 const DEFAULT_THEME = {
   background: '#0D192E', text: '#ffffff', accent: '#1877F2',
   blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' };
@@ -591,6 +607,21 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                   </div>
                   {(blinds.ante || 0) > 0 && <div style={{ ...S.blindsAnte, color: '#FFFFFF' }}>BB Ante: {(blinds.ante || 0).toLocaleString()}</div>}
                 </div>
+
+                {/* Late Reg indicator + approximate wall-clock close time */}
+                {stats.late_reg_open && (() => {
+                  const closeAt = lateRegCloseDate(blindStructure, currentLevelIdx, displaySeconds, t.late_registration_levels);
+                  return (
+                    <div style={{ width: '100%', textAlign: 'center', padding: '4px 8px', fontSize: 20, fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ color: '#31A24C' }}>Late Reg Open</span>
+                      {closeAt && (
+                        <span style={{ opacity: 0.7, marginLeft: 10 }}>
+                          Late Reg Closes ~{closeAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {nextBlinds && Object.keys(nextBlinds || {}).length > 0 && (
                   <div style={S.nextRound}>

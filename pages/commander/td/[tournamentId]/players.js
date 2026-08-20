@@ -10,7 +10,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2 } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 
@@ -26,6 +26,7 @@ const FILTERS = [
   { key: 'active', label: 'Active' },
   { key: 'eliminated', label: 'Out' },
   { key: 'registered', label: 'Registered' },
+  { key: 'alternate', label: 'Alternates' },
 ];
 
 function formatChips(n) {
@@ -116,6 +117,8 @@ export default function TDPlayers() {
       });
     }
   }
+
+  const alternateCount = allPlayers.filter(p => p.status === 'alternate').length;
 
   const filtered = allPlayers.filter(p => {
     if (filter !== 'all' && p.status !== filter) return false;
@@ -235,6 +238,60 @@ ${receipts.map(r => `<div class="card">
     setTimeout(() => { pw.print(); pw.close(); }, 500);
   };
 
+  // Seat a waiting alternate into a random open seat via the promote endpoint
+  const performPromote = async (player) => {
+    setActionLoading('promote');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/promote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({ type: 'success', text: json.data?.message || 'Alternate Seated.' });
+        setSelectedPlayer(null);
+        await fetchFloor();
+        broadcastChange('tournaments');
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Seat Alternate.' });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Seat Alternate. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
+  // Undo an elimination. On 409 PAYOUT_RECORDED, ask for confirmation before
+  // retrying with force:true (the recorded payout will be cleared).
+  const performRestore = async (player, force = false) => {
+    setActionLoading('restore');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(force ? { force: true } : {})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({
+          type: 'success',
+          text: `${json.data?.message || 'Elimination Undone.'}${json.data?.bounty_reversed ? ' Bounty Reversed.' : ''}`
+        });
+        setSelectedPlayer(null);
+        await fetchFloor();
+        broadcastChange('tournaments');
+      } else if (res.status === 409 && json?.error?.code === 'PAYOUT_RECORDED' && !force) {
+        setConfirmAction({
+          type: 'restore_force', player,
+          message: `Undo Elimination For ${player.player_name}?`,
+          detail: 'A Payout Is Already Recorded For This Player. Forcing The Undo Will Clear That Payout. Continue?',
+          color: '#F59E0B' });
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Undo Elimination.' });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Undo Elimination. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
   const executeConfirmedAction = async () => {
     if (!confirmAction) return;
     const { type, player } = confirmAction;
@@ -253,8 +310,13 @@ ${receipts.map(r => `<div class="card">
           if (res.data?.auto_break?.executed) {
             printAutoBreakReceipts(res.data.auto_break);
           }
+          // An alternate may have been auto-seated into the freed seat
+          if (res.data?.promoted_alternate) {
+            const pa = res.data.promoted_alternate;
+            setToast({ type: 'success', text: `Alternate ${pa.player_name || 'Player'} Seated At Table ${pa.table_number}, Seat ${pa.seat_number}` });
+          }
         } else {
-          setToast({ type: 'error', text: res.error || 'Elimination Failed.' });
+          setToast({ type: 'error', text: res.error?.message || res.error || 'Elimination Failed.' });
         }
       } else if (type === 'rebuy') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/rebuy`, {});
@@ -272,6 +334,9 @@ ${receipts.map(r => `<div class="card">
         } else {
           setToast({ type: 'error', text: res.error || 'Add-On Failed.' });
         }
+      } else if (type === 'restore_force') {
+        // performRestore handles toast, refetch, and closing the sheet itself
+        await performRestore(player, true);
       }
       
       if (success) {
@@ -381,14 +446,19 @@ ${receipts.map(r => `<div class="card">
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-4 flex gap-2 pb-3">
+        <div className="px-4 flex gap-2 pb-3 overflow-x-auto">
           {FILTERS.map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium ${filter === f.key
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${filter === f.key
                 ? 'bg-[#1877F2] text-white'
                 : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
                 }`}>
               {f.label}
+              {f.key === 'alternate' && alternateCount > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
+                  {alternateCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -406,7 +476,8 @@ ${receipts.map(r => `<div class="card">
               ) : (
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${player.status === 'active' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
                   player.status === 'eliminated' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
-                    'bg-[#B0B3B8]/20 text-[#B0B3B8]'
+                    player.status === 'alternate' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
+                      'bg-[#B0B3B8]/20 text-[#B0B3B8]'
                   }`}>
                   {player.player_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??'}
                 </div>
@@ -418,7 +489,9 @@ ${receipts.map(r => `<div class="card">
                     ? `${formatChips(player.current_chips)} Chips${player.rebuy_count > 0 ? ` - ${player.rebuy_count}R` : ''}${player.addon_taken ? ' - A' : ''}`
                     : player.status === 'eliminated'
                       ? `Eliminated${player.finish_position ? ` #${player.finish_position}` : ''}`
-                      : 'Registered'
+                      : player.status === 'alternate'
+                        ? 'Alternate, Waiting For Seat'
+                        : 'Registered'
                   }
                 </p>
               </div>
@@ -444,7 +517,11 @@ ${receipts.map(r => `<div class="card">
                 <div>
                   <h3 className="text-lg font-bold text-white">{selectedPlayer.player_name}</h3>
                   <p className="text-xs text-[#B0B3B8]">
-                    Table {selectedPlayer.table_number} Seat {selectedPlayer.seat_number}
+                    {selectedPlayer.status === 'alternate'
+                      ? 'Alternate, Waiting For Seat'
+                      : selectedPlayer.table_number
+                        ? `Table ${selectedPlayer.table_number} Seat ${selectedPlayer.seat_number}`
+                        : 'No Seat Assigned'}
                     {selectedPlayer.current_chips > 0 && ` - ${formatChips(selectedPlayer.current_chips)}`}
                   </p>
                 </div>
@@ -469,8 +546,18 @@ ${receipts.map(r => `<div class="card">
                   </>
                 )}
                 {selectedPlayer.status === 'eliminated' && (
-                  <ActionBtn icon={RotateCcw} label="Re-Entry" color="#31A24C"
-                    onClick={() => navigateTo(`/register?reentry=${selectedPlayer.entry_id}`)} />
+                  <>
+                    <ActionBtn icon={Undo2} label="Undo Elimination" color="#F59E0B"
+                      loading={actionLoading === 'restore'}
+                      onClick={() => performRestore(selectedPlayer)} />
+                    <ActionBtn icon={RotateCcw} label="Re-Entry" color="#31A24C"
+                      onClick={() => navigateTo(`/register?reentry=${selectedPlayer.entry_id}`)} />
+                  </>
+                )}
+                {selectedPlayer.status === 'alternate' && (
+                  <ActionBtn icon={UserPlus} label="Seat Alternate" color="#31A24C"
+                    loading={actionLoading === 'promote'}
+                    onClick={() => performPromote(selectedPlayer)} />
                 )}
               </div>
 
