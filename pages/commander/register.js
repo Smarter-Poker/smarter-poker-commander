@@ -91,6 +91,7 @@ export default function RegisterPage() {
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [existingAccount, setExistingAccount] = useState(false);
@@ -327,8 +328,17 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     }
   };
 
+  const handlePhoneChange = (setter) => (e) => {
+    setter(new AsYouType('US').input(e.target.value));
+  };
+
   const handleClubInfoChange = (e) => {
-    setClubInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      setClubInfo(prev => ({ ...prev, [name]: new AsYouType('US').input(value) }));
+    } else {
+      setClubInfo(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleGameToggle = (game) => {
@@ -352,6 +362,21 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
         setError('Please Enter A Valid Email Address');
         return false;
       }
+      if (!ownerPhone.trim()) {
+        setError('Please Enter A Valid Phone Number To Proceed');
+        return false;
+      }
+      if (!isValidPhoneNumber(ownerPhone, 'US')) {
+        setError('Please Enter A Valid US Phone Number');
+        return false;
+      }
+      
+      // Honeypot check
+      if (honeypot) {
+        setError('Suspicious activity detected.');
+        return false;
+      }
+      
       if (!existingAccount) {
         if (!password) {
           setError('Please Create A Password For Your Account');
@@ -381,6 +406,12 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
           return false;
         }
       }
+      // Validate venue phone if provided
+      if (clubInfo.phone && clubInfo.phone.trim() !== '' && !isValidPhoneNumber(clubInfo.phone, 'US')) {
+        setError('Please Enter A Valid US Venue Phone Number');
+        return false;
+      }
+
       // Club tier requires the full address.
       if (isAddressRequired) {
         if (!clubInfo.address || !clubInfo.city || !clubInfo.state || !clubInfo.zip) {
@@ -687,7 +718,8 @@ const CalibrationPanel = () => {
                 }}
               />
 
-              {/* Email Input */}
+              {/* Honeypot */}
+              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />\n              {/* Email Input */}
               <input
                 type="email"
                 value={ownerEmail}
@@ -713,7 +745,7 @@ const CalibrationPanel = () => {
               <input
                 type="tel"
                 value={ownerPhone}
-                onChange={(e) => setOwnerPhone(e.target.value)}
+                onChange={handlePhoneChange(setOwnerPhone)}
                 style={{
                   position: 'absolute',
                   top: '60.9%',
@@ -1606,8 +1638,8 @@ const CalibrationPanel = () => {
               </p>
 
               <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label><input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} /></div>
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label><input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" /></div>
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number</label><input type="tel" value={ownerPhone} onChange={e => setOwnerPhone(e.target.value)} className={inputClass} placeholder="Optional" /></div>
+              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />\n              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label><input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" /></div>
+              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number *</label><input type="tel" value={ownerPhone} onChange={handlePhoneChange(setOwnerPhone)} className={inputClass} placeholder="(555) 555-5555" /></div>
 
               {/* Existing account toggle */}
               <div className="flex items-center gap-3 p-4 bg-[#3A3B3C]/40 rounded-lg">
