@@ -1,23 +1,23 @@
 /**
- * Commander Layout — Global Header Component
+ * Commander Layout - Global Header Component
  * Provides the consistent Club Commander top bar across ALL pages:
  *   [☰ Hamburger] [← Back] .............. [CLUB COMMANDER / Venue Name]
  * 
  * Tier-gated sidebar: items show 🔒 when locked for current tier.
  * 
  * Props:
- *   title       — page title for <Head> tag
- *   backHref    — where Back button navigates (default: /commander/dashboard)
- *   hideBack    — set true on dashboard to hide the back button
- *   children    — page content
+ *   title       - page title for <Head> tag
+ *   backHref    - where Back button navigates (default: /commander/dashboard)
+ *   hideBack    - set true on dashboard to hide the back button
+ *   children    - page content
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
   Monitor, DollarSign, Gift, Calendar, Tv, Activity, BarChart3,
-  AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle
-} from 'lucide-react';
+  AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle, Timer
+, ChevronDown, LayoutGrid } from 'lucide-react';
 import CommanderErrorBoundary from './CommanderErrorBoundary';
 import FloorCallAlert from './FloorCallAlert';
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../../lib/commander/tierConfig';
@@ -38,6 +38,7 @@ const NAV_ITEMS = [
   { label: 'Floor Calls', href: '/commander/floor-calls', icon: Bell },
   { divider: true },
   { label: 'Tournaments', href: '/commander/tournaments', icon: Trophy },
+  { label: 'Tournament Director', href: '/commander/tournament-controls', icon: Timer },
   { label: 'Dealers', href: '/commander/dealers', icon: Users },
   { label: 'Kiosk', href: '/commander/kiosk', icon: Monitor },
   { divider: true },
@@ -63,6 +64,64 @@ export default function CommanderLayout({ children, title, backHref = '/commande
   useBusBridge();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [commanderAccounts, setCommanderAccounts] = useState([]);
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
+
+  useEffect(() => {
+    if (!staff?.user_id) return;
+    const fetchAccounts = async () => {
+      try {
+        const cached = sessionStorage.getItem('commander_accounts_cache');
+        if (cached) {
+          setCommanderAccounts(JSON.parse(cached));
+          return;
+        }
+        const res = await fetch('/api/my-commander-accounts');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data?.accounts) {
+            setCommanderAccounts(json.data.accounts);
+            sessionStorage.setItem('commander_accounts_cache', JSON.stringify(json.data.accounts));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch commander accounts', err);
+      }
+    };
+    fetchAccounts();
+  }, [staff?.user_id]);
+
+  const switchAccount = (account) => {
+    // We update local storage with the new staff and venue, then reload.
+    // The account object has venue_id, role, sub_tier, venue_name, club_logo
+    const currentStaff = JSON.parse(localStorage.getItem('commander_staff') || '{}');
+    const newStaff = {
+      ...currentStaff,
+      venue_id: account.venue_id,
+      venue_name: account.venue_name,
+      role: account.role || 'owner',
+      sub_tier: account.sub_tier || 'PRO'
+    };
+    localStorage.setItem('commander_staff', JSON.stringify(newStaff));
+    
+    // Set venue info
+    localStorage.setItem('commander_venue', JSON.stringify({
+      id: account.venue_id,
+      name: account.venue_name,
+      images: account.club_logo ? [account.club_logo] : []
+    }));
+    
+    // Also mock a minimal subscription for the UI logic if needed
+    const sub = {
+      venue_id: account.venue_id,
+      venue: { id: account.venue_id, name: account.venue_name },
+      plan: account.sub_tier === 'ELITE' ? 'elite' : 'pro'
+    };
+    localStorage.setItem('commander_subscription', JSON.stringify(sub));
+    
+    window.location.href = '/commander/dashboard';
+  };
+
   const [staff, setStaff] = useState(null);
   const [showClubPagePopup, setShowClubPagePopup] = useState(false);
   const [clubPageId, setClubPageId] = useState(null); // Set when venue has an existing club page
@@ -218,7 +277,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         const res = await fetch(`/api/social/pages?linked_venue_id=${staff.venue_id}`);
         const json = await res.json();
         if (json.success && json.data && json.data.length > 0) {
-          // Already has a page, no need to remind — store the page ID for hamburger link
+          // Already has a page, no need to remind - store the page ID for hamburger link
           setClubPageId(json.data[0].id);
           return;
         }
@@ -264,7 +323,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
   // ── PIN GATE VERIFICATION ──
   const handlePinSubmit = async () => {
     if (pinLockout) {
-      setPinError('Too many attempts — wait 30 seconds');
+      setPinError('Too many attempts - wait 30 seconds');
       return;
     }
     if (!pinInput || pinInput.length < 4) {
@@ -280,7 +339,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
       } catch (e) { console.warn('[App] Handled exception:', e); }
     }
     if (!venueId) {
-      setPinError('No venue session — please log in first');
+      setPinError('No venue session - please log in first');
       return;
     }
     setPinLoading(true);
@@ -298,7 +357,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         setPinAttempts(nextAttempts);
         if (nextAttempts >= 5) {
           setPinLockout(true);
-          setPinError('Too many failed attempts — locked for 30 seconds');
+          setPinError('Too many failed attempts - locked for 30 seconds');
           setTimeout(() => { setPinLockout(false); setPinAttempts(0); setPinError(''); }, 30000);
         } else {
           setPinError(data.error || `Invalid PIN (${5 - nextAttempts} attempts remaining)`);
@@ -317,10 +376,10 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         setGateGranted(true);
         setPinInput('');
       } else {
-        setPinError(`Access denied — ${verifiedRole} role does not have permission for this page`);
+        setPinError(`Access denied - ${verifiedRole} role does not have permission for this page`);
       }
     } catch (e) {
-      setPinError('Verification failed — try again');
+      setPinError('Verification failed - try again');
     } finally {
       setPinLoading(false);
     }
@@ -474,18 +533,18 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         .cmd-menu-panel {
           position: fixed;
           top: 0;
-          right: 0;
+          left: 0;
           z-index: 201;
           width: 280px;
           max-height: 100vh;
           overflow-y: auto;
           background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
-          border-left: 2px solid #444;
+          border-right: 2px solid #444;
           padding: 16px 0;
           animation: cmdMenuSlide 0.2s ease;
         }
         @keyframes cmdMenuSlide {
-          from { transform: translateX(100%); }
+          from { transform: translateX(-100%); }
           to { transform: translateX(0); }
         }
         .cmd-menu-header {
@@ -751,8 +810,84 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           <div className="cmd-global-center">
             <div className="cmd-global-title">Club Commander</div>
           </div>
-          <div className="cmd-global-right">
-            <div className="cmd-global-venue">{venueName}</div>
+          <div className="cmd-global-right" style={{ position: 'relative' }}>
+            <div 
+              className="cmd-global-venue" 
+              style={{ cursor: commanderAccounts.length > 1 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={() => commanderAccounts.length > 1 && setShowAccountSwitcher(!showAccountSwitcher)}
+            >
+              {venueName}
+              {commanderAccounts.length > 1 && <ChevronDown size={14} />}
+            </div>
+            {showAccountSwitcher && (
+              <>
+                <div 
+                  style={{ position: 'fixed', inset: 0, zIndex: 199 }} 
+                  onClick={() => setShowAccountSwitcher(false)} 
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  background: '#242526',
+                  border: '1px solid #3A3B3C',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  minWidth: '220px',
+                  zIndex: 200,
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
+                }}>
+                  <div style={{ fontSize: '11px', color: '#B0B3B8', textTransform: 'uppercase', padding: '4px 8px 8px', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    Switch Account
+                  </div>
+                  {commanderAccounts.map(acc => (
+                    <button
+                      key={`acc-${acc.venue_id}`}
+                      onClick={() => switchAccount(acc)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '10px 8px',
+                        borderRadius: '6px',
+                        background: Number(staff?.venue_id) === acc.venue_id ? '#3A3B3C' : 'transparent',
+                        border: 'none',
+                        color: '#E4E6EB',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                      onMouseOver={(e) => {
+                        if (Number(staff?.venue_id) !== acc.venue_id) e.currentTarget.style.background = '#3A3B3C50';
+                      }}
+                      onMouseOut={(e) => {
+                        if (Number(staff?.venue_id) !== acc.venue_id) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <div style={{
+                        width: '24px', height: '24px', borderRadius: '4px', overflow: 'hidden', background: '#18191A',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                      }}>
+                        {acc.club_logo ? (
+                          <img src={acc.club_logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <LayoutGrid size={12} color="#8A8D91" />
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {acc.venue_name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#8A8D91', textTransform: 'uppercase' }}>
+                          {acc.role === 'owner' ? 'Owner' : 'Staff'} • {acc.sub_tier || 'FREE'}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -766,7 +901,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           }}>
             <AlertCircle size={16} color="#EF4444" />
             <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>
-              You are offline — changes will not save until reconnected
+              You are offline - changes will not save until reconnected
             </span>
           </div>
         )}
@@ -782,7 +917,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertCircle size={16} color="#F59E0B" />
               <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>
-                Session expires in ~{sessionExpiring.minutesLeft} min — save your work
+                Session expires in ~{sessionExpiring.minutesLeft} min - save your work
               </span>
             </div>
             <button onClick={() => setSessionExpiring(null)} style={{
@@ -1002,7 +1137,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 className="cmd-pin-gate-back"
                 onClick={() => router.push('/commander/dashboard')}
               >
-                ← Back to Dashboard
+                ← Back To Dashboard
               </button>
             </div>
           </div>
