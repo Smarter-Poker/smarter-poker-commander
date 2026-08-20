@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import twilio from 'twilio';
+import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -12,6 +13,7 @@ if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
 }
 
 export default async function handler(req, res) {
+  if (!applyRateLimit(req, res, LIMITS.auth)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

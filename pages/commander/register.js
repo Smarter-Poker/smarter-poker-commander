@@ -1065,6 +1065,39 @@ const CalibrationPanel = () => {
                     }}
                   />
                   {error && <p style={{ color: '#F02849', marginBottom: '16px' }}>{error}</p>}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <button
+                      onClick={async () => {
+                        setIsVerifyingPhone(true);
+                        setError('');
+                        try {
+                          const res = await fetch('/api/commander/verify-sms', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'send', phone: ownerPhone })
+                          });
+                          const data = await res.json();
+                          if (data.hash) {
+                            setPhoneVerificationHash(data.hash);
+                            setError('New code sent successfully.');
+                            setTimeout(() => setError(''), 3000);
+                          } else {
+                            setError(data.error || 'Failed to resend SMS.');
+                          }
+                        } catch (err) {
+                          setError('Network error resending SMS.');
+                        }
+                        setIsVerifyingPhone(false);
+                      }}
+                      disabled={isVerifyingPhone}
+                      style={{
+                        flex: 1, padding: '8px', background: 'transparent',
+                        border: '1px solid #333', color: '#00F0FF', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'
+                      }}
+                    >
+                      Resend Code
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <button
                       onClick={prevStep}
