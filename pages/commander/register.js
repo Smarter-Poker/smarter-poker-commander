@@ -120,9 +120,13 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     'STUD': { l: 51, w: 7.6, t: 78.8, h: 3 },
     'MIXED': { l: 59.6, w: 8.4, t: 78.8, h: 3 },
     'TOURNAMENTS': { l: 68.8, w: 14.6, t: 78.8, h: 2.9 },
+    'plan_home': { l: 14.8, t: 40.5, w: 70.4, h: 7.1 },
+    'plan_charity': { l: 14.8, t: 49.9, w: 70.4, h: 7.1 },
+    'plan_club': { l: 14.8, t: 59.3, w: 70.4, h: 7.1 },
     'dot_home': { l: 4.3, t: 51 },
     'dot_charity': { l: 4.3, t: 51 },
     'dot_club': { l: 4.3, t: 51 },
+    'checkbox_agree': { l: 14.9, t: 75.2, w: 2.5, h: 2.5 },
     'checkmark': { l: 15.3, t: 75.7 }
   });
   const [activeCalib, setActiveCalib] = useState('NLH');
@@ -157,6 +161,13 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
           
           el.style.left = `${newLeft.toFixed(2)}%`;
           el.style.top = `${newTop.toFixed(2)}%`;
+          if (idKey === 'checkmark') {
+            const vis = document.getElementById('calib-checkmark_visual');
+            if (vis) {
+              vis.style.left = `${newLeft.toFixed(2)}%`;
+              vis.style.top = `${newTop.toFixed(2)}%`;
+            }
+          }
           
           liveCalib.current = {
             ...liveCalib.current,
@@ -746,7 +757,7 @@ const CalibrationPanel = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  pointerEvents: 'none',
+                  pointerEvents: showCalib ? 'auto' : 'none',
                   zIndex: 9
                 }}>
                   <span className="text-[#1877F2] font-bold">✓</span>
@@ -1220,14 +1231,17 @@ const CalibrationPanel = () => {
 
           {/* Plan 1: Home Games */}
           <button
+            id="calib-plan_home"
+            {...getDraggableProps('plan_home')}
             type="button"
             onClick={() => setSelectedTier('home_game')}
             style={{
               position: 'absolute',
-              top: '40.5%',
-              left: '14.8%',
-              width: '70.4%',
-              height: '7.1%',
+              top: `${calib.plan_home.t}%`,
+              left: `${calib.plan_home.l}%`,
+              width: `${calib.plan_home.w}%`,
+              height: `${calib.plan_home.h}%`,
+              ...(showCalib ? getDraggableProps('plan_home').style : {}),
               background: 'transparent',
               border: selectedTier === 'home_game' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
@@ -1249,7 +1263,7 @@ const CalibrationPanel = () => {
                  height: '12px',
                  backgroundColor: '#1877F2',
                  borderRadius: '50%',
-                 pointerEvents: 'none'
+                 pointerEvents: showCalib ? 'auto' : 'none'
                }} />
              )}
           </button>
@@ -1284,7 +1298,7 @@ const CalibrationPanel = () => {
                  height: '12px',
                  backgroundColor: '#1877F2',
                  borderRadius: '50%',
-                 pointerEvents: 'none'
+                 pointerEvents: showCalib ? 'auto' : 'none'
                }} />
              )}
           </button>
@@ -1319,13 +1333,15 @@ const CalibrationPanel = () => {
                  height: '12px',
                  backgroundColor: '#1877F2',
                  borderRadius: '50%',
-                 pointerEvents: 'none'
+                 pointerEvents: showCalib ? 'auto' : 'none'
                }} />
              )}
           </button>
 
           {/* Terms Checkbox */}
           <input
+            id="calib-checkmark"
+            {...getDraggableProps('checkmark')}
             type="checkbox"
             checked={agreedToTerms}
             onChange={(e) => setAgreedToTerms(e.target.checked)}
@@ -1333,26 +1349,26 @@ const CalibrationPanel = () => {
               position: 'absolute',
               top: `${calib.checkmark.t}%`,
               left: `${calib.checkmark.l}%`,
-              width: '2.2%',
-              height: '2.2%',
+              width: `${calib.checkbox_agree.w}%`,
+              height: `${calib.checkbox_agree.h}%`,
+              ...(showCalib ? getDraggableProps('checkmark').style : {}),
               cursor: 'pointer',
-              opacity: 0.01,
+              opacity: showCalib ? 0.3 : 0.01,
               zIndex: 10
             }}
             title="I Agree To The Terms And Privacy Policy"
           />
           {agreedToTerms && (
-            <div id="calib-checkmark" {...getDraggableProps('checkmark')} style={{
+            <div id="calib-checkmark_visual" style={{
               position: 'absolute',
               top: `${calib.checkmark.t}%`,
               left: `${calib.checkmark.l}%`,
-              ...(showCalib ? getDraggableProps('checkmark').style : {}),
               width: '2.2%',
               height: '2.2%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              pointerEvents: 'none',
+              pointerEvents: showCalib ? 'auto' : 'none',
               zIndex: 9
             }}>
               <span className="text-[#1877F2] font-bold" style={{ fontSize: 'min(18px, 2vw)' }}>✓</span>
