@@ -657,45 +657,61 @@ const venueId = staff?.venue_id;
             <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div onClick={() => setShowUpgradeModal(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
               <div style={{
-                position: 'relative', background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%)',
-                borderRadius: 16, width: '90%', maxWidth: 400, padding: 28,
-                boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.12)'
+                position: 'relative', 
+                width: '90%', 
+                maxWidth: 500, 
+                aspectRatio: '600 / 480',
+                backgroundImage: 'url(/images/upgrade_modal_bg.png)',
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                fontFamily: 'Inter, sans-serif'
               }}>
-                <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #F59E0B, #EF4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <Crown size={28} color="#fff" />
+                <div style={{
+                  position: 'absolute',
+                  top: '44.5%',
+                  left: '10%',
+                  right: '10%',
+                  textAlign: 'center',
+                  color: '#FFFFFF',
+                  fontSize: 'clamp(12px, 3vw, 15px)',
+                  lineHeight: 1.6,
+                  textTransform: 'capitalize',
+                  letterSpacing: '0.5px',
+                  fontWeight: 600
+                }}>
+                  {showUpgradeModal.label} Requires An Upgrade To<br/>
+                  The <span style={{ color: '#60A5FA', fontWeight: 700 }}>{showUpgradeModal.upgradeTierName}</span> Plan ${showUpgradeModal.upgradePrice} Per Month.
                 </div>
-                <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
-                  Upgrade Required
-                </h2>
-                <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                  <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> Requires The{' '}
-                  <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> Plan
-                  {showUpgradeModal.upgradePrice && <> (${showUpgradeModal.upgradePrice}/mo)</>}.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button
-                    onClick={() => { setShowUpgradeModal(null); router.push('/commander/settings?tab=subscription'); }}
-                    style={{
-                      padding: '12px 24px', borderRadius: 10, border: 'none',
-                      background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#fff',
-                      fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                      boxShadow: '0 4px 16px rgba(245,158,11,0.4)'
-                    }}
-                  >
-                    Upgrade Plan
-                  </button>
-                  <button
-                    onClick={() => setShowUpgradeModal(null)}
-                    style={{
-                      padding: '10px 20px', borderRadius: 10, border: '2px solid rgba(255,255,255,0.15)',
-                      background: 'transparent', color: '#888',
-                      fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                    }}
-                  >
-                    Maybe Later
-                  </button>
-                </div>
+                
+                {/* Invisible Upgrade Button */}
+                <div 
+                  onClick={() => { setShowUpgradeModal(null); router.push('/commander/settings?tab=subscription'); }}
+                  style={{
+                    position: 'absolute',
+                    top: '55%', /* Adjusted based on image */
+                    left: '20%',
+                    right: '20%',
+                    height: '14%',
+                    cursor: 'pointer'
+                  }}
+                />
+
+                {/* Invisible Maybe Later Button */}
+                <div 
+                  onClick={() => setShowUpgradeModal(null)}
+                  style={{
+                    position: 'absolute',
+                    top: '71%', /* Adjusted based on image */
+                    left: '20%',
+                    right: '20%',
+                    height: '14%',
+                    cursor: 'pointer'
+                  }}
+                />
               </div>
             </div>
           )}
