@@ -36,6 +36,11 @@ const CONFIG_COLUMNS = [
   'buyin_amount', 'buyin_fee', 'starting_chips',
   'late_registration_levels', 'min_entries', 'max_entries', 'guaranteed_pool',
   'blind_structure', 'break_schedule', 'payout_structure',
+  // 2026-08-20 audit fix: paying_places was omitted, so every clone silently
+  // reverted to the column default of 3 paid places no matter how the source
+  // event was configured. is_multi_day/total_days were lost the same way and
+  // turned a Day 1/Day 2 event into a one-day freezeout.
+  'paying_places', 'is_multi_day', 'total_days',
   'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'max_rebuys', 'rebuy_end_level',
   'allows_addon', 'addon_amount', 'addon_chips', 'addon_at_break',
   'bounty_amount', 'broadcast_to_smarter', 'series_id', 'leaderboard_id'

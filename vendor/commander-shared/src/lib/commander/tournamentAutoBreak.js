@@ -86,9 +86,13 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
         let venueLogoUrl = null;
         let venueCity = null;
         let venueState = null;
-        if ((!venueName || !venueLogoUrl) && tournament.venue_id) {
+        // 2026-08-20 audit fix: this read `venues`, whose id is a UUID and which
+        // holds zero rows. commander_tournaments.venue_id is an INTEGER FK to
+        // poker_venues, so the comparison was a type error, the error was
+        // discarded, and every auto-break receipt printed with no venue header.
+        if (tournament.venue_id) {
             const { data: venueRow } = await getSupabase()
-                .from('venues')
+                .from('poker_venues')
                 .select('name, logo_url, city, state')
                 .eq('id', tournament.venue_id)
                 .maybeSingle();
@@ -99,23 +103,39 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
         }
 
 
-        const { data: tables } = await getSupabase()
+        const { data: tables, error: tablesErr } = await getSupabase()
             .from('commander_tables')
             .select('id, table_number, max_seats')
             .eq('venue_id', tournament.venue_id)
             .eq('tournament_id', tournamentId)
             .eq('mode', 'tournament');
 
+        // Discarded read errors here are indistinguishable from "no tables" and
+        // silently disable auto-break for the whole tournament. Surface them.
+        if (tablesErr) {
+            console.error('[auto-break] commander_tables read failed', {
+                tournamentId, code: tablesErr.code, message: tablesErr.message, details: tablesErr.details,
+            });
+            return null;
+        }
+
         if (!tables || tables.length < 2) return null; // 1 table = final table, never auto-break
 
         // ── Fetch active entries with seat info ──
-        const { data: entries } = await getSupabase()
+        const { data: entries, error: entriesErr } = await getSupabase()
             .from('commander_tournament_entries')
             .select('id, player_name, table_number, seat_number, current_chips')
             .eq('tournament_id', tournamentId)
             .in('status', ['active', 'seated'])
             .order('table_number')
             .order('seat_number');
+
+        if (entriesErr) {
+            console.error('[auto-break] commander_tournament_entries read failed', {
+                tournamentId, code: entriesErr.code, message: entriesErr.message, details: entriesErr.details,
+            });
+            return null;
+        }
 
         if (!entries || entries.length === 0) return null;
 
@@ -158,12 +178,21 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
         //  between our read and our write)
         for (const t of otherTables) {
             if (t.open_seats.length === 0) continue;
-            const { data: liveOccupants } = await getSupabase()
+            const { data: liveOccupants, error: liveErr } = await getSupabase()
                 .from('commander_tournament_entries')
                 .select('seat_number')
                 .eq('tournament_id', tournamentId)
                 .eq('table_number', t.table_number)
                 .in('status', ['active', 'seated']);
+            // A discarded error here made the guard treat every seat as free and
+            // the break could double-seat a table. Abort instead.
+            if (liveErr) {
+                console.error('[auto-break] live occupancy read failed', {
+                    tournamentId, table_number: t.table_number,
+                    code: liveErr.code, message: liveErr.message, details: liveErr.details,
+                });
+                return null;
+            }
             const liveOccupied = new Set((liveOccupants || []).map(x => x.seat_number));
             // Remove any seat that became occupied since our initial read
             t.open_seats = t.open_seats.filter(s => !liveOccupied.has(s));
@@ -211,6 +240,7 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
                 .from('commander_tournament_entries')
                 .select('metadata')
                 .eq('id', a.entry_id)
+                .eq('tournament_id', tournamentId)
                 .maybeSingle();
 
             const { error: uErr } = await getSupabase()
@@ -225,7 +255,8 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
                         move_reason: 'auto_table_break'
                     }
                 })
-                .eq('id', a.entry_id);
+                .eq('id', a.entry_id)
+                .eq('tournament_id', tournamentId);
 
             if (uErr) {
                 errors.push({ entry_id: a.entry_id, error: uErr.message });

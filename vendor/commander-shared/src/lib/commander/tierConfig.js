@@ -59,9 +59,10 @@ export const TIER_NAMES = {
  */
 export function normalizeTier(tier) {
     if (!tier) return TIER_NAMES.HOME_GAME;
-    if (TIERS[tier]) return tier;
+    const lower = tier.toLowerCase();
+    if (TIERS[lower]) return lower;
     // Enterprise, pro, premium, etc. → treat as club (highest tier)
-    if (tier === 'enterprise' || tier === 'pro' || tier === 'premium') return TIER_NAMES.CLUB;
+    if (lower === 'enterprise' || lower === 'pro' || lower === 'premium') return TIER_NAMES.CLUB;
     return TIER_NAMES.HOME_GAME; // unknown defaults to lowest
 }
 
@@ -333,8 +334,6 @@ export function getMinimumTier(featureKey) {
  * Get the upgrade target for a given tier
  */
 export function getUpgradeTier(currentTier) {
-    const normalized = normalizeTier(currentTier);
-    if (normalized === TIER_NAMES.HOME_GAME) return TIER_NAMES.CHARITY;
-    if (normalized === TIER_NAMES.CHARITY) return TIER_NAMES.CLUB;
-    return null; // Already on highest tier (club/enterprise)
+    // User requested that the upgrade prompt strictly suggests the plan matching their venue type
+    return normalizeTier(currentTier);
 }

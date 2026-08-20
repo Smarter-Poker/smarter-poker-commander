@@ -132,8 +132,10 @@ export default async function handler(req, res) {
       // Every live player on the table being broken MUST have an assignment.
       // Without this the table was released back to the pool while a player was
       // still recorded as sitting at it, and that player vanished from the map.
+      // table_number arrives as JSON and may be a string; the column is INTEGER.
+      const breakTableNum = Number(table_number);
       const leftBehind = conflictingSeats.filter(e =>
-        e.table_number === table_number && !movingEntryIds.has(e.id)
+        e.table_number === breakTableNum && !movingEntryIds.has(e.id)
       );
       if (leftBehind.length > 0) {
         return res.status(400).json({

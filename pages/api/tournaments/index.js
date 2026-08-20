@@ -6,7 +6,7 @@
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { captureException } from '../../../src/lib/commander/errorMonitoring';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { logAction } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -89,6 +89,10 @@ async function listTournaments(req, res) {
     // (public fields only) instead of a 400.
     if (!venue_id) {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      // 2026-08-20 audit fix: 'registering' is NOT a value the
+      // commander_tournaments_status_check constraint allows - the real value is
+      // 'registration'. Every tournament with open registration was invisible on
+      // the cross-venue player hub list.
       const { data, error } = await getSupabase()
         .from('commander_tournaments')
         .select(`
@@ -96,22 +100,43 @@ async function listTournaments(req, res) {
           scheduled_start, status, current_entries, max_entries,
           poker_venues (id, name, city, state)
         `)
-        .in('status', ['scheduled', 'registering', 'running'])
+        .in('status', ['scheduled', 'registration', 'running', 'paused', 'final_table'])
         .gte('scheduled_start', since)
         .order('scheduled_start', { ascending: true })
-        .limit(50);
+        .limit(limit);
 
       if (error) throw error;
 
       return res.status(200).json({ success: true, data: { tournaments: data } });
     }
 
+    // 2026-08-20 audit fix: guardWriteStaff returns `true` on GET, so this list
+    // is PUBLIC. It nonetheless selected `*`, publishing created_by (a staff
+    // uuid) and the whole settings blob (live clock state) for any venue_id an
+    // anonymous caller cared to type. Only a signed staff session for THIS
+    // venue gets the full rows; everyone else gets the same public field set
+    // the cross-venue branch above returns. Mirrors tournaments/[id].js.
+    const staffCheck = await verifyStaffSession(req);
+    const isVenueStaff = !!(staffCheck && staffCheck.staff &&
+      String(staffCheck.staff.venue_id) === String(venue_id));
+
+    const PUBLIC_COLUMNS = `
+        id, venue_id, name, description, tournament_type, variant,
+        buyin_amount, buyin_fee, starting_chips, scheduled_start,
+        registration_opens, late_registration_levels, late_reg_open,
+        min_entries, max_entries, guaranteed_pool, actual_prizepool,
+        paying_places, payout_structure, blind_structure, break_schedule,
+        allows_rebuys, rebuy_amount, rebuy_chips, max_rebuys, rebuy_end_level,
+        allows_addon, addon_amount, addon_chips, addon_at_break, bounty_amount,
+        status, current_level, current_entries, players_remaining,
+        total_chips_in_play, average_stack, tables_remaining,
+        actual_start, ended_at, series_id, leaderboard_id,
+        poker_venues (id, name, city, state)
+      `;
+
     let query = getSupabase()
       .from('commander_tournaments')
-      .select(`
-        *,
-        poker_venues (id, name, city, state)
-      `)
+      .select(isVenueStaff ? `*, poker_venues (id, name, city, state)` : PUBLIC_COLUMNS)
       .eq('venue_id', venue_id)
       .order('scheduled_start', { ascending: true })
       .limit(limit);
@@ -121,8 +146,13 @@ async function listTournaments(req, res) {
       const statusParts = status.split(',').map(s => s.trim());
 
       // Map shorthand labels to actual DB status arrays
+      // 'registration' is the real constraint value; 'registering' never matched
+      // anything, so the TD's "Upcoming" filter hid every open-registration
+      // tournament. Both are listed so an older client sending the wrong raw
+      // value still resolves.
       const resolveStatuses = (label) => {
-        if (label === 'upcoming') return ['scheduled', 'registering'];
+        if (label === 'upcoming') return ['scheduled', 'registration'];
+        if (label === 'registering') return ['registration'];
         if (label === 'active') return ['running', 'paused', 'final_table'];
         return [label]; // raw status value
       };

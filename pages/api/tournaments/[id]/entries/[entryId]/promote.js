@@ -176,8 +176,12 @@ export default async function handler(req, res) {
     // outage can never fail the seating itself.
     if (promoted.player_phone) {
       (async () => {
+        // 2026-08-20 audit fix: this read `venues`, whose id is a UUID and which
+        // holds zero rows. commander_tournaments.venue_id is an INTEGER FK to
+        // poker_venues, so the comparison was a type error, the error was
+        // discarded, and every seat-ready SMS said "Your Poker Room".
         const { data: venue } = await getSupabase()
-          .from('venues')
+          .from('poker_venues')
           .select('name')
           .eq('id', tournament.venue_id)
           .maybeSingle();

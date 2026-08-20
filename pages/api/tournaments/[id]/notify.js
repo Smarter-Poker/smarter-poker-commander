@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
       if (req.method !== 'POST') {
           res.setHeader('Allow', ['POST']);
-          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+          return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
       }
 
       const { id: tournamentId } = req.query;
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       if (!type || !NOTIFICATION_TYPES.includes(type)) {
           return res.status(400).json({
               success: false,
-              error: `Invalid Type. Must Be One Of: ${NOTIFICATION_TYPES.join(', ')}`
+              error: { code: 'VALIDATION_ERROR', message: `Invalid Type. Must Be One Of: ${NOTIFICATION_TYPES.join(', ')}` }
           });
       }
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (tErr || !tournament) {
-              return res.status(404).json({ success: false, error: 'Tournament Not Found' });
+              return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
           }
 
           const venueName = tournament.poker_venues?.name || 'Venue';
@@ -95,17 +95,30 @@ export default async function handler(req, res) {
               // Single player notification
               targetUserIds = [player_id];
           } else {
-              // Mass notification to all active/registered players
-              const { data: entries } = await getSupabase()
+              // Mass notification to all active/registered players.
+              // 2026-08-20 audit fix: .limit(100) silently truncated the target
+              // list, so in any field over 100 entries most players were never
+              // told the tournament was starting and the response still said
+              // the broadcast succeeded.
+              const { data: entries, error: eErr } = await getSupabase()
                   .from('commander_tournament_entries')
                   .select('player_id')
                   .eq('tournament_id', tournamentId)
                   .in('status', ['registered', 'seated', 'active'])
-                  .limit(100);
+                  .limit(5000);
 
-              targetUserIds = (entries || [])
+              if (eErr) {
+                  console.error('[notify.js] entries read failed', {
+                      tournamentId, code: eErr.code, message: eErr.message, details: eErr.details,
+                  });
+                  return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Read Tournament Entries' } });
+              }
+
+              // De-duplicate: a re-entry player has more than one row and would
+              // otherwise get the same push twice.
+              targetUserIds = [...new Set((entries || [])
                   .map(e => e.player_id)
-                  .filter(Boolean);
+                  .filter(Boolean))];
           }
 
           if (targetUserIds.length === 0) {
@@ -133,7 +146,6 @@ export default async function handler(req, res) {
               } catch (pushErr) {
                   console.warn('[notify.js] Push notification error:', pushErr.message);
               }
-          } else {
           }
 
           // Also insert in-app notifications for each player
@@ -156,27 +168,34 @@ export default async function handler(req, res) {
               .from('commander_notifications')
               .insert(notificationRows);
 
+          // The empty `if (insertErr) {}` swallowed every in-app write failure,
+          // so the TD saw "notified" while nothing had been recorded.
           if (insertErr) {
+              console.error('[notify.js] commander_notifications insert failed', {
+                  tournamentId, rows: notificationRows.length,
+                  code: insertErr.code, message: insertErr.message, details: insertErr.details,
+              });
           }
 
           return res.status(200).json({
               success: true,
               data: {
                   sent: sentCount,
-                  in_app: targetUserIds.length,
+                  in_app: insertErr ? 0 : targetUserIds.length,
+                  in_app_error: insertErr ? insertErr.message : undefined,
                   type,
                   message: notification.body
               }
           });
       } catch (error) {
           console.warn('[notify.js] Error:', error);
-          return res.status(500).json({ success: false, error: 'Internal Server Error' });
+          return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 

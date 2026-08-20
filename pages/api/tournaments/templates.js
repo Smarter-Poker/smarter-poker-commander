@@ -4,7 +4,7 @@
  * POST /api/commander/tournaments/templates - Create template (or save from existing tournament)
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -18,53 +18,73 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this used guardWriteStaff, which returns `true` for GET
+// and lets the request through unauthenticated. Tournament templates are venue
+// business configuration (buy-in, fee, guarantee, payout structure), so the
+// listing was readable by anyone who knew a venue_id. Templates have no public
+// consumer, so the read side is now staff-only too.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
+    } else if (!applyRateLimit(req, res, LIMITS.read)) {
+      return;
     }
 
-      const _g = await guardWriteStaff(req, res); if (!_g) return;
+      const _g = await guardStaff(req, res); if (!_g) return;
 
-      if (req.method === 'GET') return listTemplates(req, res);
+      if (req.method === 'GET') return listTemplates(req, res, _g);
       if (req.method === 'POST') return createTemplate(req, res, _g);
 
       res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
-async function listTemplates(req, res) {
+// 2026-08-20 audit fix: venue_id came straight off the query string and was
+// never checked against the caller's staff session, so staff at venue A could
+// read (and write) venue B's tournament templates by changing one query param.
+function venueMismatch(staff, venueId) {
+    if (!staff || staff === true) return false;
+    if (staff.venue_id === undefined || staff.venue_id === null) return false;
+    return String(staff.venue_id) !== String(venueId);
+}
+
+async function listTemplates(req, res, staff) {
     try {
         const { venue_id } = req.query;
-        if (!venue_id) return res.status(400).json({ success: false, error: { message: 'venue_id required' } });
+        if (!venue_id) return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'venue_id Required' } });
+
+        if (venueMismatch(staff, venue_id)) {
+            return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
+        }
 
         const { data, error } = await getSupabase()
             .from('commander_tournament_templates')
             .select('*')
             .eq('venue_id', venue_id)
             .order('created_at', { ascending: false })
-                .limit(100);
+            .limit(200);
 
         if (error) throw error;
 
         return res.status(200).json({ success: true, data: { templates: data || [] } });
     } catch (error) {
         console.warn('List templates error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }
 
 async function createTemplate(req, res, staff) {
     try {
         if (!staff || staff === true) {
-            return res.status(401).json({ success: false, error: { message: 'Staff auth required' } });
+            return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff Authentication Required' } });
         }
 
         const {
@@ -86,8 +106,17 @@ async function createTemplate(req, res, staff) {
                 .maybeSingle();
 
             if (tErr || !tournament) {
-                return res.status(404).json({ success: false, error: { message: 'Tournament not found' } });
+                return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
             }
+
+            if (venueMismatch(staff, tournament.venue_id)) {
+                return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Tournament Belongs To A Different Venue' } });
+            }
+
+            // Never copy live clock state into a reusable template - a tournament
+            // created from it would start already holding another event's clock.
+            const srcSettings = (tournament.settings && typeof tournament.settings === 'object') ? tournament.settings : {};
+            const { clock_state: _droppedClock, ...templateSettings } = srcSettings;
 
             const { data: template, error } = await getSupabase()
                 .from('commander_tournament_templates')
@@ -111,7 +140,7 @@ async function createTemplate(req, res, staff) {
                     addon_amount: tournament.addon_amount,
                     addon_chips: tournament.addon_chips,
                     max_entries: tournament.max_entries,
-                    settings: tournament.settings,
+                    settings: templateSettings,
                     leaderboard_id: tournament.leaderboard_id
                 })
                 .select()
@@ -123,7 +152,11 @@ async function createTemplate(req, res, staff) {
 
         // Manual creation
         if (!venue_id || !name) {
-            return res.status(400).json({ success: false, error: { message: 'venue_id and name required' } });
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'venue_id And name Required' } });
+        }
+
+        if (venueMismatch(staff, venue_id)) {
+            return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
         }
 
         const { data: template, error } = await getSupabase()
@@ -144,6 +177,6 @@ async function createTemplate(req, res, staff) {
     } catch (error) {
         try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
         console.warn('Create template error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }

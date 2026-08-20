@@ -280,13 +280,24 @@ async function handleExecute(req, res, tournament) {
   // and 409 if any destination seat was taken since the assignments were
   // generated (mirrors balance-execute.js's conflictingSeats guard).
   const movingEntryIds = new Set(assignments.map(a => a.entry_id));
-  const { data: currentSeats } = await getSupabase()
+  const { data: currentSeats, error: cErr } = await getSupabase()
     .from('commander_tournament_entries')
-    .select('id, table_number, seat_number, player_name')
+    .select('id, table_number, seat_number, player_name, current_chips, status')
     .eq('tournament_id', tournament.id)
     .in('status', ['active', 'seated']);
 
-  const occupiedList = (currentSeats || []).filter(e =>
+  // A discarded error here made the guard pass on an empty result and the break
+  // went on to overwrite live seats.
+  if (cErr) {
+    console.error('[tournaments/auto-break] seat conflict read failed', {
+      tournamentId: tournament.id, code: cErr.code, message: cErr.message, details: cErr.details,
+    });
+    return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seats' } });
+  }
+
+  const liveSeats = currentSeats || [];
+
+  const occupiedList = liveSeats.filter(e =>
     !movingEntryIds.has(e.id) &&
     assignments.some(a => a.to_table === e.table_number && a.to_seat === e.seat_number)
   );
@@ -299,12 +310,38 @@ async function handleExecute(req, res, tournament) {
     });
   }
 
+  // Every live player on the table being broken MUST have an assignment.
+  // Without this the table was released back to the pool while a player was
+  // still recorded as sitting at it, and that player vanished from the map.
+  const breakTableNum = Number(break_table);
+  const leftBehind = liveSeats.filter(e => e.table_number === breakTableNum && !movingEntryIds.has(e.id));
+  if (leftBehind.length > 0) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'PLAYERS_LEFT_BEHIND',
+        message: `Table ${break_table} Still Has ${leftBehind.length} Unassigned Player(s): ${leftBehind.map(e => e.player_name || 'Unknown').join(', ')}`
+      }
+    });
+  }
+
+  // Index the live rows so the receipt is built from what the DATABASE says the
+  // player's origin and stack were, not from client-supplied assignment fields.
+  const liveById = new Map(liveSeats.map(e => [e.id, e]));
+
   // Execute moves
   for (const a of assignments) {
+    const live = liveById.get(a.entry_id);
+    if (!live) {
+      errors.push({ entry_id: a.entry_id, error: 'Entry Not Active In This Tournament' });
+      continue;
+    }
+
     const { data: currentEntry } = await getSupabase()
       .from('commander_tournament_entries')
       .select('metadata')
       .eq('id', a.entry_id)
+      .eq('tournament_id', tournament.id)
       .maybeSingle();
 
     const existingMetadata = currentEntry?.metadata || {};
@@ -317,7 +354,7 @@ async function handleExecute(req, res, tournament) {
         metadata: {
           ...existingMetadata,
           last_moved_at: new Date().toISOString(),
-          last_moved_from: { table: a.from_table, seat: a.from_seat },
+          last_moved_from: { table: live.table_number, seat: live.seat_number },
           move_reason: 'table_break'
         }
       })
@@ -329,7 +366,13 @@ async function handleExecute(req, res, tournament) {
     if (error) {
       errors.push({ entry_id: a.entry_id, error: error.message });
     } else {
-      moved.push(a);
+      moved.push({
+        ...a,
+        player_name: live.player_name || a.player_name,
+        from_table: live.table_number,
+        from_seat: live.seat_number,
+        chips: live.current_chips ?? a.chips ?? null
+      });
     }
   }
 

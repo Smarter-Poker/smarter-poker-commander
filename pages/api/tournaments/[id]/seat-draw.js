@@ -73,12 +73,24 @@ export default async function handler(req, res) {
     }
 
     // Entries: seated players hold their seats; registered players get drawn.
-    const { data: allEntries } = await getSupabase()
+    const { data: allEntries, error: entriesErr } = await getSupabase()
       .from('commander_tournament_entries')
       .select('id, player_name, status, table_number, seat_number, current_chips')
       .eq('tournament_id', tournamentId)
       .in('status', ['registered', 'seated', 'active'])
       .limit(5000);
+
+    // A discarded read error here looked exactly like an empty field and the TD
+    // was told "Every Entry Already Has A Seat" when nothing had been read.
+    if (entriesErr) {
+      console.error('[seat-draw.js] entries read failed', {
+        tournamentId, code: entriesErr.code, message: entriesErr.message, details: entriesErr.details,
+      });
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DB_ERROR', message: 'Failed To Read Tournament Entries' }
+      });
+    }
 
     const entries = allEntries || [];
     const seated = entries.filter(e => e.table_number && e.seat_number);
@@ -112,14 +124,25 @@ export default async function handler(req, res) {
       const perTable = Math.min(10, Math.max(2, Number(req.body?.seats_per_table) || 9));
       const totalPlayers = seated.length + toSeat.length;
       const needed = Math.max(1, Math.ceil(totalPlayers / perTable));
-      // Skip table numbers already in use by seated players to avoid collisions.
-      const usedNumbers = new Set(seated.map(e => e.table_number));
+      // 2026-08-20 audit fix: `usedNumbers` was built and then never consulted -
+      // the loop always synthesized 1..N. If seated players were parked on a
+      // table OUTSIDE that range (say table 5 with 1..3 synthesized) their table
+      // was excluded from the pool, its open seats were never offered, and the
+      // draw could fail NOT_ENOUGH_SEATS with a half-empty room. Seed the pool
+      // with the tables that already hold players, then top up.
+      const usedNumbers = [...new Set(seated.map(e => e.table_number).filter(Boolean))]
+        .sort((a, b) => a - b);
+      for (const tn of usedNumbers) tables.push({ table_number: tn, max_seats: perTable });
+
+      const taken = new Set(usedNumbers);
       let n = 1;
       while (tables.length < needed) {
+        while (taken.has(n)) n++;
         tables.push({ table_number: n, max_seats: perTable });
-        usedNumbers.add(n);
+        taken.add(n);
         n++;
       }
+      tables.sort((a, b) => a.table_number - b.table_number);
     }
 
     if (tables.length === 0) {
@@ -185,6 +208,48 @@ export default async function handler(req, res) {
       });
     }
 
+    // Re-verify every drawn seat is STILL empty immediately before writing.
+    // The draw reads the field, shuffles in memory, then writes; a concurrent
+    // register.js auto-seat (which claims a seat through
+    // commander_claim_open_seat) can take one of these seats inside that window
+    // and the draw would silently double-seat the table. Aborting is correct
+    // here: a seat draw is a single deliberate TD action and re-running it is
+    // cheap, whereas two players on one seat is a floor incident.
+    const drawnTables = [...new Set(assignments.map(a => a.table_number))];
+    if (drawnTables.length > 0) {
+      const { data: liveSeats, error: liveErr } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('id, table_number, seat_number, player_name')
+        .eq('tournament_id', tournamentId)
+        .in('status', ['seated', 'active'])
+        .in('table_number', drawnTables);
+
+      if (liveErr) {
+        console.error('[seat-draw.js] seat re-verification failed', {
+          tournamentId, code: liveErr.code, message: liveErr.message, details: liveErr.details,
+        });
+        return res.status(500).json({
+          success: false,
+          error: { code: 'DB_ERROR', message: 'Failed To Verify Drawn Seats' }
+        });
+      }
+
+      const drawnIds = new Set(assignments.map(a => a.entry_id));
+      const taken = (liveSeats || []).find(e =>
+        !drawnIds.has(e.id) &&
+        assignments.some(a => a.table_number === e.table_number && a.seat_number === e.seat_number)
+      );
+      if (taken) {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: 'SEAT_OCCUPIED',
+            message: `Draw Aborted: Seat ${taken.seat_number} At Table ${taken.table_number} Was Taken By ${taken.player_name || 'Another Player'}. Run The Draw Again.`
+          }
+        });
+      }
+    }
+
     // Apply assignments. Sequential batched updates; each is a single-row write.
     // Chips are granted ONLY to entries that do not have a stack yet. A player
     // who already has chips (already active, or rebought before the draw ran)
@@ -221,13 +286,17 @@ export default async function handler(req, res) {
     });
 
     return res.status(200).json({
-      success: true,
+      // A partial draw is NOT a success - some players were left unseated and
+      // the TD must be shown the failures rather than a green checkmark.
+      success: errors.length === 0,
       data: {
         assignments,
         tables_used: tables.map(t => t.table_number),
-        players_drawn: assignments.length,
+        players_drawn: assignments.length - errors.length,
         errors: errors.length > 0 ? errors : undefined,
-        message: `Seat Draw Complete. ${assignments.length} Players Seated Across ${tables.length} Tables.`
+        message: errors.length === 0
+          ? `Seat Draw Complete. ${assignments.length} Players Seated Across ${tables.length} Tables.`
+          : `Seat Draw Partially Applied. ${assignments.length - errors.length} Of ${assignments.length} Players Seated, ${errors.length} Failed.`
       }
     });
   } catch (err) {

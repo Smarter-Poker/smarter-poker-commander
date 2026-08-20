@@ -198,13 +198,35 @@ async function updateTournament(req, res, id, staff) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: structErr } });
     }
 
-    const updates = { ...req.body, updated_at: new Date().toISOString() };
+    // 2026-08-20 audit fix: this spread the WHOLE request body into the UPDATE
+    // and only removed four keys. The TD screen round-trips the tournament
+    // object, which carries embedded relations (poker_venues,
+    // commander_tournament_entries) and read-only aggregates - PostgREST rejects
+    // any unknown column, so a plain "save" 500'd. Allowlist the real,
+    // editable columns instead.
+    const EDITABLE_COLUMNS = [
+      'name', 'description', 'tournament_type', 'variant',
+      'buyin_amount', 'buyin_fee', 'starting_chips',
+      'scheduled_start', 'registration_opens', 'late_registration_levels', 'late_reg_open',
+      'min_entries', 'max_entries', 'guaranteed_pool',
+      'blind_structure', 'break_schedule', 'payout_structure', 'paying_places',
+      'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'max_rebuys', 'rebuy_end_level',
+      'allows_addon', 'addon_amount', 'addon_chips', 'addon_at_break',
+      'bounty_amount', 'broadcast_to_smarter', 'series_id', 'leaderboard_id',
+      'settings', 'status', 'current_level', 'actual_start', 'ended_at',
+      'actual_prizepool', 'final_payouts',
+      'is_multi_day', 'total_days', 'current_day', 'flight_label', 'resume_time',
+      'day_end_chip_counts', 'parent_tournament_id', 'engine_id',
+    ];
 
-    // Remove fields that shouldn't be updated directly
-    delete updates.id;
-    delete updates.venue_id;
-    delete updates.created_by;
-    delete updates.created_at;
+    const updates = { updated_at: new Date().toISOString() };
+    for (const key of EDITABLE_COLUMNS) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    if (Object.keys(updates).length === 1) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'No Editable Fields Were Provided' } });
+    }
 
     // Clock state lives at settings.clock_state and is written atomically by
     // the clock endpoints. A whole-settings update from this generic route

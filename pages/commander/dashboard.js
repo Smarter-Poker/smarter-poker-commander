@@ -164,16 +164,56 @@ export default function CommanderDashboard() {
 
   // Auth guard - validate localStorage AND Supabase session
   useEffect(() => {
-    // BYPASS AUTH FOR LOCAL TESTING
-    setStaff({
-      venue_id: 'test-venue-123',
-      venue_name: 'Club JAQK',
-      role: 'owner',
-      sub_tier: 'PRO',
-      user_id: 'test',
-      id: 'test'
-    });
-    setCurrentTier('PRO');
+    const controller = new AbortController();
+    async function validateSession() {
+      const stored = getStaffSession();
+      if (!stored) {
+        if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+        return;
+      }
+      try {
+        const data = JSON.parse(stored);
+        // Require at minimum an id or user_id - venue_id can be null for new owners without a venue
+        if (!data.id && !data.user_id) {
+          if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+          return;
+        }
+        setStaff(data);
+      } catch {
+        if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+        return;
+      }
+
+      // Validate Supabase session is alive - refresh if expired
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          // Try to refresh
+          const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+          if (!refreshed) {
+            // Session truly expired - clear session-specific data and redirect to login
+            localStorage.removeItem('commander_venue');
+            localStorage.removeItem('commander_subscription');
+            const remembered = localStorage.getItem('commander_remember');
+            if (!remembered) {
+              // Not remembered - clear everything
+              localStorage.removeItem('commander_staff');
+              if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+            } else {
+              // Remembered - keep staff email for pre-fill, redirect with expired flag
+              if (router.asPath !== '/commander/login') router.push('/commander/login?expired=1').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+            }
+          }
+        }
+      } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+
+      try {
+        const sub = JSON.parse(localStorage.getItem('commander_subscription') || '{}');
+        if (sub.tier) setCurrentTier(sub.tier);
+      } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+    }
+    validateSession();
+    return () => controller.abort();
   }, [router]);
 
   // Hard Stop countdown logic

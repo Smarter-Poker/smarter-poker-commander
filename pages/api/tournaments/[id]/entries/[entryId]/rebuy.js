@@ -77,8 +77,16 @@ export default async function handler(req, res) {
       if (entry.status === 'eliminated') {
         return res.status(400).json({ success: false, error: { code: 'PLAYER_ELIMINATED', message: 'Player Is Eliminated. Use Re-Entry Instead.' } });
       }
+      // Only a live entry can rebuy. 'eliminated' was the only status blocked, so
+      // a cancelled, cashed, bagged or winner entry could still be charged for
+      // chips and take money from the drawer against a dead seat.
+      if (!['registered', 'seated', 'active', 'alternate'].includes(entry.status)) {
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Rebuy For A Player With Status ${entry.status}` } });
+      }
 
-      // Check max rebuys
+      // Check max rebuys. A null max_rebuys means unlimited; 999 is the sentinel
+      // handed to the RPC, but it must not be reported to the TD as a real cap.
+      const unlimitedRebuys = tournament.max_rebuys == null;
       const maxRebuys = tournament.max_rebuys || 999;
       if ((entry.rebuy_count || 0) >= maxRebuys) {
         return res.status(400).json({ success: false, error: { code: 'MAX_REBUYS_REACHED', message: `Maximum Rebuys (${maxRebuys}) Reached` } });
@@ -140,7 +148,7 @@ export default async function handler(req, res) {
           chips_added: rebuyChips,
           total_chips: newChips,
           cost: tournament.rebuy_amount || 0, // 2026-07-25 audit fix: real column
-          rebuys_remaining: maxRebuys - newRebuyCount,
+          rebuys_remaining: unlimitedRebuys ? null : Math.max(0, maxRebuys - newRebuyCount),
           replayed: result?.replayed === true
         }
       });
