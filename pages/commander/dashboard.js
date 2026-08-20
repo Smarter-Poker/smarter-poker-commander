@@ -51,12 +51,12 @@ const CARDS = [
     features: [
       { label: 'Tournament Manager', href: '/commander/tournaments', icon: '/images/commander/icons/tn-registration.png' },
       { label: 'Tournament Templates', href: '/commander/tournament-settings', icon: '/images/commander/icons/tn-settings.png?v=3' },
-      { label: 'Tournament Clocks', href: '/commander/tournament-clocks', icon: '/images/commander/icons/tn-clock.png' },
-      { label: 'Tournament Maintenance', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-maintenance.png' },
+      { label: 'Tournament Clock', href: '/commander/tournament-clocks', icon: '/images/commander/icons/tn-clock.png' },
+      { label: 'Leagues', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
       { label: 'Clock Setup', href: '/commander/clock-setup', icon: '/images/commander/icons/tn-clock-setup.png' },
-      { label: 'Leagues & Freerolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
-      { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-controls.png' },
-      { label: 'Tournament Leaderboards', href: '/commander/tournament-leaderboards', icon: '/images/commander/icons/tn-clock.png' },
+      { label: 'Free Rolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-freerolls.webp' },
+      { label: 'Tournament Controls', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-controls-new.webp' },
+      { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-director.webp' },
     ] },
   {
     id: 'floor',
