@@ -11,7 +11,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText, Square } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText, Square, Timer, UserPlus, Coins, Megaphone } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
@@ -22,6 +22,50 @@ const NAV_ITEMS = [
   { key: 'reports', path: '/reports' }, { key: 'clock', path: '/clock' },
 ];
 const NAV_ICONS = { control: Trophy, tables: LayoutGrid, players: Users, payouts: DollarSign, reports: FileText, clock: Monitor };
+
+function formatClock(seconds) {
+  const s = Number(seconds);
+  if (!Number.isFinite(s) || s < 0) return '--:--';
+  const m = Math.floor(s / 60);
+  const rem = Math.floor(s % 60);
+  return `${m}:${String(rem).padStart(2, '0')}`;
+}
+
+// ── Floor announcements ────────────────────────────────────────────────────
+// One tap = the banner on every clock display (message.js writes
+// settings.clock_state.current_message) AND the matching push to every
+// registered player (notify.js). The two used to be separate screens and the
+// push side had no caller at all, so nobody outside the room ever heard a
+// break call.
+const FLOOR_ANNOUNCEMENTS = [
+  {
+    key: 'break', label: 'Break Time', icon: Coffee, color: '#F59E0B',
+    message: 'Break Time', messageType: 'announcement', durationSeconds: 300,
+    notifyType: 'break'
+  },
+  {
+    key: 'break_ending', label: 'Break Ending, Two Minutes', icon: Timer, color: '#F59E0B',
+    message: 'Break Ending, Two Minutes', messageType: 'alert', durationSeconds: 120,
+    notifyType: 'break_ending'
+  },
+  {
+    key: 'registration_closing', label: 'Registration Closing', icon: UserPlus, color: '#EF4444',
+    message: 'Registration Closing', messageType: 'alert', durationSeconds: 300,
+    notifyType: 'custom',
+    notifyMessage: 'Registration Is Closing. This Is The Last Call To Enter Or Re-Enter.'
+  },
+  {
+    key: 'final_table', label: 'Final Table', icon: Star, color: '#1877F2',
+    message: 'Final Table', messageType: 'announcement', durationSeconds: 300,
+    notifyType: 'final_table'
+  },
+  {
+    key: 'color_up', label: 'Color Up', icon: Coins, color: '#31A24C',
+    message: 'Color Up', messageType: 'announcement', durationSeconds: 300,
+    notifyType: 'custom',
+    notifyMessage: 'Color Up In Progress. Please Stack Your Chips For The Race.'
+  }
+];
 
 // Approximate wall-clock time late registration closes: remaining seconds of
 // the current level plus the full duration of every structure row (breaks
@@ -52,6 +96,8 @@ export default function TDClock() {
   const [messageText, setMessageText] = useState('');
   const [showMessage, setShowMessage] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  // Key of the floor announcement currently being sent (banner + push).
+  const [announcing, setAnnouncing] = useState(null);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -223,14 +269,85 @@ export default function TDClock() {
 
   const sendMessage = async () => {
     if (!messageText.trim()) return;
-    const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: messageText, type: 'announcement', duration_seconds: 60 })
-    });
-    if (res.ok) {
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageText, type: 'announcement', duration_seconds: 60 })
+      });
+      const json = await res.json().catch(() => null);
+      // A failed broadcast used to leave the modal open with no explanation.
+      if (!res.ok || !json?.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Broadcast Failed. Please Try Again.' });
+        return;
+      }
       setMessageText('');
       setShowMessage(false);
+      setToast({ type: 'success', text: 'Message Is On The Clock Displays.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Broadcast Failed. Check Console.' });
+    }
+  };
+
+  // One tap: banner on the displays (message.js) + push to players (notify.js).
+  // The two calls are independent, so a push failure never swallows the banner
+  // and the TD is told exactly which half landed.
+  const sendFloorAnnouncement = async (item) => {
+    if (announcing) return;
+    setAnnouncing(item.key);
+    try {
+      const [msgRes, pushRes] = await Promise.all([
+        commanderFetch(`/api/commander/tournaments/${tournamentId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: item.message,
+            type: item.messageType,
+            duration_seconds: item.durationSeconds
+          })
+        }).catch(() => null),
+        commanderFetch(`/api/commander/tournaments/${tournamentId}/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: item.notifyType,
+            message: item.notifyMessage || item.message
+          })
+        }).catch(() => null)
+      ]);
+
+      const msgJson = msgRes ? await msgRes.json().catch(() => null) : null;
+      const pushJson = pushRes ? await pushRes.json().catch(() => null) : null;
+      const bannerOk = !!(msgRes && msgRes.ok && msgJson?.success);
+      const pushOk = !!(pushRes && pushRes.ok && pushJson?.success);
+      const notified = pushJson?.data?.in_app ?? pushJson?.data?.sent ?? 0;
+
+      if (!bannerOk && !pushOk) {
+        setToast({
+          type: 'error',
+          text: msgJson?.error?.message || pushJson?.error?.message || 'Announcement Failed. Please Try Again.'
+        });
+      } else if (!bannerOk) {
+        setToast({ type: 'error', text: 'Push Sent, But The Display Banner Failed.' });
+      } else if (!pushOk) {
+        setToast({ type: 'error', text: `"${item.message}" Is On The Displays, But The Push Failed.` });
+      } else {
+        setToast({
+          type: 'success',
+          text: `"${item.message}" On The Displays, ${notified} Player${notified === 1 ? '' : 's'} Notified.`
+        });
+      }
+
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Announcement Failed. Check Console.' });
+    } finally {
+      setAnnouncing(null);
     }
   };
 
@@ -261,6 +378,17 @@ export default function TDClock() {
   const clockState = clock.clock_state || {};
   const isRunning = clockState.status === 'running';
   const isPaused = clockState.status === 'paused';
+
+  // Break state has two sources and the screen showed neither: the manual
+  // toggle (settings.clock_state.on_break, surfaced as alerts.on_break) and a
+  // scheduled break ROW in the structure (row.is_break with its own duration).
+  const blindStructure = Array.isArray(tournament.blind_structure) ? tournament.blind_structure : [];
+  const currentRow = blindStructure[clock.current_level ?? 0] || null;
+  const rowIsBreak = !!currentRow?.is_break;
+  const breakRowMinutes = currentRow ? (currentRow.duration ?? currentRow.duration_minutes ?? 0) : 0;
+  const manualBreak = !!alerts.on_break;
+  const onBreak = manualBreak || rowIsBreak;
+  const breakSecondsLeft = clockSeconds ?? clockState.remaining_seconds ?? null;
 
   return (
     <CommanderLayout title="Commander - Clock" backHref={`/commander/td/${tournamentId}`}>
@@ -326,6 +454,60 @@ export default function TDClock() {
                 </div>
               );
             })()}
+            {/* ON BREAK state, with the scheduled-break countdown */}
+            {onBreak && (
+              <div className="w-full max-w-lg mb-5 p-4 rounded-2xl bg-[#F59E0B]/10 border-2 border-[#F59E0B]/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#F59E0B]/20 flex items-center justify-center flex-shrink-0">
+                    <Coffee className="w-6 h-6 text-[#F59E0B]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-base font-bold text-[#F59E0B] uppercase tracking-wider">On Break</h2>
+                    <p className="text-xs text-[#B0B3B8] truncate">
+                      {rowIsBreak
+                        ? `${currentRow?.label || 'Scheduled Break'}${breakRowMinutes > 0 ? `, ${breakRowMinutes} Min` : ''}`
+                        : 'Manual Break, Clock Paused'}
+                    </p>
+                  </div>
+                  {rowIsBreak && (
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-3xl font-bold text-white tabular-nums leading-none">
+                        {formatClock(breakSecondsLeft)}
+                      </p>
+                      <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider mt-1">Break Remaining</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  {manualBreak && (
+                    <button
+                      onClick={() => clockAction('break')}
+                      disabled={!!actionLoading}
+                      className="flex-1 h-12 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+                    >
+                      {actionLoading === 'break'
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Ending Break...</>
+                        : <><Play className="w-4 h-4" /> End Break And Resume Play</>
+                      }
+                    </button>
+                  )}
+                  {rowIsBreak && !manualBreak && (
+                    <button
+                      onClick={() => clockAction('next_level')}
+                      disabled={!!actionLoading}
+                      className="flex-1 h-12 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+                    >
+                      {actionLoading === 'next_level'
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting Level...</>
+                        : <><SkipForward className="w-4 h-4" /> End Break, Start Next Level</>
+                      }
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Controls */}
             <div className="flex items-center gap-3 mb-6">
               <button onClick={() => clockAction('prev_level')} disabled={!!actionLoading}
@@ -376,6 +558,39 @@ export default function TDClock() {
               <ActionChip icon={Maximize} label="Fullscreen" onClick={toggleFullscreen} />
               <ActionChip icon={Square} label="End Event" onClick={() => setShowEndConfirm(true)}
                 active={true} activeColor="#EF4444" disabled={!!actionLoading} />
+            </div>
+
+            {/* ===== FLOOR ANNOUNCEMENTS (single tap: banner + push) ===== */}
+            <div className="w-full max-w-lg mt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Megaphone className="w-4 h-4 text-[#1877F2]" />
+                <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider">
+                  Floor Announcements
+                </h2>
+              </div>
+              <p className="text-xs text-[#B0B3B8] mb-3">
+                Each One Sets The Banner On Every Clock Display And Pushes To Every Registered Player.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {FLOOR_ANNOUNCEMENTS.map(item => {
+                  const Icon = item.icon;
+                  const busy = announcing === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => sendFloorAnnouncement(item)}
+                      disabled={!!announcing}
+                      className="h-14 px-4 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold flex items-center gap-3 text-left active:bg-[#3A3B3C] transition-colors disabled:opacity-50"
+                    >
+                      {busy
+                        ? <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" style={{ color: item.color }} />
+                        : <Icon className="w-5 h-5 flex-shrink-0" style={{ color: item.color }} />
+                      }
+                      <span className="flex-1 min-w-0 truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

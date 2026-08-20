@@ -32,6 +32,7 @@ export default function MemberProfile() {
   const [addTimeAmount, setAddTimeAmount] = useState('');
   const [showAddTime, setShowAddTime] = useState(false);
   const [tournamentResults, setTournamentResults] = useState([]);
+  const [tournamentSummary, setTournamentSummary] = useState(null);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -72,8 +73,13 @@ const headers = { };
       if (memberRes.data || memberRes.success) setMember(memberRes.data?.member || memberRes.data || null);
       const sessionsArr = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
       setSessions(sessionsArr);
-      const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [];
+      // player-results now returns { results, summary }. Older deployments
+      // returned a bare array, so both shapes are accepted.
+      const tData = tournamentsRes.data;
+      const tournamentsArr = Array.isArray(tData) ? tData
+        : (Array.isArray(tData?.results) ? tData.results : []);
       setTournamentResults(tournamentsArr);
+      setTournamentSummary(Array.isArray(tData) ? null : (tData?.summary || null));
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   };
@@ -296,33 +302,69 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                 </div>
               )}
 
-              {/* Tournaments */}
+              {/* Tournament History */}
               {tab === 'tournaments' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Tournament History</h3>
+
+                  {/* Career summary. Only shown when the API supplied one, so an
+                      older deployment returning a bare array never renders a
+                      row of fabricated zeros. */}
+                  {tournamentSummary && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <StatTile label="Events" value={(tournamentSummary.events_played || 0).toLocaleString()} />
+                      <StatTile label="Cashes" value={(tournamentSummary.cashes || 0).toLocaleString()} color="#31A24C" />
+                      <StatTile label="ITM Rate" value={`${tournamentSummary.itm_rate || 0}%`} color="#1877F2" />
+                      <StatTile label="Winnings" value={`$${(tournamentSummary.total_winnings || 0).toLocaleString()}`} color="#31A24C" />
+                      <StatTile
+                        label="Net"
+                        value={`${(tournamentSummary.net || 0) < 0 ? '-$' : '$'}${Math.abs(tournamentSummary.net || 0).toLocaleString()}`}
+                        color={(tournamentSummary.net || 0) < 0 ? '#EF4444' : '#31A24C'}
+                      />
+                      <StatTile
+                        label="Best Finish"
+                        value={tournamentSummary.best_finish ? ordinalPlace(tournamentSummary.best_finish) : '--'}
+                        color="#F59E0B"
+                      />
+                    </div>
+                  )}
+
                   {tournamentResults.length === 0 ? (
                     <p className="py-6 text-center text-[#B0B3B8]">No Tournament Results</p>
                   ) : (
-                    tournamentResults.slice(0, 30).map((t, i) => (
-                      <div key={t.id || i} className="flex items-center justify-between px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg">
-                        <div>
-                          <p className="text-sm text-white">{t.tournament_name || t.name || 'Tournament'}</p>
-                          <p className="text-[10px] text-[#B0B3B8]">
-                            {t.date ? new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
-                            {t.buyin_amount ? `, $${t.buyin_amount} Buy-In` : ''}
-                          </p>
+                    <div className="space-y-2">
+                      {tournamentResults.slice(0, 30).map((t, i) => (
+                        <div key={t.id || i} className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg">
+                          <div className="min-w-0">
+                            <p className="text-sm text-white truncate">{t.tournament_name || t.name || 'Tournament'}</p>
+                            <p className="text-[10px] text-[#B0B3B8]">
+                              {t.date ? new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                              {t.buyin_amount ? `, $${Number(t.buyin_amount).toLocaleString()} Buy-In` : ''}
+                              {t.rebuys > 0 ? `, ${t.rebuys}R` : ''}
+                              {t.addon ? ', Add-On' : ''}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            {t.finish_position ? (
+                              <span className={`text-sm font-bold ${t.finish_position <= 3 ? 'text-[#F59E0B]' : 'text-[#B0B3B8]'}`}>
+                                {ordinalPlace(t.finish_position)}
+                                {t.field_size ? ` Of ${Number(t.field_size).toLocaleString()}` : ''}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-[#B0B3B8] capitalize">{t.status || 'Entered'}</span>
+                            )}
+                            {t.payout > 0 && (
+                              <p className="text-xs text-[#31A24C] font-medium">${Number(t.payout).toLocaleString()}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          {t.finish_position && (
-                            <span className={`text-sm font-bold ${t.finish_position <= 3 ? 'text-[#F59E0B]' : 'text-[#B0B3B8]'}`}>
-                              {t.finish_position === 1 ? '1st' : t.finish_position === 2 ? '2nd' : t.finish_position === 3 ? '3rd' : `${t.finish_position}th`}
-                            </span>
-                          )}
-                          {t.payout > 0 && (
-                            <p className="text-xs text-[#31A24C] font-medium">${t.payout.toLocaleString()}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      ))}
+                      {tournamentResults.length > 30 && (
+                        <p className="text-[10px] text-[#B0B3B8] text-center pt-1">
+                          Showing The 30 Most Recent Of {tournamentResults.length.toLocaleString()} Entries
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -362,6 +404,27 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
         </div>
       )}
     </CommanderLayout>
+  );
+}
+
+function ordinalPlace(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num <= 0) return '--';
+  const rem100 = num % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${num}th`;
+  const rem10 = num % 10;
+  if (rem10 === 1) return `${num}st`;
+  if (rem10 === 2) return `${num}nd`;
+  if (rem10 === 3) return `${num}rd`;
+  return `${num}th`;
+}
+
+function StatTile({ label, value, color }) {
+  return (
+    <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
+      <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">{label}</p>
+      <p className="text-base font-bold" style={{ color: color || '#E4E6EB' }}>{value}</p>
+    </div>
   );
 }
 

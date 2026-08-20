@@ -11,10 +11,11 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle, Coins } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle, Coins, Scale } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
+import { getStaffData } from '../../../../src/lib/commander/clientAuth';
 import { useConfirmAction } from "../../../../src/components/commander/shared/ConfirmModal";
 
 const NAV_ITEMS = [
@@ -71,6 +72,11 @@ export default function TDTablesMap() {
   const [breakExecuting, setBreakExecuting] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [seatDrawResults, setSeatDrawResults] = useState(null);
+  // ── Balance Tables (balance-suggest -> review sheet -> balance-execute) ──
+  const [balanceSuggestion, setBalanceSuggestion] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceExecuting, setBalanceExecuting] = useState(false);
+  const [balanceFailures, setBalanceFailures] = useState([]);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -126,6 +132,203 @@ export default function TDTablesMap() {
       setToast({ type: 'error', text: 'Popup Blocked. Seat Change Cards Are Waiting At The Print Station.' });
     }
     return printed;
+  };
+
+  // ── Balance Tables ──────────────────────────────────────────────────────
+  // GET  /api/commander/tournaments/[id]/balance-suggest
+  //      -> { success, data: { type, table_to_break?, moves[], table_counts, message } }
+  // POST /api/commander/tournaments/[id]/balance-execute  { moves:[{entry_id,to_table,to_seat,reason}] }
+  //      -> { success, data: { executed, failed, moves[], errors? } }
+  // Both endpoints existed and were guarded but had no caller anywhere in the
+  // app, so the floor had to break a whole table to fix a two-seat imbalance.
+
+  // Venue identity for printed cards. The staff session carries it on an owner
+  // login; PIN terminals only have the commander_venue blob.
+  const readVenueIdentity = () => {
+    let staff = {};
+    try { staff = getStaffData() || {}; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+    let venue = {};
+    try { venue = JSON.parse(localStorage.getItem('commander_venue') || '{}') || {}; }
+    catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+    return {
+      venue_name: staff.venue_name || venue.name || '',
+      venue_city: staff.venue_city || venue.city || '',
+      venue_state: staff.venue_state || venue.state || '',
+      venue_logo_url: venue.club_logo_url || venue.logo_url || null
+    };
+  };
+
+  // Chip counts live on floor.entries, keyed by entry_id.
+  const chipsForEntry = (entryId) => {
+    const entry = (floor?.entries || []).find(e => e.entry_id === entryId);
+    return entry?.current_chips ?? null;
+  };
+
+  // Queue the seat-change cards on the floor print station, exactly like a
+  // table break does. A TD tablet usually has no printer and blocks popups, so
+  // the queue is the reliable place for the paper to come out.
+  const queueSeatChangeCards = async (moves, title) => {
+    if (!Array.isArray(moves) || moves.length === 0) return false;
+    const venue = readVenueIdentity();
+    const timestamp = new Date().toISOString();
+    const receipts = moves.map(m => ({
+      ...venue,
+      tournament_name: floor?.tournament?.name || 'Tournament',
+      buyin_amount: floor?.tournament?.buyin_amount ?? null,
+      player_name: m.player_name || 'Player',
+      from_table: m.from_table ?? null,
+      from_seat: m.from_seat ?? null,
+      to_table: m.to_table,
+      to_seat: m.to_seat,
+      chips: chipsForEntry(m.entry_id),
+      timestamp
+    }));
+
+    try {
+      const res = await commanderFetch('/api/commander/print-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job_type: 'seat_change',
+          tournament_id: tournamentId,
+          table_number: null,
+          title,
+          receipts,
+          source: 'td_balance'
+        })
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        console.warn('[td/tables] balance print job failed:', json?.error?.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[td/tables] balance print job failed:', err?.message || err);
+      return false;
+    }
+  };
+
+  const handleBalanceSuggest = async () => {
+    setBalanceLoading(true);
+    setBalanceFailures([]);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/balance-suggest`, {});
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Could Not Read Table Balance.' });
+        return;
+      }
+      const data = json.data || {};
+      const moves = Array.isArray(data.moves) ? data.moves : [];
+      if (moves.length === 0) {
+        setToast({ type: 'success', text: data.message || 'Tables Are Balanced.' });
+        return;
+      }
+      setBalanceSuggestion(data);
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Could Not Read Table Balance. Check Console.' });
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
+
+  const handleBalanceExecute = async () => {
+    const suggestion = balanceSuggestion;
+    const proposed = suggestion?.moves || [];
+    if (proposed.length === 0) return;
+    setBalanceExecuting(true);
+    setBalanceFailures([]);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/balance-execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          moves: proposed.map(m => ({
+            entry_id: m.entry_id,
+            to_table: m.to_table,
+            to_seat: m.to_seat,
+            reason: m.reason || (suggestion.type === 'break' ? 'table_break' : 'balance')
+          }))
+        })
+      });
+      const json = await res.json().catch(() => null);
+
+      // 409 SEAT_OCCUPIED / 400 DUPLICATE_SEAT abort the whole batch server-side.
+      if (!res.ok) {
+        setToast({ type: 'error', text: json?.error?.message || `Balance Failed (${res.status}).` });
+        return;
+      }
+
+      const data = json?.data || {};
+      const executed = Array.isArray(data.moves) ? data.moves : [];
+      const errors = Array.isArray(data.errors) ? data.errors : [];
+
+      // Name the failures so the floor knows exactly who did not move, and
+      // narrow the sheet to just those moves so pressing the button again
+      // retries only what failed instead of re-sending the whole batch.
+      if (errors.length > 0) {
+        const failedIds = new Set(errors.map(e => e.entry_id));
+        setBalanceFailures(errors.map(e => {
+          const src = proposed.find(m => m.entry_id === e.entry_id);
+          return {
+            entry_id: e.entry_id,
+            player_name: src?.player_name || 'Unknown Player',
+            error: e.error || 'Move Failed'
+          };
+        }));
+        setBalanceSuggestion(prev => prev ? {
+          ...prev,
+          moves: (prev.moves || []).filter(m => failedIds.has(m.entry_id))
+        } : prev);
+      }
+
+      let queued = false;
+      if (executed.length > 0) {
+        queued = await queueSeatChangeCards(
+          executed,
+          suggestion.type === 'break' && suggestion.table_to_break != null
+            ? `Table ${suggestion.table_to_break} Break, ${executed.length} Seat Change Card(s)`
+            : `Table Balance, ${executed.length} Seat Change Card(s)`
+        );
+        // Print here too when the popup is allowed, so a TD with a paired
+        // printer gets the cards without walking to the station.
+        printSeatChangeCards(executed.map(m => ({
+          ...readVenueIdentity(),
+          tournament_name: floor?.tournament?.name || 'Tournament',
+          buyin_amount: floor?.tournament?.buyin_amount ?? null,
+          player_name: m.player_name,
+          from_table: m.from_table,
+          from_seat: m.from_seat,
+          to_table: m.to_table,
+          to_seat: m.to_seat,
+          chips: chipsForEntry(m.entry_id),
+          timestamp: new Date().toISOString()
+        })));
+      }
+
+      if (errors.length === 0) {
+        setBalanceSuggestion(null);
+        setToast({
+          type: 'success',
+          text: `${executed.length} Player${executed.length === 1 ? '' : 's'} Moved.${queued ? ' Seat Change Cards Queued At The Print Station.' : ''}`
+        });
+      } else {
+        setToast({
+          type: 'error',
+          text: `${executed.length} Moved, ${errors.length} Failed. Review The List Below.`
+        });
+      }
+
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Balance Failed. Check Console.' });
+    } finally {
+      setBalanceExecuting(false);
+    }
   };
 
   const handleEliminate = async (entryId, playerName) => {
@@ -291,6 +494,32 @@ export default function TDTablesMap() {
           </div>
         )}
 
+        {/* Balance Tables. Prominent alert card while floor-view reports an
+            imbalance, otherwise a quiet button in the action stack below. */}
+        {floor?.alerts?.imbalanced && (
+          <div className="mx-4 mt-3 p-4 bg-[#1877F2]/10 border-2 border-[#1877F2]/40 rounded-2xl">
+            <div className="flex items-start gap-3 mb-3">
+              <Scale className="w-6 h-6 text-[#1877F2] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-[#1877F2]">Tables Are Out Of Balance</h3>
+                <p className="text-xs text-[#B0B3B8] mt-0.5">
+                  Two Or More Seats Between The Fullest And Emptiest Table.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleBalanceSuggest}
+              disabled={balanceLoading || balanceExecuting}
+              className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+            >
+              {balanceLoading
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking Balance...</>
+                : <><Scale className="w-4 h-4" /> Balance Tables</>
+              }
+            </button>
+          </div>
+        )}
+
         {/* Run Seat Draw */}
         {(floor?.stats?.players_registered || 0) > 0 && (
           <div className="mx-4 mt-3">
@@ -309,13 +538,25 @@ export default function TDTablesMap() {
 
         {/* Chip Counts (break-time stack entry). A bottom-nav entry would make
             seven targets and drop each below 44px at 375px, so it lives here. */}
-        <div className="mx-4 mt-3">
+        <div className="mx-4 mt-3 grid grid-cols-2 gap-3">
           <button
             onClick={() => navigateTo('/chips')}
             className="w-full py-3.5 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#3A3B3C] transition-colors"
           >
             <Coins className="w-4 h-4 text-[#F59E0B]" /> Chip Counts
           </button>
+          {!floor?.alerts?.imbalanced && (
+            <button
+              onClick={handleBalanceSuggest}
+              disabled={balanceLoading || balanceExecuting || tables.length < 2}
+              className="w-full py-3.5 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#3A3B3C] transition-colors disabled:opacity-40"
+            >
+              {balanceLoading
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
+                : <><Scale className="w-4 h-4 text-[#1877F2]" /> Balance Tables</>
+              }
+            </button>
+          )}
         </div>
 
         {/* Tables Grid */}
@@ -594,6 +835,102 @@ export default function TDTablesMap() {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== BALANCE MOVES SHEET ===== */}
+        {balanceSuggestion && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+            onClick={() => { if (!balanceExecuting) { setBalanceSuggestion(null); setBalanceFailures([]); } }}>
+            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-[#3A3B3C] flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center flex-shrink-0">
+                  <Scale className="w-5 h-5 text-[#1877F2]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-white">
+                    {balanceSuggestion.type === 'break' ? 'Break And Rebalance' : 'Balance Tables'}
+                  </h3>
+                  <p className="text-xs text-[#B0B3B8]">{balanceSuggestion.message || 'Review The Proposed Moves'}</p>
+                </div>
+                <button onClick={() => { setBalanceSuggestion(null); setBalanceFailures([]); }}
+                  disabled={balanceExecuting}
+                  className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50 flex-shrink-0">
+                  <X className="w-5 h-5 text-[#E4E6EB]" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                {/* Current seat counts, so the TD can sanity-check the plan */}
+                {balanceSuggestion.table_counts && Object.keys(balanceSuggestion.table_counts).length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(balanceSuggestion.table_counts)
+                      .map(Number)
+                      .sort((a, b) => a - b)
+                      .map(tn => (
+                        <span key={tn}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono ${tn === balanceSuggestion.table_to_break
+                            ? 'bg-[#EF4444]/20 text-[#EF4444]'
+                            : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                            }`}>
+                          T{tn}: {balanceSuggestion.table_counts[tn]}
+                        </span>
+                      ))}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  {(balanceSuggestion.moves || []).map(m => (
+                    <div key={m.entry_id} className="flex items-center gap-2 px-3 py-2.5 bg-[#3A3B3C]/50 rounded-xl">
+                      <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                        {m.player_name || 'Player'}
+                      </span>
+                      <span className="text-xs text-[#B0B3B8] font-mono flex-shrink-0">
+                        T{m.from_table}-S{m.from_seat ?? '-'}
+                      </span>
+                      <ArrowRightLeft className="w-3.5 h-3.5 text-[#1877F2] flex-shrink-0" />
+                      <span className="text-xs font-bold text-[#31A24C] font-mono flex-shrink-0">
+                        T{m.to_table}-S{m.to_seat}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Per-move failures returned by balance-execute */}
+                {balanceFailures.length > 0 && (
+                  <div className="bg-[#EF4444]/10 border border-[#EF4444]/40 rounded-xl overflow-hidden">
+                    <p className="px-3 py-2 text-xs font-bold text-[#EF4444] uppercase tracking-wider border-b border-[#EF4444]/20">
+                      {balanceFailures.length} Move{balanceFailures.length === 1 ? '' : 's'} Failed
+                    </p>
+                    <div className="divide-y divide-[#EF4444]/15">
+                      {balanceFailures.map(f => (
+                        <div key={f.entry_id || f.player_name} className="px-3 py-2">
+                          <p className="text-sm font-medium text-[#E4E6EB]">{f.player_name}</p>
+                          <p className="text-xs text-[#EF4444]">{f.error}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 pb-5 pt-2 border-t border-[#3A3B3C] flex gap-3">
+                <button onClick={() => { setBalanceSuggestion(null); setBalanceFailures([]); }}
+                  disabled={balanceExecuting}
+                  className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={handleBalanceExecute}
+                  disabled={balanceExecuting || (balanceSuggestion.moves || []).length === 0}
+                  className="flex-1 py-3.5 rounded-xl bg-[#1877F2] text-white font-bold flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-50">
+                  {balanceExecuting
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Moving...</>
+                    : <><Printer className="w-4 h-4" /> Move {(balanceSuggestion.moves || []).length} &amp; Print</>
+                  }
+                </button>
               </div>
             </div>
           </div>

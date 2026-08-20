@@ -1,10 +1,26 @@
 /**
- * Tournament Leaderboards API
- * GET /api/commander/tournaments/leaderboards - List leaderboards for venue
- * POST /api/commander/tournaments/leaderboards - Create new leaderboard
+ * Tournament Season Leaderboards API
+ * GET  /api/commander/tournaments/leaderboards - List seasons for the venue
+ * POST /api/commander/tournaments/leaderboards - Create a season
+ *
+ * These are the SEASON POINTS boards (commander_tournament_leaderboards:
+ * season_start, season_end, point_for_entry, point_structure, is_active), not
+ * the TV display boards in commander_leaderboards. Points earned per finish
+ * land in commander_tournament_points and are aggregated here.
+ *
+ * 2026-08-20 fixes:
+ *  - guardWriteStaff returns `true` on GET without verifying anything, so this
+ *    listing (venue seasons plus every player name and point total) was public
+ *    to anyone who could guess a venue_id. Reads now require a staff session
+ *    and the venue comes from that session.
+ *  - Creating an active season now deactivates the venue's other active
+ *    seasons. awardTournamentPoints falls back to "the venue's active
+ *    leaderboard" when a tournament has no leaderboard_id, and that fallback is
+ *    only deterministic when exactly one is active.
+ *  - point_structure is validated instead of being written through unchecked.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -18,116 +34,194 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+const DEFAULT_POINT_STRUCTURE = [
+    { position: 1, points: 100 },
+    { position: 2, points: 75 },
+    { position: 3, points: 60 },
+    { position: 4, points: 50 },
+    { position: 5, points: 40 },
+    { position: 6, points: 35 },
+    { position: 7, points: 30 },
+    { position: 8, points: 25 },
+    { position: 9, points: 20 },
+    { position: 10, points: 15 }
+];
+
+// Auth: STAFF - a verified staff session is required for both read and write.
 export default async function handler(req, res) {
   try {
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
-    }
+    } else if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-      const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const staff = await guardStaff(req, res);
+    if (!staff) return;
 
-      if (req.method === 'GET') return listLeaderboards(req, res);
-      if (req.method === 'POST') return createLeaderboard(req, res, _g);
+    if (req.method === 'GET') return listLeaderboards(req, res, staff);
+    if (req.method === 'POST') return createLeaderboard(req, res, staff);
 
-      res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
-async function listLeaderboards(req, res) {
+/** Venue always resolves from the verified session, never from the query. */
+function resolveVenueId(req, staff) {
+    const sessionVenue = Number(staff?.venue_id);
+    if (Number.isFinite(sessionVenue) && sessionVenue > 0) return sessionVenue;
+    const requested = Number(req.query?.venue_id ?? req.body?.venue_id);
+    return Number.isFinite(requested) && requested > 0 ? requested : null;
+}
+
+/**
+ * Normalize a point_structure payload to [{ position, points }] sorted by
+ * position, dropping anything that is not a usable pair. Returns null when the
+ * caller sent something that is not an array at all.
+ */
+function normalizePointStructure(raw) {
+    if (raw === undefined || raw === null) return null;
+    if (!Array.isArray(raw)) return null;
+    const cleaned = raw
+        .map(slot => ({
+            position: Math.trunc(Number(slot?.position ?? slot?.place)),
+            points: Number(slot?.points ?? slot?.point ?? 0)
+        }))
+        .filter(slot => Number.isFinite(slot.position) && slot.position > 0 && Number.isFinite(slot.points) && slot.points >= 0)
+        .sort((a, b) => a.position - b.position);
+    return cleaned;
+}
+
+async function listLeaderboards(req, res, staff) {
     try {
-        const { venue_id, active_only } = req.query;
-        if (!venue_id) return res.status(400).json({ success: false, error: { message: 'venue_id required' } });
+        const venueId = resolveVenueId(req, staff);
+        if (!venueId) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Venue Could Not Be Resolved For This Session' } });
+        }
+        if (staff.venue_id && Number(req.query.venue_id) && Number(req.query.venue_id) !== Number(staff.venue_id)) {
+            return res.status(403).json({ success: false, error: { code: 'WRONG_VENUE', message: 'Leaderboard Belongs To A Different Venue' } });
+        }
 
         let query = getSupabase()
             .from('commander_tournament_leaderboards')
             .select('*')
-            .eq('venue_id', venue_id)
+            .eq('venue_id', venueId)
             .order('season_start', { ascending: false })
-                .limit(100);
+            .limit(100);
 
-        if (active_only === 'true') {
-            query = query.eq('is_active', true)
-                .limit(100);
-        }
+        if (req.query.active_only === 'true') query = query.eq('is_active', true);
 
         const { data, error } = await query;
         if (error) throw error;
 
-        // For each leaderboard, get top standings
-        const leaderboardsWithStandings = await Promise.all((data || []).map(async (lb) => {
-            const { data: points } = await getSupabase()
-                .from('commander_tournament_points')
-                .select('player_id, player_name, points, finish_position, entry_points')
-                .eq('leaderboard_id', lb.id)
-                    .limit(100);
+        const boards = data || [];
+        if (boards.length === 0) {
+            return res.status(200).json({ success: true, data: { leaderboards: [] } });
+        }
 
-            // Aggregate points per player
-            const playerMap = {};
-            (points || []).forEach(p => {
-                const key = p.player_id || p.player_name;
-                if (!playerMap[key]) {
-                    playerMap[key] = { player_id: p.player_id, player_name: p.player_name, total_points: 0, events_played: 0, best_finish: null };
-                }
-                playerMap[key].total_points += (p.points || 0) + (p.entry_points || 0);
-                playerMap[key].events_played += 1;
-                if (p.finish_position && (!playerMap[key].best_finish || p.finish_position < playerMap[key].best_finish)) {
-                    playerMap[key].best_finish = p.finish_position;
-                }
-            });
+        // One query for every board's points instead of one per board.
+        const { data: allPoints } = await getSupabase()
+            .from('commander_tournament_points')
+            .select('leaderboard_id, player_id, player_name, points, entry_points, finish_position')
+            .in('leaderboard_id', boards.map(b => b.id))
+            .limit(5000);
 
-            const standings = Object.values(playerMap || {})
-                .sort((a, b) => b.total_points - a.total_points)
-                .map((player, index) => ({ ...player, rank: index + 1 }));
+        const byBoard = {};
+        (allPoints || []).forEach(p => {
+            if (!byBoard[p.leaderboard_id]) byBoard[p.leaderboard_id] = [];
+            byBoard[p.leaderboard_id].push(p);
+        });
 
-            return { ...lb, standings };
+        const leaderboards = boards.map(lb => ({
+            ...lb,
+            standings: aggregateStandings(byBoard[lb.id] || [])
         }));
 
-        return res.status(200).json({ success: true, data: { leaderboards: leaderboardsWithStandings } });
+        return res.status(200).json({ success: true, data: { leaderboards } });
     } catch (error) {
         console.warn('List leaderboards error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Load Leaderboards' } });
     }
+}
+
+/** Aggregate raw commander_tournament_points rows into ranked standings. */
+export function aggregateStandings(points) {
+    const playerMap = {};
+    (points || []).forEach(p => {
+        const key = p.player_id || p.player_name;
+        if (!key) return;
+        if (!playerMap[key]) {
+            playerMap[key] = {
+                player_id: p.player_id || null,
+                player_name: p.player_name || null,
+                total_points: 0,
+                events_played: 0,
+                best_finish: null
+            };
+        }
+        playerMap[key].total_points += (p.points || 0) + (p.entry_points || 0);
+        playerMap[key].events_played += 1;
+        if (p.finish_position && (!playerMap[key].best_finish || p.finish_position < playerMap[key].best_finish)) {
+            playerMap[key].best_finish = p.finish_position;
+        }
+    });
+
+    return Object.values(playerMap)
+        .sort((a, b) => (b.total_points - a.total_points) || (a.events_played - b.events_played))
+        .map((player, index) => ({ ...player, rank: index + 1 }));
 }
 
 async function createLeaderboard(req, res, staff) {
     try {
-        if (!staff || staff === true) {
-            return res.status(401).json({ success: false, error: { message: 'Staff auth required' } });
+        const venueId = resolveVenueId(req, staff);
+        if (!venueId) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Venue Could Not Be Resolved For This Session' } });
         }
 
-        const { venue_id, name, season_start, season_end, point_for_entry, point_structure } = req.body;
+        const { name, season_start, season_end, point_for_entry, point_structure, is_active } = req.body || {};
 
-        if (!venue_id || !name || !season_start || !season_end) {
-            return res.status(400).json({ success: false, error: { message: 'venue_id, name, season_start, season_end required' } });
+        if (!name || !String(name).trim()) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Season Name Is Required' } });
+        }
+        if (!season_start || !season_end) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Season Start And Season End Are Required' } });
+        }
+        if (new Date(season_end) < new Date(season_start)) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Season End Must Not Be Before Season Start' } });
+        }
+
+        const structure = normalizePointStructure(point_structure);
+        if (point_structure !== undefined && structure === null) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'point_structure Must Be An Array Of { position, points }' } });
+        }
+
+        const entryPoints = Number(point_for_entry);
+        const active = is_active !== false;
+
+        // Exactly one active season per venue keeps the awardTournamentPoints
+        // fallback ("the venue's active leaderboard") unambiguous.
+        if (active) {
+            await getSupabase()
+                .from('commander_tournament_leaderboards')
+                .update({ is_active: false })
+                .eq('venue_id', venueId)
+                .eq('is_active', true);
         }
 
         const { data, error } = await getSupabase()
             .from('commander_tournament_leaderboards')
             .insert({
-                venue_id,
-                name,
+                venue_id: venueId,
+                name: String(name).trim().slice(0, 120),
                 season_start,
                 season_end,
-                point_for_entry: point_for_entry || 1,
-                point_structure: point_structure || [
-                    { position: 1, points: 100 },
-                    { position: 2, points: 75 },
-                    { position: 3, points: 60 },
-                    { position: 4, points: 50 },
-                    { position: 5, points: 40 },
-                    { position: 6, points: 35 },
-                    { position: 7, points: 30 },
-                    { position: 8, points: 25 },
-                    { position: 9, points: 20 },
-                    { position: 10, points: 15 }
-                ]
+                point_for_entry: Number.isFinite(entryPoints) && entryPoints >= 0 ? Math.trunc(entryPoints) : 1,
+                point_structure: (structure && structure.length > 0) ? structure : DEFAULT_POINT_STRUCTURE,
+                is_active: active
             })
             .select()
             .maybeSingle();
@@ -138,6 +232,6 @@ async function createLeaderboard(req, res, staff) {
     } catch (error) {
         try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
         console.warn('Create leaderboard error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Create The Leaderboard' } });
     }
 }

@@ -371,6 +371,124 @@ export function buildActionReceiptsHtml(receipts, options = {}) {
   return htmlDoc(title, ACTION_CSS, list.map(actionReceiptFragment).join('\n'));
 }
 
+/* ── Tournament Final Results Sheet ───────────────────────────── */
+
+const RESULTS_CSS = `
+@page { margin: 0; size: 80mm auto; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Courier New', monospace; background: #fff; color: #000; -webkit-print-color-adjust: exact; }
+.sheet { width: 72mm; padding: 5mm 4mm 8mm; margin: 0 auto; page-break-after: always; }
+.sheet:last-child { page-break-after: avoid; }
+.c { text-align: center; }
+.b { font-weight: bold; }
+.venue { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
+.venue-sub { text-align: center; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #333; margin-bottom: 2mm; }
+.title { text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; margin: 2mm 0 1mm; }
+.tourn { text-align: center; font-size: 15px; font-weight: bold; margin-bottom: 1mm; }
+.when { text-align: center; font-size: 11px; color: #333; margin-bottom: 2mm; }
+.d { border-top: 1px dashed #000; margin: 2.5mm 0; }
+.rw { display: flex; justify-content: space-between; font-size: 12px; line-height: 1.7; }
+.winner { text-align: center; margin: 3mm 0; }
+.winner-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+.winner-name { font-size: 20px; font-weight: bold; text-transform: uppercase; line-height: 1.15; margin-top: 1mm; }
+.winner-prize { font-size: 15px; font-weight: bold; margin-top: 1mm; }
+.res { display: flex; align-items: baseline; font-size: 12px; line-height: 1.8; }
+.res-pos { width: 9mm; font-weight: bold; }
+.res-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 2mm; }
+.res-amt { font-weight: bold; text-align: right; min-width: 18mm; }
+.foot { text-align: center; font-size: 10px; color: #333; margin-top: 3mm; line-height: 1.5; }
+`.trim();
+
+function ordinal(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  const rem100 = num % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${num}th`;
+  const rem10 = num % 10;
+  if (rem10 === 1) return `${num}st`;
+  if (rem10 === 2) return `${num}nd`;
+  if (rem10 === 3) return `${num}rd`;
+  return `${num}th`;
+}
+
+function fmtDollars(v) {
+  const num = Number(v);
+  if (!Number.isFinite(num)) return '';
+  return `$${Math.round(num).toLocaleString()}`;
+}
+
+function resultsSheetFragment(receipt) {
+  const r = receipt || {};
+  const results = Array.isArray(r.results) ? r.results : [];
+  const location = [r.venue_city ?? r.venueCity, r.venue_state ?? r.venueState]
+    .filter(Boolean).join(', ');
+  const tournamentName = r.tournament_name ?? r.tournamentName ?? 'Tournament';
+  const startedAt = r.started_at ?? r.startedAt ?? null;
+  const endedAt = r.ended_at ?? r.endedAt ?? null;
+  const winner = results.find(x => Number(x?.position) === 1) || null;
+
+  // Summary rows are only printed when the value is actually known, so a
+  // sheet never asserts a zero prize pool that nobody entered.
+  const summaryRows = [
+    ['Entries', r.total_entries, v => Number(v).toLocaleString()],
+    ['Rebuys', r.total_rebuys, v => Number(v).toLocaleString()],
+    ['Add-Ons', r.total_addons, v => Number(v).toLocaleString()],
+    ['Prize Pool', r.prize_pool, fmtDollars],
+    ['Total Paid', r.total_paid, fmtDollars],
+    ['Overlay', r.overlay, fmtDollars]
+  ]
+    .filter(([, value]) => value !== null && value !== undefined && Number.isFinite(Number(value)))
+    .map(([label, value, fmt]) => `<div class="rw"><span>${escapeHtml(label)}:</span><span class="b">${escapeHtml(fmt(value))}</span></div>`)
+    .join('');
+
+  return `<div class="sheet">
+  <div class="venue">${escapeHtml(r.venue_name ?? r.venueName ?? 'Poker Room')}</div>
+  ${location ? `<div class="venue-sub">${escapeHtml(location)}</div>` : ''}
+  <div class="title">Official Final Results</div>
+  <div class="tourn">${escapeHtml(tournamentName)}</div>
+  <div class="when">${escapeHtml(fmtDate(startedAt || endedAt))}${endedAt ? ` &nbsp; Ended ${escapeHtml(fmtTime(endedAt))}` : ''}</div>
+  <div class="d"></div>
+  ${winner ? `<div class="winner">
+    <div class="winner-label">Champion</div>
+    <div class="winner-name">${escapeHtml(winner.player_name || 'Player')}</div>
+    ${Number(winner.amount) > 0 ? `<div class="winner-prize">${escapeHtml(fmtDollars(winner.amount))}</div>` : ''}
+  </div><div class="d"></div>` : ''}
+  ${results.length > 0 ? results.map(row => `<div class="res">
+    <span class="res-pos">${escapeHtml(ordinal(row?.position))}</span>
+    <span class="res-name">${escapeHtml(row?.player_name || 'Player')}</span>
+    <span class="res-amt">${Number(row?.amount) > 0 ? escapeHtml(fmtDollars(row.amount)) : '--'}</span>
+  </div>`).join('') : '<div class="c">No Finishing Order Recorded</div>'}
+  ${summaryRows ? `<div class="d"></div>${summaryRows}` : ''}
+  <div class="d"></div>
+  <div class="foot">Printed ${escapeHtml(fmtDate(r.timestamp))} ${escapeHtml(fmtTime(r.timestamp))}</div>
+  <div class="foot">Smarter.Poker</div>
+</div>`;
+}
+
+/**
+ * Full tournament results sheet. One `receipt` describes one tournament and
+ * carries a `results` array of { position, player_name, amount }.
+ *
+ * @param {object|object[]} receipt
+ * @param {object} [options]
+ * @returns {string} HTML document
+ */
+export function buildResultsHtml(receipt, options = {}) {
+  const list = Array.isArray(receipt) ? receipt : [receipt].filter(Boolean);
+  const title = options.title
+    || list[0]?.tournament_name
+    || list[0]?.tournamentName
+    || 'Tournament Results';
+  return htmlDoc(title, RESULTS_CSS, list.map(resultsSheetFragment).join('\n'));
+}
+
+/** A payout job is a results sheet only when it carries a finishing order. */
+function isResultsReceipt(receipt) {
+  if (!receipt) return false;
+  if (receipt.receipt_kind === 'tournament_results') return true;
+  return Array.isArray(receipt.results);
+}
+
 /* ── Job Dispatcher ───────────────────────────────────────────── */
 
 const JOB_TYPE_LABELS = {
@@ -383,6 +501,8 @@ const JOB_TYPE_LABELS = {
   chip_race: 'Chip Race Receipts',
   custom: 'Receipts'
 };
+
+const RESULTS_JOB_TITLE = 'Tournament Results';
 
 /**
  * Render a queued `commander_print_jobs` row into a single print document.
@@ -402,6 +522,21 @@ export function buildJobHtml(job) {
       return buildSeatChangeCardsHtml(receipts, { title });
     case 'buyin':
       return buildBuyinReceiptsHtml(receipts, { title });
+    case 'payout':
+      // A payout job is either a stack of per-player payout cards (the cage
+      // hands one to each finisher) or the single end-of-event results sheet.
+      // Only the second shape carries a `results` array, so the two never
+      // collide and the older per-player cards keep printing as before.
+      if (receipts.some(isResultsReceipt)) {
+        return buildResultsHtml(
+          receipts.filter(isResultsReceipt),
+          { title: job?.title || RESULTS_JOB_TITLE }
+        );
+      }
+      return buildActionReceiptsHtml(
+        receipts.map(r => ({ actionType: 'payout', ...r })),
+        { title }
+      );
     default:
       return buildActionReceiptsHtml(
         receipts.map(r => ({ actionType: job?.job_type || 'custom', ...r })),

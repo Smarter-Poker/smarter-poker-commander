@@ -259,6 +259,10 @@ export default function TournamentSettings() {
   const [addonChips, setAddonChips] = useState(15000);
   const [lateRegLevels, setLateRegLevels] = useState(6);
   const [clockColor, setClockColor] = useState('navy');
+  // Season points board this event scores into. Empty string means "use the
+  // venue's active season", which is what awardTournamentPoints falls back to.
+  const [leaderboardId, setLeaderboardId] = useState('');
+  const [leaderboards, setLeaderboards] = useState([]);
 
   // Structure
   const [levels, setLevels] = useState([]);
@@ -315,6 +319,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           setAddonChips(t.addon_chips || 15000);
           setLateRegLevels(t.late_registration_levels || 6);
           setClockColor(t.settings?.clock_color || t.clock_color || 'navy');
+          setLeaderboardId(t.leaderboard_id || '');
           setLevels(parseBlinds(t.blind_structure).length > 0 ? parseBlinds(t.blind_structure) : STRUCTURE_TEMPLATES.standard.levels);
           if (t.entry_count) setEstimatedEntries(t.entry_count);
           else if (t.current_entries) setEstimatedEntries(t.current_entries);
@@ -405,6 +410,19 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
   const removePayoutPlace = (index) => {
     setCustomPayouts(customPayouts.filter((_, i) => i !== index).map((p, i) => ({ ...p, place: i + 1 })));
   };
+
+  // ===== SEASON LEADERBOARDS (venue-scoped) =====
+  useEffect(() => {
+    if (!tournament?.venue_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const json = await commanderFetchJSON('/api/commander/tournaments/leaderboards', {});
+        if (!cancelled && json?.success) setLeaderboards(json.data?.leaderboards || []);
+      } catch (err) { console.warn('Fetch leaderboards error:', err); }
+    })();
+    return () => { cancelled = true; };
+  }, [tournament?.venue_id]);
 
   // ===== SAVED TEMPLATES (venue-scoped) =====
   const fetchTemplates = async () => {
@@ -511,6 +529,9 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           blind_structure: levels,
           payout_structure: payoutPayload,
           paying_places: payoutPayload.length,
+          // null means "score into the venue's active season" rather than
+          // pinning this event to one board.
+          leaderboard_id: leaderboardId || null,
           settings: { clock_color: clockColor }
         })
       });
@@ -775,6 +796,29 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Season Leaderboard */}
+              <div>
+                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Season Leaderboard</label>
+                <p className="text-[10px] text-[#64748B] mb-2">
+                  Points Are Awarded When This Tournament Is Finalized. Leave On Automatic To Score
+                  Into Whichever Season Is Active At The Time.
+                </p>
+                <select value={leaderboardId} onChange={e => setLeaderboardId(e.target.value)}
+                  className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none">
+                  <option value="">Automatic (Venue's Active Season)</option>
+                  {leaderboards.map(lb => (
+                    <option key={lb.id} value={lb.id}>
+                      {lb.name}{lb.is_active ? ' (Active)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {leaderboards.length === 0 && (
+                  <p className="text-[10px] text-[#F59E0B] mt-1">
+                    No Seasons Exist Yet. Create One At Commander, Tournament Leaderboards.
+                  </p>
+                )}
               </div>
 
               {/* Buy-in */}

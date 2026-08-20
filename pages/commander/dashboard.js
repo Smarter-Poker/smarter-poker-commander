@@ -56,6 +56,7 @@ const CARDS = [
       { label: 'Clock Setup', href: '/commander/clock-setup', icon: '/images/commander/icons/tn-clock-setup.png' },
       { label: 'Leagues & Freerolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
       { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-controls.png' },
+      { label: 'Tournament Leaderboards', href: '/commander/tournament-leaderboards', icon: '/images/commander/icons/tn-clock.png' },
     ] },
   {
     id: 'floor',

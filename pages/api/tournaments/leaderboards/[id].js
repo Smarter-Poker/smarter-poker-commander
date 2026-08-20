@@ -5,7 +5,7 @@
  * DELETE /api/commander/tournaments/leaderboards/[id] - Deactivate leaderboard
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -24,14 +24,17 @@ export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
-    }
+    } else if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-      const _g = await guardWriteStaff(req, res); if (!_g) return;
+      // 2026-08-20 fix: this was guardWriteStaff, which returns `true` on GET
+      // without verifying anything, so a season's full standings (every player
+      // name and point total) were readable by anyone holding the uuid.
+      const staff = await guardStaff(req, res); if (!staff) return;
       const { id } = req.query;
 
-      if (req.method === 'GET') return getLeaderboard(req, res, id);
-      if (req.method === 'PUT') return updateLeaderboard(req, res, id);
-      if (req.method === 'DELETE') return deactivateLeaderboard(req, res, id);
+      if (req.method === 'GET') return getLeaderboard(req, res, id, staff);
+      if (req.method === 'PUT') return updateLeaderboard(req, res, id, staff);
+      if (req.method === 'DELETE') return deactivateLeaderboard(req, res, id, staff);
 
       res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
       return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
@@ -43,16 +46,31 @@ export default async function handler(req, res) {
   }
 }
 
-async function getLeaderboard(req, res, id) {
-    try {
-        const { data: lb, error } = await getSupabase()
-            .from('commander_tournament_leaderboards')
-            .select('*')
-            .eq('id', id)
-            .maybeSingle();
+/** A staff session may only touch its own venue's seasons. */
+function wrongVenue(res, staff, lb) {
+    if (staff?.venue_id != null && lb?.venue_id != null &&
+        Number(staff.venue_id) !== Number(lb.venue_id)) {
+        res.status(403).json({ success: false, error: { code: 'WRONG_VENUE', message: 'Leaderboard Belongs To A Different Venue' } });
+        return true;
+    }
+    return false;
+}
 
-        if (error) throw error;
-        if (!lb) return res.status(404).json({ success: false, error: { message: 'Leaderboard not found' } });
+async function loadBoard(id) {
+    const { data, error } = await getSupabase()
+        .from('commander_tournament_leaderboards')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+    if (error) throw error;
+    return data;
+}
+
+async function getLeaderboard(req, res, id, staff) {
+    try {
+        const lb = await loadBoard(id);
+        if (!lb) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Leaderboard Not Found' } });
+        if (wrongVenue(res, staff, lb)) return;
 
         // Get all points for this leaderboard. commander_tournament_points has no
         // FK to commander_tournaments, so tournament name/date are fetched separately
@@ -113,13 +131,38 @@ async function getLeaderboard(req, res, id) {
     }
 }
 
-async function updateLeaderboard(req, res, id) {
+async function updateLeaderboard(req, res, id, staff) {
     try {
+        const existing = await loadBoard(id);
+        if (!existing) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Leaderboard Not Found' } });
+        if (wrongVenue(res, staff, existing)) return;
+
         const updates = {};
         const allowed = ['name', 'season_start', 'season_end', 'point_for_entry', 'point_structure', 'is_active'];
         allowed.forEach(key => {
             if (req.body[key] !== undefined) updates[key] = req.body[key];
         });
+
+        if (Array.isArray(updates.point_structure)) {
+            updates.point_structure = updates.point_structure
+                .map(slot => ({
+                    position: Math.trunc(Number(slot?.position ?? slot?.place)),
+                    points: Number(slot?.points ?? 0)
+                }))
+                .filter(slot => Number.isFinite(slot.position) && slot.position > 0 && Number.isFinite(slot.points) && slot.points >= 0)
+                .sort((a, b) => a.position - b.position);
+        }
+
+        // Activating a season deactivates the venue's other active seasons, so
+        // the awardTournamentPoints venue fallback stays unambiguous.
+        if (updates.is_active === true) {
+            await getSupabase()
+                .from('commander_tournament_leaderboards')
+                .update({ is_active: false })
+                .eq('venue_id', existing.venue_id)
+                .eq('is_active', true)
+                .neq('id', id);
+        }
 
         const { data, error } = await getSupabase()
             .from('commander_tournament_leaderboards')
@@ -137,8 +180,12 @@ async function updateLeaderboard(req, res, id) {
     }
 }
 
-async function deactivateLeaderboard(req, res, id) {
+async function deactivateLeaderboard(req, res, id, staff) {
     try {
+        const existing = await loadBoard(id);
+        if (!existing) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Leaderboard Not Found' } });
+        if (wrongVenue(res, staff, existing)) return;
+
         const { data, error } = await getSupabase()
             .from('commander_tournament_leaderboards')
             .update({ is_active: false })

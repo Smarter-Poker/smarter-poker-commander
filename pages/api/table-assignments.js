@@ -226,6 +226,44 @@ async function handlePut(req, res, venueId, staffUserId) {
 
   if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
 
+  // 2026-08-20: refuse to reassign a table out from under live tournament
+  // players. Switching a tournament table to cash/inactive nulls tournament_id
+  // while commander_tournament_entries still point at that table number, so the
+  // players vanish from the floor map, the TD console and auto-break while
+  // still sitting at the table. The new tournament tables endpoint already
+  // guards this; this is the legacy path that did not.
+  const leavingTournament = table.tournament_id &&
+    (mode !== 'tournament' || String(tournament_id || '') !== String(table.tournament_id));
+  if (leavingTournament) {
+    const { data: seatedPlayers, error: seatedErr } = await getSupabase()
+      .from('commander_tournament_entries')
+      .select('player_name, seat_number')
+      .eq('tournament_id', table.tournament_id)
+      .eq('table_number', table.table_number)
+      .in('status', ['seated', 'active'])
+      .limit(20);
+
+    if (seatedErr) {
+      console.error('[table-assignments] seated-player check failed', {
+        table_id, code: seatedErr.code, message: seatedErr.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DB_ERROR', message: 'Could Not Verify Whether Players Are Seated At This Table' }
+      });
+    }
+    if (seatedPlayers && seatedPlayers.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'TABLE_OCCUPIED',
+          message: `Table ${table.table_number} Still Has ${seatedPlayers.length} Tournament Player(s). Break This Table From The Tournament Director Console First.`
+        },
+        data: { players: seatedPlayers.map(p => ({ player_name: p.player_name, seat_number: p.seat_number })) }
+      });
+    }
+  }
+
   // Build update - persist BOTH mode and table_purpose as source of truth
   // mode values: 'cash', 'tournament', 'inactive'
   // table_purpose values: 'cash_game', 'tournament', null
@@ -299,6 +337,41 @@ async function handleClose(req, res, venueId, staffUserId) {
     .maybeSingle();
 
   if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
+
+  // 2026-08-20: same guard as the reassignment path. Closing a tournament
+  // table nulls tournament_id and deletes its seat rows while live
+  // commander_tournament_entries still reference that table number, orphaning
+  // the players. Breaking the table from the TD console is the correct route
+  // because it MOVES the players first and prints their seat change cards.
+  if (table.tournament_id) {
+    const { data: seatedPlayers, error: seatedErr } = await getSupabase()
+      .from('commander_tournament_entries')
+      .select('player_name, seat_number')
+      .eq('tournament_id', table.tournament_id)
+      .eq('table_number', table.table_number)
+      .in('status', ['seated', 'active'])
+      .limit(20);
+
+    if (seatedErr) {
+      console.error('[table-assignments] close seated-player check failed', {
+        table_id, code: seatedErr.code, message: seatedErr.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DB_ERROR', message: 'Could Not Verify Whether Players Are Seated At This Table' }
+      });
+    }
+    if (seatedPlayers && seatedPlayers.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'TABLE_OCCUPIED',
+          message: `Table ${table.table_number} Still Has ${seatedPlayers.length} Tournament Player(s). Break This Table From The Tournament Director Console So Their Seat Change Cards Print.`
+        },
+        data: { players: seatedPlayers.map(p => ({ player_name: p.player_name, seat_number: p.seat_number })) }
+      });
+    }
+  }
 
   // Close all active games on this table
   await getSupabase()

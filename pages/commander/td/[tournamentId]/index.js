@@ -442,6 +442,32 @@ export default function TDControlCenter() {
           </button>
         </div>
 
+        {/* ===== FINAL RESULTS =====
+            Only surfaces once the event is actually near its end. Deliberately
+            a button and not a bottom-nav item: a seventh nav entry shrinks
+            every target below the 44px minimum at 375px. */}
+        {['final_table', 'completed', 'hand_for_hand'].includes(tournament.status) && (
+          <div className="px-4 pt-2">
+            <button onClick={() => navigateTo('results')}
+              className="w-full bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#F59E0B]/20 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-white font-semibold text-base">Final Results</span>
+                  <span className="text-[#B0B3B8] text-xs text-left">
+                    {tournament.status === 'completed'
+                      ? 'View, Print And Export The Results'
+                      : 'Finishing Order, Payouts And Finalize'}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[#F59E0B]" />
+            </button>
+          </div>
+        )}
+
         {/* ===== BREAK TOOLS: CHIP COUNTS + COLOR UP =====
             Deliberately buttons and not bottom-nav items. The nav already
             carries six entries and a seventh shrinks every target below the

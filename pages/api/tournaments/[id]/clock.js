@@ -48,6 +48,21 @@ function displayLevelNumber(structure, index) {
   return n;
 }
 
+// Fields inside settings.clock_state that this route does NOT own. They are
+// written by hand-for-hand.js, message.js and the break toggle, all of which
+// merge. Every timer action here rebuilds clockState from scratch, and
+// commander_clock_write does jsonb_set on the WHOLE clock_state object, so a
+// single Pause or Next Level used to wipe the hand-for-hand flag, the floor
+// announcement banner and the on-break state off the displays.
+const CARRIED_CLOCK_FIELDS = [
+  'hand_for_hand',
+  'hand_for_hand_started_at',
+  'messages',
+  'current_message',
+  'on_break',
+  'break_started_at'
+];
+
 
 let _supabase = null;
 function getSupabase() {
@@ -342,7 +357,11 @@ async function handleClockAction(req, res, tournamentId, staff) {
           isRunning: true,
           levelStartedAt: new Date().toISOString(),
           pausedAt: null,
-          pausedDuration: 0
+          pausedDuration: 0,
+          // Cards are in the air: a stale break flag would leave BREAK burned
+          // onto every display while the event runs.
+          on_break: false,
+          break_started_at: null
         };
 
         // --- Push Notification: Tournament Starting ---
@@ -380,7 +399,11 @@ async function handleClockAction(req, res, tournamentId, staff) {
           isRunning: true,
           levelStartedAt: clockState.levelStartedAt,
           pausedAt: null,
-          pausedDuration: (clockState.pausedDuration || 0) + (clockState.pausedAt ? Date.now() - new Date(clockState.pausedAt).getTime() : 0)
+          pausedDuration: (clockState.pausedDuration || 0) + (clockState.pausedAt ? Date.now() - new Date(clockState.pausedAt).getTime() : 0),
+          // Resuming play ends any break. Without this the TD could press Play
+          // and the displays kept showing BREAK for the rest of the level.
+          on_break: false,
+          break_started_at: null
         };
         break;
 
@@ -548,6 +571,20 @@ async function handleClockAction(req, res, tournamentId, staff) {
           success: false,
           error: { code: 'VALIDATION_ERROR', message: 'Invalid action' }
         });
+    }
+
+    // Carry forward the fields this route does not own (see CARRIED_CLOCK_FIELDS).
+    // A branch above that sets one of them explicitly still wins, because the
+    // rebuilt clockState is spread last.
+    if (clockState) {
+      const previous = settings.clock_state || {};
+      const carried = {};
+      for (const key of CARRIED_CLOCK_FIELDS) {
+        if (clockState[key] === undefined && previous[key] !== undefined) {
+          carried[key] = previous[key];
+        }
+      }
+      clockState = { ...carried, ...clockState };
     }
 
     // Persist status/level updates AND clock_state together in ONE atomic

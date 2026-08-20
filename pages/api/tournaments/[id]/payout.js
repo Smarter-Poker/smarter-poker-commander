@@ -286,7 +286,9 @@ async function handlePayout(req, res, tournamentId) {
   try {
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id')
+      // scheduled_start/actual_start are needed so points only accrue to a
+      // season whose window actually contains this event.
+      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -360,7 +362,9 @@ async function handleBulkPayouts(req, res, tournamentId) {
     // Get tournament for leaderboard
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id')
+      // scheduled_start/actual_start are needed so points only accrue to a
+      // season whose window actually contains this event.
+      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -371,14 +375,25 @@ async function handleBulkPayouts(req, res, tournamentId) {
       // (chop entries for still-active players may lack player_id); fallback
       // to player_id, and skip rows with neither identifier.
       // In deal_only mode record the money without ending anyone's tournament.
+      // 2026-08-20 fix: the finalize screen sends the WHOLE finishing order so
+      // every finisher accrues season points, not just the money places. This
+      // used to stamp 'cashed' on all of them, rewriting a min-cash-less bustout
+      // from 'eliminated' to 'cashed' and telling the cage a player who won
+      // nothing had been paid. Status is now only rewritten for a real result:
+      // 1st place is the winner, any other finish is 'cashed' only when money
+      // actually changed hands. Everyone else keeps the status they had.
+      const paidAmount = Number(p.amount) || 0;
+      const statusPatch = Number(p.position) === 1
+        ? { status: 'winner' }
+        : (paidAmount > 0 ? { status: 'cashed' } : {});
+
       const updatePayload = dealOnly
         ? { payout_amount: p.amount, payout_position: p.position }
         : {
             finish_position: p.position,
             payout_amount: p.amount,
             payout_position: p.position,
-            // Only 1st place is the winner; every other paid finish is 'cashed'.
-            status: Number(p.position) === 1 ? 'winner' : 'cashed'
+            ...statusPatch
           };
 
       let updateQuery = getSupabase()
@@ -437,92 +452,125 @@ async function handleBulkPayouts(req, res, tournamentId) {
   }
 }
 
-// Fallback finish-position -> points map used when the venue has no active
-// leaderboard with a point_structure. FLAG: confirm the intended points rule.
+// Fallback finish-position -> points map used when the venue is running no
+// season leaderboard at all. Points still accrue (leaderboard_id null) so a
+// room that later creates a season can see who has been playing.
 const DEFAULT_FINISH_POINTS = { 1: 100, 2: 70, 3: 50, 4: 40, 5: 30, 6: 25, 7: 20, 8: 15, 9: 10 };
 
+/** The calendar date a tournament counts against for season windows. */
+function tournamentDate(tournament) {
+  const raw = tournament?.actual_start || tournament?.scheduled_start;
+  const d = raw ? new Date(raw) : new Date();
+  if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
+  return d.toISOString().slice(0, 10);
+}
+
 /**
- * Auto-award tournament leaderboard points when a player finishes.
- * Uses the tournament's own leaderboard_id when set, otherwise resolves the
- * venue's active leaderboard for its point_structure, otherwise falls back to a
- * default finish-position map. Rows are upserted into commander_tournament_points
- * keyed on tournament_id + player_id (or player_name when player_id is absent).
+ * Resolve which season leaderboard an event scores into.
+ *
+ * Order:
+ *   1. tournament.leaderboard_id, when it still exists and belongs to the
+ *      tournament's venue (a stale id from a cloned template must not silently
+ *      score into another room's season).
+ *   2. The venue's ACTIVE season whose window contains the event date. This is
+ *      the fallback that makes points work without anyone having to attach a
+ *      leaderboard to each tournament by hand.
+ *   3. Nothing, in which case DEFAULT_FINISH_POINTS is used with a null
+ *      leaderboard_id.
+ */
+async function resolveLeaderboard(tournament) {
+  const columns = 'id, venue_id, point_for_entry, point_structure, season_start, season_end, is_active';
+
+  if (tournament?.leaderboard_id) {
+    const { data } = await getSupabase()
+      .from('commander_tournament_leaderboards')
+      .select(columns)
+      .eq('id', tournament.leaderboard_id)
+      .maybeSingle();
+    if (data && (tournament.venue_id == null || Number(data.venue_id) === Number(tournament.venue_id))) {
+      return data;
+    }
+  }
+
+  if (tournament?.venue_id != null) {
+    const onDate = tournamentDate(tournament);
+    const { data } = await getSupabase()
+      .from('commander_tournament_leaderboards')
+      .select(columns)
+      .eq('venue_id', tournament.venue_id)
+      .eq('is_active', true)
+      .lte('season_start', onDate)
+      .gte('season_end', onDate)
+      .order('season_start', { ascending: false })
+      .limit(1);
+    if (Array.isArray(data) && data.length > 0) return data[0];
+  }
+
+  return null;
+}
+
+/**
+ * Auto-award tournament leaderboard points when a player's finish is final.
+ *
+ * Rows are upserted into commander_tournament_points keyed on
+ * tournament_id + player_id, or tournament_id + player_name for walk-ins with
+ * no profile. Both keys are backed by partial unique indexes
+ * (uq_ctp_tournament_player / uq_ctp_tournament_player_name).
  */
 async function awardTournamentPoints(tournament, tournamentId, entry) {
   try {
-    // Resolve the leaderboard: tournament.leaderboard_id wins, then the
-    // venue's active leaderboard.
-    let leaderboardId = null;
-    let entryPts = 0;
-    let structure = [];
-    let lb = null;
-    if (tournament?.leaderboard_id) {
-      const { data } = await getSupabase()
-        .from('commander_tournament_leaderboards')
-        .select('id, point_for_entry, point_structure')
-        .eq('id', tournament.leaderboard_id)
-        .maybeSingle();
-      lb = data;
-    }
-    if (!lb && tournament?.venue_id != null) {
-      const { data } = await getSupabase()
-        .from('commander_tournament_leaderboards')
-        .select('id, point_for_entry, point_structure')
-        .eq('venue_id', tournament.venue_id)
-        .eq('is_active', true)
-        .order('season_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      lb = data;
-    }
-    if (lb) {
-      leaderboardId = lb.id;
-      entryPts = lb.point_for_entry || 0;
-      structure = lb.point_structure || [];
-    }
+    if (!entry?.finish_position) return;
+    // Nothing to key the row on.
+    if (!entry.player_id && !entry.player_name) return;
+
+    const lb = await resolveLeaderboard(tournament);
+    const leaderboardId = lb?.id || null;
+    const entryPts = lb ? (Number(lb.point_for_entry) || 0) : 0;
+    const structure = Array.isArray(lb?.point_structure) ? lb.point_structure : [];
 
     const positionPts = leaderboardId
-      ? (structure.find(s => s.position === entry.finish_position)?.points || 0)
+      ? (Number(structure.find(s => Number(s?.position) === Number(entry.finish_position))?.points) || 0)
       : (DEFAULT_FINISH_POINTS[entry.finish_position] || 0);
 
     if (entryPts === 0 && positionPts === 0) return;
 
-    // Skip rows we cannot key on.
-    if (!entry.player_id && !entry.player_name) return;
+    const row = {
+      leaderboard_id: leaderboardId,
+      points: positionPts,
+      entry_points: entryPts,
+      finish_position: entry.finish_position,
+      rebuy_count: entry.rebuy_count || 0,
+      addon_count: entry.addon_taken ? 1 : 0,
+      updated_at: new Date().toISOString()
+    };
 
-    // Upsert points (avoid duplicates) keyed on tournament + player.
     let existingQuery = getSupabase()
       .from('commander_tournament_points')
       .select('id')
       .eq('tournament_id', tournamentId);
     existingQuery = entry.player_id
       ? existingQuery.eq('player_id', entry.player_id)
-      : existingQuery.eq('player_name', entry.player_name);
+      : existingQuery.is('player_id', null).eq('player_name', entry.player_name);
     const { data: existing } = await existingQuery.maybeSingle();
 
     if (existing) {
-      await getSupabase()
+      const { error } = await getSupabase()
         .from('commander_tournament_points')
-        .update({
-          leaderboard_id: leaderboardId,
-          points: positionPts,
-          entry_points: entryPts,
-          finish_position: entry.finish_position
-        })
+        .update(row)
         .eq('id', existing.id);
-    } else {
-      await getSupabase()
-        .from('commander_tournament_points')
-        .insert({
-          leaderboard_id: leaderboardId,
-          tournament_id: tournamentId,
-          player_id: entry.player_id || null,
-          player_name: entry.player_name || null,
-          points: positionPts,
-          entry_points: entryPts,
-          finish_position: entry.finish_position
-        });
+      if (error) console.warn('Award points update failed:', error.message || error);
+      return;
     }
+
+    const { error } = await getSupabase()
+      .from('commander_tournament_points')
+      .insert({
+        ...row,
+        tournament_id: tournamentId,
+        player_id: entry.player_id || null,
+        player_name: entry.player_name || null
+      });
+    if (error) console.warn('Award points insert failed:', error.message || error);
   } catch (err) {
     console.warn('Award points error:', err);
   }

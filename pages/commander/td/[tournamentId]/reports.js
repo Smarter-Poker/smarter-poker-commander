@@ -13,7 +13,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import {
     Trophy, Users, DollarSign, LayoutGrid, Monitor,
     FileText, Download, Loader2, ClipboardList,
-    UserCheck, CreditCard
+    UserCheck, CreditCard, ChevronRight
 } from 'lucide-react';
 import { commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 
@@ -126,6 +126,24 @@ export default function TDReports() {
                 </div>
 
                 <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+                    {/* Final Results.
+                        Lives here rather than as a seventh bottom-nav item: a
+                        seventh entry drops every nav target below the 44px
+                        minimum at 375px. */}
+                    <button onClick={() => navigateTo('/results')}
+                        className="w-full bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center justify-between active:bg-[#3A3B3C] transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center flex-shrink-0">
+                                <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                            </div>
+                            <div className="flex flex-col items-start">
+                                <span className="text-white font-semibold text-base">Final Results</span>
+                                <span className="text-[#B0B3B8] text-xs text-left">Finishing Order, Payouts And Finalize</span>
+                            </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-[#B0B3B8] flex-shrink-0" />
+                    </button>
+
                     {/* Tabs */}
                     <div className="flex gap-2">
                         {REPORT_TABS.map(t => {

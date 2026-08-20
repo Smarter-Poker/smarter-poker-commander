@@ -93,7 +93,12 @@ async function listEntries(req, res, tournamentId) {
       .eq('tournament_id', tournamentId)
       .order('registered_at', { ascending: true })
 
-    if (status) {
+    // 2026-08-20 fix: callers pass ?status=all to mean "no status filter"
+    // (pages/commander/reports/tournament-results.js does exactly this). That
+    // was being applied literally as status = 'all', which matches nothing, so
+    // the Tournament Results report expanded to an empty finishing order on
+    // every completed event.
+    if (status && status !== 'all') {
       query = query.eq('status', status)
     }
 
