@@ -18,6 +18,7 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -309,8 +310,27 @@ export default async function handler(req, res) {
         .update(payload)
         .eq('id', a.entry_id)
         .eq('tournament_id', tournamentId);
-      if (error) errors.push({ entry_id: a.entry_id, message: error.message });
+      // One player's collision must NOT abort the draw. The rest of the field
+      // still gets seated and the failures are reported row by row.
+      // uq_commander_entries_live_seat rejects a chair that was claimed after
+      // the re-verification pass above, which is exactly the case rowConflict
+      // labels as a collision.
+      if (error) {
+        const row = rowConflict(error, {
+          entryId: a.entry_id,
+          playerName: a.player_name,
+          tableNumber: a.table_number,
+          seatNumber: a.seat_number,
+          action: 'Seat Draw'
+        });
+        // `message` is the field this route has always used; `error` and
+        // `collision` are the shared shape. Both are sent so the TD screen keeps
+        // rendering and new clients can count collisions.
+        errors.push({ ...row, message: row.error });
+      }
     }
+
+    const collided = countCollisions(errors);
 
     await logAction({ action: 'seat_draw', category: 'tournament' }, {
       venueId: tournament.venue_id,
@@ -318,7 +338,12 @@ export default async function handler(req, res) {
       targetId: tournamentId,
       targetType: 'commander_tournaments',
       targetName: tournament.name,
-      metadata: { players_drawn: assignments.length, tables_used: tables.length, errors: errors.length },
+      metadata: {
+        players_drawn: assignments.length,
+        tables_used: tables.length,
+        errors: errors.length,
+        seat_collisions: collided
+      },
       req
     });
 
@@ -330,10 +355,12 @@ export default async function handler(req, res) {
         assignments,
         tables_used: tables.map(t => t.table_number),
         players_drawn: assignments.length - errors.length,
+        players_failed: errors.length,
+        seat_collisions: collided,
         errors: errors.length > 0 ? errors : undefined,
         message: errors.length === 0
           ? `Seat Draw Complete. ${assignments.length} Players Seated Across ${tables.length} Tables.`
-          : `Seat Draw Partially Applied. ${assignments.length - errors.length} Of ${assignments.length} Players Seated, ${errors.length} Failed.`
+          : `Seat Draw Partially Applied. ${assignments.length - errors.length} Of ${assignments.length} Players Seated, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Seat Was Already Taken` : ''}. Fix Those Players, Then Run The Draw Again.`
       }
     });
   } catch (err) {

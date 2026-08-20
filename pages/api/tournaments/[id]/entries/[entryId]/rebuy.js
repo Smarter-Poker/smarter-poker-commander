@@ -57,12 +57,27 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: { code: 'REBUYS_NOT_ALLOWED', message: 'Rebuys Not Allowed In This Tournament' } });
       }
 
-      // Check rebuy period
+      // REBUY WINDOW
       // 2026-07-25 audit fix: current_level is 0-indexed; the rebuy period runs
-      // while (current_level + 1) <= rebuy_end_level when a cutoff is set.
+      // while (current_level + 1) <= rebuy_end_level when a cutoff is set. Same
+      // convention register.js uses for late registration
+      // ((current_level + 1) > late_registration_levels closes it).
+      //
+      // 2026-08-20: the guard tested `tournament.rebuy_end_level &&`, which
+      // treats 0 as "no cutoff configured". A tournament set to end rebuys at
+      // level 0 means there is no rebuy period at all, and that configuration
+      // was silently ignored, leaving rebuys open for the whole event. Test for
+      // null explicitly. A NULL rebuy_end_level still means UNLIMITED and must
+      // never block.
       const currentLevel = tournament.current_level || 0;
-      if (tournament.rebuy_end_level && (currentLevel + 1) > tournament.rebuy_end_level) {
-        return res.status(400).json({ success: false, error: { code: 'REBUY_PERIOD_CLOSED', message: `Rebuy Period Closed (Ended At Level ${tournament.rebuy_end_level})` } });
+      if (tournament.rebuy_end_level != null && (currentLevel + 1) > tournament.rebuy_end_level) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'REBUY_WINDOW_CLOSED',
+            message: `Rebuys Closed. The Rebuy Period Ended After Level ${tournament.rebuy_end_level} And The Clock Is On Level ${currentLevel + 1}.`
+          }
+        });
       }
 
       // Get entry
@@ -84,12 +99,26 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Rebuy For A Player With Status ${entry.status}` } });
       }
 
-      // Check max rebuys. A null max_rebuys means unlimited; 999 is the sentinel
-      // handed to the RPC, but it must not be reported to the TD as a real cap.
+      // MAX REBUYS
+      // A null max_rebuys means unlimited; 999 is only the sentinel handed to
+      // the RPC and must never be reported to the TD as a real cap.
+      //
+      // 2026-08-20: `tournament.max_rebuys || 999` also swallowed a configured
+      // max_rebuys of 0 ("this event allows no rebuys at all") and replaced it
+      // with the unlimited sentinel. Handle 0 explicitly. The RPC still gets the
+      // real number so the cap is enforced inside the transaction as well.
       const unlimitedRebuys = tournament.max_rebuys == null;
-      const maxRebuys = tournament.max_rebuys || 999;
-      if ((entry.rebuy_count || 0) >= maxRebuys) {
-        return res.status(400).json({ success: false, error: { code: 'MAX_REBUYS_REACHED', message: `Maximum Rebuys (${maxRebuys}) Reached` } });
+      const maxRebuys = unlimitedRebuys ? 999 : Number(tournament.max_rebuys);
+      if (!unlimitedRebuys && (entry.rebuy_count || 0) >= maxRebuys) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MAX_REBUYS_REACHED',
+            message: maxRebuys === 0
+              ? 'This Tournament Does Not Allow Rebuys.'
+              : `Maximum Rebuys Reached. ${entry.player_name || 'This Player'} Has Already Taken ${entry.rebuy_count || 0} Of ${maxRebuys}.`
+          }
+        });
       }
 
       const rebuyChips = tournament.rebuy_chips || tournament.starting_chips || 10000;

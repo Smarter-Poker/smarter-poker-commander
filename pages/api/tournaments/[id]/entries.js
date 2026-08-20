@@ -12,6 +12,7 @@ import { guardStaff, verifyStaffSession, getUser } from '../../../../src/lib/com
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { claimOpenSeat, promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
+import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -307,7 +308,18 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
       `)
       .maybeSingle();
 
-    if (error) throw error;
+    // A staff caller can name table_number / seat_number on this insert. With
+    // uq_commander_entries_live_seat in place that chair may already be held,
+    // and the insert is now rejected with 23505 instead of double-booking it.
+    if (error) {
+      if (seatConflictResponse(res, error, {
+        tableNumber: assignedTable,
+        seatNumber: assignedSeat,
+        playerName: player_name,
+        action: 'Registration'
+      })) return;
+      throw error;
+    }
 
     // 2026-08-20: random seat draw for late registrants. When the tournament
     // is running and no seat was given, seat the player at a random open seat
@@ -351,6 +363,9 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
     });
   } catch (error) {
     console.warn('Register player error:', error);
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ success: false, error: conflictError(error, { action: 'Registration' }) });
+    }
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

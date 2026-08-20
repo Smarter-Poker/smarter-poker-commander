@@ -7,6 +7,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -146,7 +147,17 @@ export default async function handler(req, res) {
           .eq('tournament_id', tournamentId);
 
         if (uErr) {
-          errors.push({ entry_id: move.entry_id, error: uErr.message });
+          // A single collision must not abort the batch: the other moves are
+          // legitimate and the floor still wants them applied.
+          // uq_commander_entries_live_seat rejects a destination chair that was
+          // filled after the pre-flight conflict read above.
+          errors.push(rowConflict(uErr, {
+            entryId: move.entry_id,
+            playerName: entry.player_name,
+            tableNumber: move.to_table,
+            seatNumber: move.to_seat,
+            action: 'Table Balance'
+          }));
         } else {
           results.push({
             entry_id: move.entry_id,
@@ -159,13 +170,19 @@ export default async function handler(req, res) {
         }
       }
 
+      const collided = countCollisions(errors);
+
       return res.status(200).json({
         success: errors.length === 0,
         data: {
           executed: results.length,
           failed: errors.length,
+          seat_collisions: collided,
           moves: results,
-          errors: errors.length > 0 ? errors : undefined
+          errors: errors.length > 0 ? errors : undefined,
+          message: errors.length === 0
+            ? `${results.length} Move${results.length === 1 ? '' : 's'} Applied.`
+            : `${results.length} Move${results.length === 1 ? '' : 's'} Applied, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Destination Seat Was Already Taken` : ''}. Re-Run Balance After Refreshing The Table Map.`
         }
       });
     } catch (err) {

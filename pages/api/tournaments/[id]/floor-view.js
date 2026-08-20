@@ -48,6 +48,47 @@ const ENTRY_COLUMNS = [
   'payout_amount', 'registered_at', 'created_at', 'metadata'
 ].join(', ');
 
+/**
+ * Last manual chip correction for an entry, or undefined when the stack has
+ * never been overwritten by hand.
+ *
+ * entries/[entryId]/chips.js appends { from, to, delta, by, at } to
+ * metadata.chip_corrections on every correction (capped at the last 20). Only
+ * the newest one is published here: this route is polled by every tablet and TV
+ * in the room, so the whole array must not go over the wire.
+ *
+ * Falls back to the older single-shot metadata.previous_chips shape so entries
+ * corrected before the history existed still show something.
+ */
+function lastChipCorrection(entry) {
+  const meta = entry?.metadata;
+  if (!meta || typeof meta !== 'object') return undefined;
+
+  const history = Array.isArray(meta.chip_corrections) ? meta.chip_corrections : null;
+  if (history && history.length > 0) {
+    const last = history[history.length - 1];
+    if (!last || typeof last !== 'object') return undefined;
+    return {
+      from: last.from ?? null,
+      to: last.to ?? null,
+      delta: last.delta ?? ((Number(last.to) || 0) - (Number(last.from) || 0)),
+      by: last.by ?? null,
+      at: last.at ?? null,
+      total_corrections: history.length
+    };
+  }
+
+  if (meta.previous_chips == null || !meta.chip_updated_at) return undefined;
+  return {
+    from: meta.previous_chips,
+    to: entry.current_chips ?? null,
+    delta: (Number(entry.current_chips) || 0) - (Number(meta.previous_chips) || 0),
+    by: meta.updated_by ?? null,
+    at: meta.chip_updated_at,
+    total_corrections: 1
+  };
+}
+
 // Clock backfill throttle. A tournament that was never properly started has no
 // settings.clock_state, and this GET used to write one on EVERY request. With
 // 20 tablets polling that is 40 writes a minute, and because
@@ -521,6 +562,12 @@ export default async function handler(req, res) {
             registered_at: e.registered_at || e.created_at,
             queue_position: alternatePositions.get(e.id),
             avatar_url: avatarMap[e.player_id]?.avatar_url || undefined,
+            // Most recent manual chip correction, so the Players tab can show
+            // that a stack was overwritten and by how much without anyone
+            // opening the audit log. The full capped history lives on
+            // metadata.chip_corrections; only the tail is shipped because this
+            // payload goes to every tablet and TV in the room.
+            last_chip_correction: lastChipCorrection(e),
           })),
           eliminated: eliminatedEntries
             .sort((a, b) => (b.finish_position || 999) - (a.finish_position || 999))

@@ -20,6 +20,7 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -374,7 +375,16 @@ async function handleExecute(req, res, tournament, staff) {
       .eq('tournament_id', tournament.id);
 
     if (error) {
-      errors.push({ entry_id: a.entry_id, error: error.message });
+      // One player's collision must not abort the break. The broken table is
+      // only released when errors.length === 0, so a partial break leaves the
+      // table open and nobody is stranded without a chair.
+      errors.push(rowConflict(error, {
+        entryId: a.entry_id,
+        playerName: live.player_name || a.player_name,
+        tableNumber: a.to_table,
+        seatNumber: a.to_seat,
+        action: 'Table Break'
+      }));
     } else {
       moved.push({
         ...a,
@@ -469,15 +479,22 @@ async function handleExecute(req, res, tournament, staff) {
     printJobId = job?.id || null;
   }
 
+  const collided = countCollisions(errors);
+
   return res.status(200).json({
     success: errors.length === 0,
     data: {
       table_broken: break_table,
       players_moved: moved.length,
+      players_failed: errors.length,
+      seat_collisions: collided,
       moves: moved,
       receipts,
       print_job_id: printJobId,
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
+      message: errors.length === 0
+        ? `Table ${break_table} Broken. ${moved.length} Player${moved.length === 1 ? '' : 's'} Moved.`
+        : `Table ${break_table} Not Fully Broken. ${moved.length} Moved, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Destination Seat Was Already Taken` : ''}. The Table Stays Open Until Every Player Has A Seat.`
     }
   });
 }

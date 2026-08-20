@@ -8,6 +8,7 @@ import { createClient } from '../../../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
+import { seatConflictResponse } from '../../../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -141,7 +142,17 @@ export default async function handler(req, res) {
         .eq('id', entryId)
         .eq('tournament_id', tournamentId);
 
-      if (uErr) return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Change Seat' } });
+      if (uErr) {
+        // The occupancy probe above is a read, so a seat can still be filled
+        // between that read and this write. uq_commander_entries_live_seat now
+        // rejects the second writer with 23505 instead of double-booking the
+        // chair; turn that into the same actionable 409 the probe returns.
+        if (seatConflictResponse(res, uErr, { tableNumber: tableNum, seatNumber: seatNum, action: 'Seat Change' })) return;
+        console.error('[tournaments/entries/seat] seat write failed', {
+          tournamentId, entryId, code: uErr.code, message: uErr.message, details: uErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Change Seat' } });
+      }
 
       return res.status(200).json({
         success: true,

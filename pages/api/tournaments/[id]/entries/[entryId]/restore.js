@@ -15,6 +15,7 @@ import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
+import { isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -106,7 +107,25 @@ export default async function handler(req, res) {
       .select()
       .maybeSingle();
 
-    if (restoreError) throw restoreError;
+    // This write CLEARS finish_position, so it cannot collide on
+    // uq_commander_entries_finish_position. It can still collide on the live
+    // seat index when the restored row is put back into a chair somebody else
+    // has taken since the bust, so the violation is reported as a conflict
+    // rather than a 500.
+    if (restoreError) {
+      if (isUniqueViolation(restoreError)) {
+        return res.status(409).json({
+          success: false,
+          error: conflictError(restoreError, {
+            tableNumber: entry.table_number,
+            seatNumber: entry.seat_number,
+            playerName: entry.player_name,
+            action: 'Elimination Undo'
+          })
+        });
+      }
+      throw restoreError;
+    }
     if (!restored) {
       return res.status(409).json({
         success: false,
@@ -194,6 +213,9 @@ export default async function handler(req, res) {
     try { reportApiError(err, req); } catch (_e) { console.warn('[App] Handled exception:', _e?.message || _e); }
     console.warn('[restore.js] Error:', err);
     if (!res.headersSent) {
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ success: false, error: conflictError(err, { action: 'Elimination Undo' }) });
+      }
       return res.status(500).json({
         success: false,
         error: { code: 'SERVER_ERROR', message: 'Failed To Restore Entry' }

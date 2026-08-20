@@ -10,6 +10,7 @@ import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -188,7 +189,16 @@ export default async function handler(req, res) {
           .eq('tournament_id', tournamentId);
 
         if (uErr) {
-          errors.push({ entry_id: a.entry_id, error: uErr.message });
+          // One player's collision must not abort the break: the remaining
+          // players still need moving, and the table is deliberately NOT
+          // released while any error stands (see below), so nobody is stranded.
+          errors.push(rowConflict(uErr, {
+            entryId: a.entry_id,
+            playerName: entry.player_name,
+            tableNumber: a.to_table,
+            seatNumber: a.to_seat,
+            action: 'Table Break'
+          }));
         } else {
           results.push({
             entry_id: a.entry_id,
@@ -280,15 +290,22 @@ export default async function handler(req, res) {
         printJobId = job?.id || null;
       }
 
+      const collided = countCollisions(errors);
+
       return res.status(200).json({
         success: errors.length === 0,
         data: {
           table_broken: table_number,
           players_moved: results.length,
+          players_failed: errors.length,
+          seat_collisions: collided,
           moves: results,
           receipts,
           print_job_id: printJobId,
-          errors: errors.length > 0 ? errors : undefined
+          errors: errors.length > 0 ? errors : undefined,
+          message: errors.length === 0
+            ? `Table ${table_number} Broken. ${results.length} Player${results.length === 1 ? '' : 's'} Moved.`
+            : `Table ${table_number} Not Fully Broken. ${results.length} Moved, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Destination Seat Was Already Taken` : ''}. The Table Stays Open Until Every Player Has A Seat.`
         }
       });
     } catch (err) {

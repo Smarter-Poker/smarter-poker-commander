@@ -31,6 +31,11 @@ export default function TDRegisterPlayer() {
     const [searchLoading, setSearchLoading] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [reentryName, setReentryName] = useState(null);
+    // The busted entry this re-entry replaces. Sent to the register API as
+    // reentry_of so the NEW entry row is linked to it. Without this the API
+    // cannot tell a re-entry from a first-time registration, and the two rows
+    // for the same player were never connected.
+    const [reentryOf, setReentryOf] = useState(null);
     // The register endpoint returns seat_assignment / is_alternate and this
     // screen threw both away, so the TD registered a player and was never told
     // where they were sitting. The cashier screen has always shown it.
@@ -55,7 +60,11 @@ export default function TDRegisterPlayer() {
                 setTournament(json.data.tournament);
                 if (reentry && json.data.entries) {
                     const prior = json.data.entries.find(e => e.entry_id === reentry);
-                    if (prior) { setReentryName(prior.player_name); setSearchQuery(prior.player_name || ''); }
+                    if (prior) {
+                        setReentryName(prior.player_name);
+                        setReentryOf(prior.entry_id);
+                        setSearchQuery(prior.player_name || '');
+                    }
                 }
             }
         } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
@@ -169,7 +178,15 @@ export default function TDRegisterPlayer() {
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ player_id: selectedPlayer.id, player_name: selectedPlayer.player_name })
+                body: JSON.stringify({
+                    player_id: selectedPlayer.id,
+                    player_name: selectedPlayer.player_name,
+                    // Only sent on a real re-entry. The API validates that the
+                    // original entry belongs to this player and is eliminated,
+                    // then creates a NEW entry and leaves the busted one (and
+                    // its finish position and payout) untouched.
+                    ...(reentryOf ? { reentry_of: reentryOf } : {})
+                })
             });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.success) {
@@ -207,6 +224,7 @@ export default function TDRegisterPlayer() {
             broadcastChange('tournaments');
             setSelectedPlayer(null);
             setReentryName(null);
+            setReentryOf(null);
         } catch (err) {
             console.warn('Registration error:', err);
             setMessage({ type: 'error', text: 'Network Error. Try Again.' });

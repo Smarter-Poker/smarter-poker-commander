@@ -29,6 +29,26 @@ function getSupabase() {
 }
 
 /**
+ * UNIQUE VIOLATION (Postgres 23505)
+ *
+ * Production carries uq_commander_entries_live_seat, a partial unique index on
+ * (tournament_id, table_number, seat_number) for live statuses. A seat write
+ * that lands on a chair somebody else just took is now REJECTED rather than
+ * silently double-booking the table.
+ *
+ * The same predicate lives in src/lib/commander/dbErrors.js for every API
+ * route. It is duplicated here on purpose: this module ships inside the
+ * @smarter-poker/commander-shared package and must not reach across the package
+ * boundary into the host app's src/ tree.
+ */
+function isUniqueViolation(error) {
+    if (!error) return false;
+    if (error.code === '23505') return true;
+    const text = [error.message, error.details, error.hint, error.constraint].filter(Boolean).join(' ');
+    return /duplicate key value violates unique constraint/i.test(text);
+}
+
+/**
  * Fisher-Yates random shuffle (in-place)
  */
 function shuffleArray(arr) {
@@ -266,7 +286,19 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
                 .eq('tournament_id', tournamentId);
 
             if (uErr) {
-                errors.push({ entry_id: a.entry_id, error: uErr.message });
+                // One player's collision must NOT abort the break. The table is
+                // only released when errors.length === 0 (below), so a partial
+                // break leaves the table open and nobody is stranded.
+                const collision = isUniqueViolation(uErr);
+                errors.push({
+                    entry_id: a.entry_id,
+                    player_name: a.player_name,
+                    code: collision ? 'SEAT_OCCUPIED' : 'DB_ERROR',
+                    error: collision
+                        ? `Seat ${a.to_seat} At Table ${a.to_table} Is Already Taken. Another Device Filled It First. Move ${a.player_name || 'This Player'} By Hand.`
+                        : uErr.message,
+                    collision
+                });
             } else {
                 moved.push(a);
             }
@@ -366,15 +398,22 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
             }
         }
 
+        const collided = errors.filter(e => e && e.collision === true).length;
+
         return {
             executed: true,
             break_table: breakCandidate.table_number,
             table_closed: tableClosed,
             players_moved: moved.length,
+            players_failed: errors.length,
+            seat_collisions: collided,
             moves: moved,
             receipts,
             print_job_id: printJobId,
-            errors: errors.length > 0 ? errors : undefined
+            errors: errors.length > 0 ? errors : undefined,
+            message: errors.length === 0
+                ? `Table ${breakCandidate.table_number} Broken. ${moved.length} Player${moved.length === 1 ? '' : 's'} Moved.`
+                : `Table ${breakCandidate.table_number} Not Fully Broken. ${moved.length} Moved, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Destination Seat Was Already Taken` : ''}. The Table Stays Open Until Every Player Has A Seat.`
         };
 
     } catch (err) {

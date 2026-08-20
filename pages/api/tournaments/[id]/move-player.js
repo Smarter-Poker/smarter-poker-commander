@@ -8,6 +8,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { seatConflictResponse } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -127,6 +128,15 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (uErr) {
+        // The occupancy probe above is a read. Between it and this write another
+        // device can fill the chair, and uq_commander_entries_live_seat now
+        // rejects the loser with 23505 rather than double-booking the seat.
+        if (seatConflictResponse(res, uErr, {
+          tableNumber: to_table, seatNumber: to_seat, action: 'Player Move'
+        })) return;
+        console.error('[tournaments/move-player] move write failed', {
+          tournamentId, entry_id, code: uErr.code, message: uErr.message, details: uErr.details,
+        });
         return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Move Player' } });
       }
 

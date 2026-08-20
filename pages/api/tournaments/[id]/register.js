@@ -16,6 +16,7 @@ import {
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
+import { isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -121,6 +122,24 @@ async function handleRegister(req, res, tournamentId, staff) {
     });
   }
 
+  // RE-ENTRY vs REBUY (2026-08-20)
+  //
+  // A REBUY tops up the SAME entry: same row, rebuy_count + 1, one entry in the
+  // field. It lives at entries/[entryId]/rebuy.
+  //
+  // A RE-ENTRY is a brand new entry after a bust: a NEW row with its own
+  // starting stack, counting as an ADDITIONAL entry toward the prize pool. The
+  // busted row is left exactly as it is, so it keeps its finish_position and any
+  // payout already recorded against it.
+  //
+  // The floor screens already routed Re-Entry here, but they sent nothing to say
+  // so: the new row was indistinguishable from a first-time registration and the
+  // two entries were never linked. reentry_of carries the busted entry's id, is
+  // validated below, and is stamped on the new row.
+  const reentryOf = (typeof req.body?.reentry_of === 'string' && req.body.reentry_of.trim())
+    ? req.body.reentry_of.trim()
+    : null;
+
   try {
     // Get tournament details
     const { data: tournament, error: tError } = await getSupabase()
@@ -152,6 +171,57 @@ async function handleRegister(req, res, tournamentId, staff) {
           error: { code: 'LATE_REG_CLOSED', message: 'Late Registration Is Closed' }
         });
       }
+    }
+
+    // Validate the re-entry link before anything is written. A bad link is
+    // rejected outright rather than quietly dropped: an unlinked re-entry looks
+    // exactly like a first-time registration in every report.
+    let priorEntry = null;
+    if (reentryOf) {
+      const { data: prior, error: priorErr } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('id, player_id, player_name, status, finish_position, payout_amount, metadata')
+        .eq('id', reentryOf)
+        .eq('tournament_id', tournamentId)
+        .maybeSingle();
+
+      if (priorErr) {
+        console.error('[tournaments/register] reentry_of lookup failed', {
+          tournamentId, reentry_of: reentryOf,
+          code: priorErr.code, message: priorErr.message, details: priorErr.details,
+        });
+        return res.status(500).json({
+          success: false,
+          error: { code: 'DB_ERROR', message: 'Failed To Read The Original Entry' }
+        });
+      }
+      if (!prior) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'ORIGINAL_ENTRY_NOT_FOUND', message: 'The Original Entry Was Not Found In This Tournament' }
+        });
+      }
+      if (prior.player_id && String(prior.player_id) !== String(player_id)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'REENTRY_PLAYER_MISMATCH',
+            message: 'The Original Entry Belongs To A Different Player. Re-Entry Must Be For The Same Player.'
+          }
+        });
+      }
+      // Only a busted entry can be re-entered. A player who is still in the
+      // event wants a REBUY (same entry, more chips), not a second entry.
+      if (prior.status !== 'eliminated') {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'REENTRY_NOT_ELIGIBLE',
+            message: `That Player Is Still In The Tournament (Status ${prior.status}). Use Rebuy Instead Of Re-Entry.`
+          }
+        });
+      }
+      priorEntry = prior;
     }
 
     // Parallel validation: existing registration, capacity, exclusions, and spending limits
@@ -269,7 +339,20 @@ async function handleRegister(req, res, tournamentId, staff) {
         registration_method: 'app',
         status: registerAsAlternate ? 'alternate' : 'registered',
         cashier_staff_id: cashierStaffId,
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        // Re-entry marker. Stored on the row itself so the link travels with the
+        // entry and is visible without joining the audit log. The ORIGINAL entry
+        // is deliberately not touched: it keeps its finish_position and its
+        // recorded payout, which is what the finishing order and the money
+        // reports read.
+        ...(priorEntry ? {
+          metadata: {
+            is_reentry: true,
+            reentry_of: priorEntry.id,
+            reentry_at: new Date().toISOString(),
+            reentry_from_finish_position: priorEntry.finish_position ?? null
+          }
+        } : {})
       })
       .select()
       .maybeSingle();
@@ -277,7 +360,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     if (error) {
       console.error('[tournaments/register] commander_tournament_entries insert failed', {
         tournamentId, player_id, cashier_staff_id: cashierStaffId,
-        payment_method: paymentMethod,
+        payment_method: paymentMethod, reentry_of: priorEntry?.id || null,
         code: error.code, message: error.message, details: error.details,
       });
       throw error;
@@ -390,16 +473,36 @@ async function handleRegister(req, res, tournamentId, staff) {
       }
     }
 
-    // Audit log
-    await logAction({ action: 'register_player', category: 'tournament' }, {
-      venueId: tournament.venue_id,
-      staffId: staff.id,
-      targetId: player_id,
-      targetType: 'commander_tournament_entries',
-      targetName: pName || 'Player',
-      metadata: { tournament_id: tournamentId, amount: totalAmount },
-      req
-    });
+    // Audit log. A re-entry is recorded as its own action so the cage can tell
+    // second entries from first entries without diffing the entries table.
+    await logAction(
+      priorEntry
+        ? { action: 'reenter_player', category: 'tournament' }
+        : { action: 'register_player', category: 'tournament' },
+      {
+        venueId: tournament.venue_id,
+        staffId: staff.id,
+        targetId: player_id,
+        targetType: 'commander_tournament_entries',
+        targetName: pName || 'Player',
+        metadata: {
+          tournament_id: tournamentId,
+          amount: totalAmount,
+          entry_id: entry?.id || null,
+          // logAudit accepts targetName but does not forward it to
+          // log_audit_event, so the name is carried here where it persists.
+          player_name: pName || null,
+          ...(priorEntry ? {
+            is_reentry: true,
+            reentry_of: priorEntry.id,
+            original_finish_position: priorEntry.finish_position ?? null
+          } : {})
+        },
+        req
+      }
+    );
+
+    const registeredWord = priorEntry ? 'Re-Entered' : 'Registered';
 
     return res.status(201).json({
       success: true,
@@ -407,15 +510,26 @@ async function handleRegister(req, res, tournamentId, staff) {
         entry,
         is_alternate: registerAsAlternate || undefined,
         seat_assignment: seatAssignment || undefined,
+        // Present only on a true re-entry. The original entry is untouched and
+        // its finish position is echoed back so the floor can see the link.
+        is_reentry: priorEntry ? true : undefined,
+        reentry_of: priorEntry ? priorEntry.id : undefined,
+        original_finish_position: priorEntry ? (priorEntry.finish_position ?? null) : undefined,
         message: registerAsAlternate
           ? 'Field Is Full. Player Added To The Alternates List.'
           : seatAssignment
-            ? `Registered And Seated At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
-            : 'Registered.'
+            ? `${registeredWord} And Seated At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+            : `${registeredWord}.`
       }
     });
   } catch (error) {
     console.warn('Register error:', error);
+    // uq_commander_entries_live_seat can reject the auto-seat that follows a
+    // late registration. That is a seat collision the cashier can act on, not a
+    // server fault, so it must never surface as a 500.
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ success: false, error: conflictError(error, { action: 'Registration' }) });
+    }
     return res.status(500).json({
       success: false,
       error: { code: 'SERVER_ERROR', message: 'Failed To Register' }

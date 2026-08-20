@@ -21,6 +21,7 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
+import { rowConflict, countCollisions, isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -193,23 +194,40 @@ export default async function handler(req, res) {
         .eq('tournament_id', tournamentId)
         .in('status', LIVE_STATUSES);
 
+      // One row's failure must not abort the repair sweep: the remaining
+      // conflicts still get cleared.
       if (clearErr) {
-        failed.push({ entry_id: t.entry_id, player_name: t.player_name, error: clearErr.message });
+        failed.push(rowConflict(clearErr, {
+          entryId: t.entry_id,
+          playerName: t.player_name,
+          tableNumber: t.from_table,
+          seatNumber: t.from_seat,
+          action: 'Seat Conflict Repair'
+        }));
         continue;
       }
 
       const seat = await claimOpenSeat(getSupabase(), tournamentId, t.entry_id);
       if (!seat) {
         // Put them back rather than leaving a live player with no seat at all.
-        await getSupabase()
+        // With uq_commander_entries_live_seat in place this restore can itself
+        // be rejected: the earliest occupant is still in that chair, which is
+        // precisely the conflict being repaired. Report it instead of leaving
+        // the floor believing the player was put back.
+        const { error: restoreErr } = await getSupabase()
           .from('commander_tournament_entries')
           .update({ table_number: t.from_table, seat_number: t.from_seat })
           .eq('id', t.entry_id)
           .eq('tournament_id', tournamentId);
+
         failed.push({
           entry_id: t.entry_id,
           player_name: t.player_name,
-          error: 'No Open Seat Available. Add A Table Or Break One First.'
+          code: 'NO_OPEN_SEATS',
+          collision: false,
+          error: restoreErr
+            ? `No Open Seat Available, And ${t.player_name || 'The Player'} Could Not Be Put Back At Table ${t.from_table} Seat ${t.from_seat}. They Are Currently Unseated. Add A Table Or Break One, Then Seat Them By Hand.`
+            : 'No Open Seat Available. Add A Table Or Break One First.'
         });
         continue;
       }
@@ -272,7 +290,7 @@ export default async function handler(req, res) {
       targetId: tournamentId,
       targetType: 'commander_tournaments',
       targetName: tournament.name,
-      metadata: { resolved: resolved.length, failed: failed.length },
+      metadata: { resolved: resolved.length, failed: failed.length, seat_collisions: countCollisions(failed) },
       req
     });
 
@@ -280,17 +298,23 @@ export default async function handler(req, res) {
       success: failed.length === 0,
       data: {
         resolved,
+        resolved_count: resolved.length,
+        failed_count: failed.length,
+        seat_collisions: countCollisions(failed),
         failed: failed.length > 0 ? failed : undefined,
         print_job_id: printJobId,
         message: failed.length === 0
           ? `${resolved.length} Player(s) Moved To Open Seats. Cards Queued At The Print Station.`
-          : `${resolved.length} Moved, ${failed.length} Could Not Be Moved.`
+          : `${resolved.length} Moved, ${failed.length} Could Not Be Moved. Check The Failure List Before Restarting Play.`
       }
     });
   } catch (err) {
     try { reportApiError(err, req); } catch (_e) { console.warn('[App] Handled exception:', _e?.message || _e); }
     console.warn('[seat-conflicts] Error:', err);
     if (!res.headersSent) {
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ success: false, error: conflictError(err, { action: 'Seat Conflict Repair' }) });
+      }
       return res.status(500).json({
         success: false,
         error: { code: 'SERVER_ERROR', message: 'Failed To Resolve Seat Conflicts' }

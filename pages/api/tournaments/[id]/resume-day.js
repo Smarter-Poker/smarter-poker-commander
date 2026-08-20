@@ -28,6 +28,7 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { enqueuePrintJob } from '../../../../src/lib/commander/printQueue';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -366,11 +367,25 @@ export default async function handler(req, res) {
         .eq('status', 'bagged');
 
       if (uErr) {
-        errors.push({ entry_id: a.entry_id, player_name: a.player_name, message: uErr.message });
+        // One returning player's collision must not abort the whole resume:
+        // the rest of the field still sits down and the failures are listed
+        // individually so the floor can place those players by hand.
+        const row = rowConflict(uErr, {
+          entryId: a.entry_id,
+          playerName: a.player_name,
+          tableNumber: a.table_number,
+          seatNumber: a.seat_number,
+          action: 'Day Resume'
+        });
+        // `message` is the field this route has always used; `error` and
+        // `collision` are the shared shape.
+        errors.push({ ...row, message: row.error });
       } else {
         seatedNow.push(a);
       }
     }
+
+    const collided = countCollisions(errors);
 
     if (seatedNow.length === 0) {
       return res.status(500).json({
@@ -449,7 +464,8 @@ export default async function handler(req, res) {
         day: targetDay,
         players_returned: seatedNow.length,
         tables_used: tables.length,
-        errors: errors.length
+        errors: errors.length,
+        seat_collisions: collided
       },
       req
     });
@@ -470,10 +486,12 @@ export default async function handler(req, res) {
           chips: a.chips
         })),
         print_job_id: job?.id || null,
+        players_failed: errors.length,
+        seat_collisions: collided,
         errors: errors.length > 0 ? errors : undefined,
         message: errors.length === 0
           ? `Day ${targetDay} Under Way. ${seatedNow.length} Player${seatedNow.length === 1 ? '' : 's'} Drawn Across ${tables.length} Table${tables.length === 1 ? '' : 's'}. Seat Cards Are Waiting At The Print Station.`
-          : `Day ${targetDay} Partially Started. ${seatedNow.length} Of ${assignments.length} Players Seated, ${errors.length} Failed.`
+          : `Day ${targetDay} Partially Started. ${seatedNow.length} Of ${assignments.length} Players Seated, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Seat Was Already Taken` : ''}. Seat Those Players By Hand.`
       }
     });
   } catch (err) {

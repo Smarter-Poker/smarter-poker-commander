@@ -7,6 +7,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -82,12 +83,41 @@ export default async function handler(req, res) {
       const moveErrors = [];
       const timestamp = new Date().toISOString();
 
-      for (let i = 0; i < activeEntries.length; i++) {
-        const entry = activeEntries[i];
-        const newSeat = i + 1;
+      // Which entries actually change chair.
+      const plan = activeEntries
+        .map((entry, i) => ({ entry, newSeat: i + 1 }))
+        .filter(({ entry, newSeat }) => !(entry.table_number === targetTable && entry.seat_number === newSeat));
 
-        if (entry.table_number === targetTable && entry.seat_number === newSeat) continue;
+      // RELEASE FIRST. Seats are written one row at a time, and the final table
+      // re-orders players who are ALREADY on the target table (chip leader takes
+      // seat 1, and seat 1 is usually occupied by somebody who is about to move
+      // to another seat). uq_commander_entries_live_seat now rejects that
+      // transient overlap with 23505, so every player being re-seated on the
+      // target table gives up their chair before anyone takes a new one.
+      // A NULL seat is outside the partial index, so parking here is safe.
+      const toRelease = plan
+        .filter(({ entry }) => entry.table_number === targetTable)
+        .map(({ entry }) => entry.id);
 
+      if (toRelease.length > 0) {
+        const { error: releaseErr } = await getSupabase()
+          .from('commander_tournament_entries')
+          .update({ table_number: null, seat_number: null })
+          .eq('tournament_id', tournamentId)
+          .in('id', toRelease);
+
+        // Every one of these players is re-seated immediately below, so a failed
+        // release only means the assignment that follows may collide. Log it
+        // rather than aborting a final table that is half formed.
+        if (releaseErr) {
+          console.error('[tournaments/final-table] pre-release of target table seats failed', {
+            tournamentId, targetTable,
+            code: releaseErr.code, message: releaseErr.message, details: releaseErr.details,
+          });
+        }
+      }
+
+      for (const { entry, newSeat } of plan) {
         const { error: uErr } = await getSupabase()
           .from('commander_tournament_entries')
           .update({
@@ -110,8 +140,17 @@ export default async function handler(req, res) {
         // A failed seat write used to be dropped on the floor: the player kept
         // their old table/seat, the response reported the final table as set,
         // and nobody was told.
+        // A single collision must not abort the final table: the rest of the
+        // players still take their chairs and the failures are listed so the
+        // floor can place those players by hand.
         if (uErr) {
-          moveErrors.push({ entry_id: entry.id, player_name: entry.player_name, error: uErr.message });
+          moveErrors.push(rowConflict(uErr, {
+            entryId: entry.id,
+            playerName: entry.player_name,
+            tableNumber: targetTable,
+            seatNumber: newSeat,
+            action: 'Final Table Seating'
+          }));
         } else {
           moves.push({
             entry_id: entry.id,
@@ -149,11 +188,14 @@ export default async function handler(req, res) {
         data: {
           final_table_number: targetTable,
           players: activeEntries.length,
+          players_seated: moves.length,
+          players_failed: moveErrors.length,
+          seat_collisions: countCollisions(moveErrors),
           moves,
           errors: moveErrors.length > 0 ? moveErrors : undefined,
           message: moveErrors.length === 0
             ? `Final Table Set At Table ${targetTable} With ${activeEntries.length} Players`
-            : `Final Table Set At Table ${targetTable}, But ${moveErrors.length} Seat Assignment(s) Failed`
+            : `Final Table Set At Table ${targetTable}, ${moves.length} Seated, ${moveErrors.length} Seat Assignment(s) Failed. Seat Those Players By Hand.`
         }
       });
     } catch (err) {

@@ -17,6 +17,7 @@ import {
 } from '../../../../../../src/lib/commander/pushNotifications';
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { sendSeatNotification } from '../../../../../../src/lib/commander/twilio';
+import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -114,7 +115,15 @@ export default async function handler(req, res) {
         .eq('status', 'alternate')
         .select()
         .maybeSingle();
-      if (explicitError) throw explicitError;
+      // The occupancy probe above is a read. uq_commander_entries_live_seat
+      // rejects the second writer with 23505, which used to bubble out of here
+      // as an opaque 500 with the alternate still on the list.
+      if (explicitError) {
+        if (seatConflictResponse(res, explicitError, {
+          tableNumber, seatNumber, playerName: entry.player_name, action: 'Alternate Seating'
+        })) return;
+        throw explicitError;
+      }
       if (!promotedExplicit) {
         return res.status(409).json({
           success: false,
@@ -208,6 +217,11 @@ export default async function handler(req, res) {
     try { reportApiError(err, req); } catch (_e) { console.warn('[App] Handled exception:', _e?.message || _e); }
     console.warn('[promote.js] Error:', err);
     if (!res.headersSent) {
+      // A unique violation thrown from anywhere in this handler is a seat
+      // collision, not a server fault. Never report it as a 500.
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ success: false, error: conflictError(err, { action: 'Alternate Seating' }) });
+      }
       return res.status(500).json({
         success: false,
         error: { code: 'SERVER_ERROR', message: 'Failed To Seat Alternate' }

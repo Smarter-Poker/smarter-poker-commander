@@ -18,6 +18,7 @@ import { parsePayoutStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
+import { isUniqueViolation, conflictError, conflictMessage } from '../../../../src/lib/commander/dbErrors';
 // Shared pure payout-math helpers (same math the payout screen uses, so the
 // winner's payout here always matches position 1 there).
 import { generatePayoutTable, normalizePayoutSlot } from './payout';
@@ -118,7 +119,20 @@ export default async function handler(req, res) {
           p_eliminated_by: eliminated_by_id || null
         });
 
-      if (claimError) throw claimError;
+      // uq_commander_entries_finish_position now rejects a duplicate place. The
+      // RPC walks down from the field count looking for a free place, so a
+      // violation here means another bust took the place inside the same
+      // instant. Retrying the bust is correct and safe, so say that instead of
+      // returning an opaque 500.
+      if (claimError) {
+        if (isUniqueViolation(claimError)) {
+          return res.status(409).json({
+            success: false,
+            error: conflictError(claimError, { playerName: entry.player_name, action: 'Elimination' })
+          });
+        }
+        throw claimError;
+      }
 
       const claim = Array.isArray(claimRows) ? claimRows[0] : claimRows;
       if (!claim || claim.finish_position == null) {
@@ -262,6 +276,11 @@ export default async function handler(req, res) {
         );
       }
 
+      // Set when the last player could not be recorded as the winner (a place-1
+      // collision, or any other rejected write). Reported to the TD so the
+      // finishing order is repaired before anyone is paid.
+      let winnerWriteFailure = null;
+
       // Check if tournament should end (only 1 player left)
       if (remainingCount <= 2) {
         // Mark the winner
@@ -291,7 +310,11 @@ export default async function handler(req, res) {
                 ? Number(winner.payout_amount)
                 : payoutForPosition(1));
 
-          await getSupabase()
+          // uq_commander_entries_finish_position rejects a second row claiming
+          // place 1. This write used to discard its error entirely, so a
+          // collision would leave the event with no recorded winner and nobody
+          // would be told. Surface it on the response instead.
+          const { error: winnerError } = await getSupabase()
             .from('commander_tournament_entries')
             .update({
               status: 'winner',
@@ -305,6 +328,16 @@ export default async function handler(req, res) {
               }
             })
             .eq('id', winner.id);
+
+          if (winnerError) {
+            winnerWriteFailure = isUniqueViolation(winnerError)
+              ? conflictMessage(winnerError, { finishPosition: 1, playerName: winner.player_name, action: 'Winner Recording' })
+              : 'The Winner Could Not Be Recorded. Check The Finishing Order Before Paying Out.';
+            console.error('[eliminate.js] winner write failed', {
+              tournamentId, winner_id: winner.id,
+              code: winnerError.code, message: winnerError.message, details: winnerError.details,
+            });
+          }
 
           // Award XP to winner
           if (winner.player_id) {
@@ -321,14 +354,18 @@ export default async function handler(req, res) {
             );
           }
 
-          // End tournament
-          await getSupabase()
-            .from('commander_tournaments')
-            .update({
-              status: 'completed',
-              ended_at: new Date().toISOString()
-            })
-            .eq('id', tournamentId);
+          // End tournament. Skipped when the winner could not be written: an
+          // event closed out with no first place is far harder to repair than
+          // one left running for another tap of the button.
+          if (!winnerWriteFailure) {
+            await getSupabase()
+              .from('commander_tournaments')
+              .update({
+                status: 'completed',
+                ended_at: new Date().toISOString()
+              })
+              .eq('id', tournamentId);
+          }
         }
       }
 
@@ -391,6 +428,9 @@ export default async function handler(req, res) {
           inTheMoney: payoutAmount > 0,
           bountiesAwarded: bountiesCollected,
           remainingPlayers: remainingCount - 1,
+          // Present only when the last player could not be recorded as the
+          // winner. The tournament is deliberately left open in that case.
+          winner_warning: winnerWriteFailure || undefined,
           // Present when a waiting alternate was auto-seated into the freed seat
           promoted_alternate: promotedAlternate ? {
             entry_id: promotedAlternate.id,
@@ -404,6 +444,11 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       console.warn('Eliminate player error:', error);
+      // A unique violation anywhere in the bust path is a finishing-order or
+      // seat collision, not a server fault.
+      if (isUniqueViolation(error)) {
+        return res.status(409).json({ success: false, error: conflictError(error, { action: 'Elimination' }) });
+      }
       return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 

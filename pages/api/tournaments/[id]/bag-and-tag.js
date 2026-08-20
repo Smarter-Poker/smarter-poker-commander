@@ -31,6 +31,7 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { enqueuePrintJob } from '../../../../src/lib/commander/printQueue';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -216,7 +217,17 @@ export default async function handler(req, res) {
         .in('status', ['seated', 'active']);
 
       if (uErr) {
-        errors.push({ entry_id: e.id, player_name: e.player_name, message: uErr.message });
+        // This write NULLs the seat, so it sits outside both partial unique
+        // indexes and cannot collide on a chair. The classifier is still used
+        // so every batch route in the tournament path reports failures with the
+        // same vocabulary, and so a future schema change cannot make this the
+        // one route that hands the floor a raw Postgres string.
+        const row = rowConflict(uErr, {
+          entryId: e.id,
+          playerName: e.player_name,
+          action: 'Bag And Tag'
+        });
+        errors.push({ ...row, message: row.error });
         continue;
       }
 
@@ -376,7 +387,8 @@ export default async function handler(req, res) {
         players_bagged: bagged.length,
         tables_released: tablesReleased,
         total_chips: bagged.reduce((sum, b) => sum + (b.chips || 0), 0),
-        errors: errors.length
+        errors: errors.length,
+        write_collisions: countCollisions(errors)
       },
       req
     });
@@ -393,6 +405,8 @@ export default async function handler(req, res) {
         total_chips: bagged.reduce((sum, b) => sum + (b.chips || 0), 0),
         bagged,
         print_job_id: job?.id || null,
+        players_failed: errors.length,
+        write_collisions: countCollisions(errors),
         errors: errors.length > 0 ? errors : undefined,
         message: errors.length === 0
           ? `Day ${currentDay} Closed. ${bagged.length} Player${bagged.length === 1 ? '' : 's'} Bagged, ${tablesReleased} Table${tablesReleased === 1 ? '' : 's'} Released. Bag Tags Are Waiting At The Print Station.`
