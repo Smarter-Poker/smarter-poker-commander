@@ -329,11 +329,6 @@ export default function CommanderLogin() {
     } catch (err) {
       console.warn('OAuth Error:', err);
       setError(err.message || `Failed to sign in with ${provider}`);
-      setLoading(false);
-    }
-  }
-
-  
   if (checkingSession) {
     return (
       <div className="min-h-screen bg-[#02050A] flex items-center justify-center">
@@ -343,35 +338,38 @@ export default function CommanderLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden font-rajdhani bg-black">
-      <SEOHead
-        title="Club Commander - Sign In"
-        description="Club Commander Poker Room Management Tool."
-        noindex={true}
-      />
-
-      {/* Full-screen blurred background to prevent any solid black space on widescreen monitors */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-3xl scale-110 opacity-60" 
-        style={{ backgroundImage: 'url(/images/commander/login-bg-v2.jpg)' }} 
-      />
-
-      <div 
-        className="relative w-full max-w-[600px] mx-auto z-10 shadow-[0_0_100px_rgba(0,0,0,0.8)]" 
-        style={{ aspectRatio: '841/1008' }}
-      >
-        {/* Exact User Provided Background Image */}
-        <img 
-          src="/images/commander/login-bg-v2.jpg" 
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none rounded-2xl" 
-          alt="Login Background" 
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 50px #040914 inset !important;
+            -webkit-text-fill-color: white !important;
+            border-radius: 4px;
+        }
+      `}} />
+      <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+        <SEOHead
+          title="Club Commander - Sign In"
+          description="Club Commander Poker Room Management Tool."
+          noindex={true}
         />
 
-        {/* 1. SSO Bridge Button overlay / Recent Login */}
-        {ssoEmail && (
+        <div 
+          className="relative w-full h-full z-10" 
+        >
+          {/* Stretch the image to fill the screen exactly as requested, no black bars, no blur */}
+          <img 
+            src="/images/commander/login-bg-v2.jpg" 
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+            alt="Login Background" 
+          />
+
+          {/* 1. SSO Bridge Button overlay / Recent Login */}
           <button
             type="button"
-            onClick={handleSSOContinue}
+            onClick={ssoEmail ? handleSSOContinue : undefined}
             disabled={ssoLoading || loading}
             style={{
               position: 'absolute',
@@ -387,216 +385,196 @@ export default function CommanderLogin() {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
-              fontSize: '15px',
+              fontSize: 'min(15px, 2vw)',
               fontWeight: '600',
               fontFamily: 'Inter, sans-serif'
             }}
             title="Continue with SSO"
           >
-            {ssoLoading ? 'Signing In...' : `Continue As ${ssoEmail}`}
+            {ssoLoading ? 'Signing In...' : `Continue As ${ssoEmail || 'Smarter.Poker'}`}
           </button>
-        )}
 
-        {/* 2. Google OAuth Button overlay */}
-        <button
-          type="button"
-          onClick={() => handleOAuthSignIn('google')}
-          disabled={loading}
-          style={{
-            position: 'absolute',
-            top: '37.8%',
-            left: '26%',
-            width: '48%',
-            height: '4.5%',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            zIndex: 10
-          }}
-          title="Continue With Google"
-        />
-
-        <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
-          
-          {/* 3. Email Input overlay */}
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              position: 'absolute',
-              top: '49%',
-              left: '28%',
-              width: '44%',
-              height: '4.5%',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'white',
-              fontSize: '15px',
-              zIndex: 10,
-              WebkitAppearance: 'none',
-              appearance: 'none',
-              fontFamily: 'Inter, sans-serif'
-            }}
-          />
-
-          {/* 4. Password Input overlay */}
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              position: 'absolute',
-              top: '56.5%',
-              left: '28%',
-              width: '39%', // Leave room for eye icon
-              height: '4.5%',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'white',
-              fontSize: '15px',
-              zIndex: 10,
-              WebkitAppearance: 'none',
-              appearance: 'none',
-              fontFamily: 'Inter, sans-serif'
-            }}
-          />
-
-          {/* 5. Eye Icon Toggle overlay */}
+          {/* 2. Google OAuth Button overlay */}
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: 'absolute',
-              top: '56.5%',
-              left: '68%',
-              width: '6%',
-              height: '4.5%',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              zIndex: 11
-            }}
-            title="Toggle Password Visibility"
-          />
-
-          {/* 6. Remember Me Checkbox overlay */}
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            style={{
-              position: 'absolute',
-              top: '62%',
-              left: '26%',
-              width: '2%',
-              height: '2%',
-              cursor: 'pointer',
-              opacity: 0.01,
-              zIndex: 10
-            }}
-            title="Remember Me"
-          />
-          {/* Visual mock of checkbox state to cover the drawn one if checked */}
-          {rememberMe && (
-            <div style={{
-              position: 'absolute',
-              top: '62%',
-              left: '26%',
-              width: '1.8%',
-              height: '1.5%',
-              background: '#0070f3',
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-              zIndex: 9
-            }}>
-              <Check className="w-3 h-3 text-white" strokeWidth={3} />
-            </div>
-          )}
-
-          {/* 7. Forgot Password Link overlay */}
-          <a 
-            href="#"
-            onClick={(e) => { e.preventDefault(); setError("Password recovery coming soon."); }}
-            style={{
-              position: 'absolute',
-              top: '62%',
-              left: '55%',
-              width: '19%',
-              height: '2%',
-              background: 'transparent',
-              cursor: 'pointer',
-              zIndex: 10
-            }}
-            title="Forgot Password"
-          />
-
-          {/* 8. Sign In Button overlay */}
-          <button
-            type="submit"
+            onClick={() => handleOAuthSignIn('google')}
             disabled={loading}
             style={{
               position: 'absolute',
-              top: '65.2%',
+              top: '37.8%',
               left: '26%',
               width: '48%',
               height: '4.5%',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              zIndex: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white'
+              zIndex: 10
             }}
-            title="Sign In"
-          >
-            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-          </button>
-        </form>
+            title="Continue With Google"
+          />
 
-        {/* Error Message Display Overlay */}
-        {error && (
-          <div style={{
-            position: 'absolute',
-            top: '70%',
-            left: '26%',
-            width: '48%',
-            textAlign: 'center',
-            color: '#F02849',
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            padding: '4px',
-            borderRadius: '4px',
-            fontSize: '14px',
-            zIndex: 10
-          }}>
-            {error}
-          </div>
-        )}
+          <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
+            
+            {/* 3. Email Input overlay */}
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                position: 'absolute',
+                top: '49%',
+                left: '28%',
+                width: '44%',
+                height: '4.5%',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'white',
+                fontSize: 'min(15px, 2vw)',
+                zIndex: 10,
+                fontFamily: 'Inter, sans-serif'
+              }}
+            />
 
-        {/* 9. Sign Up Button overlay */}
-        <Link
-          href="/commander/register"
-          style={{
-            position: 'absolute',
-            top: '73.5%',
-            left: '26%',
-            width: '48%',
-            height: '4.5%',
-            background: 'transparent',
-            cursor: 'pointer',
-            zIndex: 10
-          }}
-          title="Sign Up"
-        />
+            {/* 4. Password Input overlay */}
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                position: 'absolute',
+                top: '56.5%',
+                left: '28%',
+                width: '39%', // Leave room for eye icon
+                height: '4.5%',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'white',
+                fontSize: 'min(15px, 2vw)',
+                zIndex: 10,
+                fontFamily: 'Inter, sans-serif'
+              }}
+            />
+
+            {/* 5. Eye Icon Toggle overlay */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                top: '56.5%',
+                left: '68%',
+                width: '6%',
+                height: '4.5%',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                zIndex: 11
+              }}
+              title="Toggle Password Visibility"
+            />
+
+            {/* 6. Remember Me Checkbox overlay */}
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={{
+                position: 'absolute',
+                top: '62%',
+                left: '26%',
+                width: '2%',
+                height: '2%',
+                cursor: 'pointer',
+                opacity: 0.01,
+                zIndex: 10
+              }}
+              title="Remember Me"
+            />
+            {/* Visual mock of checkbox state to cover the drawn one if checked */}
+            {rememberMe && (
+              <div style={{
+                position: 'absolute',
+                top: '62%',
+                left: '26%',
+                width: '1.8%',
+                height: '1.5%',
+                background: '#0070f3',
+                borderRadius: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: 9
+              }}>
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              </div>
+            )}
+
+            {/* 7. Forgot Password Link overlay */}
+            <a 
+              href="#"
+              style={{
+                position: 'absolute',
+                top: '62%',
+                left: '55%',
+                width: '19%',
+                height: '2%',
+                background: 'transparent',
+                cursor: 'pointer',
+                zIndex: 10
+              }}
+              title="Forgot Password"
+            />
+
+            {/* 8. Sign In Button overlay */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                position: 'absolute',
+                top: '65.2%',
+                left: '26%',
+                width: '48%',
+                height: '4.5%',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white'
+              }}
+              title="Sign In"
+            >
+              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            </button>
+          </form>
+
+          {/* Error Message Display Overlay */}
+          {error && (
+            <div style={{
+              position: 'absolute',
+              top: '70%',
+              left: '26%',
+              width: '48%',
+              textAlign: 'center',
+              color: '#F02849',
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              padding: '4px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              zIndex: 10
+            }}
+            >
+              {error}
+            </div>
+          )}
+
 
       </div>
     </div>
