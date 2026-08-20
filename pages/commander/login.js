@@ -428,9 +428,9 @@ export default function CommanderLogin() {
               required
               style={{
                 position: 'absolute',
-                top: '49%',
-                left: '32%',
-                width: '40%',
+                top: '50.4%',
+                left: '30%',
+                width: '42%',
                 height: '4.5%',
                 background: 'transparent',
                 border: 'none',
@@ -438,7 +438,8 @@ export default function CommanderLogin() {
                 color: 'white',
                 fontSize: 'min(17px, 3vw)',
                 zIndex: 10,
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'Inter, sans-serif',
+                paddingTop: '0.5%'
               }}
             />
 
@@ -450,9 +451,9 @@ export default function CommanderLogin() {
               required
               style={{
                 position: 'absolute',
-                top: '56.5%',
-                left: '32%',
-                width: '35%', // Leave room for eye icon
+                top: '58.5%',
+                left: '30%',
+                width: '37%', // Leave room for eye icon
                 height: '4.5%',
                 background: 'transparent',
                 border: 'none',
@@ -460,7 +461,8 @@ export default function CommanderLogin() {
                 color: 'white',
                 fontSize: 'min(17px, 3vw)',
                 zIndex: 10,
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'Inter, sans-serif',
+                paddingTop: '0.5%'
               }}
             />
 
@@ -470,7 +472,7 @@ export default function CommanderLogin() {
               onClick={() => setShowPassword(!showPassword)}
               style={{
                 position: 'absolute',
-                top: '56.5%',
+                top: '58.5%',
                 left: '68%',
                 width: '6%',
                 height: '4.5%',
@@ -489,9 +491,9 @@ export default function CommanderLogin() {
               onChange={(e) => setRememberMe(e.target.checked)}
               style={{
                 position: 'absolute',
-                top: '62%',
-                left: '26%',
-                width: '2%',
+                top: '64.5%',
+                left: '25%',
+                width: '3%',
                 height: '2%',
                 cursor: 'pointer',
                 opacity: 0.01,
@@ -499,32 +501,13 @@ export default function CommanderLogin() {
               }}
               title="Remember Me"
             />
-            {/* Visual mock of checkbox state to cover the drawn one if checked */}
-            {rememberMe && (
-              <div style={{
-                position: 'absolute',
-                top: '62%',
-                left: '26%',
-                width: '1.8%',
-                height: '1.5%',
-                background: '#0070f3',
-                borderRadius: '2px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'none',
-                zIndex: 9
-              }}>
-                <Check className="w-3 h-3 text-white" strokeWidth={3} />
-              </div>
-            )}
 
             {/* 7. Forgot Password Link overlay */}
             <a 
               href="#"
               style={{
                 position: 'absolute',
-                top: '62%',
+                top: '64.5%',
                 left: '55%',
                 width: '19%',
                 height: '2%',
@@ -541,7 +524,7 @@ export default function CommanderLogin() {
               disabled={loading}
               style={{
                 position: 'absolute',
-                top: '65.2%',
+                top: '68.5%',
                 left: '26%',
                 width: '48%',
                 height: '4.5%',
@@ -564,7 +547,7 @@ export default function CommanderLogin() {
           {error && (
             <div style={{
               position: 'absolute',
-              top: '70%',
+              top: '74%',
               left: '26%',
               width: '48%',
               textAlign: 'center',
@@ -585,7 +568,7 @@ export default function CommanderLogin() {
             href="/commander/register"
             style={{
               position: 'absolute',
-              top: '73.5%',
+              top: '78%',
               left: '26%',
               width: '48%',
               height: '4.5%',
