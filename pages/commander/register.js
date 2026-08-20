@@ -1181,10 +1181,15 @@ const CalibrationPanel = () => {
                 }}
               />
 
-              {/* Address Input */}
-              <input
-                type="text"
-                value={clubInfo.address}
+              {/* Address Input via Google Autocomplete */}
+              <Autocomplete
+                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+                onPlaceSelected={handlePlaceSelected}
+                options={{
+                  types: ['address', 'establishment', '(cities)'],
+                  componentRestrictions: { country: 'us' },
+                }}
+                defaultValue={clubInfo.address}
                 onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
                 required={isAddressRequired}
                 style={{

@@ -265,12 +265,7 @@ export default async function handler(req, res) {
           userId = authData.user.id;
           createdUser = true;
 
-          // Trigger the Supabase email verification immediately!
-          try {
-            await getSupabase().auth.resend({ type: 'signup', email });
-          } catch (e) {
-            console.warn('[create-subscription] Failed to send verification email:', e.message);
-          }
+          // Defer email verification trigger until after Stripe payment succeeds (moved to end of file)
         } else if (authError?.message?.toLowerCase().includes('already') ||
           authError?.message?.toLowerCase().includes('exists') ||
           authError?.message?.toLowerCase().includes('registered')) {
@@ -612,6 +607,16 @@ export default async function handler(req, res) {
           })
         });
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+
+      // ─── 8. Trigger Supabase Email Verification (New Users Only) ─────
+      if (createdUser && email) {
+        try {
+          await getSupabase().auth.resend({ type: 'signup', email });
+          console.log(`[create-subscription] Sent verification email to ${email}`);
+        } catch (e) {
+          console.warn('[create-subscription] Failed to send verification email:', e.message);
+        }
+      }
 
       // ─── Done ────────────────────────────────────────────────────────
       return res.status(200).json({
