@@ -99,13 +99,19 @@ export default function SSOPage() {
     const abortController = new AbortController();
     const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
 
+    // Multi-club support: pass the last venue the user switched to (set by
+    // the hamburger club switcher) so SSO login restores that club, not just
+    // the newest subscription. Server validates ownership.
+    let preferredVenueId = null;
+    try { preferredVenueId = localStorage.getItem('commander_active_venue_id') || null; } catch { /* ignore */ }
+
     const subRes = await fetch('/api/commander/check-subscription', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ userId: user.id }),
+      body: JSON.stringify({ userId: user.id, preferred_venue_id: preferredVenueId }),
       signal: abortController.signal,
     });
     clearTimeout(fetchTimeout);
@@ -153,6 +159,8 @@ export default function SSOPage() {
     };
     localStorage.setItem('commander_staff', JSON.stringify(staffSession));
     localStorage.setItem('commander_remember', 'true');
+    // Drop any previous user's cached club/home-game switcher list
+    try { sessionStorage.removeItem('commander_accounts_cache'); } catch { /* ignore */ }
 
     // Redirect to dashboard (or stored return URL)
     let redirectTo = '/commander/dashboard';
@@ -171,7 +179,7 @@ export default function SSOPage() {
   return (
     <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
       <SEOHead
-        title="Club Commander — Signing In"
+        title="Club Commander - Signing In"
         description="Completing your Club Commander sign-in."
         noindex={true}
       />

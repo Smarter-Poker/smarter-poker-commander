@@ -17,7 +17,7 @@ import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
   Monitor, DollarSign, Gift, Calendar, Tv, Activity, BarChart3,
   AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle,
-  Check, Home, Building2, Loader2
+  Check, Home, Building2, Loader2, Timer
 } from 'lucide-react';
 import CommanderErrorBoundary from './CommanderErrorBoundary';
 import FloorCallAlert from './FloorCallAlert';
@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { label: 'Floor Calls', href: '/commander/floor-calls', icon: Bell },
   { divider: true },
   { label: 'Tournaments', href: '/commander/tournaments', icon: Trophy },
+  { label: 'Tournament Director', href: '/commander/tournament-controls', icon: Timer },
   { label: 'Dealers', href: '/commander/dealers', icon: Users },
   { label: 'Kiosk', href: '/commander/kiosk', icon: Monitor },
   { divider: true },
@@ -271,11 +272,11 @@ export default function CommanderLayout({ children, title, backHref = '/commande
   // ── PIN GATE VERIFICATION ──
   const handlePinSubmit = async () => {
     if (pinLockout) {
-      setPinError('Too many attempts — wait 30 seconds');
+      setPinError('Too Many Attempts. Wait 30 Seconds.');
       return;
     }
     if (!pinInput || pinInput.length < 4) {
-      setPinError('Enter at least 4 digits');
+      setPinError('Enter At Least 4 Digits');
       return;
     }
     // Get venue_id from staff session or localStorage fallback
@@ -287,7 +288,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
       } catch (e) { console.warn('[App] Handled exception:', e); }
     }
     if (!venueId) {
-      setPinError('No venue session — please log in first');
+      setPinError('No Venue Session. Please Log In First.');
       return;
     }
     setPinLoading(true);
@@ -305,10 +306,10 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         setPinAttempts(nextAttempts);
         if (nextAttempts >= 5) {
           setPinLockout(true);
-          setPinError('Too many failed attempts — locked for 30 seconds');
+          setPinError('Too Many Failed Attempts. Locked For 30 Seconds.');
           setTimeout(() => { setPinLockout(false); setPinAttempts(0); setPinError(''); }, 30000);
         } else {
-          setPinError(data.error || `Invalid PIN (${5 - nextAttempts} attempts remaining)`);
+          setPinError(data.error || `Invalid PIN (${5 - nextAttempts} Attempts Remaining)`);
         }
         setPinLoading(false);
         return;
@@ -324,10 +325,10 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         setGateGranted(true);
         setPinInput('');
       } else {
-        setPinError(`Access denied — ${verifiedRole} role does not have permission for this page`);
+        setPinError(`Access Denied. The ${verifiedRole} Role Does Not Have Permission For This Page.`);
       }
     } catch (e) {
-      setPinError('Verification failed — try again');
+      setPinError('Verification Failed. Try Again.');
     } finally {
       setPinLoading(false);
     }
@@ -350,48 +351,70 @@ export default function CommanderLayout({ children, title, backHref = '/commande
   };
 
   // ── MULTI-CLUB / HOME-GAME SWITCHER ──
-  // Lazily load the user's Commander contexts (owned club subscriptions +
-  // owned home-game groups) the first time the hamburger menu opens.
-  // 5-minute sessionStorage cache avoids refetching on every open.
+  // Lazily load the user's Commander contexts (owned club subscriptions,
+  // venues where they are active staff, and home-game groups they own or
+  // administer) the first time the hamburger menu opens.
+  // 5-minute sessionStorage cache, scoped to the signed-in user id so a
+  // login change on the same tab can never serve another user's list.
   useEffect(() => {
     if (!menuOpen || accounts !== null) return;
     let cancelled = false;
     (async () => {
       try {
         const CACHE_KEY = 'commander_accounts_cache';
-        try {
-          const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-          if (cached && cached.fetched_at && (Date.now() - cached.fetched_at) < 5 * 60 * 1000) {
-            if (!cancelled) setAccounts({ clubs: cached.clubs || [], home_groups: cached.home_groups || [] });
-            return;
-          }
-        } catch (e) { console.warn('[App] Handled exception:', e); }
 
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
           // PIN-only staff session — no Supabase auth, no switcher
-          if (!cancelled) setAccounts({ clubs: [], home_groups: [] });
+          if (!cancelled) setAccounts({ clubs: [], staff_venues: [], home_groups: [] });
           return;
         }
+
+        try {
+          const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+          if (cached && cached.fetched_at &&
+              (Date.now() - cached.fetched_at) < 5 * 60 * 1000 &&
+              cached.user_id === session.user?.id) {
+            if (!cancelled) setAccounts({
+              clubs: cached.clubs || [],
+              staff_venues: cached.staff_venues || [],
+              home_groups: cached.home_groups || [],
+            });
+            return;
+          }
+        } catch (e) { console.warn('[App] Handled exception:', e); }
+
         const res = await fetch('/api/commander/my-commander-accounts', {
           headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
         if (!res.ok) {
-          if (!cancelled) setAccounts({ clubs: [], home_groups: [] });
+          // Do not cache failures; error flag allows a retry on next menu open
+          if (!cancelled) setAccounts({ clubs: [], staff_venues: [], home_groups: [], error: true });
           return;
         }
         const json = await res.json();
-        const payload = { clubs: json.clubs || [], home_groups: json.home_groups || [] };
+        const payload = {
+          clubs: json.clubs || [],
+          staff_venues: json.staff_venues || [],
+          home_groups: json.home_groups || [],
+        };
         if (!cancelled) setAccounts(payload);
         try {
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ...payload, fetched_at: Date.now() }));
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+            ...payload, user_id: session.user?.id, fetched_at: Date.now(),
+          }));
         } catch (e) { console.warn('[App] Handled exception:', e); }
       } catch (e) {
         console.warn('[Commander] account switcher load error:', e);
-        if (!cancelled) setAccounts({ clubs: [], home_groups: [] });
+        if (!cancelled) setAccounts({ clubs: [], staff_venues: [], home_groups: [], error: true });
       }
     })();
     return () => { cancelled = true; };
+  }, [menuOpen, accounts]);
+
+  // A failed load retries the next time the menu opens
+  useEffect(() => {
+    if (!menuOpen && accounts?.error) setAccounts(null);
   }, [menuOpen, accounts]);
 
   const handleSwitchClub = async (venueId) => {
@@ -402,7 +425,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setSwitchError('Sign in as the owner to switch clubs');
+        setSwitchError('Sign In As The Owner To Switch Clubs');
         return;
       }
       const res = await fetch('/api/commander/my-commander-accounts', {
@@ -415,37 +438,38 @@ export default function CommanderLayout({ children, title, backHref = '/commande
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.subscription || !json.staff_session) {
-        setSwitchError(json.error || 'Could not switch clubs — try again');
+        setSwitchError(json.error || 'Could Not Switch Clubs. Try Again.');
         return;
       }
       const subscription = json.subscription;
 
       // Rebuild the exact localStorage state login.js creates, for the new
-      // venue. NEVER touch the signed fields (user_id/venue_id/role/
-      // session_ts/sig) or the HMAC signature breaks.
+      // venue. NEVER touch the signed fields (id/user_id/venue_id/role/
+      // session_ts/sig) or the HMAC signature breaks. Role + permissions
+      // come from the SERVER: full owner rights on owned venues, the real
+      // staff role and merged permission set everywhere else.
       localStorage.setItem('commander_venue', JSON.stringify(subscription.venue));
       localStorage.setItem('commander_subscription', JSON.stringify(subscription));
       const staffSession = {
         ...json.staff_session,
         email: staff?.email,
-        display_name: staff?.display_name,
+        display_name: json.staff_session?.display_name || staff?.display_name,
         venue_name: subscription.venue?.name || 'My Venue',
-        permissions: {
-          manage_games: true,
-          manage_waitlist: true,
-          manage_staff: true,
-          manage_tables: true,
-          manage_tournaments: true,
-          manage_settings: true,
-          view_analytics: true,
-          view_reports: true,
-          send_announcements: true },
+        permissions: json.permissions || {},
       };
       localStorage.setItem('commander_staff', JSON.stringify(staffSession));
-      // Remember the choice so future logins land on this venue
-      try { localStorage.setItem('commander_active_venue_id', String(subscription.venue_id)); } catch (e) { console.warn('[App] Handled exception:', e); }
-      // Per-venue caches must not leak across the switch
+      // Remember the choice so future logins land on this venue (owner only —
+      // check-subscription resolves preferred venue against owned subs)
+      try {
+        if (json.role === 'owner') {
+          localStorage.setItem('commander_active_venue_id', String(subscription.venue_id));
+        }
+      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // Per-venue caches and settings must not leak across the switch:
+      // branding (logo), the venue-level security-gate preference, and all
+      // PIN unlock grants belong to the venue we are leaving.
       localStorage.removeItem('commander_branding');
+      localStorage.removeItem('commander_security_gate');
       try {
         Object.keys(sessionStorage || {}).forEach(k => {
           if (k.startsWith('pin_unlock_')) sessionStorage.removeItem(k);
@@ -458,13 +482,15 @@ export default function CommanderLayout({ children, title, backHref = '/commande
       window.location.href = '/commander/dashboard';
     } catch (e) {
       console.warn('[Commander] switch club error:', e);
-      setSwitchError('Could not switch clubs — try again');
+      setSwitchError('Could Not Switch Clubs. Try Again.');
     } finally {
       setSwitchingVenueId(null);
     }
   };
 
-  const totalContexts = (accounts?.clubs?.length || 0) + (accounts?.home_groups?.length || 0);
+  const totalContexts = (accounts?.clubs?.length || 0) +
+    (accounts?.staff_venues?.length || 0) +
+    (accounts?.home_groups?.length || 0);
 
   const venueName = staff?.venue_name || 'Poker Room';
   const currentTierConfig = getTierConfig(currentTier);
@@ -756,6 +782,40 @@ export default function CommanderLayout({ children, title, backHref = '/commande
         .cmd-switcher-spin {
           animation: cmdSwitcherSpin 0.8s linear infinite;
         }
+        .cmd-switcher-logo {
+          width: 20px;
+          height: 20px;
+          border-radius: 4px;
+          overflow: hidden;
+          flex-shrink: 0;
+          border: 1px solid rgba(255,255,255,0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .cmd-switcher-logo img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .cmd-switcher-loading {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 9px 16px;
+          color: #666;
+          font-size: 12px;
+        }
+        .cmd-switcher-add {
+          color: #31A24C;
+          font-size: 13px;
+          padding-top: 7px;
+          padding-bottom: 7px;
+        }
+        .cmd-switcher-add:hover {
+          color: #43C25E;
+        }
         @keyframes cmdSwitcherSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
@@ -941,7 +1001,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           <div className="cmd-global-center">
             {title && !hideBack && (
               <div className="cmd-global-page-title">
-                {title.replace(/\s*\|.*$/, '').replace(/^Commander\s*—\s*/, '')}
+                {title.replace(/\s*\|.*$/, '').replace(/^Commander\s*[—:|-]\s*/, '')}
               </div>
             )}
           </div>
@@ -963,7 +1023,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           }}>
             <AlertCircle size={16} color="#EF4444" />
             <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>
-              You are offline — changes will not save until reconnected
+              You Are Offline. Changes Will Not Save Until Reconnected.
             </span>
           </div>
         )}
@@ -979,7 +1039,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertCircle size={16} color="#F59E0B" />
               <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>
-                Session expires in ~{sessionExpiring.minutesLeft} min — save your work
+                Session Expires In ~{sessionExpiring.minutesLeft} Min. Save Your Work.
               </span>
             </div>
             <button onClick={() => setSessionExpiring(null)} style={{
@@ -1011,7 +1071,15 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 </button>
               </div>
               {/* ── MULTI-CLUB / HOME-GAME SWITCHER ── */}
-              {totalContexts > 1 && (
+              {menuOpen && accounts === null && (
+                <div className="cmd-switcher-section">
+                  <div className="cmd-switcher-label">My Clubs &amp; Games</div>
+                  <div className="cmd-switcher-loading">
+                    <Loader2 size={14} className="cmd-switcher-spin" /> Loading...
+                  </div>
+                </div>
+              )}
+              {totalContexts >= 1 && (
                 <div className="cmd-switcher-section">
                   <div className="cmd-switcher-label">My Clubs &amp; Games</div>
                   {accounts.clubs.map((club) => {
@@ -1023,10 +1091,43 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                         className={`cmd-switcher-item ${isCurrent ? 'current' : ''}`}
                         disabled={!!switchingVenueId}
                         onClick={() => handleSwitchClub(club.venue_id)}
+                        aria-label={`Switch to ${club.venue?.name || 'venue'}`}
                       >
-                        <Building2 size={16} />
+                        {club.logo_url ? (
+                          <span className="cmd-switcher-logo">
+                            <img src={club.logo_url} alt="" />
+                          </span>
+                        ) : (
+                          <Building2 size={16} />
+                        )}
                         <span className="cmd-switcher-name">{club.venue?.name || 'My Venue'}</span>
                         <span className="cmd-switcher-type">{getTierConfig(club.tier)?.name || 'Club'}</span>
+                        {isCurrent && <Check size={15} />}
+                        {isSwitching && <Loader2 size={15} className="cmd-switcher-spin" />}
+                      </button>
+                    );
+                  })}
+                  {(accounts.staff_venues || []).map((sv) => {
+                    const isCurrent = String(sv.venue_id) === String(staff?.venue_id);
+                    const isSwitching = switchingVenueId === sv.venue_id;
+                    const roleLabel = sv.role ? sv.role.charAt(0).toUpperCase() + sv.role.slice(1) : 'Staff';
+                    return (
+                      <button
+                        key={`staff-${sv.venue_id}`}
+                        className={`cmd-switcher-item ${isCurrent ? 'current' : ''}`}
+                        disabled={!!switchingVenueId}
+                        onClick={() => handleSwitchClub(sv.venue_id)}
+                        aria-label={`Switch to ${sv.venue?.name || 'venue'} as ${roleLabel}`}
+                      >
+                        {sv.logo_url ? (
+                          <span className="cmd-switcher-logo">
+                            <img src={sv.logo_url} alt="" />
+                          </span>
+                        ) : (
+                          <Users size={16} />
+                        )}
+                        <span className="cmd-switcher-name">{sv.venue?.name || 'Venue'}</span>
+                        <span className="cmd-switcher-type">{roleLabel}</span>
                         {isCurrent && <Check size={15} />}
                         {isSwitching && <Loader2 size={15} className="cmd-switcher-spin" />}
                       </button>
@@ -1041,12 +1142,29 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                         setMenuOpen(false);
                         window.location.href = `/hub/commander/home-games/${group.id}`;
                       }}
+                      aria-label={`Open home game ${group.name}`}
                     >
                       <Home size={16} />
                       <span className="cmd-switcher-name">{group.name}</span>
                       <span className="cmd-switcher-type">Home Game</span>
                     </button>
                   ))}
+                  <button
+                    className="cmd-switcher-item cmd-switcher-add"
+                    onClick={() => { setMenuOpen(false); window.location.href = '/commander/register?existing=1'; }}
+                    aria-label="Add another club"
+                  >
+                    <PlusCircle size={15} />
+                    <span className="cmd-switcher-name">Add Club</span>
+                  </button>
+                  <button
+                    className="cmd-switcher-item cmd-switcher-add"
+                    onClick={() => { setMenuOpen(false); window.location.href = '/hub/commander/home-games/create'; }}
+                    aria-label="Create a home game"
+                  >
+                    <PlusCircle size={15} />
+                    <span className="cmd-switcher-name">New Home Game</span>
+                  </button>
                   {switchError && <div className="cmd-switcher-error">{switchError}</div>}
                 </div>
               )}
@@ -1127,9 +1245,9 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 Upgrade Required
               </h2>
               <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> requires the{' '}
-                <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> plan
-                {showUpgradeModal.upgradePrice && <> (${showUpgradeModal.upgradePrice}/mo)</>}.
+                <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> Requires The{' '}
+                <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> Plan
+                {showUpgradeModal.upgradePrice && <> (${showUpgradeModal.upgradePrice}/Mo)</>}.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <button
@@ -1182,7 +1300,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
               </div>
               <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>Create Your Club Page</h2>
               <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                Set up a public page for <strong style={{ color: '#ddd' }}>{venueName}</strong> on Smarter.Poker Social. Attract new players and keep your regulars updated.
+                Set Up A Public Page For <strong style={{ color: '#ddd' }}>{venueName}</strong> On Smarter.Poker Social. Attract New Players And Keep Your Regulars Updated.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <button onClick={() => { dismissClubPagePopup(); window.location.href = '/hub/social-media?createPage=true'; }} style={{
@@ -1210,8 +1328,8 @@ export default function CommanderLayout({ children, title, backHref = '/commande
               </div>
               <h2 className="cmd-pin-gate-title">ACCESS RESTRICTED</h2>
               <p className="cmd-pin-gate-subtitle">
-                This page requires elevated permissions.<br />
-                Enter an authorized PIN to continue.
+                This Page Requires Elevated Permissions.<br />
+                Enter An Authorized PIN To Continue.
               </p>
               <input
                 type="password"
@@ -1239,7 +1357,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 className="cmd-pin-gate-back"
                 onClick={() => router.push('/commander/dashboard')}
               >
-                ← Back to Dashboard
+                ← Back To Dashboard
               </button>
             </div>
           </div>

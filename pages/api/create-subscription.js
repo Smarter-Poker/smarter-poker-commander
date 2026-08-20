@@ -147,18 +147,27 @@ export default async function handler(req, res) {
       }
 
       // ─── Duplicate prevention: check if this email already has an active Commander subscription ──
-      const { data: existingEmailSub } = await getSupabase()
-        .from('commander_subscriptions')
-        .select('id, status, venue:poker_venues(name)')
-        .eq('billing_email', email)
-        .in('status', ['active', 'trialing'])
-        .limit(1);
+      // MULTI-CLUB (2026-08-19): this gate previously blocked ALL second
+      // venues, contradicting the additional-venue logic further down (free
+      // trial check + "additional venue" payment requirement). It now only
+      // applies to the NEW-ACCOUNT path. The existing-account path is
+      // authenticated below (valid Supabase session whose email must match),
+      // so a signed-in owner may legitimately add another club; pricing for
+      // the additional venue is enforced by the free-trial/payment logic.
+      if (!existingAccount) {
+        const { data: existingEmailSub } = await getSupabase()
+          .from('commander_subscriptions')
+          .select('id, status, venue:poker_venues(name)')
+          .eq('billing_email', email)
+          .in('status', ['active', 'trialing'])
+          .limit(1);
 
-      if (existingEmailSub && existingEmailSub.length > 0) {
-        const venueName = existingEmailSub[0].venue?.name || 'a venue';
-        return res.status(400).json({
-          error: `An active Club Commander account already exists for ${email} (${venueName}). Please sign in instead.`
-        });
+        if (existingEmailSub && existingEmailSub.length > 0) {
+          const venueName = existingEmailSub[0].venue?.name || 'a venue';
+          return res.status(400).json({
+            error: `An active Club Commander account already exists for ${email} (${venueName}). Please check "I already have a Smarter.Poker account" and sign in to add another venue.`
+          });
+        }
       }
 
       // ─── Duplicate prevention: check if a Commander venue already exists at this address ──

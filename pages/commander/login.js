@@ -38,11 +38,11 @@ export default function CommanderLogin() {
     } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
     // Show 'session expired' message if redirected from expired session
     if (router.query.expired === '1') {
-      setError('Your session has expired. Please sign in again.');
+      setError('Your Session Has Expired. Please Sign In Again.');
     }
     // Show 'no subscription' message for OAuth users who signed in but don't have a Commander account
     if (router.query.no_sub === '1') {
-      setError('No active Club Commander subscription found. Please sign up below to create your venue.');
+      setError('No Active Club Commander Subscription Found. Please Sign Up Below To Create Your Venue.');
     }
 
     // ── SSO Bridge Detection ──────────────────────────────────────────
@@ -163,7 +163,7 @@ export default function CommanderLogin() {
       if (error) throw error;
     } catch (err) {
       console.warn(`${provider} sign in error:`, err);
-      setError(err.message || `Failed to sign in with ${provider}`);
+      setError(err.message || `Failed To Sign In With ${provider}`);
       setLoading(false);
     }
   };
@@ -199,7 +199,7 @@ export default function CommanderLogin() {
       const subData = await subRes.json().catch(() => ({}));
 
       if (!subRes.ok || !subData.subscription) {
-        setError(subData.error || 'No active Club Commander subscription found for this account.');
+        setError(subData.error || 'No Active Club Commander Subscription Found For This Account.');
         setLoading(false);
         return false;
       }
@@ -235,6 +235,9 @@ export default function CommanderLogin() {
           send_announcements: true }
       };
       localStorage.setItem('commander_staff', JSON.stringify(staffSession));
+
+      // Drop any previous user's cached club/home-game switcher list
+      try { sessionStorage.removeItem('commander_accounts_cache'); } catch { /* ignore */ }
 
       // Persist session across browser restarts if "Remember Me" is checked
       if (rememberMe) {
@@ -277,9 +280,9 @@ export default function CommanderLogin() {
     } catch (err) {
       console.warn('Login error:', err);
       if (err.name === 'AbortError') {
-        setError('Login timed out. Please check your connection and try again.');
+        setError('Login Timed Out. Please Check Your Connection And Try Again.');
       } else {
-        setError(err.message || 'Invalid email or password');
+        setError(err.message || 'Invalid Email Or Password');
       }
     } finally {
       setLoading(false);
@@ -325,7 +328,7 @@ export default function CommanderLogin() {
       }
 
       if (!accessToken) {
-        setError('Could not read your Smarter.Poker session. Please sign in manually.');
+        setError('Could Not Read Your Smarter.Poker Session. Please Sign In Manually.');
         setSsoLoading(false);
         return;
       }
@@ -346,7 +349,7 @@ export default function CommanderLogin() {
       const ssoData = await ssoRes.json().catch(() => ({}));
 
       if (!ssoRes.ok || !ssoData.url) {
-        setError(ssoData.error || 'SSO failed. Please sign in with your email and password below.');
+        setError(ssoData.error || 'SSO Failed. Please Sign In With Your Email And Password Below.');
         setSsoLoading(false);
         return;
       }
@@ -355,7 +358,7 @@ export default function CommanderLogin() {
       window.location.href = ssoData.url;
     } catch (err) {
       console.warn('[SSO] Continue error:', err);
-      setError('SSO sign-in failed. Please use email and password below.');
+      setError('SSO Sign-In Failed. Please Use Email And Password Below.');
       setSsoLoading(false);
     }
   };
@@ -372,11 +375,11 @@ export default function CommanderLogin() {
         if (session?.user) {
           await completeLogin(session.user, session.access_token);
         } else {
-          setError('Sign-in could not be completed. Please try again.');
+          setError('Sign-In Could Not Be Completed. Please Try Again.');
         }
       } catch (err) {
         console.warn('OAuth completion error:', err);
-        setError(err.message || 'Sign-in could not be completed.');
+        setError(err.message || 'Sign-In Could Not Be Completed.');
       } finally {
         setLoading(false);
       }
@@ -410,7 +413,7 @@ export default function CommanderLogin() {
   return (
     <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
       <SEOHead
-        title="Club Commander — Sign In"
+        title="Club Commander - Sign In"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -445,7 +448,7 @@ export default function CommanderLogin() {
                     {/* Smarter.Poker logo mark */}
                     <span className="text-lg font-bold tracking-tight">SP</span>
                     <span className="flex flex-col text-left leading-tight">
-                      <span className="text-xs text-blue-200 font-normal">Continue as</span>
+                      <span className="text-xs text-blue-200 font-normal">Continue As</span>
                       <span className="truncate max-w-[220px]">{ssoEmail}</span>
                     </span>
                     <ArrowRight className="w-4 h-4 ml-auto flex-shrink-0" />
@@ -453,7 +456,7 @@ export default function CommanderLogin() {
                 )}
               </button>
               <p className="text-center text-[#8A8D91] text-xs mt-2">
-                Using your Smarter.Poker account
+                Using Your Smarter.Poker Account
               </p>
             </div>
           )}
@@ -584,7 +587,7 @@ export default function CommanderLogin() {
 
         {/* Footer */}
         <p className="text-center text-[#65676B] text-xs mt-6">
-          Powered by SMARTER.POKER
+          Powered By SMARTER.POKER
         </p>
       </div>
     </div>
