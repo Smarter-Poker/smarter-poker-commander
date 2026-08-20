@@ -1022,7 +1022,224 @@ export default function RegisterPage() {
     );
   }
 
+
+  if (step === 3 && !lockedTier) {
+    return (
+      <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+        <Head>
+          <title>Club Commander - Select Plan</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+
+        <div className="relative w-full h-full z-10">
+          {/* Stretch the image to fill the screen */}
+          {/* Note: Change to register-step3-bg-paid.jpg when out of beta */}
+          <img 
+            src="/images/commander/register-step3-bg-beta.jpg" 
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+            alt="Register Step 3 Background" 
+          />
+
+          {/* Plan 1: Home Games */}
+          <button
+            type="button"
+            onClick={() => setTier(1)}
+            style={{
+              position: 'absolute',
+              top: '40.2%',
+              left: '14.5%',
+              width: '71%',
+              height: '7.7%',
+              background: 'transparent',
+              border: tier === 1 ? '2px solid #1877F2' : 'none',
+              borderRadius: '8px',
+              boxShadow: tier === 1 ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Home Games"
+          >
+             {/* Optional circle fill */}
+             {tier === 1 && (
+               <div style={{
+                 position: 'absolute',
+                 top: '50%',
+                 left: '4%',
+                 transform: 'translateY(-50%)',
+                 width: '12px',
+                 height: '12px',
+                 backgroundColor: '#1877F2',
+                 borderRadius: '50%',
+                 pointerEvents: 'none'
+               }} />
+             )}
+          </button>
+
+          {/* Plan 2: Charity */}
+          <button
+            type="button"
+            onClick={() => setTier(2)}
+            style={{
+              position: 'absolute',
+              top: '48.8%',
+              left: '14.5%',
+              width: '71%',
+              height: '7.7%',
+              background: 'transparent',
+              border: tier === 2 ? '2px solid #1877F2' : 'none',
+              borderRadius: '8px',
+              boxShadow: tier === 2 ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Charity"
+          >
+             {tier === 2 && (
+               <div style={{
+                 position: 'absolute',
+                 top: '50%',
+                 left: '4%',
+                 transform: 'translateY(-50%)',
+                 width: '12px',
+                 height: '12px',
+                 backgroundColor: '#1877F2',
+                 borderRadius: '50%',
+                 pointerEvents: 'none'
+               }} />
+             )}
+          </button>
+
+          {/* Plan 3: Clubs */}
+          <button
+            type="button"
+            onClick={() => setTier(3)}
+            style={{
+              position: 'absolute',
+              top: '57.3%',
+              left: '14.5%',
+              width: '71%',
+              height: '7.7%',
+              background: 'transparent',
+              border: tier === 3 ? '2px solid #1877F2' : 'none',
+              borderRadius: '8px',
+              boxShadow: tier === 3 ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Clubs"
+          >
+             {tier === 3 && (
+               <div style={{
+                 position: 'absolute',
+                 top: '50%',
+                 left: '4%',
+                 transform: 'translateY(-50%)',
+                 width: '12px',
+                 height: '12px',
+                 backgroundColor: '#1877F2',
+                 borderRadius: '50%',
+                 pointerEvents: 'none'
+               }} />
+             )}
+          </button>
+
+          {/* Terms Checkbox */}
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            style={{
+              position: 'absolute',
+              top: '75.6%',
+              left: '14.1%',
+              width: '2.2%',
+              height: '2.2%',
+              cursor: 'pointer',
+              opacity: 0.01,
+              zIndex: 10
+            }}
+            title="I Agree To The Terms And Privacy Policy"
+          />
+          {agreedToTerms && (
+            <div style={{
+              position: 'absolute',
+              top: '75.6%',
+              left: '14.1%',
+              width: '2.2%',
+              height: '2.2%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              zIndex: 9
+            }}>
+              <span className="text-[#1877F2] font-bold" style={{ fontSize: 'min(18px, 2vw)' }}>✓</span>
+            </div>
+          )}
+
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={prevStep}
+            style={{
+              position: 'absolute',
+              top: '80.5%',
+              left: '14.8%',
+              width: '15.2%',
+              height: '4.8%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Back"
+          />
+
+          {/* Create Free Account Button */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || !agreedToTerms}
+            style={{
+              position: 'absolute',
+              top: '80.5%',
+              left: '55.7%',
+              width: '29.3%',
+              height: '4.8%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Create Free Account"
+          />
+
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              position: 'absolute',
+              top: '87%',
+              left: '18%',
+              width: '64%',
+              textAlign: 'center',
+              color: '#F02849',
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              padding: '4px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              zIndex: 10
+            }}>
+              {error}
+            </div>
+          )}
+
+        </div>
+      </div>
+    );
+  }
+
   // Original return for steps 3-4
+
 
   return (
     <div className="min-h-screen bg-[#18191A]">
