@@ -68,8 +68,12 @@ export default function CommanderLogin() {
   }, [router.query.expired, router.query.no_sub]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
-  // Auto-restore session - if user has valid Supabase session + remember flag, skip login
+  // Auto-restore session - silently sign in whenever a Supabase session exists
   useEffect(() => {
+    // 2026-08-20: wait for the router so ?expired=1 is actually readable -
+    // running before isReady could miss the expired branch, redirect to the
+    // dashboard with the stale staff session, and re-enter the bounce loop.
+    if (!router.isReady) return;
     // Show a manual reset button if stuck for > 4s
     const stuckTimeout = setTimeout(() => setShowReset(true), 4000);
     // Force stop checking if stuck for > 8s
@@ -105,16 +109,20 @@ export default function CommanderLogin() {
           } catch { /* ignore */ }
 
           const { data: { session } } = await supabase.auth.getSession();
+          let recoveryTried = false;
           if (session?.user && !recentAttempt) {
             try { sessionStorage.setItem('commander_expired_recovery_ts', String(Date.now())); } catch { /* ignore */ }
             clearTimeout(safetyTimeout);
             clearTimeout(stuckTimeout);
+            recoveryTried = true;
             const ok = await completeLogin(session.user, session.access_token).catch(() => false);
             if (ok) return; // redirecting to dashboard with a fresh session
           }
           clearTimeout(safetyTimeout);
           clearTimeout(stuckTimeout);
-          setError('Your Session Has Expired. Please Sign In Again.');
+          // completeLogin sets its own, more specific error when it fails -
+          // only show the generic expiry message when we could not even try
+          if (!recoveryTried) setError('Your Session Has Expired. Please Sign In Again.');
           setCheckingSession(false);
           return;
         }
@@ -182,7 +190,7 @@ export default function CommanderLogin() {
       clearTimeout(safetyTimeout);
       clearTimeout(stuckTimeout);
     };
-  }, [router]);
+  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle OAuth sign in (Google)
   const handleOAuthSignIn = async (provider) => {
