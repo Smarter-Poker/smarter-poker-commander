@@ -17,7 +17,7 @@ import {
   Trophy, Users, DollarSign,
   AlertTriangle, ChevronRight, RefreshCw, Loader2,
   LayoutGrid, UserPlus, Monitor,
-  Star, Volume2, X, FileText
+  Star, Volume2, X, FileText, Coins, Layers
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 
@@ -242,8 +242,29 @@ export default function TDControlCenter() {
         </div>
 
         {/* ===== ALERT BANNER ===== */}
-        {(alerts.imbalanced || alerts.can_break_table || stats.late_reg_open) && (
+        {(alerts.seat_conflicts?.length > 0 || alerts.imbalanced || alerts.can_break_table || stats.late_reg_open) && (
           <div className="px-4 py-2 space-y-2">
+            {/* Seat conflicts outrank every other alert: two players are sitting
+                in one chair right now and the floor has to move one of them. */}
+            {alerts.seat_conflicts?.length > 0 && (
+              <button onClick={() => navigateTo('tables')}
+                className="w-full flex items-start gap-3 px-4 py-3 bg-[#EF4444]/15 border-2 border-[#EF4444]/50 rounded-xl active:bg-[#EF4444]/25">
+                <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0 text-left">
+                  {alerts.seat_conflicts.slice(0, 3).map((c, i) => (
+                    <span key={`${c.table_number}-${c.seat_number}-${i}`} className="block text-[#EF4444] text-sm font-bold">
+                      Seat Conflict: Table {c.table_number} Seat {c.seat_number} Has {c.players?.length || 2} Players
+                    </span>
+                  ))}
+                  {alerts.seat_conflicts.length > 3 && (
+                    <span className="block text-[#EF4444] text-xs font-medium mt-0.5">
+                      And {alerts.seat_conflicts.length - 3} More
+                    </span>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5" />
+              </button>
+            )}
             {alerts.imbalanced && (
               <button onClick={() => navigateTo('tables')}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl">
@@ -318,6 +339,29 @@ export default function TDControlCenter() {
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
+          </button>
+        </div>
+
+        {/* ===== BREAK TOOLS: CHIP COUNTS + COLOR UP =====
+            Deliberately buttons and not bottom-nav items. The nav already
+            carries six entries and a seventh shrinks every target below the
+            44px minimum at 375px. */}
+        <div className="px-4 pt-2 grid grid-cols-2 gap-2">
+          <button onClick={() => navigateTo('chips')}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
+              <Coins className="w-5 h-5 text-[#F59E0B]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Chip Counts</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Enter Stacks At The Break</span>
+          </button>
+          <button onClick={() => navigateTo('color-up')}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
+              <Layers className="w-5 h-5 text-[#1877F2]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Color Up</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Race Off A Denomination</span>
           </button>
         </div>
 

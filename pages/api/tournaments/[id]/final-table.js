@@ -50,12 +50,21 @@ export default async function handler(req, res) {
       const targetTable = final_table_number || 1;
 
       // Get all active entries
-      const { data: activeEntries } = await getSupabase()
+      const { data: activeEntries, error: eErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('*')
         .eq('tournament_id', tournamentId)
         .in('status', ['active', 'seated'])
         .order('current_chips', { ascending: false });
+
+      // A discarded read error used to look identical to an empty field and the
+      // TD was told there were "No Active Players" at the final table.
+      if (eErr) {
+        console.error('[tournaments/final-table] entries read failed', {
+          tournamentId, code: eErr.code, message: eErr.message, details: eErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Read Tournament Entries' } });
+      }
 
       if (!activeEntries || activeEntries.length === 0) {
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'No Active Players' } });
@@ -66,6 +75,7 @@ export default async function handler(req, res) {
 
       // Assign seats 1-N, sorted by chip count (chip leader gets seat 1)
       const moves = [];
+      const moveErrors = [];
       const timestamp = new Date().toISOString();
 
       for (let i = 0; i < activeEntries.length; i++) {
@@ -86,9 +96,15 @@ export default async function handler(req, res) {
               move_reason: 'final_table'
             }
           })
-          .eq('id', entry.id);
+          .eq('id', entry.id)
+          .eq('tournament_id', tournamentId);
 
-        if (!uErr) {
+        // A failed seat write used to be dropped on the floor: the player kept
+        // their old table/seat, the response reported the final table as set,
+        // and nobody was told.
+        if (uErr) {
+          moveErrors.push({ entry_id: entry.id, player_name: entry.player_name, error: uErr.message });
+        } else {
           moves.push({
             entry_id: entry.id,
             player_name: entry.player_name,
@@ -121,12 +137,15 @@ export default async function handler(req, res) {
       if (uErr) return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Set Final Table Status' } });
 
       return res.status(200).json({
-        success: true,
+        success: moveErrors.length === 0,
         data: {
           final_table_number: targetTable,
           players: activeEntries.length,
           moves,
-          message: `Final Table Set At Table ${targetTable} With ${activeEntries.length} Players`
+          errors: moveErrors.length > 0 ? moveErrors : undefined,
+          message: moveErrors.length === 0
+            ? `Final Table Set At Table ${targetTable} With ${activeEntries.length} Players`
+            : `Final Table Set At Table ${targetTable}, But ${moveErrors.length} Seat Assignment(s) Failed`
         }
       });
     } catch (err) {

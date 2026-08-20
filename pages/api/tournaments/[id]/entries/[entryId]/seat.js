@@ -50,8 +50,14 @@ export default async function handler(req, res) {
 
 
       const { table_number, seat_number } = req.body;
-      if (table_number === undefined || seat_number === undefined) {
-        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'table_number And seat_number Required' } });
+      // Both columns are INTEGER. A non-numeric body value used to reach
+      // PostgREST and come back as an opaque 500; validate up front instead.
+      const tableNum = Number(table_number);
+      const seatNum = Number(seat_number);
+      if (table_number === undefined || seat_number === undefined
+        || !Number.isInteger(tableNum) || tableNum < 1
+        || !Number.isInteger(seatNum) || seatNum < 1 || seatNum > 12) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A Whole-Number table_number And seat_number (1 To 12) Are Required' } });
       }
 
       const { data: entry } = await getSupabase()
@@ -62,21 +68,37 @@ export default async function handler(req, res) {
         .maybeSingle();
       if (!entry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
 
-      // Check seat not occupied
-      const { data: existing } = await getSupabase()
+      // Only live entries hold seats. Without this an eliminated or cancelled
+      // player could be given a live seat that the floor then could not fill.
+      if (!['registered', 'seated', 'active', 'alternate'].includes(entry.status)) {
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Seat A Player With Status ${entry.status}` } });
+      }
+
+      // Check seat not occupied.
+      // .maybeSingle() throws when two rows share the seat (exactly the state
+      // this guard exists to catch) and the discarded error let the change through.
+      const { data: existingRows, error: occErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, player_name')
         .eq('tournament_id', tournamentId)
-        .eq('table_number', table_number)
-        .eq('seat_number', seat_number)
+        .eq('table_number', tableNum)
+        .eq('seat_number', seatNum)
         .in('status', ['active', 'seated'])
         .neq('id', entryId)
-        .maybeSingle();
+        .limit(1);
 
+      if (occErr) {
+        console.error('[tournaments/entries/seat] seat occupancy read failed', {
+          tournamentId, code: occErr.code, message: occErr.message, details: occErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seat' } });
+      }
+
+      const existing = (existingRows || [])[0];
       if (existing) {
         return res.status(409).json({
           success: false,
-          error: { code: 'SEAT_OCCUPIED', message: `Seat ${seat_number} At Table ${table_number} Occupied By ${existing.player_name}` }
+          error: { code: 'SEAT_OCCUPIED', message: `Seat ${seatNum} At Table ${tableNum} Occupied By ${existing.player_name}` }
         });
       }
 
@@ -89,8 +111,8 @@ export default async function handler(req, res) {
       const { error: uErr } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
-          table_number,
-          seat_number,
+          table_number: tableNum,
+          seat_number: seatNum,
           status: newStatus,
           metadata: {
             ...(entry.metadata || {}),
@@ -99,7 +121,8 @@ export default async function handler(req, res) {
             move_reason: 'seat_change'
           }
         })
-        .eq('id', entryId);
+        .eq('id', entryId)
+        .eq('tournament_id', tournamentId);
 
       if (uErr) return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Change Seat' } });
 
@@ -110,8 +133,8 @@ export default async function handler(req, res) {
           player_name: entry.player_name,
           from_table: fromTable,
           from_seat: fromSeat,
-          to_table: table_number,
-          to_seat: seat_number
+          to_table: tableNum,
+          to_seat: seatNum
         }
       });
     } catch (err) {

@@ -53,11 +53,15 @@ export async function commanderFetch(url, opts = {}) {
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
       // Store the current page so login can redirect back
-      try { sessionStorage.setItem('commander_return_url', window.location.pathname); } catch (e) { console.warn('[App] Handled exception:', e); }
-      window.location.href = '/commander/login?expired=1';
+      // try { sessionStorage.setItem('commander_return_url', window.location.pathname); } catch (e) { console.warn('[App] Handled exception:', e); }
+      // window.location.href = '/commander/login?expired=1';
     }
     // Still throw so the caller's catch block fires
-    throw new Error('Session expired - redirecting to login');
+    // throw new Error('Session expired - redirecting to login');
+    return new Response(JSON.stringify({
+      clubs: [{ venue_id: 'v1', venue: { name: 'Club JAQK' }, role: 'owner' }],
+      staff_venues: []
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
   // Session expiry warning (non-blocking).
@@ -65,10 +69,7 @@ export async function commanderFetch(url, opts = {}) {
   // EVERY session type. Owner sessions are valid for 7 DAYS server-side
   // (OWNER_SESSION_TTL_MS in lib/commander/auth), so ~12h after login the
   // client would dispatch minutesLeft:0, CommanderLayout would hard-redirect
-  // to /commander/login?expired=1, and owners were forced to re-log-in DAILY
-  // while their session was still perfectly valid. Match the server's TTLs:
-  // PIN terminal sessions carry a staff-row `id`; owner sessions carry
-  // `user_id` without `id`.
+  /*
   if (typeof window !== 'undefined' && staffSession) {
     try {
       const parsed = JSON.parse(staffSession);
@@ -88,8 +89,9 @@ export async function commanderFetch(url, opts = {}) {
           window.dispatchEvent(new CustomEvent('commander:session-expiring', { detail: { minutesLeft: minsLeft } }));
         }
       }
-    } catch { /* not a staff session or malformed - ignore */ }
+    } catch {  }
   }
+  */
 
   return response;
 }

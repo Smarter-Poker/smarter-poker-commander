@@ -11,7 +11,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle, Coins } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../../../src/components/commander/shared/ConfirmModal";
@@ -241,6 +241,13 @@ ${receipts.map(r => `<div class="card">
 
   const tables = floor?.tables || [];
 
+  // Seat conflicts come from floor-view alerts: two live players holding the
+  // same table + seat. Mark the table tile and the exact seat dot so the floor
+  // can see which chair is double-booked without opening every table.
+  const seatConflicts = floor?.alerts?.seat_conflicts || [];
+  const conflictSeatKeys = new Set(seatConflicts.map(c => `${c.table_number}:${c.seat_number}`));
+  const conflictTableNumbers = new Set(seatConflicts.map(c => c.table_number));
+
   return (
     <CommanderLayout title="Commander - Tables" backHref={`/commander/td/${tournamentId}`}>
       <SEOHead
@@ -335,6 +342,17 @@ ${receipts.map(r => `<div class="card">
           </div>
         )}
 
+        {/* Chip Counts (break-time stack entry). A bottom-nav entry would make
+            seven targets and drop each below 44px at 375px, so it lives here. */}
+        <div className="mx-4 mt-3">
+          <button
+            onClick={() => navigateTo('/chips')}
+            className="w-full py-3.5 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#3A3B3C] transition-colors"
+          >
+            <Coins className="w-4 h-4 text-[#F59E0B]" /> Chip Counts
+          </button>
+        </div>
+
         {/* Tables Grid */}
         <div className="p-4">
           <div className="grid grid-cols-2 gap-4">
@@ -343,13 +361,20 @@ ${receipts.map(r => `<div class="card">
               const maxSeats = table.max_seats || 9;
               const seatPositions = getSeatPositions(maxSeats);
               const occupiedSeats = table.players.map(p => p.seat_number);
+              const hasConflict = conflictTableNumbers.has(table.table_number);
 
               return (
                 <button
                   key={table.table_number}
                   onClick={() => setSelectedTable(table)}
-                  className={`relative rounded-2xl border-2 p-4 aspect-[4/3] flex flex-col items-center justify-center ${colors.bg} ${colors.border} active:scale-[0.98] transition-transform`}
+                  className={`relative rounded-2xl border-2 p-4 aspect-[4/3] flex flex-col items-center justify-center ${colors.bg} ${colors.border} active:scale-[0.98] transition-transform ${hasConflict ? 'ring-2 ring-[#EF4444] ring-offset-2 ring-offset-[#18191A]' : ''}`}
                 >
+                  {hasConflict && (
+                    <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#EF4444] flex items-center justify-center z-10"
+                      title="Seat Conflict On This Table">
+                      <AlertTriangle className="w-3.5 h-3.5 text-white" />
+                    </span>
+                  )}
                   {/* Oval table shape with seat dots */}
                   <div className="relative w-full h-full">
                     {/* Center table info */}
@@ -364,12 +389,15 @@ ${receipts.map(r => `<div class="card">
                     {/* Seat dots positioned around oval */}
                     {seatPositions.map(pos => {
                       const isOccupied = occupiedSeats.includes(pos.seat);
+                      const isConflicted = conflictSeatKeys.has(`${table.table_number}:${pos.seat}`);
                       return (
                         <div
                           key={pos.seat}
-                          className={`absolute w-4 h-4 rounded-full border-2 ${isOccupied
-                            ? `${colors.dot} border-white/30`
-                            : 'bg-transparent border-[#3A3B3C]'
+                          className={`absolute w-4 h-4 rounded-full border-2 ${isConflicted
+                            ? 'bg-[#EF4444] border-white animate-pulse'
+                            : isOccupied
+                              ? `${colors.dot} border-white/30`
+                              : 'bg-transparent border-[#3A3B3C]'
                             }`}
                           style={{
                             left: `${pos.x}%`,
@@ -389,6 +417,48 @@ ${receipts.map(r => `<div class="card">
             <div className="text-center py-16">
               <LayoutGrid className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
               <p className="text-[#B0B3B8]">No Active Tables</p>
+            </div>
+          )}
+
+          {/* ===== SEAT CONFLICTS ===== */}
+          {seatConflicts.length > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
+                <h2 className="text-sm font-semibold text-[#EF4444] uppercase tracking-wider">
+                  Seat Conflicts ({seatConflicts.length})
+                </h2>
+              </div>
+              <div className="bg-[#EF4444]/10 border-2 border-[#EF4444]/40 rounded-2xl overflow-hidden">
+                <div className="divide-y divide-[#EF4444]/20">
+                  {seatConflicts.map((c, i) => (
+                    <button
+                      key={`${c.table_number}-${c.seat_number}-${i}`}
+                      onClick={() => {
+                        const t = tables.find(tt => tt.table_number === c.table_number);
+                        if (t) setSelectedTable(t);
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-[#EF4444]/15"
+                    >
+                      <span className="px-2 py-1 rounded-lg bg-[#EF4444] text-white text-xs font-bold font-mono flex-shrink-0">
+                        T{c.table_number}-S{c.seat_number}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-[#EF4444]">
+                          Table {c.table_number} Seat {c.seat_number} Has {c.players?.length || 2} Players
+                        </p>
+                        <p className="text-xs text-[#E4E6EB] truncate">
+                          {(c.players || []).filter(Boolean).join(' And ') || 'Unknown Players'}
+                        </p>
+                      </div>
+                      <ArrowRightLeft className="w-4 h-4 text-[#EF4444] flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+                <p className="px-4 py-2.5 text-xs text-[#B0B3B8] border-t border-[#EF4444]/20">
+                  Open The Table And Move One Player To An Open Seat.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -419,13 +489,14 @@ ${receipts.map(r => `<div class="card">
                 <div className="relative w-full aspect-[2/1] bg-[#31A24C]/10 rounded-[50%] border-2 border-[#31A24C]/30 mx-auto max-w-xs">
                   {getSeatPositions(selectedTable.max_seats || 9).map(pos => {
                     const player = selectedTable.players.find(p => p.seat_number === pos.seat);
+                    const posConflicted = conflictSeatKeys.has(`${selectedTable.table_number}:${pos.seat}`);
                     return (
                       <div key={pos.seat} className="absolute flex flex-col items-center"
                         style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)' }}>
                         {player?.avatar_url ? (
-                          <img src={player.avatar_url} alt="" width={28} height={28} loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover border-2 border-white/30" />
+                          <img src={player.avatar_url} alt="" width={28} height={28} loading="lazy" decoding="async" className={`w-7 h-7 rounded-full object-cover border-2 ${posConflicted ? 'border-[#EF4444]' : 'border-white/30'}`} />
                         ) : (
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${player ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${posConflicted ? 'bg-[#EF4444] text-white' : player ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
                             }`}>
                             {player ? (player.player_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || pos.seat) : pos.seat}
                           </div>
@@ -446,9 +517,11 @@ ${receipts.map(r => `<div class="card">
                 <div className="space-y-1">
                   {selectedTable.players
                     .sort((a, b) => a.seat_number - b.seat_number)
-                    .map(player => (
+                    .map(player => {
+                      const seatConflicted = conflictSeatKeys.has(`${selectedTable.table_number}:${player.seat_number}`);
+                      return (
                       <div key={player.entry_id}
-                        className="flex items-center gap-3 px-3 py-3 bg-[#3A3B3C]/50 rounded-xl">
+                        className={`flex items-center gap-3 px-3 py-3 rounded-xl ${seatConflicted ? 'bg-[#EF4444]/15 ring-1 ring-[#EF4444]/50' : 'bg-[#3A3B3C]/50'}`}>
                         {player.avatar_url ? (
                           <img src={player.avatar_url} alt="" width={28} height={28} loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover border-2 border-[#1877F2]/40 flex-shrink-0" />
                         ) : (
@@ -463,6 +536,11 @@ ${receipts.map(r => `<div class="card">
                             {player.rebuy_count > 0 && ` - ${player.rebuy_count}R`}
                             {player.addon_taken && ' - A'}
                           </p>
+                          {seatConflicted && (
+                            <p className="text-xs font-bold text-[#EF4444] mt-0.5">
+                              Seat Conflict, Move One Player
+                            </p>
+                          )}
                         </div>
                         <div className="flex gap-1">
                           <button
@@ -485,7 +563,8 @@ ${receipts.map(r => `<div class="card">
                           </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                 </div>
 
                 {/* Break Table button */}

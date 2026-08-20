@@ -58,15 +58,20 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
 
-      // Fetch real venue data from both tables in parallel
+      // Fetch real venue data from both tables in parallel.
+      // 2026-08-20 audit fix: this read `venues`, whose id is a UUID and which
+      // holds zero rows. commander_tournaments.venue_id is an INTEGER FK to
+      // poker_venues, so the comparison was a type error, the error was
+      // discarded, and every printed seat-change card said "Smarter Poker"
+      // with no city/state.
       const [venueRes, settingsRes] = await Promise.all([
-        getSupabase().from('venues').select('name, city, state').eq('id', tournament.venue_id).maybeSingle(),
+        getSupabase().from('poker_venues').select('name, city, state, logo_url').eq('id', tournament.venue_id).maybeSingle(),
         getSupabase().from('commander_venue_settings').select('club_logo_url').eq('venue_id', tournament.venue_id).maybeSingle()
       ]);
       const venueName = venueRes.data?.name || 'Smarter Poker';
       const venueCity = venueRes.data?.city || null;
       const venueState = venueRes.data?.state || null;
-      const venueLogoUrl = settingsRes.data?.club_logo_url || null;
+      const venueLogoUrl = settingsRes.data?.club_logo_url || venueRes.data?.logo_url || null;
 
       // Validate all assignments have required fields
       for (const a of assignments) {
@@ -96,14 +101,24 @@ export default async function handler(req, res) {
       // conflicts. Limit raised from 100: a truncated read silently skipped
       // seats in large fields and the guard missed real conflicts.
       const movingEntryIds = new Set(assignments.map(a => a.entry_id));
-      const { data: conflictingSeats } = await getSupabase()
+      const { data: liveSeats, error: cErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
-        .in('status', ['active', 'seated'])
-            .limit(1000);
+        .in('status', ['active', 'seated']);
 
-      const occupant = (conflictingSeats || []).find(e =>
+      // A discarded error here made the guard pass on an empty result and the
+      // break went on to overwrite live seats.
+      if (cErr) {
+        console.error('[tournaments/break-table] seat conflict read failed', {
+          tournamentId, code: cErr.code, message: cErr.message, details: cErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seats' } });
+      }
+
+      const conflictingSeats = liveSeats || [];
+
+      const occupant = conflictingSeats.find(e =>
         !movingEntryIds.has(e.id) &&
         assignments.some(a => a.to_table === e.table_number && a.to_seat === e.seat_number)
       );
@@ -114,18 +129,38 @@ export default async function handler(req, res) {
         });
       }
 
+      // Every live player on the table being broken MUST have an assignment.
+      // Without this the table was released back to the pool while a player was
+      // still recorded as sitting at it, and that player vanished from the map.
+      const leftBehind = conflictingSeats.filter(e =>
+        e.table_number === table_number && !movingEntryIds.has(e.id)
+      );
+      if (leftBehind.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'PLAYERS_LEFT_BEHIND',
+            message: `Table ${table_number} Still Has ${leftBehind.length} Unassigned Player(s): ${leftBehind.map(e => e.player_name || 'Unknown').join(', ')}`
+          }
+        });
+      }
+
       // Execute all moves
       const results = [];
       const errors = [];
 
       for (const a of assignments) {
-        const { data: entry } = await getSupabase()
+        const { data: entry, error: readErr } = await getSupabase()
           .from('commander_tournament_entries')
           .select('table_number, seat_number, player_name, current_chips, metadata')
           .eq('id', a.entry_id)
           .eq('tournament_id', tournamentId)
           .maybeSingle();
 
+        if (readErr) {
+          errors.push({ entry_id: a.entry_id, error: readErr.message });
+          continue;
+        }
         if (!entry) {
           errors.push({ entry_id: a.entry_id, error: 'Entry Not Found In This Tournament' });
           continue;

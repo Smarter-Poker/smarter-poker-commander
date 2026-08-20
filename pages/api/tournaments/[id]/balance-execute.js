@@ -46,15 +46,43 @@ export default async function handler(req, res) {
       const errors = [];
       const timestamp = new Date().toISOString();
 
+      // --- Reject duplicate destinations INSIDE the batch itself ---
+      // Two moves naming the same (table, seat) both used to succeed, silently
+      // double-seating a table. break-table.js already guarded this; this route
+      // did not.
+      const seatKeys = new Set();
+      for (const m of moves) {
+        if (m.to_table === undefined || m.to_seat === undefined) continue;
+        const key = `${m.to_table}-${m.to_seat}`;
+        if (seatKeys.has(key)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'DUPLICATE_SEAT', message: `Duplicate Assignment: Table ${m.to_table} Seat ${m.to_seat}` }
+          });
+        }
+        seatKeys.add(key);
+      }
+
       // --- RACE CONDITION GUARD: Verify all destination seats are still empty ---
-      // (limit raised from 100: a truncated read here silently skipped seats
-      // in large fields and the guard missed real conflicts)
-      const { data: conflictingSeats } = await getSupabase()
+      // Scoped to the destination tables only, so the read is bounded by table
+      // count rather than field size (an unbounded/truncated read in a 1000+
+      // entry tournament silently skipped seats and missed real conflicts).
+      const destTables = [...new Set(moves.map(m => m.to_table).filter(t => t !== undefined && t !== null))];
+      const { data: conflictingSeats, error: cErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
         .in('status', ['active', 'seated'])
-            .limit(1000);
+        .in('table_number', destTables.length > 0 ? destTables : [-1]);
+
+      // A discarded error here made the guard pass on an empty result and the
+      // batch went on to overwrite live seats.
+      if (cErr) {
+        console.error('[tournaments/balance-execute] seat conflict read failed', {
+          tournamentId, code: cErr.code, message: cErr.message, details: cErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seats' } });
+      }
 
       const occupiedList = (conflictingSeats || []).filter(e =>
         !moves.some(m => m.entry_id === e.id) &&
@@ -75,15 +103,25 @@ export default async function handler(req, res) {
           continue;
         }
 
-        const { data: entry } = await getSupabase()
+        const { data: entry, error: readErr } = await getSupabase()
           .from('commander_tournament_entries')
-          .select('table_number, seat_number, player_name, metadata')
+          .select('table_number, seat_number, player_name, status, metadata')
           .eq('id', move.entry_id)
           .eq('tournament_id', tournamentId)
           .maybeSingle();
 
+        if (readErr) {
+          errors.push({ entry_id: move.entry_id, error: readErr.message });
+          continue;
+        }
         if (!entry) {
           errors.push({ entry_id: move.entry_id, error: 'Entry Not Found' });
+          continue;
+        }
+        // Only live players can be balanced. Moving an eliminated or cancelled
+        // entry parks a dead player on a live seat that the floor then cannot fill.
+        if (!['active', 'seated'].includes(entry.status)) {
+          errors.push({ entry_id: move.entry_id, error: `Player Is Not Active (Status: ${entry.status})` });
           continue;
         }
 
@@ -99,7 +137,9 @@ export default async function handler(req, res) {
               move_reason: move.reason || 'balance'
             }
           })
-          .eq('id', move.entry_id);
+          .eq('id', move.entry_id)
+          // Scope to this tournament so a stray entry_id cannot be moved.
+          .eq('tournament_id', tournamentId);
 
         if (uErr) {
           errors.push({ entry_id: move.entry_id, error: uErr.message });

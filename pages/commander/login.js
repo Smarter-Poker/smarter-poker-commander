@@ -186,7 +186,177 @@ export default function CommanderLogin() {
     }
     
     checkExistingSession();
-    return (
+  }, [router.isReady]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Sign in with Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError) throw authError;
+
+      await completeLogin(data.user, data.session.access_token);
+    } catch (err) {
+      console.warn('Login error:', err);
+      if (err.name === 'AbortError') {
+        setError('Login Timed Out. Please Check Your Connection And Try Again.');
+      } else {
+        setError(err.message || 'Invalid Email Or Password');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── SSO Continue handler ─────────────────────────────────────────────
+  // Called when the user clicks "Continue as [email]". Reads their current
+  // smarter.poker JWT from localStorage, calls the hub SSO endpoint to get
+  // a one-time bridge token, then redirects to /auth/sso on Commander to
+  // finish the session transfer.
+  const handleSSOContinue = async () => {
+    setError(null);
+    setSsoLoading(true);
+    try {
+      // Read the current smarter.poker session token
+      let accessToken = null;
+      try {
+        const authRaw = localStorage.getItem('smarter-poker-auth');
+        if (authRaw) {
+          const auth = JSON.parse(authRaw);
+          accessToken = auth?.access_token;
+        }
+        // Fallback: check Supabase default storage keys
+        if (!accessToken) {
+          const sbKeys = Object.keys(localStorage || {}).filter(
+            k => k.startsWith('sb-') && k.endsWith('-auth-token')
+          );
+          if (sbKeys.length > 0) {
+            const raw = localStorage.getItem(sbKeys[0]);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              accessToken = parsed?.access_token;
+            }
+          }
+        }
+      } catch (e) { /* localStorage unavailable */ }
+
+      if (!accessToken) {
+        // No local token - fall back to supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
+      }
+
+      if (!accessToken) {
+        setError('Could Not Read Your Smarter.Poker Session. Please Sign In Manually.');
+        setSsoLoading(false);
+        return;
+      }
+
+      // Call the hub SSO endpoint - this works when Commander is accessed via
+      // smarter.poker/commander/* rewrite. When accessed directly at
+      // commander.smarter.poker, this URL hits the main hub API.
+      const hubOrigin = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
+      const ssoRes = await fetch(`${hubOrigin}/api/auth/commander-sso`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        credentials: 'include',
+      });
+
+      const ssoData = await ssoRes.json().catch(() => ({}));
+
+      if (!ssoRes.ok || !ssoData.url) {
+        setError(ssoData.error || 'SSO Failed. Please Sign In With Your Email And Password Below.');
+        setSsoLoading(false);
+        return;
+      }
+
+      // Redirect to Commander SSO landing page with the one-time token
+      window.location.href = ssoData.url;
+    } catch (err) {
+      console.warn('[SSO] Continue error:', err);
+      setError('SSO Sign-In Failed. Please Use Email And Password Below.');
+      setSsoLoading(false);
+    }
+  };
+
+
+  // OAuth return path (/auth/callback redirects here with ?oauth=1 once the
+  // Supabase session is established) - finish the subscription check.
+  useEffect(() => {
+    if (router.query.oauth !== '1') return;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await completeLogin(session.user, session.access_token);
+        } else {
+          setError('Sign-In Could Not Be Completed. Please Try Again.');
+        }
+      } catch (err) {
+        console.warn('OAuth completion error:', err);
+        setError(err.message || 'Sign-In Could Not Be Completed.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query.oauth]);
+
+  // Show loading while checking for existing session
+  async function handleOAuthSignIn(provider) {
+    try {
+      setLoading(true);
+      setError(null);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/commander/login?oauth=1`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.warn('OAuth Error:', err);
+      setError(err.message || `Failed to sign in with ${provider}`);
+      setLoading(false);
+    }
+  }
+
+  if (checkingSession) return (
+    <div className="min-h-screen bg-[#18191A] flex flex-col items-center justify-center p-4">
+      <div className="text-[#8A8D91] text-sm flex items-center gap-2 mb-4">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        Restoring Session...
+      </div>
+      {showReset && (
+        <button
+          onClick={() => {
+            localStorage.removeItem('commander_staff');
+            localStorage.removeItem('commander_remember');
+            localStorage.removeItem('commander-auth');
+            setCheckingSession(false);
+          }}
+          className="text-xs text-[#EF4444] border border-[#EF444440] rounded px-4 py-2 hover:bg-[#EF444410] transition-colors"
+        >
+          Reset Session & Sign In
+        </button>
+      )}
+    </div>
+  );
+
+  return (
     <div className="min-h-screen bg-[#050914] flex flex-col items-center justify-center p-4 relative overflow-hidden font-rajdhani">
       {/* Dynamic Background Effects */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">

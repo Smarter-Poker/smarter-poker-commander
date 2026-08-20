@@ -30,6 +30,9 @@ export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
+    } else if (!applyRateLimit(req, res, LIMITS.read)) {
+      // The GET check path was previously unthrottled entirely.
+      return;
     }
 
     const _g = await guardWriteStaff(req, res); if (!_g) return;
@@ -65,13 +68,21 @@ export default async function handler(req, res) {
 
 async function getTableData(tournamentId, venueId) {
   // Get tournament tables
-  const { data: tables } = await getSupabase()
+  const { data: tables, error: tablesError } = await getSupabase()
     .from('commander_tables')
     .select('id, table_number, max_seats')
     .eq('venue_id', venueId)
     .eq('tournament_id', tournamentId)
     .eq('mode', 'tournament')
-        .limit(100)
+    .limit(200);
+
+  if (tablesError) {
+    console.error('[tournaments/auto-break] commander_tables read failed', {
+      tournamentId, venueId, code: tablesError.code,
+      message: tablesError.message, details: tablesError.details,
+    });
+    throw tablesError;
+  }
 
   if (!tables || tables.length < 2) return { tables: tables || [], entries: [], tableMap: {} };
 
@@ -241,15 +252,19 @@ async function handleExecute(req, res, tournament) {
   const errors = [];
   const moved = [];
 
-  // Fetch real venue data from both tables in parallel
+  // Fetch real venue data from both tables in parallel.
+  // 2026-08-20 audit fix: this read `venues`, whose id is a UUID and which holds
+  // zero rows. commander_tournaments.venue_id is an INTEGER FK to poker_venues,
+  // so the comparison was a type error, the error was discarded, and every
+  // printed seat-change card said "Smarter Poker" with no city/state.
   const [venueRes, settingsRes] = await Promise.all([
-    getSupabase().from('venues').select('name, city, state').eq('id', tournament.venue_id).maybeSingle(),
+    getSupabase().from('poker_venues').select('name, city, state, logo_url').eq('id', tournament.venue_id).maybeSingle(),
     getSupabase().from('commander_venue_settings').select('club_logo_url').eq('venue_id', tournament.venue_id).maybeSingle()
   ]);
   const venueName = venueRes.data?.name || 'Smarter Poker';
   const venueCity = venueRes.data?.city || null;
   const venueState = venueRes.data?.state || null;
-  const venueLogoUrl = settingsRes.data?.club_logo_url || null;
+  const venueLogoUrl = settingsRes.data?.club_logo_url || venueRes.data?.logo_url || null;
 
   // Validate no seat conflicts
   const seatKeys = new Set();

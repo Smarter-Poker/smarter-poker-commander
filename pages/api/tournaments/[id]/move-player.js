@@ -66,12 +66,17 @@ export default async function handler(req, res) {
       if (eErr || !entry) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
       }
-      if (entry.status === 'eliminated') {
-        return res.status(400).json({ success: false, error: { code: 'PLAYER_ELIMINATED', message: 'Cannot Move Eliminated Player' } });
+      // Only live players hold seats. 'eliminated' was the only status blocked,
+      // so a cancelled, cashed, bagged or winner entry could still be parked on
+      // a live seat that the floor then could not fill.
+      if (!['registered', 'seated', 'active', 'alternate'].includes(entry.status)) {
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Move A Player With Status ${entry.status}` } });
       }
 
-      // Check destination seat is not occupied
-      const { data: existing } = await getSupabase()
+      // Check destination seat is not occupied.
+      // .maybeSingle() throws when two rows share the seat (exactly the state
+      // this guard exists to catch) and the discarded error let the move through.
+      const { data: existingRows, error: occErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, player_name')
         .eq('tournament_id', tournamentId)
@@ -79,8 +84,16 @@ export default async function handler(req, res) {
         .eq('seat_number', to_seat)
         .in('status', ['active', 'seated'])
         .neq('id', entry_id)
-        .maybeSingle();
+        .limit(1);
 
+      if (occErr) {
+        console.error('[tournaments/move-player] seat occupancy read failed', {
+          tournamentId, code: occErr.code, message: occErr.message, details: occErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seat' } });
+      }
+
+      const existing = (existingRows || [])[0];
       if (existing) {
         return res.status(409).json({
           success: false,

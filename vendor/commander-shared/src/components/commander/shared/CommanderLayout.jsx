@@ -824,9 +824,9 @@ export default function CommanderLayout({ children, title, backHref = '/commande
 
       <CommanderErrorBoundary>
         {/* ── GLOBAL HEADER BAR ── */}
-        <div className="cmd-global-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
-          <div className="cmd-global-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button className="cmd-hamburger" onClick={() => setMenuOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+        <div className="cmd-global-header" style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
+          <div className="cmd-global-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <button className="cmd-hamburger" onClick={() => setMenuOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               <img src="/images/commander/btn-hamburger.png" alt="Menu" style={{ width: '36px', height: '36px' }} />
             </button>
             {hideBack ? (
@@ -849,17 +849,17 @@ export default function CommanderLayout({ children, title, backHref = '/commande
               </button>
             )}
           </div>
-          <div className="cmd-global-center">
+          <div className="cmd-global-center" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
             <div className="cmd-global-title">Club Commander</div>
           </div>
-          <div className="cmd-global-right" style={{ position: 'relative' }}>
+          <div className="cmd-global-right" style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', flex: 1, whiteSpace: 'nowrap' }}>
             <div 
               className="cmd-global-venue" 
-              style={{ cursor: commanderAccounts.length > 1 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '4px' }}
-              onClick={() => commanderAccounts.length > 1 && setShowAccountSwitcher(!showAccountSwitcher)}
+              style={{ cursor: Array.isArray(commanderAccounts) && commanderAccounts.length > 1 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={() => Array.isArray(commanderAccounts) && commanderAccounts.length > 1 && setShowAccountSwitcher(!showAccountSwitcher)}
             >
               {venueName}
-              {commanderAccounts.length > 1 && <ChevronDown size={14} />}
+              {Array.isArray(commanderAccounts) && commanderAccounts.length > 1 && <ChevronDown size={14} />}
             </div>
             {showAccountSwitcher && (
               <>
