@@ -926,13 +926,13 @@ export default function RegisterPage() {
 
               {/* Games Offered Toggles */}
               {[
-                { label: 'NLH', l: 15.6, w: 7 },
-                { label: 'PLO', l: 23.5, w: 7 },
-                { label: 'PLO8', l: 31.4, w: 7 },
-                { label: 'LIMIT HE', l: 39.3, w: 10 },
-                { label: 'STUD', l: 50.2, w: 8 },
-                { label: 'MIXED', l: 59.1, w: 8 },
-                { label: 'TOURNAMENTS', l: 68.0, w: 15 }
+                { label: 'NLH', l: 15.3, w: 7.6 },
+                { label: 'PLO', l: 23.3, w: 7.6 },
+                { label: 'PLO8', l: 31.3, w: 7.6 },
+                { label: 'LIMIT HE', l: 39.4, w: 10.4 },
+                { label: 'STUD', l: 50.3, w: 8.4 },
+                { label: 'MIXED', l: 59.1, w: 8.4 },
+                { label: 'TOURNAMENTS', l: 68.1, w: 14.6 }
               ].map(({ label, l, w }) => (
                 <button
                   key={label}
@@ -961,10 +961,10 @@ export default function RegisterPage() {
                   }}
                   style={{
                     position: 'absolute',
-                    top: '78.5%',
+                    top: '78.6%',
                     left: `${l}%`,
                     width: `${w}%`,
-                    height: '2.8%',
+                    height: '2.5%',
                     // Using a subtle 15% opacity white background for selected state per user feedback to have NO OVERLAYS.
                     // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
                     // I will use a very subtle white background
