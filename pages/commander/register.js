@@ -1043,7 +1043,7 @@ export default function RegisterPage() {
           {/* Plan 1: Home Games */}
           <button
             type="button"
-            onClick={() => setTier(1)}
+            onClick={() => setSelectedTier('home_games')}
             style={{
               position: 'absolute',
               top: '40.2%',
@@ -1051,16 +1051,16 @@ export default function RegisterPage() {
               width: '71%',
               height: '7.7%',
               background: 'transparent',
-              border: tier === 1 ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'home_games' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
-              boxShadow: tier === 1 ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'home_games' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
             title="Home Games"
           >
              {/* Optional circle fill */}
-             {tier === 1 && (
+             {selectedTier === 'home_games' && (
                <div style={{
                  position: 'absolute',
                  top: '50%',
@@ -1078,7 +1078,7 @@ export default function RegisterPage() {
           {/* Plan 2: Charity */}
           <button
             type="button"
-            onClick={() => setTier(2)}
+            onClick={() => setSelectedTier('charity')}
             style={{
               position: 'absolute',
               top: '48.8%',
@@ -1086,15 +1086,15 @@ export default function RegisterPage() {
               width: '71%',
               height: '7.7%',
               background: 'transparent',
-              border: tier === 2 ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'charity' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
-              boxShadow: tier === 2 ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'charity' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
             title="Charity"
           >
-             {tier === 2 && (
+             {selectedTier === 'charity' && (
                <div style={{
                  position: 'absolute',
                  top: '50%',
@@ -1112,7 +1112,7 @@ export default function RegisterPage() {
           {/* Plan 3: Clubs */}
           <button
             type="button"
-            onClick={() => setTier(3)}
+            onClick={() => setSelectedTier('club')}
             style={{
               position: 'absolute',
               top: '57.3%',
@@ -1120,15 +1120,15 @@ export default function RegisterPage() {
               width: '71%',
               height: '7.7%',
               background: 'transparent',
-              border: tier === 3 ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'club' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
-              boxShadow: tier === 3 ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'club' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
             title="Clubs"
           >
-             {tier === 3 && (
+             {selectedTier === 'club' && (
                <div style={{
                  position: 'absolute',
                  top: '50%',
@@ -1233,6 +1233,82 @@ export default function RegisterPage() {
             </div>
           )}
 
+        </div>
+      </div>
+    );
+  }
+
+
+  if (step === 4) {
+    const displayPlan = selectedTier === 'home_games' ? 'Home Games' : 
+                        selectedTier === 'charity' ? 'Charity' : 'Clubs';
+
+    return (
+      <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+        <Head>
+          <title>Club Commander - Registration Complete</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+
+        <div className="relative w-full h-full z-10">
+          {/* Stretch the image to fill the screen */}
+          <img 
+            src="/images/commander/register-step4-bg.jpg" 
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+            alt="Registration Complete Background" 
+          />
+
+          {/* Login Email Data */}
+          <div style={{
+            position: 'absolute',
+            top: '57.8%',
+            left: '28%',
+            color: '#E4E6EB',
+            fontSize: 'min(17px, 3vw)',
+            fontFamily: 'Inter, sans-serif',
+            zIndex: 10
+          }}>
+            {ownerEmail}
+          </div>
+
+          {/* Venue ID Data */}
+          <div style={{
+            position: 'absolute',
+            top: '69.5%',
+            left: '28%',
+            color: '#E4E6EB',
+            fontSize: 'min(17px, 3vw)',
+            fontFamily: 'Inter, sans-serif',
+            zIndex: 10
+          }}>
+            {registrationResult?.venueId || 'N/A'}
+          </div>
+
+          {/* Plan Data */}
+          <div style={{
+            position: 'absolute',
+            top: '73%',
+            left: '28%',
+            color: '#E4E6EB',
+            fontSize: 'min(17px, 3vw)',
+            fontFamily: 'Inter, sans-serif',
+            zIndex: 10
+          }}>
+            {displayPlan} {COMMANDER_FREE_MODE ? `(${COMMANDER_FREE_TAGLINE})` : '(14-day trial)'}
+          </div>
+
+          {/* Sign In Button */}
+          <Link href="/commander/login" style={{
+              position: 'absolute',
+              top: '78.5%',
+              left: '14%',
+              width: '72%',
+              height: '6.5%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+          }} title="Sign In To Dashboard" />
         </div>
       </div>
     );
