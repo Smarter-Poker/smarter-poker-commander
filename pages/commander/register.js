@@ -113,13 +113,13 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // --- UI CALIBRATION SYSTEM ---
   const [calib, setCalib] = useState({
-    'NLH': { l: 15.3, w: 7.6, t: 78.6, h: 2.5 },
-    'PLO': { l: 23.3, w: 7.6, t: 78.6, h: 2.5 },
-    'PLO8': { l: 31.3, w: 7.6, t: 78.6, h: 2.5 },
-    'LIMIT HE': { l: 39.4, w: 10.4, t: 78.6, h: 2.5 },
-    'STUD': { l: 50.3, w: 8.4, t: 78.6, h: 2.5 },
-    'MIXED': { l: 59.1, w: 8.4, t: 78.6, h: 2.5 },
-    'TOURNAMENTS': { l: 68.1, w: 14.6, t: 78.6, h: 2.5 },
+    'NLH': { l: 15.4, w: 7.1, t: 78.8, h: 3 },
+    'PLO': { l: 23.6, w: 7, t: 78.9, h: 3 },
+    'PLO8': { l: 31.7, w: 7.6, t: 78.9, h: 2.9 },
+    'LIMIT HE': { l: 40.2, w: 9.9, t: 78.8, h: 3 },
+    'STUD': { l: 51, w: 7.6, t: 78.8, h: 3 },
+    'MIXED': { l: 59.6, w: 8.4, t: 78.8, h: 3 },
+    'TOURNAMENTS': { l: 68.8, w: 14.6, t: 78.8, h: 2.9 },
     'dot_home': { l: 4.3, t: 51 },
     'dot_charity': { l: 4.3, t: 51 },
     'dot_club': { l: 4.3, t: 51 },
