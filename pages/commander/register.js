@@ -1075,8 +1075,8 @@ export default function RegisterPage() {
              {selectedTier === 'home_games' && (
                <div style={{
                  position: 'absolute',
-                 top: '50%',
-                 left: '4%',
+                 top: '51%',
+                 left: '4.3%',
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1109,8 +1109,8 @@ export default function RegisterPage() {
              {selectedTier === 'charity' && (
                <div style={{
                  position: 'absolute',
-                 top: '50%',
-                 left: '4%',
+                 top: '51%',
+                 left: '4.3%',
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1143,8 +1143,8 @@ export default function RegisterPage() {
              {selectedTier === 'club' && (
                <div style={{
                  position: 'absolute',
-                 top: '50%',
-                 left: '4%',
+                 top: '51%',
+                 left: '4.3%',
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1162,8 +1162,8 @@ export default function RegisterPage() {
             onChange={(e) => setAgreedToTerms(e.target.checked)}
             style={{
               position: 'absolute',
-              top: '75.6%',
-              left: '14.6%',
+              top: '75.7%',
+              left: '15.3%',
               width: '2.2%',
               height: '2.2%',
               cursor: 'pointer',
@@ -1175,8 +1175,8 @@ export default function RegisterPage() {
           {agreedToTerms && (
             <div style={{
               position: 'absolute',
-              top: '75.6%',
-              left: '14.6%',
+              top: '75.7%',
+              left: '15.3%',
               width: '2.2%',
               height: '2.2%',
               display: 'flex',
