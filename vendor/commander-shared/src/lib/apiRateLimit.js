@@ -1,5 +1,5 @@
 /**
- * apiRateLimit.js — Production-ready in-memory rate limiter
+ * apiRateLimit.js - Production-ready in-memory rate limiter
  * 
  * Uses a sliding window counter per (identifier + endpoint) key.
  * Automatically cleans up expired entries every 5 minutes.
@@ -101,11 +101,11 @@ export function applyRateLimit(req, res, opts = {}) {
 
 // Pre-defined limit tiers
 export const LIMITS = {
-  ai:        { max: 5,  windowMs: 60_000 },       // 5/min — AI generation
-  upload:    { max: 10, windowMs: 60_000 },        // 10/min — file uploads
-  financial: { max: 20, windowMs: 60_000 },        // 20/min — financial ops
-  auth:      { max: 10, windowMs: 60_000 },        // 10/min — auth attempts
-  write:     { max: 30, windowMs: 60_000 },        // 30/min — write ops
-  read:      { max: 120, windowMs: 60_000 },       // 120/min — read ops
-  default:   { max: 60, windowMs: 60_000 },        // 60/min — everything else
+  ai:        { max: 5,  windowMs: 60_000 },       // 5/min - AI generation
+  upload:    { max: 10, windowMs: 60_000 },        // 10/min - file uploads
+  financial: { max: 20, windowMs: 60_000 },        // 20/min - financial ops
+  auth:      { max: 10, windowMs: 60_000 },        // 10/min - auth attempts
+  write:     { max: 30, windowMs: 60_000 },        // 30/min - write ops
+  read:      { max: 120, windowMs: 60_000 },       // 120/min - read ops
+  default:   { max: 60, windowMs: 60_000 },        // 60/min - everything else
 };

@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -90,7 +90,7 @@ async function listDealers(req, res) {
     const { data, error, count } = await query;
 
     if (error) {
-      // Missing-table guard — migration archived at
+      // Missing-table guard - migration archived at
       // supabase/migrations/archive/20260127_commander_remaining_tables.sql,
       // never applied to production. Return empty list with clear flag.
       if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
@@ -193,7 +193,7 @@ async function registerDealer(req, res) {
         status: 'active',
         verified: false
       })
-      // 2026-07-25 audit fix: dropped the `profiles:dealer_id (...)` embed — the
+      // 2026-07-25 audit fix: dropped the `profiles:dealer_id (...)` embed - the
       // FK it requires doesn't exist (PGRST200 after the row was inserted; same
       // issue as the listDealers fix above). Plain select of the inserted row.
       .select()

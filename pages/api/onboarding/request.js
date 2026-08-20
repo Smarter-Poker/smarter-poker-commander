@@ -4,7 +4,7 @@
  * Captures lead information for new venue signups
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-// Note: No auth guard — this is a public lead capture form. Protected by IP rate limiting.
+// Note: No auth guard - this is a public lead capture form. Protected by IP rate limiting.
 import { checkMemoryRateLimit } from '../../../src/lib/commander/rateLimit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';

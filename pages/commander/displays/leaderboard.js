@@ -1,22 +1,22 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * Leaderboard TV Display — PRODUCTION v3
+ * Leaderboard TV Display - PRODUCTION v3
  * /commander/displays/leaderboard
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Self-generating + staff-managed leaderboard display.
  * 
  * AUTO-GENERATED BOARDS (from commander_members + sessions):
- *   Most Visits         — commander_members.total_visits ranked
- *   Hours Played        — from commander_player_sessions or estimate
- *   Today's Check-Ins   — who's here today
- *   VIP Hall of Fame    — tier + lifetime visits
+ *   Most Visits         - commander_members.total_visits ranked
+ *   Hours Played        - from commander_player_sessions or estimate
+ *   Today's Check-Ins   - who's here today
+ *   VIP Hall of Fame    - tier + lifetime visits
  * 
  * LEAGUE BOARDS (from commander_leagues):
- *   [League Name]       — live standings with points, events, wins
+ *   [League Name]       - live standings with points, events, wins
  * 
  * CUSTOM BOARDS (from commander_leaderboards):
- *   [Custom Name]       — staff-created via leaderboard builder
+ *   [Custom Name]       - staff-created via leaderboard builder
  * 
  * Priority: Custom boards first → League boards → Auto boards
  * Auto-rotates 12s. Wake lock. Real-time via Commander Data Bus.
@@ -57,13 +57,13 @@ export default function LeaderboardDisplay() {
     return f || m.member_number || 'Member';
   }
   function tAgo(d) {
-    if (!d) return '—';
+    if (!d) return '-';
     const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
     if (m < 1) return 'Just now'; if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
     return `${Math.floor(h / 24)}d ago`;
   }
-  function mSince(d) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'; }
+  function mSince(d) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '-'; }
   function fmtHours(h) {
     if (!h || h === 0) return '0h';
     if (h < 1) return `${Math.round(h * 60)}m`;
@@ -178,7 +178,7 @@ export default function LeaderboardDisplay() {
         if (players.length > 0 && players.some(p => p.total_hours > 0)) {
           const maxH = Math.max(...players.map(p => p.total_hours), 1);
           built.push({
-            id: 'hours', icon: '', title: 'Hours Played — All Time',
+            id: 'hours', icon: '', title: 'Hours Played - All Time',
             subtitle: `${players.length} players ranked by total play time${!hJson?.data?.has_session_data ? ' (estimated from visits)' : ''}`,
             scoreHeader: 'HOURS', source: 'auto',
             entries: players.slice(0, 15).map((p, i) => ({
@@ -196,7 +196,7 @@ export default function LeaderboardDisplay() {
       if (byVisits.length > 0) {
         const topV = byVisits[0].total_visits || 1;
         built.push({
-          id: 'visits', icon: '', title: 'Most Visits — All Time',
+          id: 'visits', icon: '', title: 'Most Visits - All Time',
           subtitle: `Top ${byVisits.length} by total check-ins | ${members.length} total members`,
           scoreHeader: 'VISITS', source: 'auto',
           entries: byVisits.map((m, i) => ({
@@ -257,7 +257,7 @@ export default function LeaderboardDisplay() {
   return (
     <CommanderLayout title="Leaderboard Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
-              title="Commander — Leaderboard Display"
+              title="Commander - Leaderboard Display"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
@@ -304,10 +304,10 @@ export default function LeaderboardDisplay() {
                 <p className="text-2xl font-bold text-white/40 mb-3">No Leaderboard Data Yet</p>
                 <div className="text-left bg-white/5 rounded-xl p-6 border border-white/10 space-y-3">
                   <p className="text-sm text-white/50 font-semibold uppercase tracking-wider mb-3">How to get started:</p>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">1.</span><p><strong className="text-white/60">Add Members</strong> — Register players in Commander → Members</p></div>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">2.</span><p><strong className="text-white/60">Check In Players</strong> — Track visits via kiosk or manual check-in</p></div>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">3.</span><p><strong className="text-white/60">Create Custom Boards</strong> — Go to Commander → Leaderboard Builder to add custom boards</p></div>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">4.</span><p><strong className="text-white/60">Create a League</strong> — Go to Commander → Leagues to set up a poker league with custom points</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">1.</span><p><strong className="text-white/60">Add Members</strong> - Register players in Commander → Members</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">2.</span><p><strong className="text-white/60">Check In Players</strong> - Track visits via kiosk or manual check-in</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">3.</span><p><strong className="text-white/60">Create Custom Boards</strong> - Go to Commander → Leaderboard Builder to add custom boards</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">4.</span><p><strong className="text-white/60">Create a League</strong> - Go to Commander → Leagues to set up a poker league with custom points</p></div>
                 </div>
               </div>
             </div>

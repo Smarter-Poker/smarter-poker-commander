@@ -1,10 +1,10 @@
 /**
- * Public Waitlist Join API — POST /api/commander/waitlist/public-join
+ * Public Waitlist Join API - POST /api/commander/waitlist/public-join
  * Allows authenticated players to add themselves to a venue waitlist via web.
  * Sets signup_method = 'web' automatically.
  *
  * Auth: Verifies Supabase JWT from Authorization header (Bearer token).
- * Does NOT require staff auth — only a valid logged-in user.
+ * Does NOT require staff auth - only a valid logged-in user.
  *
  * Also: cleans up expired web entries (>1 hour, not checked in) on each call.
  */
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
       const token = authHeader.replace('Bearer ', '').trim();
 
-      // Try to parse the token — it might be a raw JWT or a JSON object with access_token
+      // Try to parse the token - it might be a raw JWT or a JSON object with access_token
       let accessToken = token;
       try {
           const parsed = JSON.parse(token);

@@ -1,7 +1,7 @@
 /**
- * Commander — Staff Time Clock
+ * Commander - Staff Time Clock
  * QR scan to clock in/out, shift log, hours summary
- * NO EMOJIS — Lucide icons only
+ * NO EMOJIS - Lucide icons only
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
@@ -59,7 +59,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
 
     useEffect(() => { const _c = new AbortController(); fetchEntries(_c.signal); return () => _c.abort(); }, [fetchEntries]);
 
-    // Real-time sync — listen for staff entity changes (clock in/out from other tabs/devices)
+    // Real-time sync - listen for staff entity changes (clock in/out from other tabs/devices)
     useCommanderSync(venueId, fetchEntries, { entities: ['staff'] });
 
     // Camera QR scanning
@@ -158,7 +158,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
     return (
         <CommanderLayout title="Time Clock | Club Commander" backHref="/commander/dashboard?card=staff">
             <>
-                <SEOHead title="Commander — Time Clock" description="Staff Clock In/Out" noindex={true} />
+                <SEOHead title="Commander - Time Clock" description="Staff Clock In/Out" noindex={true} />
 
                 <div className="cmd-page">
                     <header className="cmd-header-bar">
@@ -210,7 +210,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                                     <div className={`text-sm font-medium ${scanResult.action === 'clock_in' ? 'text-[#10B981]' : 'text-[#EF4444]'
                                         }`}>
                                         {scanResult.action === 'clock_in' ? 'CLOCKED IN' : 'CLOCKED OUT'}
-                                        {scanResult.hours_worked ? ` — ${formatDuration(scanResult.hours_worked)}` : ''}
+                                        {scanResult.hours_worked ? ` - ${formatDuration(scanResult.hours_worked)}` : ''}
                                         {' at '}{formatTime(scanResult.action === 'clock_in' ? scanResult.clock_in : scanResult.clock_out)}
                                     </div>
                                 </div>
@@ -330,7 +330,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                                             <div className="text-right">
                                                 <div className="text-sm text-[#E4E6EB]">
                                                     {formatTime(entry.clock_in)}
-                                                    {entry.clock_out ? ` — ${formatTime(entry.clock_out)}` : ''}
+                                                    {entry.clock_out ? ` - ${formatTime(entry.clock_out)}` : ''}
                                                 </div>
                                                 <div className={`text-xs font-medium ${entry.clock_out ? 'text-[#B0B3B8]' : 'text-[#10B981]'
                                                     }`}>

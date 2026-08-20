@@ -1,5 +1,5 @@
 /**
- * BlindStructureEditor — Visual editor for tournament blind structures
+ * BlindStructureEditor - Visual editor for tournament blind structures
  * Displays level table with SB/BB/Ante/Duration, break rows, add/remove
  * UI: Dark industrial sci-fi gaming theme, no emojis, Inter font
  */
@@ -60,7 +60,7 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
         onChange(renumbered);
     }
 
-    const totalMinutes = structure.reduce((sum, l) => sum + (l.duration || 0), 0);
+    const totalMinutes = structure.reduce((sum, l) => sum + (l.duration ?? l.duration_minutes ?? 0), 0);
     const playLevels = structure.filter(l => !l.is_break).length;
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
@@ -70,10 +70,10 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
             {/* Summary bar */}
             <div className="flex items-center justify-between px-3 py-2 bg-[#0D192E] rounded-lg">
                 <span className="text-sm text-[#94A3B8]">
-                    {playLevels} levels, {structure.filter(l => l.is_break).length} breaks
+                    {playLevels} Levels, {structure.filter(l => l.is_break).length} Breaks
                 </span>
                 <span className="text-sm font-medium text-[#22D3EE]">
-                    Est. duration: ~{hours}h {mins > 0 ? `${mins}m` : ''}
+                    Est. Duration: ~{hours}h {mins > 0 ? `${mins}m` : ''}
                 </span>
             </div>
 
@@ -103,11 +103,11 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                         </td>
                                         <td className="px-2 py-2 text-right text-[#F59E0B]">
                                             {readOnly ? (
-                                                `${item.duration}m`
+                                                `${item.duration ?? item.duration_minutes ?? 0}m`
                                             ) : (
                                                 <input
                                                     type="number"
-                                                    value={item.duration}
+                                                    value={item.duration ?? item.duration_minutes ?? 0}
                                                     onChange={(e) => updateLevel(idx, 'duration', parseInt(e.target.value) || 5)}
                                                     className="w-14 h-7 bg-[#0D192E] border border-[#1E3A5F] rounded text-center text-[#F59E0B] text-sm"
                                                 />
@@ -151,7 +151,9 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                     className={`border-b border-[#1E3A5F]/50 hover:bg-[#132240]/50 transition-colors ${isEditing ? 'bg-[#132240]' : ''}`}
                                     onClick={() => !readOnly && setEditingIndex(isEditing ? null : idx)}
                                 >
-                                    <td className="px-2 py-2 text-[#64748B] font-mono">{item.level}</td>
+                                    {/* Break-aware fallback: structures saved without a `level` field
+                                        get their number by counting non-break rows up to this index */}
+                                    <td className="px-2 py-2 text-[#64748B] font-mono">{item.level ?? structure.slice(0, idx + 1).filter(l => !l.is_break).length}</td>
                                     <td className="px-2 py-2 text-right text-white">
                                         {!readOnly && isEditing ? (
                                             <input
@@ -162,7 +164,7 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                                 className="w-20 h-7 bg-[#0D192E] border border-[#1E3A5F] rounded text-right text-white text-sm px-2"
                                             />
                                         ) : (
-                                            item.small_blind.toLocaleString()
+                                            (item.small_blind ?? 0).toLocaleString()
                                         )}
                                     </td>
                                     <td className="px-2 py-2 text-right text-white font-medium">
@@ -175,7 +177,7 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                                 className="w-20 h-7 bg-[#0D192E] border border-[#1E3A5F] rounded text-right text-white text-sm px-2"
                                             />
                                         ) : (
-                                            item.big_blind.toLocaleString()
+                                            (item.big_blind ?? 0).toLocaleString()
                                         )}
                                     </td>
                                     <td className="px-2 py-2 text-right text-[#94A3B8]">
@@ -195,13 +197,13 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                                         {!readOnly && isEditing ? (
                                             <input
                                                 type="number"
-                                                value={item.duration}
+                                                value={item.duration ?? item.duration_minutes ?? 0}
                                                 onChange={(e) => updateLevel(idx, 'duration', parseInt(e.target.value) || 1)}
                                                 onClick={(e) => e.stopPropagation()}
                                                 className="w-14 h-7 bg-[#0D192E] border border-[#1E3A5F] rounded text-center text-[#22D3EE] text-sm"
                                             />
                                         ) : (
-                                            `${item.duration}m`
+                                            `${item.duration ?? item.duration_minutes ?? 0}m`
                                         )}
                                     </td>
                                     {!readOnly && (

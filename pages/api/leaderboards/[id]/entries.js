@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     // CDN cache: fresh for 30s, serve stale up to 120s
@@ -106,7 +106,7 @@ async function listEntries(req, res, leaderboardId) {
 
 async function addOrUpdateEntry(req, res, leaderboardId) {
   try {
-    // Staff already validated by guardWriteStaff — get venue from staff session
+    // Staff already validated by guardWriteStaff - get venue from staff session
     const staffResult = await verifyStaffSession(req);
     if (staffResult.error) {
       return res.status(staffResult.error.status || 401).json({ error: staffResult.error.message });
@@ -278,7 +278,7 @@ async function updateRankings(leaderboardId) {
   if (!rpcErr) return; // RPC succeeded
 
   // Fallback: manual ranking via JS (RPC may have failed)
-  // 2026-07-25 audit fix: removed the 100-row cap — it silently left entries
+  // 2026-07-25 audit fix: removed the 100-row cap - it silently left entries
   // beyond the first 100 unranked.
   const { data: entries } = await getSupabase()
     .from('commander_leaderboard_entries')

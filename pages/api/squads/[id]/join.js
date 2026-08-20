@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2026-07-25 audit fix: the joining player is the verified session user —
+    // 2026-07-25 audit fix: the joining player is the verified session user -
     // body player_id was forgeable and is now ignored. Body may be entirely
     // absent (the accept-invitation flow sends none).
     const user = await guardUser(req, res);

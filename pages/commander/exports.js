@@ -15,12 +15,12 @@ import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 const EXPORT_TYPES = [
-  { value: 'players', label: 'Player Data', icon: Users, desc: 'Member profiles, stats, visit history', color: '#1877F2' },
-  { value: 'sessions', label: 'Player Sessions', icon: Clock, desc: 'Check-ins, time played, table assignments', color: '#31A24C' },
-  { value: 'tournaments', label: 'Tournaments', icon: Trophy, desc: 'Tournament results, entries, payouts', color: '#F59E0B' },
-  { value: 'analytics', label: 'Daily Analytics', icon: BarChart3, desc: 'Daily metrics, revenue, player counts', color: '#A855F7' },
-  { value: 'comps', label: 'Comp Transactions', icon: Gift, desc: 'Comp earn/redeem history', color: '#EF4444' },
-  { value: 'audit_logs', label: 'Audit Logs', icon: Shield, desc: 'Staff actions, security events', color: '#6B7280' },
+  { value: 'players', label: 'Player Data', icon: Users, desc: 'Member Profiles, Stats, Visit History', color: '#1877F2' },
+  { value: 'sessions', label: 'Player Sessions', icon: Clock, desc: 'Check-Ins, Time Played, Table Assignments', color: '#31A24C' },
+  { value: 'tournaments', label: 'Tournaments', icon: Trophy, desc: 'Tournament Results, Entries, Payouts', color: '#F59E0B' },
+  { value: 'analytics', label: 'Daily Analytics', icon: BarChart3, desc: 'Daily Metrics, Revenue, Player Counts', color: '#A855F7' },
+  { value: 'comps', label: 'Comp Transactions', icon: Gift, desc: 'Comp Earn/Redeem History', color: '#EF4444' },
+  { value: 'audit_logs', label: 'Audit Logs', icon: Shield, desc: 'Staff Actions, Security Events', color: '#6B7280' },
 ];
 
 const STATUS_STYLES = {
@@ -59,7 +59,7 @@ export default function ExportsHub() {
       const expJson = await expRes.json().catch(() => ({ exports: [] }));
       const tJson = await tRes.json().catch(() => ({ data: { tournaments: [] } }));
       setExports(expJson.exports || []);
-      // Tournaments API nests under data.tournaments — data itself is an object
+      // Tournaments API nests under data.tournaments - data itself is an object
       setTournaments(tJson.data?.tournaments || (Array.isArray(tJson.data) ? tJson.data : []));
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
@@ -89,7 +89,7 @@ const res = await commanderFetch('/api/commander/exports', {
         fetchData();
         broadcastChange('exports');
       } else {
-        setMessage({ type: 'error', text: json.error || 'Export failed' });
+        setMessage({ type: 'error', text: json.error || 'Export Failed' });
       }
     } catch (err) { setMessage({ type: 'error', text: 'Network Error' }); }
     finally { setCreating(null); }
@@ -118,7 +118,7 @@ const res = await commanderFetch('/api/commander/exports', {
         setMessage({ type: 'success', text: 'Hendon Mob Export Downloaded!' });
       } else {
         const json = await res.json();
-        setMessage({ type: 'error', text: json.error || 'Hendon Mob export failed' });
+        setMessage({ type: 'error', text: json.error || 'Hendon Mob Export Failed' });
       }
     } catch (err) { setMessage({ type: 'error', text: 'Network Error' }); }
     finally { setCreating(null); }
@@ -131,7 +131,7 @@ const res = await commanderFetch('/api/commander/exports', {
   return (
     <CommanderLayout title="Data Exports" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Data Exports"
+        title="Commander - Data Exports"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -209,7 +209,7 @@ const res = await commanderFetch('/api/commander/exports', {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white capitalize">{exp.export_type?.replace(/_/g, ' ')}</p>
                           <p className="text-xs text-[#6A6B6D]">
-                            {exp.format?.toUpperCase()} • {exp.row_count != null ? `${exp.row_count} rows` : ''}
+                            {exp.format?.toUpperCase()} • {exp.row_count != null ? `${exp.row_count} Rows` : ''}
                             {exp.created_at && ` • ${new Date(exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
                           </p>
                         </div>

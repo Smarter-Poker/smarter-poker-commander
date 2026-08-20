@@ -1,5 +1,5 @@
 /**
- * Table Tablets — Dealer View Dashboard
+ * Table Tablets - Dealer View Dashboard
  * /commander/table-tablets
  *
  * Shows all tables with inline dealer view matching the Table Management visuals:
@@ -25,7 +25,7 @@ const STATUS_BADGE = {
     reserved: { bg: '#F59E0B', label: 'Reserved' },
     maintenance: { bg: '#6B7280', label: 'Maint.' } };
 
-// Full game type name mapping — never show abbreviations to dealers
+// Full game type name mapping - never show abbreviations to dealers
 const GAME_TYPE_MAP = {
     nlh: 'No Limit Hold\'em', nolimit: 'No Limit Hold\'em',
     plo: 'Pot Limit Omaha', potlimitomaha: 'Pot Limit Omaha',
@@ -44,7 +44,7 @@ function getFullGameName(type) {
 // Every handler below used to `throw` on !res.ok BEFORE reading the response
 // body, so a 400 ("Insufficient time balance"), a 401 (staff session expired)
 // or a 409 (ambiguous venue) all reached the dealer as a generic "Network
-// error" — the actionable detail the API had already sent was discarded one
+// error" - the actionable detail the API had already sent was discarded one
 // line too early. This reads the body regardless of status and normalises the
 // two error shapes the Commander APIs use (`error: 'text'` and
 // `error: { code, message }`).
@@ -53,7 +53,7 @@ async function parseApiResponse(res) {
     try { json = await res.json(); } catch (e) { /* empty or non-JSON body */ }
     if (!res.ok) {
         const msg = (json && (json.error?.message || (typeof json.error === 'string' ? json.error : null) || json.message))
-            || (res.status === 401 ? 'Session expired — sign in again'
+            || (res.status === 401 ? 'Session expired - sign in again'
             :  res.status === 403 ? 'Not permitted for this venue'
             :  `Request failed (${res.status})`);
         return { ...(json || {}), success: false, error: msg, httpStatus: res.status };
@@ -85,14 +85,14 @@ function formatTime(seconds) {
 
 function getTimerColor(seconds) {
     if (seconds <= 0) return '#EF4444';
-    if (seconds <= 300) return '#EF4444';   // < 5 min — red
-    if (seconds <= 900) return '#F59E0B';   // < 15 min — yellow
+    if (seconds <= 300) return '#EF4444';   // < 5 min - red
+    if (seconds <= 900) return '#F59E0B';   // < 15 min - yellow
     return '#31A24C';                       // green
 }
 
 // ── Haptic feedback for tablet buttons ──
 // Uses navigator.vibrate() where supported (Android tablets).
-// On iOS, vibration API isn't available — we use AudioContext as a fallback buzz.
+// On iOS, vibration API isn't available - we use AudioContext as a fallback buzz.
 function haptic(intensity = 'medium') {
     try {
         const ms = intensity === 'light' ? 10 : intensity === 'heavy' ? 50 : 25;
@@ -102,7 +102,7 @@ function haptic(intensity = 'medium') {
     } catch (e) { console.warn("[table-tablets.js]", e); }
 }
 
-// Arc-length parameterized ellipse for equal visual spacing — matches tables.js
+// Arc-length parameterized ellipse for equal visual spacing - matches tables.js
 const _seatPositionsCache = {};
 function computeSeatPositions(maxSeats) {
     if (_seatPositionsCache[maxSeats]) return _seatPositionsCache[maxSeats];
@@ -133,7 +133,7 @@ function computeSeatPositions(maxSeats) {
     const seatPositions = allPos.slice(1);
     seatPositions.forEach(p => { const t = parseFloat(p.top); if (t < 30) p.top = '30%'; });
     // Per-seat vertical nudges (seats are 1-indexed, array is 0-indexed)
-    // Seats 3 & 7 down toward middle, Seats 2 & 8 up toward middle — fills the side gap
+    // Seats 3 & 7 down toward middle, Seats 2 & 8 up toward middle - fills the side gap
     const nudge = { 2: -3, 3: 3, 7: 3, 8: -3 };
     Object.entries(nudge || {}).forEach(([seat, offset]) => {
         const idx = parseInt(seat) - 1;
@@ -163,7 +163,7 @@ export default function TableTabletsPage() {
     const [scanCameraActive, setScanCameraActive] = useState(false);
     const [scanResult, setScanResult] = useState(null);
     const [scanError, setScanError] = useState('');
-    // manualDealerQR removed — scan only (issue #6)
+    // manualDealerQR removed - scan only (issue #6)
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const scanIntervalRef = useRef(null);
@@ -171,7 +171,7 @@ export default function TableTabletsPage() {
     // detector.detect() is async and the scan interval fires every 300ms
     // regardless, so clearInterval() stops future ticks but CANNOT cancel a
     // detect() already in flight. A second detection resolving after the
-    // scanner closed would call the handler again with the same card —
+    // scanner closed would call the handler again with the same card -
     // double-seating the player and deducting their time balance twice.
     // These are refs, not state: a ref flips synchronously, so a rapid
     // double-tap or a duplicate frame cannot slip through the window before
@@ -179,7 +179,7 @@ export default function TableTabletsPage() {
     const seatSubmitRef = useRef(false);
     const dealerScanSubmitRef = useRef(false);
     const unseatSubmitRef = useRef(false);
-    // Live countdown tick — tracks when API data was last fetched
+    // Live countdown tick - tracks when API data was last fetched
     const lastFetchAt = useRef(Date.now());
     const [tickCounter, setTickCounter] = useState(0);
     // Tablet assignment panel
@@ -219,7 +219,7 @@ export default function TableTabletsPage() {
     const [callFloorSending, setCallFloorSending] = useState(false);
     const [callFloorSent, setCallFloorSent] = useState(false);
     const [callFloorId, setCallFloorId] = useState(null);
-    // Tournament Clock overlay — SAFEGUARD: lockedTournamentId is the ONLY source
+    // Tournament Clock overlay - SAFEGUARD: lockedTournamentId is the ONLY source
     // for the iframe URL. It is captured at button-click time and validated as a UUID.
     // This ensures the clock display can NEVER show a different tournament.
     const [showTournamentClock, setShowTournamentClock] = useState(false);
@@ -335,7 +335,7 @@ export default function TableTabletsPage() {
         };
     }, [fullscreenTable, lockedTable]);
 
-    // ── Cleanup camera streams on unmount — prevents tablet camera resource leaks ──
+    // ── Cleanup camera streams on unmount - prevents tablet camera resource leaks ──
     useEffect(() => {
         return () => {
             if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
@@ -392,7 +392,7 @@ export default function TableTabletsPage() {
                 setPinError(json.error || 'Invalid PIN');
             }
         } catch {
-            setPinError('Network error — try again');
+            setPinError('Network error - try again');
         }
         setPinLoading(false);
     };
@@ -401,7 +401,7 @@ export default function TableTabletsPage() {
         if (!venueId) return;
 const headers = { };
 
-        // Fetch tables — API already joins commander_games + commander_table_seats
+        // Fetch tables - API already joins commander_games + commander_table_seats
         try {
             const json = await commanderFetchJSON(`/api/commander/tables?venue_id=${venueId}`, { headers, signal });
             if (json.success) {
@@ -433,7 +433,7 @@ const headers = { };
                         } catch (e) { console.warn("[table-tablets.js]", e); }
                     }
 
-                    // Fetch tournament entries — one floor-view call per unique tournament_id
+                    // Fetch tournament entries - one floor-view call per unique tournament_id
                     const uniqueTournaments = [...new Set(tournTbls.map(t => t.tournament_id).filter(Boolean))];
                     await Promise.all(uniqueTournaments.map(async (tid) => {
                         try {
@@ -456,7 +456,7 @@ const headers = { };
                     tablesArr = tablesArr.map(t => {
                         const tNum = t.table_number || t.number;
 
-                        // Tournament table — merge entry data
+                        // Tournament table - merge entry data
                         if (isTournamentTable(t) && tournamentEntriesByTable[tNum]) {
                             const tData = tournamentEntriesByTable[tNum];
                             return {
@@ -475,7 +475,7 @@ const headers = { };
                             };
                         }
 
-                        // Cash table — merge session data
+                        // Cash table - merge session data
                         const tableSessions = sessionsByTable[tNum];
                         if (!tableSessions || tableSessions.length === 0) return t;
                         return {
@@ -507,7 +507,7 @@ const headers = { };
         lastFetchAt.current = Date.now();
         setLoading(false);
 
-        // Fetch active dealer rotations — maps table_number to dealer_name
+        // Fetch active dealer rotations - maps table_number to dealer_name
         try {
             const rotRes = await commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers });
             if (!rotRes.ok) throw new Error(`Request failed (${rotRes.status})`);
@@ -560,11 +560,11 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     // Auto-refresh every 30s (fallback; realtime sync handles instant updates)
     useEffect(() => {
         if (!venueId) return;
-        const interval = setInterval(fetchAll, 30000); // fallback — real-time sync handles instant updates
+        const interval = setInterval(fetchAll, 30000); // fallback - real-time sync handles instant updates
         return () => clearInterval(interval);
     }, [venueId, fetchAll]);
 
-    // Commander Data Bus — instant cross-tab sync for tables, games, dealers
+    // Commander Data Bus - instant cross-tab sync for tables, games, dealers
     useCommanderSync(venueId, fetchAll, { entities: ['tables', 'games', 'dealers'] });
 
     // 1-second tick for live countdown display.
@@ -572,7 +572,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     // or app backgrounded). This component is ~2,000 lines with no memoisation, so
     // every tick re-renders the entire table grid; on a tablet left running for a
     // whole shift that burned CPU and battery animating a display nobody could see.
-    // Nothing is lost on resume — adjustTime() recomputes every countdown from
+    // Nothing is lost on resume - adjustTime() recomputes every countdown from
     // lastFetchAt, and we force one immediate tick when the screen comes back.
     useEffect(() => {
         let tick = null;
@@ -591,7 +591,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     }, []);
 
     // 2026-08-19: hold a screen Wake Lock for the length of the shift.
-    // A dealer tablet must stay readable at the table — seat timers, the floor-call
+    // A dealer tablet must stay readable at the table - seat timers, the floor-call
     // button and the scan flow are useless behind a sleeping screen, and a dealer
     // having to wake and unlock the device mid-hand is a real operational cost.
     // The lock is released by the browser whenever the page is hidden, so it is
@@ -610,7 +610,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
                 if (cancelled) { try { await sentinel.release(); } catch (e) { /* ignore */ } sentinel = null; return; }
                 sentinel.addEventListener('release', () => { sentinel = null; });
             } catch (e) {
-                // Refused (battery saver, permissions policy, unsupported) — non-fatal.
+                // Refused (battery saver, permissions policy, unsupported) - non-fatal.
                 console.warn('[table-tablets] wake lock unavailable:', e?.message || e);
             }
         };
@@ -625,8 +625,8 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     }, []);
 
     // 2026-08-19: refetch the grid the moment connectivity returns.
-    // CommanderLayout already owns the *visual* offline state — it listens for
-    // online/offline and renders the *You are offline* banner — so this
+    // CommanderLayout already owns the *visual* offline state - it listens for
+    // online/offline and renders the *You are offline* banner - so this
     // deliberately does NOT toast, which would give the dealer two
     // notifications for one event. What the layout does not do is recover the
     // data: previously a Wi-Fi drop left the grid showing seats and countdowns
@@ -653,7 +653,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
 
     // Helper: get game + player info from table data.
     // 2026-08-19: wrapped in useCallback so their identity is stable across
-    // renders — otherwise anything downstream that depends on them is
+    // renders - otherwise anything downstream that depends on them is
     // invalidated on every tick.
     const getTableGame = useCallback((table) => {
         const games = Array.isArray(table.commander_games) ? table.commander_games : [];
@@ -668,7 +668,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     }, [getTableGame]);
 
     // 2026-08-19: these four derived lists previously ran three .filter() passes
-    // and a spread on EVERY render — including each 1-second countdown tick, and
+    // and a spread on EVERY render - including each 1-second countdown tick, and
     // every keystroke in an unrelated input. Beyond the wasted work, they handed
     // back a brand-new array identity each time, which defeats memoisation for
     // anything consuming them. They only change when `tables` changes, so they
@@ -840,7 +840,7 @@ const headers = { 'Content-Type': 'application/json' };
                 body: JSON.stringify({ entry_id: entryId }) });
             const json = await parseApiResponse(res);
             if (json.entry || json.success) {
-                const pos = json.finishPosition ? ` — finished ${json.finishPosition}${['st', 'nd', 'rd'][json.finishPosition - 1] || 'th'}` : '';
+                const pos = json.finishPosition ? ` - finished ${json.finishPosition}${['st', 'nd', 'rd'][json.finishPosition - 1] || 'th'}` : '';
                 const payout = json.payoutAmount ? ` · $${json.payoutAmount.toLocaleString()}` : '';
                 setToast({ type: 'success', text: `${playerName} eliminated${pos}${payout}` });
                 setShowPlayerMenu(null);
@@ -851,7 +851,7 @@ const headers = { 'Content-Type': 'application/json' };
                 const tStats = menuTable?._tournamentStats;
                 if (tData && tStats?.late_reg_open) {
                     broadcastChange('cashier');
-                    setToast({ type: 'success', text: `${playerName} eliminated — seat available for resale (late reg open)` });
+                    setToast({ type: 'success', text: `${playerName} eliminated - seat available for resale (late reg open)` });
                 } else if (tData?.allows_rebuys) {
                     const currentLevel = tData.settings?.clock_state?.currentLevel || 0;
                     const rebuyEndLevel = tData.rebuy_end_level || 99;
@@ -902,7 +902,7 @@ const headers = { 'Content-Type': 'application/json' };
                     venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `Chip count updated: ${chipCount.toLocaleString()} — ${playerName}` });
+                setToast({ type: 'success', text: `Chip count updated: ${chipCount.toLocaleString()} - ${playerName}` });
                 broadcastChange('tables');
                 fetchAll();
             } else {
@@ -980,7 +980,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 };
                 waitForVideo();
             } catch {
-                setToast({ type: 'error', text: 'Camera access denied — check permissions' });
+                setToast({ type: 'error', text: 'Camera access denied - check permissions' });
             }
         }, 300);
     };
@@ -1007,13 +1007,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
         const hasTimed = seatData.some(s => s.time_remaining !== undefined && s.time_remaining !== null);
         const { dealerPos, seatPositions } = computeSeatPositions(maxSeats);
 
-        // Build seat array — merge session data, table_seats data, then fill with anonymous badges
+        // Build seat array - merge session data, table_seats data, then fill with anonymous badges
         const seatArr = Array.from({ length: maxSeats }, (_, i) => {
             const seatNum = i + 1;
-            // Priority 1: session data (from dealer sessions API — has time_remaining)
+            // Priority 1: session data (from dealer sessions API - has time_remaining)
             const session = seatData.find(s => s.seat_number === seatNum);
             if (session) return { number: seatNum, taken: session };
-            // Priority 2: table_seats data (from tables API — has player_name)
+            // Priority 2: table_seats data (from tables API - has player_name)
             const tableSeat = (table.seats || []).find(s => s.seat_number === seatNum && s.status === 'occupied');
             if (tableSeat) return { number: seatNum, taken: { ...tableSeat } };
             return { number: seatNum, taken: null };
@@ -1075,7 +1075,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         )}
                     </div>
 
-                    {/* Dealer badge — card style matching player cards */}
+                    {/* Dealer badge - card style matching player cards */}
                     {(() => {
                         const dealerName = dealerMap[tNum] || game?.dealer_name || 'No Dealer';
                         return (
@@ -1124,7 +1124,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         );
                     })()}
 
-                    {/* Seat badges — matching tables.js avatar style */}
+                    {/* Seat badges - matching tables.js avatar style */}
                     {seatArr.slice(0, seatPositions.length).map((seat, idx) => {
                         const pos = seatPositions[idx];
                         const isOccupied = !!seat.taken;
@@ -1142,7 +1142,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 : 'translate(-50%, -50%)';
                         const badgeDirection = isRightSide ? 'row-reverse' : 'row';
 
-                        // Timer computation — live 1-second countdown (FREEZE when paused/meal_break)
+                        // Timer computation - live 1-second countdown (FREEZE when paused/meal_break)
                         let timerText = null, timerColor = null;
                         const isPausedOrBreak = seat.taken?.session_status === 'paused' || seat.taken?.session_status === 'meal_break';
                         if (isOccupied && seat.taken) {
@@ -1180,13 +1180,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                     setToast({ type: 'error', text: json.error || 'Move failed' });
                                                 }
                                             } else {
-                                                setToast({ type: 'error', text: 'Missing entry data — try refreshing' });
+                                                setToast({ type: 'error', text: 'Missing entry data - try refreshing' });
                                             }
                                             setMovingPlayer(null);
                                         })();
                                         return;
                                     }
-                                    if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied — pick an empty seat' }); return; }
+                                    if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied - pick an empty seat' }); return; }
                                     if (isOccupied) setShowPlayerMenu({ ...seat, tableNumber: tNum });
                                     else openSeatScanner(tNum, seat.number);
                                 } : undefined}
@@ -1219,7 +1219,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     ) : (
                                         <span style={{ fontSize: isFullscreen ? 18 : 16, fontWeight: 600, color: movingPlayer && isFullscreen ? '#22c55e' : '#B0B3B8' }}>{seat.number}</span>
                                     )}
-                                    {/* Missed Blinds Sticker — overlays top-right of avatar */}
+                                    {/* Missed Blinds Sticker - overlays top-right of avatar */}
                                     {isOccupied && (seat.taken?.missed_blinds || 0) > 0 && (
                                         <div style={{
                                             position: 'absolute', top: -4, right: -4,
@@ -1289,7 +1289,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         <div>
                             <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Table Tablets</h1>
                             <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>
-                                {tables.length} tables — {activeTables.length} active • Tap to expand
+                                {tables.length} tables - {activeTables.length} active • Tap to expand
                             </p>
                         </div>
                     </div>
@@ -1388,7 +1388,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         </div>
                     ) : (
                         <>
-                            {/* ACTIVE TOURNAMENT TABLES — amber section */}
+                            {/* ACTIVE TOURNAMENT TABLES - amber section */}
                             {activeTournamentTables.length > 0 && (
                                 <>
                                     <h2 style={{ fontSize: 15, fontWeight: 700, color: '#FFD700', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1408,7 +1408,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                         background: '#1a1a2e', border: '2px solid rgba(255,215,0,0.5)', borderRadius: 16,
                                                         cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' }}>
 
-                                                    {/* Table header — tournament amber gradient */}
+                                                    {/* Table header - tournament amber gradient */}
                                                     <div style={{
                                                         padding: '6px 12px',
                                                         background: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
@@ -1445,7 +1445,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 </>
                             )}
 
-                            {/* ACTIVE CASH TABLES — expanded cards with full table visual */}
+                            {/* ACTIVE CASH TABLES - expanded cards with full table visual */}
                             {activeCashTables.length > 0 && (
                                 <>
                                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1465,7 +1465,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                         background: '#1a1a2e', border: '2px solid rgba(24,119,242,0.3)', borderRadius: 16,
                                                         cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' }}>
 
-                                                    {/* Table header — game info bar */}
+                                                    {/* Table header - game info bar */}
                                                     <div style={{
                                                         padding: '12px 16px',
                                                         background: 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)',
@@ -1510,7 +1510,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 </>
                             )}
 
-                            {/* IDLE TABLES — compact grid */}
+                            {/* IDLE TABLES - compact grid */}
                             {idleTables.length > 0 && (
                                 <>
                                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1538,7 +1538,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#64748B' }}>
                                                         <Armchair size={12} /> {maxSeats} seats
                                                         {table.table_name && table.table_name !== `Table ${tNum}` && (
-                                                            <span>— {table.table_name}</span>
+                                                            <span>- {table.table_name}</span>
                                                         )}
                                                     </div>
                                                 </button>
@@ -1562,10 +1562,10 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
             {/* ── FULLSCREEN TABLE POPUP ── */}
             {fullscreenTable && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#1a1f22', display: 'flex', flexDirection: 'column', animation: 'fullscreenIn 0.2s ease-out', overscrollBehavior: 'none', touchAction: 'manipulation', overflow: 'hidden', height: '100vh', width: '100vw' }}>
-                    {/* NO HEADER in fullscreen — table takes up full screen */}
+                    {/* NO HEADER in fullscreen - table takes up full screen */}
                     {!lockedTable && (
                         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 70, display: 'flex', alignItems: 'center', gap: 10 }}>
-                            {/* Lock button — only on tournament tables, shows Unlock icon since page is unlocked */}
+                            {/* Lock button - only on tournament tables, shows Unlock icon since page is unlocked */}
                             {isTournamentTable(fullscreenTable) && (
                                 <button
                                     onClick={() => { haptic(); lockToTable(fullscreenTable.table_number || fullscreenTable.number); }}
@@ -1600,14 +1600,14 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     borderRadius: 10, padding: '6px 14px', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: 6,
                                     fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}
-                                title="Unlock — requires manager PIN"
+                                title="Unlock - requires manager PIN"
                             >
                                 <Lock size={12} /> Unlock
                             </button>
                         </div>
                     )}
 
-                    {/* Fullscreen table visual — leaves room for bottom icons */}
+                    {/* Fullscreen table visual - leaves room for bottom icons */}
                     <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8px 0 0 0', overflow: 'hidden', position: 'relative', background: '#1a1f22' }}>
                         <div style={{ width: '100%', maxWidth: 1100 }}>
                             {renderTableVisual(fullscreenTable, true)}
@@ -1618,7 +1618,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         {/* BOTTOM-LEFT: Call Floor */}
                         {(() => {
                             const isA = callFloorSent; const _ss = getStaffSession() || ''; const _tk = getToken(); return (
-                                <button disabled={callFloorSending} onClick={!isA ? async () => { haptic('heavy'); setCallFloorSending(true); try { const n = fullscreenTable.table_number || fullscreenTable.number; const r = await commanderFetch('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venue_id: venueId, table_number: n, table_name: fullscreenTable.table_name || `Table ${n}` }) }).then(r => { if (!r.ok) throw new Error('fail'); return r; }); const j = await r.json(); if (j.success) { setCallFloorSent(true); setCallFloorId(j.data?.id || null); setToast({ type: 'success', text: `Floor called — Table ${n}` }); broadcastChange('floor_calls'); } else { setToast({ type: 'error', text: j.error || 'Floor call failed' }); } } catch { setToast({ type: 'error', text: 'Network error' }); } setCallFloorSending(false); } : async () => { haptic(); if (callFloorId) { try { const j = await commanderFetchJSON('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', call_id: callFloorId }) }); if (j.success) { setToast({ type: 'success', text: 'Floor call cancelled' }); broadcastChange('floor_calls'); setCallFloorSent(false); setCallFloorId(null); } else { setToast({ type: 'error', text: j.error || 'Cancel failed' }); } } catch (e) { console.warn("[table-tablets.js]", e); setToast({ type: 'error', text: 'Network error' }); } } }}
+                                <button disabled={callFloorSending} onClick={!isA ? async () => { haptic('heavy'); setCallFloorSending(true); try { const n = fullscreenTable.table_number || fullscreenTable.number; const r = await commanderFetch('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venue_id: venueId, table_number: n, table_name: fullscreenTable.table_name || `Table ${n}` }) }).then(r => { if (!r.ok) throw new Error('fail'); return r; }); const j = await r.json(); if (j.success) { setCallFloorSent(true); setCallFloorId(j.data?.id || null); setToast({ type: 'success', text: `Floor called - Table ${n}` }); broadcastChange('floor_calls'); } else { setToast({ type: 'error', text: j.error || 'Floor call failed' }); } } catch { setToast({ type: 'error', text: 'Network error' }); } setCallFloorSending(false); } : async () => { haptic(); if (callFloorId) { try { const j = await commanderFetchJSON('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', call_id: callFloorId }) }); if (j.success) { setToast({ type: 'success', text: 'Floor call cancelled' }); broadcastChange('floor_calls'); setCallFloorSent(false); setCallFloorId(null); } else { setToast({ type: 'error', text: j.error || 'Cancel failed' }); } } catch (e) { console.warn("[table-tablets.js]", e); setToast({ type: 'error', text: 'Network error' }); } } }}
                                     style={{ position: 'fixed', bottom: 4, left: 4, zIndex: 60, height: '20.25vh', width: '27vh', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, opacity: callFloorSending ? 0.5 : 1, transition: 'opacity 0.2s, transform 0.1s', filter: isA ? 'hue-rotate(320deg) saturate(1.5)' : 'none' }}>
 
                                     <img src='/assets/tablet-buttons/call-floor.png' alt="" style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} loading="lazy" />
@@ -1636,7 +1636,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 </button>);
                         })()}
 
-                        {/* BOTTOM-CENTER: Tournament Clock — only on tournament tables, only when clock overlay is NOT open */}
+                        {/* BOTTOM-CENTER: Tournament Clock - only on tournament tables, only when clock overlay is NOT open */}
                         {fullscreenTable && isTournamentTable(fullscreenTable) && fullscreenTable.tournament_id && !showTournamentClock && (
                             <button onClick={() => { haptic(); const t = fullscreenTable.tournament_id; const U = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; if (!t || !U.test(t)) { console.warn('[SAFEGUARD] Invalid tournament_id:', t); return; } if (!isTournamentTable(fullscreenTable)) { console.warn('[SAFEGUARD] Not tournament table'); return; } setLockedTournamentId(t); setShowTournamentClock(true); }}
                                 style={{ position: 'fixed', top: 4, left: 4, zIndex: 60, height: '20.25vh', width: '27vh', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, transition: 'opacity 0.2s, transform 0.1s' }}>
@@ -1645,7 +1645,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             </button>
                         )}
 
-                        {/* TOP-CENTER: Shot Clock button — only on tournament tables with shot_clock_enabled */}
+                        {/* TOP-CENTER: Shot Clock button - only on tournament tables with shot_clock_enabled */}
                         {fullscreenTable && isTournamentTable(fullscreenTable) && fullscreenTable._tournamentData?.settings?.shot_clock_enabled && (() => {
                             const scDuration = fullscreenTable._tournamentData.settings.shot_clock_seconds || 30;
                             const scActive = shotClockSeconds !== null;
@@ -1661,7 +1661,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         setShotClockSeconds(p => {
                                             if (p <= 0) return p; // Already expired, waiting for reset timeout
                                             if (p <= 1) {
-                                                // Hit zero — schedule auto-reset after brief flash
+                                                // Hit zero - schedule auto-reset after brief flash
                                                 const dur = scDuration;
                                                 setTimeout(() => {
                                                     shotClockVoiceFired.current = false;
@@ -1700,7 +1700,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
 
                     </div>
 
-                    {/* ── TOURNAMENT CLOCK OVERLAY — 1:1 mirror via iframe ──
+                    {/* ── TOURNAMENT CLOCK OVERLAY - 1:1 mirror via iframe ──
                         SAFEGUARD CHAIN:
                         1. lockedTournamentId must exist (set at click-time, UUID-validated)
                         2. fullscreenTable must still be a tournament table
@@ -1715,7 +1715,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             <div style={{
                                 position: 'absolute', inset: 0, zIndex: 10001,
                                 background: '#0D192E', display: 'flex', flexDirection: 'column' }}>
-                                {/* Tournament Table back button — icon only, top-left of overlay */}
+                                {/* Tournament Table back button - icon only, top-left of overlay */}
                                 <button onClick={() => { haptic(); setShowTournamentClock(false); setLockedTournamentId(null); }}
                                     style={{
                                         position: 'absolute', top: 8, left: 8, zIndex: 10002,
@@ -1780,7 +1780,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         );
                     })()}
 
-                    {/* ── SHOT CLOCK OVERLAY — collapsible fullscreen decision timer ── */}
+                    {/* ── SHOT CLOCK OVERLAY - collapsible fullscreen decision timer ── */}
                     {shotClockSeconds !== null && (() => {
                         const secs = shotClockSeconds;
                         const scDuration = fullscreenTable?._tournamentData?.settings?.shot_clock_seconds || 30;
@@ -1897,7 +1897,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
                             background: 'rgba(24,119,242,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
                             boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                            Moving {movingPlayer.player_name} — tap an empty seat
+                            Moving {movingPlayer.player_name} - tap an empty seat
                             <button onClick={() => { haptic(); setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
                                 style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >Cancel</button>
@@ -1987,7 +1987,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         setChipCountInput(null);
                                         setShowPlayerMenu(null);
                                     }} style={{ width: '100%', marginTop: 10, padding: '14px', borderRadius: 12, background: (!rawVal || isNaN(rawVal)) ? '#3A3B3C' : '#FFD700', border: 'none', color: (!rawVal || isNaN(rawVal)) ? '#666' : '#000', fontSize: 16, fontWeight: 800, cursor: (!rawVal || isNaN(rawVal)) ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
-                                        {playerActionLoading ? 'Saving...' : `Save — ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} chips`}
+                                        {playerActionLoading ? 'Saving...' : `Save - ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} chips`}
                                     </button>
                                 </div>
                             );
@@ -2008,7 +2008,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                     <div style={{ width: '90%', maxWidth: 400, aspectRatio: '4/3', borderRadius: 16, overflow: 'hidden', border: '3px solid #1877F2', position: 'relative' }}>
                         <video ref={seatScannerVideoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
                     </div>
-                    {/* Manual entry removed — scan only */}
+                    {/* Manual entry removed - scan only */}
                     <button onClick={() => { haptic(); closeSeatScanner(); }} style={{ marginTop: 12, padding: '14px 48px', borderRadius: 12, background: '#EF4444', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
                 </div>
             )}
@@ -2072,7 +2072,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     </div>
                                 )}
 
-                                {/* Manual entry removed — scan only */}
+                                {/* Manual entry removed - scan only */}
                             </>
                         )}
                     </div>

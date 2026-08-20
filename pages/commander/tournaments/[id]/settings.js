@@ -319,7 +319,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           if (t.entry_count) setEstimatedEntries(t.entry_count);
           else if (t.current_entries) setEstimatedEntries(t.current_entries);
           // 2026-07-30: payout_structure is the canonical jsonb array of { place, pct }.
-          // Legacy rows may still hold a preset-key string (e.g. 'standard') — keep that
+          // Legacy rows may still hold a preset-key string (e.g. 'standard') - keep that
           // as the generator selection. Older drafts used a `custom_payouts` field that is
           // NOT a real column; fall back to it on read so saved payouts round-trip.
           const savedPayouts = Array.isArray(t.payout_structure)
@@ -349,10 +349,10 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
   const addLevel = () => {
     const lastLevel = levels.filter(l => !l.is_break).pop();
     setLevels([...levels, {
-      small_blind: (lastLevel?.small_blind || 500) * 1.5,
-      big_blind: (lastLevel?.big_blind || 1000) * 1.5,
-      ante: (lastLevel?.ante || 100) * 1.5,
-      duration: lastLevel?.duration || 20
+      small_blind: Math.round((lastLevel?.small_blind || 500) * 1.5),
+      big_blind: Math.round((lastLevel?.big_blind || 1000) * 1.5),
+      ante: Math.round((lastLevel?.ante || 100) * 1.5),
+      duration: (lastLevel?.duration ?? lastLevel?.duration_minutes) || 20
     }]);
   };
 
@@ -454,10 +454,10 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
       const json = await res.json();
       if (json.success) {
         setTemplateName('');
-        setToast({ type: 'success', text: 'Template saved.' });
+        setToast({ type: 'success', text: 'Template Saved.' });
         fetchTemplates();
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed to save template.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Save Template.' }); }
     finally { setTemplateBusy(false); }
   };
 
@@ -483,7 +483,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
       setCustomPayouts(tpl.payout_structure.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct != null ? p.pct : p.percentage) || 0 })));
     }
     setShowTemplatePicker(false);
-    setToast({ type: 'success', text: `Loaded template "${tpl.name}".` });
+    setToast({ type: 'success', text: `Loaded Template "${tpl.name}".` });
   };
 
   // ===== SAVE =====
@@ -502,7 +502,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           starting_chips: startingChips,
           max_entries: maxEntries ? parseInt(maxEntries) : null,
           guaranteed_pool: guaranteedPool ? parseInt(guaranteedPool) : null,
-          // 2026-07-25 audit fix: PUT passes fields straight to the DB — use the
+          // 2026-07-25 audit fix: PUT passes fields straight to the DB - use the
           // real column names, not the drifted rebuy_cost/rebuy_levels/addon_cost
           allows_rebuys: rebuyAllowed, rebuy_end_level: rebuyLevels,
           rebuy_amount: rebuyCost, rebuy_chips: rebuyChips,
@@ -517,7 +517,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) { setSaved(true); setTimeout(() => setSaved(false), 2000); broadcastChange('tournaments'); }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Save Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSaving(false); }
   };
 
@@ -531,7 +531,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
     pct: Number(p.pct) || 0,
     amount: Math.round(totalPool * (Number(p.pct) || 0) / 100)
   }));
-  const totalMinutes = levels.reduce((sum, l) => sum + (l.duration || 0), 0);
+  const totalMinutes = levels.reduce((sum, l) => sum + (l.duration ?? l.duration_minutes ?? 0), 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
   const levelCount = levels.filter(l => !l.is_break).length;
   const breakCount = levels.filter(l => l.is_break).length;
@@ -551,7 +551,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
   return (
     <>
       <SEOHead
-        title="Commander — Settings"
+        title="Commander - Settings"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -600,24 +600,24 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)}
-              placeholder="Template name"
+              placeholder="Template Name"
               className="px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-xs text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none w-40 placeholder-[#6A6B6D]" />
             <button onClick={saveAsTemplate} disabled={templateBusy || !templateName.trim()}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1877F2] text-white disabled:opacity-50">
-              {templateBusy ? 'Saving...' : 'Save as Template'}
+              {templateBusy ? 'Saving...' : 'Save As Template'}
             </button>
           </div>
           {showTemplatePicker && (
             <div className="w-full mt-2 border-t border-[#3A3B3C] pt-2">
               {templates.length === 0 ? (
-                <p className="text-xs text-[#64748B]">No saved templates for this venue yet.</p>
+                <p className="text-xs text-[#64748B]">No Saved Templates For This Venue Yet.</p>
               ) : (
                 <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                   {templates.map(tpl => (
                     <button key={tpl.id} onClick={() => loadSavedTemplate(tpl)}
                       className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0D192E] hover:bg-[#132240] text-left">
                       <span className="text-sm text-[#E4E6EB]">{tpl.name}</span>
-                      <span className="text-[10px] text-[#64748B]">{parseBlinds(tpl.blind_structure).filter(l => !l.is_break).length} levels</span>
+                      <span className="text-[10px] text-[#64748B]">{parseBlinds(tpl.blind_structure).filter(l => !l.is_break).length} Levels</span>
                     </button>
                   ))}
                 </div>
@@ -680,8 +680,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     return (
                       <div key={i} className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-3 py-2 flex items-center gap-2">
                         <Coffee className="w-4 h-4 text-[#F59E0B]" />
-                        <span className="text-sm font-medium text-[#F59E0B] flex-1">BREAK</span>
-                        <input type="number" value={level.duration}
+                        <span className="text-sm font-medium text-[#F59E0B] flex-1">{level.label ? level.label.toUpperCase() : 'BREAK'}</span>
+                        <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
                           onChange={e => updateLevel(i, 'duration', e.target.value)}
                           className="w-14 px-2 py-1 bg-[#3A3B3C] rounded text-center text-sm text-white"
                         />
@@ -705,7 +705,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                       <input type="number" value={level.ante}
                         onChange={e => updateLevel(i, 'ante', e.target.value)}
                         className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
-                      <input type="number" value={level.duration}
+                      <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
                         onChange={e => updateLevel(i, 'duration', e.target.value)}
                         className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
                       <div className="flex flex-col">
@@ -757,7 +757,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Clock Color */}
               <div>
                 <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Clock Color</label>
-                <p className="text-[10px] text-[#64748B] mb-2">Assign a unique color to distinguish this tournament's clock display</p>
+                <p className="text-[10px] text-[#64748B] mb-2">Assign A Unique Color To Distinguish This Tournament's Clock Display</p>
                 <div className="grid grid-cols-6 gap-2">
                   {[
                     { key: 'navy', label: 'Navy', from: '#2C3E6B', to: '#1E2D52' },
@@ -799,7 +799,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Late Reg (levels)</label>
+                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Late Reg (Levels)</label>
                   <input type="number" value={lateRegLevels} onChange={e => setLateRegLevels(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
                 </div>
@@ -922,7 +922,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                         }`}>{struct.name.split('(')[0].trim()}</button>
                   ))}
                 </div>
-                <p className="text-[10px] text-[#64748B] mt-2">Presets seed the table below from your estimated entries. Every place and percentage stays editable afterwards.</p>
+                <p className="text-[10px] text-[#64748B] mt-2">Presets Seed The Table Below From Your Estimated Entries. Every Place And Percentage Stays Editable Afterwards.</p>
               </div>
 
               {/* Total allocation validation */}
@@ -931,7 +931,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 : 'bg-[#EF4444]/10 border-[#EF4444]/30'}`}>
                 <span className="text-xs text-[#B0B3B8] uppercase tracking-wider">Total Allocation</span>
                 <span className={`text-sm font-bold ${payoutSumOk ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>
-                  {payoutSum.toFixed(2)}%{payoutSumOk ? '' : ' — must total 100%'}
+                  {payoutSum.toFixed(2)}%{payoutSumOk ? '' : ', Must Total 100%'}
                 </span>
               </div>
 
@@ -970,8 +970,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {guaranteedPool && totalPool < parseInt(guaranteedPool) && (
                 <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-4">
                   <p className="text-sm text-[#EF4444] font-medium">
-                    Pool (${totalPool.toLocaleString()}) is below guarantee (${parseInt(guaranteedPool).toLocaleString()}).
-                    House covers ${(parseInt(guaranteedPool) - totalPool).toLocaleString()} overlay.
+                    Pool (${totalPool.toLocaleString()}) Is Below Guarantee (${parseInt(guaranteedPool).toLocaleString()}).
+                    House Covers ${(parseInt(guaranteedPool) - totalPool).toLocaleString()} Overlay.
                   </p>
                 </div>
               )}

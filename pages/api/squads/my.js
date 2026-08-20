@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
       // Fetch group details for each membership
       // 2026-07-25 audit fix: removed stray .limit(100) chained onto a JS array
-      // (arrays have no .limit — it crashed the endpoint).
+      // (arrays have no .limit - it crashed the endpoint).
       const groupIds = [...new Set((memberships || []).map(m => m.group_id).filter(Boolean))];
 
       let groupsMap = {};

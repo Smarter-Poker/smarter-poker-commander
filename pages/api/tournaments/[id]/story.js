@@ -34,7 +34,7 @@ const TOURNAMENT_GRADIENTS = {
 
 const VALID_STORY_TYPES = ['registered', 'chip_update', 'itm', 'final_table', 'winner', 'bubble', 'custom'];
 
-// Auth: USER — requires authenticated user
+// Auth: USER - requires authenticated user
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -50,20 +50,20 @@ export default async function handler(req, res) {
 
       if (req.method !== 'POST') {
           res.setHeader('Allow', ['POST']);
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // Auth via Bearer token (player auth)
       const authHeader = req.headers.authorization;
       const token = authHeader?.replace('Bearer ', '');
       if (!token) {
-          return res.status(401).json({ success: false, error: 'Authorization required' });
+          return res.status(401).json({ success: false, error: 'Authorization Required' });
       }
 
       const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
       if (authError || !user) {
-          return res.status(401).json({ success: false, error: 'Invalid token' });
+          return res.status(401).json({ success: false, error: 'Invalid Token' });
       }
 
       const { id: tournamentId } = req.query;
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       if (!VALID_STORY_TYPES.includes(story_type)) {
           return res.status(400).json({
               success: false,
-              error: `Invalid story_type. Must be one of: ${VALID_STORY_TYPES.join(', ')}`
+              error: `Invalid story_type. Must Be One Of: ${VALID_STORY_TYPES.join(', ')}`
           });
       }
 
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (tErr || !tournament) {
-              return res.status(404).json({ success: false, error: 'Tournament not found' });
+              return res.status(404).json({ success: false, error: 'Tournament Not Found' });
           }
 
           // Get player's entry to verify participation
@@ -104,7 +104,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (!entry) {
-              return res.status(403).json({ success: false, error: 'You are not registered in this tournament' });
+              return res.status(403).json({ success: false, error: 'You Are Not Registered In This Tournament' });
           }
 
           // Build story content
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
 
           if (storyErr) {
               console.warn('[story.js] Failed to create story:', storyErr);
-              return res.status(500).json({ success: false, error: 'Failed to create story' });
+              return res.status(500).json({ success: false, error: 'Failed To Create Story' });
           }
 
           return res.status(201).json({
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
           });
       } catch (error) {
           console.warn('[story.js] Error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
@@ -161,35 +161,35 @@ function buildStoryContent(type, ctx) {
 
     switch (type) {
         case 'registered':
-            return `Just registered for ${tournamentName}! Let's go! 🏆`;
+            return `Just Registered For ${tournamentName}! Let's Go!`;
 
         case 'chip_update': {
             const chipStr = chipCount ? chipCount.toLocaleString() : '???';
             const blindStr = blinds
-                ? `Level ${(level || 0) + 1} — ${blinds.small_blind?.toLocaleString()}/${blinds.big_blind?.toLocaleString()}`
+                ? `Level ${(level || 0) + 1}, ${blinds.small_blind?.toLocaleString()}/${blinds.big_blind?.toLocaleString()}`
                 : '';
-            return `Sitting on ${chipStr} chips in ${tournamentName}! ${blindStr} 💪`;
+            return `Sitting On ${chipStr} Chips In ${tournamentName}! ${blindStr}`;
         }
 
         case 'itm':
             return payoutAmount
-                ? `IN THE MONEY! 💰 Finished ${addOrdinal(finishPosition)} in ${tournamentName} — $${payoutAmount.toLocaleString()}`
-                : `IN THE MONEY! 💰 Cashed in ${tournamentName}!`;
+                ? `In The Money! Finished ${addOrdinal(finishPosition)} In ${tournamentName}, $${payoutAmount.toLocaleString()}`
+                : `In The Money! Cashed In ${tournamentName}!`;
 
         case 'final_table':
-            return `FINAL TABLE! 🔥 ${tournamentName} — Let's close it out!`;
+            return `Final Table! ${tournamentName}, Let's Close It Out!`;
 
         case 'winner':
             return payoutAmount
-                ? `I WON ${tournamentName}! 🏆🏆🏆 $${payoutAmount.toLocaleString()}`
-                : `I WON ${tournamentName}! 🏆🏆🏆`;
+                ? `I Won ${tournamentName}! $${payoutAmount.toLocaleString()}`
+                : `I Won ${tournamentName}!`;
 
         case 'bubble':
-            return `Bubbled ${tournamentName}. 😤 So close! Next time.`;
+            return `Bubbled ${tournamentName}. So Close! Next Time.`;
 
         case 'custom':
         default:
-            return `Playing in ${tournamentName}!`;
+            return `Playing In ${tournamentName}!`;
     }
 }
 

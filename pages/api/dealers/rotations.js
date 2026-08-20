@@ -55,7 +55,7 @@ async function getRotations(req, res) {
     });
   }
 
-  // Light auth for GET (read-only) — matches tables API pattern
+  // Light auth for GET (read-only) - matches tables API pattern
   const staffSession = req.headers['x-staff-session'];
   if (!staffSession) {
     return res.status(401).json({
@@ -88,7 +88,7 @@ async function getRotations(req, res) {
   const todayStart = `${new Date().toISOString().split('T')[0]}T00:00:00`;
 
   try {
-    // Get active dealer assignments — only dealer_id FK exists in rotations table
+    // Get active dealer assignments - only dealer_id FK exists in rotations table
     // table_number and dealer_name are stored directly as columns
     let rotations = [];
     try {
@@ -151,11 +151,11 @@ async function createRotation(req, res) {
   }
 
   // Accept the dealer tablet's signed x-staff-session (like sibling dealer
-  // routes, e.g. /api/dealers) instead of a JWT-only guard — PIN terminals
+  // routes, e.g. /api/dealers) instead of a JWT-only guard - PIN terminals
   // have no JWT and were previously blocked from managing rotations.
   const staff = await guardWriteStaff(req, res);
   if (!staff) return;
-  // Preserve venue scoping — the session must belong to this venue.
+  // Preserve venue scoping - the session must belong to this venue.
   if (String(staff.venue_id) !== String(venue_id)) {
     return res.status(403).json({
       success: false,

@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
       // Filter by game type
       if (game_type) {
-        // 2026-07-25 audit fix: commander_games.game_type is lowercase now — ilike (no wildcards) = case-insensitive equality
+        // 2026-07-25 audit fix: commander_games.game_type is lowercase now - ilike (no wildcards) = case-insensitive equality
         query = query.ilike('game_type', game_type);
       }
 

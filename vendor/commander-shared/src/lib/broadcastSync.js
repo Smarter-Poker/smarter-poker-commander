@@ -26,7 +26,7 @@ export const BROADCAST_TAB_ID = typeof crypto !== 'undefined' && crypto.randomUU
     ? crypto.randomUUID()
     : `tab_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-/** Debug logger — enabled via localStorage.setItem('broadcast_debug', '1') */
+/** Debug logger - enabled via localStorage.setItem('broadcast_debug', '1') */
 function debugLog(direction, channelName, message) {
     if (typeof localStorage === 'undefined') return;
     try {
@@ -43,7 +43,7 @@ function debugLog(direction, channelName, message) {
 
 /**
  * Fire a one-shot BroadcastChannel message and immediately close.
- * Safe for SSG/SSR — silently no-ops if BroadcastChannel is unavailable.
+ * Safe for SSG/SSR - silently no-ops if BroadcastChannel is unavailable.
  *
  * @param {string} channelName - The channel name to broadcast on
  * @param {*} message - The message payload (string, object, etc.)
@@ -55,7 +55,7 @@ export function broadcastSync(channelName, message = 'refresh') {
         bc.close();
         debugLog('📡 SEND', channelName, message);
     } catch {
-        // BroadcastChannel not supported (SSR, old browsers) — silent no-op
+        // BroadcastChannel not supported (SSR, old browsers) - silent no-op
     }
 }
 
@@ -99,7 +99,7 @@ export function listenBroadcast(channelName, handler) {
             handler(event.data);
         };
     } catch {
-        // BroadcastChannel not supported — silent no-op
+        // BroadcastChannel not supported - silent no-op
     }
     return () => {
         try { bc?.close(); } catch { /* noop */ }

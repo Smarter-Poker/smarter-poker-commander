@@ -50,7 +50,7 @@ const DOCUMENTATION = [
   },
 ];
 
-// 2026-07-25 audit fix: removed the 'API Documentation' link — /commander/docs/api does not exist
+// 2026-07-25 audit fix: removed the 'API Documentation' link - /commander/docs/api does not exist
 const QUICK_LINKS = [
   { label: 'Status Page', href: 'https://status.smarter.poker', icon: ExternalLink, external: true },
   { label: 'Contact Support', href: 'mailto:support@smarter.poker', icon: ExternalLink, external: true },
@@ -61,7 +61,7 @@ export default function DocumentationIndexPage() {
   return (
     <CommanderLayout title="Documentation | Commander" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Documentation"
+        title="Commander - Documentation"
         description="Club Commander Documentation Hub."
         noindex={true}
       />

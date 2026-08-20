@@ -62,7 +62,7 @@ function DealerCard({ dealer, onEdit, onRotate }) {
       {dealer.current_table && (
         <div className="bg-[#1877F2]/5 rounded-lg p-2 mb-3">
           <p className="text-sm text-[#1877F2] font-medium">
-            Currently at Table {dealer.current_table}
+            Currently At Table {dealer.current_table}
           </p>
           <p className="text-xs text-[#B0B3B8]">
             Since {new Date(dealer.rotation_started).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -270,7 +270,7 @@ function RotateModal({ dealer, tables, onSubmit, onClose }) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-white">Table {table.table_number}</p>
-                  <p className="text-sm text-[#B0B3B8]">{table.current_game || 'No game'}</p>
+                  <p className="text-sm text-[#B0B3B8]">{table.current_game || 'No Game'}</p>
                 </div>
                 {selectedTable === table.id && (
                   <Check className="w-5 h-5 text-[#1877F2]" />
@@ -358,7 +358,7 @@ export default function DealersPage() {
     }
   }, [venueId]);
 
-  // Commander Data Bus — sync dealers and tables across tabs
+  // Commander Data Bus - sync dealers and tables across tabs
   useCommanderSync(venueId, () => { fetchDealers(); fetchTables(); fetchRotations(); }, { entities: ['dealers', 'tables'] });
 
   async function fetchDealers(signal) {
@@ -424,7 +424,7 @@ const res = await commanderFetch('/api/commander/dealers', {
       }
     } catch (err) {
       console.warn('Add dealer failed:', err);
-      setToast({ type: 'error', text: 'Failed to add dealer. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Add Dealer. Please Try Again.' });
     }
   }
 
@@ -445,7 +445,7 @@ const res = await commanderFetch(`/api/commander/dealers/${editingDealer.id}`, {
       }
     } catch (err) {
       console.warn('Edit dealer failed:', err);
-      setToast({ type: 'error', text: 'Failed to update dealer. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Update Dealer. Please Try Again.' });
     }
   }
 
@@ -467,11 +467,11 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
       }
     } catch (err) {
       console.warn('Rotate dealer failed:', err);
-      setToast({ type: 'error', text: 'Failed to rotate dealer. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Rotate Dealer. Please Try Again.' });
     }
   }
 
-  // commander_dealers has no current_table/rotation_started columns — derive
+  // commander_dealers has no current_table/rotation_started columns - derive
   // the active table from the open rotation rows (ended_at null) returned by
   // the rotations API, otherwise every dealer always showed as "Available".
   const activeRotationByDealer = {};
@@ -508,7 +508,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
         {/* Action Bar + Tabs */}
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <p className="text-sm text-[#B0B3B8]">
-            {activeDealers.length} active, {availableDealers.length} available
+            {activeDealers.length} Active, {availableDealers.length} Available
           </p>
           {activeTab === 'dealers' && (
             <button
@@ -626,7 +626,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
               <div className="cmd-panel">
                 <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
                   <h2 className="font-semibold text-white">Recent Rotations</h2>
-                  <span className="text-sm text-[#B0B3B8]">{rotations.length} total</span>
+                  <span className="text-sm text-[#B0B3B8]">{rotations.length} Total</span>
                 </div>
 
                 {rotations.length === 0 ? (
@@ -634,7 +634,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
                     <RotateCw className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
                     <p className="text-[#B0B3B8]">No Rotation History Yet</p>
                     <p className="text-sm text-[#3A3B3C] mt-1">
-                      Rotations will appear here when dealers are moved between tables
+                      Rotations Will Appear Here When Dealers Are Moved Between Tables
                     </p>
                   </div>
                 ) : (
@@ -694,7 +694,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
                   <ul className="text-sm text-[#B0B3B8] mt-1 space-y-1">
                     <li>Rotate Dealers Every 30 Minutes To Keep Games Fresh</li>
                     <li>Match Dealer Certifications To Game Types</li>
-                    <li>Track Down-time To Ensure Fair Distribution</li>
+                    <li>Track Down-Time To Ensure Fair Distribution</li>
                   </ul>
                 </div>
               </div>

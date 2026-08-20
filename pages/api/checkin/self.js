@@ -6,7 +6,7 @@
  * previously called the staff-guarded /api/commander/dealer/scan and always
  * 401'd (players have no staff session). This endpoint is intentionally
  * PUBLIC (the QR code IS the authentication), IP rate-limited, and returns
- * only the minimum the page needs — no member PII beyond first name.
+ * only the minimum the page needs - no member PII beyond first name.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { checkMemoryRateLimit } from '../../../src/lib/commander/rateLimit';
@@ -23,10 +23,10 @@ function getSupabase() {
 }
 
 // How long before a repeat scan counts as a NEW check-in (the page polls every
-// 30s — without this window every poll would inflate visit counts).
+// 30s - without this window every poll would inflate visit counts).
 const CHECKIN_DEDUP_MS = 6 * 60 * 60 * 1000; // 6 hours
 
-// Auth: PUBLIC — QR code is the credential; IP rate-limited.
+// Auth: PUBLIC - QR code is the credential; IP rate-limited.
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     // 2026-07-28 audit fix: last_checkin/visit_count are NOT columns of
     // commander_members (the real ones are last_visit/total_visits). Including
     // them made PostgREST reject the whole UPDATE, so self check-ins recorded
-    // nothing at all. The error was also discarded — now surfaced.
+    // nothing at all. The error was also discarded - now surfaced.
     const now = new Date().toISOString();
     const lastVisitMs = member.last_visit ? new Date(member.last_visit).getTime() : 0;
     if (!lastVisitMs || (Date.now() - lastVisitMs) > CHECKIN_DEDUP_MS) {
@@ -107,9 +107,9 @@ export default async function handler(req, res) {
       }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); // Non-fatal if table doesn't exist
     }
 
-    // Already seated? (table/seat only — no PII)
+    // Already seated? (table/seat only - no PII)
     // 2026-07-28 audit fix: commander_table_sessions has no time_remaining
-    // column — selecting it errored the query and the error was dropped, so
+    // column - selecting it errored the query and the error was dropped, so
     // already_seated was always null. time_remaining is DERIVED, using the same
     // formula as pages/api/dealer/sessions/index.js (seconds, floored at 0).
     const { data: existingSessions, error: sessionError } = await getSupabase()

@@ -13,7 +13,7 @@ import DealerTicker from '../../../../src/components/commander/shared/DealerTick
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import useWakeLock from '../../../../src/hooks/useWakeLock';
 import { busEmit } from '../../../../src/engine/EventBus';
-import { getToken, getStaffSession } from '../../../../src/lib/commander/clientAuth';
+import { getToken } from '../../../../src/lib/commander/clientAuth';
 
 export default function SeatingDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-tournaments-id-seating-display'); }, []);
@@ -30,27 +30,26 @@ export default function SeatingDisplay() {
 
     if (!id) return;
     try {
-      const staffSession = typeof window !== 'undefined' ? (getStaffSession() || '') : '';
       const bearerToken = typeof window !== 'undefined' ? (getToken()) : '';
       const headers = { Authorization: `Bearer ${bearerToken}` };
       const [tRes, eRes] = await Promise.all([
         fetch(`/api/commander/tournaments/${id}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
         fetch(`/api/commander/tournaments/${id}/entries`, { headers }).then(r => r.json()).catch(() => ({ success: false }))
       ]);
-      // 2026-07-25 audit fix: unwrap API payloads — data is { tournament } / { entries }
+      // 2026-07-25 audit fix: unwrap API payloads - data is { tournament } / { entries }
       if (tRes.success) setTournament(tRes.data?.tournament || null);
       if (eRes.success) setEntries(eRes.data?.entries || []);
     } catch (err) { console.warn(err); }
     setNow(new Date());
   }, [id]);
 
-  // Supabase Realtime — instant sync when player seating changes
+  // Supabase Realtime - instant sync when player seating changes
   useTournamentRealtime(id, fetchData);
 
   useEffect(() => {
     if (!id) return;
     fetchData();
-    const poll = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [id, fetchData]);
@@ -60,7 +59,7 @@ export default function SeatingDisplay() {
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
 
   // Group active entries by table
-  // 2026-08-04 audit fix: entries use status 'seated' as well — include it so
+  // 2026-08-04 audit fix: entries use status 'seated' as well - include it so
   // seated players appear on the chart.
   const active = entries.filter(e => e.status === 'active' || e.status === 'seated' || e.status === 'playing');
   const byTable = {};
@@ -80,7 +79,7 @@ export default function SeatingDisplay() {
   return (
     <>
       <SEOHead
-        title="Commander — Seating Display"
+        title="Commander - Seating Display"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -95,8 +94,8 @@ export default function SeatingDisplay() {
         {/* Header */}
         <div className="bg-[#1877F2] px-8 py-3 flex items-center justify-between flex-shrink-0">
           <div>
-            <h1 className="text-2xl font-bold">{tournament?.name || 'Tournament'} — Seating Chart</h1>
-            <p className="text-sm opacity-80">{active.length} players — {tableNumbers.filter(t => t !== 'Unassigned').length} tables</p>
+            <h1 className="text-2xl font-bold">{tournament?.name || 'Tournament'} - Seating Chart</h1>
+            <p className="text-sm opacity-80">{active.length} Players, {tableNumbers.filter(t => t !== 'Unassigned').length} Tables</p>
           </div>
           <p className="text-3xl font-mono font-bold tabular-nums">
             {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -121,7 +120,7 @@ export default function SeatingDisplay() {
                     <h3 className={`text-lg font-bold ${isUnassigned ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`}>
                       {isUnassigned ? 'Unassigned' : `Table ${tableNum}`}
                     </h3>
-                    <span className="text-sm text-white/40">{players.length} players</span>
+                    <span className="text-sm text-white/40">{players.length} Players</span>
                   </div>
                   <div className="space-y-1">
                     {players.map(p => (

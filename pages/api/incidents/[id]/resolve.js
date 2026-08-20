@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      // 2026-07-25 audit fix: venue-scope — the incident must belong to the
+      // 2026-07-25 audit fix: venue-scope - the incident must belong to the
       // staff member's venue.
       const { data: existing, error: loadError } = await getSupabase()
         .from('commander_incidents')

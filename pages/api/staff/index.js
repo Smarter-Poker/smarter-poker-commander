@@ -107,7 +107,7 @@ async function handlePost(req, res) {
     const { venue_id: bodyVenueId } = req.body;
 
     // 2026-07-25 audit fix (P0): this handler shipped with its auth deleted
-    // behind a comment claiming middleware covered it — middleware.ts only
+    // behind a comment claiming middleware covered it - middleware.ts only
     // PIN-gates /api/admin/*, NOT /api/staff. Anyone could create an
     // owner-role staff member with a chosen PIN and take over a venue.
     const authResult = await verifyManagerSession(req, bodyVenueId);
@@ -138,7 +138,7 @@ async function handlePost(req, res) {
 
     const display_name = _displayName || name;
 
-    // Validation — require venue_id, role, and either user_id or display_name
+    // Validation - require venue_id, role, and either user_id or display_name
     if (!venue_id || !role) {
       return res.status(400).json({
         success: false,
@@ -213,7 +213,7 @@ async function handlePost(req, res) {
       }
     }
 
-    // Create staff record — user_id is optional for name-only employees
+    // Create staff record - user_id is optional for name-only employees
     // Check for duplicate PIN at this venue
     if (pin_code) {
       // Duplicate-PIN check happens in the database via fn_staff_pin_taken, which
@@ -270,7 +270,7 @@ async function handlePost(req, res) {
           photo_url: photo_url || null,
           membership_tier: 'staff',
           membership_status: 'active',
-          notes: `Staff member — ${role}`,
+          notes: `Staff member - ${role}`,
         })
         .select('id')
         .maybeSingle();
@@ -316,7 +316,7 @@ async function handlePost(req, res) {
     }
 
     // 2026-07-25 audit fix: reuse the manager session verified at the top of
-    // this handler (previously this was the ONLY auth call — used solely for
+    // this handler (previously this was the ONLY auth call - used solely for
     // audit logging, never to block the write).
     if (authResult.staff) {
       await logAction(AuditActions.STAFF_CREATE, {

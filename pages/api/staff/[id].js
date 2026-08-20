@@ -72,7 +72,7 @@ async function handlePatch(req, res, id) {
     }
 
     // 2026-07-25 audit fix (P0): auth had been deleted behind a comment
-    // claiming middleware covered this route — it does not. Unauthenticated
+    // claiming middleware covered this route - it does not. Unauthenticated
     // callers could escalate roles, reset PINs, or deactivate staff.
     const authResult = await verifyManagerSession(req, target.venue_id);
     if (authResult.error) {
@@ -200,7 +200,7 @@ async function handleDelete(req, res, id) {
       });
     }
 
-    // 2026-07-25 audit fix (P0): auth restored — middleware never covered
+    // 2026-07-25 audit fix (P0): auth restored - middleware never covered
     // this route; anyone could deactivate any staff member (incl. the owner).
     const authResult = await verifyManagerSession(req, target.venue_id);
     if (authResult.error) {

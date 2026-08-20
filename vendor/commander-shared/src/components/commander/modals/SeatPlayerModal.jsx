@@ -87,10 +87,10 @@ export default function SeatPlayerModal({
         broadcastChange('tables');
         broadcastChange('games');
       } else {
-        setError(data.error?.message || 'Failed to seat player');
+        setError(data.error?.message || 'Failed To Seat Player');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -142,7 +142,7 @@ export default function SeatPlayerModal({
             <div className="text-center py-8">
               <p className="text-[#64748B]">No Matching Games Available</p>
               <p className="text-sm text-[#4A5E78] mt-1">
-                Open a {player.stakes} {player.game_type?.toUpperCase()} game first
+                Open A {player.stakes} {player.game_type?.toUpperCase()} Game First
               </p>
             </div>
           ) : (
@@ -170,7 +170,7 @@ export default function SeatPlayerModal({
                           {game.table_name || `Table ${game.table_number}`}
                         </div>
                         <div className={`text-sm ${selectedGame?.id === game.id ? 'text-white/80' : 'text-[#64748B]'}`}>
-                          {game.player_count || 0}/{game.max_players} players
+                          {game.player_count || 0}/{game.max_players} Players
                         </div>
                       </button>
                     ))}
@@ -218,7 +218,7 @@ export default function SeatPlayerModal({
               ) : (
                 <>
                   <UserPlus className="w-5 h-5" />
-                  Seat at Position {selectedSeat || '?'}
+                  Seat At Position {selectedSeat || '?'}
                 </>
               )}
             </button>

@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Control Center
+ * Tournament Director - Control Center
  * /commander/td/[tournamentId]
  * Main command screen for the TD holding a tablet on the floor
  * Shows: tournament header, stats, alerts, activity feed
@@ -91,7 +91,7 @@ export default function TDControlCenter() {
         setError(json.error);
       }
     } catch (err) {
-      if (err.name !== 'AbortError') setError('Failed to load tournament data');
+      if (err.name !== 'AbortError') setError('Failed To Load Tournament Data');
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ export default function TDControlCenter() {
       setMessageModal(false);
     } catch (err) {
       console.warn('Send message failed:', err);
-      setError('Failed to send tournament message. Please try again.');
+      setError('Failed To Send Tournament Message. Please Try Again.');
     } finally {
       setSendingMessage(false);
     }
@@ -151,12 +151,12 @@ export default function TDControlCenter() {
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (!json.success) setToast({ type: 'error', text: json.error || 'Failed to toggle Hand-for-Hand.' });
+      if (!json.success) setToast({ type: 'error', text: json.error || 'Failed To Toggle Hand-For-Hand.' });
       await fetchFloor();
       broadcastChange('tournaments');
     } catch (err) {
       console.warn('H4H toggle failed:', err);
-      setError('Hand-for-Hand toggle failed.');
+      setError('Hand-For-Hand Toggle Failed.');
     }
   };
 
@@ -178,10 +178,10 @@ export default function TDControlCenter() {
       <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
         <div className="bg-[#242526] rounded-xl p-6 text-center max-w-md">
           <AlertTriangle className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" />
-          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament not found'}</p>
+          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament Not Found'}</p>
           <button onClick={() => router.push('/commander/tournaments')}
             className="px-6 py-3 bg-[#1877F2] text-white rounded-lg text-base font-medium">
-            Back to Tournaments
+            Back To Tournaments
           </button>
         </div>
       </div>
@@ -193,9 +193,9 @@ export default function TDControlCenter() {
   const statusConf = STATUS_CONFIG[tournament.status] || STATUS_CONFIG.scheduled;
 
   return (
-    <CommanderLayout title="Commander — Control Center" backHref="/commander/tournament-controls">
+    <CommanderLayout title="Commander - Control Center" backHref="/commander/tournament-controls">
       <SEOHead
-        title="Commander — Control Center"
+        title="Commander - Control Center"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -225,8 +225,8 @@ export default function TDControlCenter() {
             </div>
             <div className="flex items-center gap-1">
               {/* 2026-08-04 audit fix: the announcement modal and H4H handler existed
-                  but nothing opened/invoked them — surface both controls here */}
-              <button onClick={handleHandForHand} title="Toggle Hand-for-Hand"
+                  but nothing opened/invoked them - surface both controls here */}
+              <button onClick={handleHandForHand} title="Toggle Hand-For-Hand"
                 className={`p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C] ${alerts.hand_for_hand ? 'bg-[#EF4444]/10' : ''}`}>
                 <AlertTriangle className={`w-5 h-5 ${alerts.hand_for_hand ? 'text-[#EF4444]' : 'text-[#B0B3B8]'}`} />
               </button>
@@ -264,7 +264,7 @@ export default function TDControlCenter() {
               <div className="flex items-center gap-3 px-4 py-3 bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl">
                 <UserPlus className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
                 <span className="text-[#1877F2] text-sm font-medium">
-                  Late registration open — {stats.levels_until_late_reg_closes} level{stats.levels_until_late_reg_closes !== 1 ? 's' : ''} remaining
+                  Late Registration Open, {stats.levels_until_late_reg_closes} Level{stats.levels_until_late_reg_closes !== 1 ? 's' : ''} Remaining
                 </span>
               </div>
             )}
@@ -277,7 +277,7 @@ export default function TDControlCenter() {
             className="w-full bg-[#1877F2] rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform shadow-lg">
             <div className="flex flex-col items-start gap-1">
               <span className="text-white font-bold text-lg">Tournament Clock</span>
-              <span className="text-white/80 text-xs">Tap to open Fullscreen Mirror display</span>
+              <span className="text-white/80 text-xs">Tap To Open Fullscreen Mirror Display</span>
             </div>
             <Monitor className="w-8 h-8 text-white opacity-90" />
           </button>
@@ -293,7 +293,7 @@ export default function TDControlCenter() {
               </div>
               <div className="flex flex-col items-start">
                 <span className="text-white font-semibold text-base">Add Player</span>
-                <span className="text-[#B0B3B8] text-xs">Register an entrant or re-entry</span>
+                <span className="text-[#B0B3B8] text-xs">Register An Entrant Or Re-Entry</span>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
@@ -329,7 +329,10 @@ export default function TDControlCenter() {
                 <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Prize Pool / Paying</span>
               </div>
               <p className="text-sm font-bold text-white truncate">{formatMoney(tournament.actual_prizepool || stats.prize_pool)}</p>
-              <p className="text-xs text-[#B0B3B8] font-medium">{tournament.paying_places ? `${tournament.paying_places} places paid` : 'Places TBD'}</p>
+              <p className="text-xs text-[#B0B3B8] font-medium">{tournament.paying_places ? `${tournament.paying_places} Places Paid` : 'Places TBD'}</p>
+              {stats.overlay_amount > 0 && (
+                <p className="text-xs text-[#EF4444] font-medium">Overlay {formatMoney(stats.overlay_amount)}</p>
+              )}
             </div>
           </div>
         )}
@@ -434,7 +437,7 @@ export default function TDControlCenter() {
                             <p className="text-sm text-[#E4E6EB] truncate">{e.player_name}</p>
                             <p className="text-xs text-[#B0B3B8] mt-0.5">
                               {isEliminated ? `Eliminated #${e.finish_position || '?'}` :
-                                isAlternate ? 'Added to alternates' :
+                                isAlternate ? 'Added To Alternates' :
                                   isActive ? `Seated T${e.table_number || '?'}-S${e.seat_number || '?'}` :
                                     'Registered'}
                               {e.rebuy_count > 0 ? ` • ${e.rebuy_count}R` : ''}
@@ -447,7 +450,7 @@ export default function TDControlCenter() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-[#B0B3B8]">No activity yet</div>
+                  <div className="p-8 text-center text-[#B0B3B8]">No Activity Yet</div>
                 )}
               </div>
             </div>

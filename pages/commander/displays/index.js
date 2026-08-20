@@ -52,7 +52,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
     return getVenueId();
   });
 
-  // Commander Data Bus — sync tournament list
+  // Commander Data Bus - sync tournament list
   useCommanderSync(venueId, fetchData, { entities: ['tournaments'] });
 
   const getBaseUrl = () => {
@@ -77,7 +77,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
   return (
     <CommanderLayout title="Display Management" backHref="/commander/dashboard?card=displays">
       <SEOHead
-              title="Commander — Displays Hub"
+              title="Commander - Displays Hub"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
@@ -100,7 +100,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                   <li>2. Connect HDMI Receiver To The TV</li>
                   <li>3. Open The Display URL In Chrome On The Source Device</li>
                   <li>4. Click Anywhere To Go Fullscreen</li>
-                  <li>5. Display Auto-refreshes — No Interaction Needed</li>
+                  <li>5. Display Auto-refreshes - No Interaction Needed</li>
                 </ol>
               </div>
             </div>
@@ -140,7 +140,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                   key={t.id}
                   icon={Clock}
                   title={t.name}
-                  description={`${t.status === 'running' ? 'Running' : t.status === 'paused' ? 'Paused' : t.status} — Level ${(t.current_level || 0) + 1}`}
+                  description={`${t.status === 'running' ? 'Running' : t.status === 'paused' ? 'Paused' : t.status} - Level ${(t.current_level || 0) + 1}`}
                   url={`${getBaseUrl()}/commander/tournaments/${t.id}/clock-display`}
                   path={`/commander/tournaments/${t.id}/clock-display`}
                   copied={copied}
@@ -168,7 +168,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Megaphone}
               title="Promotions Board"
-              description="Active Promotions, High Hand Leaderboard, Jackpot Amounts — Auto-rotates"
+              description="Active Promotions, High Hand Leaderboard, Jackpot Amounts - Auto-rotates"
               url={`${getBaseUrl()}/commander/displays/promotions`}
               path="/commander/displays/promotions"
               copied={copied}
@@ -197,14 +197,14 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             Player Table Displays
           </h2>
           <p className="text-xs text-[#B0B3B8] mb-2">
-            Mount at each table — players see their time counting down. URL per table.
+            Mount at each table - players see their time counting down. URL per table.
           </p>
           <div className="space-y-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(t => (
               <DisplayCard
                 key={t}
                 icon={Timer}
-                title={`Table ${t} — Player View`}
+                title={`Table ${t} - Player View`}
                 description={`Live countdown timers for all seated players at Table ${t}`}
                 url={`${getBaseUrl()}/commander/player/${t}`}
                 path={`/commander/player/${t}`}
@@ -257,7 +257,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Trophy}
               title="Leaderboard"
-              description="Player Rankings, Points Leaders, Tournament Wins — Auto-rotates Between Boards"
+              description="Player Rankings, Points Leaders, Tournament Wins - Auto-rotates Between Boards"
               url={`${getBaseUrl()}/commander/displays/leaderboard`}
               path="/commander/displays/leaderboard"
               copied={copied}
@@ -279,7 +279,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                 <div key={`td-${t.id}`}>
                   <DisplayCard
                     icon={Tv}
-                    title={`${t.name} — Structure`}
+                    title={`${t.name} - Structure`}
                     description="Full Blind Schedule With Current Level Highlighted And Auto-scroll"
                     url={`${getBaseUrl()}/commander/tournaments/${t.id}/structure-display`}
                     path={`/commander/tournaments/${t.id}/structure-display`}
@@ -291,7 +291,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                   <div className="h-2" />
                   <DisplayCard
                     icon={Users}
-                    title={`${t.name} — Seating Chart`}
+                    title={`${t.name} - Seating Chart`}
                     description="All Tables With Player Seat Assignments, Chip Counts"
                     url={`${getBaseUrl()}/commander/tournaments/${t.id}/seating-display`}
                     path={`/commander/tournaments/${t.id}/seating-display`}

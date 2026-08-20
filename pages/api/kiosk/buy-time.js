@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     // Staff auth: kiosk devices must present an HMAC-signed staff session.
     // 2026-07-28 audit fix: this route used to JSON.parse the raw x-staff-session
     // header and look the staff row up by sessionData.id with no signature check,
-    // no TTL and no venue scoping — anyone who learned a staff UUID could grant
+    // no TTL and no venue scoping - anyone who learned a staff UUID could grant
     // any member any number of prepaid minutes at any venue. guardStaff routes
     // through verifyStaffSession, which checks the HMAC and enforces the session
     // TTL, and it emits the 401 itself (same shape as the other money routes,
@@ -96,8 +96,8 @@ export default async function handler(req, res) {
       // pages/api/dealer/sessions/[id]/add-time.js implements it: put the minutes
       // on the session clock, then leave the balance alone.
       //
-      // 2026-07-28 audit fix (2): both writes were read-modify-write — select the
-      // value, add in JS, write the sum back — so two concurrent kiosk purchases
+      // 2026-07-28 audit fix (2): both writes were read-modify-write - select the
+      // value, add in JS, write the sum back - so two concurrent kiosk purchases
       // both read the old value and the second write erased the first. Cash was
       // taken twice and one lot of minutes was credited. The purchase-log insert
       // was also a separate statement, so a crash between the two left cash
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
 
       if (purchaseError) {
         // Cash may already have been collected at the kiosk, so make this loud.
-        console.error('[kiosk/buy-time] FAILED to apply time purchase — no minutes granted and no ledger row written:', {
+        console.error('[kiosk/buy-time] FAILED to apply time purchase - no minutes granted and no ledger row written:', {
           member_id,
           venue_id: member.venue_id,
           minutes_purchased: purchasedMinutes,

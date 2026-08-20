@@ -1,5 +1,5 @@
 /**
- * Tournament Settings — Template picker, blind structure editor, defaults
+ * Tournament Settings - Template picker, blind structure editor, defaults
  * Users can select from 7 pre-built templates or create custom ones
  * UI: Dark industrial sci-fi gaming theme, no emojis, Inter font
  */
@@ -140,7 +140,7 @@ export default function TournamentSettingsPage() {
             }
         } catch (err) {
             console.warn('Failed to create tournament:', err);
-            setToast({ type: 'error', text: 'Failed to create tournament. Please try again.' });
+            setToast({ type: 'error', text: 'Failed To Create Tournament. Please Try Again.' });
         } finally {
             setCreating(false);
         }
@@ -157,7 +157,7 @@ export default function TournamentSettingsPage() {
     return (
         <CommanderLayout title={`Tournament Settings | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=tournaments">
             <SEOHead
-                title="Commander — Tournament Settings"
+                title="Commander - Tournament Settings"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />
@@ -169,7 +169,7 @@ export default function TournamentSettingsPage() {
                         <div className="p-3 bg-[#10B981]/10 border border-[#10B981]/30 rounded-lg flex items-center gap-3 animate-fadeIn">
                             <Trophy className="w-5 h-5 text-[#10B981]" />
                             <span className="text-sm text-[#10B981] font-medium">
-                                "{createSuccess}" created and added to schedule. Edit details in Tournament Manager.
+                                "{createSuccess}" Created And Added To Schedule. Edit Details In Tournament Manager.
                             </span>
                         </div>
                     )}
@@ -178,7 +178,7 @@ export default function TournamentSettingsPage() {
                     <div>
                         <h1 className="text-xl font-bold text-white">Tournament Templates</h1>
                         <p className="text-sm text-[#64748B] mt-1">
-                            Choose a pre-built template to instantly create a tournament with expert blind structures, or view the structure details first.
+                            Choose A Pre-Built Template To Instantly Create A Tournament With Expert Blind Structures, Or View The Structure Details First.
                         </p>
                     </div>
 
@@ -192,7 +192,7 @@ export default function TournamentSettingsPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-semibold text-white">Clock Display Preset</h3>
-                                        <p className="text-xs text-[#64748B]">Applied to the TV clock when tournament runs</p>
+                                        <p className="text-xs text-[#64748B]">Applied To The TV Clock When Tournament Runs</p>
                                     </div>
                                 </div>
                                 <select
@@ -200,7 +200,7 @@ export default function TournamentSettingsPage() {
                                     onChange={e => setSelectedPreset(e.target.value)}
                                     className="bg-[#0D192E] border-2 border-[#1E3A5F] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#1877F2] min-w-[200px]"
                                 >
-                                    <option value="">No preset (default theme)</option>
+                                    <option value="">No Preset (Default Theme)</option>
                                     {clockPresets.map(p => (
                                         <option key={p.id} value={p.id}>{p.name}{p.is_default ? ' (Default)' : ''}</option>
                                     ))}
@@ -218,7 +218,7 @@ export default function TournamentSettingsPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-semibold text-white">Shot Clock</h3>
-                                    <p className="text-xs text-[#64748B]">Per-hand decision timer visible on dealer tablets</p>
+                                    <p className="text-xs text-[#64748B]">Per-Hand Decision Timer Visible On Dealer Tablets</p>
                                 </div>
                             </div>
                             <button
@@ -245,7 +245,7 @@ export default function TournamentSettingsPage() {
                                     ))}
                                 </div>
                                 <p className="text-[10px] text-[#64748B] mt-2 flex items-center gap-1">
-                                    <Timer className="w-3 h-3" /> Dealer taps to start/reset. Voice announces "5 seconds" at 5s remaining.
+                                    <Timer className="w-3 h-3" /> Dealer Taps To Start/Reset. Voice Announces "5 Seconds" At 5s Remaining.
                                 </p>
                             </div>
                         )}
@@ -303,7 +303,7 @@ export default function TournamentSettingsPage() {
                                             <div className="mt-2 flex gap-2 flex-wrap">
                                                 {template.bounty_amount > 0 && (
                                                     <span className="px-2 py-0.5 bg-[#EF4444]/10 rounded text-xs text-[#EF4444]">
-                                                        ${template.bounty_amount} bounty
+                                                        ${template.bounty_amount} Bounty
                                                     </span>
                                                 )}
                                                 {template.allows_rebuys && (
@@ -313,7 +313,7 @@ export default function TournamentSettingsPage() {
                                                 )}
                                                 {template.allows_addon && (
                                                     <span className="px-2 py-0.5 bg-[#A855F7]/10 rounded text-xs text-[#A855F7]">
-                                                        Add-on: {formatChips(template.addon_chips)} chips
+                                                        Add-On: {formatChips(template.addon_chips)} Chips
                                                     </span>
                                                 )}
                                             </div>

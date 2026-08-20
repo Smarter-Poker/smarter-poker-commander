@@ -42,7 +42,7 @@ import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/c
 import { createClient } from '@supabase/supabase-js';
 
 /* ─── Supabase client for Realtime (no auth needed for display) ── */
-/* GUARD: createClient must NOT run during SSG — localStorage doesn't exist on server */
+/* GUARD: createClient must NOT run during SSG - localStorage doesn't exist on server */
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 const supabase = (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -90,7 +90,7 @@ function formatDealerTime(startedAt) {
   const now = new Date();
   const diffMs = now - start;
   const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'Just started';
+  if (minutes < 1) return 'Just Started';
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -121,7 +121,7 @@ function QRScannerModal({ onScan, onClose, title, subtitle }) {
         }
       } catch (err) {
         console.warn('Camera error:', err);
-        setError('Camera access denied. Please allow camera access to scan QR codes.');
+        setError('Camera Access Denied. Please Allow Camera Access To Scan QR Codes.');
         return;
       }
 
@@ -180,7 +180,7 @@ function QRScannerModal({ onScan, onClose, title, subtitle }) {
         {title || 'Scan Card'}
       </h2>
       <p style={{ color: '#B0B3B8', fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>
-        {subtitle || 'Hold the member card QR code in front of the camera'}
+        {subtitle || 'Hold The Member Card QR Code In Front Of The Camera'}
       </p>
 
       {error ? (
@@ -265,7 +265,7 @@ function PlayerInfoModal({ player, venueType, onRemove, onClose }) {
           <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>{player.player_name}</p>
           {player.membership_tier && (
             <p style={{ fontSize: '12px', color: '#B0B3B8', marginTop: '4px' }}>
-              {player.membership_tier} member
+              {player.membership_tier} Member
             </p>
           )}
         </div>
@@ -345,7 +345,7 @@ export default function PlayerTableDisplay() {
   useEffect(() => {
     if (!tableNumber) return;
     fetchData();
-    const poll = setInterval(fetchData, 30000); // fallback — Supabase Realtime handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - Supabase Realtime handles instant updates
     return () => clearInterval(poll);
   }, [tableNumber, fetchData]);
 
@@ -364,13 +364,13 @@ export default function PlayerTableDisplay() {
     return () => clearInterval(ticker);
   }, [isTexas]);
 
-  // Commander Data Bus — instant sync for player and dealer changes
+  // Commander Data Bus - instant sync for player and dealer changes
   const [syncVenueId] = useState(() => {
     try { return getStaffData().venue_id; } catch { return table?.venue_id || null; }
   });
   useCommanderSync(syncVenueId || table?.venue_id || '', fetchData, { entities: ['tables', 'dealers'] });
 
-  /* ─── Supabase Realtime — mirrors tablet/[tableNumber].js ──────── */
+  /* ─── Supabase Realtime - mirrors tablet/[tableNumber].js ──────── */
   // Coalesce bursts of change events into a single refetch.
   const refetchTimer = useRef(null);
   const scheduleRefetch = useCallback(() => {
@@ -466,11 +466,11 @@ export default function PlayerTableDisplay() {
 
       if (json.success) {
         setDealer(json.data.dealer);
-        setScanStatus({ type: 'success', message: `${json.data.dealer.name} is now dealing` });
+        setScanStatus({ type: 'success', message: `${json.data.dealer.name} Is Now Dealing` });
         broadcastChange('dealers');
         broadcastChange('tables');
       } else {
-        setScanStatus({ type: 'error', message: json.error || 'Scan failed' });
+        setScanStatus({ type: 'error', message: json.error || 'Scan Failed' });
       }
     } catch (err) {
       setScanStatus({ type: 'error', message: 'Network Error. Please Try Again.' });
@@ -502,12 +502,12 @@ export default function PlayerTableDisplay() {
         const d = json.data;
         setScanStatus({
           type: 'success',
-          message: `${d.player_name} seated at S${d.seat_number}${d.time_allocated_minutes ? ` (${d.time_allocated_minutes}m)` : ''}`
+          message: `${d.player_name} Seated At S${d.seat_number}${d.time_allocated_minutes ? ` (${d.time_allocated_minutes}m)` : ''}`
         });
         setTargetSeat(null);
         broadcastChange('tables');
       } else {
-        setScanStatus({ type: 'error', message: json.error || 'Scan failed' });
+        setScanStatus({ type: 'error', message: json.error || 'Scan Failed' });
       }
     } catch (err) {
       setScanStatus({ type: 'error', message: 'Network Error. Please Try Again.' });
@@ -532,13 +532,13 @@ export default function PlayerTableDisplay() {
 
       if (json.success) {
         const d = json.data;
-        let msg = `${d.player_name} removed (${d.elapsed_minutes}m played)`;
-        if (d.unused_minutes_returned > 0) msg += ` · ${d.unused_minutes_returned}m returned`;
-        if (d.comp_earned > 0) msg += ` · $${d.comp_earned} comp`;
+        let msg = `${d.player_name} Removed (${d.elapsed_minutes}m Played)`;
+        if (d.unused_minutes_returned > 0) msg += ` · ${d.unused_minutes_returned}m Returned`;
+        if (d.comp_earned > 0) msg += ` · $${d.comp_earned} Comp`;
         setScanStatus({ type: 'success', message: msg });
         broadcastChange('tables');
       } else {
-        setScanStatus({ type: 'error', message: json.error || 'Remove failed' });
+        setScanStatus({ type: 'error', message: json.error || 'Remove Failed' });
       }
     } catch (err) {
       setScanStatus({ type: 'error', message: 'Network Error. Please Try Again.' });
@@ -575,7 +575,7 @@ export default function PlayerTableDisplay() {
   return (
     <>
       <SEOHead
-        title="Commander — Details"
+        title="Commander - Details"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -601,7 +601,7 @@ export default function PlayerTableDisplay() {
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Table {tableNumber}</h1>
             <span className="text-sm opacity-80">
-              {table?.game_type || 'NLH'} {table?.stakes || ''} — {players.length}/{maxSeats}
+              {table?.game_type || 'NLH'} {table?.stakes || ''} - {players.length}/{maxSeats}
             </span>
             {!isTexas && (
               <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -731,7 +731,7 @@ export default function PlayerTableDisplay() {
                   style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)' }}>
 
                   {!player ? (
-                    /* Empty seat — tappable to scan player */
+                    /* Empty seat - tappable to scan player */
                     <div
                       className="w-16 h-16 rounded-full bg-white/3 border border-white/8 flex items-center justify-center cursor-pointer empty-seat-pulse"
                       style={{ borderColor: 'rgba(34,211,238,0.15)' }}
@@ -745,7 +745,7 @@ export default function PlayerTableDisplay() {
                       </div>
                     </div>
                   ) : (
-                    /* Occupied seat — tappable for player info */
+                    /* Occupied seat - tappable for player info */
                     <>
                       <div
                         className={`relative w-16 h-16 rounded-full flex items-center justify-center border-2 cursor-pointer ${isExpired ? 'expired-pulse' : ''}`}
@@ -823,10 +823,10 @@ export default function PlayerTableDisplay() {
         <QRScannerModal
           onScan={scanMode === 'dealer' ? handleDealerScan : handlePlayerScan}
           onClose={() => { setShowScanner(false); setTargetSeat(null); }}
-          title={scanMode === 'dealer' ? 'Scan Dealer Card' : `Scan Player Card${targetSeat ? ` — Seat ${targetSeat}` : ''}`}
+          title={scanMode === 'dealer' ? 'Scan Dealer Card' : `Scan Player Card${targetSeat ? `, Seat ${targetSeat}` : ''}`}
           subtitle={scanMode === 'dealer'
-            ? 'Hold the employee card QR code in front of the camera'
-            : 'Hold the player member card QR code in front of the camera'
+            ? 'Hold The Employee Card QR Code In Front Of The Camera'
+            : 'Hold The Player Member Card QR Code In Front Of The Camera'
           }
         />
       )}

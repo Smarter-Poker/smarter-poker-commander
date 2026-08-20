@@ -6,7 +6,7 @@
  * time_remaining = (time_allocated + time_added) * 60 - elapsed_seconds
  * 
  * Both dealer tablet and player display poll this endpoint.
- * No auth guard — tablet is unauthenticated (same as other tablet endpoints).
+ * No auth guard - tablet is unauthenticated (same as other tablet endpoints).
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';

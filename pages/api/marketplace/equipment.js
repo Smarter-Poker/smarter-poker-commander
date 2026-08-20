@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -83,7 +83,7 @@ async function listEquipment(req, res) {
     const { data, error, count } = await query;
 
     if (error) {
-      // Missing-table guard — commander_equipment_rentals migration archived at
+      // Missing-table guard - commander_equipment_rentals migration archived at
       // supabase/migrations/archive/20260127_commander_remaining_tables.sql,
       // never applied. Return empty list with feature_disabled flag.
       if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
@@ -105,7 +105,7 @@ async function listEquipment(req, res) {
       .eq('available', true)
       .limit(100);
 
-    // Array.prototype has no .limit() — slice to cap, in case the dataset is huge
+    // Array.prototype has no .limit() - slice to cap, in case the dataset is huge
     const uniqueCategories = [...new Set(categories?.map(c => c.category).filter(Boolean))].slice(0, 100);
 
     return res.status(200).json({
@@ -168,10 +168,10 @@ async function listForRent(req, res) {
 
     // 2026-07-29 fix: the insert wrote description/weekly_rate/service_area/images/
     // deposit_required, none of which existed on commander_equipment_rentals (7-col
-    // stub), so every POST failed with PGRST204 — the "list for rent" feature never
+    // stub), so every POST failed with PGRST204 - the "list for rent" feature never
     // worked. The columns are added by migration 20260729_equipment_rentals_shape.sql.
     // The `profiles:vendor_id (...)` embed also required a FK that does not exist
-    // (PGRST200), the same one already removed from the GET path above — dropped here.
+    // (PGRST200), the same one already removed from the GET path above - dropped here.
     const { data: equipment, error } = await getSupabase()
       .from('commander_equipment_rentals')
       .insert({

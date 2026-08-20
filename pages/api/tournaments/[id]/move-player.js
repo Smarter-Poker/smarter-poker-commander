@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -30,12 +30,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     try {
@@ -48,12 +48,12 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) {
-        return res.status(404).json({ success: false, error: 'Tournament not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
 
       const { entry_id, to_table, to_seat } = req.body;
       if (!entry_id || to_table === undefined || to_seat === undefined) {
-        return res.status(400).json({ success: false, error: 'entry_id, to_table, and to_seat required' });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'entry_id, to_table, And to_seat Required' } });
       }
 
       // Get the entry
@@ -64,10 +64,10 @@ export default async function handler(req, res) {
         .eq('tournament_id', tournamentId)
         .maybeSingle();
       if (eErr || !entry) {
-        return res.status(404).json({ success: false, error: 'Entry not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
       }
       if (entry.status === 'eliminated') {
-        return res.status(400).json({ success: false, error: 'Cannot move eliminated player' });
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_ELIMINATED', message: 'Cannot Move Eliminated Player' } });
       }
 
       // Check destination seat is not occupied
@@ -78,12 +78,13 @@ export default async function handler(req, res) {
         .eq('table_number', to_table)
         .eq('seat_number', to_seat)
         .in('status', ['active', 'seated'])
+        .neq('id', entry_id)
         .maybeSingle();
 
       if (existing) {
         return res.status(409).json({
           success: false,
-          error: `Seat ${to_seat} at Table ${to_table} is occupied by ${existing.player_name}`
+          error: { code: 'SEAT_OCCUPIED', message: `Seat ${to_seat} At Table ${to_table} Is Occupied By ${existing.player_name}` }
         });
       }
 
@@ -107,7 +108,7 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (uErr) {
-        return res.status(500).json({ success: false, error: 'Failed to move player' });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Move Player' } });
       }
 
       return res.status(200).json({
@@ -125,12 +126,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Move player error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

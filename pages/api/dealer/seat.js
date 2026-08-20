@@ -23,7 +23,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -102,13 +102,13 @@ export default async function handler(req, res) {
       }
 
       // Use all available time from card.
-      // 2026-07-28 audit fix: this allocated `availableTime` — a value read
-      // several statements earlier — onto the new session and then, in a
+      // 2026-07-28 audit fix: this allocated `availableTime` - a value read
+      // several statements earlier - onto the new session and then, in a
       // separate write, set time_balance_minutes to 0. Two concurrent seat
       // requests for the same member both read the same balance, both created a
       // session carrying the full balance, and both zeroed it: the player got
       // the minutes twice for one payment. The seat/duplicate-session checks
-      // above are advisory for the same reason — they read before they write.
+      // above are advisory for the same reason - they read before they write.
       // commander_claim_member_time_minutes locks the member row, reads the
       // balance and zeroes it in one transaction, returning exactly what it
       // took, so only one caller can ever claim a given block of minutes.

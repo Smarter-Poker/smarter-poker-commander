@@ -303,7 +303,7 @@ export default function StreamingPage() {
     }
   }, [router]);
 
-  // fetchStreams declared first — must precede useEffect/useCommanderSync that reference it
+  // fetchStreams declared first - must precede useEffect/useCommanderSync that reference it
   const fetchStreams = useCallback(async (signal) => {
     setLoading(true);
     try {
@@ -329,7 +329,7 @@ const res = await commanderFetch(`/api/commander/streaming?venue_id=${venueId}`,
     }
   }, [venueId, fetchStreams]);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(venueId || '', fetchStreams, { entities: ['streaming'] });
 
   async function handleStartStream(tableId) {

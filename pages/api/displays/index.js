@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -58,7 +58,7 @@ async function handleGet(req, res) {
   }
 
   try {
-    // Verify staff auth — even GET operations should be authenticated
+    // Verify staff auth - even GET operations should be authenticated
     const staffSession = req.headers['x-staff-session'];
     if (!staffSession) {
       return res.status(401).json({

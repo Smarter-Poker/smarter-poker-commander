@@ -41,13 +41,13 @@ export default async function handler(req, res) {
     // as genuine Twilio traffic and could forge SMS delivery statuses.
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
     if (!twilioAuthToken) {
-      console.warn('TWILIO_AUTH_TOKEN not configured — rejecting webhook');
+      console.warn('TWILIO_AUTH_TOKEN not configured - rejecting webhook');
       return res.status(500).json({ error: 'Webhook auth token not configured' });
     }
 
     const twilioSignature = req.headers['x-twilio-signature'];
     if (!twilioSignature) {
-      console.warn('[twilio-webhook] Missing X-Twilio-Signature header — rejecting');
+      console.warn('[twilio-webhook] Missing X-Twilio-Signature header - rejecting');
       return res.status(403).json({ error: 'Missing webhook signature' });
     }
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
       crypto.timingSafeEqual(expected, received);
 
     if (!valid) {
-      console.warn('[twilio-webhook] Invalid signature — possible spoofed request');
+      console.warn('[twilio-webhook] Invalid signature - possible spoofed request');
       return res.status(403).json({ error: 'Invalid webhook signature' });
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -159,7 +159,7 @@ export default async function handler(req, res) {
   }
 }
 
-// Body parsing enabled — Twilio sends form-encoded data
+// Body parsing enabled - Twilio sends form-encoded data
 export const config = {
   api: {
     bodyParser: true

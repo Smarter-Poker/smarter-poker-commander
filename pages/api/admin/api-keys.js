@@ -15,7 +15,7 @@ function getSupabase() {
 }
 
 // commander_api_keys stores key_hash + key_prefix only (verified against
-// information_schema) — raw keys are never persisted. No verifier for these
+// information_schema) - raw keys are never persisted. No verifier for these
 // keys exists in this repo yet; sha256 hex of the full key is the canonical
 // hash, so any future verifier must compare sha256(presentedKey) against
 // key_hash.
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         .maybeSingle();
       if (error) return res.status(500).json({ success: false, error: error.message });
       if (!data) return res.status(500).json({ success: false, error: 'Failed to create API key' });
-      // The raw key is returned exactly once and cannot be recovered later —
+      // The raw key is returned exactly once and cannot be recovered later -
       // only its sha256 hash is stored.
       return res.json({
         success: true,

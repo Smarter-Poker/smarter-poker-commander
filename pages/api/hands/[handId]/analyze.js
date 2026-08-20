@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: OWNER — requires owner role
+// Auth: OWNER - requires owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

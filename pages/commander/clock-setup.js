@@ -1,5 +1,5 @@
 /**
- * Tournament Clock Setup — Named Preset Manager
+ * Tournament Clock Setup - Named Preset Manager
  * Full CRUD for clock display presets saved to Supabase
  * Presets selectable when creating/editing tournaments
  */
@@ -114,7 +114,7 @@ export default function ClockSetup() {
 
     useEffect(() => { if (staff) { const _c = new AbortController(); fetchPresets(_c.signal); return () => _c.abort(); } }, [staff, fetchPresets]);
 
-    // Commander Data Bus — sync clock presets
+    // Commander Data Bus - sync clock presets
     useCommanderSync(staff?.venue_id || '', fetchPresets, { entities: ['tournaments'] });
 
     const startNew = (starterTheme = null) => {
@@ -175,7 +175,7 @@ export default function ClockSetup() {
     };
 
     const handleDelete = async (presetId) => {
-        if (!confirm('Delete this clock preset?')) return;
+        if (!confirm('Delete This Clock Preset?')) return;
         try {
             const res = await commanderFetch(`/api/commander/clock-presets?id=${presetId}`, {
                 method: 'DELETE' });
@@ -184,7 +184,7 @@ export default function ClockSetup() {
                 broadcastChange('tournaments');
                 if (editing?.id === presetId) setEditing(null);
             }
-        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Delete Failed. Please Check Your Connection And Try Again.' }); }
     };
 
     if (!staff) {
@@ -197,7 +197,7 @@ export default function ClockSetup() {
     if (editing) {
         return (
             <CommanderLayout title="Clock Setup | Commander" backHref="/commander/dashboard?card=tournaments">
-                <SEOHead title="Commander — Clock Preset Editor" description="Configure clock display preset" noindex={true} />
+                <SEOHead title="Commander - Clock Preset Editor" description="Configure clock display preset" noindex={true} />
                 <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', fontFamily: "var(--font-inter), sans-serif" }}>
                     <div style={{ maxWidth: 800, margin: '0 auto', padding: '20px 16px' }}>
 
@@ -209,7 +209,7 @@ export default function ClockSetup() {
                                 </div>
                                 <div>
                                     <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{editing === 'new' ? 'New Clock Preset' : 'Edit Preset'}</h1>
-                                    <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>Configure display theme and options</p>
+                                    <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>Configure Display Theme And Options</p>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 8 }}>
@@ -232,7 +232,7 @@ export default function ClockSetup() {
                             />
                             <label style={{ ...labelStyle, marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <input type="checkbox" checked={formDefault} onChange={e => setFormDefault(e.target.checked)} style={{ accentColor: '#1877F2' }} />
-                                Set as Default Preset
+                                Set As Default Preset
                             </label>
                         </div>
 
@@ -305,22 +305,22 @@ export default function ClockSetup() {
                             <p style={sectionTitle}>Display Options</p>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                 {[
-                                    { key: 'show_prize_pool', label: 'Prize Pool', icon: '💰' },
-                                    { key: 'show_payouts', label: 'Payout Bar', icon: '🏆' },
-                                    { key: 'show_icm', label: 'ICM Values', icon: '📊' },
-                                    { key: 'show_chip_chop', label: 'Chip Chop', icon: '✂️' },
-                                    { key: 'show_chip_colors', label: 'Chip Colors', icon: '🎨' },
-                                    { key: 'show_next_round', label: 'Next Round', icon: '⏭' },
-                                    { key: 'show_schedule_preview', label: 'Blind Schedule (Next 5)', icon: '📋' },
-                                    { key: 'show_seating', label: 'Seating Chart', icon: '🪑' },
-                                ].map(({ key, label, icon }) => (
+                                    { key: 'show_prize_pool', label: 'Prize Pool' },
+                                    { key: 'show_payouts', label: 'Payout Bar' },
+                                    { key: 'show_icm', label: 'ICM Values' },
+                                    { key: 'show_chip_chop', label: 'Chip Chop' },
+                                    { key: 'show_chip_colors', label: 'Chip Colors' },
+                                    { key: 'show_next_round', label: 'Next Round' },
+                                    { key: 'show_schedule_preview', label: 'Blind Schedule (Next 5)' },
+                                    { key: 'show_seating', label: 'Seating Chart' },
+                                ].map(({ key, label }) => (
                                     <label key={key} style={{
                                         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
                                         background: formDisplay[key] ? 'rgba(24,119,242,0.1)' : 'rgba(255,255,255,0.03)',
                                         border: `1px solid ${formDisplay[key] ? 'rgba(24,119,242,0.3)' : 'rgba(255,255,255,0.08)'}`,
                                         cursor: 'pointer', transition: 'all 0.2s' }}>
                                         <input type="checkbox" checked={formDisplay[key]} onChange={e => setFormDisplay({ ...formDisplay, [key]: e.target.checked })} style={{ accentColor: '#1877F2' }} />
-                                        <span style={{ fontSize: 12, fontWeight: 500 }}>{icon} {label}</span>
+                                        <span style={{ fontSize: 12, fontWeight: 500 }}>{label}</span>
                                     </label>
                                 ))}
                             </div>
@@ -331,17 +331,17 @@ export default function ClockSetup() {
                             <p style={sectionTitle}>Screen Cycling</p>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                                 <input type="checkbox" checked={formDisplay.screen_cycle_enabled} onChange={e => setFormDisplay({ ...formDisplay, screen_cycle_enabled: e.target.checked })} style={{ accentColor: '#1877F2' }} />
-                                <span style={{ fontSize: 13, fontWeight: 500 }}>Auto-rotate between display screens</span>
+                                <span style={{ fontSize: 13, fontWeight: 500 }}>Auto-Rotate Between Display Screens</span>
                             </label>
                             {formDisplay.screen_cycle_enabled && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <label style={{ fontSize: 12, color: '#64748B' }}>Cycle every</label>
+                                    <label style={{ fontSize: 12, color: '#64748B' }}>Cycle Every</label>
                                     <input
                                         type="number" min="5" max="120" value={formDisplay.screen_cycle_interval}
                                         onChange={e => setFormDisplay({ ...formDisplay, screen_cycle_interval: parseInt(e.target.value) || 15 })}
                                         style={{ ...inputStyle, width: 80 }}
                                     />
-                                    <label style={{ fontSize: 12, color: '#64748B' }}>seconds</label>
+                                    <label style={{ fontSize: 12, color: '#64748B' }}>Seconds</label>
                                 </div>
                             )}
                         </div>
@@ -357,7 +357,7 @@ export default function ClockSetup() {
                                     style={{ ...inputStyle, cursor: 'pointer' }}
                                 >
                                     {SOUND_PACKS.map(sp => (
-                                        <option key={sp.value} value={sp.value}>{sp.label} — {sp.desc}</option>
+                                        <option key={sp.value} value={sp.value}>{sp.label} - {sp.desc}</option>
                                     ))}
                                 </select>
                             </div>
@@ -379,14 +379,14 @@ export default function ClockSetup() {
                             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                                 <input type="checkbox" checked={formDisplay.burn_in_prevention} onChange={e => setFormDisplay({ ...formDisplay, burn_in_prevention: e.target.checked })} style={{ accentColor: '#1877F2' }} />
                                 <MonitorPlay size={14} color={formDisplay.burn_in_prevention ? '#1877F2' : '#64748B'} />
-                                Burn-in Prevention (subtle pixel shift for OLED/plasma TVs)
+                                Burn-In Prevention (Subtle Pixel Shift For OLED/Plasma TVs)
                             </label>
                         </div>
 
                         {/* Chip Denominations */}
                         <div style={panelStyle}>
                             <p style={sectionTitle}>Chip Denominations</p>
-                            <p style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>Configure chip values and colors shown on the clock display. Obsolete chips auto-dim based on current blinds.</p>
+                            <p style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>Configure Chip Values And Colors Shown On The Clock Display. Obsolete Chips Auto-Dim Based On Current Blinds.</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations).map((chip, idx) => (
                                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -449,13 +449,13 @@ export default function ClockSetup() {
                                 <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <img
                                         src={formDisplay.logo_url}
-                                        alt="Logo preview"
+                                        alt="Logo Preview"
                                         style={{ height: 36, maxWidth: 200, objectFit: 'contain', borderRadius: 4 }}
                                         onError={e => { e.target.style.display = 'none'; }}
                                         loading="lazy"
                                         decoding="async"
                                     />
-                                    <span style={{ fontSize: 11, color: '#64748B' }}>Logo preview</span>
+                                    <span style={{ fontSize: 11, color: '#64748B' }}>Logo Preview</span>
                                 </div>
                             )}
                             <label style={{ ...labelStyle, marginTop: 12 }}>Background Image URL</label>
@@ -471,7 +471,7 @@ export default function ClockSetup() {
     // ======= LIST VIEW =======
     return (
         <CommanderLayout title="Clock Setup | Commander" backHref="/commander/dashboard?card=tournaments">
-            <SEOHead title="Commander — Clock Setup" description="Tournament clock display presets" noindex={true} />
+            <SEOHead title="Commander - Clock Setup" description="Tournament clock display presets" noindex={true} />
             <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', fontFamily: "var(--font-inter), sans-serif" }}>
                 <div style={{ maxWidth: 700, margin: '0 auto', padding: '20px 16px' }}>
 
@@ -483,7 +483,7 @@ export default function ClockSetup() {
                             </div>
                             <div>
                                 <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Clock Presets</h1>
-                                <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>Named themes for tournament clock displays</p>
+                                <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>Named Themes For Tournament Clock Displays</p>
                             </div>
                         </div>
                         <button onClick={() => startNew()} style={btnPrimary}>
@@ -499,8 +499,8 @@ export default function ClockSetup() {
                     ) : presets.length === 0 ? (
                         <div style={{ ...panelStyle, textAlign: 'center', padding: 40 }}>
                             <Palette size={40} color="#4A5E78" style={{ margin: '0 auto 12px' }} />
-                            <p style={{ color: '#64748B', marginBottom: 4 }}>No clock presets yet</p>
-                            <p style={{ color: '#4A5E78', fontSize: 12, marginBottom: 16 }}>Create one or start from a template below</p>
+                            <p style={{ color: '#64748B', marginBottom: 4 }}>No Clock Presets Yet</p>
+                            <p style={{ color: '#4A5E78', fontSize: 12, marginBottom: 16 }}>Create One Or Start From A Template Below</p>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                                 {STARTER_THEMES.map(st => (
                                     <button key={st.name} onClick={() => startNew(st)} style={{
@@ -539,7 +539,7 @@ export default function ClockSetup() {
                                                     preset.display_options?.show_payouts && 'Payouts',
                                                     preset.display_options?.show_schedule_preview && 'Schedule',
                                                     preset.display_options?.screen_cycle_enabled && 'Cycling',
-                                                ].filter(Boolean).join(' • ') || 'Standard display'}
+                                                ].filter(Boolean).join(' • ') || 'Standard Display'}
                                             </p>
                                         </div>
                                         <div style={{ display: 'flex', gap: 4 }}>

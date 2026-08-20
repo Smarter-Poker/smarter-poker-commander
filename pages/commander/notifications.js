@@ -42,16 +42,16 @@ const ANNOUNCEMENT_TYPES = [
 ];
 
 const ANNOUNCEMENT_TEMPLATES = [
-  { emoji: '', name: 'Happy Hour', title: 'Happy Hour', message: 'Happy hour is now in effect! Enjoy drink specials at the bar.', priority: 'high', type: 'promotion' },
-  { emoji: '', name: 'High Hand Bonus', title: 'High Hand Bonus', message: 'High hand bonus is active! Check the board for the current qualifying hand and prize amount.', priority: 'high', type: 'promotion' },
-  { emoji: '', name: 'Dealer Push', title: 'Dealer Push', message: 'Dealer push in progress. Please have your dealer locks and tips ready.', priority: 'normal', type: 'update' },
-  { emoji: '', name: 'Tournament Starting', title: 'Tournament Starting Soon', message: 'Tournament registration is closing soon! Head to the front desk to register.', priority: 'urgent', type: 'event' },
-  { emoji: '', name: 'Food Service', title: 'Food Service Available', message: 'Kitchen is now open! Menus available at your table. Flag down your dealer to place an order.', priority: 'normal', type: 'general' },
-  { emoji: '', name: 'New Game Opening', title: 'New Game Opening', message: 'A new game is opening! Check with the floor for available seats.', priority: 'high', type: 'announcement' },
-  { emoji: '', name: 'Last Call', title: 'Last Call', message: 'Last call for drinks and food. Kitchen closes in 30 minutes.', priority: 'normal', type: 'general' },
-  { emoji: '', name: 'Table Maintenance', title: 'Table Maintenance', message: 'A table is temporarily closed for maintenance. Players will be moved to available seats.', priority: 'low', type: 'maintenance' },
-  { emoji: '', name: 'Special Promotion', title: 'Special Promotion', message: 'Special promotion running today! Ask the front desk for details.', priority: 'high', type: 'promotion' },
-  { emoji: '', name: 'Waitlist Update', title: 'Waitlist Update', message: 'Seats are opening up! If you are on the waitlist, please check in with the front desk.', priority: 'normal', type: 'announcement' },
+  { emoji: '', name: 'Happy Hour', title: 'Happy Hour', message: 'Happy Hour Is Now In Effect! Enjoy Drink Specials At The Bar.', priority: 'high', type: 'promotion' },
+  { emoji: '', name: 'High Hand Bonus', title: 'High Hand Bonus', message: 'High Hand Bonus Is Active! Check The Board For The Current Qualifying Hand And Prize Amount.', priority: 'high', type: 'promotion' },
+  { emoji: '', name: 'Dealer Push', title: 'Dealer Push', message: 'Dealer Push In Progress. Please Have Your Dealer Locks And Tips Ready.', priority: 'normal', type: 'update' },
+  { emoji: '', name: 'Tournament Starting', title: 'Tournament Starting Soon', message: 'Tournament Registration Is Closing Soon! Head To The Front Desk To Register.', priority: 'urgent', type: 'event' },
+  { emoji: '', name: 'Food Service', title: 'Food Service Available', message: 'Kitchen Is Now Open! Menus Available At Your Table. Flag Down Your Dealer To Place An Order.', priority: 'normal', type: 'general' },
+  { emoji: '', name: 'New Game Opening', title: 'New Game Opening', message: 'A New Game Is Opening! Check With The Floor For Available Seats.', priority: 'high', type: 'announcement' },
+  { emoji: '', name: 'Last Call', title: 'Last Call', message: 'Last Call For Drinks And Food. Kitchen Closes In 30 Minutes.', priority: 'normal', type: 'general' },
+  { emoji: '', name: 'Table Maintenance', title: 'Table Maintenance', message: 'A Table Is Temporarily Closed For Maintenance. Players Will Be Moved To Available Seats.', priority: 'low', type: 'maintenance' },
+  { emoji: '', name: 'Special Promotion', title: 'Special Promotion', message: 'Special Promotion Running Today! Ask The Front Desk For Details.', priority: 'high', type: 'promotion' },
+  { emoji: '', name: 'Waitlist Update', title: 'Waitlist Update', message: 'Seats Are Opening Up! If You Are On The Waitlist, Please Check In With The Front Desk.', priority: 'normal', type: 'announcement' },
 ];
 
 export default function NotificationCenter() {
@@ -120,7 +120,7 @@ export default function NotificationCenter() {
         setUnreadCount(prev => Math.max(0, prev - 1));
         broadcastChange('notifications');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   const markAllRead = async () => {
@@ -133,7 +133,7 @@ export default function NotificationCenter() {
         setUnreadCount(0);
         broadcastChange('notifications');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setMarkingAll(false); }
   };
 
@@ -145,7 +145,7 @@ export default function NotificationCenter() {
         setNotifications(prev => prev.filter(n => n.id !== id));
         broadcastChange('notifications');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   // ─── Announcements ───
@@ -164,7 +164,7 @@ export default function NotificationCenter() {
     if (activeTab === 'announcements') fetchAnnouncements();
   }, [activeTab, fetchAnnouncements]);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   const refreshAll = useCallback(() => {
     fetchNotifications();
     fetchAnnouncements();
@@ -202,7 +202,7 @@ export default function NotificationCenter() {
   };
 
   const saveAnnouncement = async () => {
-    if (!formData.message.trim()) return setToast({ type: 'error', text: 'Message is required' });
+    if (!formData.message.trim()) return setToast({ type: 'error', text: 'Message Is Required' });
     setSavingAnnouncement(true);
     // 2026-07-25 audit fix: datetime-local values are local wall-clock strings;
     // convert to ISO (UTC) before sending
@@ -251,13 +251,13 @@ export default function NotificationCenter() {
       broadcastChange('announcements');
     } catch (err) {
       console.warn(err);
-      setToast({ type: 'error', text: err.message || 'Failed to save' });
+      setToast({ type: 'error', text: err.message || 'Failed To Save' });
     }
     finally { setSavingAnnouncement(false); }
   };
 
   const deleteAnnouncement = async (id) => {
-    if (!confirm('Delete this announcement? This cannot be undone.')) return;
+    if (!confirm('Delete This Announcement? This Cannot Be Undone.')) return;
     try {
       const json = await commanderFetchJSON(`/api/commander/announcements?id=${id}`, {
         method: 'DELETE'});
@@ -265,7 +265,7 @@ export default function NotificationCenter() {
         setAnnouncements(prev => prev.filter(a => a.id !== id));
         broadcastChange('announcements');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   const formatTime = (ts) => {
@@ -282,7 +282,7 @@ export default function NotificationCenter() {
   return (
     <CommanderLayout title="Notifications & Announcements" backHref="/commander/dashboard?card=displays">
       <SEOHead
-        title="Commander — Notifications & Announcements"
+        title="Commander - Notifications & Announcements"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -321,13 +321,13 @@ export default function NotificationCenter() {
           <>
             <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
               <div className="flex-1">
-                <p className="text-xs text-[#B0B3B8]">{unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}</p>
+                <p className="text-xs text-[#B0B3B8]">{unreadCount > 0 ? `${unreadCount} Unread` : 'All Caught Up'}</p>
               </div>
               {unreadCount > 0 && (
                 <button onClick={markAllRead} disabled={markingAll}
                   className="px-3 py-2 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium flex items-center gap-1.5 active:bg-[#4A4B4C] disabled:opacity-50">
                   {markingAll ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCheck className="w-3 h-3" />}
-                  Mark all read
+                  Mark All Read
                 </button>
               )}
               {/* 2026-07-25 audit fix: do not pass the click event as an AbortSignal */}
@@ -347,7 +347,7 @@ export default function NotificationCenter() {
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <BellOff className="w-12 h-12 text-[#3A3B3C] mb-3" />
-                <p className="text-[#6A6B6D] text-sm">{filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}</p>
+                <p className="text-[#6A6B6D] text-sm">{filter === 'unread' ? 'No Unread Notifications' : 'No Notifications Yet'}</p>
               </div>
             ) : (
               <div className="px-4 pb-6">
@@ -422,7 +422,7 @@ export default function NotificationCenter() {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
                 <Megaphone size={48} style={{ color: '#3A3B3C', marginBottom: 12 }} />
                 <p style={{ fontSize: 16, fontWeight: 600, color: '#6A6B6D', margin: '0 0 4px' }}>No Announcements</p>
-                <p style={{ fontSize: 13, color: '#4A4B4C', margin: '0 0 20px' }}>Create an announcement to display on room TVs</p>
+                <p style={{ fontSize: 13, color: '#4A4B4C', margin: '0 0 20px' }}>Create An Announcement To Display On Room TVs</p>
                 <button onClick={openCreateForm}
                   style={{
                     padding: '10px 20px', borderRadius: 10, background: '#1877F2', border: 'none',
@@ -546,7 +546,7 @@ export default function NotificationCenter() {
                         fontSize: 13, fontWeight: 600, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                         transition: 'all 0.2s' }}>
-                      {showTemplates ? 'Hide Templates' : 'Use a Template'}
+                      {showTemplates ? 'Hide Templates' : 'Use A Template'}
                       <ChevronDown size={14} style={{ transform: showTemplates ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                     </button>
                     {showTemplates && (
@@ -579,7 +579,7 @@ export default function NotificationCenter() {
                     Title (Optional)
                   </label>
                   <input
-                    type="text" placeholder="e.g. Happy Hour Starting Now"
+                    type="text" placeholder="E.g. Happy Hour Starting Now"
                     value={formData.title}
                     onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
                     style={{
@@ -595,7 +595,7 @@ export default function NotificationCenter() {
                     Message *
                   </label>
                   <textarea
-                    placeholder="Type your announcement message..."
+                    placeholder="Type Your Announcement Message..."
                     value={formData.message}
                     onChange={e => setFormData(p => ({ ...p, message: e.target.value }))}
                     rows={3}
@@ -658,7 +658,7 @@ export default function NotificationCenter() {
                         boxSizing: 'border-box' }}
                     />
                     <p style={{ fontSize: 11, color: '#6A6B6D', marginTop: 4 }}>
-                      Leave blank to publish immediately
+                      Leave Blank To Publish Immediately
                     </p>
                   </div>
                   <div>
@@ -675,7 +675,7 @@ export default function NotificationCenter() {
                         boxSizing: 'border-box' }}
                     />
                     <p style={{ fontSize: 11, color: '#6A6B6D', marginTop: 4 }}>
-                      Leave blank for no expiration
+                      Leave Blank For No Expiration
                     </p>
                   </div>
                 </div>

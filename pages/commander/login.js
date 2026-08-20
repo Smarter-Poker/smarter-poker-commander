@@ -26,7 +26,7 @@ export default function CommanderLogin() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [showReset, setShowReset] = useState(false);
 
-  // SSO bridge state — set when smarter.poker session detected in localStorage
+  // SSO bridge state - set when smarter.poker session detected in localStorage
   const [ssoEmail, setSsoEmail] = useState(null);
   const [ssoLoading, setSsoLoading] = useState(false);
 
@@ -51,7 +51,7 @@ export default function CommanderLogin() {
     // this Commander tab was opened from within smarter.poker, the shared
     // localStorage key should already have the session.
     // NOTE: This only works when both origins share a parent domain AND
-    // the browser allows cross-origin localStorage sharing — which it doesn't.
+    // the browser allows cross-origin localStorage sharing - which it doesn't.
     // For the common case (cross-origin), the hub passes ?hub_token= in the
     // URL when navigating to Commander, which we use below.
     //
@@ -69,7 +69,7 @@ export default function CommanderLogin() {
   }, [router.query.expired, router.query.no_sub]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
-  // Auto-restore session — if user has valid Supabase session + remember flag, skip login
+  // Auto-restore session - if user has valid Supabase session + remember flag, skip login
   useEffect(() => {
     // Show a manual reset button if stuck for > 4s
     const stuckTimeout = setTimeout(() => setShowReset(true), 4000);
@@ -117,12 +117,12 @@ export default function CommanderLogin() {
         if (session) {
           clearTimeout(safetyTimeout);
           clearTimeout(stuckTimeout);
-          // Session valid AND staff data is valid — go straight to dashboard
+          // Session valid AND staff data is valid - go straight to dashboard
           window.location.href = '/commander/dashboard';
           return;
         }
 
-        // Session expired — try to refresh
+        // Session expired - try to refresh
         const { data: { session: refreshed } } = await supabase.auth.refreshSession();
         if (refreshed) {
           clearTimeout(safetyTimeout);
@@ -131,7 +131,7 @@ export default function CommanderLogin() {
           return;
         }
 
-        // Refresh failed — keep commander_remember and staff email for pre-fill
+        // Refresh failed - keep commander_remember and staff email for pre-fill
         localStorage.removeItem('commander_venue');
         localStorage.removeItem('commander_subscription');
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
@@ -177,7 +177,7 @@ export default function CommanderLogin() {
       const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
 
       // Check if user has a commander subscription (server-side to bypass RLS)
-      // CRITICAL FIX: Send JWT Bearer token — check-subscription requires auth (BUG #260)
+      // CRITICAL FIX: Send JWT Bearer token - check-subscription requires auth (BUG #260)
       // 2026-07-25 audit fix: use the /api/commander/* path so this works on
       // BOTH origins (bare /api/check-subscription 404'd when the login page
       // was served through the smarter.poker/commander proxy), and parse the
@@ -210,7 +210,7 @@ export default function CommanderLogin() {
       localStorage.setItem('commander_venue', JSON.stringify(subscription.venue));
       localStorage.setItem('commander_subscription', JSON.stringify(subscription));
 
-      // Dashboard checks for commander_staff — the server now returns an
+      // Dashboard checks for commander_staff - the server now returns an
       // HMAC-SIGNED owner session (2026-07-25 audit fix). Merge display
       // extras locally but NEVER touch the signed fields
       // (user_id/venue_id/role/session_ts/sig) or the signature breaks.
@@ -322,7 +322,7 @@ export default function CommanderLogin() {
       } catch (e) { /* localStorage unavailable */ }
 
       if (!accessToken) {
-        // No local token — fall back to supabase.auth.getSession()
+        // No local token - fall back to supabase.auth.getSession()
         const { data: { session } } = await supabase.auth.getSession();
         accessToken = session?.access_token;
       }
@@ -333,7 +333,7 @@ export default function CommanderLogin() {
         return;
       }
 
-      // Call the hub SSO endpoint — this works when Commander is accessed via
+      // Call the hub SSO endpoint - this works when Commander is accessed via
       // smarter.poker/commander/* rewrite. When accessed directly at
       // commander.smarter.poker, this URL hits the main hub API.
       const hubOrigin = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
@@ -365,7 +365,7 @@ export default function CommanderLogin() {
 
 
   // OAuth return path (/auth/callback redirects here with ?oauth=1 once the
-  // Supabase session is established) — finish the subscription check.
+  // Supabase session is established) - finish the subscription check.
   useEffect(() => {
     if (router.query.oauth !== '1') return;
     (async () => {

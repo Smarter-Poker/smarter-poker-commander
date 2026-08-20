@@ -16,6 +16,9 @@ import { checkAndExecuteAutoBreak } from '../../../../src/lib/commander/tourname
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parsePayoutStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+// Shared pure payout-math helpers (same math the payout screen uses, so the
+// winner's payout here always matches position 1 there).
+import { generatePayoutTable, normalizePayoutSlot } from './payout';
 
 
 let _supabase = null;
@@ -28,7 +31,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -39,13 +42,13 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
 
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     try {
@@ -54,7 +57,11 @@ export default async function handler(req, res) {
       const { entry_id, eliminated_by_id } = req.body;
 
       if (!entry_id) {
-        return res.status(400).json({ success: false, error: 'Entry ID required' });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Entry ID Required' } });
+      }
+
+      if (eliminated_by_id && String(eliminated_by_id) === String(entry_id)) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A Player Cannot Eliminate Themselves' } });
       }
 
       // Get tournament
@@ -65,7 +72,7 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (tournamentError || !tournament) {
-        return res.status(404).json({ success: false, error: 'Tournament not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
 
 
@@ -79,77 +86,77 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (entryError || !entry) {
-        return res.status(404).json({ success: false, error: 'Entry not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
       }
 
       if (entry.status === 'eliminated') {
-        return res.status(400).json({ success: false, error: 'Player already eliminated' });
+        return res.status(400).json({ success: false, error: { code: 'ALREADY_ELIMINATED', message: 'Player Already Eliminated' } });
       }
 
-      // Count remaining players to determine finish position
+      // Count remaining players to determine finish position (this entry
+      // included, so with 5 left the bust takes 5th).
       const { count: remainingCount } = await getSupabase()
         .from('commander_tournament_entries')
         .select('*', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId)
         .in('status', ['seated', 'active'])
 
-      const finishPosition = remainingCount;
+      let finishPosition = remainingCount;
+
+      // Race guard: two near-simultaneous eliminations can read the same
+      // remaining count. If this finish position is already claimed by another
+      // entry, step down to the next unclaimed one (per-entry, so re-entries
+      // that busted earlier keep their own positions).
+      while (finishPosition > 1) {
+        const { count: taken } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('tournament_id', tournamentId)
+          .eq('finish_position', finishPosition)
+          .neq('id', entry_id);
+        if (!taken) break;
+        finishPosition -= 1;
+      }
+
+      // ── Prize pool + payout structure (single source of math, shared with
+      // payout.js so the amounts always agree) ──
+      // collected = entries*buyin + rebuys*rebuy_amount + addons*addon_amount;
+      // pool = actual_prizepool when set, else max(collected, guaranteed_pool).
+      const [totalEntries, totalRebuys, totalAddons] = await Promise.all([
+        getTotalEntries(tournamentId),
+        getTotalRebuys(tournamentId),
+        getTotalAddons(tournamentId)
+      ]);
+      const collectedPool = (totalEntries * (tournament.buyin_amount || 0)) +
+        (totalRebuys * (tournament.rebuy_amount || 0)) +
+        (totalAddons * (tournament.addon_amount || 0));
+      const actualPool = Number(tournament.actual_prizepool) || 0;
+      const effectivePrizePool = actualPool > 0
+        ? actualPool
+        : Math.max(collectedPool, Number(tournament.guaranteed_pool) || 0);
+
+      let payoutStructure = parsePayoutStructure(tournament.payout_structure).map(normalizePayoutSlot);
+      if (payoutStructure.length === 0) {
+        // No saved structure: use the standard field-size-band table so busts
+        // and the payout screen agree.
+        payoutStructure = generatePayoutTable(totalEntries, tournament.paying_places);
+      }
+
+      const payoutForPosition = (position) => {
+        const slot = payoutStructure.find(p => p.position === position);
+        if (!slot) return 0;
+        if (slot.percentage) return Math.floor(effectivePrizePool * slot.percentage / 100);
+        if (slot.amount) return slot.amount;
+        return 0;
+      };
 
       // Calculate payout if in the money
-      const payoutStructure = parsePayoutStructure(tournament.payout_structure);
-      let payoutAmount = 0;
-      let payoutPosition = null;
+      const payoutAmount = payoutForPosition(finishPosition);
+      const payoutPosition = payoutAmount > 0 ? finishPosition : null;
 
-      // Check if this position pays
-      const payoutInfo = payoutStructure.find(p => p.position === finishPosition);
-      if (payoutInfo) {
-        // Calculate prize pool
-        const totalEntries = tournament.current_entries || 0;
-        const totalRebuys = await getTotalRebuys(tournamentId);
-        const totalAddons = await getTotalAddons(tournamentId);
-
-        const prizePool = (totalEntries * tournament.buyin_amount) +
-          (totalRebuys * (tournament.rebuy_amount || 0)) +
-          (totalAddons * (tournament.addon_amount || 0));
-
-        // Guaranteed pool adjustment
-        const effectivePrizePool = Math.max(prizePool, tournament.guaranteed_pool || 0);
-
-        // Calculate payout (percentage or fixed)
-        if (payoutInfo.percentage) {
-          payoutAmount = Math.floor(effectivePrizePool * payoutInfo.percentage / 100);
-        } else if (payoutInfo.amount) {
-          payoutAmount = payoutInfo.amount;
-        }
-
-        payoutPosition = finishPosition;
-      }
-
-      // Handle bounty if applicable
-      let bountiesCollected = 0;
-      if (tournament.bounty_amount && eliminated_by_id) {
-        // Award bounty to eliminator (read current + increment, preserving metadata)
-        const { data: eliminator } = await getSupabase()
-          .from('commander_tournament_entries')
-          .select('bounties_collected, metadata')
-          .eq('id', eliminated_by_id)
-          .maybeSingle();
-
-        await getSupabase()
-          .from('commander_tournament_entries')
-          .update({
-            bounties_collected: (eliminator?.bounties_collected || 0) + 1,
-            metadata: {
-              ...(eliminator?.metadata || {}),
-              last_bounty_at: new Date().toISOString()
-            }
-          })
-          .eq('id', eliminated_by_id);
-
-        bountiesCollected = 1;
-      }
-
-      // Update eliminated player
+      // Update eliminated player. The status predicate makes a double-tap
+      // safe: only an entry still in the tournament can be eliminated, so of
+      // two racing requests exactly one wins and the other gets a 409.
       const { data: eliminated, error: updateError } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
@@ -163,6 +170,7 @@ export default async function handler(req, res) {
           seat_number: null,
         })
         .eq('id', entry_id)
+        .in('status', ['registered', 'seated', 'active'])
         .select(`
           *,
           profiles (id, display_name, avatar_url)
@@ -170,6 +178,40 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (updateError) throw updateError;
+
+      if (!eliminated) {
+        return res.status(409).json({ success: false, error: { code: 'ALREADY_ELIMINATED', message: 'Player Was Already Eliminated By Another Request' } });
+      }
+
+      // Handle bounty if applicable. Runs AFTER the race-guarded elimination
+      // update so the losing side of a double-tap can never award a second
+      // bounty. Scoped to this tournament so a stray entry id from another
+      // tournament can never collect it.
+      let bountiesCollected = 0;
+      if (tournament.bounty_amount && eliminated_by_id) {
+        const { data: eliminator } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('bounties_collected, metadata')
+          .eq('id', eliminated_by_id)
+          .eq('tournament_id', tournamentId)
+          .maybeSingle();
+
+        if (eliminator) {
+          await getSupabase()
+            .from('commander_tournament_entries')
+            .update({
+              bounties_collected: (eliminator.bounties_collected || 0) + 1,
+              metadata: {
+                ...(eliminator.metadata || {}),
+                last_bounty_at: new Date().toISOString()
+              }
+            })
+            .eq('id', eliminated_by_id)
+            .eq('tournament_id', tournamentId);
+
+          bountiesCollected = 1;
+        }
+      }
 
       // Award XP if player cashed
       if (payoutAmount > 0 && entry.player_id) {
@@ -202,27 +244,9 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         if (winner) {
-          // Calculate winner payout
-          const winnerPayout = payoutStructure.find(p => p.position === 1);
-          let winnerAmount = 0;
-
-          if (winnerPayout) {
-            const totalEntries = tournament.current_entries || 0;
-            const totalRebuys = await getTotalRebuys(tournamentId);
-            const totalAddons = await getTotalAddons(tournamentId);
-
-            const prizePool = (totalEntries * tournament.buyin_amount) +
-              (totalRebuys * (tournament.rebuy_amount || 0)) +
-              (totalAddons * (tournament.addon_amount || 0));
-
-            const effectivePrizePool = Math.max(prizePool, tournament.guaranteed_pool || 0);
-
-            if (winnerPayout.percentage) {
-              winnerAmount = Math.floor(effectivePrizePool * winnerPayout.percentage / 100);
-            } else if (winnerPayout.amount) {
-              winnerAmount = winnerPayout.amount;
-            }
-          }
+          // Winner payout: exactly position 1 of the same structure + pool
+          // math used above (and by payout.js), so the numbers always agree.
+          const winnerAmount = payoutForPosition(1);
 
           await getSupabase()
             .from('commander_tournament_entries')
@@ -269,7 +293,7 @@ export default async function handler(req, res) {
       // After a bust, there may now be enough open seats to consolidate a table.
       // This only fires if the re-entry period is already over.
       //
-      // IMPORTANT: Re-fetch tournament here — the status may have changed to 'completed'
+      // IMPORTANT: Re-fetch tournament here - the status may have changed to 'completed'
       // if this was the last elimination. checkAndExecuteAutoBreak gates on status,
       // so using a stale 'running' snapshot would incorrectly try to break the winner's table.
       const { data: freshTournament } = await getSupabase()
@@ -290,21 +314,33 @@ export default async function handler(req, res) {
           finishPosition,
           payoutAmount,
           inTheMoney: payoutAmount > 0,
+          bountiesAwarded: bountiesCollected,
           remainingPlayers: remainingCount - 1,
-          // Included when a table was automatically broken — frontend uses this to print receipts
+          // Included when a table was automatically broken - frontend uses this to print receipts
           auto_break: autoBreakResult || undefined
         }
       });
     } catch (error) {
       console.warn('Eliminate player error:', error);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
+}
+
+// Field size: every non-cancelled entry (re-entries count as fresh entries).
+async function getTotalEntries(tournamentId) {
+  const { count } = await getSupabase()
+    .from('commander_tournament_entries')
+    .select('id', { count: 'exact', head: true })
+    .eq('tournament_id', tournamentId)
+    .neq('status', 'cancelled');
+
+  return count || 0;
 }
 
 async function getTotalRebuys(tournamentId) {
@@ -336,14 +372,14 @@ async function fireEliminationNotification(playerId, tournament, position, payou
   if (isWinner) {
     title = 'Tournament Winner!';
     message = payout
-      ? `Congratulations! You won ${tournamentName}! Prize: $${payout.toLocaleString()}`
-      : `Congratulations! You won ${tournamentName}!`;
+      ? `Congratulations! You Won ${tournamentName}! Prize: $${payout.toLocaleString()}`
+      : `Congratulations! You Won ${tournamentName}!`;
   } else if (payout > 0) {
     title = 'In The Money!';
-    message = `You finished ${addOrdinalSuffix(position)} in ${tournamentName} and won $${payout.toLocaleString()}!`;
+    message = `You Finished ${addOrdinalSuffix(position)} In ${tournamentName} And Won $${payout.toLocaleString()}!`;
   } else {
     title = 'Tournament Result';
-    message = `Thanks for playing ${tournamentName}! You finished ${addOrdinalSuffix(position)}.`;
+    message = `Thanks For Playing ${tournamentName}! You Finished ${addOrdinalSuffix(position)}.`;
   }
 
   await sendPushNotification({
@@ -359,8 +395,8 @@ async function fireEliminationNotification(playerId, tournament, position, payou
 async function createAutoStory(playerId, storyType, tournament, position, payout) {
   const contentMap = {
     itm: payout
-      ? `IN THE MONEY! Finished ${addOrdinalSuffix(position)} in ${tournament.name} — $${payout.toLocaleString()}`
-      : `IN THE MONEY! Cashed in ${tournament.name}!`,
+      ? `IN THE MONEY! Finished ${addOrdinalSuffix(position)} In ${tournament.name}, $${payout.toLocaleString()}`
+      : `IN THE MONEY! Cashed In ${tournament.name}!`,
     winner: payout
       ? `I WON ${tournament.name}! $${payout.toLocaleString()}`
       : `I WON ${tournament.name}!`
@@ -375,7 +411,7 @@ async function createAutoStory(playerId, storyType, tournament, position, payout
     .from('social_stories')
     .insert({
       author_id: playerId,
-      content: contentMap[storyType] || `Playing in ${tournament.name}`,
+      content: contentMap[storyType] || `Playing In ${tournament.name}`,
       media_type: 'text',
       background_color: gradients[storyType] || gradients.itm
     });

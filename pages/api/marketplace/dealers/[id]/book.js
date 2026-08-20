@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires a signed staff session (owner/manager/floor)
+// Auth: STAFF_WRITE - requires a signed staff session (owner/manager/floor)
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

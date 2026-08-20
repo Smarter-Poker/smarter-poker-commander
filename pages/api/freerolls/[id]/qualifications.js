@@ -6,7 +6,7 @@
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 // 2026-07-25 audit fix: verifyStaffSession/getUser imported so GET reads are
-// scoped — staff see the full list, players (Bearer) see only their own row.
+// scoped - staff see the full list, players (Bearer) see only their own row.
 import { guardWriteStaff, verifyStaffSession, getUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
@@ -21,7 +21,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
           });
       }
 
-      // 2026-07-25 audit fix: writes are venue-scoped — staff may only manage
+      // 2026-07-25 audit fix: writes are venue-scoped - staff may only manage
       // qualifications for freerolls at their own venue.
       if (req.method !== 'GET' && guard && guard.venue_id) {
           const { data: freerollRow } = await getSupabase()

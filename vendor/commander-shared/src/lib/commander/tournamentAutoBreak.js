@@ -4,7 +4,7 @@
  *
  * Rules:
  *  - Only fires AFTER the re-entry period has ended:
- *      current_level > max(rebuy_levels || 0, late_registration_levels || 0)
+ *      (current_level + 1) > max(rebuy_end_level || 0, late_registration_levels || 0)
  *  - Before re-entry ends → returns null (manual breaking only)
  *  - Breaks at most ONE table per call (the smallest active table)
  *  - Seat assignments are RANDOMIZED using Fisher-Yates shuffle
@@ -12,14 +12,18 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
-// Lazy getter — prevents SSG/SSR crashes when env vars aren't available at module load time.
+// Lazy getter - prevents SSG/SSR crashes when env vars aren't available at module load time.
+// Missing env vars throw at FIRST USE (never at import) instead of silently
+// building a client against a placeholder host that fails every query.
 let _supabase;
 function getSupabase() {
     if (!_supabase) {
-        _supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-        );
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!url || !key) {
+            throw new Error('[tournamentAutoBreak] Supabase env vars missing: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) are required');
+        }
+        _supabase = createClient(url, key);
     }
     return _supabase;
 }
@@ -37,19 +41,22 @@ function shuffleArray(arr) {
 
 /**
  * Returns true if re-entry/rebuy period has ended.
- * Uses the higher of rebuy_levels or late_registration_levels.
+ * Uses the higher of rebuy_end_level or late_registration_levels.
+ * (rebuy_levels was never a real column - it always read as undefined.)
  *
  * @param {object} tournament - Full tournament row
  * @param {number} currentLevel - Current 0-indexed blind level
  */
 function isReEntryPeriodOver(tournament, currentLevel) {
     const reentryEnd = Math.max(
-        tournament.rebuy_levels || 0,
+        tournament.rebuy_end_level || 0,
         tournament.late_registration_levels || 0
     );
-    // If no re-entry is configured at all (0), the period never existed — still treat as "over"
+    // If no re-entry is configured at all (0), the period never existed - still treat as "over"
     // so auto-break can work from the start.
-    return currentLevel > reentryEnd;
+    // current_level is 0-indexed; rebuy_end_level / late_registration_levels
+    // are 1-indexed level NUMBERS (same comparison as rebuy.js / register.js).
+    return (currentLevel + 1) > reentryEnd;
 }
 
 /**
@@ -229,14 +236,15 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
 
         // ── Release the broken table (ONLY if all players successfully moved) ──
         if (errors.length === 0) {
+            // NOTE: commander_tables has NO updated_at column - including it
+            // makes PostgREST reject the UPDATE and the table is never released.
             const { error: releaseErr } = await getSupabase()
                 .from('commander_tables')
                 .update({
                     mode: 'inactive',
                     tournament_id: null,
                     status: 'available',
-                    assigned_at: null,
-                    updated_at: new Date().toISOString()
+                    assigned_at: null
                 })
                 .eq('venue_id', tournament.venue_id)
                 .eq('tournament_id', tournamentId)
@@ -276,5 +284,9 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
             errors: errors.length > 0 ? errors : undefined
         };
 
-    } catch (err) { console.warn('[App] Handled exception:', err?.message || err); }
+    } catch (err) {
+        console.warn('[App] Handled exception:', err?.message || err);
+        // Callers treat null as "no break occurred" - keep that contract on error.
+        return null;
+    }
 }

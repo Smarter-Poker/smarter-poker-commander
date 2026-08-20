@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -29,17 +29,17 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
-    if (!tournamentId) return res.status(400).json({ success: false, error: 'Tournament ID required' });
+    if (!tournamentId) return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
 
     try {
 
       const { moves } = req.body;
       if (!Array.isArray(moves) || moves.length === 0) {
-        return res.status(400).json({ success: false, error: 'moves array required' });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'moves Array Required' } });
       }
 
       const results = [];
@@ -47,14 +47,17 @@ export default async function handler(req, res) {
       const timestamp = new Date().toISOString();
 
       // --- RACE CONDITION GUARD: Verify all destination seats are still empty ---
+      // (limit raised from 100: a truncated read here silently skipped seats
+      // in large fields and the guard missed real conflicts)
       const { data: conflictingSeats } = await getSupabase()
         .from('commander_tournament_entries')
-        .select('table_number, seat_number, player_name')
+        .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
         .in('status', ['active', 'seated'])
-            .limit(100);
+            .limit(1000);
 
       const occupiedList = (conflictingSeats || []).filter(e =>
+        !moves.some(m => m.entry_id === e.id) &&
         moves.some(m => m.to_table === e.table_number && m.to_seat === e.seat_number)
       );
 
@@ -62,13 +65,13 @@ export default async function handler(req, res) {
         const e = occupiedList[0];
         return res.status(409).json({
           success: false,
-          error: `Balance aborted: Seat ${e.seat_number} at Table ${e.table_number} is now occupied by ${e.player_name}`
+          error: { code: 'SEAT_OCCUPIED', message: `Balance Aborted: Seat ${e.seat_number} At Table ${e.table_number} Is Now Occupied By ${e.player_name}` }
         });
       }
 
       for (const move of moves) {
         if (!move.entry_id || move.to_table === undefined || move.to_seat === undefined) {
-          errors.push({ entry_id: move.entry_id, error: 'Missing to_table or to_seat' });
+          errors.push({ entry_id: move.entry_id, error: 'Missing to_table Or to_seat' });
           continue;
         }
 
@@ -80,7 +83,7 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         if (!entry) {
-          errors.push({ entry_id: move.entry_id, error: 'Entry not found' });
+          errors.push({ entry_id: move.entry_id, error: 'Entry Not Found' });
           continue;
         }
 
@@ -123,12 +126,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Balance execute error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

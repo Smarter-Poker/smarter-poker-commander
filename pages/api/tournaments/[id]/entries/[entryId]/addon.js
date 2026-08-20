@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -30,29 +30,29 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId, entryId } = req.query;
     if (!tournamentId || !entryId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID and Entry ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID And Entry ID Required' } });
     }
 
     try {
       // Staff is already validated by guardWriteStaff at the handler level
 
-      // 2026-07-25 audit fix: addon_cost/addon_level are not real columns —
+      // 2026-07-25 audit fix: addon_cost/addon_level are not real columns -
       // use addon_amount; starting_chips is referenced in the fallback below.
       const { data: tournament } = await getSupabase()
         .from('commander_tournaments')
         .select('id, venue_id, allows_addon, addon_amount, addon_chips, starting_chips')
         .eq('id', tournamentId)
         .maybeSingle();
-      if (!tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (!tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
 
       if (!tournament.allows_addon) {
-        return res.status(400).json({ success: false, error: 'Add-ons not allowed in this tournament' });
+        return res.status(400).json({ success: false, error: { code: 'ADDONS_NOT_ALLOWED', message: 'Add-Ons Not Allowed In This Tournament' } });
       }
 
       const { data: entry } = await getSupabase()
@@ -61,14 +61,14 @@ export default async function handler(req, res) {
         .eq('id', entryId)
         .eq('tournament_id', tournamentId)
         .maybeSingle();
-      if (!entry) return res.status(404).json({ success: false, error: 'Entry not found' });
+      if (!entry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
 
       if (!['active', 'seated'].includes(entry.status)) {
-        return res.status(400).json({ success: false, error: 'Player must be active to take add-on' });
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: 'Player Must Be Active To Take Add-On' } });
       }
 
       if (entry.addon_taken) {
-        return res.status(400).json({ success: false, error: 'Player has already taken their add-on' });
+        return res.status(400).json({ success: false, error: { code: 'ADDON_ALREADY_TAKEN', message: 'Player Has Already Taken Their Add-On' } });
       }
 
       const addonChips = tournament.addon_chips || tournament.starting_chips || 10000;
@@ -103,10 +103,10 @@ export default async function handler(req, res) {
         });
 
       if (uErr) {
-        if (uErr.code === 'P0002') return res.status(404).json({ success: false, error: 'Entry not found' });
-        if (uErr.code === 'P0001') return res.status(400).json({ success: false, error: uErr.message || 'Add-on rejected' });
+        if (uErr.code === 'P0002') return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
+        if (uErr.code === 'P0001') return res.status(400).json({ success: false, error: { code: 'ADDON_REJECTED', message: uErr.message || 'Add-On Rejected' } });
         console.warn('Addon RPC error:', uErr);
-        return res.status(500).json({ success: false, error: 'Failed to process add-on' });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Process Add-On' } });
       }
 
       const updatedEntry = result?.entry || {};
@@ -126,12 +126,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Addon error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

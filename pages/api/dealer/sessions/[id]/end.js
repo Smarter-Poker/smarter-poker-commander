@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       // End the session.
       // 2026-07-28 audit fix: this wrote status='ended' unconditionally, so two
       // concurrent end requests both saw an active session, both ended it and
-      // BOTH ran the refund and auto-comp below — the member got the unused
+      // BOTH ran the refund and auto-comp below - the member got the unused
       // minutes back twice and was comped twice for one session. Atomic
       // arithmetic alone does not fix that; the payout has to belong to
       // whichever caller actually performs the active -> ended transition.

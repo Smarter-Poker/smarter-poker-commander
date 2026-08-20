@@ -90,7 +90,7 @@ export default async function handler(req, res) {
       }
 
       // Verify squad is in forming status (not yet submitted)
-      // 2026-07-25 audit fix: real column is group_status — squad.status was
+      // 2026-07-25 audit fix: real column is group_status - squad.status was
       // always undefined, so every submit 400'd as ALREADY_SUBMITTED.
       if (squad.group_status !== 'forming') {
         return res.status(400).json({
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2026-07-25 audit fix: members DO have member_status — only submit
+      // 2026-07-25 audit fix: members DO have member_status - only submit
       // accepted members, not pending invitations.
       const members = (squad.commander_waitlist_group_members || [])
         .filter(m => !m.member_status || m.member_status === 'active');

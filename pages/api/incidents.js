@@ -4,7 +4,7 @@
  * POST /api/commander/incidents - Create incident (floor call, dispute, etc)
  */
 // 2026-07-25 audit fix: rewritten to match the real commander_incidents schema
-// (incident_type/severity/players_involved/incident_status — the old code wrote
+// (incident_type/severity/players_involved/incident_status - the old code wrote
 // nonexistent type/priority/status/table_number columns) and to authenticate
 // via verifyStaffSession so PIN-terminal staff are not locked out by the
 // Bearer-JWT-only path. Response shape now { success, data: { incidents } }.
@@ -23,7 +23,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — verified staff session (PIN terminal or owner login)
+// Auth: STAFF - verified staff session (PIN terminal or owner login)
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {

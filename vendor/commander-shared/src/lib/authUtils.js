@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * GLOBAL AUTH UTILITY — Bulletproof Authentication for Smarter.Poker
+ * GLOBAL AUTH UTILITY - Bulletproof Authentication for Smarter.Poker
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * This utility provides consistent, AbortError-resistant auth methods for
@@ -20,7 +20,7 @@
  *   const profile = await queryProfiles(userId);
  */
 
-// Supabase credentials — use env vars with hardcoded fallback for production stability
+// Supabase credentials - use env vars with hardcoded fallback for production stability
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbkmacvwxktbh.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MzA4NDQsImV4cCI6MjA4MzMwNjg0NH0.ZGFrUYq7yAbkveFdudh4q_Xk0qN0AZ-jnu4FkX9YKjo';
 
@@ -68,14 +68,14 @@ export function getAuthUser() {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * BULLETPROOF USER RETRIEVAL — 3-Level Fallback Chain
+ * BULLETPROOF USER RETRIEVAL - 3-Level Fallback Chain
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * USE THIS INSTEAD OF supabase.auth.getUser() EVERYWHERE.
  * 
- * Level 1: supabase.auth.getUser() — network call (can fail with AbortError)
- * Level 2: supabase.auth.getSession() — localStorage via Supabase (can fail with navigator.locks)
- * Level 3: getAuthUser() — direct localStorage read (ALWAYS works, immune to AbortError)
+ * Level 1: supabase.auth.getUser() - network call (can fail with AbortError)
+ * Level 2: supabase.auth.getSession() - localStorage via Supabase (can fail with navigator.locks)
+ * Level 3: getAuthUser() - direct localStorage read (ALWAYS works, immune to AbortError)
  * 
  * Usage:
  *   import { getSafeUser } from '@/lib/authUtils';
@@ -107,7 +107,7 @@ export async function getSafeUser(supabaseClient) {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * RESILIENT AUTH GATE — Wait for auth before deciding to redirect
+ * RESILIENT AUTH GATE - Wait for auth before deciding to redirect
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * USE THIS for page-level auth guards. Unlike getAccessToken() which is a
@@ -134,11 +134,11 @@ export async function ensureAuthReady(supabaseClient) {
     const retried = getAuthUser();
     if (retried?.id) return retried;
 
-    // 4. Last resort — full getSafeUser chain (includes getUser network call)
+    // 4. Last resort - full getSafeUser chain (includes getUser network call)
     const safeUser = await getSafeUser(supabaseClient);
     if (safeUser?.id) return safeUser;
 
-    // 5. Session backup recovery — restores from backup if primary was corrupted
+    // 5. Session backup recovery - restores from backup if primary was corrupted
     try {
         const restored = restoreSessionBackup();
         if (restored) {
@@ -155,7 +155,7 @@ export async function ensureAuthReady(supabaseClient) {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * useRequireAuth() — Drop-in hook for protected pages
+ * useRequireAuth() - Drop-in hook for protected pages
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * Replaces the fragile pattern:
@@ -201,7 +201,7 @@ export function useRequireAuth(redirectPath) {
                     }
                     return;
                 }
-                // Cached flag exists but user is gone — clear and do full check
+                // Cached flag exists but user is gone - clear and do full check
                 sessionStorage.removeItem('sp_auth_confirmed');
             }
 
@@ -231,7 +231,7 @@ export function useRequireAuth(redirectPath) {
         if (typeof window === 'undefined') return;
         const handleStorage = (e) => {
             if (e.key === 'smarter-poker-auth' && !e.newValue) {
-                // Auth was cleared in another tab — redirect to login
+                // Auth was cleared in another tab - redirect to login
                 setUser(null);
                 sessionStorage.removeItem('sp_auth_confirmed');
                 const target = redirectPath || router.asPath;
@@ -280,7 +280,7 @@ export function getSessionToken() {
 
 /**
  * Get the access token for authenticated API calls.
- * Alias for getSessionToken — matches the .ts file export name
+ * Alias for getSessionToken - matches the .ts file export name
  * Both files must export this for dynamic import() consistency.
  */
 export function getAccessToken() {
@@ -289,7 +289,7 @@ export function getAccessToken() {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * authedFetch — Drop-in replacement for fetch() that auto-injects Bearer token
+ * authedFetch - Drop-in replacement for fetch() that auto-injects Bearer token
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * USE THIS for internal /api/ route calls instead of raw fetch().
@@ -336,9 +336,9 @@ export async function authedFetch(url, options = {}) {
             }
         } catch (_) { console.warn('[App] Handled exception:', _?.message || _); }
 
-        // Refresh didn't help — clear fast-path so next page does full auth
+        // Refresh didn't help - clear fast-path so next page does full auth
         try { sessionStorage.removeItem('sp_auth_confirmed'); } catch (_) { console.warn('[App] Handled exception:', _?.message || _); }
-        console.warn(`[authedFetch] 401 on ${url} — token refresh failed`);
+        console.warn(`[authedFetch] 401 on ${url} - token refresh failed`);
     }
 
     return response;
@@ -346,7 +346,7 @@ export async function authedFetch(url, options = {}) {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * createAuthedFetcher — SWR-compatible fetcher with auto auth
+ * createAuthedFetcher - SWR-compatible fetcher with auto auth
  * ═══════════════════════════════════════════════════════════════════════════
  * 
  * Drop-in replacement for SWR's default fetcher. Auto-adds Bearer token.
@@ -515,7 +515,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 🛡️ SESSION BACKUP / RESTORE — Last line of defense against accidental logout
+// 🛡️ SESSION BACKUP / RESTORE - Last line of defense against accidental logout
 // ═══════════════════════════════════════════════════════════════════════════
 const AUTH_STORAGE_KEY = 'smarter-poker-auth';
 const AUTH_BACKUP_KEY = 'smarter-poker-auth-backup';

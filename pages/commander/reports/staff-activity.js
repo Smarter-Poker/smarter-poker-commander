@@ -27,7 +27,7 @@ export default function StaffActivity() {
       const { signal } = controller;
       try {
 const json = await commanderFetchJSON('/api/commander/incidents?status=all&limit=50', {});
-        // Incidents API nests under data.incidents — data itself is an object
+        // Incidents API nests under data.incidents - data itself is an object
         if (json.success) setActivities(json.data?.incidents || (Array.isArray(json.data) ? json.data : []));
       } catch (err) { console.warn(err); }
       finally { setLoading(false); }
@@ -75,7 +75,7 @@ const params = new URLSearchParams();
     <CommanderLayout title="Staff Activity" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Staff Activity"
+          title="Commander - Staff Activity"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />

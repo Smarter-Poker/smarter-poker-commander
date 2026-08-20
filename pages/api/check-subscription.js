@@ -7,7 +7,7 @@ import { signStaffSession } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
-// Note: No auth guard — this route is called during login BEFORE staff session exists.
+// Note: No auth guard - this route is called during login BEFORE staff session exists.
 // It has its own inline JWT validation below.
 
 let _supabase = null;
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
           return res.status(405).json({ error: 'Method not allowed' });
       }
 
-      // BUG #260 FIX: Require JWT auth — previously accepted arbitrary userId from body,
+      // BUG #260 FIX: Require JWT auth - previously accepted arbitrary userId from body,
       // allowing anyone to look up any user's subscription details and venue info.
       const token = req.headers.authorization?.replace('Bearer ', '');
       if (!token) {
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
           // Multi-club support (2026-08-19): a user may own several active
           // subscriptions. If the client passes preferred_venue_id (the venue
           // they last switched to via the hamburger switcher), log them into
-          // THAT venue — still filtered by owner_id, so it can never resolve
+          // THAT venue - still filtered by owner_id, so it can never resolve
           // to a venue they don't own. Otherwise fall back to the newest sub.
           const preferredVenueId = req.body?.preferred_venue_id;
 
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
               return res.status(500).json({ error: 'Failed to check subscription' });
           }
 
-          // Preferred venue no longer valid (sub canceled, etc.) — fall back
+          // Preferred venue no longer valid (sub canceled, etc.) - fall back
           if (!subs?.length && preferredVenueId) {
               const fallback = await getSupabase()
                   .from('commander_subscriptions')

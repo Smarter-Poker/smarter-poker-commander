@@ -1,5 +1,5 @@
 /**
- * Tournament Clocks — Multi-Clock Hub
+ * Tournament Clocks - Multi-Clock Hub
  * Supports up to 6 simultaneous tournament clocks for TV/HDMI streaming
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -11,6 +11,19 @@ import { Clock, Monitor, Play, Loader2, Tv } from 'lucide-react';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+
+// Break-aware level label: current_level is an ARRAY INDEX into blind_structure,
+// which interleaves break rows. Count only non-break rows for the display number.
+function levelLabel(t) {
+    let bs = t?.blind_structure;
+    if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = []; } }
+    if (!Array.isArray(bs)) bs = [];
+    const idx = t?.current_level || 0;
+    if (!bs.length) return `Level ${idx + 1}`;
+    const row = bs[idx];
+    if (row?.is_break) return row.label || 'Break';
+    return `Level ${bs.slice(0, idx + 1).filter(l => !l.is_break).length}`;
+}
 
 export default function TournamentClocks() {
   useEffect(() => { busEmit.sessionStart('commander-tournament-clocks'); }, []);
@@ -30,7 +43,7 @@ export default function TournamentClocks() {
     }, []);
 
     const fetchTournaments = useCallback(async () => {
-        // 2026-07-25 audit fix: the list API requires venue_id — omit and it 400s
+        // 2026-07-25 audit fix: the list API requires venue_id - omit and it 400s
         if (!staff?.venue_id) return;
         setLoading(true);
         try {
@@ -47,7 +60,7 @@ export default function TournamentClocks() {
 
     useEffect(() => { if (staff) { const _c = new AbortController(); fetchTournaments(_c.signal); return () => _c.abort(); } }, [staff, fetchTournaments]);
 
-    // Commander Data Bus — sync tournaments across tabs
+    // Commander Data Bus - sync tournaments across tabs
     useCommanderSync(staff?.venue_id || '', fetchTournaments, { entities: ['tournaments'] });
 
     if (!staff) {
@@ -63,7 +76,7 @@ export default function TournamentClocks() {
 
     return (
         <CommanderLayout title="Tournament Clocks | Commander" backHref="/commander/dashboard?card=tournaments">
-            <SEOHead title="Commander — Tournament Clocks" description="Live tournament clocks for TV streaming" noindex={true} />
+            <SEOHead title="Commander - Tournament Clocks" description="Live tournament clocks for TV streaming" noindex={true} />
             <div className="cmd-page">
                 <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
 
@@ -74,7 +87,7 @@ export default function TournamentClocks() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-white">Tournament Clocks</h1>
-                            <p className="text-sm text-[#64748B]">Stream up to 6 clocks to TVs via HDMI</p>
+                            <p className="text-sm text-[#64748B]">Stream Up To 6 Clocks To TVs Via HDMI</p>
                         </div>
                     </div>
 
@@ -84,7 +97,7 @@ export default function TournamentClocks() {
                             <Tv className="w-5 h-5 text-[#1877F2] mt-0.5 flex-shrink-0" />
                             <div className="text-sm text-[#94A3B8]">
                                 <p className="font-semibold text-white mb-1">HDMI Streaming Ready</p>
-                                <p>Open any clock in fullscreen mode, then connect your device to a TV via HDMI transmitter. Each clock runs independently — stream up to 6 tournaments simultaneously on different screens.</p>
+                                <p>Open Any Clock In Fullscreen Mode, Then Connect Your Device To A TV Via HDMI Transmitter. Each Clock Runs Independently, Stream Up To 6 Tournaments Simultaneously On Different Screens.</p>
                             </div>
                         </div>
                     </div>
@@ -104,7 +117,7 @@ export default function TournamentClocks() {
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-white truncate">{t.name}</p>
                                             <p className="text-xs text-[#64748B]">
-                                                Level {t.current_level || 1} • {t.players_remaining || '?'} remaining • {t.status}
+                                                {levelLabel(t)} • {t.players_remaining || '?'} Remaining • {(t.status || '').charAt(0).toUpperCase() + (t.status || '').slice(1).replace(/_/g, ' ')}
                                             </p>
                                         </div>
                                         <button
@@ -146,8 +159,8 @@ export default function TournamentClocks() {
                     {!loading && tournaments.length === 0 && (
                         <div className="cmd-panel p-8 text-center">
                             <Clock className="w-12 h-12 text-[#4A5E78] mx-auto mb-3" />
-                            <p className="text-[#64748B] mb-2">No active tournaments</p>
-                            <p className="text-xs text-[#4A5E78]">Start a tournament from the Tournament Manager to see its clock here.</p>
+                            <p className="text-[#64748B] mb-2">No Active Tournaments</p>
+                            <p className="text-xs text-[#4A5E78]">Start A Tournament From The Tournament Manager To See Its Clock Here.</p>
                         </div>
                     )}
 

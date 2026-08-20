@@ -1,6 +1,6 @@
 /**
  * Check if the logged-in user has Commander access (staff or subscription)
- * Uses service role key to bypass RLS — called by WorldHub to detect Commander accounts
+ * Uses service role key to bypass RLS - called by WorldHub to detect Commander accounts
  * Accepts Bearer token in Authorization header (same pattern as other Commander APIs)
  * Returns { hasAccess: true/false, staff: {...} } 
  */
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
           return res.status(200).json({ hasAccess: false });
       } catch (err) {
           console.warn('[check-access] Error:', err);
-          return res.status(200).json({ hasAccess: false }); // Fail open — don't block the Hub
+          return res.status(200).json({ hasAccess: false }); // Fail open - don't block the Hub
       }
 
   } catch (err) {

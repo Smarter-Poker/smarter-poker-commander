@@ -39,7 +39,7 @@ export default function CombinedDisplay() {
   const [clockSeconds, setClockSeconds] = useState(null);
   const wakeLockRef = useRef(null);
 
-  // 2026-07-25 audit fix: memoize so fetchData's identity is stable — a fresh
+  // 2026-07-25 audit fix: memoize so fetchData's identity is stable - a fresh
   // array every render made fetchData change every render, re-arming the
   // 30s poll effect in a render/fetch loop.
   const panels = useMemo(() => layout.split('+').filter(Boolean), [layout]);
@@ -87,13 +87,13 @@ return { 'x-staff-session': staff };
       }
       await Promise.allSettled(fetches);
     } catch (err) { console.warn(err); }
-    // 2026-07-25 audit fix: removed setNow here — the 1s clock interval
+    // 2026-07-25 audit fix: removed setNow here - the 1s clock interval
     // already updates it, and calling it from fetchData fed the render loop.
   }, [panels, tournament]);
 
   useEffect(() => {
     fetchData();
-    const poll = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => {
       setNow(new Date());
       setClockSeconds(s => s !== null && s > 0 ? s - 1 : s);
@@ -101,7 +101,7 @@ return { 'x-staff-session': staff };
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [fetchData]);
 
-  // Commander Data Bus — instant sync for TV display
+  // Commander Data Bus - instant sync for TV display
   useCommanderSync(venueIdRef.current, fetchData, { entities: ['tables', 'waitlist', 'tournaments', 'settings'] });
 
   // Wake lock
@@ -130,7 +130,7 @@ return { 'x-staff-session': staff };
   return (
     <CommanderLayout title="Combined Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
-              title="Commander — Combined Display"
+              title="Commander - Combined Display"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />

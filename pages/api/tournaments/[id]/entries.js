@@ -22,7 +22,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     const { id: tournamentId } = req.query;
 
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     if (req.method === 'GET') {
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       if (requestedPlayerId && String(requestedPlayerId) !== String(user.id)) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Only staff can register other players' }
+          error: { code: 'AUTH_REQUIRED', message: 'Only Staff Can Register Other Players' }
         });
       }
       return registerPlayer(req, res, tournamentId, { user });
@@ -70,12 +70,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -130,7 +130,7 @@ async function listEntries(req, res, tournamentId) {
     return res.status(200).json({ success: true, data: payload });
   } catch (error) {
     console.warn('List entries error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -158,19 +158,19 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
       .maybeSingle();
 
     if (tournamentError || !tournament) {
-      return res.status(404).json({ success: false, error: 'Tournament not found' });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
     }
 
     // Check if registration is allowed
     if (!['scheduled', 'registering', 'running'].includes(tournament.status)) {
-      return res.status(400).json({ success: false, error: 'Registration is closed for this tournament' });
+      return res.status(400).json({ success: false, error: { code: 'REGISTRATION_CLOSED', message: 'Registration Is Closed For This Tournament' } });
     }
 
     // Check late registration
     // 2026-07-25 audit fix: current_level is 0-indexed, compare level number (current_level + 1)
     if (tournament.status === 'running' && tournament.late_registration_levels != null) {
       if ((tournament.current_level + 1) > tournament.late_registration_levels) {
-        return res.status(400).json({ success: false, error: 'Late registration period has ended' });
+        return res.status(400).json({ success: false, error: { code: 'LATE_REG_CLOSED', message: 'Late Registration Period Has Ended' } });
       }
     }
 
@@ -183,14 +183,14 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
         .in('status', ['registered', 'seated', 'active'])
 
       if (count >= tournament.max_entries) {
-        return res.status(400).json({ success: false, error: 'Tournament is full' });
+        return res.status(400).json({ success: false, error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' } });
       }
     }
 
     // 2026-07-25 audit fix: staff callers may register anyone; Bearer users only themselves
     const effectivePlayerId = player_id || userId;
     if (!isStaffCaller && effectivePlayerId !== userId) {
-      return res.status(403).json({ success: false, error: 'Only staff can register other players' });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only Staff Can Register Other Players' } });
     }
 
     // Check for existing registration
@@ -204,7 +204,7 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
         .maybeSingle();
 
       if (existing) {
-        return res.status(400).json({ success: false, error: 'Player is already registered' });
+        return res.status(400).json({ success: false, error: { code: 'ALREADY_REGISTERED', message: 'Player Is Already Registered' } });
       }
     }
 
@@ -237,7 +237,7 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
     return res.status(201).json({ success: true, data: { entry } });
   } catch (error) {
     console.warn('Register player error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -245,7 +245,7 @@ async function unregisterPlayer(req, res, tournamentId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' } });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -253,13 +253,13 @@ async function unregisterPlayer(req, res, tournamentId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' } });
     }
 
     const { entry_id } = req.body;
 
     if (!entry_id) {
-      return res.status(400).json({ success: false, error: 'Entry ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Entry ID Required' } });
     }
 
     // Get entry
@@ -271,7 +271,7 @@ async function unregisterPlayer(req, res, tournamentId) {
       .maybeSingle();
 
     if (entryError || !entry) {
-      return res.status(404).json({ success: false, error: 'Entry not found' });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
     }
 
     const tournament = entry.commander_tournaments;
@@ -288,7 +288,7 @@ async function unregisterPlayer(req, res, tournamentId) {
         .maybeSingle();
 
       if (!staff) {
-        return res.status(400).json({ success: false, error: 'Cannot unregister after tournament has started' });
+        return res.status(400).json({ success: false, error: { code: 'TOURNAMENT_STARTED', message: 'Cannot Unregister After Tournament Has Started' } });
       }
     }
 
@@ -304,7 +304,7 @@ async function unregisterPlayer(req, res, tournamentId) {
         .maybeSingle();
 
       if (!staff) {
-        return res.status(403).json({ success: false, error: 'Access denied' });
+        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access Denied' } });
       }
     }
 
@@ -315,10 +315,10 @@ async function unregisterPlayer(req, res, tournamentId) {
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, message: 'Player unregistered' });
+    return res.status(200).json({ success: true, message: 'Player Unregistered' });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Unregister player error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

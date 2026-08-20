@@ -73,7 +73,7 @@ export default function BreakManager() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // Real-time sync — instantly reacts to tournament changes from other TD pages
+  // Real-time sync - instantly reacts to tournament changes from other TD pages
   useCommanderSync(venueId, checkBreak, { entities: ['tournaments'] });
 
   // 30s safety poll (debounce ref prevents conflicts with RT pushes)
@@ -99,9 +99,9 @@ export default function BreakManager() {
         broadcastChange('tournaments');
         busEmit.screenShake('heavy');
       } else {
-        setToast({ type: 'error', text: json.error || 'Break failed — please try again.' });
+        setToast({ type: 'error', text: json.error || 'Break Failed. Please Try Again.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Break failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Break Failed. Check Console.' }); }
     finally { setExecuting(false); }
   };
 
@@ -138,7 +138,7 @@ ${receipts.map(r => `<div class="card">
   <div class="venue-name">${r.venue_name || 'Club'}</div>
   ${(r.venue_city || r.venue_state) ? `<div class="venue-location">${[r.venue_city, r.venue_state].filter(Boolean).join(', ')}</div>` : ''}
   <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` — $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
+  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` - $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
   <div class="divider"></div>
   <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
   <div class="divider"></div>
@@ -165,7 +165,7 @@ ${receipts.map(r => `<div class="card">
     <CommanderLayout title="Table Break Receipts" backHref="/commander/dashboard?card=tournaments">
       <>
         <SEOHead
-          title="Commander — Break Manager"
+          title="Commander - Break Manager"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -175,7 +175,7 @@ ${receipts.map(r => `<div class="card">
           <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
             <div className="flex-1">
               <h1 className="text-lg font-bold text-white">Table Break Manager</h1>
-              <p className="text-xs text-[#B0B3B8]">{breakData?.total_players || 0} players across {breakData?.tables_active || 0} tables</p>
+              <p className="text-xs text-[#B0B3B8]">{breakData?.total_players || 0} Players Across {breakData?.tables_active || 0} Tables</p>
             </div>
             <button onClick={checkBreak} className="p-2 rounded-lg active:bg-[#3A3B3C]">
               <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
@@ -190,7 +190,7 @@ ${receipts.map(r => `<div class="card">
                 <div className="bg-[#31A24C]/10 border-2 border-[#31A24C]/30 rounded-2xl p-5 text-center">
                   <Check className="w-12 h-12 text-[#31A24C] mx-auto mb-3" />
                   <h2 className="text-xl font-bold text-white mb-1">Table {executed.table_broken} Broken</h2>
-                  <p className="text-sm text-[#B0B3B8]">{executed.players_moved} players moved to new seats</p>
+                  <p className="text-sm text-[#B0B3B8]">{executed.players_moved} Players Moved To New Seats</p>
                 </div>
 
                 {/* Print button */}
@@ -240,8 +240,8 @@ ${receipts.map(r => `<div class="card">
                         T{t.table_number}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-white">{t.players}/{t.max_seats} players</p>
-                        <p className="text-xs text-[#B0B3B8]">{t.open_seats} open seat{t.open_seats !== 1 ? 's' : ''}</p>
+                        <p className="text-sm font-medium text-white">{t.players}/{t.max_seats} Players</p>
+                        <p className="text-xs text-[#B0B3B8]">{t.open_seats} Open Seat{t.open_seats !== 1 ? 's' : ''}</p>
                       </div>
                       {t.table_number === breakData?.break_table && breakData?.should_break && (
                         <span className="px-3 py-1 rounded-full bg-[#EF4444] text-white text-xs font-bold">BREAK</span>
@@ -288,7 +288,7 @@ ${receipts.map(r => `<div class="card">
                   <div className="bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-2xl p-5 text-center">
                     <Check className="w-10 h-10 text-[#31A24C] mx-auto mb-2" />
                     <h2 className="text-base font-bold text-white mb-1">No Break Needed</h2>
-                    <p className="text-sm text-[#B0B3B8]">{breakData?.reason || 'Tables are balanced'}</p>
+                    <p className="text-sm text-[#B0B3B8]">{breakData?.reason || 'Tables Are Balanced'}</p>
                   </div>
                 )}
               </>

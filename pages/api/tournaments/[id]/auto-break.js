@@ -25,7 +25,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const _g = await guardWriteStaff(req, res); if (!_g) return;
 
     const { id: tournamentId } = req.query;
-    if (!tournamentId) return res.status(400).json({ success: false, error: 'Tournament ID required' });
+    if (!tournamentId) return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
 
     try {
       // Staff is already validated by guardWriteStaff at the handler level
@@ -46,20 +46,20 @@ export default async function handler(req, res) {
         .select('*')
         .eq('id', tournamentId)
         .maybeSingle();
-      if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
       if (req.method === 'GET') return handleCheck(req, res, tournament);
       if (req.method === 'POST') return handleExecute(req, res, tournament);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     } catch (err) {
       console.warn('Auto-break error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -132,7 +132,7 @@ async function handleCheck(req, res, tournament) {
       success: true,
       data: {
         should_break: false,
-        reason: tables.length === 0 ? 'No tournament tables' : 'Only one table remaining — final table',
+        reason: tables.length === 0 ? 'No Tournament Tables' : 'Only One Table Remaining, Final Table',
         tables_active: tables.length,
         total_players: entries.length
       }
@@ -147,12 +147,12 @@ async function handleCheck(req, res, tournament) {
   if (tableStats.length < 2) {
     return res.status(200).json({
       success: true,
-      data: { should_break: false, reason: 'Not enough active tables', tables_active: tableStats.length }
+      data: { should_break: false, reason: 'Not Enough Active Tables', tables_active: tableStats.length }
     });
   }
 
   // If the TD explicitly requests to break a specific table (manual break),
-  // use THAT table as the break candidate — not the auto-detected smallest table.
+  // use THAT table as the break candidate - not the auto-detected smallest table.
   const forceTableNum = req.query.force_table ? parseInt(req.query.force_table) : null;
   const breakCandidate = forceTableNum
     ? tableStats.find(t => t.table_number === forceTableNum) || tableStats[0]
@@ -179,8 +179,8 @@ async function handleCheck(req, res, tournament) {
       players_to_move: playersToMove,
       open_seats_available: totalOpenSeats,
       reason: shouldBreak
-        ? `Table ${breakCandidate.table_number} has ${playersToMove} players, ${totalOpenSeats} open seats available on other tables`
-        : `Need ${playersToMove} open seats but only ${totalOpenSeats} available`,
+        ? `Table ${breakCandidate.table_number} Has ${playersToMove} Players, ${totalOpenSeats} Open Seats Available On Other Tables`
+        : `Need ${playersToMove} Open Seats But Only ${totalOpenSeats} Available`,
       assignments,
       tables_active: tableStats.length,
       total_players: entries.length,
@@ -194,7 +194,7 @@ async function handleCheck(req, res, tournament) {
   });
 }
 
-// Generate optimal seat assignments — distribute players evenly
+// Generate optimal seat assignments - distribute players evenly
 function generateAssignments(playersToMove, destinationTables) {
   const assignments = [];
   // Sort destinations by most open seats first (fill bigger gaps first)
@@ -235,7 +235,7 @@ async function handleExecute(req, res, tournament) {
   const { break_table, assignments } = req.body;
 
   if (!break_table || !Array.isArray(assignments) || assignments.length === 0) {
-    return res.status(400).json({ success: false, error: 'break_table and assignments array required' });
+    return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'break_table And assignments Array Required' } });
   }
 
   const errors = [];
@@ -256,12 +256,12 @@ async function handleExecute(req, res, tournament) {
   for (const a of assignments) {
     const key = `${a.to_table}-${a.to_seat}`;
     if (seatKeys.has(key)) {
-      return res.status(400).json({ success: false, error: `Duplicate seat: Table ${a.to_table} Seat ${a.to_seat}` });
+      return res.status(400).json({ success: false, error: { code: 'DUPLICATE_SEAT', message: `Duplicate Seat: Table ${a.to_table} Seat ${a.to_seat}` } });
     }
     seatKeys.add(key);
   }
 
-  // 2026-07-25 audit fix: RACE CONDITION GUARD — re-query current occupied seats
+  // 2026-07-25 audit fix: RACE CONDITION GUARD - re-query current occupied seats
   // and 409 if any destination seat was taken since the assignments were
   // generated (mirrors balance-execute.js's conflictingSeats guard).
   const movingEntryIds = new Set(assignments.map(a => a.entry_id));
@@ -280,7 +280,7 @@ async function handleExecute(req, res, tournament) {
     const e = occupiedList[0];
     return res.status(409).json({
       success: false,
-      error: `Break aborted: Seat ${e.seat_number} at Table ${e.table_number} is now occupied by ${e.player_name || 'another player'}`
+      error: { code: 'SEAT_OCCUPIED', message: `Break Aborted: Seat ${e.seat_number} At Table ${e.table_number} Is Now Occupied By ${e.player_name || 'Another Player'}` }
     });
   }
 
@@ -319,7 +319,7 @@ async function handleExecute(req, res, tournament) {
   }
 
   // Release the broken table back to inactive (ONLY if all players successfully moved)
-  // 2026-07-28 audit fix: commander_tables has no updated_at column — including
+  // 2026-07-28 audit fix: commander_tables has no updated_at column - including
   // it made PostgREST reject this UPDATE, so the broken table was never released
   // back to the pool. The discarded error is now surfaced.
   if (errors.length === 0) {

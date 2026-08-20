@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Players Management
+ * Tournament Director - Players Management
  * /commander/td/[tournamentId]/players
  * Searchable player list with filter tabs (All/Active/Eliminated/Registered)
  * Tap player -> action sheet: Move, Eliminate, Rebuy, Add-on, Update Chips, Seat Change
@@ -82,7 +82,7 @@ export default function TDPlayers() {
   useEffect(() => { const _c = new AbortController(); fetchFloor(_c.signal); const i = setInterval(() => fetchFloor(_c.signal), 30000); return () => { _c.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
 
   // 2026-08-04 audit fix: the tables page deep-links here with ?move=<entry_id>
-  // but the param was read and never used — open the move modal for that entry
+  // but the param was read and never used - open the move modal for that entry
   // once floor data arrives.
   useEffect(() => {
     if (!moveEntryId || !floor?.entries?.length || moveModal) return;
@@ -144,7 +144,7 @@ export default function TDPlayers() {
     setConfirmAction({
       type: 'eliminate', player,
       message: `Eliminate ${player.player_name}?`,
-      detail: `Position #${floor?.stats?.players_remaining || '?'} — This cannot be undone.`,
+      detail: `Position #${floor?.stats?.players_remaining || '?'}. This Cannot Be Undone.`,
       color: '#EF4444' });
   };
 
@@ -152,7 +152,7 @@ export default function TDPlayers() {
     setConfirmAction({
       type: 'rebuy', player,
       message: `Rebuy for ${player.player_name}?`,
-      detail: floor?.tournament?.rebuy_cost ? `Cost: $${floor.tournament.rebuy_cost} — Chips: ${formatChips(floor.tournament.rebuy_chips || floor.tournament.starting_chips)}` : 'Process rebuy for this player.',
+      detail: floor?.tournament?.rebuy_cost ? `Cost: $${floor.tournament.rebuy_cost}, Chips: ${formatChips(floor.tournament.rebuy_chips || floor.tournament.starting_chips)}` : 'Process Rebuy For This Player.',
       color: '#31A24C' });
   };
 
@@ -218,7 +218,7 @@ ${receipts.map(r => `<div class="card">
   <div class="venue-name">${r.venue_name || 'Club'}</div>
   ${(r.venue_city || r.venue_state) ? `<div class="venue-location">${[r.venue_city, r.venue_state].filter(Boolean).join(', ')}</div>` : ''}
   <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` — $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
+  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` - $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
   <div class="divider"></div>
   <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
   <div class="divider"></div>
@@ -254,7 +254,7 @@ ${receipts.map(r => `<div class="card">
             printAutoBreakReceipts(res.data.auto_break);
           }
         } else {
-          setToast({ type: 'error', text: res.error || 'Elimination failed.' });
+          setToast({ type: 'error', text: res.error || 'Elimination Failed.' });
         }
       } else if (type === 'rebuy') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/rebuy`, {});
@@ -262,7 +262,7 @@ ${receipts.map(r => `<div class="card">
           success = true;
           printBluetoothReceipt(player, 'Rebuy', floor?.tournament?.rebuy_cost, floor?.tournament?.rebuy_chips || floor?.tournament?.starting_chips);
         } else {
-          setToast({ type: 'error', text: res.error || 'Rebuy failed.' });
+          setToast({ type: 'error', text: res.error || 'Rebuy Failed.' });
         }
       } else if (type === 'addon') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/addon`, {});
@@ -270,7 +270,7 @@ ${receipts.map(r => `<div class="card">
           success = true;
           printBluetoothReceipt(player, 'Add-on', floor?.tournament?.addon_cost, floor?.tournament?.addon_chips || floor?.tournament?.starting_chips);
         } else {
-          setToast({ type: 'error', text: res.error || 'Add-on failed.' });
+          setToast({ type: 'error', text: res.error || 'Add-On Failed.' });
         }
       }
       
@@ -279,7 +279,7 @@ ${receipts.map(r => `<div class="card">
         await fetchFloor();
         broadcastChange('tournaments');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -290,7 +290,7 @@ ${receipts.map(r => `<div class="card">
     setConfirmAction({
       type: 'addon', player,
       message: `Add-on for ${player.player_name}?`,
-      detail: floor?.tournament?.addon_cost ? `Cost: $${floor.tournament.addon_cost} — Chips: ${formatChips(floor.tournament.addon_chips || floor.tournament.starting_chips)}` : 'Process add-on for this player.',
+      detail: floor?.tournament?.addon_cost ? `Cost: $${floor.tournament.addon_cost}, Chips: ${formatChips(floor.tournament.addon_chips || floor.tournament.starting_chips)}` : 'Process Add-On For This Player.',
       color: '#8B5CF6' });
   };
 
@@ -312,12 +312,12 @@ ${receipts.map(r => `<div class="card">
           await fetchFloor();
           broadcastChange('tournaments');
         } else {
-          setToast({ type: 'error', text: json.error || 'Failed to update chips.' });
+          setToast({ type: 'error', text: json.error || 'Failed To Update Chips.' });
         }
       } else {
-        setToast({ type: 'error', text: 'Failed to update chips.' });
+        setToast({ type: 'error', text: 'Failed To Update Chips.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed to update chips. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Update Chips. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -336,9 +336,9 @@ ${receipts.map(r => `<div class="card">
         await fetchFloor();
         broadcastChange('tournaments');
       } else {
-        setToast({ type: 'error', text: res.error || 'Move failed — seat may be occupied.' });
+        setToast({ type: 'error', text: res.error || 'Move Failed. Seat May Be Occupied.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Move failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Move Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -347,9 +347,9 @@ ${receipts.map(r => `<div class="card">
   if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
 
   return (
-    <CommanderLayout title="Commander — Players" backHref={`/commander/td/${tournamentId}`}>
+    <CommanderLayout title="Commander - Players" backHref={`/commander/td/${tournamentId}`}>
       <SEOHead
-        title="Commander — Players"
+        title="Commander - Players"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -358,7 +358,7 @@ ${receipts.map(r => `<div class="card">
         {/* Header */}
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3">
           <h1 className="text-lg font-bold text-white">Players</h1>
-          <p className="text-xs text-[#B0B3B8]">{allPlayers.filter(p => p.status === 'active').length} active — {allPlayers.length} total</p>
+          <p className="text-xs text-[#B0B3B8]">{allPlayers.filter(p => p.status === 'active').length} Active, {allPlayers.length} Total</p>
         </div>
 
         {/* Search */}
@@ -415,7 +415,7 @@ ${receipts.map(r => `<div class="card">
                 <p className="text-sm font-medium text-[#E4E6EB] truncate">{player.player_name}</p>
                 <p className="text-xs text-[#B0B3B8]">
                   {player.status === 'active'
-                    ? `${formatChips(player.current_chips)} chips${player.rebuy_count > 0 ? ` — ${player.rebuy_count}R` : ''}${player.addon_taken ? ' — A' : ''}`
+                    ? `${formatChips(player.current_chips)} Chips${player.rebuy_count > 0 ? ` - ${player.rebuy_count}R` : ''}${player.addon_taken ? ' - A' : ''}`
                     : player.status === 'eliminated'
                       ? `Eliminated${player.finish_position ? ` #${player.finish_position}` : ''}`
                       : 'Registered'
@@ -428,7 +428,7 @@ ${receipts.map(r => `<div class="card">
           {filtered.length === 0 && (
             <div className="text-center py-12">
               <Users className="w-10 h-10 text-[#3A3B3C] mx-auto mb-2" />
-              <p className="text-[#B0B3B8]">{search ? 'No players found' : 'No players in this category'}</p>
+              <p className="text-[#B0B3B8]">{search ? 'No Players Found' : 'No Players In This Category'}</p>
             </div>
           )}
         </div>
@@ -445,7 +445,7 @@ ${receipts.map(r => `<div class="card">
                   <h3 className="text-lg font-bold text-white">{selectedPlayer.player_name}</h3>
                   <p className="text-xs text-[#B0B3B8]">
                     Table {selectedPlayer.table_number} Seat {selectedPlayer.seat_number}
-                    {selectedPlayer.current_chips > 0 && ` — ${formatChips(selectedPlayer.current_chips)}`}
+                    {selectedPlayer.current_chips > 0 && ` - ${formatChips(selectedPlayer.current_chips)}`}
                   </p>
                 </div>
               </div>
@@ -523,7 +523,7 @@ ${receipts.map(r => `<div class="card">
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white mb-1">Move Player</h3>
               <p className="text-sm text-[#B0B3B8] mb-4">
-                {moveModal.player_name} — currently Table {moveModal.table_number} Seat {moveModal.seat_number}
+                {moveModal.player_name}, Currently Table {moveModal.table_number} Seat {moveModal.seat_number}
               </p>
               {/* Quick table buttons */}
               {floor?.tables && (
@@ -535,7 +535,7 @@ ${receipts.map(r => `<div class="card">
                     }}
                       className={`px-3 py-2 rounded-lg text-sm ${moveTable === String(t.table_number) ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
                         }`}>
-                      T{t.table_number} ({t.available_seats} open)
+                      T{t.table_number} ({t.available_seats} Open)
                     </button>
                   ))}
                 </div>
@@ -562,7 +562,7 @@ ${receipts.map(r => `<div class="card">
                 const occupied = t.players.map(p => p.seat_number);
                 return (
                   <div className="mb-4">
-                    <p className="text-xs text-[#B0B3B8] mb-2">Tap an open seat on Table {t.table_number}</p>
+                    <p className="text-xs text-[#B0B3B8] mb-2">Tap An Open Seat On Table {t.table_number}</p>
                     <div className="grid grid-cols-5 gap-2">
                       {Array.from({ length: t.max_seats }, (_, i) => i + 1).map(s => {
                         const isOccupied = occupied.includes(s);
@@ -634,10 +634,10 @@ ${receipts.map(r => `<div class="card">
               </div>
               {confirmAction.type === 'eliminate' && floor?.tournament?.bounty_amount > 0 && (
                 <div className="mb-4 text-left">
-                  <label className="text-xs text-[#B0B3B8] mb-1 block">Eliminated By — awards ${floor.tournament.bounty_amount} bounty</label>
+                  <label className="text-xs text-[#B0B3B8] mb-1 block">Eliminated By, Awards ${floor.tournament.bounty_amount} Bounty</label>
                   <select value={eliminatorId} onChange={e => setEliminatorId(e.target.value)}
                     className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1877F2]">
-                    <option value="">Unknown — no bounty awarded</option>
+                    <option value="">Unknown, No Bounty Awarded</option>
                     {allPlayers.filter(p => p.status === 'active' && p.entry_id !== confirmAction.player.entry_id).map(p => (
                       <option key={p.entry_id} value={p.entry_id}>{p.player_name}{p.table_number ? ` (T${p.table_number})` : ''}</option>
                     ))}

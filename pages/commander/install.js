@@ -1,5 +1,5 @@
 /**
- * Club Commander — Install on iPad & Android
+ * Club Commander - Install on iPad & Android
  * /commander/install
  * Step-by-step guide to add Commander to tablet/phone home screen
  */
@@ -19,106 +19,106 @@ export default function CommanderInstall() {
             {
                 num: 1,
                 title: 'Open Safari',
-                desc: 'Navigate to smarter.poker/commander in Safari. You must use Safari — Chrome does not support home screen installation on Apple devices.',
+                desc: 'Navigate To smarter.poker/commander In Safari. You Must Use Safari, Chrome Does Not Support Home Screen Installation On Apple Devices.',
                 icon: '🧭',
-                highlight: 'Safari only'
+                highlight: 'Safari Only'
             },
             {
                 num: 2,
                 title: 'Log Into Commander',
-                desc: 'Enter your venue PIN to log in first. This ensures the app saves your session when installed.',
+                desc: 'Enter Your Venue PIN To Log In First. This Ensures The App Saves Your Session When Installed.',
                 icon: '🔐',
-                highlight: 'Log in before installing'
+                highlight: 'Log In Before Installing'
             },
             {
                 num: 3,
-                title: 'Tap the Share Button',
-                desc: 'Tap the Share icon (box with arrow pointing up) in the Safari toolbar. On iPad, it\'s in the top-right corner.',
+                title: 'Tap The Share Button',
+                desc: 'Tap The Share Icon (Box With Arrow Pointing Up) In The Safari Toolbar. On iPad, It\'s In The Top-Right Corner.',
                 icon: '📤',
-                highlight: 'Box with arrow ↑'
+                highlight: 'Box With Arrow ↑'
             },
             {
                 num: 4,
-                title: 'Tap "Add to Home Screen"',
-                desc: 'Scroll down in the share sheet and tap "Add to Home Screen." The name will auto-fill as "Club Commander."',
+                title: 'Tap "Add To Home Screen"',
+                desc: 'Scroll Down In The Share Sheet And Tap "Add To Home Screen." The Name Will Auto-Fill As "Club Commander."',
                 icon: '➕',
-                highlight: 'Add to Home Screen'
+                highlight: 'Add To Home Screen'
             },
             {
                 num: 5,
-                title: 'Tap "Add" to Confirm',
-                desc: 'Tap "Add" in the top-right corner. The Club Commander icon now appears on your home screen.',
+                title: 'Tap "Add" To Confirm',
+                desc: 'Tap "Add" In The Top-Right Corner. The Club Commander Icon Now Appears On Your Home Screen.',
                 icon: '✓',
                 highlight: 'Tap Add'
             },
             {
                 num: 6,
                 title: 'Launch & Manage',
-                desc: 'Tap the icon to open Commander in full-screen mode — no browser bars, no tabs. Perfect for front-desk tablets and dealer stations.',
+                desc: 'Tap The Icon To Open Commander In Full-Screen Mode, No Browser Bars, No Tabs. Perfect For Front-Desk Tablets And Dealer Stations.',
                 icon: '🚀',
-                highlight: 'Full-screen kiosk mode'
+                highlight: 'Full-Screen Kiosk Mode'
             }
         ],
         android: [
             {
                 num: 1,
                 title: 'Open Chrome',
-                desc: 'Navigate to smarter.poker/commander in Google Chrome.',
+                desc: 'Navigate To smarter.poker/commander In Google Chrome.',
                 icon: '🌐',
-                highlight: 'Chrome recommended'
+                highlight: 'Chrome Recommended'
             },
             {
                 num: 2,
                 title: 'Log Into Commander',
-                desc: 'Enter your venue PIN to log in first. This ensures the app saves your session.',
+                desc: 'Enter Your Venue PIN To Log In First. This Ensures The App Saves Your Session.',
                 icon: '🔐',
-                highlight: 'Log in before installing'
+                highlight: 'Log In Before Installing'
             },
             {
                 num: 3,
-                title: 'Tap the Three-Dot Menu',
-                desc: 'Tap the ⋮ menu icon (three vertical dots) in the top-right corner of Chrome.',
+                title: 'Tap The Three-Dot Menu',
+                desc: 'Tap The ⋮ Menu Icon (Three Vertical Dots) In The Top-Right Corner Of Chrome.',
                 icon: '⋮',
-                highlight: 'Three dots → top right'
+                highlight: 'Three Dots → Top Right'
             },
             {
                 num: 4,
-                title: 'Tap "Install App" or "Add to Home Screen"',
-                desc: 'Chrome will show "Install app" if it detects the PWA, or "Add to Home screen" otherwise. Both work the same way.',
+                title: 'Tap "Install App" Or "Add To Home Screen"',
+                desc: 'Chrome Will Show "Install App" If It Detects The PWA, Or "Add To Home Screen" Otherwise. Both Work The Same Way.',
                 icon: '📲',
                 highlight: 'Install App'
             },
             {
                 num: 5,
                 title: 'Confirm Installation',
-                desc: 'Tap "Install" or "Add" to confirm. The app will appear on your home screen and app drawer.',
+                desc: 'Tap "Install" Or "Add" To Confirm. The App Will Appear On Your Home Screen And App Drawer.',
                 icon: '✓',
                 highlight: 'Tap Install'
             },
             {
                 num: 6,
                 title: 'Launch & Manage',
-                desc: 'Tap the Club Commander icon to open in full-screen standalone mode. Ideal for tablet-based poker room management.',
+                desc: 'Tap The Club Commander Icon To Open In Full-Screen Standalone Mode. Ideal For Tablet-Based Poker Room Management.',
                 icon: '🚀',
-                highlight: 'Full-screen standalone mode'
+                highlight: 'Full-Screen Standalone Mode'
             }
         ]
     };
 
     const useCases = [
-        { icon: '🖥️', title: 'Front Desk', desc: 'Check-in kiosk, waitlist, cashier' },
-        { icon: '🃏', title: 'Dealer Stations', desc: 'Seat players, manage time clocks' },
-        { icon: '📊', title: 'Floor Manager', desc: 'Real-time table overview, reporting' },
-        { icon: '🏆', title: 'Tournament Desk', desc: 'Clock, registration, payouts' },
+        { icon: '🖥️', title: 'Front Desk', desc: 'Check-In Kiosk, Waitlist, Cashier' },
+        { icon: '🃏', title: 'Dealer Stations', desc: 'Seat Players, Manage Time Clocks' },
+        { icon: '📊', title: 'Floor Manager', desc: 'Real-Time Table Overview, Reporting' },
+        { icon: '🏆', title: 'Tournament Desk', desc: 'Clock, Registration, Payouts' },
     ];
 
     const currentSteps = steps[tab];
 
     return (
-        <CommanderLayout title="Install on Tablet" backHref="/commander/downloads">
+        <CommanderLayout title="Install On Tablet" backHref="/commander/downloads">
             <SEOHead
-                title="Commander — Install on iPad & Android"
-                description="Install Club Commander on your iPad or Android tablet for a full-screen poker room management experience."
+                title="Commander - Install On iPad & Android"
+                description="Install Club Commander On Your iPad Or Android Tablet For A Full-Screen Poker Room Management Experience."
                 noindex={true}
             />
             <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
@@ -135,7 +135,7 @@ export default function CommanderInstall() {
                             Install Club Commander
                         </h1>
                         <p className="text-[#B0B3B8] text-sm max-w-md mx-auto">
-                            Add Commander to your tablet home screen for a full-screen, native management experience.
+                            Add Commander To Your Tablet Home Screen For A Full-Screen, Native Management Experience.
                         </p>
                     </div>
                 </div>
@@ -213,8 +213,8 @@ export default function CommanderInstall() {
                                 <Monitor className="w-5 h-5 text-[#1877F2]" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-bold">Need the Desktop App?</p>
-                                <p className="text-[#B0B3B8] text-xs">Download for Windows, Mac, or Linux</p>
+                                <p className="text-white text-sm font-bold">Need The Desktop App?</p>
+                                <p className="text-[#B0B3B8] text-xs">Download For Windows, Mac, Or Linux</p>
                             </div>
                             <Link href="/commander/downloads" className="px-3 py-2 rounded-lg bg-[#3A3B3C] text-white text-xs font-medium flex items-center gap-1">
                                 <Download className="w-3.5 h-3.5" /> Desktop
@@ -229,7 +229,7 @@ export default function CommanderInstall() {
                             Open Commander <ArrowRight className="w-4 h-4" />
                         </Link>
                         <p className="text-[#6A6B6D] text-[10px] mt-3">
-                            Then follow the steps above to add it to your home screen
+                            Then Follow The Steps Above To Add It To Your Home Screen
                         </p>
                     </div>
                 </div>

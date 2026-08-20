@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Get games — try with joins first, fallback to simple query
+      // Get games - try with joins first, fallback to simple query
       let games = [];
       try {
         const result = await getSupabase()

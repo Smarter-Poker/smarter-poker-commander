@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Update heartbeat. UPDATE only — never creates rows — and scoped to the
+      // Update heartbeat. UPDATE only - never creates rows - and scoped to the
       // caller's venue so a device_id cannot be used against another club's row.
       const now = new Date().toISOString();
       const { data: display, error } = await getSupabase()
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Minimum the screen needs — no config, no rotation settings.
+      // Minimum the screen needs - no config, no rotation settings.
       return res.status(200).json({ success: true, timestamp: now });
     } catch (error) {
       console.warn('Heartbeat error:', error);

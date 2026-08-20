@@ -3,8 +3,8 @@
  * POST /api/commander/dealer/hand-count
  *
  * Actions:
- *   increment — +1 on commander_tables.hands_dealt AND active rotation hands_dealt
- *   reset     — set commander_tables.hands_dealt = 0 (rotation count preserved)
+ *   increment - +1 on commander_tables.hands_dealt AND active rotation hands_dealt
+ *   reset     - set commander_tables.hands_dealt = 0 (rotation count preserved)
  *
  * Body: { table_number: number, action: 'increment' | 'reset' }
  * Returns: { success, hands_dealt }
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
               if (upErr) throw upErr;
           }
 
-          // Prevent caching — each request must hit the server
+          // Prevent caching - each request must hit the server
           res.setHeader('Cache-Control', 'no-store');
           return res.status(200).json({ success: true, hands_dealt: newCount });
       } catch (err) {

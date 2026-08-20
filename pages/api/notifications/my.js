@@ -2,7 +2,7 @@
  * Player Notifications API
  * GET /api/commander/notifications/my
  */
-// 2026-07-25 audit fix: dual auth — a Bearer user sees their own rows, a
+// 2026-07-25 audit fix: dual auth - a Bearer user sees their own rows, a
 // verified staff session (PIN terminal or owner) sees the venue's rows. The
 // old JWT-only path locked out PIN-terminal staff.
 import { createClient } from '../../../src/lib/supabaseServerClient';

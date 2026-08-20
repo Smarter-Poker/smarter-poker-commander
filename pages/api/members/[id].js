@@ -1,5 +1,5 @@
 /**
- * Commander Member Detail API — Get, Update, Delete
+ * Commander Member Detail API - Get, Update, Delete
  * GET: Fetch single member by ID
  * PUT: Update member fields
  * DELETE: Deactivate member (soft delete)
@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

@@ -117,7 +117,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
               type="text"
               value={formData.player_name}
               onChange={(e) => setFormData(prev => ({ ...prev, player_name: e.target.value }))}
-              placeholder="e.g., John Smith"
+              placeholder="E.g., John Smith"
               className="cmd-input w-full"
             />
           </div>
@@ -153,7 +153,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                 type="text"
                 value={formData.table_number}
                 onChange={(e) => setFormData(prev => ({ ...prev, table_number: e.target.value }))}
-                placeholder="e.g., 5"
+                placeholder="E.g., 5"
                 className="cmd-input w-full"
               />
             </div>
@@ -179,8 +179,8 @@ const res = await commanderFetch('/api/commander/high-hands', {
               className="w-5 h-5 text-[#1877F2] border-[#3A3B3C] rounded focus:ring-[#1877F2]"
             />
             <div>
-              <p className="font-medium text-white">Auto-verify This Hand</p>
-              <p className="text-sm text-[#B0B3B8]">Mark as verified by {staff?.display_name || 'you'}</p>
+              <p className="font-medium text-white">Auto-Verify This Hand</p>
+              <p className="text-sm text-[#B0B3B8]">Mark As Verified By {staff?.display_name || 'You'}</p>
             </div>
           </label>
         </div>
@@ -283,7 +283,7 @@ function CurrentHighHandBanner({ highHand }) {
   );
 }
 
-/* PromoCard removed — replaced by PromotionCard component */
+/* PromoCard removed - replaced by PromotionCard component */
 
 export default function PromotionsPage() {
   const router = useRouter();
@@ -399,9 +399,9 @@ const res = await fetch('/api/promo/seed-premade', {
         setToast({ type: 'success', text: `${data.message}` });
         fetchPromoCodes();
       } else {
-        setToast({ type: 'error', text: data.error || 'Failed to seed promos' });
+        setToast({ type: 'error', text: data.error || 'Failed To Seed Promos' });
       }
-    } catch (err) { console.warn('Seed promos error:', err); setToast({ type: 'error', text: 'Failed to seed promos' }); }
+    } catch (err) { console.warn('Seed promos error:', err); setToast({ type: 'error', text: 'Failed To Seed Promos' }); }
     finally { setSeedingPromos(false); }
   };
 
@@ -414,11 +414,11 @@ const res = await fetch('/api/promo/admin-promo-codes', {
         body: JSON.stringify({ id: code.id, is_active: !code.is_active })
       });
       if (res.ok) fetchPromoCodes();
-    } catch (err) { console.warn('Toggle promo code error:', err); setToast({ type: 'error', text: 'Action failed: Toggle promo code. Please try again.' }); }
+    } catch (err) { console.warn('Toggle promo code error:', err); setToast({ type: 'error', text: 'Action Failed: Toggle Promo Code. Please Try Again.' }); }
   };
 
   const deletePromoCode = async (code) => {
-    if (!confirm(`Deactivate promo code "${code.code}"?`)) return;
+    if (!confirm(`Deactivate Promo Code "${code.code}"?`)) return;
     try {
       const token = getToken();
 const res = await fetch(`/api/promo/admin-promo-codes?id=${code.id}`, {
@@ -426,7 +426,7 @@ const res = await fetch(`/api/promo/admin-promo-codes?id=${code.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) fetchPromoCodes();
-    } catch (err) { console.warn('Delete promo code error:', err); setToast({ type: 'error', text: 'Action failed: Delete promo code. Please try again.' }); }
+    } catch (err) { console.warn('Delete promo code error:', err); setToast({ type: 'error', text: 'Action Failed: Delete Promo Code. Please Try Again.' }); }
   };
 
   const openEditPromoCode = (code) => {
@@ -453,9 +453,9 @@ const res = await fetch('/api/promo/admin-promo-codes', {
         setEditingPromoCode(null);
         fetchPromoCodes();
       } else {
-        setToast({ type: 'error', text: data.error || 'Failed to save' });
+        setToast({ type: 'error', text: data.error || 'Failed To Save' });
       }
-    } catch (err) { console.warn('Save promo code error:', err); setToast({ type: 'error', text: 'Failed to save' }); }
+    } catch (err) { console.warn('Save promo code error:', err); setToast({ type: 'error', text: 'Failed To Save' }); }
   };
 
   useEffect(() => {
@@ -465,10 +465,10 @@ const res = await fetch('/api/promo/admin-promo-codes', {
     }
   }, [venueId, fetchPromotions, fetchHighHands]);
 
-  // Commander Data Bus — sync promotions across tabs
+  // Commander Data Bus - sync promotions across tabs
   useCommanderSync(venueId, () => { fetchPromotions(); fetchHighHands(); }, { entities: ['settings'] });
 
-  // ── Supabase Realtime — auto-refresh on promotion changes ──
+  // ── Supabase Realtime - auto-refresh on promotion changes ──
   useEffect(() => {
     if (!venueId) return;
     let reconnects = 0;
@@ -529,17 +529,17 @@ const results = await Promise.allSettled([...selectedIds].map(id =>
         }).then(r => { if (!r.ok) throw new Error('fail'); return r; })
       ));
       const failed = results.filter(r => r.status === 'rejected').length;
-      if (failed > 0) setToast({ type: 'error', text: `${failed} of ${selectedIds.size} operations failed` });
+      if (failed > 0) setToast({ type: 'error', text: `${failed} Of ${selectedIds.size} Operations Failed` });
       clearSelection();
       broadcastChange('settings');
       fetchPromotions();
     } catch (error) {
       console.warn('Bulk toggle failed:', error);
-      setToast({ type: 'error', text: 'Bulk operation failed: ' + error.message });
+      setToast({ type: 'error', text: 'Bulk Operation Failed: ' + error.message });
     }
   }
   async function bulkDelete() {
-    if (!confirm(`Delete ${selectedIds.size} promotion(s)?`)) return;
+    if (!confirm(`Delete ${selectedIds.size} Promotion(s)?`)) return;
     try {
       const token = getToken();
 const results = await Promise.allSettled([...selectedIds].map(id =>
@@ -547,13 +547,13 @@ const results = await Promise.allSettled([...selectedIds].map(id =>
         .then(r => { if (!r.ok) throw new Error('fail'); return r; })
       ));
       const failed = results.filter(r => r.status === 'rejected').length;
-      if (failed > 0) setToast({ type: 'error', text: `${failed} of ${selectedIds.size} deletions failed` });
+      if (failed > 0) setToast({ type: 'error', text: `${failed} Of ${selectedIds.size} Deletions Failed` });
       clearSelection();
       broadcastChange('settings');
       fetchPromotions();
     } catch (error) {
       console.warn('Bulk delete failed:', error);
-      setToast({ type: 'error', text: 'Bulk delete failed: ' + error.message });
+      setToast({ type: 'error', text: 'Bulk Delete Failed: ' + error.message });
     }
   }
 
@@ -618,7 +618,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${highHand.id}`, {
     } catch (error) {
       setAwardsLoading(false);
       console.warn('Verify high hand failed:', error);
-      setToast({ type: 'error', text: 'Verify high hand failed. Please check your connection and try again.' });
+      setToast({ type: 'error', text: 'Verify High Hand Failed. Please Check Your Connection And Try Again.' });
     }
   }
 
@@ -636,7 +636,7 @@ const res = await commanderFetch(`/api/commander/promotions/${promo.id}`, {
       }
     } catch (error) {
       console.warn('Toggle failed:', error);
-      setToast({ type: 'error', text: 'Failed to toggle promotion. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Toggle Promotion. Please Try Again.' });
     }
   }
 
@@ -651,7 +651,7 @@ const res = await commanderFetch(`/api/commander/promotions/${promo.id}`, { meth
       }
     } catch (error) {
       console.warn('Delete failed:', error);
-      setToast({ type: 'error', text: 'Failed to delete promotion. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Delete Promotion. Please Try Again.' });
     }
   }
 
@@ -699,11 +699,11 @@ const cloneData = {
         broadcastChange('settings');
         fetchPromotions();
       } else {
-        setToast({ type: 'error', text: 'Duplicate failed: ' + (result.error || 'Unknown error') });
+        setToast({ type: 'error', text: 'Duplicate Failed: ' + (result.error || 'Unknown Error') });
       }
     } catch (error) {
       console.warn('Duplicate promo failed:', error);
-      setToast({ type: 'error', text: 'Duplicate failed: ' + error.message });
+      setToast({ type: 'error', text: 'Duplicate Failed: ' + error.message });
     }
   }
 
@@ -736,7 +736,7 @@ const cloneData = {
     if (fromIdx < 0 || toIdx < 0) { setDraggedId(null); setDragOverId(null); return; }
     const [moved] = items.splice(fromIdx, 1);
     items.splice(toIdx, 0, moved);
-    // Optimistic local update — shows instantly
+    // Optimistic local update - shows instantly
     const reorderedPromos = promotions.map(p => {
       const idx = items.findIndex(i => i.id === p.id);
       if (idx < 0) return p;
@@ -757,7 +757,7 @@ try {
       broadcastChange('settings');
     } catch (err) {
       console.warn('Drag reorder save failed:', err);
-      setToast({ type: 'error', text: 'Failed to save reorder. Reverting...' });
+      setToast({ type: 'error', text: 'Failed To Save Reorder. Reverting...' });
       fetchPromotions(); // Revert on failure
     }
   }
@@ -774,7 +774,7 @@ try {
     <CommanderLayout title="Promotions | Commander" backHref="/commander/dashboard?card=displays">
       <>
         <SEOHead
-          title="Commander — Promotions"
+          title="Commander - Promotions"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -975,7 +975,7 @@ try {
                     padding: '48px 24px', textAlign: 'center' }}>
                     <Gift size={48} color="#3A3B3C" style={{ margin: '0 auto 12px' }} />
                     <p style={{ color: '#B0B3B8', fontSize: 15, fontWeight: 500, marginBottom: 8 }}>
-                      {filter !== 'all' ? `No ${filter} promotions found` : 'No Promotions Yet'}
+                      {filter !== 'all' ? `No ${filter} Promotions Found` : 'No Promotions Yet'}
                     </p>
                     {filter !== 'all' ? (
                       <button
@@ -1070,7 +1070,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                       }
                     } catch (error) {
                       console.warn('Submit high hand failed:', error);
-                      setToast({ type: 'error', text: 'Failed to submit high hand. Please try again.' });
+                      setToast({ type: 'error', text: 'Failed To Submit High Hand. Please Try Again.' });
                     }
                   }}
                 />
@@ -1250,7 +1250,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                         { label: 'Active Now', value: analytics.activeCount, color: '#4ADE80', icon: CheckCircle },
                         { label: 'Total Awarded', value: analytics.totalAwarded, color: '#F59E0B', icon: Award },
                         { label: 'Total Value', value: `$${analytics.totalValue.toLocaleString()}`, color: '#8B5CF6', icon: DollarSign },
-                        { label: 'Avg Per Award', value: analytics.avgPerAward > 0 ? `$${analytics.avgPerAward.toLocaleString()}` : '—', color: '#22D3EE', icon: BarChart3 },
+                        { label: 'Avg Per Award', value: analytics.avgPerAward > 0 ? `$${analytics.avgPerAward.toLocaleString()}` : '-', color: '#22D3EE', icon: BarChart3 },
                       ].map((card, i) => {
                         const CardIcon = card.icon;
                         return (
@@ -1316,7 +1316,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                 ) : (
                   <div style={{ textAlign: 'center', padding: '60px 0', color: '#8A8D91' }}>
                     <BarChart3 size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-                    <p>No promotion data available</p>
+                    <p>No Promotion Data Available</p>
                   </div>
                 )}
               </div>
@@ -1354,7 +1354,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                     background: '#18191A', border: '1px solid #3A3B3C', color: '#E4E6EB',
                     fontSize: 15, fontFamily: 'monospace', fontWeight: 700,
                     outline: 'none' }}
-                  placeholder="e.g. WELCOME50"
+                  placeholder="E.g. WELCOME50"
                 />
               </div>
 
@@ -1369,13 +1369,13 @@ const res = await commanderFetch('/api/commander/high-hands', {
                     width: '100%', padding: '10px 14px', borderRadius: 8,
                     background: '#18191A', border: '1px solid #3A3B3C', color: '#E4E6EB',
                     fontSize: 14, outline: 'none' }}
-                  placeholder="Promotion description"
+                  placeholder="Promotion Description"
                 />
               </div>
 
               <div style={{ marginBottom: 24 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Max Uses <span style={{ fontWeight: 400, textTransform: 'none' }}>(leave blank for unlimited)</span>
+                  Max Uses <span style={{ fontWeight: 400, textTransform: 'none' }}>(Leave Blank For Unlimited)</span>
                 </label>
                 <input
                   type="number"
@@ -1446,11 +1446,11 @@ const res = await commanderFetch('/api/commander/promotions', {
                         setShowCreateModal(false);
                         setUseWizard(false);
                       } else {
-                        setToast({ type: 'error', text: 'Create failed: ' + (result.error || 'Unknown error') });
+                        setToast({ type: 'error', text: 'Create Failed: ' + (result.error || 'Unknown Error') });
                       }
                     } catch (error) {
                       console.warn('Create promo failed:', error);
-                      setToast({ type: 'error', text: 'Create failed: ' + error.message });
+                      setToast({ type: 'error', text: 'Create Failed: ' + error.message });
                     }
                   }}
                   onCancel={() => { setUseWizard(false); setShowCreateModal(false); }}
@@ -1475,11 +1475,11 @@ const res = await commanderFetch('/api/commander/promotions', {
                     fetchPromotions();
                     setShowCreateModal(false);
                   } else {
-                    setToast({ type: 'error', text: 'Create failed: ' + (result.error || 'Unknown error') });
+                    setToast({ type: 'error', text: 'Create Failed: ' + (result.error || 'Unknown Error') });
                   }
                 } catch (error) {
                   console.warn('Create promo failed:', error);
-                  setToast({ type: 'error', text: 'Create failed: ' + error.message });
+                  setToast({ type: 'error', text: 'Create Failed: ' + error.message });
                 }
               }}
               onClose={() => setShowCreateModal(false)}
@@ -1507,15 +1507,15 @@ const res = await commanderFetch(`/api/commander/promotions/${editingPromo.id}`,
                   setShowEditModal(false);
                   setEditingPromo(null);
                 } else {
-                  setToast({ type: 'error', text: 'Update failed: ' + (result.error || 'Unknown error') });
+                  setToast({ type: 'error', text: 'Update Failed: ' + (result.error || 'Unknown Error') });
                 }
               } catch (error) {
                 console.warn('Update promo failed:', error);
-                setToast({ type: 'error', text: 'Update failed: ' + error.message });
+                setToast({ type: 'error', text: 'Update Failed: ' + error.message });
               }
             }}
             onDelete={async (id) => {
-              if (!confirm('Delete this promotion?')) return;
+              if (!confirm('Delete This Promotion?')) return;
               try {
 const res = await commanderFetch(`/api/commander/promotions/${id}`, { method: 'DELETE'});
                 if (res.ok) {
@@ -1526,7 +1526,7 @@ const res = await commanderFetch(`/api/commander/promotions/${id}`, { method: 'D
                 }
               } catch (error) {
                 console.warn('Delete failed:', error);
-                setToast({ type: 'error', text: 'Failed to delete promotion. Please try again.' });
+                setToast({ type: 'error', text: 'Failed To Delete Promotion. Please Try Again.' });
               }
             }}
             onClose={() => {

@@ -1,5 +1,5 @@
 /**
- * Generate Claim Code API — POST /api/commander/staff/generate-claim
+ * Generate Claim Code API - POST /api/commander/staff/generate-claim
  * Owner/manager generates a claim code for a staff member
  * Employee uses this code to link their Smarter.Poker account
  */
@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: OWNER — requires owner role
+// Auth: OWNER - requires owner role
 export default async function handler(req, res) {
   try {
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {

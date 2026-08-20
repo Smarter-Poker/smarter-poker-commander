@@ -1,9 +1,9 @@
 /**
- * Player Arrival API — POST /api/commander/waitlist/arrive
+ * Player Arrival API - POST /api/commander/waitlist/arrive
  * Allows authenticated players to signal arrival at the venue.
  * Updates checked_in_at on ALL their active waitlist entries for the venue.
  *
- * Auth: Bearer token (player JWT) — only updates entries belonging to the caller.
+ * Auth: Bearer token (player JWT) - only updates entries belonging to the caller.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';

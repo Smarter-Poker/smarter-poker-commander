@@ -22,7 +22,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
           console.warn('[Hours API] Error:', err);
           // If commander_player_sessions is unavailable, fall back to the member's
           // own recorded totals. 2026-07-28 audit fix: same visit_count/last_checkin
-          // drift as above — real columns are total_visits / last_visit /
+          // drift as above - real columns are total_visits / last_visit /
           // total_hours_played.
           try {
               const { data: members } = await getSupabase()

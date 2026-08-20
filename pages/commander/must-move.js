@@ -1,8 +1,8 @@
 /**
- * Must-Move Games Manager — Chain-Based Horizontal Layout
+ * Must-Move Games Manager - Chain-Based Horizontal Layout
  * /commander/must-move
  * Chain movement: T7 → T4 → T1 (players move one step at a time)
- * Horizontal card layout — must-move lists displayed beside the game
+ * Horizontal card layout - must-move lists displayed beside the game
  */
 import { useState, useEffect, useCallback } from 'react';
 import SEOHead from '../../src/components/seo/SEOHead';
@@ -126,7 +126,7 @@ export default function MustMoveManager() {
   return (
     <CommanderLayout title="Must-Move Games" backHref="/commander/dashboard?card=floor">
       <SEOHead
-        title="Commander — Must-Move Games"
+        title="Commander - Must-Move Games"
         description="Club Commander Must-Move Games Management."
         noindex={true}
       />
@@ -180,9 +180,9 @@ export default function MustMoveManager() {
               background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)',
               borderRadius: 14, padding: '14px 16px' }}>
               <p style={{ fontSize: 13, color: '#B0B3B8', margin: 0, lineHeight: 1.6 }}>
-                <span style={{ color: '#F59E0B', fontWeight: 700 }}>Chain Movement:</span> Players move
-                <strong style={{ color: '#F59E0B' }}> one table at a time</strong> toward the main game.
-                Example: Table 7 → Table 4 → Table 1 (Main). The longest-sitting player moves first.
+                <span style={{ color: '#F59E0B', fontWeight: 700 }}>Chain Movement:</span> Players Move
+                <strong style={{ color: '#F59E0B' }}> One Table At A Time</strong> Toward The Main Game.
+                Example: Table 7 → Table 4 → Table 1 (Main). The Longest-Sitting Player Moves First.
               </p>
             </div>
 

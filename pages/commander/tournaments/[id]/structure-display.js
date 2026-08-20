@@ -13,7 +13,7 @@ import DealerTicker from '../../../../src/components/commander/shared/DealerTick
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import useWakeLock from '../../../../src/hooks/useWakeLock';
 import { busEmit } from '../../../../src/engine/EventBus';
-import { getToken, getStaffSession } from '../../../../src/lib/commander/clientAuth';
+import { getToken } from '../../../../src/lib/commander/clientAuth';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -37,7 +37,6 @@ export default function StructureDisplay() {
 
     if (!id) return;
     try {
-      const staffSession = typeof window !== 'undefined' ? (getStaffSession() || '') : '';
       const bearerToken = typeof window !== 'undefined' ? (getToken()) : '';
       const headers = { Authorization: `Bearer ${bearerToken}` };
       const [tRes, cRes] = await Promise.all([
@@ -51,13 +50,13 @@ export default function StructureDisplay() {
     setNow(new Date());
   }, [id]);
 
-  // Supabase Realtime — instant sync when level changes
+  // Supabase Realtime - instant sync when level changes
   useTournamentRealtime(id, fetchData);
 
   useEffect(() => {
     if (!id) return;
     fetchData();
-    const poll = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [id, fetchData]);
@@ -65,7 +64,7 @@ export default function StructureDisplay() {
   // Scroll current level into view
   useEffect(() => {
     currentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    // 2026-08-04 audit fix: the level lives at clockData.tournament.current_level —
+    // 2026-08-04 audit fix: the level lives at clockData.tournament.current_level -
     // the old dependency never changed, so the view only scrolled on mount.
   }, [clockData?.tournament?.current_level]);
 
@@ -73,7 +72,7 @@ export default function StructureDisplay() {
 
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
   // 2026-07-25 audit fix: clock API exposes data.blindStructure (camelCase fields)
-  // and data.tournament.current_level — not data.levels / data.current_level.
+  // and data.tournament.current_level - not data.levels / data.current_level.
   const clockLevels = (clockData?.blindStructure || []).map(b => ({
     small_blind: b.smallBlind,
     big_blind: b.bigBlind,
@@ -89,7 +88,7 @@ export default function StructureDisplay() {
   return (
     <>
       <SEOHead
-        title="Commander — Structure Display"
+        title="Commander - Structure Display"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -108,7 +107,7 @@ export default function StructureDisplay() {
           <div>
             <h1 className="text-2xl font-bold">{tournament?.name || 'Tournament Structure'}</h1>
             <p className="text-sm opacity-80">
-              ${tournament?.buyin_amount || 0}+${tournament?.buyin_fee || 0} — {tournament?.starting_chips?.toLocaleString() || '15,000'} chips
+              ${tournament?.buyin_amount || 0}+${tournament?.buyin_fee || 0}, {tournament?.starting_chips?.toLocaleString() || '15,000'} Chips
             </p>
           </div>
           <p className="text-3xl font-mono font-bold tabular-nums">
@@ -136,8 +135,8 @@ export default function StructureDisplay() {
                       isPast ? 'opacity-30' : 'bg-[#F59E0B]/5'
                       }`}>
                     <span className="text-[#F59E0B] font-bold">BRK</span>
-                    <span className="text-[#F59E0B]">Break</span>
-                    <span className="text-right text-[#F59E0B]">{level.duration}m</span>
+                    <span className="text-[#F59E0B]">{level.label || 'Break'}</span>
+                    <span className="text-right text-[#F59E0B]">{(level.duration ?? level.duration_minutes ?? 0)}m</span>
                   </div>
                 );
               }
@@ -153,7 +152,7 @@ export default function StructureDisplay() {
                   <span className={`text-lg ${level.ante > 0 ? '' : 'text-white/20'} ${isCurrent ? 'font-bold' : ''}`}>
                     {level.ante > 0 ? level.ante.toLocaleString() : '-'}
                   </span>
-                  <span className={`text-right ${isCurrent ? 'font-bold' : 'text-white/50'}`}>{level.duration}m</span>
+                  <span className={`text-right ${isCurrent ? 'font-bold' : 'text-white/50'}`}>{(level.duration ?? level.duration_minutes ?? 0)}m</span>
                 </div>
               );
             })}
@@ -174,11 +173,11 @@ export default function StructureDisplay() {
         <div className="border-t border-white/10 px-8 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex gap-6 text-sm text-white/40">
             {/* 2026-08-04 audit fix: real columns are allows_rebuys / rebuy_end_level /
-                allows_addon / late_registration_levels — the old names never existed
+                allows_addon / late_registration_levels - the old names never existed
                 so none of these chips ever rendered */}
-            {tournament?.allows_rebuys && <span>Rebuys thru Level {tournament.rebuy_end_level}</span>}
+            {tournament?.allows_rebuys && <span>Rebuys Thru Level {tournament.rebuy_end_level}</span>}
             {tournament?.allows_addon && <span>Add-On Available At Break</span>}
-            {tournament?.late_registration_levels && <span>Late reg thru Level {tournament.late_registration_levels}</span>}
+            {tournament?.late_registration_levels && <span>Late Reg Thru Level {tournament.late_registration_levels}</span>}
           </div>
           <p className="text-white/15 text-xs tracking-wider">Powered By Smarter.Poker</p>
         </div>

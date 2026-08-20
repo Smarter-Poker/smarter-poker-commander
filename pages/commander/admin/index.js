@@ -28,7 +28,7 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
   const [copiedKey, setCopiedKey] = useState(null);
   const [error, setError] = useState(null);
   // The full key is only returned once at creation (the API stores a hash and
-  // lists only key_prefix afterwards) — hold it here for a one-time display.
+  // lists only key_prefix afterwards) - hold it here for a one-time display.
   const [newFullKey, setNewFullKey] = useState(null);
 
 
@@ -48,11 +48,11 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
       if (data.success) {
         setApiKeys(data.data?.keys || []);
       } else {
-        setError(data.error?.message || 'Failed to load API keys');
+        setError(data.error?.message || 'Failed To Load API Keys');
       }
     } catch (err) {
       console.warn('Load API keys error:', err);
-      setError('Failed to load API keys');
+      setError('Failed To Load API Keys');
     } finally {
       setLoading(false);
     }
@@ -85,19 +85,19 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
         }
         onSuccess?.();
       } else {
-        setError(data.error?.message || 'Failed to create API key');
+        setError(data.error?.message || 'Failed To Create API Key');
       }
     } catch (err) {
       setLoading(false);
       console.warn('Create API key error:', err);
-      setError('Failed to create API key');
+      setError('Failed To Create API Key');
     } finally {
       setCreating(false);
     }
   }
 
   async function handleDeleteKey(keyId) {
-    if (!confirm('Are you sure you want to delete this API key?')) return;
+    if (!confirm('Are You Sure You Want To Delete This API Key?')) return;
     setError(null);
     try {
       const token = getToken();
@@ -109,11 +109,11 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
         setApiKeys(apiKeys.filter(k => k.id !== keyId));
         onSuccess?.();
       } else {
-        setError(data.error?.message || 'Failed to delete API key');
+        setError(data.error?.message || 'Failed To Delete API Key');
       }
     } catch (err) {
       console.warn('Delete API key error:', err);
-      setError('Failed to delete API key');
+      setError('Failed To Delete API Key');
     }
   }
 
@@ -160,13 +160,13 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
             </div>
           )}
           <p className="text-sm text-[#B0B3B8] mb-4">
-            API keys allow external systems to access Commander data. Keep your keys secure.
+            API Keys Allow External Systems To Access Commander Data. Keep Your Keys Secure.
           </p>
 
           {newFullKey && (
             <div className="mb-4 p-3 bg-[#31A24C]/10 border border-[#31A24C]/20 rounded-lg">
               <p className="text-sm text-[#31A24C] font-medium mb-1">
-                Copy your new API key now — it will not be shown again.
+                Copy Your New API Key Now, It Will Not Be Shown Again.
               </p>
               <code className="text-xs text-white font-mono break-all">{newFullKey.key}</code>
             </div>
@@ -178,7 +178,7 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
               type="text"
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
-              placeholder="Key Name (e.g., POS System)"
+              placeholder="Key Name (E.g., POS System)"
               className="cmd-input flex-1"
             />
             <button
@@ -254,7 +254,7 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
 function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
   // 2026-08-06 fix: settings were keyed on columns that do not exist on
   // commander_venue_settings (comp_rate, auto_text_enabled, waitlist_settings,
-  // display_settings) — every save 500'd. Use the real columns instead.
+  // display_settings) - every save 500'd. Use the real columns instead.
   const [settings, setSettings] = useState({
     auto_comp_rate: 0,
     sms_notifications_enabled: true,
@@ -315,11 +315,11 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
         onSuccess?.();
         onClose();
       } else {
-        setError(data.error?.message || data.error || 'Failed to save venue settings. Please try again.');
+        setError(data.error?.message || data.error || 'Failed To Save Venue Settings. Please Try Again.');
       }
     } catch (err) {
       console.warn('Save venue settings error:', err);
-      setError('Failed to save venue settings. Please try again.');
+      setError('Failed To Save Venue Settings. Please Try Again.');
     } finally {
       setSaving(false);
     }
@@ -389,7 +389,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Call Timeout (minutes)</span>
+                <span className="text-sm text-[#B0B3B8]">Call Timeout (Minutes)</span>
                 <input
                   type="number"
                   min="1"
@@ -400,7 +400,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Default Wait Per Player (minutes)</span>
+                <span className="text-sm text-[#B0B3B8]">Default Wait Per Player (Minutes)</span>
                 <input
                   type="number"
                   min="1"
@@ -430,7 +430,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Auto Refresh Interval (seconds)</span>
+                <span className="text-sm text-[#B0B3B8]">Auto Refresh Interval (Seconds)</span>
                 <input
                   type="number"
                   min="5"
@@ -506,7 +506,7 @@ export default function AdminDashboard() {
       const venuesRes = await commanderFetch('/api/commander/admin/venues?summary=true', fetchOpts());
       if (!venuesRes.ok) throw new Error(`Request failed (${venuesRes.status})`);
       const venuesData = await venuesRes.json();
-      // 2026-07-25 audit fix: the API nests under data — read data.venues/data.summary
+      // 2026-07-25 audit fix: the API nests under data - read data.venues/data.summary
       if (venuesData.success && venuesData.data?.venues) {
         setVenues(venuesData.data.venues);
         setSummary(venuesData.data.summary || {});
@@ -579,7 +579,7 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.warn('Create export error:', err);
-      setError('Failed to create export. Please try again.');
+      setError('Failed To Create Export. Please Try Again.');
     }
   };
 
@@ -620,7 +620,7 @@ export default function AdminDashboard() {
   return (
     <CommanderLayout title="Admin Dashboard | Commander" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Admin"
+        title="Commander - Admin"
         description="Club Commander Admin Dashboard."
         noindex={true}
       >
@@ -715,7 +715,7 @@ export default function AdminDashboard() {
               <div className="cmd-panel p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">API Keys</h3>
                 <p className="text-[#B0B3B8] mb-4">
-                  Create API keys for external integrations like POS systems, player tracking software, or custom displays.
+                  Create API Keys For External Integrations Like POS Systems, Player Tracking Software, Or Custom Displays.
                 </p>
                 <button
                   onClick={() => setShowApiKeysModal(true)}
@@ -729,7 +729,7 @@ export default function AdminDashboard() {
               <div className="cmd-panel p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Venue Settings</h3>
                 <p className="text-[#B0B3B8] mb-4">
-                  Configure venue-specific settings like comp rates, notification preferences, and display options.
+                  Configure Venue-Specific Settings Like Comp Rates, Notification Preferences, And Display Options.
                 </p>
                 <div className="space-y-3">
                   {venues.map(venue => (

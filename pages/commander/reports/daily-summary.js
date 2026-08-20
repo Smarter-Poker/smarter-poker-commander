@@ -27,7 +27,7 @@ export default function DailySummaryReport() {
 const venueId = getVenueId();
 const headers = { };
 
-        // General summary — commanderFetch attaches the Authorization and
+        // General summary - commanderFetch attaches the Authorization and
         // x-staff-session headers these APIs require (bare fetch 401'd)
         const [summaryRes, cashierRes] = await Promise.all([
           commanderFetch(`/api/commander/reports/summary?range=today&date=${date}`, { headers }).catch(() => ({ ok: false })),
@@ -84,7 +84,7 @@ td:last-child{text-align:right;font-weight:bold}
 .total{border-top:2px solid #000;font-weight:bold;font-size:13px}
 .void{color:#e00}
 @media print{body{padding:0}}</style></head><body>
-<h1>Shift Report — ${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h1>
+<h1>Shift Report - ${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h1>
 <h2>Revenue Summary</h2>
 <table>
 <tr><td>Gross Revenue</td><td>$${cashierData.totalRevenue.toLocaleString()}</td></tr>
@@ -93,17 +93,17 @@ td:last-child{text-align:right;font-weight:bold}
 </table>
 <h2>Payment Breakdown</h2>
 <table>
-<tr><td>💵 Cash Collected</td><td>$${cashierData.cashTotal.toLocaleString()}</td></tr>
-<tr><td>💳 Card Collected</td><td>$${cashierData.cardTotal.toLocaleString()}</td></tr>
+<tr><td>Cash Collected</td><td>$${cashierData.cashTotal.toLocaleString()}</td></tr>
+<tr><td>Card Collected</td><td>$${cashierData.cardTotal.toLocaleString()}</td></tr>
 </table>
 <h2>Category Breakdown</h2>
 <table>
-<tr><td>⏱️ Time Sales (${cashierData.time.count})</td><td>$${cashierData.time.total.toLocaleString()}</td></tr>
-<tr><td>🎫 Membership Sales (${cashierData.membership.count})</td><td>$${cashierData.membership.total.toLocaleString()}</td></tr>
-<tr><td>🎲 Buy-In Receipts (${cashierData.buyIn.count})</td><td>$${cashierData.buyIn.total.toLocaleString()}</td></tr>
+<tr><td>Time Sales (${cashierData.time.count})</td><td>$${cashierData.time.total.toLocaleString()}</td></tr>
+<tr><td>Membership Sales (${cashierData.membership.count})</td><td>$${cashierData.membership.total.toLocaleString()}</td></tr>
+<tr><td>Buy-In Receipts (${cashierData.buyIn.count})</td><td>$${cashierData.buyIn.total.toLocaleString()}</td></tr>
 </table>
-<h2>Transactions (${cashierData.transactions.length} total)</h2>
-<table>${cashierData.transactions.slice(0, 50).map(tx => `<tr${(tx.notes || '').includes('VOID') || (tx.notes || '').includes('REFUND') ? ' class="void"' : ''}><td>${tx.player_name} — ${tx.notes || 'Buy-In'}</td><td>$${parseFloat(tx.amount).toLocaleString()}</td></tr>`).join('')}</table>
+<h2>Transactions (${cashierData.transactions.length} Total)</h2>
+<table>${cashierData.transactions.slice(0, 50).map(tx => `<tr${(tx.notes || '').includes('VOID') || (tx.notes || '').includes('REFUND') ? ' class="void"' : ''}><td>${tx.player_name} - ${tx.notes || 'Buy-In'}</td><td>$${parseFloat(tx.amount).toLocaleString()}</td></tr>`).join('')}</table>
 <p style="text-align:center;margin-top:20px;font-size:10px;color:#999">Printed ${new Date().toLocaleString()}</p>
 </body></html>`;
     printW.document.write(html);
@@ -113,7 +113,7 @@ td:last-child{text-align:right;font-weight:bold}
 
   return (
     <CommanderLayout title="Daily Summary" backHref="/commander/dashboard?card=reports">
-      <SEOHead title="Commander — Daily Summary" description="Shift and daily summary report with cashier breakdown." noindex={true} />
+      <SEOHead title="Commander - Daily Summary" description="Shift And Daily Summary Report With Cashier Breakdown." noindex={true} />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
@@ -196,7 +196,7 @@ td:last-child{text-align:right;font-weight:bold}
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-[#B0B3B8] text-center py-4">No transactions for this date</p>
+                <p className="text-sm text-[#B0B3B8] text-center py-4">No Transactions For This Date</p>
               )}
             </div>
           </div>
@@ -223,14 +223,14 @@ function CategoryRow({ icon: Icon, label, amount, count, cash, card, color, isNe
         <Icon className="w-4 h-4" style={{ color }} />
         <div>
           <p className="text-xs font-semibold text-white">{label}</p>
-          {cash + card > 0 && <p className="text-[9px] text-[#B0B3B8]">{cash} cash / {card} card</p>}
+          {cash + card > 0 && <p className="text-[9px] text-[#B0B3B8]">{cash} Cash / {card} Card</p>}
         </div>
       </div>
       <div className="text-right">
         <p className={`text-sm font-bold ${isNegative ? 'text-[#EF4444]' : ''}`} style={!isNegative ? { color } : {}}>
           {isNegative ? '-' : ''}${amount.toLocaleString()}
         </p>
-        <p className="text-[9px] text-[#B0B3B8]">{count} transactions</p>
+        <p className="text-[9px] text-[#B0B3B8]">{count} Transactions</p>
       </div>
     </div>
   );

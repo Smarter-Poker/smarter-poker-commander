@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { BarChart3, Users, DollarSign, Clock, TrendingUp, TrendingDown, Trophy, Target, Loader2 } from 'lucide-react';
-// Peak Hours Grid — visual heatmap of hour-by-hour activity
+// Peak Hours Grid - visual heatmap of hour-by-hour activity
 function PeakHoursGrid({ analytics }) {
   // Build hourly counts from analytics data
   const hourCounts = new Array(24).fill(0);
@@ -37,7 +37,7 @@ function PeakHoursGrid({ analytics }) {
                     ? `rgba(24, 119, 242, ${0.15 + intensity * 0.85})`
                     : '#3A3B3C'
                 }}
-                title={`${h}: ${count} sessions`}
+                title={`${h}: ${count} Sessions`}
               />
               {hour % 3 === 0 && (
                 <span className="text-[10px] text-[#B0B3B8]">{h}</span>
@@ -57,7 +57,7 @@ function PeakHoursGrid({ analytics }) {
   );
 }
 
-// Activity Trend Line — SVG sparkline
+// Activity Trend Line - SVG sparkline
 function ActivityTrendLine({ dailyData }) {
   const data = dailyData || [];
   if (data.length < 2) return (
@@ -66,7 +66,7 @@ function ActivityTrendLine({ dailyData }) {
         <TrendingUp className="w-5 h-5 text-[#31A24C]" />
         Activity Trend
       </h3>
-      <p className="text-sm text-[#B0B3B8]">Not enough data for trend visualization</p>
+      <p className="text-sm text-[#B0B3B8]">Not Enough Data For Trend Visualization</p>
     </div>
   );
 
@@ -368,7 +368,7 @@ const headers = { };
     if (venueId) fetchAnalytics();
   }, [venueId, period, fetchAnalytics]);
 
-  // Commander Data Bus — refresh analytics on changes
+  // Commander Data Bus - refresh analytics on changes
   useCommanderSync(venueId, fetchAnalytics, { entities: ['tables', 'members', 'waitlist'] });
 
   if (!staff) {
@@ -383,7 +383,7 @@ const headers = { };
     <CommanderLayout title="Analytics | Commander" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Analytics & Reports"
+          title="Commander - Analytics & Reports"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />

@@ -26,7 +26,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -47,19 +47,19 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
 // 2026-07-28: commander_tournament_entries.payment_method is CHECK-constrained.
 const ENTRY_PAYMENT_METHODS = ['cash', 'card', 'credit', 'comp', 'chips', 'transfer', 'other'];
-// commander_cash_transactions.payment_method has a NARROWER CHECK — passing an
+// commander_cash_transactions.payment_method has a NARROWER CHECK - passing an
 // entry-only value ('credit'/'chips'/'transfer'/'other') would make the whole
 // cash-drawer insert fail, so it is only forwarded when it is legal there.
 const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'comp', 'marker'];
@@ -67,7 +67,7 @@ const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'comp', 'marker'];
 /**
  * Resolve the verified staff session to a real commander_staff.id.
  * verifyStaffSession can return a SYNTHETIC owner object whose `id` is an auth
- * user id, not a commander_staff row — writing that into cashier_staff_id would
+ * user id, not a commander_staff row - writing that into cashier_staff_id would
  * violate the FK and reject the entire registration insert. Returns null when
  * the session does not map to a real staff row (attribution left NULL rather
  * than faked).
@@ -96,7 +96,7 @@ async function handleRegister(req, res, tournamentId, staff) {
   const { player_id } = req.body;
 
   // payment_method is optional. Reject an unknown value outright rather than
-  // silently coercing it — a wrong payment method on a money row is worse than
+  // silently coercing it - a wrong payment method on a money row is worse than
   // a missing one.
   const rawPaymentMethod = req.body?.payment_method;
   let paymentMethod = null;
@@ -106,7 +106,7 @@ async function handleRegister(req, res, tournamentId, staff) {
         success: false,
         error: {
           code: 'INVALID_PAYMENT_METHOD',
-          message: `payment_method must be one of: ${ENTRY_PAYMENT_METHODS.join(', ')}`,
+          message: `payment_method Must Be One Of: ${ENTRY_PAYMENT_METHODS.join(', ')}`,
         },
       });
     }
@@ -116,7 +116,7 @@ async function handleRegister(req, res, tournamentId, staff) {
   if (!player_id) {
     return res.status(400).json({
       success: false,
-      error: { code: 'MISSING_FIELDS', message: 'player_id required' }
+      error: { code: 'MISSING_FIELDS', message: 'player_id Required' }
     });
   }
 
@@ -131,7 +131,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     if (tError || !tournament) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Tournament not found' }
+        error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
 
@@ -139,7 +139,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     if (!['scheduled', 'registering', 'running'].includes(tournament.status)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'REGISTRATION_CLOSED', message: 'Registration is closed' }
+        error: { code: 'REGISTRATION_CLOSED', message: 'Registration Is Closed' }
       });
     }
 
@@ -148,7 +148,7 @@ async function handleRegister(req, res, tournamentId, staff) {
       if ((tournament.current_level + 1) > tournament.late_registration_levels) {
         return res.status(400).json({
           success: false,
-          error: { code: 'LATE_REG_CLOSED', message: 'Late registration is closed' }
+          error: { code: 'LATE_REG_CLOSED', message: 'Late Registration Is Closed' }
         });
       }
     }
@@ -188,7 +188,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: { code: 'ALREADY_REGISTERED', message: 'Already registered' }
+        error: { code: 'ALREADY_REGISTERED', message: 'Already Registered' }
       });
     }
 
@@ -196,7 +196,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     if (tournament.max_entries && count >= tournament.max_entries) {
       return res.status(400).json({
         success: false,
-        error: { code: 'TOURNAMENT_FULL', message: 'Tournament is full' }
+        error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' }
       });
     }
 
@@ -206,7 +206,7 @@ async function handleRegister(req, res, tournamentId, staff) {
         success: false,
         error: {
           code: 'SELF_EXCLUDED',
-          message: 'You have an active self-exclusion and cannot register at this time.',
+          message: 'You Have An Active Self-Exclusion And Cannot Register At This Time.',
           exclusion_type: exclusion.exclusion_type,
           expires_at: exclusion.expires_at
         }
@@ -227,12 +227,15 @@ async function handleRegister(req, res, tournamentId, staff) {
 
       const todaySpend = (todayEntries || []).reduce((sum, e) => sum + (e.total_invested || 0), 0);
 
-      if (todaySpend + tournament.buyin_amount > limits.daily_limit) {
+      // The new charge is buy-in PLUS fee (total_invested on prior entries
+      // includes the fee, so the comparison must too).
+      const newCharge = (tournament.buyin_amount || 0) + (tournament.buyin_fee || 0);
+      if (todaySpend + newCharge > limits.daily_limit) {
         return res.status(403).json({
           success: false,
           error: {
             code: 'LIMIT_EXCEEDED',
-            message: `Registration would exceed your daily limit of $${limits.daily_limit}`,
+            message: `Registration Would Exceed Your Daily Limit Of $${limits.daily_limit}`,
             current_spend: todaySpend,
             limit: limits.daily_limit
           }
@@ -281,7 +284,7 @@ async function handleRegister(req, res, tournamentId, staff) {
 
       // 2026-07-28 audit fix: link the cash-drawer row to the tournament
       // (commander_cash_transactions.tournament_id), and surface the insert
-      // error — this write previously discarded it, so a rejected buy_in row
+      // error - this write previously discarded it, so a rejected buy_in row
       // left the registration recorded with no matching cash liability.
       const { error: cashTxError } = await getSupabase().from('commander_cash_transactions').insert({
         venue_id: tournament.venue_id,
@@ -320,7 +323,7 @@ async function handleRegister(req, res, tournamentId, staff) {
       await sendPushNotification({
         externalUserIds: [player_id],
         title: 'Registration Confirmed',
-        message: `You're registered for ${tournament.name}! Starts at ${startTime}.`,
+        message: `You're Registered For ${tournament.name}! Starts At ${startTime}.`,
         url: `/hub/commander/tournament/${tournamentId}/my-status`,
         data: { type: 'tournament_registered', tournament_id: tournamentId }
       }).catch(err => console.warn('[register.js] Push failed:', err.message));
@@ -333,7 +336,7 @@ async function handleRegister(req, res, tournamentId, staff) {
           .from('social_stories')
           .insert({
             author_id: player_id,
-            content: `Just registered for ${tournament.name}! Let's go!`,
+            content: `Just Registered For ${tournament.name}! Let's Go!`,
             media_type: 'text',
             background_color: 'linear-gradient(135deg, #1877F2 0%, #0A5DC2 100%)'
           });
@@ -361,7 +364,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     console.warn('Register error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to register' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Register' }
     });
   }
 }
@@ -372,22 +375,31 @@ async function handleUnregister(req, res, tournamentId, staff) {
   if (!player_id) {
     return res.status(400).json({
       success: false,
-      error: { code: 'MISSING_FIELDS', message: 'player_id required' }
+      error: { code: 'MISSING_FIELDS', message: 'player_id Required' }
     });
   }
 
   try {
-    // Check tournament status
+    // Check tournament status (venue_id is needed for the audit log below;
+    // previously only status was selected, so the log recorded undefined,
+    // and a missing tournament crashed the log call).
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('status')
+      .select('status, venue_id')
       .eq('id', tournamentId)
       .maybeSingle();
 
-    if (tournament?.status === 'running' || tournament?.status === 'completed') {
+    if (!tournament) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
+      });
+    }
+
+    if (tournament.status === 'running' || tournament.status === 'completed') {
       return res.status(400).json({
         success: false,
-        error: { code: 'TOURNAMENT_STARTED', message: 'Cannot unregister after tournament starts' }
+        error: { code: 'TOURNAMENT_STARTED', message: 'Cannot Unregister After Tournament Starts' }
       });
     }
 
@@ -415,14 +427,14 @@ async function handleUnregister(req, res, tournamentId, staff) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Registration cancelled' }
+      data: { message: 'Registration Cancelled' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Unregister error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to unregister' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Unregister' }
     });
   }
 }

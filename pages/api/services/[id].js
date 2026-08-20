@@ -20,7 +20,7 @@ function getSupabase() {
 
 const VALID_STATUSES = ['pending', 'acknowledged', 'in_progress', 'completed', 'cancelled'];
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       case 'GET':
         return handleGet(req, res, id);
       case 'PATCH': {
-        // 2026-07-25 audit fix: use the staff object resolved by the guard —
+        // 2026-07-25 audit fix: use the staff object resolved by the guard -
         // the old handlePatch re-queried commander_staff by sessionData.id,
         // which is undefined for owner sessions.
         const staff = await guardStaff(req, res);
@@ -116,7 +116,7 @@ async function handleGet(req, res, requestId) {
 
 async function handlePatch(req, res, requestId, staff) {
   try {
-    // 2026-07-25 audit fix: staff is the verified object from guardStaff —
+    // 2026-07-25 audit fix: staff is the verified object from guardStaff -
     // no re-query by sessionData.id (undefined for owner sessions).
     if (!staff) {
       return res.status(401).json({

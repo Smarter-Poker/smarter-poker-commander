@@ -1,5 +1,5 @@
 /**
- * FloorCallAlert — Real-time fullscreen popup when a table calls the floor
+ * FloorCallAlert - Real-time fullscreen popup when a table calls the floor
  * 
  * Uses Supabase Realtime (postgres_changes) as the primary path, with a 20s
  * safety poll so a dropped channel cannot silently stop floor-call alerts.
@@ -67,7 +67,7 @@ export default function FloorCallAlert({ venueId }) {
                     handleNewCall(call);
                 }
             } else {
-                // No active calls — if we're showing an alert, the call was cancelled/resolved
+                // No active calls - if we're showing an alert, the call was cancelled/resolved
                 setActiveCall(prev => {
                     if (prev) {
                         lastSeenId.current = null;
@@ -83,7 +83,7 @@ export default function FloorCallAlert({ venueId }) {
         poll();
 
         // 2026-07-27 audit fix: the header has always advertised a polling
-        // fallback, but `pollInterval` was declared and never used — the only
+        // fallback, but `pollInterval` was declared and never used - the only
         // live path was the realtime channel. If that channel dropped, a floor
         // tablet stopped announcing floor calls silently and indefinitely.
         // A safety poll now runs alongside realtime. It is deliberately slower

@@ -1,5 +1,5 @@
 /**
- * Table Assignments — Floor Manager Control Center
+ * Table Assignments - Floor Manager Control Center
  * /commander/table-assignments
  *
  * Each physical table gets assigned to:
@@ -84,7 +84,7 @@ return {
     return () => _c.abort();
   }, [fetchData, router]);
 
-  // Commander Data Bus — sync when tables are changed from other tabs
+  // Commander Data Bus - sync when tables are changed from other tabs
   const venueId = (() => { try { return getStaffData().venue_id || ''; } catch { return ''; } })();
   useCommanderSync(venueId, fetchData, { entities: ['tables'] });
 
@@ -174,7 +174,7 @@ return {
   return (
     <CommanderLayout title="Table Assignments" backHref="/commander/dashboard?card=floor">
       <SEOHead
-        title="Commander — Table Assignments"
+        title="Commander - Table Assignments"
         description="Assign tables to cash games or tournaments."
         noindex={true}
       />
@@ -294,7 +294,7 @@ return {
                     )}
 
                     {mode === 'inactive' && (
-                      <p className="text-[10px] text-[#6A6B6D]">{table.max_seats} seats — Not Assigned</p>
+                      <p className="text-[10px] text-[#6A6B6D]">{table.max_seats} seats - Not Assigned</p>
                     )}
                   </div>
 
@@ -410,7 +410,7 @@ return {
                               {t.name}
                             </p>
                             <p className="text-xs text-[#B0B3B8]">
-                              {t.game_type || 'NLH'} — {t.status} — ${t.buyin_amount || 0} buy-in
+                              {t.game_type || 'NLH'} - {t.status} - ${t.buyin_amount || 0} buy-in
                             </p>
                           </button>
                         ))}

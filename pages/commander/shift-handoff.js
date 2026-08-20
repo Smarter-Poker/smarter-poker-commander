@@ -55,7 +55,7 @@ export default function ShiftHandoff() {
     return () => _c.abort();
   }, []);
 
-  // fetchHandoffs declared FIRST — must precede useEffect/useCommanderSync that reference it
+  // fetchHandoffs declared FIRST - must precede useEffect/useCommanderSync that reference it
   const fetchHandoffs = async (signal) => {
     setLoading(true);
     try {
@@ -74,7 +74,7 @@ const res = await commanderFetch(`/api/commander/shift-handoff?venue_id=${staff.
     return () => _c.abort();
   }, [staff]);
 
-  // Commander Data Bus — sync handoffs across tabs
+  // Commander Data Bus - sync handoffs across tabs
   useCommanderSync(staff?.venue_id || '', fetchHandoffs, { entities: ['staff'] });
 
   const handleSubmit = async () => {
@@ -148,7 +148,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
   return (
     <CommanderLayout title="Shift Handoff" backHref="/commander/dashboard?card=staff">
       <SEOHead
-        title="Commander — Shift Handoff"
+        title="Commander - Shift Handoff"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -259,7 +259,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
                   <MessageSquare size={14} /> Floor Notes *
                 </label>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4}
-                  placeholder="General Floor State — How The Room Is Running, Player Mood, Game Quality, Upcoming Events..."
+                  placeholder="General Floor State - How The Room Is Running, Player Mood, Game Quality, Upcoming Events..."
                   className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm resize-y focus:outline-none focus:border-[#1877F2] placeholder-[#65676B]" style={{ fontFamily: 'inherit' }} />
               </div>
 

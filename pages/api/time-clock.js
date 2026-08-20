@@ -1,5 +1,5 @@
 /**
- * Time Clock API — Staff Clock In/Out
+ * Time Clock API - Staff Clock In/Out
  * POST: Clock in or out via QR code scan
  * GET: List today's time clock entries for a venue
  */
@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -167,7 +167,7 @@ async function handlePost(req, res) {
             .limit(1);
 
         if (openShift?.[0]) {
-            // Clock OUT — close the open shift
+            // Clock OUT - close the open shift
             const clockIn = new Date(openShift[0].clock_in);
             const clockOut = new Date();
             const hoursWorked = Math.round(((clockOut - clockIn) / 3600000) * 100) / 100;
@@ -194,7 +194,7 @@ async function handlePost(req, res) {
                 }
             });
         } else {
-            // Clock IN — create new entry
+            // Clock IN - create new entry
             const { data: entry, error } = await getSupabase()
                 .from('commander_time_clock')
                 .insert({

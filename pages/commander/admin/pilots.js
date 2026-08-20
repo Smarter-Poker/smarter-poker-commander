@@ -31,7 +31,7 @@ const TARGET_REGIONS = [
   { id: 'fl-1', region: 'Florida', target: 1, description: 'Florida Room' },
 ];
 
-// 2026-07-25 audit fix: minimal Add Pilot modal — the button set showAddModal
+// 2026-07-25 audit fix: minimal Add Pilot modal - the button set showAddModal
 // but no modal existed.
 function AddPilotModal({ isOpen, onClose, onAdded }) {
   const [venues, setVenues] = useState([]);
@@ -56,7 +56,7 @@ function AddPilotModal({ isOpen, onClose, onAdded }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!venueId) { setError('Select a venue'); return; }
+    if (!venueId) { setError('Select A Venue'); return; }
     setSaving(true);
     setError(null);
     try {
@@ -72,11 +72,11 @@ function AddPilotModal({ isOpen, onClose, onAdded }) {
         onAdded?.();
         onClose();
       } else {
-        setError(data?.error?.message || data?.error || `Failed to add pilot (${res.status})`);
+        setError(data?.error?.message || data?.error || `Failed To Add Pilot (${res.status})`);
       }
     } catch (err) {
       console.warn('Add pilot failed:', err);
-      setError('Failed to add pilot. Please try again.');
+      setError('Failed To Add Pilot. Please Try Again.');
     } finally {
       setSaving(false);
     }
@@ -107,7 +107,7 @@ function AddPilotModal({ isOpen, onClose, onAdded }) {
                 onChange={(e) => setVenueId(e.target.value)}
                 className="cmd-input w-full"
               >
-                <option value="">Select a venue...</option>
+                <option value="">Select A Venue...</option>
                 {venues.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}{v.city ? ` (${v.city}, ${v.state})` : ''}
@@ -130,7 +130,7 @@ function AddPilotModal({ isOpen, onClose, onAdded }) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder="Deployment notes..."
+              placeholder="Deployment Notes..."
               className="cmd-input w-full"
             />
           </div>
@@ -227,7 +227,7 @@ export default function PilotVenuesPage() {
   return (
     <>
       <SEOHead
-        title="Commander — Pilots"
+        title="Commander - Pilots"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -314,7 +314,7 @@ export default function PilotVenuesPage() {
                 const current = pilotsByRegion[region.region.substring(0, 2).toUpperCase()] || 0;
                 const progress = (current / region.target) * 100;
                 // 2026-07-25 audit fix: removed the per-card CommanderLayout
-                // wrapper — a full layout inside the grid is invalid
+                // wrapper - a full layout inside the grid is invalid
                 return (
                     <div key={region.id} className="bg-[#1E293B] rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -339,7 +339,7 @@ export default function PilotVenuesPage() {
               <div className="flex items-center justify-between">
                 <span className="text-[#B0B3B8]">Total Progress</span>
                 <span className="text-white font-medium">
-                  {activePilots.length}/5 venues
+                  {activePilots.length}/5 Venues
                 </span>
               </div>
               <div className="h-3 bg-[#374151] rounded-full overflow-hidden mt-2">
@@ -515,12 +515,12 @@ export default function PilotVenuesPage() {
               <ChecklistItem
                 checked={activePilots.length >= 5}
                 label="5 Pilot Venues Live"
-                description={`${activePilots.length}/5 venues currently active`}
+                description={`${activePilots.length}/5 Venues Currently Active`}
               />
               <ChecklistItem
                 checked={avgUptime >= 95 && avgTickets <= 5 && avgSatisfaction >= 4 && avgAdoption >= 50}
                 label="Success Metrics Met"
-                description="95% Uptime, <5 Tickets/week, 4+/5 Satisfaction, 50%+ Adoption"
+                description="95% Uptime, <5 Tickets/Week, 4+/5 Satisfaction, 50%+ Adoption"
               />
             </div>
           </div>
@@ -534,7 +534,7 @@ export default function PilotVenuesPage() {
         />
 
         {/* 2026-08-06 fix: clicking a pilot set selectedPilot but nothing
-            rendered it — the detail click was dead. Show the real metrics. */}
+            rendered it - the detail click was dead. Show the real metrics. */}
         <PilotDetailModal
           pilot={selectedPilot}
           onClose={() => setSelectedPilot(null)}
@@ -547,10 +547,10 @@ export default function PilotVenuesPage() {
 function PilotDetailModal({ pilot, onClose }) {
   if (!pilot) return null;
 
-  const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '—');
+  const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '-');
   const fmtNum = (v, suffix, digits) =>
     v === null || v === undefined || v === '' || Number.isNaN(Number(v))
-      ? 'pending'
+      ? 'Pending'
       : `${Number(v).toFixed(digits)}${suffix}`;
   const weeklyReports = Array.isArray(pilot.weekly_reports) ? pilot.weekly_reports.length : 0;
 
@@ -586,7 +586,7 @@ function PilotDetailModal({ pilot, onClose }) {
                   : 'bg-gray-500/20 text-gray-400'
                 }`}
             >
-              {pilot.status || 'unknown'}
+              {pilot.status || 'Unknown'}
             </span>
             {pilot.converted_to_paid && (
               <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-400">
@@ -600,27 +600,27 @@ function PilotDetailModal({ pilot, onClose }) {
             <div className="bg-[#1E293B] rounded-lg p-3">
               <div className="text-xs text-[#B0B3B8] mb-1">Uptime</div>
               <div className="text-white font-medium">
-                {pilot.uptime_percentage ? fmtNum(pilot.uptime_percentage, '%', 1) : 'pending'}
+                {pilot.uptime_percentage ? fmtNum(pilot.uptime_percentage, '%', 1) : 'Pending'}
               </div>
             </div>
             <div className="bg-[#1E293B] rounded-lg p-3">
               <div className="text-xs text-[#B0B3B8] mb-1">Support Tickets</div>
               <div className="text-white font-medium">
                 {pilot.support_tickets_count === null || pilot.support_tickets_count === undefined
-                  ? 'pending'
+                  ? 'Pending'
                   : pilot.support_tickets_count}
               </div>
             </div>
             <div className="bg-[#1E293B] rounded-lg p-3">
               <div className="text-xs text-[#B0B3B8] mb-1">Staff Satisfaction</div>
               <div className="text-white font-medium">
-                {pilot.staff_satisfaction_score ? fmtNum(pilot.staff_satisfaction_score, '/5', 1) : 'pending'}
+                {pilot.staff_satisfaction_score ? fmtNum(pilot.staff_satisfaction_score, '/5', 1) : 'Pending'}
               </div>
             </div>
             <div className="bg-[#1E293B] rounded-lg p-3">
               <div className="text-xs text-[#B0B3B8] mb-1">Player Adoption</div>
               <div className="text-white font-medium">
-                {pilot.player_adoption_percentage ? fmtNum(pilot.player_adoption_percentage, '%', 0) : 'pending'}
+                {pilot.player_adoption_percentage ? fmtNum(pilot.player_adoption_percentage, '%', 0) : 'Pending'}
               </div>
             </div>
           </div>
@@ -647,7 +647,7 @@ function PilotDetailModal({ pilot, onClose }) {
           <div>
             <div className="text-xs text-[#B0B3B8] mb-1">Final Assessment</div>
             <div className="text-white text-sm bg-[#1E293B] rounded-lg p-3 whitespace-pre-wrap">
-              {pilot.final_assessment || 'pending'}
+              {pilot.final_assessment || 'Pending'}
             </div>
           </div>
         </div>
@@ -697,7 +697,7 @@ function ChecklistItem({ checked, pending, label, description }) {
         <div className={`font-medium ${checked ? 'text-white' : 'text-[#B0B3B8]'}`}>{label}</div>
         <div className="text-sm text-[#B0B3B8]">{description}</div>
         {!checked && pending && (
-          <div className="text-xs text-yellow-400 mt-0.5">Pending — not tracked in pilot data</div>
+          <div className="text-xs text-yellow-400 mt-0.5">Pending, Not Tracked In Pilot Data</div>
         )}
       </div>
     </div>

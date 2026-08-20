@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const _staff = await guardManager(req, res);
     if (!_staff) return;
 
-    // 2026-07-25 audit fix: POST branch — the page's Add Pilot flow had no
+    // 2026-07-25 audit fix: POST branch - the page's Add Pilot flow had no
     // API to call (endpoint was GET-only).
     if (req.method === 'POST') {
       try {

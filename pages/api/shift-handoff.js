@@ -1,8 +1,8 @@
 /**
  * Shift Handoff API
- * POST /api/commander/shift-handoff — Create new handoff (outgoing floor)
- * GET /api/commander/shift-handoff — List handoffs for venue
- * PATCH /api/commander/shift-handoff — Acknowledge handoff (incoming floor)
+ * POST /api/commander/shift-handoff - Create new handoff (outgoing floor)
+ * GET /api/commander/shift-handoff - List handoffs for venue
+ * PATCH /api/commander/shift-handoff - Acknowledge handoff (incoming floor)
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../src/lib/commander/auth';
@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -59,7 +59,7 @@ async function createHandoff(req, res) {
 
     // Snapshot current floor state
     // 2026-07-25 audit fix: snapshot queries used status values that are never
-    // written — tables are 'in_use' when occupied, games are 'waiting'/'running',
+    // written - tables are 'in_use' when occupied, games are 'waiting'/'running',
     // and incidents use the incident_status column (there is no status column).
     const [tablesRes, waitlistRes, incidentsRes, gamesRes] = await Promise.all([
       getSupabase().from('commander_tables').select('id, table_number, table_name, status, game_type, stakes, max_seats').eq('venue_id', venue_id).eq('status', 'in_use'),

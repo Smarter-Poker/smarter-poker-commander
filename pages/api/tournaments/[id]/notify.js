@@ -38,7 +38,7 @@ const NOTIFICATION_TYPES = [
     'custom'
 ];
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
       if (req.method !== 'POST') {
           res.setHeader('Allow', ['POST']);
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       const { id: tournamentId } = req.query;
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       if (!type || !NOTIFICATION_TYPES.includes(type)) {
           return res.status(400).json({
               success: false,
-              error: `Invalid type. Must be one of: ${NOTIFICATION_TYPES.join(', ')}`
+              error: `Invalid Type. Must Be One Of: ${NOTIFICATION_TYPES.join(', ')}`
           });
       }
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (tErr || !tournament) {
-              return res.status(404).json({ success: false, error: 'Tournament not found' });
+              return res.status(404).json({ success: false, error: 'Tournament Not Found' });
           }
 
           const venueName = tournament.poker_venues?.name || 'Venue';
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
           if (targetUserIds.length === 0) {
               return res.status(200).json({
                   success: true,
-                  data: { sent: 0, message: 'No players to notify' }
+                  data: { sent: 0, message: 'No Players To Notify' }
               });
           }
 
@@ -170,7 +170,7 @@ export default async function handler(req, res) {
           });
       } catch (error) {
           console.warn('[notify.js] Error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
@@ -187,75 +187,82 @@ function buildNotification(type, ctx) {
         case 'tournament_starting':
             return {
                 title: `${tournamentName} Starting Now`,
-                body: `${tournamentName} at ${venueName} is starting! Please take your seat.`
+                body: `${tournamentName} At ${venueName} Is Starting! Please Take Your Seat.`
             };
 
         case 'seat_assignment':
             return {
                 title: 'Seat Assignment',
                 body: table_number
-                    ? `Your seat is ready: Table ${table_number}${seat_number ? `, Seat ${seat_number}` : ''} — ${tournamentName}`
-                    : `Your seat is ready for ${tournamentName}. Check the floor for your assignment.`
+                    ? `Your Seat Is Ready: Table ${table_number}${seat_number ? `, Seat ${seat_number}` : ''}, ${tournamentName}`
+                    : `Your Seat Is Ready For ${tournamentName}. Check The Floor For Your Assignment.`
             };
 
         case 'level_up': {
             const blinds = parseBlindStructure(tournament?.blind_structure);
             const level = tournament?.current_level || 0;
             const current = blinds?.[level];
+            // Break rows share the array with playing levels, so the index is
+            // not the level number. Count non-break rows up to the current index.
+            let displayLevel = 0;
+            for (let i = 0; i <= level && i < (blinds?.length || 0); i++) {
+                if (!blinds[i]?.is_break) displayLevel++;
+            }
+            if (displayLevel === 0) displayLevel = level + 1;
             return {
-                title: `Level ${level + 1} — ${tournamentName}`,
+                title: `Level ${displayLevel}, ${tournamentName}`,
                 body: current
-                    ? `Blinds now ${current.small_blind?.toLocaleString()}/${current.big_blind?.toLocaleString()}${current.ante ? ` ante ${current.ante.toLocaleString()}` : ''}`
-                    : `Level ${level + 1} has started.`
+                    ? `Blinds Now ${current.small_blind?.toLocaleString()}/${current.big_blind?.toLocaleString()}${current.ante ? ` Ante ${current.ante.toLocaleString()}` : ''}`
+                    : `Level ${displayLevel} Has Started.`
             };
         }
 
         case 'break':
             return {
                 title: 'Break Time',
-                body: `${tournamentName} is on break. Play resumes shortly.`
+                body: `${tournamentName} Is On Break. Play Resumes Shortly.`
             };
 
         case 'break_ending':
             return {
                 title: 'Break Ending',
-                body: `Break is ending soon. Please return to your seat for ${tournamentName}.`
+                body: `Break Is Ending Soon. Please Return To Your Seat For ${tournamentName}.`
             };
 
         case 'final_table':
             return {
                 title: 'Final Table!',
-                body: `${tournamentName} has reached the Final Table! Good luck!`
+                body: `${tournamentName} Has Reached The Final Table! Good Luck!`
             };
 
         case 'elimination':
             return {
                 title: 'Tournament Result',
-                body: customMessage || `Thank you for playing ${tournamentName}!`
+                body: customMessage || `Thank You For Playing ${tournamentName}!`
             };
 
         case 'itm':
             return {
                 title: 'In The Money!',
-                body: customMessage || `Congratulations! You cashed in ${tournamentName}!`
+                body: customMessage || `Congratulations! You Cashed In ${tournamentName}!`
             };
 
         case 'winner':
             return {
                 title: 'Tournament Winner!',
-                body: customMessage || `Congratulations! You won ${tournamentName}!`
+                body: customMessage || `Congratulations! You Won ${tournamentName}!`
             };
 
         case 'custom':
             return {
                 title: tournamentName,
-                body: customMessage || 'You have a new tournament notification.'
+                body: customMessage || 'You Have A New Tournament Notification.'
             };
 
         default:
             return {
                 title: tournamentName,
-                body: 'Tournament notification'
+                body: 'Tournament Notification'
             };
     }
 }

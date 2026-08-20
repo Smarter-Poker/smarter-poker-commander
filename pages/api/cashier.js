@@ -24,7 +24,7 @@ const VALID_TYPES = ['buy_in', 'cash_out', 'add_on', 'time_purchase', 'membershi
 // Upper bound on a single cashier transaction (column is numeric(10,2)).
 const MAX_TXN_AMOUNT = 1000000;
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -76,7 +76,7 @@ async function handleGet(req, res, staff) {
 
     const transactions = data || [];
     // Exclude voided transactions AND void audit records from summary calculations
-    // void-type records are audit trail only — the original transaction is already excluded via voided_at
+    // void-type records are audit trail only - the original transaction is already excluded via voided_at
     const active = transactions.filter(t => !t.voided_at && t.type !== 'void');
     const buyIns = active.filter(t => ['buy_in', 'add_on', 'time_purchase', 'membership'].includes(t.type));
     const cashOuts = active.filter(t => ['cash_out'].includes(t.type));
@@ -112,7 +112,7 @@ async function handlePost(req, res, staff) {
       return res.status(400).json({ success: false, error: `type must be one of: ${VALID_TYPES.join(', ')}` });
     }
     // 2026-07-28 audit fix: `parseFloat(amount) || 0` recorded $0 for a garbled
-    // amount instead of rejecting it — parseFloat('abc') is NaN which `|| 0`
+    // amount instead of rejecting it - parseFloat('abc') is NaN which `|| 0`
     // turned into a silent zero-dollar transaction, and parseFloat('12abc')
     // silently became 12. Coerce strictly with Number() and reject anything that
     // is not a finite, in-range value. amount stays optional (it is not required
@@ -157,7 +157,7 @@ async function handlePost(req, res, staff) {
       req
     });
 
-    // Get updated player totals for this session — EXCLUDE voided transactions
+    // Get updated player totals for this session - EXCLUDE voided transactions
     let playerTotals = null;
     if (session_id) {
       const { data: txns } = await getSupabase()
@@ -180,7 +180,7 @@ async function handlePost(req, res, staff) {
   }
 }
 
-// PATCH — Mark transaction as voided (audit trail)
+// PATCH - Mark transaction as voided (audit trail)
 async function handlePatch(req, res, staff) {
   try {
     const { transaction_id, voided_by, void_reason } = req.body;
@@ -199,12 +199,12 @@ async function handlePatch(req, res, staff) {
       return res.status(404).json({ success: false, error: 'Transaction not found' });
     }
 
-    // SAFEGUARD: Prevent double-void — already voided transactions cannot be voided again
+    // SAFEGUARD: Prevent double-void - already voided transactions cannot be voided again
     if (existing.voided_at) {
       return res.status(400).json({ success: false, error: 'Transaction already voided', data: existing });
     }
 
-    // SAFEGUARD: Scope to venue — staff can only void transactions in their venue
+    // SAFEGUARD: Scope to venue - staff can only void transactions in their venue
     // BUG #254 FIX: Always use staff.venue_id, never fall back to req.body
     if (staff.venue_id && existing.venue_id && String(existing.venue_id) !== String(staff.venue_id)) {
       return res.status(403).json({ success: false, error: 'Cannot void transactions from another venue' });

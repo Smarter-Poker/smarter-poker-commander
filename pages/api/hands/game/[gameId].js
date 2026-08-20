@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       }
 
       // 2026-07-25 audit fix: only participants of this game may read its hand
-      // list — gate by presence in any hand's player_seat_map or a seat record.
+      // list - gate by presence in any hand's player_seat_map or a seat record.
       const inAnySeatMap = (hands || []).some(
         h => h.player_seat_map && typeof h.player_seat_map === 'object' && h.player_seat_map[user.id] != null
       );
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
       // Format hands for player view
       const formattedHands = hands?.map(hand => {
         // Determine player's seat and cards strictly from player_seat_map.
-        // 2026-07-25 audit fix: never fall back to the first seat's cards —
+        // 2026-07-25 audit fix: never fall back to the first seat's cards -
         // that leaked other players' hole cards.
         let playerSeat = null;
         let playerCards = [];
@@ -119,7 +119,7 @@ export default async function handler(req, res) {
           w => (playerSeat != null && w.seat === playerSeat) || w.player_id === user.id
         );
         // 2026-07-25 audit fix: profit was fabricated (pot/2 or -pot/4) and
-        // presented as real — actual per-player accounting is not available.
+        // presented as real - actual per-player accounting is not available.
         const profit = null;
 
         return {

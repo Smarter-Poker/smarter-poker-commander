@@ -57,7 +57,7 @@ const headers = { };
       });
       setWaitlists(grouped);
 
-      // Tournaments API nests under data.tournaments — handle both shapes
+      // Tournaments API nests under data.tournaments - handle both shapes
       const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data
         : Array.isArray(tournamentsRes.data?.tournaments) ? tournamentsRes.data.tournaments : [];
       setTournaments(tournamentsArr.filter(t =>
@@ -70,7 +70,7 @@ const headers = { };
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
-    const poll = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { controller.abort(); clearInterval(poll); clearInterval(clock); };
   }, [fetchData]);
@@ -108,7 +108,7 @@ const headers = { };
   return (
     <>
       <SEOHead
-        title="Commander — Player Lobby"
+        title="Commander - Player Lobby"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -126,7 +126,7 @@ const headers = { };
         <div className="bg-[#1877F2] px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Now Playing</h1>
-            <p className="text-sm opacity-80">{activeTables.length} tables running — {Object.keys(waitlists || {}).length > 0 ? `${Object.values(waitlists || {}).reduce((s, n) => s + n, 0)} on waitlist` : 'No waitlist'}</p>
+            <p className="text-sm opacity-80">{activeTables.length} Tables Running, {Object.keys(waitlists || {}).length > 0 ? `${Object.values(waitlists || {}).reduce((s, n) => s + n, 0)} On Waitlist` : 'No Waitlist'}</p>
           </div>
           <p className="text-4xl font-mono font-bold tabular-nums">
             {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -159,10 +159,10 @@ const headers = { };
                           <h2 className="text-xl font-bold text-white">{gameName}</h2>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm text-white/60">{group.tables.length} table{group.tables.length > 1 ? 's' : ''}</span>
+                          <span className="text-sm text-white/60">{group.tables.length} Table{group.tables.length > 1 ? 's' : ''}</span>
                           {group.openSeats > 0 ? (
                             <span className="px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: `${color}30`, color }}>
-                              {group.openSeats} open seat{group.openSeats > 1 ? 's' : ''}
+                              {group.openSeats} Open Seat{group.openSeats > 1 ? 's' : ''}
                             </span>
                           ) : (
                             <span className="px-3 py-1 rounded-full text-sm font-bold bg-white/5 text-white/40">
@@ -268,7 +268,7 @@ const headers = { };
 
         {/* Footer ticker */}
         <div className="border-t border-white/10 px-6 py-2 flex items-center justify-between flex-shrink-0">
-          <p className="text-white/10 text-xs">Ask Staff For Details — Scan Your Member QR Code At The Kiosk To Check In</p>
+          <p className="text-white/10 text-xs">Ask Staff For Details, Scan Your Member QR Code At The Kiosk To Check In</p>
           <p className="text-white/10 text-xs tracking-wider">Powered By Smarter.Poker</p>
         </div>
       </div>

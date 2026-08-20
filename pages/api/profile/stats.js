@@ -79,7 +79,7 @@ export default async function handler(req, res) {
 
       const tournamentsPlayed = tournamentEntries?.length || 0;
       // 2026-07-25 audit fix: removed stray .limit(100) chained onto number
-      // literals — it crashed the endpoint for anyone with 0 wins/cashes.
+      // literals - it crashed the endpoint for anyone with 0 wins/cashes.
       const tournamentWins = tournamentEntries?.filter(e => e.finish_position === 1).length || 0;
       const tournamentCashes = tournamentEntries?.filter(e => e.payout_amount > 0).length || 0;
       const totalWinnings = tournamentEntries?.reduce((sum, e) => sum + (e.payout_amount || 0), 0) || 0;
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
         .from('commander_home_rsvps')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        // 2026-07-25 audit fix: response values are yes/no/maybe — 'going' never
+        // 2026-07-25 audit fix: response values are yes/no/maybe - 'going' never
         // matched; count confirmed 'yes' RSVPs.
         .eq('response', 'yes')
         .eq('is_confirmed', true)

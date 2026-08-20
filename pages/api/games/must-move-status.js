@@ -1,5 +1,5 @@
 /**
- * Must-Move Games Management API — Chain-Based
+ * Must-Move Games Management API - Chain-Based
  * GET /api/commander/games/must-move-status?venue_id=X
  *   Returns active games grouped by type+stakes with chain-ordered must-move relationships.
  *   Chain example: T7 → T4 → T1 (players move one step at a time, not all to main).
@@ -22,7 +22,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -286,7 +286,7 @@ async function handlePost(req, res) {
       .eq('id', mmGame?.table_id)
       .maybeSingle();
 
-    // Move the player (INSERT FIRST, THEN DELETE — if insert fails, player stays at source):
+    // Move the player (INSERT FIRST, THEN DELETE - if insert fails, player stays at source):
     // 1. Insert a new seat at the target game FIRST
     const { error: insertError } = await getSupabase().from('commander_seats').insert({
       game_id: actualTargetId,
@@ -302,7 +302,7 @@ async function handlePost(req, res) {
       return res.status(500).json({ success: false, error: 'Failed to seat player at target table' });
     }
 
-    // 2. Delete their seat at the must-move table (safe — player already seated at target)
+    // 2. Delete their seat at the must-move table (safe - player already seated at target)
     await getSupabase().from('commander_seats').delete().eq('id', playerToMove.id);
 
     // 3. Update player counts using actual seat counts (not stale fields)

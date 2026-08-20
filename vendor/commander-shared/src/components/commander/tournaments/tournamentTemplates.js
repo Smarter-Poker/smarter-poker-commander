@@ -1,5 +1,5 @@
 /**
- * Tournament Templates — 7 Industry-Standard Tournament Structures
+ * Tournament Templates - 7 Industry-Standard Tournament Structures
  * Expert blind structures with proper antes, breaks, and escalation
  * Used by Tournament Settings page and CreateTournamentModal
  */
@@ -195,14 +195,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'daily-deepstack',
         name: 'Daily Deepstack',
-        description: 'Standard Daily Tournament with Deep Starting Stack and 20-minute Levels. Great for Regulars Seeking Solid Play.',
+        description: 'Standard Daily Tournament With Deep Starting Stack And 20-Minute Levels. Great For Regulars Seeking Solid Play.',
         tournament_type: 'freezeout',
         buyin_amount: 150,
         buyin_fee: 30,
         starting_chips: 20000,
         blind_structure: DAILY_DEEPSTACK_BLINDS,
         late_registration_levels: 8,
-        estimated_duration: '~5 hours',
+        estimated_duration: '~5 Hours',
         allows_rebuys: false,
         allows_addon: false,
         bounty_amount: 0,
@@ -212,14 +212,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'nightly-turbo',
         name: 'Nightly Turbo',
-        description: 'Fast-paced Action with Shorter Levels. Perfect for Weeknight Play When Players Want Quick Results.',
+        description: 'Fast-Paced Action With Shorter Levels. Perfect For Weeknight Play When Players Want Quick Results.',
         tournament_type: 'freezeout',
         buyin_amount: 80,
         buyin_fee: 15,
         starting_chips: 10000,
         blind_structure: NIGHTLY_TURBO_BLINDS,
         late_registration_levels: 6,
-        estimated_duration: '~3 hours',
+        estimated_duration: '~3 Hours',
         allows_rebuys: false,
         allows_addon: false,
         bounty_amount: 0,
@@ -229,14 +229,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'weekend-major',
         name: 'Weekend Major',
-        description: 'Premium Event with Deep Stack, Long Levels, and Dinner Break. the Flagship Weekend Tournament.',
+        description: 'Premium Event With Deep Stack, Long Levels, And Dinner Break. The Flagship Weekend Tournament.',
         tournament_type: 'freezeout',
         buyin_amount: 300,
         buyin_fee: 50,
         starting_chips: 30000,
         blind_structure: WEEKEND_MAJOR_BLINDS,
         late_registration_levels: 8,
-        estimated_duration: '~8 hours',
+        estimated_duration: '~8 Hours',
         allows_rebuys: false,
         allows_addon: false,
         bounty_amount: 0,
@@ -246,14 +246,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'bounty-hunter',
         name: 'Bounty Hunter',
-        description: 'Knockout Format with $50 Bounty per Elimination. Rewards Aggressive Play and Creates Action.',
+        description: 'Knockout Format With $50 Bounty Per Elimination. Rewards Aggressive Play And Creates Action.',
         tournament_type: 'bounty',
         buyin_amount: 100,
         buyin_fee: 20,
         starting_chips: 15000,
         blind_structure: BOUNTY_HUNTER_BLINDS,
         late_registration_levels: 6,
-        estimated_duration: '~4 hours',
+        estimated_duration: '~4 Hours',
         allows_rebuys: false,
         allows_addon: false,
         bounty_amount: 50,
@@ -263,14 +263,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'rebuy-madness',
         name: 'Rebuy Madness',
-        description: 'Unlimited Rebuys Through Level 6 with Add-on at Break. Builds Big Prize Pools From Smaller Buy-ins.',
+        description: 'Unlimited Rebuys Through Level 6 With Add-On At Break. Builds Big Prize Pools From Smaller Buy-Ins.',
         tournament_type: 'rebuy',
         buyin_amount: 60,
         buyin_fee: 10,
         starting_chips: 8000,
         blind_structure: REBUY_MADNESS_BLINDS,
         late_registration_levels: 6,
-        estimated_duration: '~4 hours',
+        estimated_duration: '~4 Hours',
         allows_rebuys: true,
         rebuy_amount: 60,
         rebuy_chips: 8000,
@@ -287,14 +287,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'satellite-qualifier',
         name: 'Satellite Qualifier',
-        description: 'Quick Single-table Satellite with Hyper-turbo Levels. Winners Earn Seats Into Larger Events.',
+        description: 'Quick Single-Table Satellite With Hyper-Turbo Levels. Winners Earn Seats Into Larger Events.',
         tournament_type: 'satellite',
         buyin_amount: 50,
         buyin_fee: 10,
         starting_chips: 5000,
         blind_structure: SATELLITE_QUALIFIER_BLINDS,
         late_registration_levels: 4,
-        estimated_duration: '~2 hours',
+        estimated_duration: '~2 Hours',
         allows_rebuys: false,
         allows_addon: false,
         bounty_amount: 0,
@@ -304,14 +304,14 @@ export const TOURNAMENT_TEMPLATES = [
     {
         id: 'progressive-knockout',
         name: 'Progressive Knockout',
-        description: 'Half the Buy-in Starts as Your Bounty. Eliminate a Player and Win Half Their Bounty — the Other Half Adds to Yours. Bounties Grow as the Tournament Progresses.',
+        description: 'Half The Buy-In Starts As Your Bounty. Eliminate A Player And Win Half Their Bounty, The Other Half Adds To Yours. Bounties Grow As The Tournament Progresses.',
         tournament_type: 'pko',
         buyin_amount: 200,
         buyin_fee: 30,
         starting_chips: 15000,
         blind_structure: PKO_BLINDS,
         late_registration_levels: 8,
-        estimated_duration: '~5 hours',
+        estimated_duration: '~5 Hours',
         allows_rebuys: false,
         allows_addon: false,
         bounty_amount: 100,
@@ -323,12 +323,12 @@ export const TOURNAMENT_TEMPLATES = [
 
 // All supported tournament types
 export const TOURNAMENT_TYPES = [
-    { value: 'freezeout', label: 'Freezeout', description: 'One Buy-in, no Rebuys' },
+    { value: 'freezeout', label: 'Freezeout', description: 'One Buy-In, No Rebuys' },
     { value: 'rebuy', label: 'Rebuy', description: 'Rebuys Allowed During Rebuy Period' },
-    { value: 'bounty', label: 'Bounty', description: 'Fixed Cash Bounty for Each Elimination' },
-    { value: 'pko', label: 'Progressive KO', description: 'Bounty Grows — Half on Knock Out, Half Added to Yours' },
-    { value: 'satellite', label: 'Satellite', description: 'Win a Seat to a Larger Event' },
-    { value: 'shootout', label: 'Shootout', description: 'Win Your Table to Advance' },
+    { value: 'bounty', label: 'Bounty', description: 'Fixed Cash Bounty For Each Elimination' },
+    { value: 'pko', label: 'Progressive KO', description: 'Bounty Grows, Half On Knock Out, Half Added To Yours' },
+    { value: 'satellite', label: 'Satellite', description: 'Win A Seat To A Larger Event' },
+    { value: 'shootout', label: 'Shootout', description: 'Win Your Table To Advance' },
     { value: 'turbo', label: 'Turbo', description: 'Shorter Blind Levels (8-12 Min)' },
     { value: 'hyper', label: 'Hyper-Turbo', description: 'Very Short Levels (3-5 Min)' },
 ];
@@ -342,11 +342,11 @@ export const COMMON_BUYINS = [30, 50, 60, 80, 100, 150, 200, 300, 500, 1000];
 // Estimate tournament duration from blind structure
 export function estimateDuration(blindStructure) {
     if (!blindStructure?.length) return 'Unknown';
-    const totalMinutes = blindStructure.reduce((sum, level) => sum + (level.duration || 0), 0);
+    const totalMinutes = blindStructure.reduce((sum, level) => sum + (level.duration ?? level.duration_minutes ?? 0), 0);
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
-    if (hours === 0) return `~${mins} min`;
-    if (mins === 0) return `~${hours} hrs`;
+    if (hours === 0) return `~${mins} Min`;
+    if (mins === 0) return `~${hours} Hrs`;
     return `~${hours}h ${mins}m`;
 }
 
@@ -354,7 +354,7 @@ export function estimateDuration(blindStructure) {
 export function formatBuyin(buyin, fee, bounty) {
     let str = `$${buyin}`;
     if (fee) str += `+$${fee}`;
-    if (bounty) str += ` (+$${bounty} bounty)`;
+    if (bounty) str += ` (+$${bounty} Bounty)`;
     return str;
 }
 

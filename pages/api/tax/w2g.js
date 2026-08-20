@@ -1,8 +1,8 @@
 /**
  * W-2G Tax Compliance API
- * GET /api/commander/tax/w2g — List tax events for venue
- * POST /api/commander/tax/w2g — Generate W-2G for a tax event
- * PATCH /api/commander/tax/w2g — Update tax event (SSN, acknowledge, notes)
+ * GET /api/commander/tax/w2g - List tax events for venue
+ * POST /api/commander/tax/w2g - Generate W-2G for a tax event
+ * PATCH /api/commander/tax/w2g - Update tax event (SSN, acknowledge, notes)
  *
  * IRS W-2G: Required for poker tournament winnings >= $5,000 (net of buy-in)
  * Federal withholding: 24% on reportable gambling winnings
@@ -24,7 +24,7 @@ function getSupabase() {
 
 const FEDERAL_WITHHOLDING_RATE = 0.24;
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -127,7 +127,7 @@ async function generateW2G(req, res, staff) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'tax_event_id required' } });
   }
 
-  // 2026-07-25 audit fix: generating a W-2G updates the tax event — manager role required.
+  // 2026-07-25 audit fix: generating a W-2G updates the tax event - manager role required.
   if (!['owner', 'manager'].includes(staff.role)) {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager role required' } });
   }
@@ -216,7 +216,7 @@ async function generateW2G(req, res, staff) {
         w2g_generated: true,
         withholding_amount: withholdingAmount,
         withholding_rate: FEDERAL_WITHHOLDING_RATE,
-        // 2026-07-25 audit fix: removed player_ssn_last4 write — column does not exist.
+        // 2026-07-25 audit fix: removed player_ssn_last4 write - column does not exist.
         w2g_document_url: `w2g://${tax_event_id}` // Reference for retrieval
       })
       .eq('id', tax_event_id)
@@ -230,7 +230,7 @@ async function generateW2G(req, res, staff) {
       data: {
         w2g: w2gData,
         tax_event: updated,
-        message: `W-2G generated for ${playerName} — $${grossAmount.toFixed(2)} gross, $${withholdingAmount.toFixed(2)} withheld`
+        message: `W-2G generated for ${playerName} - $${grossAmount.toFixed(2)} gross, $${withholdingAmount.toFixed(2)} withheld`
       }
     });
   } catch (error) {
@@ -240,7 +240,7 @@ async function generateW2G(req, res, staff) {
 }
 
 async function updateTaxEvent(req, res, staff) {
-  // 2026-07-25 audit fix: removed player_ssn_last4 handling — the column does not
+  // 2026-07-25 audit fix: removed player_ssn_last4 handling - the column does not
   // exist and SSN data must not be written through this API.
   const { tax_event_id, notes, player_acknowledged } = req.body;
 

@@ -1,5 +1,5 @@
 /**
- * Commander Rate Limiting — RE-EXPORT SHIM
+ * Commander Rate Limiting - RE-EXPORT SHIM
  * ═══════════════════════════════════════════════════════════════
  * This file is a backward-compatible shim. All rate limiting logic
  * now lives in the canonical src/lib/apiRateLimit.js.

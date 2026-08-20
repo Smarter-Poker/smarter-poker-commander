@@ -502,7 +502,7 @@ export default function TroubleshootingPage() {
   return (
     <>
       <SEOHead
-                title="Commander — Troubleshooting"
+                title="Commander - Troubleshooting"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />

@@ -1,11 +1,11 @@
 /**
- * Commander Members API — List & Create
+ * Commander Members API - List & Create
  * GET: List members for a venue (with search, filter, pagination)
  * POST: Create a new member (auto-generates member_number + qr_code)
  */
 import crypto from 'crypto';
 import { createClient } from '../../../src/lib/supabaseServerClient';
-// 2026-07-25 audit fix: guardStaff — member list is PII and must not be public on GET
+// 2026-07-25 audit fix: guardStaff - member list is PII and must not be public on GET
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -94,7 +94,7 @@ async function handleList(req, res, staff) {
     }
 
     // 2026-07-25 audit fix: omit sensitive PII from the LIST payload (detail
-    // route keeps them) and cache privately — this is an authenticated response.
+    // route keeps them) and cache privately - this is an authenticated response.
     const sanitized = (members || []).map(({ id_number, date_of_birth, ...rest }) => rest);
 
     res.setHeader('Cache-Control', 'private, max-age=30');

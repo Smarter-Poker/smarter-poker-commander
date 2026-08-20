@@ -27,11 +27,11 @@ export default function AddBuyinModal({
     if (!buyinAmount || buyinAmount <= 0) return;
 
     if (minBuyin > 0 && buyinAmount < minBuyin) {
-      setError(`Minimum buy-in is $${minBuyin}`);
+      setError(`Minimum Buy-In Is $${minBuyin}`);
       return;
     }
     if (maxBuyin > 0 && buyinAmount > maxBuyin) {
-      setError(`Maximum buy-in is $${maxBuyin}`);
+      setError(`Maximum Buy-In Is $${maxBuyin}`);
       return;
     }
 
@@ -56,10 +56,10 @@ export default function AddBuyinModal({
         broadcastChange('tables');
         broadcastChange('games');
       } else {
-        setError(data.error?.message || 'Failed to add buy-in');
+        setError(data.error?.message || 'Failed To Add Buy-In');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +83,7 @@ export default function AddBuyinModal({
               <DollarSign className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Add Buy-in</h2>
+              <h2 className="text-lg font-semibold text-white">Add Buy-In</h2>
               <p className="text-sm text-[#64748B]">
                 {session.player_name || 'Player'} - Seat {session.seat_number}
               </p>
@@ -107,7 +107,7 @@ export default function AddBuyinModal({
 
           {/* Current total */}
           <div className="p-3 bg-[#0D192E] rounded-lg">
-            <p className="text-sm text-[#64748B]">Current Total Buy-in</p>
+            <p className="text-sm text-[#64748B]">Current Total Buy-In</p>
             <p className="text-xl font-bold text-white">
               ${session.total_buyin || 0}
             </p>
@@ -154,7 +154,7 @@ export default function AddBuyinModal({
             </div>
             {(minBuyin > 0 || maxBuyin < 999999) && (
               <p className="text-xs text-[#64748B] mt-1">
-                Buy-in range: ${minBuyin} - ${maxBuyin}
+                Buy-In Range: ${minBuyin} - ${maxBuyin}
               </p>
             )}
           </div>
@@ -175,7 +175,7 @@ export default function AddBuyinModal({
             ) : (
               <>
                 <DollarSign className="w-5 h-5" />
-                Add ${amount || 0} Buy-in
+                Add ${amount || 0} Buy-In
               </>
             )}
           </button>

@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -81,7 +81,7 @@ async function getHighHand(req, res, id) {
 async function updateHighHand(req, res, id, staff) {
   try {
     // 2026-07-25 audit fix: identity comes from the verified x-staff-session
-    // (guardWriteStaff) — the Bearer-JWT + user_id lookup blocked PIN-terminal
+    // (guardWriteStaff) - the Bearer-JWT + user_id lookup blocked PIN-terminal
     // staff. Venue scoping is preserved against the record being written.
 
     // Get existing high hand
@@ -159,7 +159,7 @@ async function updateHighHand(req, res, id, staff) {
 async function deleteHighHand(req, res, id, staff) {
   try {
     // 2026-07-25 audit fix: identity comes from the verified x-staff-session
-    // (guardWriteStaff) — the Bearer-JWT + user_id lookup blocked PIN-terminal
+    // (guardWriteStaff) - the Bearer-JWT + user_id lookup blocked PIN-terminal
     // staff. Venue scoping and the manager/owner role check are preserved.
 
     // Get existing high hand

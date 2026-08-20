@@ -1,5 +1,5 @@
 /**
- * SUPABASE API KEY RESOLUTION — Commander App
+ * SUPABASE API KEY RESOLUTION - Commander App
  * ---------------------------------------------------------------------------
  * Copied from Smarter-Poker-World-Hub/src/lib/supabaseKeys.js (2026-08-16).
  *

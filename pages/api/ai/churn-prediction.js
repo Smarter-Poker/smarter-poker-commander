@@ -1,6 +1,6 @@
 /**
  * Player Churn Prediction API
- * GET /api/commander/ai/churn-prediction — Get churn risk scores for venue players
+ * GET /api/commander/ai/churn-prediction - Get churn risk scores for venue players
  *
  * Analyzes player visit patterns to predict who may not return:
  * - Visit frequency decline
@@ -26,7 +26,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.ai)) return;
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
     }
 
-    // Require staff auth — exposes player names and visit analytics
+    // Require staff auth - exposes player names and visit analytics
     const staff = await guardStaff(req, res);
     if (!staff) return;
 
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         .select('player_id, check_in_at, total_time_minutes, total_buyin')
         .eq('venue_id', venue_id)
         .gte('check_in_at', ninetyDaysAgo)
-        // 2026-07-25 audit fix: removed .limit(100) — the cap silently truncated
+        // 2026-07-25 audit fix: removed .limit(100) - the cap silently truncated
         // the 90-day aggregation this prediction is computed from.
         .order('check_in_at', { ascending: false })
 

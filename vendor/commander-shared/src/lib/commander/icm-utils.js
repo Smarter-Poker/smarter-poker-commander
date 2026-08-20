@@ -131,7 +131,7 @@ function approximateICM(playerIdx, stacks, prizes, totalChips) {
         if (pos === 0) {
             equity += chipFraction * prizes[pos];
         } else {
-            // Diminishing returns for lower positions — ICM compresses equity
+            // Diminishing returns for lower positions - ICM compresses equity
             // Players with large stacks get less equity than chip-proportional for 1st
             // but more security for lower positions
             const compression = 1 - (chipFraction * 0.3);

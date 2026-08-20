@@ -125,7 +125,7 @@ export default async function handler(req, res) {
       }
 
       // Distributed-attack guard: too many recent FAILURES against this venue
-      // from any source. Peek only — this check never increments the counter.
+      // from any source. Peek only - this check never increments the counter.
       const venueLock = await venueLockoutSeconds(venue_id);
       if (venueLock > 0) {
         res.setHeader('Retry-After', venueLock);

@@ -119,7 +119,7 @@ export default function DealerTablet() {
 
       // Route based on table mode set by floor manager in Table Assignments
       if (tbl.mode === 'tournament' && tbl.tournament_id) {
-        // TOURNAMENT MODE — get players from tournament floor-view
+        // TOURNAMENT MODE - get players from tournament floor-view
         try {
           const tRes = await commanderFetch(`/api/commander/tournaments/${tbl.tournament_id}/floor-view`, { headers });
           if (!tRes.ok) throw new Error(`Tournament fetch failed (${tRes.status})`);
@@ -149,7 +149,7 @@ export default function DealerTablet() {
           }
         } catch (e) { console.warn('Tournament fetch error:', e); }
       } else {
-        // CASH MODE or INACTIVE — get player sessions
+        // CASH MODE or INACTIVE - get player sessions
         setTournamentMode(null);
         try {
           const sessionsRes = await commanderFetch(`/api/commander/dealer/sessions?table=${tableNumber}`, { headers });
@@ -170,17 +170,17 @@ export default function DealerTablet() {
       fetchTable(ctrl.signal);
     }, 30000);
     return () => { controller.abort(); clearInterval(i); };
-  }, [fetchTable]); // fallback — real-time sync handles instant updates
+  }, [fetchTable]); // fallback - real-time sync handles instant updates
 
   // Extract venueId for cross-device Supabase sync
   const [venueId] = useState(() => {
     return getVenueId();
   });
 
-  // Commander Data Bus — instant cross-tab sync + Supabase Realtime cross-device
+  // Commander Data Bus - instant cross-tab sync + Supabase Realtime cross-device
   useCommanderSync(venueId, fetchTable, { entities: ['tables', 'games', 'dealers'] });
 
-  // Keep screen awake — this is a dealer tablet mounted at the table
+  // Keep screen awake - this is a dealer tablet mounted at the table
   useWakeLock();
 
   // Store last sync timestamp for drift-free countdown
@@ -199,7 +199,7 @@ export default function DealerTablet() {
     serverSnapshotRef.current = snapshot;
   }, [seatedPlayers.length, seatedPlayers.map(p => p.session_id).join(',')]);
 
-  // Drift-free countdown ticker — computes display time from server anchor
+  // Drift-free countdown ticker - computes display time from server anchor
   const [displayPlayers, setDisplayPlayers] = useState([]);
   useEffect(() => {
     const ticker = setInterval(() => {
@@ -241,7 +241,7 @@ export default function DealerTablet() {
       if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
       setScanning(true);
       detectQR();
-    } catch { setScanError('Camera access denied. Use manual entry.'); }
+    } catch { setScanError('Camera Access Denied. Use Manual Entry.'); }
   };
 
   const stopCamera = () => {
@@ -295,9 +295,9 @@ export default function DealerTablet() {
         setDealerScanMode(false);
         broadcastChange('dealers');
       } else {
-        setScanError(json.error || 'Dealer scan failed');
+        setScanError(json.error || 'Dealer Scan Failed');
       }
-    } catch (err) { setScanError('Network error — try again'); }
+    } catch (err) { setScanError('Network Error, Try Again'); }
     finally { setScanLoading(false); }
   };
 
@@ -312,7 +312,7 @@ export default function DealerTablet() {
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'Member not found');
+      if (!res.ok || !json.success) throw new Error(json.error || 'Member Not Found');
       setScannedMember(json.data);
     } catch (err) { setScanError(err.message); }
     finally { setScanLoading(false); }
@@ -335,7 +335,7 @@ export default function DealerTablet() {
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed to seat player');
+      if (!json.success) throw new Error(json.error || 'Failed To Seat Player');
       closeScanner(); await fetchTable();
       broadcastChange('tables');
     } catch (err) { setScanError(err.message); }
@@ -351,7 +351,7 @@ export default function DealerTablet() {
         await fetchTable();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   setScanLoading(false);
   };
 
@@ -369,7 +369,7 @@ export default function DealerTablet() {
         setAddTimePlayer(null); await fetchTable();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setAddingTime(false); }
   };
 
@@ -391,9 +391,9 @@ export default function DealerTablet() {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (!json.success && json.error) {
-        setToast({ type: 'error', text: json.error || 'Bust out failed.' });
+        setToast({ type: 'error', text: json.error || 'Bust Out Failed.' });
       }
-      // Also remove from table session if applicable — non-fatal cleanup.
+      // Also remove from table session if applicable - non-fatal cleanup.
       // In tournament mode session_id is just the entry_id (set in fetchTable),
       // not a real table session, so skip it; and a failed cleanup must not
       // report the whole bust-out as failed after eliminate already succeeded.
@@ -405,7 +405,7 @@ export default function DealerTablet() {
       await fetchTable();
       broadcastChange('tables');
       broadcastChange('tournaments');
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Bust out failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Bust Out Failed. Check Console.' }); }
     finally { setBustingOut(null); }
   };
 
@@ -423,7 +423,7 @@ export default function DealerTablet() {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (!res.ok || json.success === false) {
-        setToast({ type: 'error', text: json.error || 'Failed to update chips.' });
+        setToast({ type: 'error', text: json.error || 'Failed To Update Chips.' });
         return;
       }
       setChipEntryPlayer(null);
@@ -431,7 +431,7 @@ export default function DealerTablet() {
       await fetchTable();
       broadcastChange('tables');
       broadcastChange('tournaments');
-    } catch (err) { console.warn('Update chips error:', err); setToast({ type: 'error', text: 'Failed to update chips. Check console.' }); }
+    } catch (err) { console.warn('Update chips error:', err); setToast({ type: 'error', text: 'Failed To Update Chips. Check Console.' }); }
     finally { setSavingChips(false); }
   };
 
@@ -456,7 +456,7 @@ export default function DealerTablet() {
       } else {
         setConfirmRemoveAll(false);
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setRemovingAll(false); }
   };
 
@@ -482,10 +482,10 @@ export default function DealerTablet() {
         body: JSON.stringify({ table_id: table?.id })
       });
       if (res.ok) {
-        // Redirect back to poker room — table is now inactive
+        // Redirect back to poker room - table is now inactive
         router.push('/commander/poker-room');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setClosingTable(false); }
   };
 
@@ -502,7 +502,7 @@ export default function DealerTablet() {
         body: JSON.stringify({ venue_id: vid, table_number: parseInt(tableNumber), reason: 'floor_assistance', description: `Floor requested at Table ${tableNumber}`, priority: 'normal', called_by: 'dealer' })
       });
       if (res.ok) broadcastChange('floor_calls');
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     setTimeout(() => setFloorRequested(false), 30000);
   };
 
@@ -515,7 +515,7 @@ export default function DealerTablet() {
   return (
     <>
       <SEOHead
-        title="Commander — Details"
+        title="Commander - Details"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -530,12 +530,12 @@ export default function DealerTablet() {
             <h1 className="text-xl font-bold text-white">Table {tableNumber}</h1>
             <p className="text-xs text-[#B0B3B8]">
               {tournamentMode
-                ? <><span className="text-[#F59E0B] font-semibold">{tournamentMode.name}</span> — {seatedPlayers.length}/{maxSeats}</>
+                ? <><span className="text-[#F59E0B] font-semibold">{tournamentMode.name}</span> - {seatedPlayers.length}/{maxSeats}</>
                 : table?.mode === 'cash'
-                  ? <>{table?.game_type || 'NLH'} {table?.stakes || '$1/$2'} — {seatedPlayers.length}/{maxSeats}</>
+                  ? <>{table?.game_type || 'NLH'} {table?.stakes || '$1/$2'} - {seatedPlayers.length}/{maxSeats}</>
                   : table?.mode === 'inactive' || !table?.mode
-                    ? <span className="text-[#6A6B6D]">Table Not Assigned — Contact Floor</span>
-                    : <>{table?.game_type || 'NLH'} — {table?.stakes || '$1/$2'} — {seatedPlayers.length}/{maxSeats}</>
+                    ? <span className="text-[#6A6B6D]">Table Not Assigned, Contact Floor</span>
+                    : <>{table?.game_type || 'NLH'} - {table?.stakes || '$1/$2'} - {seatedPlayers.length}/{maxSeats}</>
               }
             </p>
           </div>
@@ -547,7 +547,7 @@ export default function DealerTablet() {
             )}
             {tournamentMode && (
               <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-2.5 py-1.5">
-                <span className="text-xs font-bold text-[#F59E0B]">{tournamentMode.players_remaining} left</span>
+                <span className="text-xs font-bold text-[#F59E0B]">{tournamentMode.players_remaining} Left</span>
               </div>
             )}
             <div className="bg-[#3A3B3C] rounded-lg px-3 py-1.5 flex items-center gap-1.5">
@@ -565,7 +565,7 @@ export default function DealerTablet() {
             <div className="text-center">
               <Lock className="w-16 h-16 text-[#B0B3B8] mx-auto mb-4" />
               <p className="text-xl font-bold text-white mb-2">Screen Locked</p>
-              <p className="text-sm text-[#B0B3B8]">Tap anywhere to unlock</p>
+              <p className="text-sm text-[#B0B3B8]">Tap Anywhere To Unlock</p>
             </div>
           </div>
         )}
@@ -575,7 +575,7 @@ export default function DealerTablet() {
           <div className="bg-[#F59E0B]/10 border-b border-[#F59E0B]/30 px-4 py-2 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
             <p className="text-sm text-[#F59E0B]">
-              {lowTimePlayers.map(p => `S${p.seat_number} ${p.player_name?.split(' ')[0]} (${formatCountdown(p.time_remaining)})`).join(' — ')}
+              {lowTimePlayers.map(p => `S${p.seat_number} ${p.player_name?.split(' ')[0]} (${formatCountdown(p.time_remaining)})`).join(' - ')}
             </p>
           </div>
         )}
@@ -584,11 +584,11 @@ export default function DealerTablet() {
         <div className="flex-1 relative p-4 overflow-hidden">
           <div className="relative w-full max-w-lg mx-auto" style={{ aspectRatio: '4/3' }}>
             <div className="absolute inset-[12%] rounded-[50%] bg-[#31A24C]/8 border-2 border-[#31A24C]/20" />
-            {/* Dealer Position — center of table */}
+            {/* Dealer Position - center of table */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center gap-2">
               <p className="text-[9px] text-[#B0B3B8] uppercase tracking-wider">T{tableNumber}</p>
               {breakTimer && <p className="text-sm font-mono font-bold text-[#F59E0B]">Break {Math.floor(breakSeconds / 60)}:{(breakSeconds % 60).toString().padStart(2, '0')}</p>}
-              {/* Dealer Scan Button — shows "Scan Dealer" if none, dealer name if scanned */}
+              {/* Dealer Scan Button - shows "Scan Dealer" if none, dealer name if scanned */}
               <button
                 onTouchStart={() => {
                   dealerLongPressRef.current = setTimeout(() => {
@@ -638,7 +638,7 @@ export default function DealerTablet() {
                 <ScanLine className="w-3.5 h-3.5" />
                 {currentDealer ? currentDealer.name?.split(' ')[0] : 'Scan Dealer'}
               </button>
-              {/* Lock Screen Button — in dealer position */}
+              {/* Lock Screen Button - in dealer position */}
               <button onClick={() => setScreenLocked(!screenLocked)}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 select-none ${screenLocked ? 'bg-[#EF4444]/20 border border-[#EF4444]/40 text-[#EF4444]' : 'bg-[#3A3B3C]/60 border border-[#4A4B4C]/40 text-[#8A8D91]'}`}>
                 {screenLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
@@ -797,7 +797,7 @@ export default function DealerTablet() {
           {(!table?.mode || table?.mode === 'inactive') && (
             <div className="p-3 bg-[#3A3B3C]/50 border border-[#3A3B3C] rounded-xl text-center mb-2">
               <Power className="w-6 h-6 text-[#6A6B6D] mx-auto mb-1" />
-              <p className="text-xs text-[#6A6B6D]">Table Not Assigned — Ask Floor Manager To Assign Via Table Assignments</p>
+              <p className="text-xs text-[#6A6B6D]">Table Not Assigned, Ask Floor Manager To Assign Via Table Assignments</p>
             </div>
           )}
 
@@ -814,7 +814,7 @@ export default function DealerTablet() {
                 if (!res.ok) throw new Error(`Request failed (${res.status})`);
                 const json = await res.json();
                 if (json.success) setHandCount(json.hands_dealt);
-              } catch (err) { console.warn('Hand count error:', err); setToast({ type: 'error', text: 'Action failed: Hand count. Please try again.' }); }
+              } catch (err) { console.warn('Hand count error:', err); setToast({ type: 'error', text: 'Action Failed: Hand Count. Please Try Again.' }); }
             }} className="py-4 rounded-xl bg-[#1877F2] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8]"><Hash className="w-5 h-5" /> Hand +1</button>
             <button onClick={requestFloor} disabled={floorRequested}
               className={`py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${floorRequested ? 'bg-[#F59E0B] text-white animate-pulse' : 'bg-[#EF4444] text-white active:bg-[#DC2626]'}`}>
@@ -852,7 +852,7 @@ export default function DealerTablet() {
                   body: JSON.stringify({ table_number: parseInt(tableNumber), action: 'reset' })
                 });
                 if (res.ok) setHandCount(0);
-              } catch (err) { console.warn('Hand reset error:', err); setToast({ type: 'error', text: 'Action failed: Hand reset. Please try again.' }); }
+              } catch (err) { console.warn('Hand reset error:', err); setToast({ type: 'error', text: 'Action Failed: Hand Reset. Please Try Again.' }); }
             }} className="flex-1 py-2.5 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium flex items-center justify-center gap-1 active:bg-[#4A4B4C]"><RotateCcw className="w-3.5 h-3.5" /> Reset</button>
             <button onClick={() => router.push('/commander/poker-room')} className="flex-1 py-2.5 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C]">Exit</button>
           </div>
@@ -867,7 +867,7 @@ export default function DealerTablet() {
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Remove All Players?</h3>
               <p className="text-sm text-[#B0B3B8] mb-6">
-                This will end sessions for all {seatedPlayers.length} player{seatedPlayers.length !== 1 ? 's' : ''} at Table {tableNumber}. Their time will stop counting down.
+                This Will End Sessions For All {seatedPlayers.length} Player{seatedPlayers.length !== 1 ? 's' : ''} At Table {tableNumber}. Their Time Will Stop Counting Down.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setConfirmRemoveAll(false)}
@@ -887,7 +887,7 @@ export default function DealerTablet() {
           <div className="fixed inset-0 z-50 bg-black/80 flex items-end justify-center" onClick={closeScanner}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="sticky top-0 bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between z-10">
-                <div><h3 className="text-lg font-bold text-white">{dealerScanMode ? 'Scan Dealer — Push In' : `Scan Player — Seat ${targetSeat}`}</h3><p className="text-xs text-[#B0B3B8]">{dealerScanMode ? 'Scan Employee QR Code' : 'Scan Member QR Code'}</p></div>
+                <div><h3 className="text-lg font-bold text-white">{dealerScanMode ? 'Scan Dealer, Push In' : `Scan Player, Seat ${targetSeat}`}</h3><p className="text-xs text-[#B0B3B8]">{dealerScanMode ? 'Scan Employee QR Code' : 'Scan Member QR Code'}</p></div>
                 <button onClick={closeScanner} className="p-2 rounded-lg active:bg-[#3A3B3C]"><X className="w-5 h-5 text-[#B0B3B8]" /></button>
               </div>
               <div className="p-4 space-y-4">
@@ -939,12 +939,12 @@ export default function DealerTablet() {
                             <AlertTriangle className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
                             <div>
                               <p className="text-sm text-[#F59E0B] font-medium">Already Seated</p>
-                              <p className="text-xs text-[#B0B3B8]">Currently at Table {scannedMember.already_seated.table_number} Seat {scannedMember.already_seated.seat_number}</p>
+                              <p className="text-xs text-[#B0B3B8]">Currently At Table {scannedMember.already_seated.table_number} Seat {scannedMember.already_seated.seat_number}</p>
                             </div>
                           </div>
                         )}
                         <button onClick={seatPlayer} className="w-full py-4 rounded-xl bg-[#31A24C] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#28883F]">
-                          <CheckCircle2 className="w-5 h-5" /> Seat at S{targetSeat} — {scannedMember.time_balance_minutes} min
+                          <CheckCircle2 className="w-5 h-5" /> Seat At S{targetSeat}, {scannedMember.time_balance_minutes} Min
                         </button>
                       </>
                     )}
@@ -984,11 +984,11 @@ export default function DealerTablet() {
           </div>
         )}
 
-        {/* ADD TIME MODAL — Cash mode */}
+        {/* ADD TIME MODAL - Cash mode */}
         {addTimePlayer && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setAddTimePlayer(null)}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-white">S{addTimePlayer.seat_number} — {addTimePlayer.player_name}</h3>
+              <h3 className="text-lg font-bold text-white">S{addTimePlayer.seat_number}, {addTimePlayer.player_name}</h3>
               <p className="text-sm text-[#B0B3B8]">Current: <span className="font-mono font-bold text-white">{formatCountdown(addTimePlayer.time_remaining)}</span></p>
               <div className="grid grid-cols-4 gap-2">
                 {[30, 60, 120, 180].map(m => (
@@ -1013,7 +1013,7 @@ export default function DealerTablet() {
           </div>
         )}
 
-        {/* TOURNAMENT ACTION MODAL — Choose: Enter Chips or Bust Out */}
+        {/* TOURNAMENT ACTION MODAL - Choose: Enter Chips or Bust Out */}
         {tournamentActionPlayer && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setTournamentActionPlayer(null)}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
@@ -1025,8 +1025,8 @@ export default function DealerTablet() {
                   <h3 className="text-lg font-bold text-white">{tournamentActionPlayer.player_name}</h3>
                   <p className="text-sm text-[#B0B3B8]">
                     {tournamentActionPlayer.current_chips
-                      ? `${tournamentActionPlayer.current_chips.toLocaleString()} chips`
-                      : 'No chips recorded'}
+                      ? `${tournamentActionPlayer.current_chips.toLocaleString()} Chips`
+                      : 'No Chips Recorded'}
                   </p>
                 </div>
               </div>
@@ -1053,16 +1053,16 @@ export default function DealerTablet() {
           </div>
         )}
 
-        {/* CHIP ENTRY MODAL — Tournament mode */}
+        {/* CHIP ENTRY MODAL - Tournament mode */}
         {chipEntryPlayer && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setChipEntryPlayer(null)}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">
-                S{chipEntryPlayer.seat_number} — {chipEntryPlayer.player_name}
+                S{chipEntryPlayer.seat_number}, {chipEntryPlayer.player_name}
               </h3>
               <p className="text-sm text-[#B0B3B8]">
                 Current: <span className="font-mono font-bold text-white">
-                  {chipEntryPlayer.current_chips ? chipEntryPlayer.current_chips.toLocaleString() : 'Not set'}
+                  {chipEntryPlayer.current_chips ? chipEntryPlayer.current_chips.toLocaleString() : 'Not Set'}
                 </span>
               </p>
               <input
@@ -1071,7 +1071,7 @@ export default function DealerTablet() {
                 value={chipEntryValue}
                 onChange={e => setChipEntryValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && chipEntryValue) updatePlayerChips(); }}
-                placeholder="Enter chip count"
+                placeholder="Enter Chip Count"
                 autoFocus
                 className="w-full px-4 py-4 bg-[#18191A] border-2 border-[#3A3B3C] rounded-xl text-2xl font-mono font-bold text-white text-center focus:border-[#1877F2] focus:outline-none"
               />

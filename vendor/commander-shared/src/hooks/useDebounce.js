@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   USE DEBOUNCE — Delays a value update until the user stops typing
+   USE DEBOUNCE - Delays a value update until the user stops typing
    Prevents API hammering on search inputs.
 
    Usage:

@@ -73,7 +73,7 @@ export default async function handler(req, res) {
           .eq('id', user.id)
           .maybeSingle(),
 
-        // 2. Player preferences (all venues — general prefs)
+        // 2. Player preferences (all venues - general prefs)
         getSupabase()
           .from('commander_player_preferences')
           .select('preferred_games, preferred_stakes, auto_join_waitlist, notes')

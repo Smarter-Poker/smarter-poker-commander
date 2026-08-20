@@ -1,5 +1,5 @@
 /**
- * Tournament Registration — Cashier Backup
+ * Tournament Registration - Cashier Backup
  * /commander/tournament-registration
  * Allows cashier staff to register players for tournaments
  * when the cage has a long line.
@@ -51,7 +51,7 @@ const headers = { };
 
     useEffect(() => { const _c = new AbortController(); fetchTournaments(_c.signal); return () => _c.abort(); }, [fetchTournaments]);
 
-    // Commander Data Bus — sync tournaments + members across tabs
+    // Commander Data Bus - sync tournaments + members across tabs
     useCommanderSync(venueId || '', fetchTournaments, { entities: ['tournaments', 'members'] });
 
     // Player search
@@ -107,7 +107,7 @@ const headers = { };
             ? new Date(scheduledStart).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase()
             : '';
 
-        // "Received By" timestamp — written-out format like "February 17, 2026  7:53 pm"
+        // "Received By" timestamp - written-out format like "February 17, 2026  7:53 pm"
         const now = new Date();
         const receivedDate = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         const receivedTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
@@ -266,7 +266,7 @@ ${total > 0 ? `<div class="fin-total-row"><span class="fin-total-label">Total Bu
 
     const registerPlayer = async () => {
         if (!selectedPlayer || !selectedTournament) {
-            setMessage({ type: 'error', text: 'Select a player and tournament' });
+            setMessage({ type: 'error', text: 'Select A Player And Tournament' });
             return;
         }
         const buyinAmount = selectedTournament.buyin_amount || 0;
@@ -284,7 +284,7 @@ const headers = { 'Content-Type': 'application/json' };
             const regJson = await regRes.json();
 
             if (!regJson.success) {
-                const errMsg = regJson.error?.message || regJson.error || 'Registration failed';
+                const errMsg = regJson.error?.message || regJson.error || 'Registration Failed';
                 setMessage({ type: 'error', text: errMsg });
                 return;
             }
@@ -293,7 +293,7 @@ const headers = { 'Content-Type': 'application/json' };
             // inside the /api/commander/tournaments/[id]/register API endpoint.
             // This prevents a split-brain vulnerability where the UI crashes before the money is logged.
 
-            // 3. Auto-print registration receipts — use REAL data from API response + tournament record
+            // 3. Auto-print registration receipts - use REAL data from API response + tournament record
             const registeredEntry = regJson.data?.entry || {};
             let staffName = '';
             try { staffName = getStaffData().name || ''; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
@@ -315,14 +315,14 @@ const headers = { 'Content-Type': 'application/json' };
                 seatNumber: registeredEntry.seat_number || ''
             });
 
-            setMessage({ type: 'success', text: `${selectedPlayer.player_name} registered for ${selectedTournament.name || 'Tournament'}${buyinAmount > 0 ? ` — $${buyinAmount} buy-in` : ''}` });
+            setMessage({ type: 'success', text: `${selectedPlayer.player_name} Registered For ${selectedTournament.name || 'Tournament'}${buyinAmount > 0 ? `, $${buyinAmount} Buy-In` : ''}` });
             broadcastChange('tournaments');
             busEmit.celebration('confetti');
             setSelectedPlayer(null);
             setSelectedTournament(null);
         } catch (err) {
             console.warn('Registration error:', err);
-            setMessage({ type: 'error', text: 'Network error — try again' });
+            setMessage({ type: 'error', text: 'Network Error. Try Again.' });
         } finally {
             setRegistering(false);
         }
@@ -334,7 +334,7 @@ const headers = { 'Content-Type': 'application/json' };
 
     return (
         <CommanderLayout title="Tournament Registration" backHref="/commander/cashier">
-            <SEOHead title="Commander — Tournament Registration" description="Register players for tournaments." noindex={true} />
+            <SEOHead title="Commander - Tournament Registration" description="Register players for tournaments." noindex={true} />
             <div style={{ minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), -apple-system, sans-serif", padding: '16px' }}>
 
                 {/* Message Toast */}
@@ -352,7 +352,7 @@ const headers = { 'Content-Type': 'application/json' };
                 {/* Step 1: Find Player */}
                 <div style={{ background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #3A3B3C' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                        Step 1 — Select Player
+                        Step 1 - Select Player
                     </p>
                     {selectedPlayer ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1877F2', borderRadius: 10, padding: '10px 14px' }}>
@@ -400,7 +400,7 @@ const headers = { 'Content-Type': 'application/json' };
                                 </div>
                             )}
                             {searchQuery.length >= 2 && searchResults.length === 0 && !searchLoading && (
-                                <p style={{ textAlign: 'center', fontSize: 13, color: '#B0B3B8', padding: '12px 0' }}>No players found</p>
+                                <p style={{ textAlign: 'center', fontSize: 13, color: '#B0B3B8', padding: '12px 0' }}>No Players Found</p>
                             )}
                         </>
                     )}
@@ -409,7 +409,7 @@ const headers = { 'Content-Type': 'application/json' };
                 {/* Step 2: Select Tournament */}
                 <div style={{ background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #3A3B3C' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                        Step 2 — Select Tournament
+                        Step 2 - Select Tournament
                     </p>
                     {loading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
@@ -439,8 +439,8 @@ const headers = { 'Content-Type': 'application/json' };
                     ) : (
                         <div style={{ textAlign: 'center', padding: 24 }}>
                             <Trophy size={32} color="#3A3B3C" style={{ display: 'block', margin: '0 auto 8px' }} />
-                            <p style={{ fontSize: 13, color: '#B0B3B8' }}>No upcoming tournaments</p>
-                            <p style={{ fontSize: 11, color: '#666', marginTop: 4 }}>Create a tournament in Tournament Director first</p>
+                            <p style={{ fontSize: 13, color: '#B0B3B8' }}>No Upcoming Tournaments</p>
+                            <p style={{ fontSize: 11, color: '#666', marginTop: 4 }}>Create A Tournament In Tournament Director First</p>
                         </div>
                     )}
                 </div>

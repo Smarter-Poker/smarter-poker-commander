@@ -1,5 +1,5 @@
 /**
- * CreateTournamentModal — Enhanced with template picker + full configuration
+ * CreateTournamentModal - Enhanced with template picker + full configuration
  * Step 1: Choose Template or Start from Scratch
  * Step 2: Customize tournament details
  * UI: Dark industrial sci-fi gaming theme, no emojis, Inter font
@@ -223,10 +223,10 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
         resetForm();
         onClose();
       } else {
-        setError(data.error?.message || data.error || 'Failed to create tournament');
+        setError(data.error?.message || data.error || 'Failed To Create Tournament');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -311,7 +311,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             </button>
 
             <div className="py-1">
-              <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider">Pre-built Templates</p>
+              <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider">Pre-Built Templates</p>
             </div>
 
             {/* Template Cards */}
@@ -332,7 +332,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">{template.name}</p>
                     <p className="text-xs text-[#64748B]">
-                      {formatBuyin(template.buyin_amount, template.buyin_fee, template.bounty_amount)} | {formatChips(template.starting_chips)} chips | {template.estimated_duration}
+                      {formatBuyin(template.buyin_amount, template.buyin_fee, template.bounty_amount)} | {formatChips(template.starting_chips)} Chips | {template.estimated_duration}
                     </p>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-[#64748B] rotate-180" />
@@ -421,7 +421,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
 
             {/* Buy-in */}
             <div>
-              <label className="block text-sm font-medium text-white mb-1">Buy-in Amount</label>
+              <label className="block text-sm font-medium text-white mb-1">Buy-In Amount</label>
               <div className="grid grid-cols-5 gap-2 mb-2">
                 {[50, 100, 150, 200, 300].map((amount) => (
                   <button
@@ -448,7 +448,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                     onChange={(e) => setBuyinAmount(parseInt(e.target.value) || 0)}
                     className="cmd-input w-full h-10 text-center"
                   />
-                  <p className="text-xs text-[#64748B] text-center mt-1">Buy-in</p>
+                  <p className="text-xs text-[#64748B] text-center mt-1">Buy-In</p>
                 </div>
                 <div>
                   <input
@@ -486,7 +486,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             {(tournamentType === 'bounty' || tournamentType === 'pko') && (
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
-                  {tournamentType === 'pko' ? 'Starting Bounty (half of buy-in)' : 'Bounty Amount'}
+                  {tournamentType === 'pko' ? 'Starting Bounty (Half Of Buy-In)' : 'Bounty Amount'}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {[25, 50, 100, 200].map((b) => (
@@ -505,7 +505,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                 </div>
                 {tournamentType === 'pko' && (
                   <p className="text-xs text-[#F97316] mt-2">
-                    Progressive KO: When you eliminate a player, you collect half their bounty. The other half is added to your own bounty, making you a bigger target.
+                    Progressive KO: When You Eliminate A Player, You Collect Half Their Bounty. The Other Half Is Added To Your Own Bounty, Making You A Bigger Target.
                   </p>
                 )}
               </div>
@@ -546,7 +546,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-[#1E3A5F]">
-                  <label className="text-sm font-medium text-white">Add-on</label>
+                  <label className="text-sm font-medium text-white">Add-On</label>
                   <button
                     type="button"
                     onClick={() => setAllowsAddon(!allowsAddon)}
@@ -558,11 +558,11 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                 {allowsAddon && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-[#64748B]">Add-on Cost</label>
+                      <label className="text-xs text-[#64748B]">Add-On Cost</label>
                       <input type="number" value={addonAmount} onChange={(e) => setAddonAmount(parseInt(e.target.value) || 0)} className="cmd-input w-full h-8 text-sm text-center" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#64748B]">Add-on Chips</label>
+                      <label className="text-xs text-[#64748B]">Add-On Chips</label>
                       <input type="number" value={addonChips} onChange={(e) => setAddonChips(parseInt(e.target.value) || 0)} className="cmd-input w-full h-8 text-sm text-center" />
                     </div>
                   </div>
@@ -596,7 +596,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
 
             {/* Late Registration */}
             <div>
-              <label className="block text-sm font-medium text-white mb-1">Late Registration (levels)</label>
+              <label className="block text-sm font-medium text-white mb-1">Late Registration (Levels)</label>
               <div className="grid grid-cols-5 gap-2">
                 {[4, 6, 8, 10, 12].map((lvl) => (
                   <button
@@ -623,7 +623,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
               >
                 <span className="text-sm font-medium text-white flex items-center gap-2">
                   <Layers className="w-4 h-4 text-[#22D3EE]" />
-                  Blind Structure ({blindStructure.filter(l => !l.is_break).length} levels)
+                  Blind Structure ({blindStructure.filter(l => !l.is_break).length} Levels)
                 </span>
                 <span className="text-xs text-[#22D3EE]">{estimateDuration(blindStructure)}</span>
               </button>
@@ -642,9 +642,9 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             <div className="p-3 bg-[#0D192E] rounded-lg space-y-2">
               <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">Registration Receipts</p>
               {[
-                { label: 'Player Receipt', desc: 'Print copy for the player', value: printPlayerReceipt, setter: setPrintPlayerReceipt },
-                { label: 'Dealer Receipt', desc: 'Print copy for the table dealer', value: printDealerReceipt, setter: setPrintDealerReceipt },
-                { label: 'Cashier Receipt', desc: 'Print copy for the cage', value: printCageReceipt, setter: setPrintCageReceipt },
+                { label: 'Player Receipt', desc: 'Print Copy For The Player', value: printPlayerReceipt, setter: setPrintPlayerReceipt },
+                { label: 'Dealer Receipt', desc: 'Print Copy For The Table Dealer', value: printDealerReceipt, setter: setPrintDealerReceipt },
+                { label: 'Cashier Receipt', desc: 'Print Copy For The Cage', value: printCageReceipt, setter: setPrintCageReceipt },
               ].map((opt) => (
                 <div key={opt.label} className="flex items-center justify-between py-1">
                   <div>
@@ -722,7 +722,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                     />
                   </div>
                   <p className="text-xs text-[#F59E0B]/80">
-                    Players will be notified when the next flight resumes. Bag-and-tag chip counts can be recorded from the Tournament Manager.
+                    Players Will Be Notified When The Next Flight Resumes. Bag-And-Tag Chip Counts Can Be Recorded From The Tournament Manager.
                   </p>
                 </div>
               )}
@@ -732,7 +732,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             <div className="flex items-center justify-between p-3 bg-[#0D192E] rounded-lg">
               <div>
                 <p className="text-sm font-medium text-white">Post To Club Page</p>
-                <p className="text-xs text-[#64748B]">Auto-add To Your Club Page Schedule</p>
+                <p className="text-xs text-[#64748B]">Auto-Add To Your Club Page Schedule</p>
               </div>
               <button
                 type="button"

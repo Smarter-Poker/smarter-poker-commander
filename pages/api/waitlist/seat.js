@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       }
 
       // 2026-07-25 audit fix: resolve the target game server-side when the
-      // entry has no game_id, and verify the seat is free — BEFORE deleting
+      // entry has no game_id, and verify the seat is free - BEFORE deleting
       // the waitlist entry (previously the entry was deleted even when no
       // game could be resolved, silently dropping the player).
       let gameId = entry.game_id || null;

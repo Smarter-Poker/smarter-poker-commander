@@ -1,5 +1,5 @@
 /**
- * Poker Room Functions — Live Command Center
+ * Poker Room Functions - Live Command Center
  * /commander/poker-room
  * Real-time room operations dashboard:
  * - Open/Close Room toggle
@@ -108,7 +108,7 @@ const headers = { };
           }
         }
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setLoading(false); }
   }, [venueId]);
 
@@ -129,7 +129,7 @@ const res = await commanderFetch('/api/commander/settings', {
         setRoomOpen(!roomOpen);
         broadcastChange('settings');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setToggling(false); }
   };
 
@@ -183,7 +183,7 @@ const res = await commanderFetch('/api/commander/settings', {
   return (
     <CommanderLayout title="Poker Room Functions" backHref="/commander/dashboard?card=staff">
       <>
-        <SEOHead title="Commander — Poker Room Functions" description="Club Commander Poker Room Management Tool." noindex={true} />
+        <SEOHead title="Commander - Poker Room Functions" description="Club Commander Poker Room Management Tool." noindex={true} />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
           {/* Room Status Banner */}
@@ -208,8 +208,8 @@ const res = await commanderFetch('/api/commander/settings', {
                   </h2>
                   <p className="text-sm text-[#B0B3B8]">
                     {roomOpen
-                      ? `${activeTables.length} tables running • ${totalSeated} seated`
-                      : 'Tap to open the room'
+                      ? `${activeTables.length} Tables Running • ${totalSeated} Seated`
+                      : 'Tap To Open The Room'
                     }
                   </p>
                 </div>
@@ -248,8 +248,8 @@ const res = await commanderFetch('/api/commander/settings', {
                       <span className="text-sm font-medium text-white">{game}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-[#B0B3B8]">{data.tables} table{data.tables !== 1 ? 's' : ''}</span>
-                      <span className="text-sm font-bold text-[#1877F2]">{data.players} <span className="text-[#B0B3B8] font-normal text-xs">players</span></span>
+                      <span className="text-xs text-[#B0B3B8]">{data.tables} Table{data.tables !== 1 ? 's' : ''}</span>
+                      <span className="text-sm font-bold text-[#1877F2]">{data.players} <span className="text-[#B0B3B8] font-normal text-xs">Players</span></span>
                     </div>
                   </div>
                 ))}
@@ -269,8 +269,8 @@ const res = await commanderFetch('/api/commander/settings', {
                       <span className="text-sm font-medium text-white">{game}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-[#B0B3B8]">{data.tables} table{data.tables !== 1 ? 's' : ''}</span>
-                      <span className="text-sm font-bold text-[#F59E0B]">{data.players} <span className="text-[#B0B3B8] font-normal text-xs">players</span></span>
+                      <span className="text-xs text-[#B0B3B8]">{data.tables} Table{data.tables !== 1 ? 's' : ''}</span>
+                      <span className="text-sm font-bold text-[#F59E0B]">{data.players} <span className="text-[#B0B3B8] font-normal text-xs">Players</span></span>
                     </div>
                   </div>
                 ))}
@@ -343,7 +343,7 @@ const res = await commanderFetch('/api/commander/settings', {
             ) : (
               <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-8 text-center">
                 <LayoutGrid className="w-10 h-10 text-[#3A3B3C] mx-auto mb-2" />
-                <p className="text-[#B0B3B8] text-sm">No tables configured</p>
+                <p className="text-[#B0B3B8] text-sm">No Tables Configured</p>
                 <button onClick={() => router.push('/commander/tables')}
                   className="mt-3 px-4 py-2 rounded-lg bg-[#1877F2] text-white text-sm font-medium active:bg-[#1565D8]">
                   Set Up Tables
@@ -352,14 +352,14 @@ const res = await commanderFetch('/api/commander/settings', {
             )}
           </div>
 
-          {/* Quick Actions — Room-specific only */}
+          {/* Quick Actions - Room-specific only */}
           <div className="px-4 py-3">
             <h3 className="text-xs font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <QuickAction icon={LayoutGrid} label="Manage Tables" desc="Add, edit, close tables" path="/commander/tables" router={router} />
-              <QuickAction icon={ArrowRightLeft} label="Must-Move" desc="Move players between games" path="/commander/must-move" router={router} />
-              <QuickAction icon={Users} label="Waitlists" desc="Manage game waitlists" path="/commander/waitlist/desk" router={router} />
-              <QuickAction icon={Settings} label="Room Presets" desc="Game configs & defaults" path="/commander/room-presets" router={router} />
+              <QuickAction icon={LayoutGrid} label="Manage Tables" desc="Add, Edit, Close Tables" path="/commander/tables" router={router} />
+              <QuickAction icon={ArrowRightLeft} label="Must-Move" desc="Move Players Between Games" path="/commander/must-move" router={router} />
+              <QuickAction icon={Users} label="Waitlists" desc="Manage Game Waitlists" path="/commander/waitlist/desk" router={router} />
+              <QuickAction icon={Settings} label="Room Presets" desc="Game Configs & Defaults" path="/commander/room-presets" router={router} />
             </div>
           </div>
 
@@ -370,7 +370,7 @@ const res = await commanderFetch('/api/commander/settings', {
                 <AlertTriangle className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-[#F59E0B]">High Occupancy</p>
-                  <p className="text-xs text-[#B0B3B8]">{occupancyPct}% of seats filled — consider opening more tables</p>
+                  <p className="text-xs text-[#B0B3B8]">{occupancyPct}% Of Seats Filled - Consider Opening More Tables</p>
                 </div>
               </div>
             </div>

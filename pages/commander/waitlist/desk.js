@@ -1,5 +1,5 @@
 /**
- * Waitlist Desk View — The Board
+ * Waitlist Desk View - The Board
  * /commander/waitlist/desk
  * Professional grid display: black background, uniform colored headers,
  * table numbers sub-row, venue branding, scrolling ticker.
@@ -34,7 +34,7 @@ import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 const GAMES_PER_PAGE = 4;
 const ROTATE_INTERVAL = 10000;
 
-// Default customization — the classic gold theme
+// Default customization - the classic gold theme
 const DEFAULT_CUSTOM = {
   headerColor: '#B8860B',
   accentColor: '#D4AF37',
@@ -79,7 +79,7 @@ export default function WaitlistDesk() {
   // ── Hardening: optimistic UI lock ──
   const [actionLock, setActionLock] = useState(null); // entry.id being processed
   // 2026-08-04 audit fix: several catch blocks call setToast but no toast state
-  // existed in this component — error paths crashed with a ReferenceError.
+  // existed in this component - error paths crashed with a ReferenceError.
   const [toast, setToast] = useState(null);
   useEffect(() => {
     if (!toast) return;
@@ -165,7 +165,7 @@ const staffData = getStaffData();
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
-    const interval = setInterval(() => fetchData(controller.signal), 30000); // fallback — real-time sync handles instant updates
+    const interval = setInterval(() => fetchData(controller.signal), 30000); // fallback - real-time sync handles instant updates
     return () => { controller.abort(); clearInterval(interval); };
   }, [fetchData]);
 
@@ -176,7 +176,7 @@ const staffData = getStaffData();
 
   // ── ACTION HANDLERS ─────────────────────────────────────────────
   const handleCall = async (entry) => {
-    if (actionLock) return; // Optimistic lock — prevent double-tap
+    if (actionLock) return; // Optimistic lock - prevent double-tap
     if (!entry.player_phone) {
       alert(`NO PHONE NUMBER\n\n${titleCase(entry.player_name || '')} does not have a phone number on file. Please page them verbally in the room.`);
     }
@@ -201,8 +201,8 @@ const res = await commanderFetch(`/api/commander/waitlist/${entry.id}/call`, {
       setWaitlists(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'called' } : e));
       const notifCount = json.data?.notifications_sent || 0;
       if (notifCount > 0) setSmsStatus({ type: 'sent', text: `${titleCase(entry.player_name)} notified (${notifCount} notification${notifCount > 1 ? 's' : ''})` });
-      else if (!entry.player_phone) setSmsStatus({ type: 'none', text: 'No Phone — Verbal Page Only' });
-      else setSmsStatus({ type: 'none', text: 'Called — Notifications Unavailable' });
+      else if (!entry.player_phone) setSmsStatus({ type: 'none', text: 'No Phone - Verbal Page Only' });
+      else setSmsStatus({ type: 'none', text: 'Called - Notifications Unavailable' });
       busEmit.waitlistPlayerCalled(entry.player_name, entry.game_type);
       await fetchData();
       broadcastChange('waitlist');
@@ -213,7 +213,7 @@ const res = await commanderFetch(`/api/commander/waitlist/${entry.id}/call`, {
   };
 
   const handleSeat = async (entry, tableNumber, seatNumber) => {
-    if (actionLock) return; // Optimistic lock — prevent double-tap
+    if (actionLock) return; // Optimistic lock - prevent double-tap
     setActionLock(entry.id);
     try {
 const res = await commanderFetch('/api/commander/waitlist/seat', {
@@ -321,7 +321,7 @@ const res = await commanderFetch(`/api/commander/waitlist/${entry.id}`, {
   };
 
   const handleAddWalkIn = async (playerData) => {
-    // ── Hardening: Duplicate-name guard ——
+    // ── Hardening: Duplicate-name guard --
     const nameNorm = (playerData.player_name || '').trim().toLowerCase();
     const duplicate = waitlists.find(w =>
       (w.status === 'waiting' || w.status === 'called') &&
@@ -419,7 +419,7 @@ const staffData = getStaffData();
           body: JSON.stringify({ venue_id: staffData.venue_id, table_number: parseInt(tn) || tn, table_name: `Table ${tn}`, max_seats: 9, game_type: gt, stakes: st })
         });
         if (!r.ok) console.warn('Auto table err');
-      } catch { /* table may already exist — ignore */ }
+      } catch { /* table may already exist - ignore */ }
       await fetchData();
     } else {
       await fetchData();
@@ -462,7 +462,7 @@ const parts = gameLabel.split(' ');
       if (!waitlistByGame[label]) waitlistByGame[label] = [];
     });
   }
-  // Also seed from active tables — auto-sync with live floor
+  // Also seed from active tables - auto-sync with live floor
   tables.forEach(t => {
     // Skip inactive or maintenance tables
     if (t.is_active === false || t.status === 'maintenance') return;
@@ -577,7 +577,7 @@ const parts = gameLabel.split(' ');
 
   return (
     <>
-      <SEOHead title="The Board — Poker Waiting List" noindex={true} />
+      <SEOHead title="The Board - Poker Waiting List" noindex={true} />
       <div style={{ minHeight: '100vh', background: c.bgColor, color: c.textColor, fontFamily: "var(--font-inter), 'Segoe UI', sans-serif", display: 'flex', flexDirection: 'column' }}>
 
         {/* ═══ TOP BAR ═══ */}
@@ -640,7 +640,7 @@ const parts = gameLabel.split(' ');
         {gameEntries.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
             <Users size={40} color={`${c.textColor}33`} />
-            <p style={{ color: `${c.textColor}66`, marginTop: '12px', fontSize: '16px' }}>No Games — Tap "Add Game" To Create An Interest List</p>
+            <p style={{ color: `${c.textColor}66`, marginTop: '12px', fontSize: '16px' }}>No Games - Tap "Add Game" To Create An Interest List</p>
           </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', padding: '12px 16px', gap: '2px', alignItems: 'stretch' }}>
@@ -661,7 +661,7 @@ const parts = gameLabel.split(' ');
               const chain = mmGroup?.chain || [];
               const mmTables = chain.filter((g, i) => i > 0 && g.is_must_move && (g.seats || []).length > 0);
 
-              // Calculate column width — shrink to fit must-move columns
+              // Calculate column width - shrink to fit must-move columns
               const totalCols = 1 + mmTables.length; // game col + must-move cols
               const baseWidth = totalCols > 1 ? `calc(25% - 2px)` : `calc(25% - 2px)`;
 
@@ -669,7 +669,7 @@ const parts = gameLabel.split(' ');
                 <div key={gameLabel} style={{ display: 'flex', gap: '2px', flex: mmTables.length > 0 ? `0 0 calc(${25 * (1 + mmTables.length * 0.6)}% - 2px)` : '0 0 calc(25% - 2px)', maxWidth: mmTables.length > 0 ? `calc(${25 * (1 + mmTables.length * 0.6)}% - 2px)` : 'calc(25% - 2px)', minWidth: '140px' }}>
                   {/* ═══ WAITLIST COLUMN ═══ */}
                   <div style={{ flex: '1 1 0', minWidth: '140px', border: `3px solid ${c.borderColor}`, borderRadius: '4px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {/* Header — Click to edit game name/stakes */}
+                    {/* Header - Click to edit game name/stakes */}
                     <div
                       onClick={() => {
                         const parts = gameLabel.split(' ');
@@ -689,7 +689,7 @@ const parts = gameLabel.split(' ');
                             T{tn}{tableNums.length > 1 ? (i === 0 ? ' ★' : ' ⇢') : ''}
                           </span>
                         </span>
-                      )) : '—'}
+                      )) : '-'}
                     </div>
                     {/* Player Names */}
                     <div style={{ flex: 1, background: c.bgColor }}>
@@ -796,7 +796,7 @@ const parts = gameLabel.split(' ');
                     </div>
                   </div>
 
-                  {/* ═══ MUST-MOVE COLUMNS — Separate columns next to the game ═══ */}
+                  {/* ═══ MUST-MOVE COLUMNS - Separate columns next to the game ═══ */}
                   {mmTables.map(mmGame => {
                     const seats = mmGame.seats || [];
                     const targetGame = chain.find(g => g.id === mmGame.move_target_game_id) || chain[0];
@@ -968,7 +968,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
           showBorder={true}
         />
 
-        {/* ═══ SEAT MODAL — Oval Poker Table Visual ═══ */}
+        {/* ═══ SEAT MODAL - Oval Poker Table Visual ═══ */}
         {seatModal && (() => {
           // Filter tables to match the player's game type
           const seatGameType = (seatModal.game_type || '').toUpperCase();
@@ -1018,7 +1018,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                   <div>
                     <h3 style={{ fontSize: '18px', fontWeight: 700, color: c.accentColor, margin: 0 }}>Seat Player</h3>
                     <p style={{ fontSize: '14px', color: `${c.textColor}88`, margin: '2px 0 0' }}>
-                      {titleCase(seatModal.player_name)} — {seatStakes} {seatGameType}
+                      {titleCase(seatModal.player_name)} - {seatStakes} {seatGameType}
                     </p>
                   </div>
                   <button onClick={() => setSeatModal(null)} style={modalCloseStyle(c)}><X size={14} /></button>
@@ -1119,7 +1119,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                               );
                             }
 
-                            // Open seat — clickable to assign player
+                            // Open seat - clickable to assign player
                             return (
                               <button key={seat.number} onClick={() => handleSeat(seatModal, table.table_number, seat.number)} style={{
                                 position: 'absolute', top: pos.top, left: pos.left,
@@ -1266,7 +1266,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
         )}
       </div>
 
-      {/* TOAST — error feedback for action handlers (2026-08-04 audit fix) */}
+      {/* TOAST - error feedback for action handlers (2026-08-04 audit fix) */}
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 9999,

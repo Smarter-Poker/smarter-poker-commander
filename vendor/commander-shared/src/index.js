@@ -1,5 +1,5 @@
 /**
- * @smarter-poker/commander-shared — entry point
+ * @smarter-poker/commander-shared - entry point
  *
  * The package re-exports nothing by default. Consumers import directly
  * from subpaths:

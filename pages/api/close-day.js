@@ -1,7 +1,7 @@
 /**
  * Close Day API
- * POST /api/commander/close-day — Persist an end-of-day close (upsert per venue + date)
- * GET  /api/commander/close-day — Recent close records for a venue (history)
+ * POST /api/commander/close-day - Persist an end-of-day close (upsert per venue + date)
+ * GET  /api/commander/close-day - Recent close records for a venue (history)
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../src/lib/commander/auth';
@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — writes require a signed staff session; GET is venue-scoped history.
+// Auth: STAFF_WRITE - writes require a signed staff session; GET is venue-scoped history.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -47,7 +47,7 @@ async function closeDay(req, res, staff) {
   }
 
   try {
-    // closed_by comes from the authenticated staff session, not the client —
+    // closed_by comes from the authenticated staff session, not the client -
     // PIN terminals carry the commander_staff row id, owner logins the user id.
     const staffId = (staff && typeof staff === 'object' && staff.id) ? staff.id : null;
 

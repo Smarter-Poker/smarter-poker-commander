@@ -32,7 +32,7 @@ const REPORTS = [
     id: 'waitlist-metrics',
     icon: Clock,
     title: 'Waitlist Metrics',
-    description: 'Wait Times, Call Rates, No-show Rates, Demand',
+    description: 'Wait Times, Call Rates, No-Show Rates, Demand',
     color: '#F59E0B'
   },
   {
@@ -67,7 +67,7 @@ const REPORTS = [
     id: 'analytics-daily',
     icon: TrendingUp,
     title: 'Analytics Daily',
-    description: 'Aggregated Daily Metrics, Trends, Session and Revenue Charts',
+    description: 'Aggregated Daily Metrics, Trends, Session And Revenue Charts',
     color: '#9333EA'
   },
   {
@@ -102,7 +102,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/summary?range=${da
   return (
     <CommanderLayout title="Reports" backHref="/commander/dashboard">
       <SEOHead
-              title="Commander — Reports"
+              title="Commander - Reports"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />

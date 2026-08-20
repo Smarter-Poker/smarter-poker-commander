@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Unified Selector
+ * Tournament Director - Unified Selector
  * Lists all active/scheduled tournaments with 3 actions each:
  *   - TD Controls (floor management)
  *   - Launch Clock (TV/projector display)
@@ -15,6 +15,19 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+
+// Break-aware level label: current_level is an ARRAY INDEX into blind_structure,
+// which interleaves break rows. Count only non-break rows for the display number.
+function levelLabel(t) {
+    let bs = t?.blind_structure;
+    if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = []; } }
+    if (!Array.isArray(bs)) bs = [];
+    const idx = t?.current_level || 0;
+    if (!bs.length) return `Level ${idx + 1}`;
+    const row = bs[idx];
+    if (row?.is_break) return row.label || 'Break';
+    return `Level ${bs.slice(0, idx + 1).filter(l => !l.is_break).length}`;
+}
 
 const STATUS_COLORS = {
     running: { bg: 'bg-[#31A24C]/10', text: 'text-[#31A24C]', label: 'Running' },
@@ -35,7 +48,7 @@ export default function TournamentDirector() {
 
     const fetchTournaments = useCallback(async (signal) => {
         try {
-            // 2026-07-25 audit fix: the list API requires venue_id — omit and it 400s
+            // 2026-07-25 audit fix: the list API requires venue_id - omit and it 400s
             const venueId = getVenueId();
             if (!venueId) return;
             const data = await commanderFetchJSON(`/api/commander/tournaments?venue_id=${encodeURIComponent(venueId)}`, { });
@@ -57,11 +70,11 @@ export default function TournamentDirector() {
         return () => _c.abort();
     }, [router, fetchTournaments]);
 
-    // Commander Data Bus — sync tournaments across tabs
+    // Commander Data Bus - sync tournaments across tabs
     const [syncVenueId] = useState(() => getVenueId());
     useCommanderSync(syncVenueId, fetchTournaments, { entities: ['tournaments'] });
 
-    // 2026-08-04 audit fix: include 'paused' — the clock API sets status 'paused',
+    // 2026-08-04 audit fix: include 'paused' - the clock API sets status 'paused',
     // and without it a paused tournament vanished from both tabs of this selector.
     const currentStatuses = ['running', 'paused', 'break', 'final_table', 'registering'];
     const currentTournaments = tournaments.filter(t => currentStatuses.includes(t.status));
@@ -70,7 +83,7 @@ export default function TournamentDirector() {
 
     return (
         <CommanderLayout title="Tournament Director | Commander" backHref="/commander/dashboard?card=tournaments">
-            <SEOHead title="Commander — Tournament Director" description="Club Commander Poker Room Management Tool." noindex={true} />
+            <SEOHead title="Commander - Tournament Director" description="Club Commander Poker Room Management Tool." noindex={true} />
             <div className="cmd-page">
                 <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
                     <div className="flex items-center gap-3 mb-2">
@@ -79,7 +92,7 @@ export default function TournamentDirector() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-white">Tournament Director</h1>
-                            <p className="text-sm text-[#B0B3B8]">Manage live tournaments — controls, clock display, and settings</p>
+                            <p className="text-sm text-[#B0B3B8]">Manage Live Tournaments, Controls, Clock Display, And Settings</p>
                         </div>
                     </div>
 
@@ -109,11 +122,11 @@ export default function TournamentDirector() {
                         <div className="cmd-panel p-8 text-center">
                             <Trophy className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
                             <p className="text-[#B0B3B8] mb-4">
-                                {tab === 'current' ? 'No live tournaments' : 'No upcoming tournaments'}
+                                {tab === 'current' ? 'No Live Tournaments' : 'No Upcoming Tournaments'}
                             </p>
                             <button onClick={() => router.push('/commander/tournaments')}
                                 className="px-4 py-2 cmd-btn cmd-btn-primary rounded-lg text-sm font-medium">
-                                Go to Tournament Manager
+                                Go To Tournament Manager
                             </button>
                         </div>
                     ) : (
@@ -145,7 +158,7 @@ export default function TournamentDirector() {
                                                                 <Users className="w-3 h-3" /> {t.current_entries}
                                                             </span>
                                                         )}
-                                                        {t.current_level > 0 && <span className="text-xs text-[#B0B3B8]">Level {t.current_level}</span>}
+                                                        {t.current_level > 0 && <span className="text-xs text-[#B0B3B8]">{levelLabel(t)}</span>}
                                                     </div>
                                                 </div>
                                                 {isLive && (

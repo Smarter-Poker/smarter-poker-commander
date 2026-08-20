@@ -65,7 +65,7 @@ const headers = { };
         commanderFetch(`/api/commander/time-billing/sessions?member_id=${id}&venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
         commanderFetch(`/api/commander/tournaments/player-results?member_id=${id}&venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] }))
       ]);
-      // API returns { success, data: { member } } — unwrap the member row itself.
+      // API returns { success, data: { member } } - unwrap the member row itself.
       // Previously the whole data wrapper was stored, so every field read
       // (first_name, time_balance_minutes, ...) was undefined and Add Time
       // overwrote the real balance with just the added minutes.
@@ -78,7 +78,7 @@ const headers = { };
     finally { setLoading(false); }
   };
 
-  // Commander Data Bus — sync member across tabs
+  // Commander Data Bus - sync member across tabs
   useCommanderSync(getVenueId(), fetchMember, { entities: ['members'] });
 
   const addTime = async () => {
@@ -101,7 +101,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
           broadcastChange('members');
         }
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   setLoading(false);
   };
 
@@ -119,7 +119,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
           broadcastChange('members');
         }
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   const m = member;
@@ -135,7 +135,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
     <CommanderLayout title={m ? `${m.first_name} ${m.last_name}` : 'Member'} backHref="/commander/dashboard?card=waitlist">
       <>
         <SEOHead
-          title="Commander — Details"
+          title="Commander - Details"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -229,7 +229,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
             {showAddTime && (
               <div className="px-4 mt-3">
                 <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
-                  <p className="text-sm font-semibold text-white mb-2">Add Time (minutes)</p>
+                  <p className="text-sm font-semibold text-white mb-2">Add Time (Minutes)</p>
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     {[30, 60, 120, 180].map(mins => (
                       <button key={mins} onClick={() => setAddTimeAmount(String(mins))}
@@ -279,7 +279,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                     sessions.slice(0, 20).map((s, i) => (
                       <div key={s.id || i} className="flex items-center justify-between px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg">
                         <div>
-                          <p className="text-sm text-white">Table {s.table_number} — Seat {s.seat_number}</p>
+                          <p className="text-sm text-white">Table {s.table_number}, Seat {s.seat_number}</p>
                           <p className="text-[10px] text-[#B0B3B8]">
                             {s.started_at ? new Date(s.started_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
                           </p>
@@ -308,13 +308,13 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                           <p className="text-sm text-white">{t.tournament_name || t.name || 'Tournament'}</p>
                           <p className="text-[10px] text-[#B0B3B8]">
                             {t.date ? new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
-                            {t.buyin_amount ? ` — $${t.buyin_amount} buy-in` : ''}
+                            {t.buyin_amount ? `, $${t.buyin_amount} Buy-In` : ''}
                           </p>
                         </div>
                         <div className="text-right">
                           {t.finish_position && (
                             <span className={`text-sm font-bold ${t.finish_position <= 3 ? 'text-[#F59E0B]' : 'text-[#B0B3B8]'}`}>
-                              {t.finish_position === 1 ? '🥇 1st' : t.finish_position === 2 ? '🥈 2nd' : t.finish_position === 3 ? '🥉 3rd' : `${t.finish_position}th`}
+                              {t.finish_position === 1 ? '1st' : t.finish_position === 2 ? '2nd' : t.finish_position === 3 ? '3rd' : `${t.finish_position}th`}
                             </span>
                           )}
                           {t.payout > 0 && (
@@ -331,7 +331,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
               {tab === 'notes' && (
                 <div>
                   <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
-                    <p className="text-sm text-white whitespace-pre-wrap">{m.notes || 'No notes'}</p>
+                    <p className="text-sm text-white whitespace-pre-wrap">{m.notes || 'No Notes'}</p>
                   </div>
                 </div>
               )}

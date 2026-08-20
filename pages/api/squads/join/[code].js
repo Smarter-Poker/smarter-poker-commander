@@ -4,7 +4,7 @@
  * POST /api/commander/squads/join/:code - Join the squad as the verified user
  *
  * 2026-07-25 audit fix: invite links (/hub/commander/squads/join/CODE) had no
- * backing endpoint — the WH page mistakenly called the home-games join route.
+ * backing endpoint - the WH page mistakenly called the home-games join route.
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardUser } from '../../../../src/lib/commander/auth';

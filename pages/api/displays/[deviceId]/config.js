@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -101,7 +101,7 @@ async function handlePatch(req, res, deviceId, staff) {
 
   try {
     // 2026-07-25 audit fix: the display must belong to the staff member's
-    // venue — a valid session at any venue could previously edit any display.
+    // venue - a valid session at any venue could previously edit any display.
     const { data: existing, error: loadError } = await getSupabase()
       .from('commander_table_displays')
       .select('id, venue_id')
@@ -121,7 +121,7 @@ async function handlePatch(req, res, deviceId, staff) {
       });
     }
 
-    // 2026-07-25 audit fix: dropped updated_at — commander_table_displays has
+    // 2026-07-25 audit fix: dropped updated_at - commander_table_displays has
     // no such column and the write errored against production.
     const updates = {};
 

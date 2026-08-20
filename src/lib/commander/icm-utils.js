@@ -1,5 +1,5 @@
 /**
- * ICM (Independent Chip Model) — Commander-local override (2026-07-26 audit).
+ * ICM (Independent Chip Model) - Commander-local override (2026-07-26 audit).
  *
  * Previously re-exported the shared package. Now owns a corrected
  * implementation; the only consumer (pages/commander/tournaments/[id]/clock-display.js)
@@ -31,7 +31,7 @@
  *
  * Cost is O(2^n * n). We run it exactly up to EXACT_MAX players, which covers
  * every situation where a deal is actually struck (final tables). Above that we
- * use a compressed, explicitly normalised approximation — see largeFieldEquities.
+ * use a compressed, explicitly normalised approximation - see largeFieldEquities.
  */
 
 const EXACT_MAX = 18;
@@ -108,7 +108,7 @@ function exactEquities(stacks, prizes, totalChips) {
  * Uses a power-law compression of chip share (exponent < 1 pulls equity down
  * for big stacks and up for short stacks, which is the direction ICM moves)
  * and then normalises across players. Normalisation is what guarantees the
- * equities still sum to the prize pool — the defect being fixed here.
+ * equities still sum to the prize pool - the defect being fixed here.
  */
 function largeFieldEquities(stacks, totalPrize, totalChips) {
   const COMPRESSION = 0.85;

@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Add Player / Re-Entry
+ * Tournament Director - Add Player / Re-Entry
  * /commander/td/[tournamentId]/register
  * Lets the TD register a new entrant or process a re-entry for the
  * tournament directly from the floor. Posts to the shared register
@@ -60,7 +60,7 @@ export default function TDRegisterPlayer() {
 
     useEffect(() => { const _c = new AbortController(); fetchTournament(_c.signal); return () => _c.abort(); }, [fetchTournament]);
 
-    // Player search — mirrors the cashier registration flow
+    // Player search - mirrors the cashier registration flow
     const executeSearch = useCallback(async (query) => {
         const vid = venueId || tournament?.venue_id;
         if (!query || query.length < 2 || !vid) { setSearchResults([]); return; }
@@ -90,7 +90,7 @@ export default function TDRegisterPlayer() {
     };
 
     const registerPlayer = async () => {
-        if (!selectedPlayer) { setMessage({ type: 'error', text: 'Select a player first' }); return; }
+        if (!selectedPlayer) { setMessage({ type: 'error', text: 'Select A Player First' }); return; }
         setRegistering(true);
         try {
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/register`, {
@@ -100,18 +100,18 @@ export default function TDRegisterPlayer() {
             });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.success) {
-                const errMsg = json.error?.message || json.error || 'Registration failed';
+                const errMsg = json.error?.message || json.error || 'Registration Failed';
                 setMessage({ type: 'error', text: errMsg });
                 return;
             }
             const buyin = tournament?.buyin_amount || 0;
-            setMessage({ type: 'success', text: `${selectedPlayer.player_name} ${reentryName ? 're-entered' : 'registered'}${buyin > 0 ? ` — $${buyin} buy-in` : ''}` });
+            setMessage({ type: 'success', text: `${selectedPlayer.player_name} ${reentryName ? 'Re-Entered' : 'Registered'}${buyin > 0 ? `, $${buyin} Buy-In` : ''}` });
             broadcastChange('tournaments');
             setSelectedPlayer(null);
             setReentryName(null);
         } catch (err) {
             console.warn('Registration error:', err);
-            setMessage({ type: 'error', text: 'Network error — try again' });
+            setMessage({ type: 'error', text: 'Network Error. Try Again.' });
         } finally {
             setRegistering(false);
         }
@@ -124,8 +124,8 @@ export default function TDRegisterPlayer() {
     if (loading) return <div style={{ minHeight: '100vh', background: '#18191A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={32} color="#1877F2" style={{ animation: 'spin 1s linear infinite' }} /></div>;
 
     return (
-        <CommanderLayout title="Commander — Register Player" backHref={`/commander/td/${tournamentId}`}>
-            <SEOHead title="Commander — Register Player" description="Club Commander Poker Room Management Tool." noindex={true} />
+        <CommanderLayout title="Commander - Register Player" backHref={`/commander/td/${tournamentId}`}>
+            <SEOHead title="Commander - Register Player" description="Club Commander Poker Room Management Tool." noindex={true} />
             <div style={{ minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), -apple-system, sans-serif", padding: '16px' }}>
 
                 {/* Header */}
@@ -143,7 +143,7 @@ export default function TDRegisterPlayer() {
                 {reentryName && (
                     <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(49,162,76,0.15)', color: '#31A24C', fontSize: 13, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <RotateCcw size={16} />
-                        Re-entering {reentryName} — confirm the player below.
+                        Re-Entering {reentryName}. Confirm The Player Below.
                     </div>
                 )}
 
@@ -167,7 +167,7 @@ export default function TDRegisterPlayer() {
                             <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', margin: 0 }}>{tournament.name || 'Tournament'}</p>
                             <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
                                 {tournament.buyin_amount > 0 && <span style={{ fontSize: 11, color: '#31A24C' }}><DollarSign size={11} style={{ display: 'inline' }} /> ${tournament.buyin_amount}{tournament.buyin_fee > 0 ? ` + $${tournament.buyin_fee}` : ''}</span>}
-                                {tournament.starting_chips > 0 && <span style={{ fontSize: 11, color: '#B0B3B8' }}>{Number(tournament.starting_chips).toLocaleString()} chips</span>}
+                                {tournament.starting_chips > 0 && <span style={{ fontSize: 11, color: '#B0B3B8' }}>{Number(tournament.starting_chips).toLocaleString()} Chips</span>}
                             </div>
                         </div>
                     </div>
@@ -229,7 +229,7 @@ export default function TDRegisterPlayer() {
                                 </div>
                             )}
                             {searchQuery.length >= 2 && searchResults.length === 0 && !searchLoading && (
-                                <p style={{ textAlign: 'center', fontSize: 13, color: '#B0B3B8', padding: '12px 0' }}>No players found</p>
+                                <p style={{ textAlign: 'center', fontSize: 13, color: '#B0B3B8', padding: '12px 0' }}>No Players Found</p>
                             )}
                         </>
                     )}

@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Tables Map
+ * Tournament Director - Tables Map
  * /commander/td/[tournamentId]/tables
  * Visual floor map showing all tournament tables as ovals
  * Seat dots: filled (occupied) / empty, color-coded by balance status
@@ -110,7 +110,7 @@ export default function TDTablesMap() {
     return () => { controller.abort(); clearInterval(interval); };
   }, [fetchFloor]);
 
-  // ── Seat Change Card — matches tournament buy-in receipt format ──
+  // ── Seat Change Card - matches tournament buy-in receipt format ──
   const printAutoBreakReceipts = (autoBreak) => {
     if (!autoBreak?.receipts?.length) return;
     const pw = window.open('', '_blank', 'width=420,height=700');
@@ -145,7 +145,7 @@ ${receipts.map(r => `<div class="card">
   <div class="venue-name">${r.venue_name || 'Club'}</div>
   ${(r.venue_city || r.venue_state) ? `<div class="venue-location">${[r.venue_city, r.venue_state].filter(Boolean).join(', ')}</div>` : ''}
   <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` — $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
+  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` - $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
   <div class="divider"></div>
   <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
   <div class="divider"></div>
@@ -166,7 +166,7 @@ ${receipts.map(r => `<div class="card">
     setConfirmAction({
       type: 'eliminate',
       message: `Eliminate ${playerName || 'this player'}?`,
-      detail: `Position #${floor?.stats?.players_remaining || '?'} — Cannot be undone.`,
+      detail: `Position #${floor?.stats?.players_remaining || '?'}. Cannot Be Undone.`,
       color: '#EF4444',
       onConfirm: async () => {
         setActionLoading(entryId);
@@ -184,13 +184,13 @@ ${receipts.map(r => `<div class="card">
               printAutoBreakReceipts(elimJson.data.auto_break);
             }
           } else {
-            setToast({ type: 'error', text: elimJson.error || 'Elimination failed.' });
+            setToast({ type: 'error', text: elimJson.error || 'Elimination Failed.' });
           }
           await fetchFloor();
           broadcastChange('tournaments');
-          // Close modal after elimination — fresh data shown on next open
+          // Close modal after elimination - fresh data shown on next open
           setSelectedTable(null);
-        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Elimination failed. Check console.' }); }
+        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Elimination Failed. Check Console.' }); }
         finally { setActionLoading(null); }
       }
     });
@@ -206,9 +206,9 @@ ${receipts.map(r => `<div class="card">
   const tables = floor?.tables || [];
 
   return (
-    <CommanderLayout title="Commander — Tables" backHref={`/commander/td/${tournamentId}`}>
+    <CommanderLayout title="Commander - Tables" backHref={`/commander/td/${tournamentId}`}>
       <SEOHead
-        title="Commander — Tables"
+        title="Commander - Tables"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -218,7 +218,7 @@ ${receipts.map(r => `<div class="card">
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-white">Table Map</h1>
-            <p className="text-xs text-[#B0B3B8]">{tables.length} tables active — {floor?.stats?.players_remaining || 0} players</p>
+            <p className="text-xs text-[#B0B3B8]">{tables.length} Tables Active, {floor?.stats?.players_remaining || 0} Players</p>
           </div>
           <button onClick={fetchFloor} className="p-2 rounded-lg active:bg-[#3A3B3C]">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
@@ -267,9 +267,9 @@ ${receipts.map(r => `<div class="card">
                     await fetchFloor();
                     broadcastChange('tournaments');
                   } else {
-                    setToast({ type: 'error', text: json.error || 'Break failed — please try again.' });
+                    setToast({ type: 'error', text: json.error || 'Break Failed. Please Try Again.' });
                   }
-                } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Break failed. Check console.' }); }
+                } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Break Failed. Check Console.' }); }
                 finally { setBreakExecuting(false); }
               }}
               disabled={breakExecuting}
@@ -353,7 +353,7 @@ ${receipts.map(r => `<div class="card">
                 <div>
                   <h3 className="text-lg font-bold text-white">Table {selectedTable.table_number}</h3>
                   <p className="text-xs text-[#B0B3B8]">
-                    {selectedTable.player_count} players — {selectedTable.available_seats} seats open
+                    {selectedTable.player_count} Players, {selectedTable.available_seats} Seats Open
                   </p>
                 </div>
                 <button onClick={() => setSelectedTable(null)}
@@ -407,9 +407,9 @@ ${receipts.map(r => `<div class="card">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-[#E4E6EB] truncate">{player.player_name}</p>
                           <p className="text-xs text-[#B0B3B8]">
-                            {formatChips(player.current_chips)} chips
-                            {player.rebuy_count > 0 && ` — ${player.rebuy_count}R`}
-                            {player.addon_taken && ' — A'}
+                            {formatChips(player.current_chips)} Chips
+                            {player.rebuy_count > 0 && ` - ${player.rebuy_count}R`}
+                            {player.addon_taken && ' - A'}
                           </p>
                         </div>
                         <div className="flex gap-1">
@@ -441,7 +441,7 @@ ${receipts.map(r => `<div class="card">
                   <div className="px-5 pb-5">
                     <button
                       onClick={async () => {
-                        if (!confirm(`Break Table ${selectedTable.table_number}? All ${selectedTable.players.length} players will be auto-assigned to available seats.`)) return;
+                        if (!confirm(`Break Table ${selectedTable.table_number}? All ${selectedTable.players.length} Players Will Be Auto-Assigned To Available Seats.`)) return;
                         setActionLoading('break');
                         try {
                           // Step 1: Fetch auto-break assignments for THIS specific table
@@ -453,12 +453,12 @@ ${receipts.map(r => `<div class="card">
                           if (!breakSuggestRes.ok) throw new Error(`Request failed (${breakSuggestRes.status})`);
                           const breakSuggestJson = await breakSuggestRes.json();
 
-                          // Use assignments if available — these are now specifically for selectedTable.table_number
+                          // Use assignments if available - these are now specifically for selectedTable.table_number
                           let assignments = breakSuggestJson.data?.assignments || [];
 
                           if (!breakSuggestJson.success || assignments.length === 0) {
-                            // No auto assignments available — alert the TD
-                            setToast({ type: 'error', text: `Cannot auto-break Table ${selectedTable.table_number}: not enough available seats at other tables. Manually move players first.` });
+                            // No auto assignments available - alert the TD
+                            setToast({ type: 'error', text: `Cannot Auto-Break Table ${selectedTable.table_number}: Not Enough Available Seats At Other Tables. Manually Move Players First.` });
                             setActionLoading(null);
                             return;
                           }
@@ -479,13 +479,13 @@ ${receipts.map(r => `<div class="card">
                           if (json.success && json.data?.receipts?.length) {
                             printAutoBreakReceipts({ receipts: json.data.receipts });
                           } else if (!json.success) {
-                            setToast({ type: 'error', text: `Break failed: ${json.error || 'Unknown error'}` });
+                            setToast({ type: 'error', text: `Break Failed: ${json.error || 'Unknown Error'}` });
                           }
 
                           setSelectedTable(null);
                           await fetchFloor();
                           broadcastChange('tournaments');
-                        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Break failed. Check console.' }); }
+                        } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Break Failed. Check Console.' }); }
                         finally { setActionLoading(null); }
                       }}
                       disabled={actionLoading === 'break'}

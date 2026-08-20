@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
     // Must be Owner or Manager.
     // 2026-07-25 audit fix (P0): this previously called verifyStaffSession
-    // with a signature it never had ({allow, venue_id, user_id, user}) — the
+    // with a signature it never had ({allow, venue_id, user_id, user}) - the
     // real return shape is {staff}/{error}, so `authReq.allow` was always
     // undefined and the handler exited WITHOUT responding: the billing portal
     // hung on every request.
@@ -117,7 +117,7 @@ export default async function handler(req, res) {
                 user_id: String(user_id)
             },
             // 2026-07-25 audit fix: metadata on the SESSION alone never
-            // reaches customer.subscription.* webhook events — the webhook
+            // reaches customer.subscription.* webhook events - the webhook
             // could never link the paid subscription back to the venue.
             // subscription_data.metadata lands on the Subscription object.
             subscription_data: {
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
                     tier: sub.tier,
                 }
             }
-            // Note: trial already consumed locally — they pay immediately.
+            // Note: trial already consumed locally - they pay immediately.
         });
 
         return res.status(200).json({ url: checkoutSession.url });

@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -91,7 +91,7 @@ export default async function handler(req, res) {
           if (game_id) {
               gameQuery = gameQuery.eq('id', game_id);
           } else if (table_number) {
-              // commander_games has no table_number — resolve it to a table_id
+              // commander_games has no table_number - resolve it to a table_id
               const { data: tableRow } = await getSupabase()
                   .from('commander_tables')
                   .select('id')

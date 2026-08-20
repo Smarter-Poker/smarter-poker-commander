@@ -1,6 +1,6 @@
 /**
  * Auto Game Start Intelligence API
- * GET /api/commander/ai/game-start — Analyze whether new tables should open
+ * GET /api/commander/ai/game-start - Analyze whether new tables should open
  *
  * Factors:
  * - Current waitlist depth per game type
@@ -26,7 +26,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
     }
 
-    // Require staff auth — exposes venue operational data
+    // Require staff auth - exposes venue operational data
     const staff = await guardStaff(req, res);
     if (!staff) return;
 

@@ -7,7 +7,7 @@
  * - Active player sessions with time remaining
  * - Current dealer assignment
  * 
- * No auth required — tablet is unauthenticated.
+ * No auth required - tablet is unauthenticated.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
               } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
           }
 
-          // 2. Get active player sessions — try both table names for migration compatibility
+          // 2. Get active player sessions - try both table names for migration compatibility
           let sessions = [];
           try {
               let sessionsQuery = getSupabase()
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
 
               const { data, error } = await sessionsQuery;
               if (error) {
-                  // Table doesn't exist — try fallback
+                  // Table doesn't exist - try fallback
                   if (error.message?.includes('schema cache')) {
                       let fallbackQuery = getSupabase()
                           .from('commander_table_sessions')
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
               };
           });
 
-          // 3. Get current dealer — handle both old and new schema
+          // 3. Get current dealer - handle both old and new schema
           let dealer = null;
           try {
               let dealerQuery = getSupabase()

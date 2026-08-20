@@ -57,7 +57,7 @@ export async function commanderFetch(url, opts = {}) {
       window.location.href = '/commander/login?expired=1';
     }
     // Still throw so the caller's catch block fires
-    throw new Error('Session expired — redirecting to login');
+    throw new Error('Session expired - redirecting to login');
   }
 
   // Session expiry warning: check PIN session TTL (non-blocking)
@@ -68,7 +68,7 @@ export async function commanderFetch(url, opts = {}) {
         const elapsed = Date.now() - parsed.session_ts;
         const TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
         const WARN_MS = TTL_MS - (15 * 60 * 1000); // warn at 11h45m
-        // Track WHICH session_ts we already warned about — resets on new login
+        // Track WHICH session_ts we already warned about - resets on new login
         if (elapsed > WARN_MS && window.__commander_ttl_warned_ts !== parsed.session_ts) {
           window.__commander_ttl_warned_ts = parsed.session_ts;
           const minsLeft = Math.max(0, Math.round((TTL_MS - elapsed) / 60000));
@@ -77,7 +77,7 @@ export async function commanderFetch(url, opts = {}) {
           window.dispatchEvent(new CustomEvent('commander:session-expiring', { detail: { minutesLeft: minsLeft } }));
         }
       }
-    } catch { /* not a PIN session or malformed — ignore */ }
+    } catch { /* not a PIN session or malformed - ignore */ }
   }
 
   return response;

@@ -48,7 +48,7 @@ export default function WaitlistStatus() {
       setEntry(json.data);
 
       // Get position in waitlist
-      // 2026-07-25 audit fix: waitlist handler requires venue_id (400s without it) — scope to the entry's venue
+      // 2026-07-25 audit fix: waitlist handler requires venue_id (400s without it) - scope to the entry's venue
       const listRes = await commanderFetch(`/api/commander/waitlist?venue_id=${json.data.venue_id}`);
       // HIGH FIX #2c: Add response.ok check before .json()
       if (!listRes.ok) {
@@ -74,11 +74,11 @@ export default function WaitlistStatus() {
     if (!id) return;
     const _c = new AbortController();
     fetchStatus(_c.signal);
-    const poll = setInterval(() => fetchStatus(_c.signal), 15000); // fallback — Supabase Realtime handles instant updates
+    const poll = setInterval(() => fetchStatus(_c.signal), 15000); // fallback - Supabase Realtime handles instant updates
     return () => { _c.abort(); clearInterval(poll); };
   }, [id, fetchStatus]);
 
-  // Supabase Realtime — instant updates when waitlist changes
+  // Supabase Realtime - instant updates when waitlist changes
   const channelRef = useRef(null);
   const reconnectsRef = useRef(0);
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function WaitlistStatus() {
   return (
     <>
       <SEOHead
-        title="Commander — Details"
+        title="Commander - Details"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -157,7 +157,7 @@ export default function WaitlistStatus() {
             <p className="text-sm text-[#B0B3B8] mt-1">{entry?.game_type || 'Cash Game'}</p>
           </div>
 
-          {/* CALLED — urgent notification */}
+          {/* CALLED - urgent notification */}
           {isCalled && (
             <div className="bg-[#31A24C] rounded-2xl p-6 text-center animate-pulse">
               <Bell className="w-12 h-12 text-white mx-auto mb-3" />
@@ -169,7 +169,7 @@ export default function WaitlistStatus() {
             </div>
           )}
 
-          {/* SEATED — done */}
+          {/* SEATED - done */}
           {isSeated && (
             <div className="bg-[#1877F2]/10 border-2 border-[#1877F2]/40 rounded-2xl p-6 text-center">
               <CheckCircle2 className="w-12 h-12 text-[#1877F2] mx-auto mb-3" />
@@ -181,12 +181,12 @@ export default function WaitlistStatus() {
             </div>
           )}
 
-          {/* WAITING — show position */}
+          {/* WAITING - show position */}
           {isWaiting && (
             <>
               <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-8 text-center">
                 <p className="text-sm text-[#B0B3B8] mb-2">Your Position</p>
-                <p className="text-7xl font-bold text-[#1877F2]">{position || '—'}</p>
+                <p className="text-7xl font-bold text-[#1877F2]">{position || '-'}</p>
                 <p className="text-sm text-[#B0B3B8] mt-2">
                   {position === 1 ? "You're next!" : position ? `${position - 1} ahead of you` : 'Calculating...'}
                 </p>

@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       if (!_staff) return;
 
       if (req.method !== 'GET') {
-          return res.status(405).json({ success: false, error: { message: 'Method not allowed' } });
+          return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
       }
 
       const { id: tournamentId, type } = req.query;
@@ -37,36 +37,36 @@ export default async function handler(req, res) {
           case 'cashier': return cashierReport(req, res, tournamentId);
           case 'activity': return activityReport(req, res, tournamentId);
           default:
-              return res.status(400).json({ success: false, error: { message: 'type required: registration, cashier, or activity' } });
+              return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'type Required: registration, cashier, Or activity' } });
       }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
 /**
- * Registration Report — per-entry breakdown
+ * Registration Report - per-entry breakdown
  * Player name, seat, buy-in, payment method, cashier, timestamp
  */
 async function registrationReport(req, res, tournamentId) {
     try {
         const { data: tournament } = await getSupabase()
             .from('commander_tournaments')
-            .select('name, buyin_amount, buyin_fee, scheduled_start')
+            .select('name, buyin_amount, buyin_fee, rebuy_amount, addon_amount, guaranteed_pool, actual_prizepool, scheduled_start')
             .eq('id', tournamentId)
             .maybeSingle();
 
-        // 2026-07-28 audit fix: commander_tournament_entries has no
-        // payment_method and no cashier_staff_id column. PostgREST rejected the
-        // whole select with 42703, so this report returned HTTP 500 on every call.
+        // payment_method and cashier_staff_id ARE real columns on
+        // commander_tournament_entries (verified against the live schema
+        // 2026-08-19); registration writes them, so the report surfaces them.
         const { data: entries, error } = await getSupabase()
             .from('commander_tournament_entries')
             .select(`
         id, player_id, player_name, status, table_number, seat_number,
-        registration_method,
+        registration_method, payment_method, cashier_staff_id,
         rebuy_count, addon_taken, payout_amount, finish_position,
         registered_at, eliminated_at, current_chips,
         profiles (id, display_name, avatar_url)
@@ -76,24 +76,39 @@ async function registrationReport(req, res, tournamentId) {
 
         if (error) throw error;
 
-        // Calculate summary
-        const totalEntries = (entries || []).length;
-        const totalRebuys = (entries || []).reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
-        const totalAddons = (entries || []).filter(e => e.addon_taken).length;
+        // Calculate summary. Prize pool rule (same as payout.js/eliminate.js):
+        // collected = entries*buyin + rebuys*rebuy_amount + addons*addon_amount;
+        // pool = actual_prizepool when set, else max(collected, guaranteed_pool).
+        const nonCancelled = (entries || []).filter(e => e.status !== 'cancelled');
+        const totalEntries = nonCancelled.length;
+        const totalRebuys = nonCancelled.reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
+        const totalAddons = nonCancelled.filter(e => e.addon_taken).length;
         const buyinAmount = tournament?.buyin_amount || 0;
         const buyinFee = tournament?.buyin_fee || 0;
+        const rebuyAmount = tournament?.rebuy_amount || 0;
+        const addonAmount = tournament?.addon_amount || 0;
         const totalBuyins = totalEntries * (buyinAmount + buyinFee);
-        const totalRebuyRevenue = totalRebuys * (buyinAmount); // Rebuys typically don't include fee
-        const totalAddonRevenue = totalAddons * (buyinAmount); // Simplified
+        const totalRebuyRevenue = totalRebuys * rebuyAmount;
+        const totalAddonRevenue = totalAddons * addonAmount;
         const totalRevenue = totalBuyins + totalRebuyRevenue + totalAddonRevenue;
         const houseFees = totalEntries * buyinFee;
-        const prizePool = totalRevenue - houseFees;
+        const collectedPool = (totalEntries * buyinAmount) + totalRebuyRevenue + totalAddonRevenue;
+        const actualPool = Number(tournament?.actual_prizepool) || 0;
+        const prizePool = actualPool > 0
+            ? actualPool
+            : Math.max(collectedPool, Number(tournament?.guaranteed_pool) || 0);
+        const overlay = Math.max(0, (Number(tournament?.guaranteed_pool) || 0) - collectedPool);
 
-        // Payment-method breakdown is NOT derivable: nothing on
-        // commander_tournament_entries records how an entry was tendered, and the
-        // tournament buy-in rows written to commander_cash_transactions carry no
-        // tournament_id to join back on. Reporting it as all-cash would be a
-        // fabricated money figure, so it is returned as null instead.
+        // Payment-method breakdown of ENTRY buy-ins (recorded per entry at
+        // registration; entries registered before the column was populated
+        // fall under 'unrecorded').
+        const paymentBreakdown = {};
+        for (const e of nonCancelled) {
+            const method = e.payment_method || 'unrecorded';
+            if (!paymentBreakdown[method]) paymentBreakdown[method] = { count: 0, amount: 0 };
+            paymentBreakdown[method].count += 1;
+            paymentBreakdown[method].amount += buyinAmount + buyinFee;
+        }
 
         return res.status(200).json({
             success: true,
@@ -108,47 +123,41 @@ async function registrationReport(req, res, tournamentId) {
                     total_revenue: totalRevenue,
                     house_fees: houseFees,
                     prize_pool: prizePool,
+                    collected_pool: collectedPool,
+                    overlay,
                     buyin_amount: buyinAmount,
                     buyin_fee: buyinFee,
-                    payment_breakdown: null,
-                    payment_breakdown_note: 'Not recorded: commander_tournament_entries has no payment_method column.'
+                    payment_breakdown: paymentBreakdown
                 }
             }
         });
     } catch (error) {
         console.warn('Registration report error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }
 
 /**
- * Cashier Report — tournament cash reconciliation
+ * Cashier Report - tournament cash reconciliation
  *
- * 2026-07-28 audit fix: this report used to select payment_method and
- * cashier_staff_id from commander_tournament_entries. Neither column exists, so
- * PostgREST returned 42703 and the endpoint answered HTTP 500 on every call — a
- * cash control that looked present but caught nothing.
- *
- * The per-cashier split cannot be restored from the current schema: no table
- * attributes a tournament entry to the staff member who took the money.
- * commander_cash_transactions does carry processed_by, but the buy-in rows it
- * receives from tournament registration have no tournament_id — only a free-text
- * note — so they cannot be joined back to a tournament reliably. Rather than
- * invent an attribution, the report now returns the tournament-level totals that
- * ARE derivable and flags cashier attribution as unavailable.
+ * 2026-08-19: cashier_staff_id and payment_method ARE real columns on
+ * commander_tournament_entries (verified against the live schema), and
+ * registration writes both, so per-cashier attribution of entry buy-ins is
+ * derivable and reported. Entries taken before the columns were populated
+ * (or via self-registration) appear under the 'unattributed' bucket.
  */
 async function cashierReport(req, res, tournamentId) {
     try {
         const { data: tournament } = await getSupabase()
             .from('commander_tournaments')
-            .select('name, buyin_amount, buyin_fee, scheduled_start')
+            .select('name, buyin_amount, buyin_fee, rebuy_amount, addon_amount, scheduled_start')
             .eq('id', tournamentId)
             .maybeSingle();
 
         const { data: entries, error } = await getSupabase()
             .from('commander_tournament_entries')
             .select(`
-        id, player_name, registration_method,
+        id, player_name, registration_method, payment_method, cashier_staff_id, status,
         rebuy_count, addon_taken, registered_at,
         profiles (display_name)
       `)
@@ -161,21 +170,45 @@ async function cashierReport(req, res, tournamentId) {
         const buyinFee = tournament?.buyin_fee || 0;
         const entryTotal = buyinAmount + buyinFee;
 
-        const entryCount = (entries || []).length;
-        const totalRebuys = (entries || []).reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
-        const totalAddons = (entries || []).filter(e => e.addon_taken).length;
+        const nonCancelled = (entries || []).filter(e => e.status !== 'cancelled');
+        const entryCount = nonCancelled.length;
+        const totalRebuys = nonCancelled.reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
+        const totalAddons = nonCancelled.filter(e => e.addon_taken).length;
+
+        // Per-cashier split of ENTRY buy-ins (from cashier_staff_id, written by
+        // the verified staff session at registration).
+        const byCashier = {};
+        for (const e of nonCancelled) {
+            const key = e.cashier_staff_id || 'unattributed';
+            if (!byCashier[key]) {
+                byCashier[key] = { cashier_staff_id: e.cashier_staff_id || null, cashier_name: null, entries: 0, collected: 0, by_payment_method: {} };
+            }
+            byCashier[key].entries += 1;
+            byCashier[key].collected += entryTotal;
+            const method = e.payment_method || 'unrecorded';
+            byCashier[key].by_payment_method[method] = (byCashier[key].by_payment_method[method] || 0) + entryTotal;
+        }
+
+        // Resolve cashier display names
+        const cashierIds = Object.values(byCashier).map(c => c.cashier_staff_id).filter(Boolean);
+        if (cashierIds.length > 0) {
+            const { data: staffRows } = await getSupabase()
+                .from('commander_staff')
+                .select('id, display_name')
+                .in('id', cashierIds);
+            for (const s of (staffRows || [])) {
+                if (byCashier[s.id]) byCashier[s.id].cashier_name = s.display_name || null;
+            }
+        }
 
         return res.status(200).json({
             success: true,
             data: {
                 tournament_name: tournament?.name,
                 tournament_date: tournament?.scheduled_start,
-                // No cashier attribution exists in the schema — see the note above.
-                // An empty list is returned deliberately; the UI renders
-                // "No cashier data recorded" rather than a fabricated breakdown.
-                cashiers: [],
-                cashier_attribution_available: false,
-                reconciliation_note: 'Per-cashier attribution is not recorded: commander_tournament_entries has no cashier_staff_id or payment_method column. Tournament-level totals below are derived from the tournament buy-in and fee.',
+                cashiers: Object.values(byCashier),
+                cashier_attribution_available: true,
+                reconciliation_note: 'Cashier Attribution Covers Entry Buy-Ins Only. Rebuy And Add-On Cash Is Ledgered In commander_cash_transactions By The Rebuy/Add-On RPCs.',
                 total_entries: entryCount,
                 total_rebuys: totalRebuys,
                 total_addons: totalAddons,
@@ -184,20 +217,21 @@ async function cashierReport(req, res, tournamentId) {
                 total_collected: entryCount * entryTotal,
                 total_fees: entryCount * buyinFee,
                 // Rebuy and add-on cash is deliberately excluded from
-                // total_collected: it is not derivable whether rebuy_amount /
-                // addon_amount are tendered with or without the house fee, and
-                // this figure is reconciled against a physical drawer.
-                rebuy_addon_cash_included: false
+                // total_collected so the number reconciles against the entry
+                // drawer; the derivable side totals are exposed separately.
+                rebuy_addon_cash_included: false,
+                rebuy_collected: totalRebuys * (tournament?.rebuy_amount || 0),
+                addon_collected: totalAddons * (tournament?.addon_amount || 0)
             }
         });
     } catch (error) {
         console.warn('Cashier report error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }
 
 /**
- * Activity Report — chronological event log
+ * Activity Report - chronological event log
  * All registrations, eliminations, rebuys with timestamps
  */
 async function activityReport(req, res, tournamentId) {
@@ -227,7 +261,7 @@ async function activityReport(req, res, tournamentId) {
                     player_name: name,
                     player_id: e.player_id,
                     timestamp: e.registered_at,
-                    details: `Registered at Table ${e.table_number || '?'}, Seat ${e.seat_number || '?'}`
+                    details: `Registered At Table ${e.table_number || '?'}, Seat ${e.seat_number || '?'}`
                 });
             }
 
@@ -243,14 +277,14 @@ async function activityReport(req, res, tournamentId) {
                 });
             }
 
-            // Rebuy events (approximate — we only have count, not individual timestamps)
+            // Rebuy events (approximate - we only have count, not individual timestamps)
             if (e.rebuy_count > 0) {
                 activities.push({
                     type: 'rebuy',
                     player_name: name,
                     player_id: e.player_id,
                     timestamp: e.registered_at, // Approximate
-                    details: `${e.rebuy_count} rebuy(s)`
+                    details: `${e.rebuy_count} Rebuy(s)`
                 });
             }
 
@@ -261,7 +295,7 @@ async function activityReport(req, res, tournamentId) {
                     player_name: name,
                     player_id: e.player_id,
                     timestamp: e.registered_at, // Approximate
-                    details: 'Add-on taken'
+                    details: 'Add-On Taken'
                 });
             }
         });
@@ -279,6 +313,6 @@ async function activityReport(req, res, tournamentId) {
     } catch (error) {
         try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
         console.warn('Activity report error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }

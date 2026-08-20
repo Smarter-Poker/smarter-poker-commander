@@ -1,5 +1,5 @@
 /**
- * Staff Schedule Broadcast API — POST /api/commander/schedule/broadcast
+ * Staff Schedule Broadcast API - POST /api/commander/schedule/broadcast
  * Sends the week's schedule to all staff via SMS and/or email
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
                   return `${day}: ${startFormatted} - ${endFormatted}`;
               });
 
-              const message = `📋 ${venueName} Schedule (${weekLabel} - ${weekEndLabel})\n\nHi ${member.display_name || 'Team Member'},\n\nYour shifts:\n${lines.join('\n')}\n\nQuestions? Contact your manager.`;
+              const message = `${venueName} Schedule (${weekLabel} - ${weekEndLabel})\n\nHi ${member.display_name || 'Team Member'},\n\nYour shifts:\n${lines.join('\n')}\n\nQuestions? Contact your manager.`;
 
               // Send SMS
               if ((channel === 'sms' || channel === 'both') && member.phone) {
@@ -177,11 +177,11 @@ export default async function handler(req, res) {
                                       <h1 style="color: white; margin: 0; font-size: 24px;">Club Commander</h1>
                                   </div>
                                   <div style="padding: 30px; background: #F9FAFB;">
-                                      <h2 style="color: #1F2937; margin-top: 0;">Your Schedule — ${weekLabel} to ${weekEndLabel}</h2>
+                                      <h2 style="color: #1F2937; margin-top: 0;">Your Schedule - ${weekLabel} to ${weekEndLabel}</h2>
                                       <p style="color: #4B5563; font-size: 16px; line-height: 1.6; white-space: pre-line;">${message}</p>
                                   </div>
                                   <div style="padding: 20px; text-align: center; color: #9CA3AF; font-size: 12px;">
-                                      <p>Sent by Club Commander — Poker Room Management</p>
+                                      <p>Sent By Club Commander - Poker Room Management</p>
                                   </div>
                               </div>`;
                           const emailRes = await fetch('https://api.resend.com/emails', {
@@ -193,7 +193,7 @@ export default async function handler(req, res) {
                               body: JSON.stringify({
                                   from: process.env.RESEND_FROM_EMAIL || 'notifications@smarter.poker',
                                   to: member.email,
-                                  subject: `Your Schedule — ${weekLabel} to ${weekEndLabel}`,
+                                  subject: `Your Schedule - ${weekLabel} to ${weekEndLabel}`,
                                   html: htmlBody
                               })
                           });

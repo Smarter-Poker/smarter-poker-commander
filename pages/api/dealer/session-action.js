@@ -1,5 +1,5 @@
 /**
- * Session Action API — Unified player action endpoint
+ * Session Action API - Unified player action endpoint
  * POST /api/commander/dealer/session-action
  *
  * Actions: pause, resume, meal_break, missed_blinds, move, add_time
@@ -52,20 +52,20 @@ export default async function handler(req, res) {
       //
       // Making it mandatory would buy no security here: this route is
       // unauthenticated, so an attacker just supplies whatever venue_id they like
-      // and reaches any venue either way. The real defect is the ACCIDENTAL case —
+      // and reaches any venue either way. The real defect is the ACCIDENTAL case -
       // table_number/seat_number are not globally unique, so two clubs both have a
       // table 1 seat 1 and an unscoped match silently acts on whichever session the
       // planner returned first.
       //
       // So: scope by venue when we are given one, and otherwise require the
-      // table+seat pair to resolve to exactly ONE session — refusing with 409 if it
+      // table+seat pair to resolve to exactly ONE session - refusing with 409 if it
       // genuinely collides across venues. That fails loudly in exactly the case that
       // used to be silently wrong, and breaks no caller. (An earlier revision today
       // made this a hard 400 and broke three callers that never sent venue_id.)
       const venueId = Number(venue_id);
       const hasVenueId = Number.isInteger(venueId) && venueId >= 1;
 
-      // ── Tournament chip update — bypasses session lookup ──
+      // ── Tournament chip update - bypasses session lookup ──
       if (action === 'tournament_chip_update') {
           const { tournament_id, entry_id, chip_count } = req.body;
           if (!tournament_id || !entry_id || (chip_count === undefined && chip_count !== 0)) {
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
               //
               // No ambiguity guard is needed when venue_id is absent: tournament_id
               // and entry_id are UUIDs, so they already identify exactly one row
-              // globally — unlike table_number/seat_number, which collide across
+              // globally - unlike table_number/seat_number, which collide across
               // venues. We only assert ownership when a venue was actually supplied.
               if (hasVenueId) {
                   const { data: tourney, error: tErr } = await getSupabase()
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
           if (!hasVenueId && sessions?.length > 1) {
               return res.status(409).json({
                   success: false,
-                  error: 'table_number/seat_number matches sessions at more than one venue — supply venue_id to disambiguate'
+                  error: 'table_number/seat_number matches sessions at more than one venue - supply venue_id to disambiguate'
               });
           }
 
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
           }
 
           // TOURNAMENT GUARD: Block timer-based actions for tournament sessions
-          // Move is still allowed — dealers need to move tournament players between tables
+          // Move is still allowed - dealers need to move tournament players between tables
           if (['pause', 'resume', 'meal_break', 'missed_blinds', 'add_time'].includes(action)) {
               const { data: tableRow } = await getSupabase()
                   .from('commander_tables')
@@ -155,7 +155,7 @@ export default async function handler(req, res) {
               if (tableRow?.mode === 'tournament') {
                   return res.status(400).json({
                       success: false,
-                      error: 'Timer actions are not available for tournament sessions — tournaments have no individual timers'
+                      error: 'Timer actions are not available for tournament sessions - tournaments have no individual timers'
                   });
               }
           }
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
                       return res.status(200).json({ success: true, data: { action: 'pause', player_name: session.player_name, session_id: session.id, note: 'Already paused' } });
                   }
                   if (session.status === 'meal_break') {
-                      return res.status(400).json({ success: false, error: `${session.player_name} is on meal break — resume first` });
+                      return res.status(400).json({ success: false, error: `${session.player_name} is on meal break - resume first` });
                   }
                   // Stamp paused_at so billing freezes. Preserve an existing stamp if
                   // one somehow survives, so we never restart an in-progress span.
@@ -283,7 +283,7 @@ export default async function handler(req, res) {
                   // Check target seat is empty.
                   // Follow-up A: scoped to the venue of the session we actually found.
                   // Unscoped, an unrelated club's table N seat M could make this seat
-                  // look occupied — and worse, the error below interpolates that other
+                  // look occupied - and worse, the error below interpolates that other
                   // venue's player_name into a string returned to an unauthenticated
                   // caller, leaking a name across venues. session.venue_id is always
                   // known here, so this needs no conditional.
@@ -317,7 +317,7 @@ export default async function handler(req, res) {
                   // Update seat records
                   // 2026-07-28 audit fix: was `venue_id || session.venue_id`, which
                   // let the request body decide WHERE the seat writes landed. The body
-                  // value may only narrow the lookup — never redirect a write.
+                  // value may only narrow the lookup - never redirect a write.
                   const venueIdVal = session.venue_id;
                   // Clear old seat
                   await getSupabase()

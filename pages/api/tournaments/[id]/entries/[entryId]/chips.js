@@ -23,7 +23,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -34,12 +34,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'PUT') {
       res.setHeader('Allow', ['PUT']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId, entryId } = req.query;
     if (!tournamentId || !entryId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID and Entry ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID And Entry ID Required' } });
     }
 
     try {
@@ -50,19 +50,19 @@ export default async function handler(req, res) {
         .select('id, venue_id')
         .eq('id', tournamentId)
         .maybeSingle();
-      if (!tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (!tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
 
       const { chips } = req.body;
       // 2026-07-28 audit fix: `chips === undefined || chips < 0` let non-numeric
-      // values through — "abc" < 0 is false — and the raw value was written to
+      // values through - "abc" < 0 is false - and the raw value was written to
       // current_chips, which feeds the ICM equity calculation, i.e. money.
       // Coerce explicitly and require a finite, non-negative integer in range.
       const parsedChips = (typeof chips === 'number' || typeof chips === 'string')
         ? Number(chips)
         : NaN;
       if (!Number.isFinite(parsedChips) || !Number.isInteger(parsedChips) || parsedChips < 0 || parsedChips > MAX_CHIPS) {
-        return res.status(400).json({ success: false, error: `Valid chip count required (a whole number from 0 to ${MAX_CHIPS})` });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: `Valid Chip Count Required (A Whole Number From 0 To ${MAX_CHIPS.toLocaleString()})` } });
       }
 
       const { data: entry } = await getSupabase()
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         .eq('id', entryId)
         .eq('tournament_id', tournamentId)
         .maybeSingle();
-      if (!entry) return res.status(404).json({ success: false, error: 'Entry not found' });
+      if (!entry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
 
       const previousChips = entry.current_chips || 0;
 
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
         .select()
         .maybeSingle();
 
-      if (uErr) return res.status(500).json({ success: false, error: 'Failed to update chips' });
+      if (uErr) return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Update Chips' } });
 
       return res.status(200).json({
         success: true,
@@ -103,12 +103,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Update chips error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

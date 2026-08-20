@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Payouts Calculator & Manager
+ * Tournament Director - Payouts Calculator & Manager
  * /commander/td/[tournamentId]/payouts
  * Auto-calculates payouts from payout structure, allows live override for deals/chops
  * UI: Dark theme, SmarterPoker colors, Inter font, 44px+ touch targets
@@ -113,7 +113,7 @@ export default function TDPayouts() {
             }
         } catch (err) {
             console.warn('Save payouts error:', err);
-            setToast({ type: 'error', text: 'Failed to save payouts. Please try again.' });
+            setToast({ type: 'error', text: 'Failed To Save Payouts. Please Try Again.' });
         } finally {
             setSaving(false);
         }
@@ -149,7 +149,7 @@ export default function TDPayouts() {
                     <div className="flex items-center justify-between max-w-2xl mx-auto">
                         <div>
                             <h1 className="text-lg font-bold text-white">Payout Calculator</h1>
-                            <p className="text-xs text-[#B0B3B8]">Auto-calculate or override for deals</p>
+                            <p className="text-xs text-[#B0B3B8]">Auto-Calculate Or Override For Deals</p>
                         </div>
                         <button onClick={handleSave} disabled={saving}
                             className="px-4 py-2 rounded-xl bg-[#31A24C] text-white text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
@@ -182,7 +182,7 @@ export default function TDPayouts() {
                             <div>
                                 <p className="text-sm font-medium text-[#EF4444]">Overlay Alert</p>
                                 <p className="text-xs text-[#B0B3B8]">
-                                    Guaranteed {formatMoney(calcData.guaranteed)} exceeds prize pool by {formatMoney(calcData.guaranteed - prizePool)}
+                                    Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Prize Pool By {formatMoney(calcData.guaranteed - prizePool)} Overlay
                                 </p>
                             </div>
                         </div>
@@ -254,7 +254,7 @@ export default function TDPayouts() {
                             </div>
                             {Math.abs(diff) > 0 && (
                                 <p className="text-xs text-[#B0B3B8] mt-1">
-                                    {diff > 0 ? `${formatMoney(diff)} over prize pool` : `${formatMoney(Math.abs(diff))} remaining`}
+                                    {diff > 0 ? `${formatMoney(diff)} Over Prize Pool` : `${formatMoney(Math.abs(diff))} Remaining`}
                                 </p>
                             )}
                         </div>
@@ -325,7 +325,7 @@ export default function TDPayouts() {
 }
 
 /**
- * Simple ICM Calculator — input chip counts, output equity-based payouts
+ * Simple ICM Calculator - input chip counts, output equity-based payouts
  */
 function ICMCalculator({ payouts, prizePool, onApply }) {
     const [chipInputs, setChipInputs] = useState({});
@@ -355,7 +355,7 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
         // and EVERY later place at `(1 - prob) * prob`. Those terms are not a
         // probability distribution and do not sum to 1, so the allocated equity
         // never summed to the prize pool. Heads-up 80/20 on a $10,000 pool paying
-        // 6000/4000 produced 5440 / 1840 — it handed the short stack $1,840 where
+        // 6000/4000 produced 5440 / 1840 - it handed the short stack $1,840 where
         // true ICM gives $4,400, and left $2,720 of real money assigned to nobody.
         // Three-way equal stacks on $10,000 produced 2778 each, totalling $8,334.
         // Every deal struck off this screen mis-allocated the pool.
@@ -377,14 +377,14 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
 
     return (
         <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-3">
-            <p className="text-xs text-[#B0B3B8]">Enter chip counts for remaining players to calculate chip-chop values:</p>
+            <p className="text-xs text-[#B0B3B8]">Enter Chip Counts For Remaining Players To Calculate Chip-Chop Values:</p>
             <div className="space-y-2">
                 {payouts.filter(p => p.player_name).map(p => (
                     <div key={p.position} className="flex items-center gap-3">
                         <span className="text-sm text-[#E4E6EB] w-28 truncate">{p.player_name}</span>
                         <input
                             type="number"
-                            placeholder="Chip count"
+                            placeholder="Chip Count"
                             value={chipInputs[p.position] || ''}
                             onChange={e => setChipInputs(prev => ({ ...prev, [p.position]: parseInt(e.target.value) || 0 }))}
                             className="flex-1 px-3 py-2 rounded-lg bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-sm"
@@ -402,7 +402,7 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
                 <div className="space-y-2 pt-2 border-t border-[#3A3B3C]">
                     {results.map(r => (
                         <div key={r.position} className="flex items-center justify-between px-2 py-1.5">
-                            <span className="text-sm text-[#E4E6EB]">{r.percentage}% equity</span>
+                            <span className="text-sm text-[#E4E6EB]">{r.percentage}% Equity</span>
                             <span className="text-sm font-bold text-[#31A24C]">{formatMoney(r.equity)}</span>
                         </div>
                     ))}

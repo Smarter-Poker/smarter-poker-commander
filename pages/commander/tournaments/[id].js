@@ -116,7 +116,7 @@ export default function TournamentDetailPage() {
 const headers = { };
       const fo = signal ? { headers, signal } : { headers };
       // 2026-07-25 audit fix: the tournament API never returns clock_status /
-      // time_remaining / current blinds — fetch the clock endpoint alongside.
+      // time_remaining / current blinds - fetch the clock endpoint alongside.
       const [tournamentRes, entriesRes, clockRes] = await Promise.all([
         commanderFetch(`/api/commander/tournaments/${id}`, fo).catch(() => ({ ok: false })),
         commanderFetch(`/api/commander/tournaments/${id}/entries`, fo).catch(() => ({ ok: false })),
@@ -151,7 +151,7 @@ const headers = { };
     }
   }, [id]);
 
-  // Commander Data Bus — instant sync for tournament changes across devices
+  // Commander Data Bus - instant sync for tournament changes across devices
   useCommanderSync(venueId, fetchTournament, { entities: ['tournaments'] });
 
   useEffect(() => {
@@ -205,7 +205,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
       }
     } catch (error) {
       console.warn('Clock action failed:', error);
-      setToast({ type: 'error', text: 'Clock action failed. Please try again.' });
+      setToast({ type: 'error', text: 'Clock Action Failed. Please Try Again.' });
     }
   }
 
@@ -226,7 +226,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
       }
     } catch (error) {
       console.warn('Status change failed:', error);
-      setToast({ type: 'error', text: 'Status change failed. Please try again.' });
+      setToast({ type: 'error', text: 'Status Change Failed. Please Try Again.' });
     }
   }
 
@@ -259,7 +259,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
             onClick={() => router.push('/commander/tournaments')}
             className="mt-4 px-4 py-2 cmd-btn cmd-btn-primary rounded-lg"
           >
-            Back to Tournaments
+            Back To Tournaments
           </button>
         </div>
       </div>
@@ -269,7 +269,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
   return (
     <CommanderLayout title={`${tournament.name} | Commander`} backHref="/commander/dashboard?card=tournaments">
       <SEOHead
-        title="Commander — Details"
+        title="Commander - Details"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -316,7 +316,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {!['completed', 'cancelled'].includes(tournament.status) && (
                 <button
                   onClick={async () => {
-                    if (!confirm(`Close tournament "${tournament.name}"? This will cancel the tournament and cannot be undone.`)) return;
+                    if (!confirm(`Close Tournament "${tournament.name}"? This Will Cancel The Tournament And Cannot Be Undone.`)) return;
                     setClosing(true);
                     try {
 const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.id}`, {
@@ -325,11 +325,11 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
                         fetchTournament();
                         broadcastChange('tournaments');
                       } else {
-                        setToast({ type: 'error', text: 'Failed to close tournament. Please try again.' });
+                        setToast({ type: 'error', text: 'Failed To Close Tournament. Please Try Again.' });
                       }
                     } catch (err) {
                       console.warn(err);
-                      setToast({ type: 'error', text: 'Failed to close tournament' });
+                      setToast({ type: 'error', text: 'Failed To Close Tournament' });
                     } finally {
                       setClosing(false);
                     }
@@ -354,14 +354,17 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
             <div className="bg-[#1F2937] rounded-xl p-6 text-white">
               <div className="text-center mb-6">
                 <p className="text-sm text-gray-400 mb-1">
-                  Level {clockInfo?.currentBlind?.level || (tournament.current_level || 0) + 1}
+                  {/* currentBlind.level from the clock API is already the break-aware display number */}
+                  {clockInfo?.currentBlind?.isBreak
+                    ? (clockInfo.currentBlind.label || 'Break')
+                    : `Level ${clockInfo?.currentBlind?.level ?? ((tournament.current_level || 0) + 1)}`}
                 </p>
                 <p className="text-6xl font-bold font-mono">
                   {formatTime(timeRemaining)}
                 </p>
                 <p className="text-lg text-gray-300 mt-2">
                   Blinds: {clockInfo?.currentBlind?.smallBlind ?? 25}/{clockInfo?.currentBlind?.bigBlind ?? 50}
-                  {(clockInfo?.currentBlind?.ante || 0) > 0 && ` (${clockInfo.currentBlind.ante} ante)`}
+                  {(clockInfo?.currentBlind?.ante || 0) > 0 && ` (${clockInfo.currentBlind.ante} Ante)`}
                 </p>
               </div>
 
@@ -408,7 +411,11 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
             </div>
             <div className="cmd-panel p-4 text-center">
               <Clock className="w-5 h-5 text-[#8B5CF6] mx-auto mb-1" />
-              <p className="text-2xl font-bold text-white">{tournament.current_level || 1}</p>
+              <p className="text-2xl font-bold text-white">
+                {clockInfo?.currentBlind?.isBreak
+                  ? 'Break'
+                  : (clockInfo?.currentBlind?.level ?? ((tournament.current_level || 0) + 1))}
+              </p>
               <p className="text-xs text-[#64748B]">Level</p>
             </div>
           </div>
@@ -477,7 +484,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
               <div className="divide-y divide-[#4A5E78] max-h-80 overflow-y-auto">
                 {activeEntries.length === 0 ? (
                   <div className="p-4 text-center text-[#64748B]">
-                    No active players
+                    No Active Players
                   </div>
                 ) : (
                   activeEntries.map((entry) => (
@@ -510,7 +517,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournament.i
               <div className="divide-y divide-[#4A5E78] max-h-80 overflow-y-auto">
                 {eliminatedEntries.length === 0 ? (
                   <div className="p-4 text-center text-[#64748B]">
-                    No eliminations yet
+                    No Eliminations Yet
                   </div>
                 ) : (
                   eliminatedEntries.map((entry) => (

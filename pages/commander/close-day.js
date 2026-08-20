@@ -3,8 +3,8 @@
  * /commander/close-day
  * 
  * Shift closing procedures for floor managers:
- * 1. Review open tables — confirm all are closed
- * 2. Review active sessions — ensure all players checked out
+ * 1. Review open tables - confirm all are closed
+ * 2. Review active sessions - ensure all players checked out
  * 3. Cash drop / reconciliation summary
  * 4. Staff sign-off with PIN
  * 5. Generate end-of-day report
@@ -61,7 +61,7 @@ export default function CloseDay() {
       .catch(() => {});
   }, []);
 
-  // fetchStatus declared first — must precede useEffect/useCommanderSync that reference it
+  // fetchStatus declared first - must precede useEffect/useCommanderSync that reference it
   const fetchStatus = useCallback(async (signal) => {
     setLoading(true);
     try {
@@ -89,7 +89,7 @@ const headers = { };
       const sessionsArr = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
       setActiveSessions(sessionsArr.filter(s => s.status === 'active'));
       // 2026-07-25 audit fix: the daily report returns {data:{report:{summary:{...}}}},
-      // not a flat object — map its real fields into dayStats. Revenue/comp figures
+      // not a flat object - map its real fields into dayStats. Revenue/comp figures
       // come from the revenue report (range=today); they stay null when unavailable
       // so the UI can drop those tiles instead of presenting fake zeros.
       const summary = reportRes?.data?.report?.summary || {};
@@ -108,7 +108,7 @@ const headers = { };
     finally { setLoading(false); }
   }, []);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(getVenueId(), fetchStatus, { entities: ['tables', 'games'] });
 
   const openTables = tables.filter(t => t.status === 'active' || t.status === 'open');
@@ -144,7 +144,7 @@ const headers = { 'Content-Type': 'application/json' };
         broadcastChange('games');
       }
       await fetchStatus();
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setClosing(false); }
   };
 
@@ -161,7 +161,7 @@ const venueId = getVenueId();
       const json = await res.json();
       if (json.success && json.data?.valid && json.data?.staff) {
         const staff = json.data.staff;
-        // Persist the close BEFORE celebrating — confetti fires only on a real save.
+        // Persist the close BEFORE celebrating - confetti fires only on a real save.
         const saveRes = await commanderFetch('/api/commander/close-day', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -183,14 +183,14 @@ const venueId = getVenueId();
           throw new Error(saveJson?.error?.message || `Save failed (${saveRes.status})`);
         }
         if (saveJson.data?.close) setLastClose(saveJson.data.close);
-        // Saved — advance to the confirmation step and celebrate.
+        // Saved - advance to the confirmation step and celebrate.
         setStep(4);
         busEmit.sessionEnd('commander-close-day');
         busEmit.celebration('confetti');
       } else {
         setPin('');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Could not save the day close. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Could Not Save The Day Close. Please Check Your Connection And Try Again.' }); }
     finally { setVerifying(false); }
   };
 
@@ -203,7 +203,7 @@ const venueId = getVenueId();
   return (
     <CommanderLayout title="Close Day" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Close Day"
+        title="Commander - Close Day"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -230,17 +230,17 @@ const venueId = getVenueId();
               <div className="space-y-2">
                 <CheckItem
                   label="All Tables Closed"
-                  detail={openTables.length === 0 ? 'All tables are closed' : `${openTables.length} table(s) still open`}
+                  detail={openTables.length === 0 ? 'All Tables Are Closed' : `${openTables.length} Table(s) Still Open`}
                   ok={openTables.length === 0}
                 />
                 <CheckItem
                   label="All Players Checked Out"
-                  detail={activeSessions.length === 0 ? 'No active sessions' : `${activeSessions.length} session(s) still active`}
+                  detail={activeSessions.length === 0 ? 'No Active Sessions' : `${activeSessions.length} Session(s) Still Active`}
                   ok={activeSessions.length === 0}
                 />
                 <CheckItem
                   label="Waitlist Cleared"
-                  detail={waitlistCount === 0 ? 'Waitlist is empty' : `${waitlistCount} player(s) still waiting`}
+                  detail={waitlistCount === 0 ? 'Waitlist Is Empty' : `${waitlistCount} Player(s) Still Waiting`}
                   ok={waitlistCount === 0}
                 />
               </div>
@@ -275,13 +275,13 @@ const venueId = getVenueId();
 
               {lastClose && (
                 <p className="text-xs text-[#B0B3B8]">
-                  Last closed {new Date(lastClose.created_at).toLocaleString()}{lastClose.closed_by_name ? ` by ${lastClose.closed_by_name}` : ''} — re-closing will update that record.
+                  Last Closed {new Date(lastClose.created_at).toLocaleString()}{lastClose.closed_by_name ? ` By ${lastClose.closed_by_name}` : ''}, Re-Closing Will Update That Record.
                 </p>
               )}
 
               {/* 2026-07-25 audit fix: tiles now read the daily report's real summary
                   fields; revenue/comp tiles render only when backed by real data
-                  (dropped the Incidents tile — no endpoint feeds it). */}
+                  (dropped the Incidents tile - no endpoint feeds it). */}
               <div className="grid grid-cols-2 gap-3">
                 <StatCard label="Sessions Today" value={dayStats.total_sessions || 0} color="#1877F2" />
                 <StatCard label="Unique Players" value={dayStats.unique_players || 0} color="#31A24C" />
@@ -305,7 +305,7 @@ const venueId = getVenueId();
 
               {/* Notes */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Shift Notes (optional)</label>
+                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Shift Notes (Optional)</label>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)}
                   rows={3} placeholder="Any Notes About The Shift..."
                   className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2] resize-none" />
@@ -345,7 +345,7 @@ const venueId = getVenueId();
                         else if (pin.length < 4) setPin(pin + key);
                       }}
                       className="py-4 rounded-xl bg-[#3A3B3C] text-white text-xl font-semibold active:bg-[#4A4B4C]">
-                      {key === 'del' ? 'DEL' : key}
+                      {key === 'del' ? 'Del' : key}
                     </button>
                   );
                 })}
@@ -368,7 +368,7 @@ const venueId = getVenueId();
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Day Closed</h2>
               <p className="text-[#B0B3B8] mb-8">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} has been closed successfully.
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} Has Been Closed Successfully.
               </p>
 
               <div className="space-y-3">

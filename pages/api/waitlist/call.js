@@ -22,7 +22,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
 
       if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
 
-      // Resolve venue name + game label ONCE — both the SMS and the push use them.
+      // Resolve venue name + game label ONCE - both the SMS and the push use them.
       // (These used to live inside the phone-only branch, so the push path below
       // could not reuse them.)
       let venueName = 'Your poker room';

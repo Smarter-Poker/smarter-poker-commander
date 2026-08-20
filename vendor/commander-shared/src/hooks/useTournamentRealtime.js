@@ -1,5 +1,5 @@
 /**
- * useTournamentRealtime — Hardened Supabase Realtime hook for Tournament Director
+ * useTournamentRealtime - Hardened Supabase Realtime hook for Tournament Director
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Subscribes to changes on commander_tournament_entries and commander_tournaments
@@ -7,19 +7,19 @@
  * instant updates across all connected TD tablets and TV displays.
  *
  * Hardening Features:
- *   ✓ Stale closure prevention — uses ref for callback (no channel churn)
- *   ✓ Debounced updates — batches rapid-fire events (300ms window)
- *   ✓ Auto-reconnect — exponential backoff on channel failure (max 5 attempts)
- *   ✓ Visibility awareness — skips refetch when hidden, catches up on focus
- *   ✓ Online recovery — refetches when network comes back
- *   ✓ SSR-safe — all browser APIs guarded
- *   ✓ Timer leak prevention — all pending timers cleaned on unmount
- *   ✓ Unique channel names — uses full tournament ID hash
+ *   ✓ Stale closure prevention - uses ref for callback (no channel churn)
+ *   ✓ Debounced updates - batches rapid-fire events (300ms window)
+ *   ✓ Auto-reconnect - exponential backoff on channel failure (max 5 attempts)
+ *   ✓ Visibility awareness - skips refetch when hidden, catches up on focus
+ *   ✓ Online recovery - refetches when network comes back
+ *   ✓ SSR-safe - all browser APIs guarded
+ *   ✓ Timer leak prevention - all pending timers cleaned on unmount
+ *   ✓ Unique channel names - uses full tournament ID hash
  *
  * Usage:
  *   useTournamentRealtime(tournamentId, fetchFloor);
  *
- * Falls back gracefully if Realtime connection fails — polling still works as backup.
+ * Falls back gracefully if Realtime connection fails - polling still works as backup.
  */
 import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -29,7 +29,7 @@ const MAX_RECONNECT = 5;
 const DEBOUNCE_MS = 300;
 
 export default function useTournamentRealtime(tournamentId, onUpdate) {
-    // ── Ref for callback — prevents stale closure and channel churn ──
+    // ── Ref for callback - prevents stale closure and channel churn ──
     const onUpdateRef = useRef(onUpdate);
     onUpdateRef.current = onUpdate;
 
@@ -44,7 +44,7 @@ export default function useTournamentRealtime(tournamentId, onUpdate) {
 
         const client = supabase;
         if (!client) {
-            console.warn('[Realtime] Supabase client not available — using polling only');
+            console.warn('[Realtime] Supabase client not available - using polling only');
             return;
         }
 
@@ -63,7 +63,7 @@ export default function useTournamentRealtime(tournamentId, onUpdate) {
             }, DEBOUNCE_MS);
         };
 
-        // ── Visibility awareness — catch up when tab becomes visible ──
+        // ── Visibility awareness - catch up when tab becomes visible ──
         const handleVisibility = () => {
             if (!document.hidden && pendingWhileHiddenRef.current) {
                 pendingWhileHiddenRef.current = false;
@@ -71,7 +71,7 @@ export default function useTournamentRealtime(tournamentId, onUpdate) {
             }
         };
 
-        // ── Online recovery — refetch when network returns ──
+        // ── Online recovery - refetch when network returns ──
         const handleOnline = () => {
             onUpdateRef.current?.();
         };
@@ -167,5 +167,5 @@ export default function useTournamentRealtime(tournamentId, onUpdate) {
             document.removeEventListener('visibilitychange', handleVisibility);
             window.removeEventListener('online', handleOnline);
         };
-    }, [tournamentId]); // ← only tournamentId — callback is in ref
+    }, [tournamentId]); // ← only tournamentId - callback is in ref
 }

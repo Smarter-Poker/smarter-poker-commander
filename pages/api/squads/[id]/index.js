@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       return handleGet(req, res, id);
     } else if (req.method === 'DELETE') {
-      // 2026-07-25 audit fix: pass the verified user — the delete authorization
+      // 2026-07-25 audit fix: pass the verified user - the delete authorization
       // must compare the session identity, not a forgeable body player_id.
       const user = await guardUser(req, res);
       if (!user) return;

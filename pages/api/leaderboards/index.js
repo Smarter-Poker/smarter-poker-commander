@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     // CDN cache: fresh for 30s, serve stale up to 120s
@@ -85,7 +85,7 @@ async function listLeaderboards(req, res) {
 
 async function createLeaderboard(req, res) {
   try {
-    // Staff already validated by guardWriteStaff — get venue from staff session
+    // Staff already validated by guardWriteStaff - get venue from staff session
     const staffResult = await verifyStaffSession(req);
     if (staffResult.error) {
       return res.status(staffResult.error.status || 401).json({ error: staffResult.error.message });

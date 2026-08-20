@@ -3,7 +3,7 @@
  *
  * 2026-08-04 audit fix: this file used to export ONLY a no-op mock client,
  * with a header claiming "Next.js always resolves to supabase.ts". That is
- * true in World Hub, which ships a supabase.ts next to this file — but the
+ * true in World Hub, which ships a supabase.ts next to this file - but the
  * vendored copy in smarter-poker-commander has no supabase.ts, so every
  * relative `import { supabase } from '../supabase'` inside this package
  * (useCommanderSync, useTournamentRealtime, FloorCallAlert, CommanderLayout)
@@ -12,7 +12,7 @@
  *     inert), so cross-device sync silently degraded to same-browser
  *     BroadcastChannel only;
  *   - FloorCallAlert's 20s safety poll threw on the mock query builder (no
- *     chained .eq().eq()) and the error was swallowed — floor calls raised
+ *     chained .eq().eq()) and the error was swallowed - floor calls raised
  *     from another device never alerted;
  *   - CommanderLayout's logout called supabase.auth.signOut(), which the mock
  *     does not define, so the Supabase session survived "Sign Out".
@@ -62,7 +62,7 @@ const mockClient = {
   rpc: () => Promise.resolve({ data: null, error: null }),
   channel: () => {
     const ch = {
-      on: () => ch,           // chainable — returns self like real supabase
+      on: () => ch,           // chainable - returns self like real supabase
       subscribe: () => ch,
       unsubscribe: () => {},
     };
@@ -85,7 +85,7 @@ function buildClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        // Same key as src/lib/supabase.js — one shared persisted session.
+        // Same key as src/lib/supabase.js - one shared persisted session.
         storageKey: 'smarter-poker-auth',
       },
     });

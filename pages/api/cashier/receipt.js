@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
       if (transaction_id) {
         // Single transaction receipt
-        // 2026-07-25 audit fix: select the fields the receipt actually renders —
+        // 2026-07-25 audit fix: select the fields the receipt actually renders -
         // the old .select('id') left every rendered field undefined.
         const { data: tx } = await getSupabase()
           .from('commander_cash_transactions')
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
         // Full session summary receipt (cash-out receipt with all transactions)
         // 2026-07-25 audit fix: select the real columns used below (the old
         // .select('id') left them undefined). commander_table_sessions has no
-        // total_charge column — the time charge is computed from the session's
+        // total_charge column - the time charge is computed from the session's
         // 'time_purchase' cash transactions instead (see pages/api/cashier.js).
         const { data: session } = await getSupabase()
           .from('commander_table_sessions')

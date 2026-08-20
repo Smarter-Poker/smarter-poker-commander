@@ -21,7 +21,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Shared structure validation — rejects/normalizes obviously invalid tournament
+// Shared structure validation - rejects/normalizes obviously invalid tournament
 // payloads before they persist. `partial` mode (update) only checks provided fields.
 export function validateTournamentPayload(body, { partial = false } = {}) {
     const { blind_structure, payout_structure, paying_places, max_entries } = body || {};
@@ -30,28 +30,28 @@ export function validateTournamentPayload(body, { partial = false } = {}) {
     if (blind_structure !== undefined) {
         let bs = blind_structure;
         if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = null; } }
-        if (!Array.isArray(bs) || bs.length === 0) return 'blind_structure must be a non-empty array of levels';
-        if (!bs.some(l => l && !l.is_break)) return 'blind_structure must contain at least one playing level';
+        if (!Array.isArray(bs) || bs.length === 0) return 'blind_structure Must Be A Non-Empty Array Of Levels';
+        if (!bs.some(l => l && !l.is_break)) return 'blind_structure Must Contain At Least One Playing Level';
     } else if (!partial) {
-        return 'blind_structure is required and must be a non-empty array of levels';
+        return 'blind_structure Is Required And Must Be A Non-Empty Array Of Levels';
     }
 
     // payout_structure (canonical array of { place, pct }) must total ~100%.
     if (Array.isArray(payout_structure) && payout_structure.length > 0) {
         const sum = payout_structure.reduce((s, p) => s + (Number(p && (p.pct != null ? p.pct : p.percentage)) || 0), 0);
-        if (Math.abs(sum - 100) > 0.5) return `payout_structure percentages must total ~100% (got ${sum.toFixed(2)}%)`;
+        if (Math.abs(sum - 100) > 0.5) return `payout_structure Percentages Must Total ~100% (Got ${sum.toFixed(2)}%)`;
     }
 
     // paying_places cannot exceed the entries cap.
     const cap = (max_entries !== undefined && max_entries !== null && max_entries !== '') ? parseInt(max_entries) : null;
     if (cap && Number.isFinite(cap) && paying_places != null && parseInt(paying_places) > cap) {
-        return `paying_places (${paying_places}) cannot exceed max_entries (${cap})`;
+        return `paying_places (${paying_places}) Cannot Exceed max_entries (${cap})`;
     }
 
     return null;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -70,12 +70,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } });
+    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -84,7 +84,7 @@ async function listTournaments(req, res) {
     const { venue_id, status, from_date, to_date, limit: rawLimit = '50' } = req.query;
     const limit = Math.min(parseInt(rawLimit) || 50, 500);
 
-    // 2026-07-25 audit fix: the player hub needs a cross-venue list — when
+    // 2026-07-25 audit fix: the player hub needs a cross-venue list - when
     // venue_id is absent, return upcoming/active tournaments across venues
     // (public fields only) instead of a 400.
     if (!venue_id) {
@@ -150,7 +150,7 @@ async function listTournaments(req, res) {
     return res.status(200).json({ success: true, data: { tournaments: data } });
   } catch (error) {
     captureException(error, { action: 'list_tournaments', endpoint: '/api/commander/tournaments' });
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -158,7 +158,7 @@ async function createTournament(req, res, staff) {
   try {
     // staff is already authenticated by guardWriteStaff middleware
     if (!staff || staff === true) {
-      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' } });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff Authentication Required' } });
     }
 
     const {
@@ -197,7 +197,7 @@ async function createTournament(req, res, staff) {
     if (!venue_id || !name || !tournament_type || !buyin_amount || !starting_chips || !scheduled_start) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Required fields: venue_id, name, tournament_type, buyin_amount, starting_chips, scheduled_start' }
+        error: { code: 'VALIDATION_ERROR', message: 'Required Fields: venue_id, name, tournament_type, buyin_amount, starting_chips, scheduled_start' }
       });
     }
 
@@ -209,7 +209,7 @@ async function createTournament(req, res, staff) {
 
     // Verify staff belongs to this venue
     if (staff.venue_id !== undefined && String(staff.venue_id) !== String(venue_id)) {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You are not staff at this venue' } });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
     }
 
     const { data: tournament, error } = await getSupabase()
@@ -252,11 +252,11 @@ async function createTournament(req, res, staff) {
 
     if (error) throw error;
 
-    // Audit log
+    // Audit log (guard: .maybeSingle() can return null even without error)
     await logAction({ action: 'create_tournament', category: 'tournament' }, {
       venueId: venue_id,
       staffId: staff.id,
-      targetId: tournament.id,
+      targetId: tournament?.id,
       targetType: 'commander_tournaments',
       targetName: name,
       req
@@ -266,6 +266,6 @@ async function createTournament(req, res, staff) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     captureException(error, { action: 'create_tournament', endpoint: '/api/commander/tournaments', venue_id: req.body?.venue_id });
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

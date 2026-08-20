@@ -1,9 +1,9 @@
 /**
- * Tablet Display — Fullscreen Kiosk View for a Single Table
+ * Tablet Display - Fullscreen Kiosk View for a Single Table
  * /commander/tablet/[tableNumber]?venue=VENUE_ID
  *
  * Each physical tablet opens this URL locked to one table.
- * No auth required — the URL IS the assignment.
+ * No auth required - the URL IS the assignment.
  *
  * Features:
  * - Fullscreen poker table with seat badges, live timers, dealer info
@@ -22,7 +22,7 @@ import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 
 /* ─── Supabase client for Realtime (no auth needed for display) ── */
-/* GUARD: createClient must NOT run during SSG — localStorage doesn't exist on server */
+/* GUARD: createClient must NOT run during SSG - localStorage doesn't exist on server */
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 const supabase = (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -48,7 +48,7 @@ function getTimerColor(seconds) {
     return '#31A24C';
 }
 
-// Arc-length ellipse for equal seat spacing — same algo as table-tablets.js
+// Arc-length ellipse for equal seat spacing - same algo as table-tablets.js
 function computeSeatPositions(maxSeats) {
     const rx = 47, ry = 22, cxE = 50, cyE = 50;
     const STEPS = 360;
@@ -125,7 +125,7 @@ export default function TabletDisplay() {
             }
         } catch (err) {
             console.warn('Tablet fetch error:', err);
-            setError('Connection lost — retrying...');
+            setError('Connection lost - retrying...');
         }
         setLoading(false);
     }, [tableNumber, venueId]);
@@ -293,7 +293,7 @@ export default function TabletDisplay() {
             </Head>
 
             <div style={fullScreenStyle}>
-                {/* NO header — fullscreen table view matching table-tablets.js */}
+                {/* NO header - fullscreen table view matching table-tablets.js */}
 
                 {/* ── Table Visual (full height) ─────────── */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 24px', overflow: 'hidden' }}>

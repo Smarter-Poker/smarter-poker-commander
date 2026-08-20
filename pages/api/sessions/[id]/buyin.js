@@ -22,7 +22,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
       const { amount } = req.body;
 
       // 2026-07-28 audit fix: `!amount || amount <= 0` passed strings straight
-      // through — "50" is truthy and "50" <= 0 is false — and the total below was
+      // through - "50" is truthy and "50" <= 0 is false - and the total below was
       // then computed with `+`, which concatenates. Posting {"amount":"50"} to a
       // session with total_buyin 100 produced "10050", which Postgres accepted
       // for the integer column: a $100 buy-in recorded as $10,050. Coerce

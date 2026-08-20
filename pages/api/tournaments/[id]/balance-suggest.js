@@ -26,7 +26,7 @@ function findAvailableSeat(maxSeats, occupiedSeats) {
   return null;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -35,12 +35,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     try {
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
         .select('id, venue_id')
         .eq('id', tournamentId)
         .maybeSingle();
-      if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
       // Get all active entries with table/seat info
       const { data: entries } = await getSupabase()
@@ -62,15 +62,15 @@ export default async function handler(req, res) {
         .in('status', ['active', 'seated']);
 
       if (!entries || entries.length === 0) {
-        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'No active players' } });
+        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'No Active Players' } });
       }
 
       // Get unique table numbers from entries
       // 2026-07-25 audit fix: .limit() is a query-builder method, not an Array
-      // method — calling it on this array threw a TypeError.
+      // method - calling it on this array threw a TypeError.
       const tableNumbers = [...new Set(entries.map(e => e.table_number).filter(Boolean))];
       if (tableNumbers.length < 2) {
-        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'Only one table active' } });
+        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'Only One Table Active' } });
       }
 
       // Get table configs
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
             table_to_break: tableToBreak,
             moves,
             table_counts: tableCounts,
-            message: `Break Table ${tableToBreak} — move ${playersToMove.length} players`
+            message: `Break Table ${tableToBreak}, Move ${playersToMove.length} Players`
           }
         });
       }
@@ -191,25 +191,25 @@ export default async function handler(req, res) {
             moves,
             table_counts: tableCounts,
             message: moves.length > 0
-              ? `Move ${moves[0].player_name} from Table ${fromTable} to Table ${toTable}`
-              : 'No valid moves found'
+              ? `Move ${moves[0].player_name} From Table ${fromTable} To Table ${toTable}`
+              : 'No Valid Moves Found'
           }
         });
       }
 
       return res.status(200).json({
         success: true,
-        data: { type: 'none', moves: [], table_counts: tableCounts, message: 'Tables are balanced' }
+        data: { type: 'none', moves: [], table_counts: tableCounts, message: 'Tables Are Balanced' }
       });
 
     } catch (err) {
       console.warn('Balance suggest error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

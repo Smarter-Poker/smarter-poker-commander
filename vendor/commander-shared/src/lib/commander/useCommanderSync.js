@@ -1,5 +1,5 @@
 /**
- * useCommanderSync — Entity-Aware Two-Layer Real-Time Sync for Commander
+ * useCommanderSync - Entity-Aware Two-Layer Real-Time Sync for Commander
  * ═══════════════════════════════════════════════════════════════════
  *
  * Layer 1: BroadcastChannel (instant, same browser, zero cost)
@@ -8,24 +8,24 @@
  *   Self-tab broadcasts are suppressed via tab ID.
  *
  * Layer 2: Supabase Realtime (cross-device, ~1s)
- *   Uses a SINGLETON channel manager — one Supabase channel per venue
+ *   Uses a SINGLETON channel manager - one Supabase channel per venue
  *   shared across all hook instances in the same tab. Automatically
  *   expands the table subscription set when new subscribers need
  *   additional tables.
  *
  * Hardening Features:
- *   ✓ Entity-aware filtering — only refetch when YOUR entities change
- *   ✓ Singleton channel — one channel per venue per tab (no duplicates)
- *   ✓ Selective subscriptions — pages only listen to tables they need
- *   ✓ Tab visibility awareness — skips refetch when hidden, catches up on focus
- *   ✓ Online/offline resilience — refetches when network comes back
- *   ✓ Self-tab suppression — won't refetch from your own broadcasts
- *   ✓ Per-instance throttle — prevents refetch storms (max 1 per 500ms)
- *   ✓ Supabase reconnect — retries on channel failure (exponential backoff)
- *   ✓ Stale closure prevention — uses refs for callbacks
- *   ✓ SSR-safe — all browser APIs guarded
- *   ✓ setTimeout leak prevention — pending timers cleaned on unmount
- *   ✓ Full entity coverage — 12 Supabase tables with entity mapping
+ *   ✓ Entity-aware filtering - only refetch when YOUR entities change
+ *   ✓ Singleton channel - one channel per venue per tab (no duplicates)
+ *   ✓ Selective subscriptions - pages only listen to tables they need
+ *   ✓ Tab visibility awareness - skips refetch when hidden, catches up on focus
+ *   ✓ Online/offline resilience - refetches when network comes back
+ *   ✓ Self-tab suppression - won't refetch from your own broadcasts
+ *   ✓ Per-instance throttle - prevents refetch storms (max 1 per 500ms)
+ *   ✓ Supabase reconnect - retries on channel failure (exponential backoff)
+ *   ✓ Stale closure prevention - uses refs for callbacks
+ *   ✓ SSR-safe - all browser APIs guarded
+ *   ✓ setTimeout leak prevention - pending timers cleaned on unmount
+ *   ✓ Full entity coverage - 12 Supabase tables with entity mapping
  *
  * Usage:
  *   // Subscribe to ALL entities (backward compatible):
@@ -34,7 +34,7 @@
  *   // Subscribe to SPECIFIC entities only (selective subscription):
  *   useCommanderSync(venueId, fetchData, { entities: ['tables', 'games'] });
  *
- *   // Writer side — broadcast after mutation:
+ *   // Writer side - broadcast after mutation:
  *   import { broadcastChange } from '@/lib/commander/useCommanderSync';
  *   await fetch('/api/...');
  *   broadcastChange('tables');
@@ -47,9 +47,9 @@ import { broadcastSync, listenBroadcast } from '../broadcastSync';
 const CHANNEL_NAME = 'commander-sync';
 const THROTTLE_MS = 500;       // Max 1 refetch per 500ms per hook instance
 const RECONNECT_DELAY = 3000;      // Base retry delay on Supabase channel failure
-const MAX_RECONNECT_DELAY = 60000; // Backoff ceiling — retries continue indefinitely
+const MAX_RECONNECT_DELAY = 60000; // Backoff ceiling - retries continue indefinitely
 
-// Unique ID for this tab — used to suppress self-broadcasts
+// Unique ID for this tab - used to suppress self-broadcasts
 const TAB_ID = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `tab_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -60,7 +60,7 @@ const TABLE_TO_ENTITY = {
     commander_games: 'games',
     commander_waitlist: 'waitlist',
     commander_floor_calls: 'floor_calls',
-    // commander_seats excluded — lacks venue_id column (changes propagate via commander_games/commander_tables)
+    // commander_seats excluded - lacks venue_id column (changes propagate via commander_games/commander_tables)
     // 2026-07-28 fix: this key was `commander_settings`, a table that has never
     // existed in the database (to_regclass('public.commander_settings') is NULL).
     // The Realtime binding therefore targeted a nonexistent relation: settings
@@ -77,7 +77,7 @@ const TABLE_TO_ENTITY = {
     commander_dealer_rotations: 'dealers',     // Rotation changes affect dealer views
     commander_table_sessions: 'tables',        // Session changes affect table views
     commander_tournaments: 'tournaments',
-    // commander_tournament_entries excluded — lacks venue_id column (changes propagate via commander_tournaments)
+    // commander_tournament_entries excluded - lacks venue_id column (changes propagate via commander_tournaments)
     commander_incidents: 'incidents',
     commander_notifications: 'notifications',
     commander_club_announcements: 'announcements',
@@ -105,7 +105,7 @@ const ENTITY_TO_TABLES = {
     notifications: ['commander_notifications'],
     announcements: ['commander_club_announcements'],
     streaming: ['commander_streams'],              // Realtime not yet enabled
-    // 'marketplace' — no dedicated Supabase table, BroadcastChannel only
+    // 'marketplace' - no dedicated Supabase table, BroadcastChannel only
 };
 
 // All Supabase tables (used when no entity filter is specified)
@@ -131,7 +131,7 @@ const channelManager = {
         if (!client) return;
 
         if (!this.venues[key]) {
-            // First subscriber for this venue — create the entry
+            // First subscriber for this venue - create the entry
             this.venues[key] = {
                 channel: null,
                 subscribers: new Set(),
@@ -169,7 +169,7 @@ const channelManager = {
         entry.subscribers.delete(callback);
 
         if (entry.subscribers.size === 0) {
-            // Last subscriber gone — tear down the channel and clear reconnect timer
+            // Last subscriber gone - tear down the channel and clear reconnect timer
             if (entry.reconnectTimer) {
                 clearTimeout(entry.reconnectTimer);
                 entry.reconnectTimer = null;
@@ -195,7 +195,7 @@ const channelManager = {
             clearTimeout(entry.reconnectTimer);
             entry.reconnectTimer = null;
         }
-        entry.reconnects = 0; // fresh start — this is a user-driven revival
+        entry.reconnects = 0; // fresh start - this is a user-driven revival
         this._connect(key);
     },
 
@@ -229,7 +229,7 @@ const channelManager = {
                     const entity = TABLE_TO_ENTITY[table] || table;
                     // Notify ALL subscribers (each does its own entity filtering)
                     entry.subscribers.forEach(cb => {
-                        try { cb(entity); } catch { /* subscriber error — don't break others */ }
+                        try { cb(entity); } catch { /* subscriber error - don't break others */ }
                     });
                 }
             );
@@ -243,7 +243,7 @@ const channelManager = {
                 // 2026-07-27 audit fix: this previously stopped retrying after 5
                 // attempts (~45s) and never resumed, because `reconnects` only
                 // reset on a successful SUBSCRIBE. Any outage longer than that
-                // silently killed realtime for the whole venue in that tab —
+                // silently killed realtime for the whole venue in that tab -
                 // every Commander screen stopped updating until a manual reload,
                 // and FloorCallAlert (which has no polling fallback) stopped
                 // announcing floor calls entirely.
@@ -331,14 +331,14 @@ export function useCommanderSync(venueId, onRefetch, opts = {}) {
     const pendingWhileHiddenRef = useRef(false);
     const pendingTimerRef = useRef(null);
 
-    // Entity filter — if provided, only refetch when matching entity changes
+    // Entity filter - if provided, only refetch when matching entity changes
     const entitiesRef = useRef(opts.entities || null);
     entitiesRef.current = opts.entities || null;
 
     // ── Throttled refetch ───────────────────────────────────────
     const throttledRefetchRef = useRef(null);
     throttledRefetchRef.current = (entity) => {
-        // Entity filtering — skip if this hook doesn't care about this entity
+        // Entity filtering - skip if this hook doesn't care about this entity
         if (entitiesRef.current && entity && !entitiesRef.current.includes(entity)) {
             return;
         }
@@ -378,7 +378,7 @@ export function useCommanderSync(venueId, onRefetch, opts = {}) {
         const cleanup = listenBroadcast(CHANNEL_NAME, (msg) => {
             if (msg?.type !== 'data-changed') return;
 
-            // Suppress self-tab broadcasts — this tab already has fresh data
+            // Suppress self-tab broadcasts - this tab already has fresh data
             if (msg.tabId === TAB_ID) return;
 
             // Guard against stale messages (older than 10s)
@@ -417,7 +417,7 @@ export function useCommanderSync(venueId, onRefetch, opts = {}) {
         };
 
         const handleOnline = () => {
-            // Network came back — revive the channel, then refetch to catch up
+            // Network came back - revive the channel, then refetch to catch up
             if (venueId) channelManager.ensureHealthy(venueId);
             lastRefetchRef.current = Date.now();
             refetchRef.current?.();

@@ -14,7 +14,7 @@ function parseBlindStructure(raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch {
-      /* not JSON — fall through */
+      /* not JSON - fall through */
     }
   }
 

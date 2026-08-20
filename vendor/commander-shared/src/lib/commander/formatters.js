@@ -1,6 +1,6 @@
 /**
  * Commander Shared Formatting Utilities
- * Centralized pure functions — previously copy-pasted across 4+ pages.
+ * Centralized pure functions - previously copy-pasted across 4+ pages.
  */
 
 /**

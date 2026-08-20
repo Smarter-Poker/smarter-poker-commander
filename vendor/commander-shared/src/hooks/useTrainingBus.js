@@ -1,5 +1,5 @@
 /**
- * 🚌 useTrainingBus — Reusable Bus Hook for Training Pages
+ * 🚌 useTrainingBus - Reusable Bus Hook for Training Pages
  * ═══════════════════════════════════════════════════════════════════════════
  * Auto-emits SESSION_START on mount and SESSION_END on unmount.
  * Exposes decision emitters for interactive pages.

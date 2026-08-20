@@ -115,7 +115,7 @@ export default async function handler(req, res) {
       });
 
       // 2. Tournament revenue
-      // 2026-07-28 audit fix: commander_tournaments has no fee_amount column —
+      // 2026-07-28 audit fix: commander_tournaments has no fee_amount column -
       // the house fee column is buyin_fee. PostgREST rejected the select with
       // 42703, so `tournaments` came back null and every tournament figure in
       // this report (fees, prize pools, entry counts) silently reported $0.
@@ -135,7 +135,7 @@ export default async function handler(req, res) {
       for (const t of (tournaments || [])) {
         // 2026-07-28 audit fix: commander_tournament_entries has no buyin_amount
         // column (the per-entry money column is total_invested). It was never
-        // read here anyway — the amounts come from the tournament row — so the
+        // read here anyway - the amounts come from the tournament row - so the
         // bad column simply broke the query and zeroed the entry count.
         const { data: entries, error: entriesError } = await getSupabase()
           .from('commander_tournament_entries')
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
         tournamentFees += rebuys * (t.buyin_fee || 0);
       }
 
-      // 3. Comp costs (from commander_member_comp_log — the actual comp log table)
+      // 3. Comp costs (from commander_member_comp_log - the actual comp log table)
       const { data: compTxns } = await getSupabase()
         .from('commander_member_comp_log')
         .select('type, amount, comp_category, created_at, notes')

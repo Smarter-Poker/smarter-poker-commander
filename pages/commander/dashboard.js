@@ -14,7 +14,7 @@ import { supabase } from '../../src/lib/supabase';
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../src/lib/commander/tierConfig';
 // 2026-08-14 vendor-drift fix: import via the local override, which re-exports
 // canRoleAccessRoute from the shared package. The old "client-safe shared
-// module" rationale is obsolete — since the 2026-08-07 session-signing
+// module" rationale is obsolete - since the 2026-08-07 session-signing
 // hardening the vendor module itself imports node crypto, so both import
 // paths pull equivalent module graphs, and the direct vendor import bypassed
 // the override (the exact class the CI vendor drift guard now blocks).
@@ -24,7 +24,7 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 /* ─────────────────────────────────────────────────
-   CARD DEFINITIONS — each card has sub-features
+   CARD DEFINITIONS - each card has sub-features
    that link to pages within Club Commander
    ───────────────────────────────────────────────── */
 const CARDS = [
@@ -162,7 +162,7 @@ export default function CommanderDashboard() {
     }
   }, [router.isReady, router.query.card]);
 
-  // Auth guard — validate localStorage AND Supabase session
+  // Auth guard - validate localStorage AND Supabase session
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
@@ -174,7 +174,7 @@ export default function CommanderDashboard() {
       }
       try {
         const data = JSON.parse(stored);
-        // Require at minimum an id or user_id — venue_id can be null for new owners without a venue
+        // Require at minimum an id or user_id - venue_id can be null for new owners without a venue
         if (!data.id && !data.user_id) {
           if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
           return;
@@ -185,23 +185,23 @@ export default function CommanderDashboard() {
         return;
       }
 
-      // Validate Supabase session is alive — refresh if expired
+      // Validate Supabase session is alive - refresh if expired
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           // Try to refresh
           const { data: { session: refreshed } } = await supabase.auth.refreshSession();
           if (!refreshed) {
-            // Session truly expired — clear session-specific data and redirect to login
+            // Session truly expired - clear session-specific data and redirect to login
             localStorage.removeItem('commander_venue');
             localStorage.removeItem('commander_subscription');
             const remembered = localStorage.getItem('commander_remember');
             if (!remembered) {
-              // Not remembered — clear everything
+              // Not remembered - clear everything
               localStorage.removeItem('commander_staff');
               if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
             } else {
-              // Remembered — keep staff email for pre-fill, redirect with expired flag
+              // Remembered - keep staff email for pre-fill, redirect with expired flag
               if (router.asPath !== '/commander/login') router.push('/commander/login?expired=1').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
             }
           }
@@ -279,7 +279,7 @@ const venueId = staff?.venue_id;
       const upgradeConfig = upgradeTo ? getTierConfig(upgradeTo) : null;
       setShowUpgradeModal({
         label: feat.label,
-        upgradeTierName: upgradeConfig?.name || 'a higher tier',
+        upgradeTierName: upgradeConfig?.name || 'A Higher Tier',
         upgradePrice: upgradeConfig?.price || '' });
     }
   };
@@ -302,7 +302,7 @@ const venueId = staff?.venue_id;
     <CommanderLayout title="Club Commander | Dashboard" backHref="/commander/dashboard" hideBack={true}>
       <>
         <SEOHead
-          title="Commander Dashboard — Room Overview"
+          title="Commander Dashboard - Room Overview"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -566,7 +566,7 @@ const venueId = staff?.venue_id;
                 fontSize: 13,
                 fontFamily: 'Inter, sans-serif'
               }}>
-                Hard Stop in {hardStop.minutesLeft} min — All games close at {hardStop.timeFormatted}
+                Hard Stop In {hardStop.minutesLeft} Min. All Games Close At {hardStop.timeFormatted}
               </span>
             </div>
           )}
@@ -669,8 +669,8 @@ const venueId = staff?.venue_id;
                   Upgrade Required
                 </h2>
                 <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                  <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> requires the{' '}
-                  <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> plan
+                  <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> Requires The{' '}
+                  <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> Plan
                   {showUpgradeModal.upgradePrice && <> (${showUpgradeModal.upgradePrice}/mo)</>}.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

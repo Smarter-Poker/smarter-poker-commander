@@ -1,7 +1,7 @@
 /**
  * Table Atmosphere Ratings API
- * POST /api/commander/table-ratings — Submit a rating after session
- * GET /api/commander/table-ratings — Get aggregated vibes for venue tables
+ * POST /api/commander/table-ratings - Submit a rating after session
+ * GET /api/commander/table-ratings - Get aggregated vibes for venue tables
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardUser } from '../../src/lib/commander/auth';
@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: PLAYER — verified user submits their own rating; GET is public aggregates
+// Auth: PLAYER - verified user submits their own rating; GET is public aggregates
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     // 2026-07-25 audit fix: POST was gated by guardWriteStaff, but this is the
-    // player rating submission endpoint — require a verified player user and
+    // player rating submission endpoint - require a verified player user and
     // derive the rater from the session, not the body.
     if (req.method === 'POST') {
       const user = await guardUser(req, res);
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 }
 
 async function submitRating(req, res, user) {
-  // 2026-07-25 audit fix: body player_id is ignored — the rater is the
+  // 2026-07-25 audit fix: body player_id is ignored - the rater is the
   // verified session user.
   const { venue_id, table_number, action_level, friendliness, pace, game_type, stakes, comment, session_id } = req.body;
 
@@ -96,7 +96,7 @@ async function getVibes(req, res) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id required' } });
   }
 
-  // Table ratings are aggregates — safe to cache 30s at the CDN edge
+  // Table ratings are aggregates - safe to cache 30s at the CDN edge
   res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
 
   try {

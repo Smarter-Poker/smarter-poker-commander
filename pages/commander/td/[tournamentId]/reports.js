@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Reports
+ * Tournament Director - Reports
  * /commander/td/[tournamentId]/reports
  * Tab-based report viewer: Registration, Cashier, Activity
  * CSV export capability
@@ -76,7 +76,7 @@ export default function TDReports() {
             (reportData.entries || []).forEach(e => {
                 const name = e.profiles?.display_name || e.player_name || 'Unknown';
                 // 2026-07-28 audit fix: this printed "cash" for every row even
-                // when no payment method was recorded — a fabricated value in a
+                // when no payment method was recorded - a fabricated value in a
                 // document that gets reconciled. Render 'unknown' instead.
                 csv += `"${name}",${e.status},${e.table_number || ''},${e.seat_number || ''},${e.payment_method || 'unknown'},${e.rebuy_count || 0},${e.addon_taken ? 'Yes' : 'No'},${e.payout_amount || ''},${e.registered_at}\n`;
             });
@@ -209,9 +209,9 @@ export default function TDReports() {
                                                         <p className="text-sm font-bold text-[#31A24C]">{formatMoney(c.total_cash)}</p>
                                                     </div>
                                                     <div className="flex gap-4 text-[10px] text-[#B0B3B8]">
-                                                        <span>{c.entries_count} entries</span>
-                                                        <span>{c.rebuys_count} rebuys</span>
-                                                        <span>{c.addons_count} add-ons</span>
+                                                        <span>{c.entries_count} Entries</span>
+                                                        <span>{c.rebuys_count} Rebuys</span>
+                                                        <span>{c.addons_count} Add-Ons</span>
                                                         <span>Fees: {formatMoney(c.total_fees)}</span>
                                                     </div>
                                                     <div className="flex gap-2 mt-1.5">
@@ -224,7 +224,7 @@ export default function TDReports() {
                                                 </div>
                                             ))}
                                             {(reportData.cashiers || []).length === 0 && (
-                                                <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">No cashier data recorded</div>
+                                                <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">No Cashier Data Recorded</div>
                                             )}
                                         </div>
                                     </div>
@@ -262,7 +262,7 @@ export default function TDReports() {
                                                 </div>
                                             ))}
                                             {(reportData.activities || []).length === 0 && (
-                                                <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">No activity yet</div>
+                                                <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">No Activity Yet</div>
                                             )}
                                         </div>
                                     </div>

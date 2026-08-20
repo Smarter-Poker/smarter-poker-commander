@@ -1,7 +1,7 @@
 /**
  * Seat Preferences API
- * GET /api/commander/seat-preferences?player_id=X — Get preferences
- * POST /api/commander/seat-preferences — Save/update preferences
+ * GET /api/commander/seat-preferences?player_id=X - Get preferences
+ * POST /api/commander/seat-preferences - Save/update preferences
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../src/lib/commander/auth';
@@ -25,7 +25,7 @@ function getSupabase() {
 // which matches all live rows in the table.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

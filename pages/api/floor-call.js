@@ -25,7 +25,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
                   .eq('id', existing[0].id);
           }
 
-          // Create new floor call. Status must be 'pending' — the floor-calls
+          // Create new floor call. Status must be 'pending' - the floor-calls
           // queue and commander UI only surface pending/acknowledged/en_route,
           // so rows created as 'active' never appeared in the queue.
           const { data: call, error } = await getSupabase()

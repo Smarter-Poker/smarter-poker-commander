@@ -37,7 +37,7 @@ export default function VenueQRCodePage() {
       }
 
       // Generate check-in URL.
-      // 2026-07-25 audit fix: always use the canonical player origin — QR
+      // 2026-07-25 audit fix: always use the canonical player origin - QR
       // codes generated on commander.smarter.poker previously encoded
       // commander.smarter.poker/hub/... which 404s (no /hub pages there),
       // killing check-in for every printed code.
@@ -109,7 +109,7 @@ export default function VenueQRCodePage() {
     <CommanderLayout title={`Check-In QR Code | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=waitlist">
       <>
         <SEOHead
-                title="Commander — QR Code"
+                title="Commander - QR Code"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />

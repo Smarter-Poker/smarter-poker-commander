@@ -104,7 +104,7 @@ const headers = { };
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchData(); const i = setInterval(fetchData, 30000); return () => clearInterval(i); }, [fetchData]); // fallback — real-time sync handles instant updates
+  useEffect(() => { fetchData(); const i = setInterval(fetchData, 30000); return () => clearInterval(i); }, [fetchData]); // fallback - real-time sync handles instant updates
 
   // Memoized venueId for Supabase sync (avoid function call per render)
   const [syncVenueId] = useState(() => getVenueId());
@@ -266,7 +266,7 @@ const res = await commanderFetch('/api/commander/settings', {
 
           // Record the charge as a cashier transaction. The cashier contract
           // accepts type ∈ {buy_in, cash_out, add_on, time_purchase, membership,
-          // void} and a POSITIVE amount — the old 'time_charge' type / negative
+          // void} and a POSITIVE amount - the old 'time_charge' type / negative
           // amount were rejected. Include session_id + idempotency_key.
           if (charge > 0) {
             const venueId = getVenueId();
@@ -435,7 +435,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
   return (
     <CommanderLayout title="Time Billing" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Time Billing"
+        title="Commander - Time Billing"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -596,7 +596,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
             </div>
 
             {(!pricing.bulk_time_packages || pricing.bulk_time_packages.length === 0) ? (
-              <p className="text-xs text-[#64748B] text-center py-3">No bulk packages — click + Add to create a deal</p>
+              <p className="text-xs text-[#64748B] text-center py-3">No bulk packages - click + Add to create a deal</p>
             ) : (
               <div className="space-y-3">
                 {pricing.bulk_time_packages.map((pkg, idx) => {
@@ -731,7 +731,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
               <h3 className="text-base font-bold text-white flex-1">Record Payment</h3>
               <button onClick={() => { setPayModal(null); setPayAmount(''); }} className="p-1 text-[#B0B3B8]"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-[#B0B3B8] mb-3">{payModal.player_name} — T{payModal.table_number || '-'} S{payModal.seat_number || '-'}</p>
+            <p className="text-xs text-[#B0B3B8] mb-3">{payModal.player_name} - T{payModal.table_number || '-'} S{payModal.seat_number || '-'}</p>
             <label className="text-[10px] text-[#B0B3B8] block mb-1">Amount ($)</label>
             <input type="number" min="0" step="0.01" value={payAmount} autoFocus
               onChange={e => setPayAmount(e.target.value)}

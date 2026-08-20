@@ -1,8 +1,8 @@
 /**
  * Player Reputation API
- * GET /api/commander/reputation?player_id=X — Get player reputation score
- * POST /api/commander/reputation — Submit a reputation review
- * GET /api/commander/reputation?venue_id=X — Get all player scores for venue
+ * GET /api/commander/reputation?player_id=X - Get player reputation score
+ * POST /api/commander/reputation - Submit a reputation review
+ * GET /api/commander/reputation?venue_id=X - Get all player scores for venue
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../src/lib/commander/auth';
@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -119,7 +119,7 @@ async function getReputation(req, res) {
 
 async function submitReview(req, res, staff) {
   // 2026-07-25 audit fix: reviewer_id/reviewer_type are no longer accepted from
-  // the request body — any caller could impersonate another reviewer. The
+  // the request body - any caller could impersonate another reviewer. The
   // reviewer is the verified staff session; there is no player review path in
   // this endpoint (POST is staff-gated), so reviewer_type is always 'staff'.
   const { player_id, reliability, sportsmanship, etiquette, communication, comment, context } = req.body;

@@ -1,5 +1,5 @@
 /**
- * Club Commander — Supabase browser client.
+ * Club Commander - Supabase browser client.
  *
  * Intentionally does NOT re-export from commander-shared because that
  * package resolves its ./lib/supabase entry to a test mock shim that
@@ -7,7 +7,7 @@
  * in production.  This file owns the real client directly.
  *
  * [2026-08-19] Applied resolveAnonKey() guard (same as main hub) to prevent
- * "Legacy API keys are disabled" — the Vercel env var still holds the old JWT,
+ * "Legacy API keys are disabled" - the Vercel env var still holds the old JWT,
  * so we fall back to the publishable key automatically.
  */
 import { createClient } from '@supabase/supabase-js';
@@ -20,7 +20,7 @@ const _anonWarning = anonKeyWarning(_anonResolved.source);
 if (_anonWarning) console.warn(_anonWarning);
 
 if (!supabaseAnonKey) {
-  console.error('[Commander] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set — auth will fail.');
+  console.error('[Commander] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set - auth will fail.');
 }
 
 // 2026-07-25 audit fix: use the platform-wide storage key. The old

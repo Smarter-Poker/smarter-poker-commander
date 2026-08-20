@@ -206,7 +206,7 @@ async function joinOrInvite(req, res, groupId) {
     // User joining themselves. CRITICAL: join_home_group checks
     //   auth.uid() <> p_caller_user_id → UNAUTHORIZED
     // so we must use a user-JWT-scoped client (not service role). And the
-    // correct parameter name is p_caller_user_id, not p_user_id — the old
+    // correct parameter name is p_caller_user_id, not p_user_id - the old
     // code triggered PostgREST 42883 "function does not exist" every time.
     const userClient = getUserScopedClient(token);
     const { data: result, error: rpcError } = await userClient.rpc('join_home_group', {

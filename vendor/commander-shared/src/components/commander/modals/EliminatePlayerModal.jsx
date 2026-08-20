@@ -68,10 +68,10 @@ export default function EliminatePlayerModal({
         });
         onClose();
       } else {
-        setError(data.error?.message || 'Failed to eliminate player');
+        setError(data.error?.message || 'Failed To Eliminate Player');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +91,7 @@ export default function EliminatePlayerModal({
             <div>
               <h2 className="text-lg font-semibold text-white">Eliminate Player</h2>
               <p className="text-sm text-[#64748B]">
-                {activeEntries.length} players remaining
+                {activeEntries.length} Players Remaining
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function EliminatePlayerModal({
           {/* Select player to eliminate */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              Player to Eliminate
+              Player To Eliminate
             </label>
             {filteredEntries.length === 0 ? (
               <div className="text-center py-6 bg-[#0D192E] rounded-lg">
@@ -164,7 +164,7 @@ export default function EliminatePlayerModal({
           {selectedEntry && activeEntries.length > 1 && (
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Eliminated By (optional)
+                Eliminated By (Optional)
               </label>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 <button
@@ -174,7 +174,7 @@ export default function EliminatePlayerModal({
                     : 'bg-[#0D192E] text-white hover:bg-[#132240]'
                     }`}
                 >
-                  Not specified
+                  Not Specified
                 </button>
                 {activeEntries
                   .filter(e => e.id !== selectedEntry?.id)
@@ -200,7 +200,7 @@ export default function EliminatePlayerModal({
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-[#EF4444]" />
                 <span className="font-medium text-white">
-                  Finishing position: {activeEntries.length}
+                  Finishing Position: {activeEntries.length}
                   {activeEntries.length === 1 ? 'st' :
                     activeEntries.length === 2 ? 'nd' :
                       activeEntries.length === 3 ? 'rd' : 'th'}

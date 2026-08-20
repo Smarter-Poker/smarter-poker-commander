@@ -23,7 +23,7 @@ function getSupabase() {
 // Average wait time per position (minutes) - simple initial estimate
 const AVERAGE_WAIT_PER_POSITION = 15;
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
           venue_id = _authResult.venue_id;
         }
 
-        // SECURITY: venue_id is mandatory — without it, all venues' data would leak
+        // SECURITY: venue_id is mandatory - without it, all venues' data would leak
         if (!venue_id) {
           return res.status(400).json({ success: false, error: 'venue_id is required' });
         }
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
         player_phone,
         signup_method = 'app'
       } = req.body;
-      // 2026-07-25 audit fix: commander_games.game_type is now lowercase — store lowercase, compare case-insensitively
+      // 2026-07-25 audit fix: commander_games.game_type is now lowercase - store lowercase, compare case-insensitively
       const game_type = (rawGameType || '').toLowerCase();
 
       // Validation

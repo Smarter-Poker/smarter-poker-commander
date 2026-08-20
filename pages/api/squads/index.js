@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 }
 
 async function handleCreate(req, res, user) {
-  // 2026-07-25 audit fix: leader is the verified session user — body leader_id
+  // 2026-07-25 audit fix: leader is the verified session user - body leader_id
   // is ignored (it was forgeable). Also accept optional name and member_ids
   // from the create-squad wizard.
   const { venue_id, game_type, stakes, name, member_ids } = req.body || {};
@@ -64,7 +64,7 @@ async function handleCreate(req, res, user) {
 
   try {
     // Create squad (waitlist group)
-    // 2026-07-25 audit fix: write real columns — group_status (not status);
+    // 2026-07-25 audit fix: write real columns - group_status (not status);
     // prefer_same_table/accept_split do not exist on commander_waitlist_groups.
     const { data: squad, error } = await getSupabase()
       .from('commander_waitlist_groups')
@@ -75,7 +75,7 @@ async function handleCreate(req, res, user) {
         leader_id,
         name: name || null,
         group_status: 'waiting',
-        // 2026-07-25 audit fix: generate the invite code at creation — the
+        // 2026-07-25 audit fix: generate the invite code at creation - the
         // join-by-code flow depends on it and nothing else populates it.
         invite_code: require('crypto').randomBytes(4).toString('hex').toUpperCase().slice(0, 6)
       })

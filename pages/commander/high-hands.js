@@ -60,7 +60,7 @@ const json = await commanderFetchJSON(`/api/commander/high-hands?venue_id=${venu
 
   useEffect(() => { const _c = new AbortController(); fetchData(_c.signal); return () => _c.abort(); }, [fetchData]);
 
-  // Commander Data Bus — sync high hands across tabs
+  // Commander Data Bus - sync high hands across tabs
   useCommanderSync(venueId, fetchData, { entities: ['settings'] });
 
   const handleSubmit = async () => {
@@ -73,7 +73,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
         body: JSON.stringify({
           venue_id: venueId,
           player_name: form.player_name,
-          hand_description: `${form.hand_rank}${form.hand_description ? ' — ' + form.hand_description : ''}`,
+          hand_description: `${form.hand_rank}${form.hand_description ? ', ' + form.hand_description : ''}`,
           hand_rank: RANK_SCORES[form.hand_rank] || 0,
           table_number: form.table_number ? parseInt(form.table_number) : null,
           prize_amount: form.prize_amount ? parseFloat(form.prize_amount) : null,
@@ -90,7 +90,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
         broadcastChange('settings');
         fetchData();
       } else {
-        setMessage({ type: 'error', text: json.error || 'Failed to record' });
+        setMessage({ type: 'error', text: json.error || 'Failed To Record' });
       }
     } catch (err) { setMessage({ type: 'error', text: 'Network Error' }); }
     finally { setSubmitting(false); }
@@ -107,11 +107,11 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
         broadcastChange('settings');
         fetchData();
       }
-    } catch (err) { console.warn(err); setMessage({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setMessage({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this high hand?')) return;
+    if (!confirm('Delete This High Hand?')) return;
     try {
 const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
         method: 'DELETE'});
@@ -119,7 +119,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
         broadcastChange('settings');
         fetchData();
       }
-    } catch (err) { console.warn(err); setMessage({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setMessage({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   useEffect(() => {
@@ -133,14 +133,14 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
     <CommanderLayout title="High Hands" backHref="/commander/dashboard?card=displays">
       <>
         <SEOHead
-          title="Commander — High Hands"
+          title="Commander - High Hands"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
           <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-xs text-[#B0B3B8]">{todayHands.length} today</p>
+              <p className="text-xs text-[#B0B3B8]">{todayHands.length} Today</p>
             </div>
             <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
             <button onClick={() => setShowForm(true)} className="px-3 py-2 rounded-lg bg-[#1877F2] text-white text-sm font-medium flex items-center gap-1.5 active:bg-[#1565D8]">
@@ -166,7 +166,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
                     <p className="text-2xl font-bold text-white">{currentHigh.hand_description || currentHigh.notes || currentHigh.hand_rank}</p>
                     <p className="text-sm text-[#F59E0B] mt-1">
                       {currentHigh.player_name || currentHigh.profiles?.display_name || 'Unknown'}
-                      {currentHigh.prize_amount > 0 && ` — $${currentHigh.prize_amount}`}
+                      {currentHigh.prize_amount > 0 && ` - $${currentHigh.prize_amount}`}
                     </p>
                   </>
                 ) : (
@@ -178,7 +178,7 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
               <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-[#3A3B3C] flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white">Today&apos;s Hands</h3>
-                  <span className="text-xs text-[#B0B3B8]">{todayHands.length} recorded</span>
+                  <span className="text-xs text-[#B0B3B8]">{todayHands.length} Recorded</span>
                 </div>
                 {todayHands.length > 0 ? (
                   <div className="divide-y divide-[#3A3B3C]">
@@ -267,10 +267,10 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-[#B0B3B8] mb-1.5 block">Description (cards)</label>
+                    <label className="text-xs text-[#B0B3B8] mb-1.5 block">Description (Cards)</label>
                     <input type="text" value={form.hand_description} onChange={e => setForm({ ...form, hand_description: e.target.value })}
                       className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-xl text-white focus:border-[#1877F2] focus:outline-none"
-                      placeholder="e.g., Aces Full Of Kings, Quad Jacks" />
+                      placeholder="E.g., Aces Full Of Kings, Quad Jacks" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>

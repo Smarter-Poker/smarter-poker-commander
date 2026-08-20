@@ -30,6 +30,17 @@ function parseBlindStructure(raw) {
   return [];
 }
 
+// Display level number for a structure row. Break rows are interleaved in the
+// same array as playing levels, so the array index is NOT the level number.
+// Counts only non-break rows up to and including the given index.
+function displayLevelNumber(structure, index) {
+  let n = 0;
+  for (let i = 0; i <= index && i < structure.length; i++) {
+    if (!structure[i]?.is_break) n++;
+  }
+  return n;
+}
+
 
 let _supabase = null;
 function getSupabase() {
@@ -106,18 +117,19 @@ async function getClockState(req, res, tournamentId) {
     if (!clockState && ['running', 'paused', 'final_table'].includes(tournament.status)) {
       // Initialize clock state and persist it
       // 2026-07-25 audit fix: when backfilling mid-tournament use now, not
-      // actual_start — actual_start would make the current level appear expired.
+      // actual_start - actual_start would make the current level appear expired.
       clockState = {
         isRunning: true,
         levelStartedAt: new Date().toISOString(),
         pausedAt: null,
         pausedDuration: 0
       };
-      const updatedSettings = { ...settings, clock_state: clockState };
-      await getSupabase()
-        .from('commander_tournaments')
-        .update({ settings: updatedSettings })
-        .eq('id', tournamentId);
+      // Atomic jsonb_set on settings.clock_state so a concurrent settings write
+      // from another tablet is never clobbered by this backfill.
+      await getSupabase().rpc('commander_clock_write', {
+        p_tournament_id: tournamentId,
+        p_clock_state: clockState
+      });
     }
 
     // Calculate time remaining in level
@@ -159,26 +171,31 @@ async function getClockState(req, res, tournamentId) {
         // 2026-07-25 audit fix: expose the floor message stored in settings.clock_state
         currentMessage: clockState?.current_message || null,
         currentBlind: currentBlind ? {
-          level: currentLevel + 1,
+          level: displayLevelNumber(blindStructure, currentLevel),
           smallBlind: currentBlind.small_blind,
           bigBlind: currentBlind.big_blind,
           ante: currentBlind.ante || 0,
-          duration: (currentBlind.duration ?? currentBlind.duration_minutes ?? 0)
+          duration: (currentBlind.duration ?? currentBlind.duration_minutes ?? 0),
+          isBreak: currentBlind.is_break || false,
+          label: currentBlind.label || null
         } : null,
         nextBlind: nextBlind ? {
-          level: currentLevel + 2,
+          level: displayLevelNumber(blindStructure, currentLevel + 1),
           smallBlind: nextBlind.small_blind,
           bigBlind: nextBlind.big_blind,
           ante: nextBlind.ante || 0,
-          duration: (nextBlind.duration ?? nextBlind.duration_minutes ?? 0)
+          duration: (nextBlind.duration ?? nextBlind.duration_minutes ?? 0),
+          isBreak: nextBlind.is_break || false,
+          label: nextBlind.label || null
         } : null,
         blindStructure: blindStructure.map((b, i) => ({
-          level: i + 1,
+          level: displayLevelNumber(blindStructure, i),
           smallBlind: b.small_blind,
           bigBlind: b.big_blind,
           ante: b.ante || 0,
           duration: (b.duration ?? b.duration_minutes ?? 0),
           isBreak: b.is_break || false,
+          label: b.label || null,
           isCurrent: i === currentLevel
         }))
       }
@@ -303,7 +320,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         const nextLevel = (tournament.current_level || 0) + 1;
 
         if (nextLevel >= blindStructure.length) {
-          // At end of structure — extend the final level rather than hard-stopping.
+          // At end of structure - extend the final level rather than hard-stopping.
           // Reset the level timer on the same (last) level so clock keeps running.
           updates = {}; // stay on current level
           clockState = {
@@ -364,19 +381,23 @@ async function handleClockAction(req, res, tournamentId, staff) {
       }
 
       case 'add_time': {
-        // Add 60 seconds to remaining time by pushing levelStartedAt 60s earlier (less elapsed → more remaining)
+        // Add time by pushing levelStartedAt earlier (less elapsed, more remaining).
+        // Accepts an optional seconds amount from the console; defaults to 60.
         if (!clockState.levelStartedAt) break;
+        const addSecs = Math.min(3600, Math.max(1, Number(req.body.seconds) || 60));
         const started = new Date(clockState.levelStartedAt);
-        started.setSeconds(started.getSeconds() - 60);
+        started.setSeconds(started.getSeconds() - addSecs);
         clockState.levelStartedAt = started.toISOString();
         break;
       }
 
       case 'subtract_time': {
-        // Remove 60 seconds from remaining time by pushing levelStartedAt 60s later (more elapsed → less remaining)
+        // Remove time by pushing levelStartedAt later (more elapsed, less remaining).
+        // Accepts an optional seconds amount from the console; defaults to 60.
         if (!clockState.levelStartedAt) break;
+        const subSecs = Math.min(3600, Math.max(1, Number(req.body.seconds) || 60));
         const started2 = new Date(clockState.levelStartedAt);
-        started2.setSeconds(started2.getSeconds() + 60);
+        started2.setSeconds(started2.getSeconds() + subSecs);
         clockState.levelStartedAt = started2.toISOString();
         break;
       }
@@ -444,18 +465,15 @@ async function handleClockAction(req, res, tournamentId, staff) {
         });
     }
 
-    // Persist status/level updates AND clock_state together via settings
-    const currentSettings = tournament.settings || {};
-    const updatedSettings = { ...currentSettings, clock_state: clockState };
-    const updatePayload = {
-      ...updates,
-      settings: updatedSettings
-    };
-
-    const { error: updateError } = await getSupabase()
-      .from('commander_tournaments')
-      .update(updatePayload)
-      .eq('id', tournamentId);
+    // Persist status/level updates AND clock_state together in ONE atomic
+    // statement (commander_clock_write RPC uses jsonb_set on settings.clock_state,
+    // so concurrent writes from a second TD tablet cannot lose updates).
+    const { data: updatedRow, error: updateError } = await getSupabase()
+      .rpc('commander_clock_write', {
+        p_tournament_id: tournamentId,
+        p_clock_state: clockState,
+        p_updates: updates
+      });
 
     if (updateError) {
       console.warn('[clock.js] Update error:', JSON.stringify(updateError, null, 2));
@@ -499,12 +517,8 @@ async function handleClockAction(req, res, tournamentId, staff) {
 
 
 
-    // Re-fetch the updated tournament
-    const { data: updated } = await getSupabase()
-      .from('commander_tournaments')
-      .select('*')
-      .eq('id', tournamentId)
-      .maybeSingle();
+    // The RPC returns the updated row as jsonb, so no re-fetch round trip.
+    const updated = updatedRow;
 
     // --- AUTO BREAK CHECK (runs only after level advances, post re-entry period) ---
     let autoBreakResult = null;
@@ -535,7 +549,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         tournament: updated,
         clock: clockState,
         message: `Tournament ${action} successful`,
-        // Included when a table was automatically broken — frontend uses this to print receipts
+        // Included when a table was automatically broken - frontend uses this to print receipts
         auto_break: autoBreakResult || undefined
       }
     });
@@ -566,7 +580,7 @@ async function fireTournamentStartNotification(tournamentId, tournamentName) {
   await sendPushNotification({
     externalUserIds: playerIds,
     title: `${tournamentName || 'Tournament'} Starting Now`,
-    message: 'The tournament is starting! Please take your seat.',
+    message: 'The Tournament Is Starting! Please Take Your Seat.',
     url: `/hub/commander/tournament/${tournamentId}/my-status`,
     data: { type: 'tournament_starting', tournament_id: tournamentId }
   });

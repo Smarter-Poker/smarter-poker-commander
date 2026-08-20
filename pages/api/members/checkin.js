@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       if (!member_id) return res.status(400).json({ success: false, error: 'member_id required' });
 
       // Increment visit count (two-step since getSupabase().raw() is not supported in JS v2)
-      // 2026-07-28 audit fix: commander_members has total_visits/last_visit —
+      // 2026-07-28 audit fix: commander_members has total_visits/last_visit -
       // visit_count/last_checkin do not exist, so every check-in silently wrote
       // nothing (PostgREST rejected the update and the error was discarded).
       const nowIso = new Date().toISOString();
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2026-07-25 audit fix: if the update matched no row the member doesn't exist —
+      // 2026-07-25 audit fix: if the update matched no row the member doesn't exist -
       // previously fell through and returned member_name 'undefined undefined'.
       if (memberError || !member) {
         return res.status(404).json({ success: false, error: 'Member not found' });

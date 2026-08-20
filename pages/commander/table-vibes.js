@@ -33,7 +33,7 @@ export default function TableVibes() {
   const [days, setDays] = useState(30);
 
   
-  // fetchVibes declared first — must precede useEffect/useCommanderSync that reference it
+  // fetchVibes declared first - must precede useEffect/useCommanderSync that reference it
   const fetchVibes = async(signal) => {
     setLoading(true);
     try {
@@ -65,7 +65,7 @@ useEffect(() => {    const _c = new AbortController();
     return () => _c.abort();
   }, [staff, days]);
 
-  // Commander Data Bus — sync table vibes
+  // Commander Data Bus - sync table vibes
   useCommanderSync(staff?.venue_id || '', fetchVibes, { entities: ['tables'] });
   const renderBar = (value, label, color) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -80,7 +80,7 @@ useEffect(() => {    const _c = new AbortController();
   return (
     <CommanderLayout title="Table Vibes" backHref="/commander/dashboard?card=floor">
       <SEOHead
-        title="Commander — Table Vibes"
+        title="Commander - Table Vibes"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -101,7 +101,7 @@ useEffect(() => {    const _c = new AbortController();
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
           ) : vibes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
-              No table ratings yet — players rate tables after sessions
+              No table ratings yet - players rate tables after sessions
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

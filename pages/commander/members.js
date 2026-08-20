@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic';
 /**
- * Club Commander — Members Page
+ * Club Commander - Members Page
  * Full member management: list, search, add, scan, detail view
  * NO EMOJIS (per /no-emoji-commander)
  */
@@ -62,7 +62,7 @@ export default function MembersPage() {
         } catch { router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); }
     }, [router]);
 
-    // SWR-backed members list — auto-revalidates on focus/interval
+    // SWR-backed members list - auto-revalidates on focus/interval
     const membersKey = venueId ? (() => {
         const params = new URLSearchParams({ venue_id: venueId, page, limit: 50 });
         if (search) params.set('search', search);
@@ -100,7 +100,7 @@ export default function MembersPage() {
         }
     }, [membersData, page]);
 
-    // Commander Data Bus — sync members across tabs
+    // Commander Data Bus - sync members across tabs
     useCommanderSync(venueId, fetchMembers, { entities: ['members'] });
 
     // Search debounce
@@ -130,7 +130,7 @@ export default function MembersPage() {
         <CommanderLayout title="Members" backHref="/commander/dashboard?card=waitlist">
             <>
                 <SEOHead
-                    title="Commander — Member Management"
+                    title="Commander - Member Management"
                     description="Club Commander Poker Room Management Tool."
                     noindex={true}
                 />
@@ -149,7 +149,7 @@ export default function MembersPage() {
                                         <h1 className="font-bold text-white flex items-center gap-2">
                                             <Users className="w-5 h-5 text-[#1877F2]" /> Members
                                         </h1>
-                                        <p className="text-xs text-[#B0B3B8]">{total} total members</p>
+                                        <p className="text-xs text-[#B0B3B8]">{total} Total Members</p>
                                     </div>
                                 </div>
 
@@ -215,8 +215,8 @@ export default function MembersPage() {
                             ) : members.length === 0 ? (
                                 <div className="text-center py-16 bg-[#242526] rounded-xl border border-[#3A3B3C]">
                                     <Users className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                                    <h3 className="text-lg font-medium text-[#E4E6EB] mb-1">{search ? 'No members found' : 'No members yet'}</h3>
-                                    <p className="text-sm text-[#B0B3B8] mb-4">{search ? 'Try a different search term' : 'Add your first club member to get started'}</p>
+                                    <h3 className="text-lg font-medium text-[#E4E6EB] mb-1">{search ? 'No Members Found' : 'No Members Yet'}</h3>
+                                    <p className="text-sm text-[#B0B3B8] mb-4">{search ? 'Try A Different Search Term' : 'Add Your First Club Member To Get Started'}</p>
                                     {!search && (
                                         <button onClick={() => setShowAddModal(true)} className="px-6 py-2.5 bg-[#1877F2] text-white rounded-lg text-sm font-medium">
                                             Add First Member
@@ -264,12 +264,12 @@ export default function MembersPage() {
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            {/* Membership tier — click to go to cashier membership */}
+                                                            {/* Membership tier - click to go to cashier membership */}
                                                             <td className="px-4 py-3">
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); router.push(`/commander/cashier?action=membership&member=${encodeURIComponent(memberName)}&member_id=${m.id}`); }}
                                                                     className="group flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-                                                                    title="Click to update membership"
+                                                                    title="Click To Update Membership"
                                                                 >
                                                                     <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                                                                         style={{ backgroundColor: (TIER_COLORS[m.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[m.membership_tier] || '#B0B3B8' }}>
@@ -288,17 +288,17 @@ export default function MembersPage() {
                                                                     onClick={(e) => { e.stopPropagation(); router.push(`/commander/cashier?action=membership&member=${encodeURIComponent(memberName)}&member_id=${m.id}`); }}
                                                                     className="text-sm hover:underline transition-colors"
                                                                     style={{ color: isExpired ? '#EF4444' : '#B0B3B8' }}
-                                                                    title="Click to renew membership"
+                                                                    title="Click To Renew Membership"
                                                                 >
                                                                     {expiresStr}
                                                                 </button>
                                                             </td>
-                                                            {/* Time Balance — click to add time */}
+                                                            {/* Time Balance - click to add time */}
                                                             <td className="px-4 py-3">
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); router.push(`/commander/cashier?action=addtime&member=${encodeURIComponent(memberName)}&member_id=${m.id}`); }}
                                                                     className="flex items-center gap-1.5 group hover:opacity-80 transition-opacity"
-                                                                    title="Click to add time"
+                                                                    title="Click To Add Time"
                                                                 >
                                                                     <Clock className="w-3.5 h-3.5 text-[#3B82F6]" />
                                                                     <span className={`text-sm font-semibold ${timeMin > 0 ? 'text-[#3B82F6]' : 'text-[#8A8D91]'}`}>{timeStr}</span>
@@ -338,7 +338,7 @@ export default function MembersPage() {
 
                                             return (
                                                 <div key={m.id} className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 hover:bg-[#3A3B3C]/30 transition-colors">
-                                                    {/* Top row — name + member detail */}
+                                                    {/* Top row - name + member detail */}
                                                     <button onClick={() => setSelectedMember(m)} className="w-full text-left">
                                                         <div className="flex items-center gap-3 mb-3">
                                                             <div className="w-10 h-10 bg-[#3A3B3C] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -360,7 +360,7 @@ export default function MembersPage() {
                                                             <ChevronDown className="w-4 h-4 text-[#8A8D91] -rotate-90" />
                                                         </div>
                                                     </button>
-                                                    {/* Bottom row — account data shortcuts */}
+                                                    {/* Bottom row - account data shortcuts */}
                                                     <div className="grid grid-cols-3 gap-2">
                                                         <button
                                                             onClick={() => router.push(`/commander/cashier?action=membership&member=${encodeURIComponent(memberName)}&member_id=${m.id}`)}

@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // GET is PUBLIC — venue details, current games, waitlist summary, settings,
+    // GET is PUBLIC - venue details, current games, waitlist summary, settings,
     // today's tournaments and active promotions are all player-facing data
     // rendered on the public venue page. Write methods below stay manager-gated
     // (and were already rate-limited above).
@@ -160,7 +160,7 @@ async function handleGet(req, res, venueId) {
 
 async function handlePatch(req, res, venueId, staff) {
   try {
-    // 2026-07-25 audit fix: staff comes from guardManager in the handler — the
+    // 2026-07-25 audit fix: staff comes from guardManager in the handler - the
     // old re-auth looked up commander_staff by sessionData.id, which is
     // undefined for owner sessions.
     if (!staff) {

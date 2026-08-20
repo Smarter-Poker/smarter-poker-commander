@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -113,7 +113,7 @@ async function listHighHands(req, res) {
 async function createHighHand(req, res, staff) {
   try {
     // 2026-07-25 audit fix: identity comes from the verified x-staff-session
-    // (guardWriteStaff at the handler) — requiring a Bearer JWT and a user_id
+    // (guardWriteStaff at the handler) - requiring a Bearer JWT and a user_id
     // staff lookup blocked PIN-terminal staff, who have no JWT.
     const {
       venue_id,
@@ -138,7 +138,7 @@ async function createHighHand(req, res, staff) {
       return res.status(400).json({ error: 'player_id or player_name required' });
     }
 
-    // 2026-07-25 audit fix: venue scoping — session staff must belong to the
+    // 2026-07-25 audit fix: venue scoping - session staff must belong to the
     // venue this high hand is being recorded for.
     if (!staff || String(staff.venue_id) !== String(venue_id)) {
       return res.status(403).json({ error: 'You are not authorized to record high hands for this venue' });

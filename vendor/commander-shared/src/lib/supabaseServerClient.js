@@ -1,5 +1,5 @@
 /**
- * SUPABASE SERVER CLIENT PATCH — Phase 4.1d ESM port (2026-04-25)
+ * SUPABASE SERVER CLIENT PATCH - Phase 4.1d ESM port (2026-04-25)
  *
  * Patches the Supabase client's auth.getUser method to use local JWT
  * decoding when the GoTrue network call fails.
@@ -55,15 +55,15 @@ async function decodeSupabaseJWT(token) {
 /**
  * Patched createClient that wraps auth.getUser with local JWT fallback.
  *
- * Sync — returns a SupabaseClient synchronously. The internal
- * patched auth.getUser is async (always was — no behavior change for callers).
+ * Sync - returns a SupabaseClient synchronously. The internal
+ * patched auth.getUser is async (always was - no behavior change for callers).
  */
 export function createClient(url, key, options) {
   const resolvedUrl = url || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbkmacvwxktbh.supabase.co';
   const resolvedKey = key || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!resolvedKey) {
-    console.warn('[FATAL] No Supabase key available — check SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    console.warn('[FATAL] No Supabase key available - check SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY');
   }
 
   const client = originalCreateClient(resolvedUrl, resolvedKey || 'missing-key', options);
@@ -105,8 +105,8 @@ export function createClient(url, key, options) {
 
 export { decodeSupabaseJWT };
 
-// CommonJS-compatibility wrapper — some legacy callers use require()
+// CommonJS-compatibility wrapper - some legacy callers use require()
 // pattern via Next.js bundler (635 files import this module). All of
 // them use ESM `import {createClient}` syntax which works fine with
-// the export above. Keep no `module.exports` line — it would conflict
+// the export above. Keep no `module.exports` line - it would conflict
 // with ESM mode in Next.js 14.

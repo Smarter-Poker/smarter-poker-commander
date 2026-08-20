@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     try {
       // 2026-07-25 audit fix: the old inline check parsed the raw x-staff-session
       // JSON with no signature verification and (Method 3) trusted the client-
-      // supplied role outright — any caller could read staff PINs, ID numbers,
+      // supplied role outright - any caller could read staff PINs, ID numbers,
       // and dates of birth. guardManager verifies the HMAC-signed session,
       // requires owner/manager role, and enforces venue scoping.
       const manager = await guardManager(req, res, venueId);

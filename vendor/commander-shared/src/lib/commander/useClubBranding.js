@@ -1,5 +1,5 @@
 /**
- * useClubBranding — Central hook for club logo + name
+ * useClubBranding - Central hook for club logo + name
  * 
  * Reads from commander_venue_settings (via /api/commander/settings)
  * with localStorage cache so displays load instantly.

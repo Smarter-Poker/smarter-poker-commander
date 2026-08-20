@@ -115,7 +115,7 @@ export default function MemberImport() {
     const errors = [];
 
     // 2026-07-25 audit fix: the members POST handler requires venue_id (every
-    // row 400'd without it) and expects address as an object — map the flat
+    // row 400'd without it) and expects address as an object - map the flat
     // csv address/city/state/zip columns into that shape.
     const venueId = getVenueId();
 
@@ -136,12 +136,12 @@ const res = await commanderFetch('/api/commander/members', {
           headers: { 'Content-Type': 'application/json' || '' },
           body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        if (!res.ok) throw new Error(`Request Failed (${res.status})`);
         const json = await res.json();
         if (json.success) imported++;
         else {
           if (json.error?.includes('duplicate') || json.error?.includes('already exists')) skipped++;
-          else errors.push(`Row ${i + 1}: ${json.error || 'Unknown error'}`);
+          else errors.push(`Row ${i + 1}: ${json.error || 'Unknown Error'}`);
         }
       } catch (err) {
         errors.push(`Row ${i + 1}: ${err.message}`);
@@ -161,7 +161,7 @@ const res = await commanderFetch('/api/commander/members', {
     <CommanderLayout title="Import Members" backHref="/commander/dashboard?card=waitlist">
       <>
         <SEOHead
-          title="Commander — Member Import"
+          title="Commander - Member Import"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -171,7 +171,7 @@ const res = await commanderFetch('/api/commander/members', {
           <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
             <div className="flex-1">
               <h1 className="text-lg font-bold text-white">Import Members</h1>
-              <p className="text-xs text-[#B0B3B8]">Step {step} of 5</p>
+              <p className="text-xs text-[#B0B3B8]">Step {step} Of 5</p>
             </div>
           </div>
 
@@ -185,7 +185,7 @@ const res = await commanderFetch('/api/commander/members', {
                   <Upload className="w-12 h-12 text-[#B0B3B8] mx-auto mb-4" />
                   <h2 className="text-xl font-bold text-white mb-2">Upload CSV File</h2>
                   <p className="text-sm text-[#B0B3B8] mb-4">
-                    Drag and drop or tap to select a .csv file with member data
+                    Drag And Drop Or Tap To Select A .csv File With Member Data
                   </p>
                   <button className="px-6 py-3 bg-[#1877F2] text-white rounded-xl font-semibold active:bg-[#1565D8]">
                     Choose File
@@ -206,7 +206,7 @@ const res = await commanderFetch('/api/commander/members', {
               <>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-white">Map Columns</h2>
-                  <span className="text-xs text-[#B0B3B8]">{csvData.rows.length} rows found</span>
+                  <span className="text-xs text-[#B0B3B8]">{csvData.rows.length} Rows Found</span>
                 </div>
 
                 <div className="space-y-2">
@@ -215,7 +215,7 @@ const res = await commanderFetch('/api/commander/members', {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{header}</p>
                         <p className="text-[10px] text-[#B0B3B8] truncate">
-                          e.g. {csvData.rows[0]?.[idx] || '—'}
+                          E.g. {csvData.rows[0]?.[idx] || '-'}
                         </p>
                       </div>
                       <select value={mapping[idx] || ''}
@@ -223,7 +223,7 @@ const res = await commanderFetch('/api/commander/members', {
                         className="bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg px-3 py-2 text-sm text-[#E4E6EB] focus:outline-none focus:border-[#1877F2]">
                         <option value="">Skip</option>
                         {ALL_FIELDS.map(f => (
-                          <option key={f} value={f}>{f.replace(/_/g, ' ')}</option>
+                          <option key={f} value={f}>{f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
                         ))}
                       </select>
                     </div>
@@ -249,7 +249,7 @@ const res = await commanderFetch('/api/commander/members', {
               <>
                 <h2 className="text-xl font-bold text-white">Preview Import</h2>
                 <p className="text-sm text-[#B0B3B8]">
-                  {getMappedRows().length} valid rows will be imported. Showing first 5:
+                  {getMappedRows().length} Valid Rows Will Be Imported. Showing First 5:
                 </p>
 
                 <div className="space-y-2">
@@ -280,7 +280,7 @@ const res = await commanderFetch('/api/commander/members', {
                 <div className="w-full bg-[#3A3B3C] rounded-full h-3 mb-2">
                   <div className="bg-[#1877F2] h-3 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
                 </div>
-                <p className="text-sm text-[#B0B3B8]">{progress}% complete</p>
+                <p className="text-sm text-[#B0B3B8]">{progress}% Complete</p>
               </div>
             )}
 

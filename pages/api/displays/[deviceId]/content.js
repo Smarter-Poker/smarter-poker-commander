@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2026-07-25 audit fix: removed the per-request last_heartbeat write —
+      // 2026-07-25 audit fix: removed the per-request last_heartbeat write -
       // the heartbeat endpoint owns online-status tracking.
 
       // Determine which screen to show
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
   }
 }
 
-// 2026-07-25 audit fix: this is a public TV endpoint — redact player names to
+// 2026-07-25 audit fix: this is a public TV endpoint - redact player names to
 // "First L." so full names are never shown on shared displays.
 function redactName(name) {
   if (!name || typeof name !== 'string' || !name.trim()) return 'Player';
@@ -222,7 +222,7 @@ async function getHighHandContent(venueId) {
   const today = new Date().toISOString().split('T')[0];
 
   // Get today's high hands. Live schema (information_schema verified):
-  // commander_high_hands has hand_rank, cards and board_cards — there is no
+  // commander_high_hands has hand_rank, cards and board_cards - there is no
   // hand_description or hand_cards column. The old field names are preserved
   // for renderers via PostgREST aliases (hand_description:hand_rank,
   // hand_cards:cards).

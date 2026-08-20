@@ -1,8 +1,8 @@
 /**
- * Tournament Payout API — Enhanced with Auto-Calculation & Live Override
- * GET /api/commander/tournaments/:id/payout — Get payouts (saved or auto-calc)
- * POST /api/commander/tournaments/:id/payout — Save individual payout or final overrides
- * PUT /api/commander/tournaments/:id/payout — Save bulk final payouts (override mode)
+ * Tournament Payout API - Enhanced with Auto-Calculation & Live Override
+ * GET /api/commander/tournaments/:id/payout - Get payouts (saved or auto-calc)
+ * POST /api/commander/tournaments/:id/payout - Save individual payout or final overrides
+ * PUT /api/commander/tournaments/:id/payout - Save bulk final payouts (override mode)
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../src/lib/commander/auth';
@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -36,13 +36,98 @@ export default async function handler(req, res) {
     if (req.method === 'POST') return handlePayout(req, res, id);
     if (req.method === 'PUT') return handleBulkPayouts(req, res, id);
 
-    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
+    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Pure payout-math helpers (shared by calculate mode below)
+// ---------------------------------------------------------------------------
+
+// Normalize a payout_structure row to { position, percentage, amount }.
+// Accepts { position | place } and { percentage | pct | percent } shapes.
+export function normalizePayoutSlot(slot, idx) {
+  return {
+    position: Number(slot?.position ?? slot?.place ?? (idx + 1)),
+    percentage: Number(slot?.percentage ?? slot?.pct ?? slot?.percent ?? 0) || 0,
+    amount: slot?.amount != null ? Number(slot.amount) : null
+  };
+}
+
+// Standard percentage tables for 1-10 paid places.
+const STANDARD_PAYOUT_TABLES = {
+  1: [100],
+  2: [65, 35],
+  3: [50, 30, 20],
+  4: [45, 27, 18, 10],
+  5: [40, 25, 16, 11, 8],
+  6: [38, 24, 15, 10, 7, 6],
+  7: [36, 23, 15, 10, 7, 5, 4],
+  8: [33.5, 21, 14, 10, 7.5, 6, 4.5, 3.5],
+  9: [31.5, 20, 13.5, 10, 7.5, 6, 4.75, 3.75, 3],
+  10: [30, 19.5, 13, 9.5, 7.25, 5.75, 4.5, 3.75, 3.5, 3.25]
+};
+
+// Field-size band -> number of paid places (roughly 10-15% of the field).
+function payingPlacesForField(fieldSize) {
+  const n = Math.max(1, Math.floor(Number(fieldSize) || 0) || 1);
+  if (n <= 4) return 1;
+  if (n <= 10) return 2;
+  if (n <= 17) return 3;
+  if (n <= 27) return 4;
+  if (n <= 39) return 5;
+  if (n <= 51) return 6;
+  if (n <= 67) return 8;
+  if (n <= 88) return 9;
+  if (n <= 100) return 10;
+  return Math.min(Math.ceil(n * 0.12), 100);
+}
+
+// Generate a standard payout table when a tournament has no payout_structure.
+// Returns [{ position, percentage }] whose percentages total exactly 100.
+export function generatePayoutTable(fieldSize, payingPlaces = null) {
+  const places = Math.max(1, Math.floor(Number(payingPlaces) || 0) || payingPlacesForField(fieldSize));
+  if (STANDARD_PAYOUT_TABLES[places]) {
+    return STANDARD_PAYOUT_TABLES[places].map((pct, i) => ({ position: i + 1, percentage: pct }));
+  }
+  // Larger fields: smooth decay curve, normalized to exactly 100.
+  const weights = [];
+  let total = 0;
+  for (let i = 1; i <= places; i++) {
+    const w = 1 / Math.pow(i, 0.82);
+    weights.push(w);
+    total += w;
+  }
+  const pcts = weights.map(w => Math.floor((w / total) * 10000) / 100);
+  const used = pcts.reduce((s, p) => s + p, 0);
+  pcts[0] = Math.round((pcts[0] + (100 - used)) * 100) / 100; // remainder to 1st place
+  return pcts.map((pct, i) => ({ position: i + 1, percentage: pct }));
+}
+
+// Effective prize pool: actual_prizepool (when set) wins, otherwise
+// max(collected, guaranteed_pool).
+function effectivePrizePool(tournament, collected) {
+  const actual = Number(tournament?.actual_prizepool) || 0;
+  if (actual > 0) return actual;
+  return Math.max(collected, Number(tournament?.guaranteed_pool) || 0);
+}
+
+// Allocate whole-dollar amounts from percentage slots so they sum to the pool.
+// Each slot is floored; when the structure totals ~100%, the rounding
+// remainder is added to 1st place so the amounts sum to the pool exactly.
+function allocateAmounts(slots, pool) {
+  const amounts = slots.map(s => Math.floor(pool * (s.percentage || 0) / 100));
+  const totalPct = slots.reduce((s, p) => s + (p.percentage || 0), 0);
+  if (amounts.length > 0 && Math.abs(totalPct - 100) <= 0.5) {
+    const remainder = Math.round(pool - amounts.reduce((s, a) => s + a, 0));
+    if (remainder > 0) amounts[0] += remainder;
+  }
+  return amounts;
 }
 
 async function handleGetPayouts(req, res, tournamentId) {
@@ -58,6 +143,10 @@ async function handleGetPayouts(req, res, tournamentId) {
 
     if (tErr) throw tErr;
 
+    if (!tournament) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+    }
+
     // Get all entries for prize pool calculation
     const { data: entries } = await getSupabase()
       .from('commander_tournament_entries')
@@ -70,17 +159,30 @@ async function handleGetPayouts(req, res, tournamentId) {
     const totalAddons = (entries || []).filter(e => e.addon_taken).length
     const buyinAmount = tournament.buyin_amount || 0;
     const buyinFee = tournament.buyin_fee || 0;
-    const rebuyAmount = tournament.rebuy_amount || buyinAmount;
-    const addonAmount = tournament.addon_amount || buyinAmount;
-    const prizePool = (totalEntries * buyinAmount) + (totalRebuys * rebuyAmount) + (totalAddons * addonAmount);
+    // Collected pool uses the REAL per-item amounts (a null rebuy/addon price
+    // collects nothing; it must not silently default to the buy-in).
+    const rebuyAmount = tournament.rebuy_amount || 0;
+    const addonAmount = tournament.addon_amount || 0;
+    const collectedPool = (totalEntries * buyinAmount) + (totalRebuys * rebuyAmount) + (totalAddons * addonAmount);
+    // Effective pool: actual_prizepool wins; otherwise max(collected, guaranteed).
+    const prizePool = effectivePrizePool(tournament, collectedPool);
+    const overlay = Math.max(0, (Number(tournament.guaranteed_pool) || 0) - collectedPool);
     const houseFees = totalEntries * buyinFee;
 
     // If calculate mode, compute auto payouts from payout_structure
     if (mode === 'calculate') {
-      const structure = parsePayoutStructure(tournament.payout_structure);
+      let structure = parsePayoutStructure(tournament.payout_structure).map(normalizePayoutSlot);
+      // No saved payout_structure: generate a standard field-size-band table.
+      if (structure.length === 0) {
+        structure = generatePayoutTable(totalEntries, tournament.paying_places);
+      }
+      // Percentage slots are floored to whole dollars with the rounding
+      // remainder added to 1st place so the amounts sum to the pool exactly.
+      const allocated = allocateAmounts(structure, prizePool);
       const calculated = structure.map((slot, idx) => {
-        const percent = slot.percentage || slot.percent || 0;
-        const amount = Math.round(prizePool * (percent / 100));
+        const percent = slot.percentage || 0;
+        // Fixed-amount slots (no percentage) pass through their amount.
+        const amount = (!percent && slot.amount != null) ? slot.amount : allocated[idx];
         return {
           position: slot.position || idx + 1,
           percentage: percent,
@@ -128,13 +230,15 @@ async function handleGetPayouts(req, res, tournamentId) {
         data: {
           calculated_payouts: calculated,
           prize_pool: prizePool,
+          collected_pool: collectedPool,
+          overlay,
           house_fees: houseFees,
           total_entries: totalEntries,
           total_rebuys: totalRebuys,
           total_addons: totalAddons,
           final_payouts: tournament.final_payouts || null,
           guaranteed: tournament.guaranteed_pool || 0,
-          is_overlay: (tournament.guaranteed_pool || 0) > prizePool
+          is_overlay: overlay > 0
         }
       });
     }
@@ -155,6 +259,8 @@ async function handleGetPayouts(req, res, tournamentId) {
       data: {
         payouts: payouts || [],
         prize_pool: prizePool,
+        collected_pool: collectedPool,
+        overlay,
         house_fees: houseFees,
         total_entries: totalEntries,
         final_payouts: tournament.final_payouts || null,
@@ -163,21 +269,24 @@ async function handleGetPayouts(req, res, tournamentId) {
     });
   } catch (error) {
     console.warn('Get payouts error:', error);
-    return res.status(500).json({ success: false, error: { message: 'Failed to fetch payouts' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Payouts' } });
   }
 }
 
 async function handlePayout(req, res, tournamentId) {
-  const { player_id, place, amount } = req.body;
+  const { player_id, place } = req.body;
+  const amount = Number(req.body.amount);
 
-  if (!player_id || !place || !amount) {
-    return res.status(400).json({ success: false, error: { message: 'player_id, place, and amount required' } });
+  // amount may legitimately be 0 (e.g. a voided payout correction); only
+  // reject missing/non-numeric/negative values.
+  if (!player_id || !place || !Number.isFinite(amount) || amount < 0) {
+    return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'player_id, place, And A Non-Negative amount Required' } });
   }
 
   try {
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, buyin_amount, buyin_fee')
+      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -187,7 +296,8 @@ async function handlePayout(req, res, tournamentId) {
         finish_position: place,
         payout_amount: amount,
         payout_position: place,
-        status: 'winner'
+        // Only 1st place is the winner; every other paid finish is 'cashed'.
+        status: Number(place) === 1 ? 'winner' : 'cashed'
       })
       .eq('tournament_id', tournamentId)
       .eq('player_id', player_id)
@@ -218,12 +328,12 @@ async function handlePayout(req, res, tournamentId) {
     return res.status(200).json({ success: true, data: { entry } });
   } catch (error) {
     console.warn('Payout error:', error);
-    return res.status(500).json({ success: false, error: { message: 'Failed to record payout' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Record Payout' } });
   }
 }
 
 /**
- * Bulk final payouts — save all overridden amounts at once
+ * Bulk final payouts - save all overridden amounts at once
  * Used for deal/chop scenarios at final table
  */
 async function handleBulkPayouts(req, res, tournamentId) {
@@ -232,13 +342,13 @@ async function handleBulkPayouts(req, res, tournamentId) {
     // payouts = [{ player_id, position, amount }, ...]
 
     if (!payouts || !Array.isArray(payouts)) {
-      return res.status(400).json({ success: false, error: { message: 'payouts array required' } });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'payouts Array Required' } });
     }
 
     // Get tournament for leaderboard
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('venue_id, buyin_amount, buyin_fee')
+      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -254,7 +364,8 @@ async function handleBulkPayouts(req, res, tournamentId) {
           finish_position: p.position,
           payout_amount: p.amount,
           payout_position: p.position,
-          status: 'winner'
+          // Only 1st place is the winner; every other paid finish is 'cashed'.
+          status: Number(p.position) === 1 ? 'winner' : 'cashed'
         })
         .eq('tournament_id', tournamentId);
 
@@ -279,13 +390,14 @@ async function handleBulkPayouts(req, res, tournamentId) {
       }
     }
 
-    // Persist the total paid out as the actual prize pool (commander_tournaments
-    // has no final_payouts column — the per-player results live on the entries).
+    // Persist the total paid out as the actual prize pool, and the final
+    // override table itself in final_payouts (real jsonb column; the GET
+    // handler reads it back for the payouts screen).
     const actualPrizepool = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     if (actualPrizepool > 0) {
       await getSupabase()
         .from('commander_tournaments')
-        .update({ actual_prizepool: actualPrizepool })
+        .update({ actual_prizepool: actualPrizepool, final_payouts: payouts })
         .eq('id', tournamentId);
     }
 
@@ -295,7 +407,7 @@ async function handleBulkPayouts(req, res, tournamentId) {
     });
   } catch (error) {
     console.warn('Bulk payout error:', error);
-    return res.status(500).json({ success: false, error: { message: 'Failed to save payouts' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Save Payouts' } });
   }
 }
 
@@ -305,19 +417,29 @@ const DEFAULT_FINISH_POINTS = { 1: 100, 2: 70, 3: 50, 4: 40, 5: 30, 6: 25, 7: 20
 
 /**
  * Auto-award tournament leaderboard points when a player finishes.
- * commander_tournaments has no leaderboard_id column, so we resolve the venue's
- * active leaderboard (if any) for its point_structure, otherwise fall back to a
+ * Uses the tournament's own leaderboard_id when set, otherwise resolves the
+ * venue's active leaderboard for its point_structure, otherwise falls back to a
  * default finish-position map. Rows are upserted into commander_tournament_points
  * keyed on tournament_id + player_id (or player_name when player_id is absent).
  */
 async function awardTournamentPoints(tournament, tournamentId, entry) {
   try {
-    // Resolve the venue's active leaderboard for its point structure, if one exists.
+    // Resolve the leaderboard: tournament.leaderboard_id wins, then the
+    // venue's active leaderboard.
     let leaderboardId = null;
     let entryPts = 0;
     let structure = [];
-    if (tournament?.venue_id != null) {
-      const { data: lb } = await getSupabase()
+    let lb = null;
+    if (tournament?.leaderboard_id) {
+      const { data } = await getSupabase()
+        .from('commander_tournament_leaderboards')
+        .select('id, point_for_entry, point_structure')
+        .eq('id', tournament.leaderboard_id)
+        .maybeSingle();
+      lb = data;
+    }
+    if (!lb && tournament?.venue_id != null) {
+      const { data } = await getSupabase()
         .from('commander_tournament_leaderboards')
         .select('id, point_for_entry, point_structure')
         .eq('venue_id', tournament.venue_id)
@@ -325,11 +447,12 @@ async function awardTournamentPoints(tournament, tournamentId, entry) {
         .order('season_start', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (lb) {
-        leaderboardId = lb.id;
-        entryPts = lb.point_for_entry || 0;
-        structure = lb.point_structure || [];
-      }
+      lb = data;
+    }
+    if (lb) {
+      leaderboardId = lb.id;
+      entryPts = lb.point_for_entry || 0;
+      structure = lb.point_structure || [];
     }
 
     const positionPts = leaderboardId

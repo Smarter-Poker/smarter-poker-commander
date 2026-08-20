@@ -35,7 +35,7 @@ export default function DownloadsPage() {
         filename: 'Club.Commander.1.0.5.exe',
         url: '/api/commander/download?platform=win-portable'
       },
-      requirements: ['Windows 10 or later', '4GB RAM minimum', '200MB disk space']
+      requirements: ['Windows 10 Or Later', '4GB RAM Minimum', '200MB Disk Space']
     },
     mac: {
       name: 'macOS',
@@ -48,8 +48,8 @@ export default function DownloadsPage() {
         filename: 'Club.Commander-1.0.5-arm64-mac.zip',
         url: '/api/commander/download?platform=mac-zip'
       },
-      requirements: ['macOS 11 (Big Sur) or later', 'Apple Silicon (M1/M2/M3)', '4GB RAM minimum', '200MB disk space'],
-      installNote: 'If you see "Club Commander is damaged and can\'t be opened", open Terminal and run: xattr -cr /Applications/Club\\ Commander.app — then re-open the app. This removes the macOS quarantine flag from unsigned apps.'
+      requirements: ['macOS 11 (Big Sur) Or Later', 'Apple Silicon (M1/M2/M3)', '4GB RAM Minimum', '200MB Disk Space'],
+      installNote: 'If You See "Club Commander is damaged and can\'t be opened", Open Terminal And Run: xattr -cr /Applications/Club\\ Commander.app. Then Re-Open The App. This Removes The macOS Quarantine Flag From Unsigned Apps.'
     },
     linux: {
       name: 'Linux',
@@ -62,7 +62,7 @@ export default function DownloadsPage() {
         filename: 'club-commander_1.0.5_amd64.deb',
         url: '/api/commander/download?platform=linux-deb'
       },
-      requirements: ['Ubuntu 20.04+ or equivalent', '4GB RAM minimum', '200MB disk space']
+      requirements: ['Ubuntu 20.04+ Or Equivalent', '4GB RAM Minimum', '200MB Disk Space']
     }
   };
 
@@ -75,17 +75,17 @@ export default function DownloadsPage() {
   };
 
   const features = [
-    { title: 'Native Desktop Experience', desc: 'Faster performance and offline capabilities' },
-    { title: 'Auto-Updates', desc: 'Always stay on the latest version automatically' },
-    { title: 'Print Support', desc: 'Print player lists, reports, and receipts directly' },
-    { title: 'Quick Launch', desc: 'Launch from your desktop or taskbar instantly' }
+    { title: 'Native Desktop Experience', desc: 'Faster Performance And Offline Capabilities' },
+    { title: 'Auto-Updates', desc: 'Always Stay On The Latest Version Automatically' },
+    { title: 'Print Support', desc: 'Print Player Lists, Reports, And Receipts Directly' },
+    { title: 'Quick Launch', desc: 'Launch From Your Desktop Or Taskbar Instantly' }
   ];
 
   return (
     <CommanderLayout title="Download Club Commander - Desktop App" backHref="/commander/dashboard?card=reports">
       <div className="min-h-screen bg-[#18191A]">
         <SEOHead
-          title="Commander — Downloads"
+          title="Commander - Downloads"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -140,7 +140,7 @@ export default function DownloadsPage() {
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Download for {currentPlatform.name}
+                    Download For {currentPlatform.name}
                   </span>
                 )}
               </button>
@@ -152,7 +152,7 @@ export default function DownloadsPage() {
                   href={currentPlatform.altDownload.url}
                   className="text-[#1877F2] hover:underline text-sm mt-2 inline-block"
                 >
-                  Or download {currentPlatform.altDownload.name} →
+                  Or Download {currentPlatform.altDownload.name} →
                 </a>
               )}
             </div>
@@ -197,16 +197,16 @@ export default function DownloadsPage() {
           <div className="max-w-2xl mx-auto bg-[#242526] rounded-xl p-6 border border-[#3A3B3C] mb-8">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-[#31A24C]/15 flex items-center justify-center shrink-0">
-                <span className="text-3xl">📱</span>
+                <span className="text-3xl"></span>
               </div>
               <div className="flex-1">
                 <h3 className="text-[#E4E6EB] font-bold text-lg mb-1">iPad & Android</h3>
-                <p className="text-[#B0B3B8] text-sm">Add Commander to your tablet home screen — no app store needed. Perfect for front-desk kiosks and dealer stations.</p>
+                <p className="text-[#B0B3B8] text-sm">Add Commander To Your Tablet Home Screen, No App Store Needed. Perfect For Front-Desk Kiosks And Dealer Stations.</p>
               </div>
             </div>
             <Link href="/commander/install"
               className="mt-4 w-full py-3 rounded-xl bg-[#31A24C] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#2B8C42] transition-colors">
-              📲 View iPad & Android Install Guide
+              View iPad & Android Install Guide
             </Link>
           </div>
 
@@ -218,7 +218,7 @@ export default function DownloadsPage() {
               rel="noopener noreferrer"
               className="text-[#1877F2] hover:underline"
             >
-              View all releases on GitHub →
+              View All Releases On GitHub →
             </a>
           </div>
 

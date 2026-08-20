@@ -1,5 +1,5 @@
 /**
- * Dealers API — GET/POST
+ * Dealers API - GET/POST
  * GET: List dealers for a venue
  * POST: Create a new dealer
  */
@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
   if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

@@ -54,7 +54,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
     <CommanderLayout title="Revenue Report" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Revenue"
+          title="Commander - Revenue"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -82,16 +82,16 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
               <div className="bg-gradient-to-br from-[#1877F2]/20 to-[#31A24C]/10 border border-[#1877F2]/30 rounded-2xl p-5 text-center">
                 <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Total Revenue</p>
                 <p className="text-4xl font-bold text-white">{fmt(t.total_revenue)}</p>
-                <p className="text-sm text-[#B0B3B8] mt-1">Net after comps: {fmt(t.net_after_comps)}</p>
+                <p className="text-sm text-[#B0B3B8] mt-1">Net After Comps: {fmt(t.net_after_comps)}</p>
               </div>
 
               {/* Breakdown */}
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Time Billing', value: tb.revenue, sub: `${tb.sessions || 0} sessions`, sub2: `${Math.round((tb.total_minutes || 0) / 60)}h played`, icon: Clock, color: '#31A24C' },
-                  { label: 'Tournament Fees', value: tn.fees, sub: `${tn.count || 0} tournaments`, sub2: `${tn.entries || 0} entries`, icon: Trophy, color: '#F59E0B' },
-                  { label: 'Prize Pools', value: tn.prize_pools, sub: 'Buy-ins collected', sub2: null, icon: DollarSign, color: '#A855F7' },
-                  { label: 'Comps (Net)', value: t.comps_net, sub: `${fmt(t.comps_issued)} issued`, sub2: `${fmt(t.comps_voided)} voided`, icon: Gift, color: '#EF4444', neg: true },
+                  { label: 'Time Billing', value: tb.revenue, sub: `${tb.sessions || 0} Sessions`, sub2: `${Math.round((tb.total_minutes || 0) / 60)}h Played`, icon: Clock, color: '#31A24C' },
+                  { label: 'Tournament Fees', value: tn.fees, sub: `${tn.count || 0} Tournaments`, sub2: `${tn.entries || 0} Entries`, icon: Trophy, color: '#F59E0B' },
+                  { label: 'Prize Pools', value: tn.prize_pools, sub: 'Buy-Ins Collected', sub2: null, icon: DollarSign, color: '#A855F7' },
+                  { label: 'Comps (Net)', value: t.comps_net, sub: `${fmt(t.comps_issued)} Issued`, sub2: `${fmt(t.comps_voided)} Voided`, icon: Gift, color: '#EF4444', neg: true },
                 ].map((c, i) => (
                   <div key={i} className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -126,7 +126,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
                   <div className="space-y-2">
                     {tn.tournaments.map(t => (
                       <div key={t.id} className="flex items-center justify-between px-3 py-2 bg-[#3A3B3C]/30 rounded-lg">
-                        <div><p className="text-sm font-medium text-white">{t.name}</p><p className="text-xs text-[#B0B3B8]">${t.buyin} + ${t.fee} fee</p></div>
+                        <div><p className="text-sm font-medium text-white">{t.name}</p><p className="text-xs text-[#B0B3B8]">${t.buyin} + ${t.fee} Fee</p></div>
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${t.status === 'completed' ? 'bg-[#31A24C]/15 text-[#31A24C]' : t.status === 'running' ? 'bg-[#1877F2]/15 text-[#1877F2]' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>{t.status}</span>
                       </div>
                     ))}

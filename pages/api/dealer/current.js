@@ -5,7 +5,7 @@
  * Returns the current dealer assigned to a specific table.
  * Used by the table tablet display to show the active dealer.
  * 
- * No auth required — tablet is unauthenticated.
+ * No auth required - tablet is unauthenticated.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';

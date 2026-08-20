@@ -1,7 +1,7 @@
 /**
  * Game Types Configuration Page
  * /commander/game-types
- * TC equivalent: "Configuration" tile — game types, stakes, buy-ins, rake
+ * TC equivalent: "Configuration" tile - game types, stakes, buy-ins, rake
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
@@ -72,7 +72,7 @@ const json = await commanderFetchJSON('/api/commander/game-types?include_inactiv
 
   useEffect(() => { const _c = new AbortController(); fetchGameTypes(_c.signal); return () => _c.abort(); }, [fetchGameTypes]);
 
-  // Commander Data Bus — sync game types across tabs
+  // Commander Data Bus - sync game types across tabs
   useCommanderSync(venueId, fetchGameTypes, { entities: ['games'] });
 
   function resetForm() {
@@ -105,7 +105,7 @@ const json = await commanderFetchJSON('/api/commander/game-types?include_inactiv
 
   async function handleSave(signal) {
     if (!form.name || !form.short_code || !form.stakes) {
-      setError('Name, code, and stakes are required');
+      setError('Name, Code, And Stakes Are Required');
       return;
     }
     setSaving(true);
@@ -123,14 +123,14 @@ const url = editingId
       const json = await res.json();
       if (json.success) {
         broadcastChange('games');
-        setSuccess(editingId ? 'Game type updated' : 'Game type created');
+        setSuccess(editingId ? 'Game Type Updated' : 'Game Type Created');
         setTimeout(() => setSuccess(null), 3000);
         resetForm();
         fetchGameTypes();
       } else {
-        setError(json.error || 'Failed to save');
+        setError(json.error || 'Failed To Save');
       }
-    } catch (err) { setError('Failed to save game type'); }
+    } catch (err) { setError('Failed To Save Game Type'); }
     finally { setSaving(false); }
   }
 
@@ -145,11 +145,11 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}`, {
         fetchGameTypes();
         broadcastChange('games');
       }
-    } catch (err) { console.warn(err); setError('Action failed. Please check your connection and try again.'); }
+    } catch (err) { console.warn(err); setError('Action Failed. Please Check Your Connection And Try Again.'); }
   }
 
   async function handleDelete(gt) {
-    if (!confirm(`Remove "${gt.name} ${gt.stakes}" permanently?`)) return;
+    if (!confirm(`Remove "${gt.name} ${gt.stakes}" Permanently?`)) return;
     try {
 const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id=${venueId}`, {
         method: 'DELETE'});
@@ -157,7 +157,7 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
         fetchGameTypes();
         broadcastChange('games');
       }
-    } catch (err) { console.warn(err); setError('Action failed. Please check your connection and try again.'); }
+    } catch (err) { console.warn(err); setError('Action Failed. Please Check Your Connection And Try Again.'); }
   }
 
   const canManage = staff?.role === 'owner' || staff?.role === 'manager';
@@ -166,7 +166,7 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
     <CommanderLayout title={`Game Types | ${venueName || 'Commander'}`} backHref="/commander/dashboard?card=floor">
       <>
         <SEOHead
-          title="Commander — Game Types"
+          title="Commander - Game Types"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -177,7 +177,7 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
               <div className="flex items-center gap-3">
                 <div>
                   <h1 className="font-bold text-white text-lg">Game Types</h1>
-                  <p className="text-sm text-[#B0B3B8]">{venueName} — {gameTypes.filter(g => g.is_active).length} active</p>
+                  <p className="text-sm text-[#B0B3B8]">{venueName} - {gameTypes.filter(g => g.is_active).length} Active</p>
                 </div>
               </div>
               {canManage && (
@@ -254,7 +254,7 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                         className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#B0B3B8] uppercase flex items-center gap-1"><DollarSign className="w-3 h-3" /> Max Buy-In (0=no Cap)</label>
+                      <label className="text-xs text-[#B0B3B8] uppercase flex items-center gap-1"><DollarSign className="w-3 h-3" /> Max Buy-In (0=No Cap)</label>
                       <input type="number" value={form.max_buyin} onChange={e => setForm(p => ({ ...p, max_buyin: parseInt(e.target.value) || 0 }))}
                         className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
                     </div>
@@ -309,9 +309,9 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
 
                   {/* Notes */}
                   <div>
-                    <label className="text-xs text-[#B0B3B8] uppercase">Notes (optional)</label>
+                    <label className="text-xs text-[#B0B3B8] uppercase">Notes (Optional)</label>
                     <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                      rows={2} placeholder="Special Rules, House Rules, etc."
+                      rows={2} placeholder="Special Rules, House Rules, Etc."
                       className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2] resize-none" />
                   </div>
 
@@ -366,9 +366,9 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-xs text-[#B0B3B8] mt-1">
-                          <span>Buy-in: ${gt.min_buyin}{gt.max_buyin > 0 ? `–$${gt.max_buyin}` : '+'}</span>
-                          <span>{gt.max_players} max</span>
-                          {gt.rake_type === 'pot' && <span>Rake: {gt.rake_percent}% / ${gt.rake_cap} cap</span>}
+                          <span>Buy-In: ${gt.min_buyin}{gt.max_buyin > 0 ? `–$${gt.max_buyin}` : '+'}</span>
+                          <span>{gt.max_players} Max</span>
+                          {gt.rake_type === 'pot' && <span>Rake: {gt.rake_percent}% / ${gt.rake_cap} Cap</span>}
                           {gt.rake_type === 'time' && <span>${gt.time_rate}/hr</span>}
                           {gt.rake_type === 'none' && <span>No Rake</span>}
                         </div>

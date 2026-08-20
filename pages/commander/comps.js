@@ -1,10 +1,10 @@
 /**
- * Comp System — Enhanced
+ * Comp System - Enhanced
  * /commander/comps
  * 
  * Two pillars:
- * 1. Auto Rake-Back — comps earned per hour of play (configured in Settings)
- * 2. Manual Comp Issuance — categorized comps, PIN-gated, fully documented
+ * 1. Auto Rake-Back - comps earned per hour of play (configured in Settings)
+ * 2. Manual Comp Issuance - categorized comps, PIN-gated, fully documented
  * 
  * All comp issuance requires staff PIN verification. No exceptions.
  * 
@@ -99,7 +99,7 @@ export default function CompSystem() {
   // ─── Settings state ───
   const [autoCompRate, setAutoCompRate] = useState(1);
   const [membershipPlans, setMembershipPlans] = useState([]);
-  // 2026-08-06 fix: the Rates tab showed fabricated per-game multipliers —
+  // 2026-08-06 fix: the Rates tab showed fabricated per-game multipliers -
   // back it with real commander_comp_rates rows scoped to the venue.
   const [compRates, setCompRates] = useState([]);
 
@@ -252,7 +252,7 @@ export default function CompSystem() {
   // ─── Step 2: Verify PIN → award comp ───
   const verifyPinAndAward = async () => {
     if (!pinCode || pinCode.length !== 4) {
-      setPinError('Enter your 4-digit staff PIN');
+      setPinError('Enter Your 4-Digit Staff PIN');
       return;
     }
     setVerifying(true);
@@ -269,7 +269,7 @@ export default function CompSystem() {
 
       // Check both HTTP status and the 'valid' field from the API
       if (!pinRes.ok || !pinData.success || !pinData.data?.valid) {
-        setPinError(pinData.error?.message || 'Invalid PIN — Please Try Again');
+        setPinError(pinData.error?.message || 'Invalid PIN, Please Try Again');
         setVerifying(false);
         return;
       }
@@ -280,7 +280,7 @@ export default function CompSystem() {
       // ── ROLE CHECK: Only owner, manager, dualrate can issue comps ──
       const compRoles = ['owner', 'manager', 'dualrate'];
       if (!authorizer?.role || !compRoles.includes(authorizer.role)) {
-        setPinError(`Insufficient permissions — ${authorizer?.role || 'unknown'} role cannot issue comps. Requires Owner, Manager, or Dual Rate.`);
+        setPinError(`Insufficient Permissions, ${authorizer?.role || 'unknown'} Role Cannot Issue Comps. Requires Owner, Manager, Or Dual Rate.`);
         setVerifying(false);
         return;
       }
@@ -303,14 +303,14 @@ export default function CompSystem() {
         member_id: selectedMember.id,
         amount: isMembership ? (parseFloat(membershipCost) || 0) : parseFloat(compAmount),
         reason: isMembership
-          ? `Free Membership — ${durationLabel}${compNotes ? ' — ' + compNotes : ''}`
+          ? `Free Membership - ${durationLabel}${compNotes ? ' - ' + compNotes : ''}`
           : selectedCategory === 'free_food' && compLocation
-            ? `${catLabel} @ ${compLocation}${compNotes ? ' — ' + compNotes : ''}`
-            : `${catLabel}${compNotes ? ' — ' + compNotes : ''}`,
+            ? `${catLabel} @ ${compLocation}${compNotes ? ' - ' + compNotes : ''}`
+            : `${catLabel}${compNotes ? ' - ' + compNotes : ''}`,
         type: 'award',
         comp_category: selectedCategory,
         notes: selectedCategory === 'free_food' && compLocation
-          ? `📍 ${compLocation}${compNotes ? ' — ' + compNotes : ''}`
+          ? `Location: ${compLocation}${compNotes ? ' - ' + compNotes : ''}`
           : (compNotes || ''),
         authorized_by: authorizerName,
         authorized_pin: true };
@@ -374,11 +374,11 @@ export default function CompSystem() {
           setLastAwardData(null);
         }, 4000);
       } else {
-        setAwardError(json.error || 'Failed To Issue Comp — Please Try Again');
+        setAwardError(json.error || 'Failed To Issue Comp, Please Try Again');
       }
     } catch (err) {
       console.warn(err);
-      setAwardError('Network Error — Please Try Again');
+      setAwardError('Network Error, Please Try Again');
     }
     finally { setAwarding(false); setVerifying(false); }
   };
@@ -465,7 +465,7 @@ export default function CompSystem() {
 
   var executeVoidComp = function () {
     if (!voidPinCode || voidPinCode.length !== 4) {
-      setVoidPinError('Enter your 4-digit staff PIN');
+      setVoidPinError('Enter Your 4-Digit Staff PIN');
       return;
     }
     setVoidLoading(true);
@@ -487,7 +487,7 @@ export default function CompSystem() {
         // ── ROLE CHECK: Only owner, manager, dualrate can void comps ──
         var voidRoles = ['owner', 'manager', 'dualrate'];
         if (!staff || !staff.role || voidRoles.indexOf(staff.role) === -1) {
-          setVoidPinError('Insufficient permissions — ' + (staff && staff.role || 'unknown') + ' role cannot void comps. Requires Owner, Manager, or Dual Rate.');
+          setVoidPinError('Insufficient Permissions, ' + (staff && staff.role || 'unknown') + ' Role Cannot Void Comps. Requires Owner, Manager, Or Dual Rate.');
           setVoidLoading(false);
           return;
         }
@@ -504,7 +504,7 @@ export default function CompSystem() {
             comp_log_id: entry.id,
             authorized_by: (staff && staff.display_name) || 'Staff',
             authorized_pin: true,
-            void_reason: voidPinModal.actionLabel + ' by ' + ((staff && staff.display_name) || 'Staff')
+            void_reason: voidPinModal.actionLabel + ' By ' + ((staff && staff.display_name) || 'Staff')
           })
         }).then(r => { if (!r.ok) throw new Error('fail'); return r; })
           .then(function (r) { return r.json(); })
@@ -520,7 +520,7 @@ export default function CompSystem() {
               broadcastChange('members');
               fetchData();
             } else {
-              setVoidPinError(json.error || 'Void failed');
+              setVoidPinError(json.error || 'Void Failed');
             }
             setVoidPinModal(null);
             setVoidPinCode('');
@@ -529,13 +529,13 @@ export default function CompSystem() {
       })
       .catch(function (err) {
         console.warn(err);
-        setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' });
-        setVoidPinError('Network error');
+        setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' });
+        setVoidPinError('Network Error');
         setVoidLoading(false);
       });
   };
 
-  // Ka-ching cash register sound — loud and unmistakable
+  // Ka-ching cash register sound - loud and unmistakable
   const playSuccessSound = () => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -582,7 +582,7 @@ export default function CompSystem() {
     <CommanderLayout title="Comp System" backHref="/commander/dashboard?card=displays">
       <>
         <SEOHead
-          title="Commander — Comps & Rewards"
+          title="Commander - Comps & Rewards"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -622,7 +622,7 @@ export default function CompSystem() {
                     <span className="text-white font-medium">
                       {COMP_CATEGORIES.find(c => c.key === selectedCategory)?.label}
                     </span>{' '}
-                    to <span className="text-white font-medium">{selectedMember?.first_name} {selectedMember?.last_name}</span>
+                    To <span className="text-white font-medium">{selectedMember?.first_name} {selectedMember?.last_name}</span>
                   </p>
                 </div>
                 <div className="p-5 space-y-4">
@@ -668,7 +668,7 @@ export default function CompSystem() {
                   <p className="text-sm text-[#B0B3B8] mt-1">
                     Reverse <span className="text-[#EF4444] font-bold">${Math.abs(voidPinModal.logEntry.amount || 0).toFixed(2)}</span>
                     {' '}<span className="text-white">{(COMP_CATEGORIES.find(c => c.key === voidPinModal.logEntry.comp_category)?.label) || 'Comp'}</span>
-                    {' '}from <span className="text-white font-medium">{voidPinModal.logEntry.member_name || 'Member'}</span>
+                    {' '}From <span className="text-white font-medium">{voidPinModal.logEntry.member_name || 'Member'}</span>
                   </p>
                 </div>
                 <div className="p-5 space-y-4">
@@ -701,7 +701,7 @@ export default function CompSystem() {
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-bold text-white">Comp System</h1>
               <span className="text-xs px-2 py-0.5 rounded-full bg-[#31A24C]/20 text-[#31A24C] font-medium">
-                ${autoCompRate}/hr rake-back
+                ${autoCompRate}/hr Rake-Back
               </span>
             </div>
             <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
@@ -753,7 +753,7 @@ export default function CompSystem() {
                   {loading ? (
                     <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 text-[#1877F2] animate-spin" /></div>
                   ) : topEarners.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-[#B0B3B8]">No comp balances yet</p>
+                    <p className="py-6 text-center text-sm text-[#B0B3B8]">No Comp Balances Yet</p>
                   ) : (
                     <div className="space-y-1">
                       {topEarners.map((m, i) => (
@@ -937,7 +937,7 @@ export default function CompSystem() {
                                   <span className="text-2xl font-bold text-[#31A24C]">${membershipCost || '0.00'}</span>
                                 </div>
                                 <p className="text-[10px] text-[#6A6B6D] mt-1 flex items-center justify-center gap-1">
-                                  <Shield className="w-3 h-3 text-[#F59E0B]" /> Locked — Pulled From Membership Plan Pricing
+                                  <Shield className="w-3 h-3 text-[#F59E0B]" /> Locked, Pulled From Membership Plan Pricing
                                 </p>
                               </div>
                             )}
@@ -986,7 +986,7 @@ export default function CompSystem() {
                           </>
                         )}
 
-                        {/* Location field — required for Food & Beverage */}
+                        {/* Location field - required for Food & Beverage */}
                         {selectedCategory === 'free_food' && (
                           <div>
                             <p className="text-xs text-[#EF4444] mb-1 font-semibold">Location (Required)</p>
@@ -998,7 +998,7 @@ export default function CompSystem() {
                         )}
 
                         <div>
-                          <p className="text-xs text-[#B0B3B8] mb-1">Notes (optional)</p>
+                          <p className="text-xs text-[#B0B3B8] mb-1">Notes (Optional)</p>
                           <input type="text" value={compNotes}
                             onChange={e => setCompNotes(e.target.value)}
                             placeholder="E.g., Birthday Bonus, 2 Hours Free Table Time..."
@@ -1009,10 +1009,10 @@ export default function CompSystem() {
                           className="w-full py-4 rounded-xl bg-[#31A24C] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#28883F] disabled:opacity-50">
                           {awarding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Shield className="w-5 h-5" />}
                           {selectedCategory === 'free_membership'
-                            ? `Issue ${MEMBERSHIP_DURATIONS.find(d => d.key === compAmount)?.label || 'Membership'} ($${membershipCost || '0'}) — Requires PIN`
+                            ? `Issue ${MEMBERSHIP_DURATIONS.find(d => d.key === compAmount)?.label || 'Membership'} ($${membershipCost || '0'}) - Requires PIN`
                             : selectedCategory === 'free_time'
-                              ? `Issue ${(() => { const m = parseInt(timeMinutes || 0); const h = Math.floor(m / 60); const mins = m % 60; return h > 0 ? `${h}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`; })()} ($${compAmount || '0'}) — Requires PIN`
-                              : `Issue $${compAmount || '0'} — Requires PIN`}
+                              ? `Issue ${(() => { const m = parseInt(timeMinutes || 0); const h = Math.floor(m / 60); const mins = m % 60; return h > 0 ? `${h}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`; })()} ($${compAmount || '0'}) - Requires PIN`
+                              : `Issue $${compAmount || '0'} - Requires PIN`}
                         </button>
                         <p className="text-[10px] text-[#6A6B6D] text-center">
                           All Comps Require Staff PIN Verification And Are Fully Documented
@@ -1041,7 +1041,7 @@ export default function CompSystem() {
                   ))}
                 </div>
 
-                <p className="text-xs text-[#6A6B6D]">{filteredLog.length} comp transaction{filteredLog.length !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-[#6A6B6D]">{filteredLog.length} Comp Transaction{filteredLog.length !== 1 ? 's' : ''}</p>
 
                 {loading ? (
                   <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin" /></div>
@@ -1066,7 +1066,7 @@ export default function CompSystem() {
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-medium truncate ${isVoided ? 'text-[#6A6B6D] line-through' : 'text-white'}`}>{t.member_name || 'Member'}</p>
                             <p className="text-[10px] text-[#6A6B6D] truncate">
-                              {isVoidEntry ? <span className="text-[#EF4444] font-semibold">VOID — </span> : null}
+                              {isVoidEntry ? <span className="text-[#EF4444] font-semibold">VOID - </span> : null}
                               {t.reason || cat.label}
                               {t.authorized_pin && <span className="text-[#31A24C] ml-1">[PIN]</span>}
                             </p>
@@ -1081,7 +1081,7 @@ export default function CompSystem() {
                             {t.comp_category === 'free_membership' && !isVoidEntry ? (
                               <>
                                 <p className={`text-sm font-bold ${isVoided ? 'text-[#6A6B6D] line-through' : 'text-[#8B5CF6]'}`}>
-                                  {(t.reason || '').replace('Free Membership — ', '').split(' — ')[0] || 'Membership'}
+                                  {(t.reason || '').replace(/^Free Membership [\u2014-]\s*/, '').split(/\s[\u2014-]\s/)[0] || 'Membership'}
                                 </p>
                                 {(t.amount || 0) > 0 && (
                                   <p className={`text-[10px] font-medium ${isVoided ? 'text-[#6A6B6D] line-through' : 'text-[#31A24C]'}`}>${(t.amount || 0).toFixed(2)}</p>

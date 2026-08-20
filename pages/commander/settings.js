@@ -108,7 +108,7 @@ export default function CommanderSettingsPage() {
     return () => controller.abort();
   }, [venueId]);
 
-  // Cross-tab + cross-device real-time sync — reload settings when changed from other pages
+  // Cross-tab + cross-device real-time sync - reload settings when changed from other pages
   const syncSettings = useCallback(() => {
     if (!venueId) return;
     const storedStaffData = getStaffSession();
@@ -249,7 +249,7 @@ export default function CommanderSettingsPage() {
     <CommanderLayout title={`Settings | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Settings"
+          title="Commander - Settings"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -257,7 +257,7 @@ export default function CommanderSettingsPage() {
         <div className="cmd-page">
           {/* Main Content */}
           <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-            {/* Floating Save Bar — only shows when dirty */}
+            {/* Floating Save Bar - only shows when dirty */}
             {canManageSettings && isDirty && (
               <div style={{
                 position: 'sticky', top: 56, zIndex: 40,
@@ -342,7 +342,7 @@ export default function CommanderSettingsPage() {
                   {!settings.security_gate_enabled && (
                     <div className="px-4 py-3 bg-[#F59E0B]/5">
                       <p className="text-xs text-[#F59E0B] flex items-center gap-1.5">
-                        Security gate is OFF — restricted pages are accessible without PIN verification
+                        Security gate is OFF - restricted pages are accessible without PIN verification
                       </p>
                     </div>
                   )}

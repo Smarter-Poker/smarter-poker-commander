@@ -31,7 +31,7 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Digital Waitlist',
-    description: 'Let Players Join From Anywhere with Real-time Position Updates'
+    description: 'Let Players Join From Anywhere With Real-Time Position Updates'
   },
   {
     icon: Clock,
@@ -41,17 +41,17 @@ const FEATURES = [
   {
     icon: BarChart3,
     title: 'Analytics Dashboard',
-    description: 'Track Player Traffic, Table Utilization, and Trends'
+    description: 'Track Player Traffic, Table Utilization, And Trends'
   },
   {
     icon: Shield,
     title: 'Responsible Gaming',
-    description: 'Built-in Tools for Player Protection and Compliance'
+    description: 'Built-In Tools For Player Protection And Compliance'
   },
   {
     icon: Smartphone,
     title: 'Mobile-First',
-    description: 'Works on Any Device - no App Download Required'
+    description: 'Works On Any Device - No App Download Required'
   },
   {
     icon: Zap,
@@ -128,7 +128,7 @@ export default function VenueOnboardingPage() {
     return (
       <>
         <SEOHead
-          title="Club Commander — Onboarding"
+          title="Club Commander - Onboarding"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -140,7 +140,7 @@ export default function VenueOnboardingPage() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Request Submitted</h1>
             <p className="text-[#B0B3B8] mb-6">
-              Thank you for your interest in Club Commander. Our team will contact you within 1 business day to schedule a demo.
+              Thank You For Your Interest In Club Commander. Our Team Will Contact You Within 1 Business Day To Schedule A Demo.
             </p>
 
             <div className="cmd-panel p-4 mb-6">
@@ -163,7 +163,7 @@ export default function VenueOnboardingPage() {
               className="inline-flex items-center gap-2 text-[#1877F2] hover:underline"
             >
               <ChevronLeft className="w-4 h-4" />
-              Return to Home
+              Return To Home
             </Link>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function VenueOnboardingPage() {
                   Modern Poker Room Management
                 </h1>
                 <p className="text-lg text-[#B0B3B8]">
-                  Replace outdated waitlist systems with a digital-first platform that players love and staff find easy to use.
+                  Replace Outdated Waitlist Systems With A Digital-First Platform That Players Love And Staff Find Easy To Use.
                 </p>
               </div>
 
@@ -228,11 +228,11 @@ export default function VenueOnboardingPage() {
                   onClick={() => setStep('form')}
                   className="cmd-btn cmd-btn-primary inline-flex items-center gap-2 px-8 py-4 text-lg"
                 >
-                  Request a Demo
+                  Request A Demo
                   <ArrowRight className="w-5 h-5" />
                 </button>
                 <p className="text-sm text-[#B0B3B8] mt-3">
-                  Free demo, no obligation
+                  Free Demo, No Obligation
                 </p>
               </div>
 
@@ -392,7 +392,7 @@ export default function VenueOnboardingPage() {
                   {/* Table Count */}
                   <div>
                     <label className="block text-sm font-medium text-white mb-1">
-                      Number of Poker Tables
+                      Number Of Poker Tables
                     </label>
                     <select
                       name="tableCount"
@@ -447,7 +447,7 @@ export default function VenueOnboardingPage() {
                   {/* Promo Code */}
                   <div>
                     <label className="block text-sm font-medium text-white mb-1">
-                      Promo Code <span className="text-[#B0B3B8] font-normal">(optional)</span>
+                      Promo Code <span className="text-[#B0B3B8] font-normal">(Optional)</span>
                     </label>
                     <div className="relative">
                       <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
@@ -487,7 +487,7 @@ export default function VenueOnboardingPage() {
                   </button>
 
                   <p className="text-xs text-[#B0B3B8] text-center">
-                    By submitting, you agree to be contacted about Club Commander.
+                    By Submitting, You Agree To Be Contacted About Club Commander.
                   </p>
                 </form>
               </div>

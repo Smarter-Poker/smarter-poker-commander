@@ -49,6 +49,18 @@ function isToday(dateStr) {
   if (!dateStr) return false;
   return new Date(dateStr).toDateString() === new Date().toDateString();
 }
+// Break-aware level label: current_level is an ARRAY INDEX into blind_structure,
+// which interleaves break rows. Count only non-break rows for the display number.
+function levelLabel(t) {
+  let bs = t?.blind_structure;
+  if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = []; } }
+  if (!Array.isArray(bs)) bs = [];
+  const idx = t?.current_level || 0;
+  if (!bs.length) return `Level ${idx + 1}`;
+  const row = bs[idx];
+  if (row?.is_break) return row.label || 'Break';
+  return `Level ${bs.slice(0, idx + 1).filter(l => !l.is_break).length}`;
+}
 
 /* ─── Inline styles ─────────────────────────────────────────── */
 const S = {
@@ -142,7 +154,7 @@ export default function CommanderTournamentsPage() {
 
   return (
     <CommanderLayout title={`Tournaments | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=tournaments">
-      <SEOHead title="Commander — Tournaments" description="Club Commander Tournament Management" noindex={true} />
+      <SEOHead title="Commander - Tournaments" description="Club Commander Tournament Management" noindex={true} />
       <div style={S.page}>
 
         {/* ── Top Action Bar ── */}
@@ -266,12 +278,12 @@ export default function CommanderTournamentsPage() {
             <div style={{ ...S.panel, padding: '48px 24px', textAlign: 'center' }}>
               <Trophy size={48} style={{ color: '#3A3B3C', margin: '0 auto 16px', display: 'block' }} />
               <h2 style={{ fontSize: 17, fontWeight: 700, color: '#E4E6EB', margin: '0 0 8px' }}>
-                {filter === 'all' || filter === 'current_future' ? 'No Tournaments Yet' : `No ${filter} tournaments`}
+                {filter === 'all' || filter === 'current_future' ? 'No Tournaments Yet' : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Tournaments`}
               </h2>
               <p style={{ fontSize: 13, color: '#8A8D91', margin: '0 0 20px' }}>
                 {filter === 'all' || filter === 'current_future'
-                  ? 'Create your first tournament to get started'
-                  : 'Try a different filter or create a new tournament'}
+                  ? 'Create Your First Tournament To Get Started'
+                  : 'Try A Different Filter Or Create A New Tournament'}
               </p>
               <button
                 onClick={() => setShowCreate(true)}
@@ -341,8 +353,8 @@ export default function CommanderTournamentsPage() {
                     {isActive && (
                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #3A3B3C', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <span style={{ fontSize: 12, color: '#8A8D91' }}>Level {t.current_level || 1}</span>
-                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.current_entries || 0} remaining</span>{/* 2026-07-25 audit fix: current_entries */}
+                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{levelLabel(t)}</span>
+                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.current_entries || 0} Remaining</span>{/* 2026-07-25 audit fix: current_entries */}
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#31A24C', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#31A24C', display: 'inline-block', boxShadow: '0 0 6px #31A24C', animation: 'pulse 1.5s infinite' }} />

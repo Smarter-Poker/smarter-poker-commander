@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Privacy-safe public alias — "First L." from a stored full name, else "Player".
+// Privacy-safe public alias - "First L." from a stored full name, else "Player".
 // Never expose the raw player_name (last name) or player_id on the public list.
 function publicAlias(name) {
   const n = (name || '').trim();
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
           .lt('created_at', expiryTime);
       } catch (cleanupErr) { console.warn('[App] Handled exception:', cleanupErr?.message || cleanupErr); }
 
-      // Get all waiting entries at venue. Sanitized column list — no player_id
+      // Get all waiting entries at venue. Sanitized column list - no player_id
       // or player_phone. Ordered by created_at so positions are stable 1..N.
       const { data: entries, error } = await getSupabase()
         .from('commander_waitlist')

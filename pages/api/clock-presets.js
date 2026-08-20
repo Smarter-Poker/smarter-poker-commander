@@ -1,9 +1,9 @@
 /**
  * Clock Presets CRUD API
- * GET    /api/commander/clock-presets         — List all presets for venue
- * POST   /api/commander/clock-presets         — Create preset
- * PUT    /api/commander/clock-presets?id=UUID  — Update preset
- * DELETE /api/commander/clock-presets?id=UUID  — Delete preset
+ * GET    /api/commander/clock-presets         - List all presets for venue
+ * POST   /api/commander/clock-presets         - Create preset
+ * PUT    /api/commander/clock-presets?id=UUID  - Update preset
+ * DELETE /api/commander/clock-presets?id=UUID  - Delete preset
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../src/lib/commander/auth';
@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

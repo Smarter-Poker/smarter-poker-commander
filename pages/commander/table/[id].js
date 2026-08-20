@@ -49,14 +49,14 @@ export default function TableSeating() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // fetchData declared first — must precede useEffect/useCommanderSync that reference it
+  // fetchData declared first - must precede useEffect/useCommanderSync that reference it
   const fetchData = async (signal) => {
     try {
 const venueId = getVenueId();
 const headers = { };
       const fo = signal ? { headers, signal } : { headers };
       // 2026-07-25 audit fix: the sessions handler wants table=<number> and
-      // venue_id, not table_id (uuid) + status — load the table first, then
+      // venue_id, not table_id (uuid) + status - load the table first, then
       // query sessions by its table_number.
       const [tableRes, waitlistRes] = await Promise.all([
         commanderFetch(`/api/commander/tables/${id}`, fo).then(r => r.json()).catch(() => ({ data: null })),
@@ -86,11 +86,11 @@ const headers = { };
     if (!id) return;
     const _c = new AbortController();
     fetchData(_c.signal);
-    const poll = setInterval(() => fetchData(_c.signal), 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(() => fetchData(_c.signal), 30000); // fallback - real-time sync handles instant updates
     return () => { _c.abort(); clearInterval(poll); };
   }, [id]);
 
-  // Real-time sync — instant cross-tab + cross-device updates
+  // Real-time sync - instant cross-tab + cross-device updates
   const venueId = typeof window !== 'undefined'
     ? (() => { try { return getStaffData().venue_id || ''; } catch { return ''; } })()
     : '';
@@ -155,7 +155,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
   return (
     <>
       <SEOHead
-        title="Commander — Details"
+        title="Commander - Details"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -241,7 +241,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
           <div className="px-4 pb-4">
             <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white">Seat {showSeatPicker} — Seat a Player</h3>
+                <h3 className="text-sm font-bold text-white">Seat {showSeatPicker} - Seat a Player</h3>
                 <button onClick={() => setShowSeatPicker(null)} className="text-xs text-[#B0B3B8]">Cancel</button>
               </div>
 

@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -31,12 +31,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     try {
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       if (table_number === undefined || !Array.isArray(assignments)) {
         return res.status(400).json({
           success: false,
-          error: 'table_number and assignments array required'
+          error: { code: 'VALIDATION_ERROR', message: 'table_number And assignments Array Required' }
         });
       }
 
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) {
-        return res.status(404).json({ success: false, error: 'Tournament not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
 
       // Fetch real venue data from both tables in parallel
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         if (!a.entry_id || a.to_table === undefined || a.to_seat === undefined) {
           return res.status(400).json({
             success: false,
-            error: 'Each assignment needs entry_id, to_table, to_seat'
+            error: { code: 'VALIDATION_ERROR', message: 'Each Assignment Needs entry_id, to_table, to_seat' }
           });
         }
       }
@@ -85,29 +85,32 @@ export default async function handler(req, res) {
         if (seatKeys.has(key)) {
           return res.status(400).json({
             success: false,
-            error: `Duplicate assignment: Table ${a.to_table} Seat ${a.to_seat}`
+            error: { code: 'DUPLICATE_SEAT', message: `Duplicate Assignment: Table ${a.to_table} Seat ${a.to_seat}` }
           });
         }
         seatKeys.add(key);
       }
 
-      // Check destination seats are not already occupied (batch query — avoids N+1)
-      const destPairs = assignments.map(a => `(${a.to_table},${a.to_seat})`);
+      // Check destination seats are not already occupied (batch query - avoids N+1).
+      // Entries that are themselves being moved off the broken table are not
+      // conflicts. Limit raised from 100: a truncated read silently skipped
+      // seats in large fields and the guard missed real conflicts.
+      const movingEntryIds = new Set(assignments.map(a => a.entry_id));
       const { data: conflictingSeats } = await getSupabase()
         .from('commander_tournament_entries')
-        .select('table_number, seat_number, player_name')
+        .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
         .in('status', ['active', 'seated'])
-            .limit(100);
+            .limit(1000);
 
-      const occupiedSet = new Set(
-        (conflictingSeats || [])
-          .filter(e => assignments.some(a => a.to_table === e.table_number && a.to_seat === e.seat_number))
+      const occupant = (conflictingSeats || []).find(e =>
+        !movingEntryIds.has(e.id) &&
+        assignments.some(a => a.to_table === e.table_number && a.to_seat === e.seat_number)
       );
-      for (const e of occupiedSet) {
+      if (occupant) {
         return res.status(409).json({
           success: false,
-          error: `Seat ${e.seat_number} at Table ${e.table_number} already occupied by ${e.player_name}`
+          error: { code: 'SEAT_OCCUPIED', message: `Seat ${occupant.seat_number} At Table ${occupant.table_number} Already Occupied By ${occupant.player_name}` }
         });
       }
 
@@ -120,7 +123,13 @@ export default async function handler(req, res) {
           .from('commander_tournament_entries')
           .select('table_number, seat_number, player_name, current_chips, metadata')
           .eq('id', a.entry_id)
+          .eq('tournament_id', tournamentId)
           .maybeSingle();
+
+        if (!entry) {
+          errors.push({ entry_id: a.entry_id, error: 'Entry Not Found In This Tournament' });
+          continue;
+        }
 
         const { error: uErr } = await getSupabase()
           .from('commander_tournament_entries')
@@ -128,13 +137,15 @@ export default async function handler(req, res) {
             table_number: a.to_table,
             seat_number: a.to_seat,
             metadata: {
-              ...(entry?.metadata || {}),
+              ...(entry.metadata || {}),
               last_moved_at: new Date().toISOString(),
-              last_moved_from: { table: entry?.table_number, seat: entry?.seat_number },
+              last_moved_from: { table: entry.table_number, seat: entry.seat_number },
               move_reason: 'table_break'
             }
           })
-          .eq('id', a.entry_id);
+          .eq('id', a.entry_id)
+          // Scope to this tournament so a stray entry_id cannot be moved
+          .eq('tournament_id', tournamentId);
 
         if (uErr) {
           errors.push({ entry_id: a.entry_id, error: uErr.message });
@@ -153,7 +164,7 @@ export default async function handler(req, res) {
 
       // Release the broken table back to inactive (ONLY if all players successfully moved)
       if (errors.length === 0) {
-        await getSupabase()
+        const { error: releaseError } = await getSupabase()
           .from('commander_tables')
           .update({
             mode: 'inactive',
@@ -163,10 +174,17 @@ export default async function handler(req, res) {
           })
           .eq('venue_id', tournament.venue_id)
           .eq('table_number', table_number);
-      } else {
+
+        if (releaseError) {
+          console.error('[tournaments/break-table] commander_tables release failed', {
+            venue_id: tournament.venue_id, table_number,
+            code: releaseError.code, message: releaseError.message, details: releaseError.details,
+          });
+          errors.push({ table_number, error: releaseError.message });
+        }
       }
 
-      // Build receipt data — full venue-level identity
+      // Build receipt data - full venue-level identity
       const now = new Date().toISOString();
       const receipts = results.map(r => ({
         venue_name: venueName,
@@ -196,12 +214,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Break table error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

@@ -1,5 +1,5 @@
 /**
- * ConfirmModal — Shared confirmation dialog for Commander pages.
+ * ConfirmModal - Shared confirmation dialog for Commander pages.
  * Replaces browser confirm() with a non-blocking inline modal.
  * 
  * Usage with useConfirmAction hook:
@@ -17,7 +17,7 @@ import { AlertTriangle } from 'lucide-react';
  * Hook: useConfirmAction
  * Returns { requestConfirm, ConfirmDialog }
  *   requestConfirm(message, onConfirm, options?)
- *   <ConfirmDialog /> — renders the modal when active
+ *   <ConfirmDialog /> - renders the modal when active
  */
 export function useConfirmAction() {
   const [state, setState] = useState(null); // { message, onConfirm, confirmLabel, cancelLabel, variant }

@@ -84,7 +84,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Compute the LIVE 1-based position for each entry — matching the public
+      // Compute the LIVE 1-based position for each entry - matching the public
       // venue waitlist ordering (created_at ascending within game_type/stakes).
       // The stored `position` column drifts as players ahead are seated, so we
       // count how many waiting/called entries in the same group were created at

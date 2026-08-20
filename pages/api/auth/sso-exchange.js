@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
     // Reject if expired
     if (new Date(row.expires_at) < new Date()) {
-      return res.status(401).json({ error: 'SSO token has expired — please sign in again' });
+      return res.status(401).json({ error: 'SSO token has expired - please sign in again' });
     }
 
     // Reject if uid doesn't match (prevents token-uid substitution attacks)
@@ -89,11 +89,11 @@ export default async function handler(req, res) {
       .then(() => {}) // fire-and-forget
       .catch(() => {});
 
-    // Generate a sign-in link for the user (admin API — bypasses password)
+    // Generate a sign-in link for the user (admin API - bypasses password)
     // generateLink returns a magic link; we extract the tokens from it.
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: 'magiclink',
-      email: uid, // generateLink needs email, not UUID — fetch it first
+      email: uid, // generateLink needs email, not UUID - fetch it first
     });
 
     // generateLink requires email; fetch user email from auth.users

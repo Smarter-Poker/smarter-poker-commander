@@ -456,7 +456,7 @@ export default function ManagerGuidePage() {
   return (
     <>
       <SEOHead
-                title="Commander — Manager Guide"
+                title="Commander - Manager Guide"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />

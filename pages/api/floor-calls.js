@@ -27,7 +27,7 @@ const VALID_REASONS = [
 const VALID_PRIORITIES = ['urgent', 'high', 'normal', 'low'];
 const VALID_STATUSES = ['pending', 'acknowledged', 'en_route', 'resolved', 'cancelled'];
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     try {
       // GET - List floor calls with filters
       if (req.method === 'GET') {
-        // Floor calls are polled by multiple staff devices — 10s CDN cache prevents fan-out
+        // Floor calls are polled by multiple staff devices - 10s CDN cache prevents fan-out
         res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
         const { venue_id, status, reason, priority, responded_by, limit = '50' } = req.query;
 

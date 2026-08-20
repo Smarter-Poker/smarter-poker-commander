@@ -25,7 +25,7 @@ function getVenueIdFromSession(req) {
     } catch { return null; }
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -74,7 +74,7 @@ async function listFreerolls(req, res) {
         const { data: freerolls, error } = await query;
 
         if (error) {
-            // Handle missing-table cleanly — feature not provisioned in this Supabase project.
+            // Handle missing-table cleanly - feature not provisioned in this Supabase project.
             // Migration archived at supabase/migrations/archive/20260225_freerolls.sql,
             // never applied to production. Return empty list + clear flag instead of 500.
             if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {

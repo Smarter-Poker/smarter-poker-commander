@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -99,7 +99,7 @@ async function handleGet(req, res) {
           });
           data = data.map(t => ({ ...t, seats: seatsByTable[t.table_number] || [] }));
         }
-      } catch { /* seats table may not exist yet — non-critical */ }
+      } catch { /* seats table may not exist yet - non-critical */ }
 
       // Fetch tournament details for tournament tables
       try {

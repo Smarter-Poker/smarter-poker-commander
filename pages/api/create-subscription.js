@@ -5,7 +5,7 @@ import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { COMMANDER_FREE_MODE } from '../../src/lib/commander/tierConfig';
 import { reportApiError } from '../../src/lib/sentryWrap';
-// Note: No auth guard — this route is called during REGISTRATION before any session exists.
+// Note: No auth guard - this route is called during REGISTRATION before any session exists.
 // It creates the user account itself, so no pre-existing auth is possible.
 
 let _supabase = null;
@@ -23,7 +23,7 @@ function getSupabase() {
 // where Stripe is never used.
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-// 2026-07-25 audit fix: single trial-length constant — UI copy promises a
+// 2026-07-25 audit fix: single trial-length constant - UI copy promises a
 // 14-day trial but this file previously hardcoded 30 days in three places.
 const TRIAL_DAYS = 14;
 
@@ -42,7 +42,7 @@ const TIER_PRICES = {
   },
 };
 
-// Robust user lookup — tries multiple methods
+// Robust user lookup - tries multiple methods
 async function findUserByEmail(email) {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -192,8 +192,8 @@ export default async function handler(req, res) {
       if (existingAccount) {
         // ─── Path A: Existing account ──────────────────────────────────
         // 2026-07-25 audit fix (P1): this path previously linked a venue,
-        // subscription, and owner-staff role to ANY account by email — and
-        // overwrote that account's user_metadata — with zero authentication.
+        // subscription, and owner-staff role to ANY account by email - and
+        // overwrote that account's user_metadata - with zero authentication.
         // It now requires a valid Supabase session for that same account.
         const authHeader = req.headers.authorization || '';
         const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
@@ -226,7 +226,7 @@ export default async function handler(req, res) {
           });
         } catch (e) { console.warn('[create-subscription] Metadata update non-critical error:', e.message); }
       } else {
-        // ─── Path B: New account — create user ─────────────────────────
+        // ─── Path B: New account - create user ─────────────────────────
         const password = ownerInfo.password || ('Tmp' + require('crypto').randomBytes(12).toString('base64url') + 'X1!');
 
         const { data: authData, error: authError } = await getSupabase().auth.admin.createUser({
@@ -246,7 +246,7 @@ export default async function handler(req, res) {
           authError?.message?.toLowerCase().includes('exists') ||
           authError?.message?.toLowerCase().includes('registered')) {
           // 2026-07-25 audit fix (P1): do NOT silently link the existing
-          // account here — that let anyone claim a venue under a victim's
+          // account here - that let anyone claim a venue under a victim's
           // email by "registering" with it. Route them through the
           // authenticated existing-account path instead.
           return res.status(400).json({

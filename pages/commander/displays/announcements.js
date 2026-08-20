@@ -261,7 +261,7 @@ export default function AnnouncementsDisplay() {
   return (
     <CommanderLayout title="Announcements Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
-              title="Commander — Announcement Display"
+              title="Commander - Announcement Display"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
@@ -458,7 +458,7 @@ export default function AnnouncementsDisplay() {
                 </div>
               </div>
 
-              {/* Panel Content — List of all announcements */}
+              {/* Panel Content - List of all announcements */}
               <div style={{ flex: 1, overflow: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {allAnnouncements.length === 0 ? (
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>

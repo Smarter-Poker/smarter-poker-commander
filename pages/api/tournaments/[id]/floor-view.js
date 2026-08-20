@@ -9,7 +9,7 @@
  * - Stats (entries, rebuys, addons, prize pool, avg stack)
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parseBlindStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
@@ -24,12 +24,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF READ. guardWriteStaff left this GET fully public, which exposed
+// player names, phones, chip counts and entry metadata to anyone with the URL.
+// guardStaff requires a valid signed staff session on every method.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
@@ -79,7 +81,7 @@ export default async function handler(req, res) {
         }
       }
 
-      // Build table map — get real max_seats from commander_tables
+      // Build table map - get real max_seats from commander_tables
       const tableNumbers = [...new Set(activeEntries.map(e => e.table_number).filter(Boolean))].sort((a, b) => a - b);
 
       // Query actual table configs for max_seats
@@ -143,12 +145,17 @@ export default async function handler(req, res) {
       const totalAddons = entries.filter(e => e.addon_taken).length;
       const totalChips = activeEntries.reduce((sum, e) => sum + (e.current_chips || 0), 0);
       const avgStack = activeEntries.length > 0 ? Math.round(totalChips / activeEntries.length) : 0;
-      // 2026-07-25 audit fix: rebuy_cost/addon_cost are not real columns —
+      // 2026-07-25 audit fix: rebuy_cost/addon_cost are not real columns,
       // use rebuy_amount/addon_amount so rebuys and add-ons count in the pool.
-      const prizePool = tournament.actual_prizepool || tournament.prize_pool ||
-        (entries.length * (tournament.buyin_amount || 0)) +
+      // 2026-08-19 fix: dropped the dead tournament.prize_pool read (not a column)
+      // and applied the guarantee: the advertised pool is max(collected, guarantee),
+      // TableCaptain-style, so overlays display correctly.
+      const collectedPool = (entries.length * (tournament.buyin_amount || 0)) +
         (totalRebuys * (tournament.rebuy_amount || 0)) +
         (totalAddons * (tournament.addon_amount || 0));
+      const prizePool = tournament.actual_prizepool ||
+        Math.max(collectedPool, tournament.guaranteed_pool || 0);
+      const overlayAmount = Math.max(0, (tournament.guaranteed_pool || 0) - collectedPool);
 
       // Check late registration
       const lateRegOpen = tournament.status === 'running' &&
@@ -186,23 +193,29 @@ export default async function handler(req, res) {
       // Auto-initialize clock_state for running tournaments that were never properly started
       if (!clockState && ['running', 'break', 'final_table'].includes(tournament.status)) {
         // 2026-07-25 audit fix: when backfilling mid-tournament use now as
-        // levelStartedAt — using actual_start made the level appear long expired.
+        // levelStartedAt - using actual_start made the level appear long expired.
         clockState = {
           isRunning: tournament.status === 'running',
           levelStartedAt: new Date().toISOString(),
           pausedAt: null,
           pausedDuration: 0
         };
-        // Persist so this only happens once — store in settings to bypass schema cache issues
-        const updatedSettings = { ...tournamentSettings, clock_state: clockState };
-        await getSupabase()
-          .from('commander_tournaments')
-          .update({ settings: updatedSettings, actual_start: tournament.actual_start || clockState.levelStartedAt })
-          .eq('id', tournamentId);
+        // Persist so this only happens once. Atomic jsonb_set via RPC so a
+        // concurrent settings write from a TD tablet is never clobbered.
+        await getSupabase().rpc('commander_clock_write', {
+          p_tournament_id: tournamentId,
+          p_clock_state: clockState,
+          p_updates: tournament.actual_start ? {} : { actual_start: clockState.levelStartedAt }
+        });
       }
 
-      if (currentBlinds && currentBlinds.duration && clockState && clockState.levelStartedAt) {
-        const levelDuration = currentBlinds.duration * 60 * 1000;
+      // 2026-08-19 fix: accept duration_minutes as well as duration (clock.js
+      // already did; this route returning 0 made every TD screen show 0:00).
+      const currentLevelMinutes = currentBlinds
+        ? (currentBlinds.duration ?? currentBlinds.duration_minutes ?? 0)
+        : 0;
+      if (currentLevelMinutes > 0 && clockState && clockState.levelStartedAt) {
+        const levelDuration = currentLevelMinutes * 60 * 1000;
         const elapsed = clockState.isRunning
           ? Date.now() - new Date(clockState.levelStartedAt).getTime() - (clockState.pausedDuration || 0)
           : clockState.pausedAt
@@ -234,7 +247,7 @@ export default async function handler(req, res) {
             addon_chips: tournament.addon_chips,
             late_registration_levels: tournament.late_registration_levels,
             guaranteed_pool: tournament.guaranteed_pool,
-            started_at: tournament.actual_start || tournament.started_at,
+            started_at: tournament.actual_start,
             actual_start: tournament.actual_start,
             scheduled_start: tournament.scheduled_start,
             game_type: tournament.game_type,
@@ -250,6 +263,15 @@ export default async function handler(req, res) {
           },
           clock: {
             current_level: currentLevel,
+            // Break rows share the array with playing levels, so the index is not
+            // the level number. display_level counts playing levels only.
+            display_level: (() => {
+              let n = 0;
+              for (let i = 0; i <= currentLevel && i < blindStructure.length; i++) {
+                if (!blindStructure[i]?.is_break) n++;
+              }
+              return n;
+            })(),
             current_blinds: currentBlinds,
             next_blinds: nextBlinds,
             after_break_blinds: afterBreakBlinds,
@@ -269,6 +291,8 @@ export default async function handler(req, res) {
             total_rebuys: totalRebuys,
             total_addons: totalAddons,
             prize_pool: prizePool,
+            collected_pool: collectedPool,
+            overlay_amount: overlayAmount,
             total_chips: totalChips,
             average_stack: avgStack,
             tables_active: tableNumbers.length,
@@ -276,7 +300,7 @@ export default async function handler(req, res) {
             levels_until_late_reg_closes: lateRegOpen
               ? (tournament.late_registration_levels || 0) - currentLevel
               : 0,
-            // True once the re-entry window closes — signals that auto-break is now active
+            // True once the re-entry window closes - signals that auto-break is now active
             re_entry_period_over: currentLevel > Math.max(
               tournament.rebuy_end_level || 0,
               tournament.late_registration_levels || 0
@@ -293,11 +317,11 @@ export default async function handler(req, res) {
             on_break: clockState?.on_break || false
           },
           tables,
-          // Full entries list for Players tab — includes ALL statuses
+          // Full entries list for Players tab - includes ALL statuses
           entries: entries.map(e => ({
             entry_id: e.id,
             player_name: avatarMap[e.player_id]?.display_name || e.player_name,
-            user_id: e.user_id,
+            user_id: e.player_id,
             status: e.status,
             table_number: e.table_number,
             seat_number: e.seat_number,
@@ -309,7 +333,7 @@ export default async function handler(req, res) {
             eliminated_at: e.eliminated_at,
             payout_amount: e.payout_amount,
             registered_at: e.created_at,
-            phone: e.phone,
+            phone: e.player_phone,
             metadata: e.metadata,
             avatar_url: avatarMap[e.player_id]?.avatar_url || null,
           })),

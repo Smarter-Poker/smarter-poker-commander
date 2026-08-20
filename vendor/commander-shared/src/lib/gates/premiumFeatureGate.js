@@ -23,7 +23,7 @@ export async function checkFeatureAccess(userId, featureKey) {
     if (typeof window !== 'undefined') {
         try {
             if (localStorage.getItem('sp-vip-status') === 'true') {
-                console.debug('[FeatureGate] VIP confirmed via localStorage cache — skipping network check');
+                console.debug('[FeatureGate] VIP confirmed via localStorage cache - skipping network check');
                 return { hasAccess: true, isVip: true, expiresAt: null, diamonds: 0 };
             }
         } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
@@ -35,7 +35,7 @@ export async function checkFeatureAccess(userId, featureKey) {
         const session = { access_token: JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}').access_token };
         sessionUserId = session?.user?.id;
         if (!sessionUserId) {
-            console.warn('[FeatureGate] No active Supabase session — waiting for auth...');
+            console.warn('[FeatureGate] No active Supabase session - waiting for auth...');
             // Wait briefly for session to establish (common on page load)
             await new Promise(r => setTimeout(r, 500));
             const retrySession = { access_token: JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}').access_token };
@@ -83,7 +83,7 @@ export async function checkFeatureAccess(userId, featureKey) {
         console.warn('[FeatureGate] CRITICAL: Could not fetch profile for userId:', userId, '| Error:', fetchError?.message);
         // ═══════════════════════════════════════════════════════════════════
         // HARDENED: Server-side fallback via /api/vip/check-status
-        // Uses Supabase service role key (bypasses RLS) — will succeed even
+        // Uses Supabase service role key (bypasses RLS) - will succeed even
         // when client-side auth/session is not ready
         // ═══════════════════════════════════════════════════════════════════
         try {
@@ -110,7 +110,7 @@ export async function checkFeatureAccess(userId, featureKey) {
         return { hasAccess: false, isVip: false, expiresAt: null, diamonds: 0, error: 'Profile fetch failed' };
     }
 
-    console.debug('[FeatureGate] Profile loaded — diamonds:', profile.diamonds, '| is_vip:', profile.is_vip);
+    console.debug('[FeatureGate] Profile loaded - diamonds:', profile.diamonds, '| is_vip:', profile.is_vip);
 
     // VIP users get unlimited access
     if (profile.is_vip) {
@@ -245,7 +245,7 @@ export async function purchaseFeatureAccess(userId, featureKey, cost, durationHo
             return { success: false, error: rpcError.message || 'Failed to deduct diamonds' };
         }
     } else if (rpcResult) {
-        // RPC succeeded — use authoritative balance from DB
+        // RPC succeeded - use authoritative balance from DB
         if (rpcResult.success === false) {
             return { success: false, error: rpcResult.error || 'Insufficient diamonds', balance: rpcResult.balance };
         }
@@ -275,7 +275,7 @@ export async function purchaseFeatureAccess(userId, featureKey, cost, durationHo
         });
 
     if (accessError) {
-        // Refund on failure — award back the diamonds
+        // Refund on failure - award back the diamonds
         await supabase.rpc('award_diamonds', {
             p_user_id: userId,
             p_amount: cost,
@@ -363,7 +363,7 @@ export async function purchaseVipWithDiamonds(userId) {
                 p_user_id: userId,
                 p_amount: -VIP_DIAMOND_COST,
                 p_type: 'vip_membership',
-                p_description: 'VIP Membership — 30 Day Diamond Purchase (fallback)',
+                p_description: 'VIP Membership - 30 Day Diamond Purchase (fallback)',
                 p_reference_id: null
             });
             if (directError) return { success: false, error: 'Failed to deduct diamonds' };
@@ -383,7 +383,7 @@ export async function purchaseVipWithDiamonds(userId) {
             user_id: userId,
             amount: -VIP_DIAMOND_COST,
             transaction_type: 'vip_membership',
-            description: 'VIP Membership — 30 Day Diamond Purchase',
+            description: 'VIP Membership - 30 Day Diamond Purchase',
             metadata: { type: 'diamond_vip', duration_days: 30 },
             balance_after: newBalance
         });
@@ -447,7 +447,7 @@ export async function purchaseVipWithDiamonds(userId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DAILY UNLOCK ALL — 150 💎 for 24-hour access to ALL pay-as-you-go features
+// DAILY UNLOCK ALL - 150 💎 for 24-hour access to ALL pay-as-you-go features
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const DAILY_UNLOCK_ALL_COST = 150;
@@ -493,6 +493,6 @@ export async function purchaseDailyUnlockAll(userId) {
         'daily_unlock_all',
         DAILY_UNLOCK_ALL_COST,
         24,
-        'Daily All-Access Pass — 24 Hour Unlock'
+        'Daily All-Access Pass - 24 Hour Unlock'
     );
 }

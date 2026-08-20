@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Clock & Broadcast
+ * Tournament Director - Clock & Broadcast
  * /commander/td/[tournamentId]/clock
  * Large countdown display optimized for TV casting via HDMI/Airplay
  * Full clock controls, break management, H4H, final table mode
@@ -69,7 +69,7 @@ export default function TDClock() {
   useTournamentRealtime(tournamentId, fetchFloor);
   useEffect(() => { const controller = new AbortController(); fetchFloor(controller.signal); const i = setInterval(() => fetchFloor(controller.signal), 30000); return () => { controller.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
 
-  // Client-side countdown — only restart interval when clock status changes (not on every tick)
+  // Client-side countdown - only restart interval when clock status changes (not on every tick)
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     const cs = floor?.clock?.clock_state;
@@ -108,7 +108,7 @@ export default function TDClock() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [floor?.clock?.clock_state?.status]);
 
-  // ── Seat Change Card — matches tournament buy-in receipt format ──
+  // ── Seat Change Card - matches tournament buy-in receipt format ──
   const printAutoBreakReceipts = (autoBreak) => {
     if (!autoBreak?.receipts?.length) return;
     const pw = window.open('', '_blank', 'width=420,height=700');
@@ -139,7 +139,7 @@ body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000;
 .field-row { display: flex; align-items: baseline; margin: 2mm 0; font-size: 11px; }
 .field-label { font-weight: bold; min-width: 18mm; }
 .field-val { font-size: 11px; text-transform: uppercase; }
-/* TWO BOXES ── Table | Seat — exactly like the reference photo */
+/* TWO BOXES ── Table | Seat - exactly like the reference photo */
 .boxes { display: flex; gap: 4mm; justify-content: center; margin: 4mm 0 2mm; }
 .box-wrap { text-align: center; flex: 1; }
 .box-title { font-size: 11px; font-weight: bold; margin-bottom: 1mm; }
@@ -161,7 +161,7 @@ ${receipts.map(r => `<div class="card">
   <div class="venue-name">${r.venue_name || 'Smarter Poker'}</div>
   <div class="venue-sub">Poker Room</div>
   <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` — $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
+  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` - $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
   <div class="divider"></div>
   <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
   <div class="divider"></div>
@@ -175,7 +175,7 @@ ${receipts.map(r => `<div class="card">
       <span class="box-num">${r.to_seat}</span>
     </div>
   </div>
-  <div class="moved-from">Moved from Table ${r.from_table}, Seat ${r.from_seat}</div>
+  <div class="moved-from">Moved From Table ${r.from_table}, Seat ${r.from_seat}</div>
   ${r.chips ? `<div class="divider"></div><div class="chips-row"><span>Chip Count:</span><span><b>${Number(r.chips).toLocaleString()}</b></span></div>` : ''}
   <div class="divider"></div>
   <div class="footer-line">${new Date(r.timestamp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}&nbsp;&nbsp;${new Date(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -189,11 +189,22 @@ ${receipts.map(r => `<div class="card">
   const clockAction = async (action) => {
     setActionLoading(action);
     try {
+      const body = { action };
+      // Optimistic-concurrency guard: send the level index this screen believes
+      // is current so two displays cannot double-advance (API 409s on conflict).
+      if (action === 'next_level') body.from_level = floor?.clock?.current_level ?? 0;
+      if (action === 'add_time' || action === 'subtract_time') body.seconds = 60;
       const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/clock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify(body)
       });
+      if (res.status === 409) {
+        // Another display already advanced the level, just refresh state
+        await fetchFloor();
+        broadcastChange('tournaments');
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -204,12 +215,12 @@ ${receipts.map(r => `<div class="card">
           await fetchFloor();
           broadcastChange('tournaments');
         } else {
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Clock action failed. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Clock Action Failed. Please Try Again.' });
         }
       } else {
-        setToast({ type: 'error', text: 'Clock action failed.' });
+        setToast({ type: 'error', text: 'Clock Action Failed.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Clock action failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Clock Action Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -224,15 +235,15 @@ ${receipts.map(r => `<div class="card">
       if (res.ok) {
         const json = await res.json();
         if (!json.success) {
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Failed to toggle Hand-for-Hand. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Failed To Toggle Hand-For-Hand. Please Try Again.' });
         } else {
           await fetchFloor();
           broadcastChange('tournaments');
         }
       } else {
-        setToast({ type: 'error', text: 'Failed to toggle Hand-for-Hand.' });
+        setToast({ type: 'error', text: 'Failed To Toggle Hand-For-Hand.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Hand-for-Hand toggle failed.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Hand-For-Hand Toggle Failed.' }); }
   };
 
   const triggerFinalTable = async () => {
@@ -246,15 +257,15 @@ ${receipts.map(r => `<div class="card">
       if (res.ok) {
         const json = await res.json();
         if (!json.success) {
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Final table action failed. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Final Table Action Failed. Please Try Again.' });
         } else {
           await fetchFloor();
           broadcastChange('tournaments');
         }
       } else {
-        setToast({ type: 'error', text: 'Final table action failed.' });
+        setToast({ type: 'error', text: 'Final Table Action Failed.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Final table action failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Final Table Action Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -300,9 +311,9 @@ ${receipts.map(r => `<div class="card">
   const isPaused = clockState.status === 'paused';
 
   return (
-    <CommanderLayout title="Commander — Clock" backHref={`/commander/td/${tournamentId}`}>
+    <CommanderLayout title="Commander - Clock" backHref={`/commander/td/${tournamentId}`}>
       <SEOHead
-        title="Commander — Clock"
+        title="Commander - Clock"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -436,7 +447,7 @@ ${receipts.map(r => `<div class="card">
                   <Square className="w-7 h-7 text-[#EF4444]" />
                 </div>
                 <h3 className="text-lg font-bold text-white">End Tournament?</h3>
-                <p className="text-sm text-[#B0B3B8] mt-1">This marks the tournament completed and stops the clock. This cannot be undone.</p>
+                <p className="text-sm text-[#B0B3B8] mt-1">This Marks The Tournament Completed And Stops The Clock. This Cannot Be Undone.</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowEndConfirm(false)}
