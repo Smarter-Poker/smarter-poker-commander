@@ -120,14 +120,14 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     'STUD': { l: 51, w: 7.6, t: 78.8, h: 3 },
     'MIXED': { l: 59.6, w: 8.4, t: 78.8, h: 3 },
     'TOURNAMENTS': { l: 68.8, w: 14.6, t: 78.8, h: 2.9 },
-    'plan_home': { l: 14.8, t: 40.5, w: 70.4, h: 7.1 },
+    'plan_home': { l: 14.8, t: 40.4, w: 70.4, h: 7.8 },
     'plan_charity': { l: 14.8, t: 49.9, w: 70.4, h: 7.1 },
     'plan_club': { l: 14.8, t: 59.3, w: 70.4, h: 7.1 },
-    'dot_home': { l: 4.3, t: 51, w: 2, h: 10 },
-    'dot_charity': { l: 4.3, t: 51, w: 2, h: 10 },
-    'dot_club': { l: 4.3, t: 51, w: 2, h: 10 },
+    'dot_home': { l: 3.8, t: 48.2, w: 2.6, h: 21.6 },
+    'dot_charity': { l: 4.1, t: 53.6, w: 2.3, h: 22.5 },
+    'dot_club': { l: 3.9, t: 55.1, w: 2.6, h: 24.6 },
     'checkbox_agree': { l: 14.9, t: 75.2, w: 2.5, h: 2.5 },
-    'checkmark': { l: 15.3, t: 75.7, w: 2, h: 10 }
+    'checkmark': { l: 14.67, t: 75.29, w: 2, h: 2.2 }
   });
   const [activeCalib, setActiveCalib] = useState('NLH');
   const [showCalib, setShowCalib] = useState(false);
@@ -1270,14 +1270,17 @@ const CalibrationPanel = () => {
 
           {/* Plan 2: Charity */}
           <button
+            id="calib-plan_charity"
+            {...getDraggableProps('plan_charity')}
             type="button"
             onClick={() => setSelectedTier('charity')}
             style={{
               position: 'absolute',
-              top: '49.1%',
-              left: '14.8%',
-              width: '70.4%',
-              height: '7.1%',
+              top: `${calib.plan_charity.t}%`,
+              left: `${calib.plan_charity.l}%`,
+              width: `${calib.plan_charity.w}%`,
+              height: `${calib.plan_charity.h}%`,
+              ...(showCalib ? getDraggableProps('plan_charity').style : {}),
               background: 'transparent',
               border: selectedTier === 'charity' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
@@ -1305,14 +1308,17 @@ const CalibrationPanel = () => {
 
           {/* Plan 3: Clubs */}
           <button
+            id="calib-plan_club"
+            {...getDraggableProps('plan_club')}
             type="button"
             onClick={() => setSelectedTier('club')}
             style={{
               position: 'absolute',
-              top: '57.6%',
-              left: '14.8%',
-              width: '70.4%',
-              height: '7.1%',
+              top: `${calib.plan_club.t}%`,
+              left: `${calib.plan_club.l}%`,
+              width: `${calib.plan_club.w}%`,
+              height: `${calib.plan_club.h}%`,
+              ...(showCalib ? getDraggableProps('plan_club').style : {}),
               background: 'transparent',
               border: selectedTier === 'club' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
