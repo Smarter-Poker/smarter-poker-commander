@@ -551,6 +551,7 @@ const CalibrationPanel = () => {
     return (
       <>
         <style dangerouslySetInnerHTML={{__html: autofillCss}} />
+        <CalibrationPanel />
         <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
           <Head>
             <title>Club Commander - Register</title>
@@ -806,6 +807,7 @@ const CalibrationPanel = () => {
     return (
       <>
         <style dangerouslySetInnerHTML={{__html: autofillCss}} />
+        <CalibrationPanel />
         <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
           <Head>
             <title>Club Commander - Register Step 2</title>
@@ -1111,6 +1113,8 @@ const CalibrationPanel = () => {
 
   if (step === 3 && !lockedTier) {
     return (
+      <>
+      <CalibrationPanel />
       <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
         <Head>
           <title>Club Commander - Select Plan</title>
@@ -1334,6 +1338,7 @@ const CalibrationPanel = () => {
 
         </div>
       </div>
+      </>
     );
   }
 
