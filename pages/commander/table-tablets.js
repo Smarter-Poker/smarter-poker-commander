@@ -441,7 +441,14 @@ const headers = { };
                     const uniqueTournaments = [...new Set(tournTbls.map(t => t.tournament_id).filter(Boolean))];
                     await Promise.all(uniqueTournaments.map(async (tid) => {
                         try {
-                            const fRes = await commanderFetch(`/api/commander/tournaments/${tid}/floor-view`, { headers });
+                            // Payload split: this screen reads the tournament
+                            // header, the room stats and the per-table seat
+                            // lists. It never touches the entry list, the
+                            // clock, the alternates or the eliminated feed.
+                            const fRes = await commanderFetch(
+                                `/api/commander/tournaments/${tid}/floor-view?include=tournament,tables,stats`,
+                                { headers }
+                            );
                             if (!fRes.ok) throw new Error(`Request failed (${fRes.status})`);
                             const fJson = await fRes.json();
                             if (fJson.success && fJson.data?.tables) {
@@ -561,15 +568,16 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
         }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
     };
 
-    // Auto-refresh every 30s (fallback; realtime sync handles instant updates)
-    useEffect(() => {
-        if (!venueId) return;
-        const interval = setInterval(fetchAll, 30000); // fallback - real-time sync handles instant updates
-        return () => clearInterval(interval);
-    }, [venueId, fetchAll]);
-
-    // Commander Data Bus - instant cross-tab sync for tables, games, dealers
-    useCommanderSync(venueId, fetchAll, { entities: ['tables', 'games', 'dealers'] });
+    // Commander Data Bus - instant cross-tab sync for tables, games, dealers,
+    // plus the fallback poll that used to be a fixed 30s setInterval here.
+    // 'tournaments' joins the entity list so a level advance or a status
+    // change still reaches this screen over the channel once the poll has
+    // backed off. fastMs is the old 30s, so an unproven channel behaves
+    // exactly as it did before.
+    useCommanderSync(venueId, fetchAll, {
+        entities: ['tables', 'games', 'dealers', 'tournaments'],
+        poll: { fastMs: 30000, slowMs: 180000 }
+    });
 
     // 1-second tick for live countdown display.
     // 2026-08-19: the tick now pauses while the page is hidden (tablet screen off

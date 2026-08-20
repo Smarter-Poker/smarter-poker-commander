@@ -40,6 +40,11 @@ function formatChips(n) {
   return n.toLocaleString();
 }
 
+// Entries per request. Anything up to a 1000 player field is one request, the
+// same single round trip this screen has always made. Beyond that the list
+// arrives in pages so the first one can render while the rest is still coming.
+const ENTRY_PAGE_SIZE = 1000;
+
 export default function TDPlayers() {
 
   useEffect(() => { busEmit.sessionStart('commander-td-tournamentId-players'); }, []);
@@ -78,16 +83,57 @@ export default function TDPlayers() {
 
     if (!tournamentId) return;
     try {
-      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
+      // Payload split + pagination.
+      // This screen IS the entry list, so it asks for entries, but it does not
+      // need the clock, the alerts, the alternates queue or the chip-count
+      // board. The list itself arrives in pages: a normal field (under 1000)
+      // is a single request exactly as before, and a monster field renders the
+      // first page immediately instead of waiting on 5000 rows, then appends
+      // the rest. The screen ends up holding the same complete list either way,
+      // so search, filters and counts are unchanged.
+      const base = `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,tables,entries,eliminated`;
+      const opts = { ...(signal ? { signal } : {}) };
+      const res = await commanderFetch(`${base}&entries_limit=${ENTRY_PAGE_SIZE}`, opts);
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (json.success) setFloor(json.data);
-    } catch (err) { console.warn(err); }
+      if (!json.success) return;
+      setFloor(json.data);
+
+      // Drain the remaining pages. Bounded so a bad has_more can never spin.
+      let page = json.data?.entries_page;
+      let guard = 0;
+      while (page?.has_more && page.next_offset != null && guard < 20) {
+        guard += 1;
+        const nextRes = await commanderFetch(
+          `${base}&entries_limit=${ENTRY_PAGE_SIZE}&entries_offset=${page.next_offset}`,
+          opts
+        );
+        if (!nextRes.ok) break;
+        const nextJson = await nextRes.json();
+        if (!nextJson.success) break;
+        const rows = nextJson.data?.entries || [];
+        if (rows.length === 0) break;
+        // Functional update, deduped by entry_id: a realtime refetch may have
+        // replaced `floor` underneath this loop, and the seat ordering the
+        // pages are cut on can shift between requests, so a naive append could
+        // list the same player twice.
+        setFloor(prev => {
+          if (!prev) return nextJson.data;
+          const seen = new Set((prev.entries || []).map(e => e.entry_id));
+          const fresh = rows.filter(r => !seen.has(r.entry_id));
+          if (fresh.length === 0) return prev;
+          return { ...prev, entries: [...(prev.entries || []), ...fresh] };
+        });
+        page = nextJson.data?.entries_page;
+      }
+    } catch (err) { if (err?.name !== 'AbortError') console.warn(err); }
     finally { setLoading(false); }
   }, [tournamentId]);
 
-  useTournamentRealtime(tournamentId, fetchFloor);
-  useEffect(() => { const _c = new AbortController(); fetchFloor(_c.signal); const i = setInterval(() => fetchFloor(_c.signal), 30000); return () => { _c.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
+  // Realtime first: the 30s fallback poll is unchanged while the channel is
+  // unproven, and stretches to 5 minutes once it has proved itself.
+  useTournamentRealtime(tournamentId, fetchFloor, { poll: true });
+  useEffect(() => { const _c = new AbortController(); fetchFloor(_c.signal); return () => { _c.abort(); }; }, [fetchFloor]);
 
   // 2026-08-04 audit fix: the tables page deep-links here with ?move=<entry_id>
   // but the param was read and never used - open the move modal for that entry

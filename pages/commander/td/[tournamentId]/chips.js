@@ -62,8 +62,10 @@ export default function TDChipCounts() {
   const fetchFloor = useCallback(async (signal) => {
     if (!tournamentId) return;
     try {
+      // Payload split: the chip-count screen works off the table map and the
+      // room totals. It never reads the entry list or the clock.
       const res = await commanderFetch(
-        `/api/commander/tournaments/${tournamentId}/floor-view`,
+        `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,tables`,
         { ...(signal ? { signal } : {}) }
       );
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
@@ -81,13 +83,18 @@ export default function TDChipCounts() {
     }
   }, [tournamentId]);
 
-  useTournamentRealtime(tournamentId, fetchFloor);
+  // 5-min fallback only. A tight poll would fight the TD while typing, so the
+  // fast and slow tiers are both 5 minutes: this screen gains the hidden-tab
+  // suppression and the catch-up on focus, and nothing else changes.
+  useTournamentRealtime(tournamentId, fetchFloor, {
+    poll: true,
+    fastMs: 300000,
+    slowMs: 300000
+  });
   useEffect(() => {
     const controller = new AbortController();
     fetchFloor(controller.signal);
-    // 5-min fallback only. A tight poll would fight the TD while typing.
-    const interval = setInterval(() => fetchFloor(controller.signal), 300000);
-    return () => { controller.abort(); clearInterval(interval); };
+    return () => { controller.abort(); };
   }, [fetchFloor]);
 
   const tables = useMemo(() => floor?.tables || [], [floor]);

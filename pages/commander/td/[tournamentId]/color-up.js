@@ -81,8 +81,10 @@ export default function TDColorUp() {
   const fetchFloor = useCallback(async (signal) => {
     if (!tournamentId) return;
     try {
+      // Payload split: the colour-up screen works off the table map plus the
+      // tournament header. No entry list, no clock, no chip board.
       const res = await commanderFetch(
-        `/api/commander/tournaments/${tournamentId}/floor-view`,
+        `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,tables`,
         { ...(signal ? { signal } : {}) }
       );
       if (!res.ok) throw new Error(`Request failed (${res.status})`);

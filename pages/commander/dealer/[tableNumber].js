@@ -145,7 +145,13 @@ export default function DealerTablet() {
       if (tbl.mode === 'tournament' && tbl.tournament_id) {
         // TOURNAMENT MODE - get players from tournament floor-view
         try {
-          const tRes = await commanderFetch(`/api/commander/tournaments/${tbl.tournament_id}/floor-view`, { headers });
+          // Payload split: this tablet draws the header, the level clock, the
+          // room stats, the break flag, the table map (for the move picker)
+          // and the alternates queue. It never draws the full entry list.
+          const tRes = await commanderFetch(
+            `/api/commander/tournaments/${tbl.tournament_id}/floor-view?include=tournament,clock,stats,alerts,tables,alternates`,
+            { headers }
+          );
           if (!tRes.ok) throw new Error(`Tournament fetch failed (${tRes.status})`);
           const tJson = await tRes.json();
           if (tJson.success) {
@@ -160,8 +166,10 @@ export default function DealerTablet() {
               on_break: tData?.alerts?.on_break === true,
               clock: tData?.clock || null,
               tables: tData?.tables || [],
-              alternates: tData?.alternates || [],
-              entries: tData?.entries || []
+              alternates: tData?.alternates || []
+              // `entries` used to be copied in here and was read by nothing on
+              // this screen. It is the single biggest section of the floor
+              // view payload, so it is no longer requested at all.
             });
             // Anchor the level clock so the tablet can tick locally between the
             // 30s polls; every fetch re-anchors it, so it cannot drift.
@@ -207,20 +215,24 @@ export default function DealerTablet() {
   useEffect(() => {
     const controller = new AbortController();
     fetchTable(controller.signal);
-    const i = setInterval(() => {
-      const ctrl = new AbortController();
-      fetchTable(ctrl.signal);
-    }, 30000);
-    return () => { controller.abort(); clearInterval(i); };
-  }, [fetchTable]); // fallback - real-time sync handles instant updates
+    return () => { controller.abort(); };
+  }, [fetchTable]); // the fallback poll lives in useCommanderSync below
 
   // Extract venueId for cross-device Supabase sync
   const [venueId] = useState(() => {
     return getVenueId();
   });
 
-  // Commander Data Bus - instant cross-tab sync + Supabase Realtime cross-device
-  useCommanderSync(venueId, fetchTable, { entities: ['tables', 'games', 'dealers'] });
+  // Commander Data Bus - instant cross-tab sync + Supabase Realtime cross-device.
+  // 'tournaments' is in the entity list because this tablet anchors the level
+  // clock from the poll: a level advance writes commander_tournaments, so the
+  // channel carries it and the fallback poll is allowed to back off. Without
+  // that entity the backoff would let a blind change show up late.
+  // fastMs matches the 30s interval this page used to run unconditionally.
+  useCommanderSync(venueId, fetchTable, {
+    entities: ['tables', 'games', 'dealers', 'tournaments'],
+    poll: { fastMs: 30000, slowMs: 180000 }
+  });
 
   // Keep screen awake - this is a dealer tablet mounted at the table
   useWakeLock();

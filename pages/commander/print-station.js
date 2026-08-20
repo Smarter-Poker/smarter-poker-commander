@@ -43,6 +43,63 @@ const supabase = (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKe
 const POLL_INTERVAL = 15000;
 const AUTO_PRINT_KEY = 'commander_print_station_autoprint';
 
+/* ─── Station identity (multi-room routing) ───────────────────
+ * A venue with two rooms runs a printer in each. This device registers a
+ * station: a name, the tables it is responsible for, and optionally a subset
+ * of job types. The queue it pulls, and the queue Auto Print drains, are
+ * filtered to that work, so the far room's seat change cards stop coming out
+ * of the near room's printer.
+ *
+ * The station lives in localStorage on the device, not in the database:
+ * "which printer is this" is a property of the hardware in front of you, and
+ * it survives a logout, a different operator and a page reload without any
+ * schema change.
+ *
+ * Jobs with no table number (payouts, chip race, custom) belong to no room.
+ * They are delivered to every station by default and badged Unrouted, and the
+ * All Jobs tab always shows the venue's whole queue, so no job can end up
+ * routed into a hole where nobody sees it.
+ */
+const STATION_KEY = 'commander_print_station_config';
+const DEFAULT_STATION = { name: '', tables: [], jobTypes: [], includeUnrouted: true };
+
+/** "1-4, 7" -> [1,2,3,4,7]. Junk is dropped, never guessed at. */
+function parseTableInput(raw) {
+  const out = new Set();
+  String(raw || '').split(',').forEach(part => {
+    const chunk = part.trim();
+    if (!chunk) return;
+    const range = chunk.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (range) {
+      const from = Number(range[1]);
+      const to = Number(range[2]);
+      if (from > 0 && to >= from && to - from < 200) {
+        for (let n = from; n <= to; n++) out.add(n);
+      }
+      return;
+    }
+    const n = Number(chunk);
+    if (Number.isFinite(n) && n > 0) out.add(Math.floor(n));
+  });
+  return [...out].sort((a, b) => a - b);
+}
+
+/** [1,2,3,7] -> "1-3, 7" so the saved station reads back the way it was typed. */
+function formatTableList(tables) {
+  if (!Array.isArray(tables) || tables.length === 0) return '';
+  const parts = [];
+  let start = tables[0];
+  let prev = tables[0];
+  for (let i = 1; i <= tables.length; i++) {
+    const n = tables[i];
+    if (n === prev + 1) { prev = n; continue; }
+    parts.push(start === prev ? `${start}` : `${start}-${prev}`);
+    start = n;
+    prev = n;
+  }
+  return parts.join(', ');
+}
+
 const JOB_TYPE_LABELS = {
   seat_change: 'Seat Change',
   table_break: 'Table Break',
@@ -98,7 +155,12 @@ export default function PrintStation() {
 
   const [venueId, setVenueId] = useState(null);
   const [queued, setQueued] = useState([]);
+  // Every queued job in the venue, filter or no filter. Backs the All Jobs tab.
+  const [allQueued, setAllQueued] = useState([]);
   const [recent, setRecent] = useState([]);
+  const [station, setStation] = useState(DEFAULT_STATION);
+  const [stationOpen, setStationOpen] = useState(false);
+  const [stationDraft, setStationDraft] = useState({ name: '', tables: '', jobTypes: [], includeUnrouted: true });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState('queue');
@@ -118,7 +180,11 @@ export default function PrintStation() {
   const autoPrintRef = useRef(false);
   const popupBlockedRef = useRef(false);
   const mountedRef = useRef(true);
+  // Read inside fetchJobs so changing the station never changes the callback's
+  // identity (which would restart the poll and the realtime subscription).
+  const stationRef = useRef(DEFAULT_STATION);
 
+  useEffect(() => { stationRef.current = station; }, [station]);
   useEffect(() => { autoPrintRef.current = autoPrint; }, [autoPrint]);
   useEffect(() => { popupBlockedRef.current = popupBlocked; }, [popupBlocked]);
   useEffect(() => {
@@ -126,11 +192,35 @@ export default function PrintStation() {
     return () => { mountedRef.current = false; };
   }, []);
 
-  /* ─── Mount: venue + saved Auto Print preference ───────────── */
+  /* ─── Mount: venue + saved Auto Print preference + station ─── */
   useEffect(() => {
     try { setVenueId(getVenueId()); } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
     try {
       setAutoPrint(localStorage.getItem(AUTO_PRINT_KEY) === 'on');
+    } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+    try {
+      const raw = localStorage.getItem(STATION_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const loaded = {
+          name: typeof parsed?.name === 'string' ? parsed.name.slice(0, 60) : '',
+          tables: Array.isArray(parsed?.tables)
+            ? parsed.tables.map(Number).filter(n => Number.isFinite(n) && n > 0)
+            : [],
+          jobTypes: Array.isArray(parsed?.jobTypes)
+            ? parsed.jobTypes.filter(t => Object.keys(JOB_TYPE_LABELS).includes(t))
+            : [],
+          includeUnrouted: parsed?.includeUnrouted !== false
+        };
+        stationRef.current = loaded;
+        setStation(loaded);
+        setStationDraft({
+          name: loaded.name,
+          tables: formatTableList(loaded.tables),
+          jobTypes: loaded.jobTypes,
+          includeUnrouted: loaded.includeUnrouted
+        });
+      }
     } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
   }, []);
 
@@ -176,18 +266,46 @@ export default function PrintStation() {
   /* ─── Load the queue ───────────────────────────────────────── */
   const fetchJobs = useCallback(async (signal) => {
     const opts = signal ? { signal } : {};
+    const s = stationRef.current;
+    const filterActive = s.tables.length > 0 || s.jobTypes.length > 0;
+
+    // The station's own slice of the queue. Full rows: Auto Print needs the
+    // receipts the moment a job lands.
+    const stationParams = new URLSearchParams({ status: 'queued', limit: '100' });
+    if (s.name) stationParams.set('station', s.name);
+    if (s.tables.length > 0) {
+      stationParams.set('table_numbers', s.tables.join(','));
+      stationParams.set('include_unrouted', s.includeUnrouted ? '1' : '0');
+    }
+    if (s.jobTypes.length > 0) stationParams.set('job_types', s.jobTypes.join(','));
+
     try {
-      const [queuedRes, allRes] = await Promise.all([
-        commanderFetch('/api/commander/print-jobs?status=queued&limit=100', opts),
-        commanderFetch('/api/commander/print-jobs?limit=40', opts)
+      const [queuedRes, allRes, everythingRes] = await Promise.all([
+        commanderFetch(`/api/commander/print-jobs?${stationParams.toString()}`, opts),
+        // Recent list: summaries only. Nothing here renders the receipts, and
+        // the payload is the widest column in the table.
+        commanderFetch('/api/commander/print-jobs?limit=40&fields=summary', opts),
+        // All Jobs tab. Skipped entirely when no station filter is set,
+        // because then it would be the same list as the first request.
+        filterActive
+          ? commanderFetch('/api/commander/print-jobs?status=queued&limit=100&fields=summary', opts)
+          : Promise.resolve(null)
       ]);
 
       const queuedJson = await queuedRes.json().catch(() => null);
       const allJson = await allRes.json().catch(() => null);
+      const everythingJson = everythingRes ? await everythingRes.json().catch(() => null) : null;
+
+      if (everythingJson?.success) {
+        setAllQueued(Array.isArray(everythingJson.data?.jobs) ? everythingJson.data.jobs : []);
+      }
 
       if (queuedJson?.success) {
         const jobs = Array.isArray(queuedJson.data?.jobs) ? queuedJson.data.jobs : [];
         setQueued(jobs);
+        // With no filter the station queue IS the venue queue, so the All Jobs
+        // tab reuses it rather than costing a second request.
+        if (!filterActive) setAllQueued(jobs);
 
         // Flag genuinely new arrivals. The first load only seeds the set, so
         // opening the page on a backlog does not scream "New Cards".
@@ -287,10 +405,27 @@ export default function PrintStation() {
   }, []);
 
   /**
+   * The list views pull summaries, so a job from Recent or All Jobs arrives
+   * without its receipts. Fetch them for the one job being printed.
+   */
+  const withReceipts = useCallback(async (job) => {
+    if (Array.isArray(job?.payload?.receipts) && job.payload.receipts.length > 0) return job;
+    try {
+      const res = await commanderFetch(`/api/commander/print-jobs/${job.id}`, {});
+      const json = await res.json().catch(() => null);
+      if (json?.success && json.data?.job) return json.data.job;
+    } catch (err) {
+      console.warn('[print-station] receipt fetch failed:', err?.message || err);
+    }
+    return job;
+  }, []);
+
+  /**
    * Claim, render, print, close out. Returns false when nothing reached paper.
    * A blocked popup requeues the job so the cards stay owed rather than lost.
    */
-  const printJob = useCallback(async (job, { silent = false } = {}) => {
+  const printJob = useCallback(async (jobArg, { silent = false } = {}) => {
+    const job = await withReceipts(jobArg);
     const html = buildJobHtml(job);
     if (!html) {
       if (!silent) setToast({ type: 'error', text: 'This Job Has No Receipts To Print.' });
@@ -327,7 +462,7 @@ export default function PrintStation() {
 
     await fetchJobs();
     return true;
-  }, [act, fetchJobs]);
+  }, [act, fetchJobs, withReceipts]);
 
   /* ─── Auto Print ───────────────────────────────────────────── */
   useEffect(() => {
@@ -403,8 +538,73 @@ export default function PrintStation() {
 
   const manualRefresh = () => { setRefreshing(true); fetchJobs(); };
 
+  /* ─── Station config ───────────────────────────────────────── */
+  const stationFilterActive = station.tables.length > 0 || station.jobTypes.length > 0;
+
+  const saveStation = () => {
+    const next = {
+      name: String(stationDraft.name || '').slice(0, 60).trim(),
+      tables: parseTableInput(stationDraft.tables),
+      jobTypes: Array.isArray(stationDraft.jobTypes) ? stationDraft.jobTypes : [],
+      includeUnrouted: stationDraft.includeUnrouted !== false
+    };
+    stationRef.current = next;
+    setStation(next);
+    try { localStorage.setItem(STATION_KEY, JSON.stringify(next)); } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+    setStationDraft({
+      name: next.name,
+      tables: formatTableList(next.tables),
+      jobTypes: next.jobTypes,
+      includeUnrouted: next.includeUnrouted
+    });
+    setStationOpen(false);
+    // Anything previously skipped may now belong to this station.
+    attemptedRef.current = new Set();
+    setToast({
+      type: 'success',
+      text: next.tables.length > 0 || next.jobTypes.length > 0
+        ? `Station Saved. This Printer Pulls ${next.tables.length > 0 ? `Tables ${formatTableList(next.tables)}` : 'Selected Job Types'}.`
+        : 'Station Saved. This Printer Pulls Every Job In The Venue.'
+    });
+    setRefreshing(true);
+    fetchJobs();
+  };
+
+  const clearStationFilter = () => {
+    const next = { ...DEFAULT_STATION, name: station.name };
+    stationRef.current = next;
+    setStation(next);
+    try { localStorage.setItem(STATION_KEY, JSON.stringify(next)); } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+    setStationDraft({ name: next.name, tables: '', jobTypes: [], includeUnrouted: true });
+    attemptedRef.current = new Set();
+    setRefreshing(true);
+    fetchJobs();
+  };
+
+  const toggleDraftType = (type) => {
+    setStationDraft(d => {
+      const current = Array.isArray(d.jobTypes) ? d.jobTypes : [];
+      return {
+        ...d,
+        jobTypes: current.includes(type) ? current.filter(t => t !== type) : [...current, type]
+      };
+    });
+  };
+
+  /** Does this job belong to the station in front of us? */
+  const isMine = (job) => {
+    if (!stationFilterActive) return true;
+    if (station.jobTypes.length > 0 && !station.jobTypes.includes(job.job_type)) return false;
+    if (station.tables.length === 0) return true;
+    if (job.table_number === null || job.table_number === undefined) return station.includeUnrouted;
+    return station.tables.includes(Number(job.table_number));
+  };
+
   const totalCards = queued.reduce((sum, j) => sum + (Number(j.receipt_count) || 0), 0);
-  const list = tab === 'queue' ? queued : recent;
+  // Queued jobs in the venue that this station is NOT pulling. They are not
+  // lost, they are one tap away on the All Jobs tab, and the tab says how many.
+  const notMineCount = allQueued.filter(j => !isMine(j)).length;
+  const list = tab === 'queue' ? queued : (tab === 'all' ? allQueued : recent);
 
   /* ─── Render ───────────────────────────────────────────────── */
 
@@ -444,6 +644,21 @@ export default function PrintStation() {
               {job.table_number !== null && job.table_number !== undefined && (
                 <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#3A3B3C] text-[#E4E6EB]">
                   Table {job.table_number}
+                </span>
+              )}
+              {/* A job with no table belongs to no room. Say so, so nobody
+                  assumes another station has it covered. */}
+              {(job.table_number === null || job.table_number === undefined) && job.status === 'queued' && (
+                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#B0B3B8]/20 text-[#B0B3B8]">
+                  Unrouted
+                </span>
+              )}
+              {/* Visible on the All Jobs tab: queued work this station is not
+                  pulling, so the floor can print it here anyway if the other
+                  room's printer is down. */}
+              {job.status === 'queued' && !isMine(job) && (
+                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#F59E0B]/15 text-[#F59E0B]">
+                  Another Station
                 </span>
               )}
             </div>
@@ -523,11 +738,20 @@ export default function PrintStation() {
           <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <Printer className="w-5 h-5 text-[#1877F2]" /> Print Station
+                <Printer className="w-5 h-5 text-[#1877F2]" />
+                {station.name ? station.name : 'Print Station'}
               </h1>
               <p className="text-xs text-[#B0B3B8]">
                 {queued.length.toLocaleString()} Job{queued.length === 1 ? '' : 's'} Waiting
                 {' '}&middot;{' '}{totalCards.toLocaleString()} Card{totalCards === 1 ? '' : 's'}
+                {stationFilterActive && (
+                  <>
+                    {' '}&middot;{' '}
+                    {station.tables.length > 0
+                      ? `Tables ${formatTableList(station.tables)}`
+                      : 'Filtered'}
+                  </>
+                )}
               </p>
             </div>
             <button
@@ -576,6 +800,114 @@ export default function PrintStation() {
               </div>
             )}
 
+            {/* Station routing. A venue with two rooms runs a printer in each,
+                and this is where a device says which work is its own. */}
+            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white">Station Routing</p>
+                  <p className="text-xs text-[#B0B3B8] mt-0.5">
+                    {stationFilterActive
+                      ? `${station.name || 'This Printer'} Pulls ${
+                        station.tables.length > 0 ? `Tables ${formatTableList(station.tables)}` : 'Selected Job Types'
+                      }${station.tables.length > 0 && station.includeUnrouted ? ', Plus Jobs With No Table' : ''}.`
+                      : 'This Printer Pulls Every Job In The Venue.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setStationOpen(o => !o)}
+                  className="min-h-[44px] px-4 rounded-xl text-sm font-bold bg-[#3A3B3C] text-[#E4E6EB] active:scale-[0.98]"
+                >
+                  {stationOpen ? 'Close' : 'Set Up'}
+                </button>
+              </div>
+
+              {stationOpen && (
+                <div className="mt-4 space-y-3 border-t border-[#3A3B3C] pt-4">
+                  <div>
+                    <label className="text-xs font-bold text-[#B0B3B8] block mb-1" htmlFor="station-name">
+                      Station Name
+                    </label>
+                    <input
+                      id="station-name"
+                      type="text"
+                      value={stationDraft.name}
+                      onChange={e => setStationDraft(d => ({ ...d, name: e.target.value }))}
+                      placeholder="Main Room Printer"
+                      className="w-full min-h-[44px] rounded-xl bg-[#18191A] border border-[#3A3B3C] px-3 text-sm text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[#B0B3B8] block mb-1" htmlFor="station-tables">
+                      Tables (Blank Means Every Table)
+                    </label>
+                    <input
+                      id="station-tables"
+                      type="text"
+                      inputMode="numeric"
+                      value={stationDraft.tables}
+                      onChange={e => setStationDraft(d => ({ ...d, tables: e.target.value }))}
+                      placeholder="1-12, 20"
+                      className="w-full min-h-[44px] rounded-xl bg-[#18191A] border border-[#3A3B3C] px-3 text-sm text-white"
+                    />
+                    <p className="text-[11px] text-[#B0B3B8] mt-1">
+                      Ranges And Lists Both Work. Example: 1-12, 20, 21
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold text-[#B0B3B8] mb-2">Job Types (None Selected Means All)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.keys(JOB_TYPE_LABELS).map(type => {
+                        const on = (stationDraft.jobTypes || []).includes(type);
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => toggleDraftType(type)}
+                            className={`min-h-[40px] px-3 rounded-xl text-xs font-bold active:scale-[0.98] ${
+                              on ? 'bg-[#1877F2] text-white' : 'bg-[#18191A] border border-[#3A3B3C] text-[#B0B3B8]'
+                            }`}
+                          >
+                            {JOB_TYPE_LABELS[type]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-3 text-sm text-[#E4E6EB]">
+                    <input
+                      type="checkbox"
+                      checked={stationDraft.includeUnrouted !== false}
+                      onChange={e => setStationDraft(d => ({ ...d, includeUnrouted: e.target.checked }))}
+                      className="w-5 h-5"
+                    />
+                    Also Print Jobs That Have No Table
+                  </label>
+                  <p className="text-[11px] text-[#B0B3B8]">
+                    Payouts And Chip Race Cards Carry No Table Number. Leave This
+                    On At One Station At Least, Or Nothing Will Print Them.
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      onClick={saveStation}
+                      className="flex-1 min-w-[120px] min-h-[44px] rounded-xl bg-[#1877F2] text-white text-sm font-bold active:scale-[0.98]"
+                    >
+                      Save Station
+                    </button>
+                    <button
+                      onClick={clearStationFilter}
+                      className="flex-1 min-w-[120px] min-h-[44px] rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:scale-[0.98]"
+                    >
+                      Pull Every Job
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Auto print toggle */}
             <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center gap-3">
               <div className="flex-1 min-w-0">
@@ -617,6 +949,12 @@ export default function PrintStation() {
             <div className="flex gap-2">
               {[
                 { key: 'queue', label: `Queue (${queued.length.toLocaleString()})` },
+                // Always present, even with no filter: the floor must have one
+                // place that shows every job in the venue.
+                {
+                  key: 'all',
+                  label: `All Jobs (${allQueued.length.toLocaleString()})${notMineCount > 0 ? ` +${notMineCount}` : ''}`
+                },
                 { key: 'recent', label: 'Recent' }
               ].map(t => (
                 <button
@@ -642,12 +980,18 @@ export default function PrintStation() {
               <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-8 text-center">
                 <Layers className="w-10 h-10 text-[#3A3B3C] mx-auto mb-3" />
                 <p className="text-base font-bold text-white">
-                  {tab === 'queue' ? 'No Cards Waiting.' : 'Nothing Printed Yet.'}
+                  {tab === 'queue' ? 'No Cards Waiting.'
+                    : tab === 'all' ? 'Nothing Queued Anywhere In The Venue.'
+                      : 'Nothing Printed Yet.'}
                 </p>
                 <p className="text-sm text-[#B0B3B8] mt-2 leading-relaxed">
                   {tab === 'queue'
-                    ? 'Seat Change Cards Will Appear Here Automatically When A Table Breaks.'
-                    : 'Printed And Voided Jobs From This Venue Show Up Here.'}
+                    ? (stationFilterActive
+                      ? 'Nothing Waiting For This Station. Check All Jobs For Work Routed Elsewhere.'
+                      : 'Seat Change Cards Will Appear Here Automatically When A Table Breaks.')
+                    : tab === 'all'
+                      ? 'Every Queued Job In This Venue Appears Here, Whichever Station It Belongs To.'
+                      : 'Printed And Voided Jobs From This Venue Show Up Here.'}
                 </p>
               </div>
             ) : (

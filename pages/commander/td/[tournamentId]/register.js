@@ -65,7 +65,13 @@ export default function TDRegisterPlayer() {
     const fetchTournament = useCallback(async (signal) => {
         if (!router.isReady || !tournamentId) return;
         try {
-            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
+            // Payload split: the registration screen renders the tournament
+            // header, and reads the entry list only to resolve the name behind
+            // a ?reentry=<entry_id> deep link.
+            const res = await commanderFetch(
+                `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament${reentry ? ',entries' : ''}`,
+                { ...(signal ? { signal } : {}) }
+            );
             if (!res.ok) throw new Error(`Request failed (${res.status})`);
             const json = await res.json();
             if (json.success) {

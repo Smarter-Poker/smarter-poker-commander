@@ -117,7 +117,12 @@ export default function TDClock() {
 
     if (!tournamentId) return;
     try {
-      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
+      // Payload split: the TD clock draws the header, the clock, the counts
+      // and the break/H4H flags. No entry list, no table map, no chip board.
+      const res = await commanderFetch(
+        `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,clock,stats,alerts`,
+        { ...(signal ? { signal } : {}) }
+      );
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -129,8 +134,10 @@ export default function TDClock() {
     finally { setLoading(false); }
   }, [tournamentId]);
 
-  useTournamentRealtime(tournamentId, fetchFloor);
-  useEffect(() => { const controller = new AbortController(); fetchFloor(controller.signal); const i = setInterval(() => fetchFloor(controller.signal), 30000); return () => { controller.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
+  // Realtime first: 30s fallback while the channel is unproven, 5 minutes
+  // once it has delivered. The countdown ticks locally in between either way.
+  useTournamentRealtime(tournamentId, fetchFloor, { poll: true });
+  useEffect(() => { const controller = new AbortController(); fetchFloor(controller.signal); return () => { controller.abort(); }; }, [fetchFloor]);
 
   // Client-side countdown - only restart interval when clock status changes (not on every tick)
   useEffect(() => {

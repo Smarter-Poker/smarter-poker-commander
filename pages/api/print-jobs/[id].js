@@ -27,18 +27,44 @@ function getSupabase() {
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', ['POST']);
+    if (req.method !== 'POST' && req.method !== 'GET') {
+      res.setHeader('Allow', ['GET', 'POST']);
       return res.status(405).json({
         success: false,
         error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
-    if (!applyRateLimit(req, res, LIMITS.write)) return;
+    if (!applyRateLimit(req, res, req.method === 'GET' ? LIMITS.read : LIMITS.write)) return;
     const staff = await guardStaff(req, res);
     if (!staff) return;
 
     const { id } = req.query;
+
+    // GET returns one job WITH its receipts. The station's list views pull
+    // summaries (?fields=summary) because the payload is the widest column in
+    // the table and no list renders it, so this is where the receipts for the
+    // one job being printed come from.
+    if (req.method === 'GET') {
+      const { data: one } = await getSupabase()
+        .from('commander_print_jobs')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (!one) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Print Job Not Found' }
+        });
+      }
+      if (staff.venue_id && Number(staff.venue_id) !== Number(one.venue_id)) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'WRONG_VENUE', message: 'Print Job Belongs To A Different Venue' }
+        });
+      }
+      return res.status(200).json({ success: true, data: { job: one } });
+    }
+
     const action = req.body?.action;
     const VALID = ['claim', 'printed', 'void', 'requeue', 'reprint'];
     if (!VALID.includes(action)) {

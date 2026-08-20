@@ -133,12 +133,14 @@ export default function TournamentPublic() {
 
     const _c = new AbortController();
     fetchData(_c.signal);
-    const poll = setInterval(() => fetchData(_c.signal), 30000); // fallback - real-time sync handles instant updates
-    return () => { _c.abort(); clearInterval(poll); };
+    return () => { _c.abort(); };
   }, [id, fetchData, router.isReady]);
 
-  // Supabase Realtime - instant sync when tournament data changes
-  useTournamentRealtime(id, fetchData);
+  // Supabase Realtime - instant sync when tournament data changes, with the
+  // fallback poll adapting: 30s while the channel is unproven (unchanged),
+  // 5 minutes once it has actually delivered an event to this page. This is
+  // the public live page, so it is polled by every player in the room at once.
+  useTournamentRealtime(id, fetchData, { poll: true });
 
   // EventBus - refresh on cross-page mutations
   useEffect(() => {

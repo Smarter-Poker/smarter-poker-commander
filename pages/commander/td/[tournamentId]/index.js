@@ -11,6 +11,7 @@ import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
+import ConnectionPill from '../../../../src/components/commander/shared/ConnectionPill';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../../src/engine/EventBus';
 import {
@@ -92,7 +93,6 @@ export default function TDControlCenter() {
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
   }, [toast]);
-  const pollRef = useRef(null);
 
   const fetchFloor = useCallback(async (signal) => {
     if (!tournamentId) return;
@@ -125,17 +125,20 @@ export default function TDControlCenter() {
     }
   }, [tournamentId]);
 
-  // Initial load + Realtime subscription + 5-min fallback poll
-  useTournamentRealtime(tournamentId, fetchFloor);
+  // Initial load + Realtime subscription + adaptive fallback poll.
+  // The Control Center is the one screen that genuinely reads every section
+  // (the activity log walks the whole entry list), so it deliberately does
+  // NOT pass ?include and keeps the full payload.
+  const conn = useTournamentRealtime(tournamentId, fetchFloor, {
+    poll: true,
+    fastMs: 300000,
+    slowMs: 300000
+  });
   useEffect(() => {
     const _c = new AbortController();
     fetchFloor(_c.signal);
     fetchTables(_c.signal);
-    pollRef.current = setInterval(() => fetchFloor(_c.signal), 300000); // 5-min fallback (realtime handles instant updates)
-    return () => {
-      _c.abort();
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { _c.abort(); };
   }, [fetchFloor, fetchTables]);
 
   const handleAssignTables = async () => {
@@ -329,6 +332,11 @@ export default function TDControlCenter() {
                     Break
                   </span>
                 )}
+                {/* Realtime health. Live means the channel is delivering and
+                    the safety poll has backed off. Reconnecting means the
+                    screen is running on the fast fallback poll instead, which
+                    is what it always used to do. */}
+                <ConnectionPill conn={conn} />
               </div>
             </div>
             <div className="flex items-center gap-1">

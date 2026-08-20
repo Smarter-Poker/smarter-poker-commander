@@ -539,7 +539,13 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
         let cancelled = false;
         (async () => {
             try {
-                const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, {});
+                // Payload split: the deal calculator needs the remaining
+                // players with their stacks, and the chip board as a fallback
+                // when no entry rows come back. Nothing else on this payload.
+                const res = await commanderFetch(
+                    `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,stacks,entries`,
+                    {}
+                );
                 const json = await res.json().catch(() => null);
                 if (cancelled) return;
                 let remaining = [];

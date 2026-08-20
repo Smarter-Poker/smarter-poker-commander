@@ -10,6 +10,7 @@ import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
+import ConnectionPill from '../../../../src/components/commander/shared/ConnectionPill';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle, Coins, Scale, CheckCircle2, Wrench } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
@@ -102,7 +103,15 @@ export default function TDTablesMap() {
       const headers = { };
       const fetchOpts = signal ? { headers, signal } : { headers };
       const [floorRes, breakRes] = await Promise.all([
-        commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, fetchOpts),
+        // Payload split: the table map needs the header, the counts, the
+        // alerts (imbalance and seat conflicts), the tables themselves and
+        // the entry list (chipsForEntry looks a stack up by entry_id when it
+        // prints a seat change card). It never reads the clock, the
+        // alternates queue, the eliminated feed or the chip-count board.
+        commanderFetch(
+          `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,alerts,tables,entries`,
+          fetchOpts
+        ),
         commanderFetch(`/api/commander/tournaments/${tournamentId}/auto-break`, fetchOpts).catch(() => null)
       ]);
       const json = await floorRes.json();
@@ -115,12 +124,14 @@ export default function TDTablesMap() {
     finally { setLoading(false); }
   }, [tournamentId]);
 
-  useTournamentRealtime(tournamentId, fetchFloor);
+  // Realtime first. The 30s fallback poll is unchanged while the channel is
+  // unproven or broken, and stretches to 5 minutes only once the channel has
+  // actually delivered an event to this screen.
+  const conn = useTournamentRealtime(tournamentId, fetchFloor, { poll: true });
   useEffect(() => {
     const controller = new AbortController();
     fetchFloor(controller.signal);
-    const interval = setInterval(() => fetchFloor(controller.signal), 30000); // 30s fallback safety poll
-    return () => { controller.abort(); clearInterval(interval); };
+    return () => { controller.abort(); };
   }, [fetchFloor]);
 
   // ── Seat Change Cards ──
@@ -577,7 +588,12 @@ export default function TDTablesMap() {
         {/* Header */}
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-white">Table Map</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-white">Table Map</h1>
+              {/* Realtime health, so the floor knows whether this map is live
+                  or riding the fallback poll. */}
+              <ConnectionPill conn={conn} />
+            </div>
             <p className="text-xs text-[#B0B3B8]">{tables.length} Tables Active, {floor?.stats?.players_remaining || 0} Players</p>
           </div>
           <button onClick={fetchFloor} className="p-2 rounded-lg active:bg-[#3A3B3C]">

@@ -202,7 +202,15 @@ const json = await commanderFetchJSON('/api/commander/clock-presets', { });
   const fetchData = useCallback(async (signal) => {
     if (!id) return;
     try {
-const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, { ...(signal ? { signal } : {}) });
+      // Payload split: the TV clock renders the header, the clock, the stats
+      // (chip leaders and ICM read player_stacks) and the two alert flags. It
+      // never renders the entry list, the table map, the alternates queue or
+      // the eliminated feed, and this screen polls harder than anything else
+      // in the building, so it asks for exactly what it draws.
+      const res = await commanderFetch(
+        `/api/commander/tournaments/${id}/floor-view?include=tournament,clock,stats,stacks,alerts`,
+        { ...(signal ? { signal } : {}) }
+      );
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -252,16 +260,24 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
   }, [id, preset, fetchPreset]);
 
-  // Initial fetch and polling fallback
+  // Initial fetch. The fallback poll now lives in useCommanderSync below.
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
-    const poll = setInterval(() => fetchData(controller.signal), 3000);
-    return () => { controller.abort(); clearInterval(poll); };
+    return () => { controller.abort(); };
   }, [fetchData]);
 
-  // Instant Real-Time Synchronization
-  useCommanderSync(venueId, fetchData, { entities: ['tournaments'] });
+  // Instant Real-Time Synchronization + adaptive fallback poll.
+  // This screen used to poll every 3 seconds, forever, on every TV in the
+  // building. It still does whenever the realtime channel is not proven, so
+  // nothing about the worst case changed. Once the venue channel is
+  // SUBSCRIBED and has actually delivered an event, a level change reaches
+  // this screen over the channel in about a second and the poll drops to a
+  // 15 second safety net. The countdown ticks locally either way.
+  useCommanderSync(venueId, fetchData, {
+    entities: ['tournaments'],
+    poll: { fastMs: 3000, slowMs: 15000 }
+  });
 
   // Sound alert playback
   const playAlert = (type) => {
@@ -357,7 +373,10 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        const res2 = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, { });
+        const res2 = await commanderFetch(
+          `/api/commander/tournaments/${id}/floor-view?include=tournament,clock,stats,stacks,alerts`,
+          { }
+        );
         if (!res2.ok) throw new Error(`Request failed (${res2.status})`);
         const json2 = await res2.json();
         if (json2.success) {

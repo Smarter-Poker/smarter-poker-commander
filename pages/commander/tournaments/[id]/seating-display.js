@@ -43,15 +43,16 @@ export default function SeatingDisplay() {
     setNow(new Date());
   }, [id]);
 
-  // Supabase Realtime - instant sync when player seating changes
-  useTournamentRealtime(id, fetchData);
+  // Supabase Realtime - instant sync when player seating changes, with the
+  // fallback poll adapting: 30s while the channel is unproven (unchanged),
+  // 5 minutes once it has actually delivered an event to this display.
+  useTournamentRealtime(id, fetchData, { poll: true });
 
   useEffect(() => {
     if (!id) return;
     fetchData();
-    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
-    return () => { clearInterval(poll); clearInterval(clock); };
+    return () => { clearInterval(clock); };
   }, [id, fetchData]);
 
 
