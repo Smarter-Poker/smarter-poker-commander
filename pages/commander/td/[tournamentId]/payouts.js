@@ -43,6 +43,10 @@ export default function TDPayouts() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [calcData, setCalcData] = useState(null);
+    // Drives whether Save records money only (deal) or finalizes the finishing
+    // order. The payout route does not return the tournament status, so it is
+    // read from the clock route alongside the payout calculation.
+    const [tournamentStatus, setTournamentStatus] = useState(null);
     const [overrides, setOverrides] = useState({});
     const [showICM, setShowICM] = useState(false);
     const [showDealCalc, setShowDealCalc] = useState(false);
@@ -59,7 +63,11 @@ export default function TDPayouts() {
     const fetchPayouts = useCallback(async () => {
         if (!tournamentId) return;
         try {
-            const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate`, {});
+            const [json, clockJson] = await Promise.all([
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate`, {}),
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/clock`, {}).catch(() => null)
+            ]);
+            if (clockJson?.success) setTournamentStatus(clockJson.data?.tournament?.status || null);
             if (json.success) {
                 setCalcData(json.data);
                 // Initialize overrides from calculated amounts
@@ -102,15 +110,32 @@ export default function TDPayouts() {
                 amount: overrides[p.position] !== undefined ? overrides[p.position] : p.amount
             })).filter(p => p.entry_id || p.player_id);
 
+            // deal_only true records the money without ending anyone's
+            // tournament, which is the right default while play continues. Once
+            // the tournament is completed this same button is what finalizes the
+            // result, so send deal_only false to stamp the finishing order.
+            const isFinalizing = tournamentStatus === 'completed';
+
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/payout`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payouts })
+                body: JSON.stringify({ payouts, deal_only: !isFinalizing })
             });
+            const json = await res.json().catch(() => null);
 
-            if (res.ok) {
+            if (res.ok && json?.success) {
+                setToast({
+                    type: 'success',
+                    text: json.data?.message || (isFinalizing
+                        ? 'Payouts Saved And Finishing Order Recorded.'
+                        : 'Payouts Saved. Play Continues.')
+                });
                 await fetchPayouts();
                 broadcastChange('tournaments');
+            } else {
+                // 2026-08-20 fix: a failed save was silent, so a TD could not tell
+                // a rejected save from a successful one.
+                setToast({ type: 'error', text: json?.error?.message || 'Failed To Save Payouts. Please Try Again.' });
             }
         } catch (err) {
             console.warn('Save payouts error:', err);
@@ -150,12 +175,16 @@ export default function TDPayouts() {
                     <div className="flex items-center justify-between max-w-2xl mx-auto">
                         <div>
                             <h1 className="text-lg font-bold text-white">Payout Calculator</h1>
-                            <p className="text-xs text-[#B0B3B8]">Auto-Calculate Or Override For Deals</p>
+                            <p className="text-xs text-[#B0B3B8]">
+                                {tournamentStatus === 'completed'
+                                    ? 'Save Records The Final Result'
+                                    : 'Auto-Calculate Or Override For Deals'}
+                            </p>
                         </div>
                         <button onClick={handleSave} disabled={saving}
                             className="px-4 py-2 rounded-xl bg-[#31A24C] text-white text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Save
+                            {tournamentStatus === 'completed' ? 'Finalize' : 'Save'}
                         </button>
                     </div>
                 </div>

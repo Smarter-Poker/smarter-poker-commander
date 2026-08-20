@@ -188,7 +188,7 @@ export default function TDControlCenter() {
     );
   }
 
-  const { tournament, clock, stats, alerts, tables } = floor;
+  const { tournament, clock, stats, alerts, tables, alternates } = floor;
   const chipLeader = (stats.player_stacks || []).reduce((top, p) => (!top || p.chips > top.chips) ? p : top, null);
   const statusConf = STATUS_CONFIG[tournament.status] || STATUS_CONFIG.scheduled;
 
@@ -268,6 +268,27 @@ export default function TDControlCenter() {
                 </span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ===== ALTERNATES WAITING ===== */}
+        {stats.players_alternate > 0 && (
+          <div className="px-4 py-2">
+            <button onClick={() => router.push(`/commander/td/${tournamentId}/players?tab=alternate`)}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl active:bg-[#F59E0B]/20">
+              <UserPlus className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+              <div className="flex-1 min-w-0 text-left">
+                <span className="block text-[#F59E0B] text-sm font-medium">
+                  {stats.players_alternate} Alternate{stats.players_alternate !== 1 ? 's' : ''} Waiting
+                </span>
+                {alternates?.[0] && (
+                  <span className="block text-[#B0B3B8] text-xs truncate">
+                    Next Up: {alternates[0].player_name}
+                  </span>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+            </button>
           </div>
         )}
 

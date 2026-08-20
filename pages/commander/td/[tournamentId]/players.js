@@ -40,7 +40,7 @@ export default function TDPlayers() {
 
   useEffect(() => { busEmit.sessionStart('commander-td-tournamentId-players'); }, []);
   const router = useRouter();
-  const { tournamentId, move: moveEntryId } = router.query;
+  const { tournamentId, move: moveEntryId, tab: tabParam } = router.query;
   const [floor, setFloor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -95,6 +95,13 @@ export default function TDPlayers() {
     router.replace(`/commander/td/${tournamentId}/players`, undefined, { shallow: true });
   }, [moveEntryId, floor, moveModal, router, tournamentId]);
 
+  // Deep link support: the Control Center links here with ?tab=alternate so the
+  // TD lands directly on the waiting list instead of hunting for the tab.
+  useEffect(() => {
+    if (!tabParam) return;
+    if (FILTERS.some(f => f.key === tabParam)) setFilter(tabParam);
+  }, [tabParam]);
+
   // Build flat player list from full entries array (all statuses)
   const allPlayers = [];
   if (floor) {
@@ -125,6 +132,10 @@ export default function TDPlayers() {
     if (search && !p.player_name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }).sort((a, b) => {
+    // Alternates are a queue, not a name list: first registered is next up.
+    if (a.status === 'alternate' && b.status === 'alternate') {
+      return (a.queue_position || 9999) - (b.queue_position || 9999);
+    }
     if (a.status === 'active' && b.status !== 'active') return -1;
     if (a.status !== 'active' && b.status === 'active') return 1;
     return (a.player_name || '').localeCompare(b.player_name || '');
@@ -495,6 +506,14 @@ ${receipts.map(r => `<div class="card">
                   }
                 </p>
               </div>
+              {player.status === 'alternate' && player.queue_position && (
+                <span className={`flex-shrink-0 px-2 py-1 rounded-full text-[11px] font-bold whitespace-nowrap border ${player.queue_position === 1
+                  ? 'bg-[#F59E0B]/20 border-[#F59E0B]/50 text-[#F59E0B]'
+                  : 'bg-[#F59E0B]/10 border-[#F59E0B]/30 text-[#F59E0B]'
+                  }`}>
+                  {player.queue_position === 1 ? '#1 Next Up' : `#${player.queue_position}`}
+                </span>
+              )}
               <ChevronDown className="w-4 h-4 text-[#B0B3B8] rotate-[-90deg]" />
             </button>
           ))}
@@ -511,14 +530,23 @@ ${receipts.map(r => `<div class="card">
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setSelectedPlayer(null)}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-[#1877F2]" />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedPlayer.status === 'alternate' ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
+                  <Users className={`w-5 h-5 ${selectedPlayer.status === 'alternate' ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedPlayer.player_name}</h3>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white truncate">{selectedPlayer.player_name}</h3>
+                    {selectedPlayer.status === 'alternate' && selectedPlayer.queue_position && (
+                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#F59E0B]/20 border border-[#F59E0B]/50 text-[#F59E0B] text-[11px] font-bold whitespace-nowrap">
+                        {selectedPlayer.queue_position === 1 ? '#1 Next Up' : `#${selectedPlayer.queue_position}`}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-[#B0B3B8]">
                     {selectedPlayer.status === 'alternate'
-                      ? 'Alternate, Waiting For Seat'
+                      ? selectedPlayer.queue_position
+                        ? `Alternate, Position ${selectedPlayer.queue_position} In Line`
+                        : 'Alternate, Waiting For Seat'
                       : selectedPlayer.table_number
                         ? `Table ${selectedPlayer.table_number} Seat ${selectedPlayer.seat_number}`
                         : 'No Seat Assigned'}
