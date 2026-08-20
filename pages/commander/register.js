@@ -127,6 +127,62 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
   });
   const [activeCalib, setActiveCalib] = useState('NLH');
   const [showCalib, setShowCalib] = useState(false);
+  const liveCalib = useRef(calib);
+  useEffect(() => { liveCalib.current = calib; }, [calib]); // Sync initial mount
+
+  const getDraggableProps = (idKey) => {
+    if (!showCalib) return {};
+    
+    return {
+      style: { cursor: 'move', outline: activeCalib === idKey ? '2px dashed #1877F2' : '2px dotted rgba(255,255,255,0.5)' },
+      onPointerDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveCalib(idKey);
+        
+        const el = document.getElementById('calib-' + idKey);
+        if (!el) return;
+        const parentRect = el.parentElement.getBoundingClientRect();
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLeft = parseFloat(el.style.left) || 0;
+        const startTop = parseFloat(el.style.top) || 0;
+
+        const onMove = (moveEvent) => {
+          const deltaX = moveEvent.clientX - startX;
+          const deltaY = moveEvent.clientY - startY;
+          const newLeft = startLeft + (deltaX / parentRect.width) * 100;
+          const newTop = startTop + (deltaY / parentRect.height) * 100;
+          
+          el.style.left = `${newLeft.toFixed(2)}%`;
+          el.style.top = `${newTop.toFixed(2)}%`;
+          
+          liveCalib.current = {
+            ...liveCalib.current,
+            [idKey]: {
+              ...liveCalib.current[idKey],
+              l: parseFloat(newLeft.toFixed(2)),
+              t: parseFloat(newTop.toFixed(2))
+            }
+          };
+          
+          const labelL = document.getElementById('label-l');
+          const labelT = document.getElementById('label-t');
+          if (labelL) labelL.innerText = newLeft.toFixed(2) + '%';
+          if (labelT) labelT.innerText = newTop.toFixed(2) + '%';
+        };
+
+        const onUp = () => {
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+        };
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      }
+    };
+  };
 
   useEffect(() => {
     if (router.isReady && router.query.calibrate === 'true') {
@@ -496,7 +552,7 @@ const CalibrationPanel = () => {
     if (!showCalib) return null;
 
     // Use a ref to store live values without triggering re-renders
-    const liveCalib = useRef(calib);
+
 
     const handleSlide = (prop, e) => {
       const val = parseFloat(e.target.value);
@@ -1040,6 +1096,7 @@ const CalibrationPanel = () => {
                 return (
                 <button
                   id={`calib-${label}`}
+                  {...getDraggableProps(label)}
                   key={label}
                   type="button"
                   onClick={() => {
@@ -1182,10 +1239,11 @@ const CalibrationPanel = () => {
           >
              {/* Optional circle fill */}
              {selectedTier === 'home_game' && (
-               <div id="calib-dot_home" style={{
+               <div id="calib-dot_home" {...getDraggableProps('dot_home')} style={{
                  position: 'absolute',
                  top: `${calib.dot_home.t}%`,
                  left: `${calib.dot_home.l}%`,
+                 ...(showCalib ? getDraggableProps('dot_home').style : {}),
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1216,10 +1274,11 @@ const CalibrationPanel = () => {
             title="Charity"
           >
              {selectedTier === 'charity' && (
-               <div id="calib-dot_charity" style={{
+               <div id="calib-dot_charity" {...getDraggableProps('dot_charity')} style={{
                  position: 'absolute',
                  top: `${calib.dot_charity.t}%`,
                  left: `${calib.dot_charity.l}%`,
+                 ...(showCalib ? getDraggableProps('dot_charity').style : {}),
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1250,10 +1309,11 @@ const CalibrationPanel = () => {
             title="Clubs"
           >
              {selectedTier === 'club' && (
-               <div id="calib-dot_club" style={{
+               <div id="calib-dot_club" {...getDraggableProps('dot_club')} style={{
                  position: 'absolute',
                  top: `${calib.dot_club.t}%`,
                  left: `${calib.dot_club.l}%`,
+                 ...(showCalib ? getDraggableProps('dot_club').style : {}),
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1282,10 +1342,11 @@ const CalibrationPanel = () => {
             title="I Agree To The Terms And Privacy Policy"
           />
           {agreedToTerms && (
-            <div style={{
+            <div id="calib-checkmark" {...getDraggableProps('checkmark')} style={{
               position: 'absolute',
-              top: '75.7%',
-              left: '15.3%',
+              top: `${calib.checkmark.t}%`,
+              left: `${calib.checkmark.l}%`,
+              ...(showCalib ? getDraggableProps('checkmark').style : {}),
               width: '2.2%',
               height: '2.2%',
               display: 'flex',
