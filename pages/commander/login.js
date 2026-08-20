@@ -346,9 +346,8 @@ export default function CommanderLogin() {
     input:-webkit-autofill:hover, 
     input:-webkit-autofill:focus, 
     input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 50px #040914 inset !important;
+        transition: background-color 9999s ease-in-out 0s;
         -webkit-text-fill-color: white !important;
-        border-radius: 4px;
     }
   `;
 
@@ -391,7 +390,7 @@ export default function CommanderLogin() {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
-              fontSize: 'min(15px, 2vw)',
+              fontSize: 'min(20px, 3.5vw)',
               fontWeight: '600',
               fontFamily: 'Inter, sans-serif'
             }}
@@ -430,14 +429,14 @@ export default function CommanderLogin() {
               style={{
                 position: 'absolute',
                 top: '49%',
-                left: '28%',
-                width: '44%',
+                left: '32%',
+                width: '40%',
                 height: '4.5%',
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
                 color: 'white',
-                fontSize: 'min(15px, 2vw)',
+                fontSize: 'min(17px, 3vw)',
                 zIndex: 10,
                 fontFamily: 'Inter, sans-serif'
               }}
@@ -452,14 +451,14 @@ export default function CommanderLogin() {
               style={{
                 position: 'absolute',
                 top: '56.5%',
-                left: '28%',
-                width: '39%', // Leave room for eye icon
+                left: '32%',
+                width: '35%', // Leave room for eye icon
                 height: '4.5%',
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
                 color: 'white',
-                fontSize: 'min(15px, 2vw)',
+                fontSize: 'min(17px, 3vw)',
                 zIndex: 10,
                 fontFamily: 'Inter, sans-serif'
               }}
