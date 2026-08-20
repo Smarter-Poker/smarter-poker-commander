@@ -428,7 +428,7 @@ export default function CommanderLogin() {
               required
               style={{
                 position: 'absolute',
-                top: '49.8%',
+                top: '50.3%',
                 left: '32%',
                 width: '40%',
                 height: '4.5%',
@@ -450,7 +450,7 @@ export default function CommanderLogin() {
               required
               style={{
                 position: 'absolute',
-                top: '57.6%',
+                top: '58.1%',
                 left: '32%',
                 width: '35%', // Leave room for eye icon
                 height: '4.5%',
@@ -470,7 +470,7 @@ export default function CommanderLogin() {
               onClick={() => setShowPassword(!showPassword)}
               style={{
                 position: 'absolute',
-                top: '57.6%',
+                top: '58.1%',
                 left: '68%',
                 width: '6%',
                 height: '4.5%',
