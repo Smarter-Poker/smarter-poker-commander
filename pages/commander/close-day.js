@@ -111,7 +111,15 @@ const headers = { };
   // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(getVenueId(), fetchStatus, { entities: ['tables', 'games'] });
 
-  const openTables = tables.filter(t => t.status === 'active' || t.status === 'open');
+  // 2026-08-20 fix: this filtered `status === 'active' || status === 'open'`,
+  // and NEITHER value exists on commander_tables (the CHECK allows available /
+  // in_use / reserved / maintenance). openTables was therefore ALWAYS empty, so
+  // the end-of-day guard reported "all clear" with a room full of live tables
+  // and Force Close All had nothing to close. A table is open for business when
+  // it is in_use or reserved and not sitting inactive.
+  const openTables = tables.filter(t =>
+    ['in_use', 'reserved'].includes(t.status) && t.mode !== 'inactive'
+  );
   const allClear = openTables.length === 0 && activeSessions.length === 0 && waitlistCount === 0;
 
   const forceCloseAll = async () => {

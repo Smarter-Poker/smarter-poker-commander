@@ -715,7 +715,315 @@ export default function RegisterPage() {
     );
   }
 
-  // Original return for steps 2-4
+
+  if (step === 2) {
+    const autofillCss = `
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active {
+          transition: background-color 9999s ease-in-out 0s;
+          -webkit-text-fill-color: white !important;
+      }
+    `;
+
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{__html: autofillCss}} />
+        <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+          <Head>
+            <title>Club Commander - Register Step 2</title>
+            <meta name="robots" content="noindex" />
+          </Head>
+
+          <div className="relative w-full h-full z-10">
+            {/* Stretch the image to fill the screen */}
+            <img 
+              src="/images/commander/register-step2-bg.jpg" 
+              className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+              alt="Register Step 2 Background" 
+            />
+
+            <form style={{ display: 'contents' }} onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+              {/* Venue Name Input */}
+              <input
+                type="text"
+                value={clubInfo.name}
+                onChange={e => setClubInfo({ ...clubInfo, name: e.target.value })}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '42.6%',
+                  left: '18%',
+                  width: '63%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Address Input */}
+              <input
+                type="text"
+                value={clubInfo.address}
+                onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '49.7%',
+                  left: '18%',
+                  width: '63%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* City Input */}
+              <input
+                type="text"
+                value={clubInfo.city}
+                onChange={e => setClubInfo({ ...clubInfo, city: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '56.8%',
+                  left: '18%',
+                  width: '21%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* State Select */}
+              <select
+                value={clubInfo.state}
+                onChange={e => setClubInfo({ ...clubInfo, state: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '56.8%',
+                  left: '43.5%',
+                  width: '15%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif',
+                  appearance: 'none',
+                  WebkitAppearance: 'none'
+                }}
+              >
+                <option value="" className="text-black">Select State</option>
+                {US_STATES.map(st => <option key={st} value={st} className="text-black">{st}</option>)}
+              </select>
+
+              {/* Zip Input */}
+              <input
+                type="text"
+                value={clubInfo.zip}
+                onChange={e => setClubInfo({ ...clubInfo, zip: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '56.8%',
+                  left: '65%',
+                  width: '17%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Phone Input */}
+              <input
+                type="tel"
+                value={clubInfo.phone}
+                onChange={e => setClubInfo({ ...clubInfo, phone: e.target.value })}
+                style={{
+                  position: 'absolute',
+                  top: '63.9%',
+                  left: '18%',
+                  width: '29%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Web Input */}
+              <input
+                type="url"
+                value={clubInfo.website}
+                onChange={e => setClubInfo({ ...clubInfo, website: e.target.value })}
+                style={{
+                  position: 'absolute',
+                  top: '63.9%',
+                  left: '52.5%',
+                  width: '29%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Tables Input */}
+              <input
+                type="number"
+                min="1"
+                value={clubInfo.tables}
+                onChange={e => setClubInfo({ ...clubInfo, tables: e.target.value })}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '71.1%',
+                  left: '18%',
+                  width: '63%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Games Offered Toggles */}
+              {[
+                { label: 'NLH', l: 15.6, w: 7 },
+                { label: 'PLO', l: 23.5, w: 7 },
+                { label: 'PLO8', l: 31.4, w: 7 },
+                { label: 'LIMIT HE', l: 39.3, w: 10 },
+                { label: 'STUD', l: 50.2, w: 8 },
+                { label: 'MIXED', l: 59.1, w: 8 },
+                { label: 'TOURNAMENTS', l: 68.0, w: 15 }
+              ].map(({ label, l, w }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    // Match the original logic which uses 'Limit HE', 'Stud', 'Mixed', 'Tournaments' etc.
+                    // But in our label map above, they are uppercase.
+                    // Let's map them to the original strings so the database stays consistent!
+                    const gameMap = {
+                      'NLH': 'NLH',
+                      'PLO': 'PLO',
+                      'PLO8': 'PLO8',
+                      'LIMIT HE': 'Limit HE',
+                      'STUD': 'Stud',
+                      'MIXED': 'Mixed',
+                      'TOURNAMENTS': 'Tournaments'
+                    };
+                    const gameName = gameMap[label];
+                    const active = clubInfo.gamesOffered.includes(gameName);
+                    setClubInfo({
+                      ...clubInfo,
+                      gamesOffered: active 
+                        ? clubInfo.gamesOffered.filter(g => g !== gameName)
+                        : [...clubInfo.gamesOffered, gameName]
+                    });
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '78.5%',
+                    left: `${l}%`,
+                    width: `${w}%`,
+                    height: '2.8%',
+                    // Using a subtle 15% opacity white background for selected state per user feedback to have NO OVERLAYS.
+                    // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
+                    // I will use a very subtle white background
+                    background: clubInfo.gamesOffered.includes({
+                      'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'
+                    }[label]) ? 'rgba(24, 119, 242, 0.3)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    zIndex: 10
+                  }}
+                  title={label}
+                />
+              ))}
+
+              {/* Back Button */}
+              <button
+                type="button"
+                onClick={prevStep}
+                style={{
+                  position: 'absolute',
+                  top: '84.8%',
+                  left: '17%',
+                  width: '10%',
+                  height: '4%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Back"
+              />
+
+              {/* Continue Button */}
+              <button
+                type="submit"
+                disabled={loading || (lockedTier && !agreedToTerms)}
+                style={{
+                  position: 'absolute',
+                  top: '84.8%',
+                  left: '51%',
+                  width: '31%',
+                  height: '4%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Continue"
+              />
+            </form>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Original return for steps 3-4
+
   return (
     <div className="min-h-screen bg-[#18191A]">
       <Head><title>{headerTitle}</title></Head>

@@ -30,12 +30,19 @@ import { commanderFetch } from '../../src/lib/commander/commanderFetch';
  * dead-column note at the top of pages/api/tables/index.js). The lobby TV was
  * therefore drawing seat dots and "Open Seats" counts from stale numbers.
  *
- * Occupancy is derived from rows instead: the `seats` array the tables API
- * merges in from commander_table_seats (status = 'occupied'), falling back to
- * the joined live commander_games row's current_players.
+ * Occupancy is derived from rows instead, in order of trustworthiness:
+ *   1. seated_count from the tables API, which counts ACTIVE
+ *      commander_table_sessions. That table is written on every seat-in and
+ *      cleared on every unseat, so it is the real headcount (92 live rows in
+ *      production against only 8 commander_table_seats rows).
+ *   2. the `seats` array (commander_table_seats, status 'occupied'), which is
+ *      authoritative for WHICH seats are taken when it has rows but is sparse.
+ *   3. the joined live commander_games row's current_players.
  */
 function tableOccupancy(t) {
-  if (Array.isArray(t?.seats)) return t.seats.length;
+  const seatedCount = Number(t?.seated_count);
+  if (Number.isFinite(seatedCount) && seatedCount > 0) return seatedCount;
+  if (Array.isArray(t?.seats) && t.seats.length > 0) return t.seats.length;
   const games = Array.isArray(t?.commander_games) ? t.commander_games : [];
   const live = games.find(g => g && g.status !== 'closed');
   return Number(live?.current_players) || 0;
@@ -105,18 +112,26 @@ const headers = { };
 
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
 
-  // Group active tables by game type.
+  // Group running cash tables by game type.
   //
-  // KNOWN NO-OP (flagged 2026-08-20, deliberately left as-is): 'active' is not
-  // a commander_tables status. The CHECK constraint allows only available /
-  // in_use / reserved / maintenance, so this filter matches nothing and the
-  // cash-game section of the lobby TV is permanently blank. It was NOT flipped
-  // here because the correct replacement is a product call, not a mechanical
-  // one: `mode === 'cash' && status === 'in_use'` would show the right tables,
-  // but commander_table_seats is barely populated in production, so every one
-  // of them would advertise a full rack of open seats to walk-ins. Decide the
-  // seat-tracking story first, then change this line.
-  const activeTables = tables.filter(t => t.status === 'active');
+  // 2026-08-20 fix: this filtered `t.status === 'active'`, which is not a
+  // commander_tables status at all (the CHECK allows available / in_use /
+  // reserved / maintenance), so it matched nothing and the cash-game section of
+  // the lobby TV was permanently blank.
+  //
+  // The reason it was not flipped immediately was a fear that occupancy came
+  // from commander_table_seats, which holds only 8 rows in production, so every
+  // table would have advertised a nearly empty rack to walk-ins. That was the
+  // wrong source: commander_table_sessions carries 92 active rows and is
+  // written on every seat-in and unseat. The tables API now exposes that as
+  // seated_count and tableOccupancy prefers it, so the board shows real
+  // headcounts (verified in production: 2 to 6 players on 9-max tables).
+  //
+  // 'reserved' is included with 'in_use': a table held for an upcoming game is
+  // still part of the room a walk-in is looking at.
+  const activeTables = tables.filter(t =>
+    t.mode === 'cash' && ['in_use', 'reserved'].includes(t.status)
+  );
   const gameGroups = {};
   activeTables.forEach(t => {
     const key = `${t.game_type || 'Cash'} ${t.stakes || ''}`.trim();

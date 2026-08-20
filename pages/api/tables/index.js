@@ -146,6 +146,37 @@ async function handleGet(req, res, staff) {
         }
       } catch { /* seats table may not exist yet - non-critical */ }
 
+      // 2026-08-20: commander_table_seats is sparse in practice (8 rows in
+      // production against 92 live sessions), so a lobby board derived from it
+      // alone advertises a nearly empty room. commander_table_sessions IS
+      // maintained on every seat-in and unseat, so it is the trustworthy
+      // headcount for cash tables. Exposed as seated_count alongside the seat
+      // array, which stays authoritative for WHICH seats are taken when it has
+      // rows.
+      try {
+        const { data: liveSessions } = await getSupabase()
+          .from('commander_table_sessions')
+          .select('table_number')
+          .eq('venue_id', venue_id)
+          .eq('status', 'active')
+          .limit(5000);
+        if (liveSessions && data) {
+          const countByTable = {};
+          liveSessions.forEach(s => {
+            countByTable[s.table_number] = (countByTable[s.table_number] || 0) + 1;
+          });
+          data = data.map(t => ({
+            ...t,
+            seated_count: Math.max(
+              countByTable[t.table_number] || 0,
+              Array.isArray(t.seats) ? t.seats.length : 0
+            )
+          }));
+        }
+      } catch (e) {
+        console.warn('[tables] live session count failed (non-critical):', e?.message || e);
+      }
+
       // Fetch tournament details for tournament tables
       try {
         const tournamentIds = [...new Set((data || []).filter(t => t.tournament_id).map(t => t.tournament_id))];

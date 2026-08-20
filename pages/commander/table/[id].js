@@ -173,10 +173,20 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-bold px-2 py-1 rounded ${table.status === 'active' ? 'bg-[#31A24C]/20 text-[#31A24C]' :
-              table.status === 'open' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
-                'bg-[#3A3B3C] text-[#B0B3B8]'
-              }`}>{table.status}</span>
+            {/* 2026-08-20: keyed off 'active'/'open', neither of which is a
+                commander_tables status (available / in_use / reserved /
+                maintenance), so every badge fell through to the same grey. */}
+            <span className={`text-xs font-bold px-2 py-1 rounded ${table.status === 'in_use' ? 'bg-[#31A24C]/20 text-[#31A24C]' :
+              table.status === 'available' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
+                table.status === 'maintenance' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
+                  'bg-[#3A3B3C] text-[#B0B3B8]'
+              }`}>{
+                table.status === 'in_use' ? 'In Use'
+                  : table.status === 'available' ? 'Available'
+                    : table.status === 'reserved' ? 'Reserved'
+                      : table.status === 'maintenance' ? 'Maintenance'
+                        : table.status
+              }</span>
             <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
               <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
             </button>
