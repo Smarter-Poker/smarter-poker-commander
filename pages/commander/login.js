@@ -333,7 +333,16 @@ export default function CommanderLogin() {
     }
   }
 
-  if (checkingSession) return (
+  
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-[#02050A] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
     <div className="min-h-screen bg-[#02050A] flex items-center justify-center relative overflow-hidden font-rajdhani">
       <SEOHead
         title="Club Commander - Sign In"
@@ -351,12 +360,6 @@ export default function CommanderLogin() {
           className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
           alt="Login Background Mockup" 
         />
-
-        {/* 
-          OVERLAYS 
-          All elements below are absolutely positioned to sit exactly 
-          on top of the drawn elements in the image.
-        */}
 
         {/* 1. SSO Bridge Button overlay */}
         {ssoEmail && (
@@ -480,7 +483,7 @@ export default function CommanderLogin() {
               width: '2%',
               height: '1.7%',
               cursor: 'pointer',
-              opacity: 0.01, /* Almost invisible, but clickable */
+              opacity: 0.01,
               zIndex: 10
             }}
             title="Remember Me"
