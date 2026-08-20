@@ -227,20 +227,28 @@ export default async function handler(req, res) {
       // floor has to know, otherwise the first the room hears about it is two
       // players arguing over one chair. Historic data contains these, and the
       // read-then-write seating path that created them is now atomic.
-      const seatOwners = new Map();
-      const seatConflicts = [];
+      // 2026-08-20 fix: this used to push one row per EXTRA occupant, so a chair
+      // shared by three players produced two rows for the same seat, each
+      // naming only two of them. The console rendered duplicate fix buttons and
+      // disagreed with the seat-conflicts endpoint's count. Group by seat and
+      // emit one row carrying every occupant.
+      const seatOccupants = new Map();
       for (const e of activeEntries) {
         if (!e.table_number || !e.seat_number) continue;
         const key = `${e.table_number}:${e.seat_number}`;
-        if (seatOwners.has(key)) {
-          seatConflicts.push({
-            table_number: e.table_number,
-            seat_number: e.seat_number,
-            players: [seatOwners.get(key), avatarMap[e.player_id]?.display_name || e.player_name].filter(Boolean)
-          });
-        } else {
-          seatOwners.set(key, avatarMap[e.player_id]?.display_name || e.player_name);
-        }
+        if (!seatOccupants.has(key)) seatOccupants.set(key, []);
+        seatOccupants.get(key).push(avatarMap[e.player_id]?.display_name || e.player_name);
+      }
+      const seatConflicts = [];
+      for (const [key, names] of seatOccupants) {
+        if (names.length < 2) continue;
+        const [tableNumber, seatNumber] = key.split(':').map(Number);
+        seatConflicts.push({
+          table_number: tableNumber,
+          seat_number: seatNumber,
+          player_count: names.length,
+          players: names.filter(Boolean)
+        });
       }
 
       // Imbalance check

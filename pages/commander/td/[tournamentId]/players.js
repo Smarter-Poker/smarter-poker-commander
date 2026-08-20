@@ -53,6 +53,9 @@ export default function TDPlayers() {
   const [moveModal, setMoveModal] = useState(null);
   const [moveTable, setMoveTable] = useState('');
   const [moveSeat, setMoveSeat] = useState('');
+  // 'move'   -> POST /move-player, keeps the player's current status
+  // 'assign' -> PUT  /entries/[entryId]/seat, promotes 'registered' to 'seated'
+  const [moveMode, setMoveMode] = useState('move');
   const [confirmAction, setConfirmAction] = useState(null); // { type, player, message }
   const [eliminatorId, setEliminatorId] = useState('');
 
@@ -90,6 +93,7 @@ export default function TDPlayers() {
     if (!moveEntryId || !floor?.entries?.length || moveModal) return;
     const entry = floor.entries.find(e => e.entry_id === moveEntryId);
     if (entry && ['active', 'seated'].includes(entry.status)) {
+      setMoveMode('move');
       setMoveModal({ ...entry, status: entry.status === 'seated' ? 'active' : entry.status });
     }
     // Clear the param so closing the modal doesn't reopen it
@@ -349,17 +353,78 @@ export default function TDPlayers() {
     finally { setActionLoading(null); }
   };
 
+  const closeMoveModal = () => {
+    setMoveModal(null);
+    setMoveTable('');
+    setMoveSeat('');
+    setMoveMode('move');
+  };
+
+  // Same picker, two endpoints. Opening it always clears the previous choice
+  // so a stale table or seat cannot be submitted for the next player.
+  const openMovePlayer = (player) => {
+    setMoveMode('move');
+    setMoveTable('');
+    setMoveSeat('');
+    setMoveModal(player);
+  };
+
+  const openAssignSeat = (player) => {
+    setMoveMode('assign');
+    setMoveTable('');
+    setMoveSeat('');
+    setMoveModal(player);
+  };
+
+  // ── Assign Seat ─────────────────────────────────────────────────────────
+  // PUT /api/commander/tournaments/[id]/entries/[entryId]/seat
+  //     body { table_number, seat_number }
+  //     -> { success, data: { entry_id, player_name, from_table, from_seat,
+  //          to_table, to_seat } }
+  // Error codes: VALIDATION_ERROR (400, seat must be a whole number 1 to 12),
+  //              PLAYER_NOT_ACTIVE (400), SEAT_OCCUPIED (409, names the
+  //              occupant), NOT_FOUND (404), DB_ERROR / SERVER_ERROR (500).
+  // This is the only path that seats a specific registered player in a
+  // specific chair: it advances 'registered' to 'seated', which the bulk seat
+  // draw and the late-registration auto-claim otherwise own. move-player
+  // leaves the status untouched, so it cannot be used to seat a registrant.
+  const performAssignSeat = async () => {
+    if (!moveModal || !moveTable || !moveSeat) return;
+    setActionLoading('move');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${moveModal.entry_id}/seat`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table_number: parseInt(moveTable), seat_number: parseInt(moveSeat) })
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        const d = json.data || {};
+        setToast({
+          type: 'success',
+          text: `${d.player_name || moveModal.player_name} Seated At Table ${d.to_table} Seat ${d.to_seat}.`
+        });
+        closeMoveModal();
+        setSelectedPlayer(null);
+        await fetchFloor();
+        broadcastChange('tournaments');
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || `Could Not Assign That Seat (${res.status}).` });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Could Not Assign That Seat. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
   const handleMove = async () => {
     if (!moveModal || !moveTable || !moveSeat) return;
+    if (moveMode === 'assign') return performAssignSeat();
     setActionLoading('move');
     try {
       const res = await apiCall(`/api/commander/tournaments/${tournamentId}/move-player`, {
         entry_id: moveModal.entry_id, to_table: parseInt(moveTable), to_seat: parseInt(moveSeat)
       });
       if (res.success) {
-        setMoveModal(null);
-        setMoveTable('');
-        setMoveSeat('');
+        closeMoveModal();
         setSelectedPlayer(null);
         await fetchFloor();
         broadcastChange('tournaments');
@@ -511,7 +576,9 @@ export default function TDPlayers() {
                 {selectedPlayer.status === 'active' && (
                   <>
                     <ActionBtn icon={ArrowRightLeft} label="Move Player" color="#1877F2"
-                      onClick={() => { setMoveModal(selectedPlayer); }} />
+                      onClick={() => openMovePlayer(selectedPlayer)} />
+                    <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#1877F2"
+                      onClick={() => openAssignSeat(selectedPlayer)} />
                     <ActionBtn icon={Coins} label="Update Chips" color="#F59E0B"
                       onClick={() => { setChipModal(selectedPlayer); setChipValue(String(selectedPlayer.current_chips || '')); }} />
                     <ActionBtn icon={RotateCcw} label="Rebuy" color="#31A24C"
@@ -533,6 +600,15 @@ export default function TDPlayers() {
                     <ActionBtn icon={RotateCcw} label="Re-Entry" color="#31A24C"
                       onClick={() => navigateTo(`/register?reentry=${selectedPlayer.entry_id}`)} />
                   </>
+                )}
+                {/* Registered but unseated. The bulk seat draw and the late-reg
+                    auto-claim both pick the chair at random, so this is the only
+                    way the floor can put a named player in a named seat
+                    (accessibility, a feature table, or fixing a manual mistake). */}
+                {selectedPlayer.status === 'registered' && (
+                  <ActionBtn icon={UserPlus} label="Assign Seat" color="#31A24C"
+                    loading={actionLoading === 'move'}
+                    onClick={() => openAssignSeat(selectedPlayer)} />
                 )}
                 {selectedPlayer.status === 'alternate' && (
                   <ActionBtn icon={UserPlus} label="Seat Alternate" color="#31A24C"
@@ -586,11 +662,16 @@ export default function TDPlayers() {
 
         {/* ===== MOVE PLAYER MODAL ===== */}
         {moveModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setMoveModal(null)}>
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={closeMoveModal}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-white mb-1">Move Player</h3>
+              <h3 className="text-lg font-bold text-white mb-1">
+                {moveMode === 'assign' ? 'Assign Seat' : 'Move Player'}
+              </h3>
               <p className="text-sm text-[#B0B3B8] mb-4">
-                {moveModal.player_name}, Currently Table {moveModal.table_number} Seat {moveModal.seat_number}
+                {moveModal.player_name}
+                {moveModal.table_number
+                  ? `, Currently Table ${moveModal.table_number} Seat ${moveModal.seat_number}`
+                  : ', No Seat Assigned Yet'}
               </p>
               {/* Quick table buttons */}
               {floor?.tables && (
@@ -671,12 +752,14 @@ export default function TDPlayers() {
                 </div>
               )}
               <div className="flex gap-3">
-                <button onClick={() => setMoveModal(null)}
+                <button onClick={closeMoveModal}
                   className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
                 <button onClick={handleMove}
                   disabled={!moveTable || !moveSeat || actionLoading === 'move'}
                   className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50">
-                  {actionLoading === 'move' ? 'Moving...' : 'Move'}
+                  {actionLoading === 'move'
+                    ? (moveMode === 'assign' ? 'Seating...' : 'Moving...')
+                    : (moveMode === 'assign' ? 'Assign Seat' : 'Move')}
                 </button>
               </div>
             </div>

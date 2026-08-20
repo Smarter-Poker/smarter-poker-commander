@@ -11,7 +11,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle, Coins, Scale } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Loader2, RefreshCw, X, ArrowRightLeft, AlertTriangle, Printer, UserX, DollarSign, FileText, Shuffle, Coins, Scale, CheckCircle2, Wrench } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
@@ -77,6 +77,11 @@ export default function TDTablesMap() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceExecuting, setBalanceExecuting] = useState(false);
   const [balanceFailures, setBalanceFailures] = useState([]);
+  // ── Seat Conflict Repair (seat-conflicts GET -> plan sheet -> POST) ──
+  const [conflictPlan, setConflictPlan] = useState(null);
+  const [conflictLoading, setConflictLoading] = useState(null);
+  const [conflictExecuting, setConflictExecuting] = useState(false);
+  const [conflictResult, setConflictResult] = useState(null);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -331,6 +336,139 @@ export default function TDTablesMap() {
     }
   };
 
+  // ── Seat Conflict Repair ────────────────────────────────────────────────
+  // GET  /api/commander/tournaments/[id]/seat-conflicts
+  //      -> { success, data: { conflicts: [{ table_number, seat_number,
+  //           keeps_seat: { entry_id, player_name, current_chips },
+  //           must_move: [{ entry_id, player_name, current_chips }] }],
+  //           conflict_count, players_to_move } }
+  // POST same path, { action: 'resolve_all' } or { action: 'resolve', entry_id }
+  //      -> { success, data: { resolved: [{ entry_id, player_name, from_table,
+  //           from_seat, to_table, to_seat, chips }], failed?, print_job_id, message } }
+  // The floor-view alert only says a chair is double-booked. The GET is the one
+  // thing that tells the floor WHICH player keeps the seat (earliest
+  // registration wins) and who has to get up, so the plan is always shown
+  // before anything moves. A partial failure still returns HTTP 200 with
+  // success:false, so failures are read from the body, not the status.
+
+  const postSeatConflict = async (body) => {
+    const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/seat-conflicts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const json = await res.json().catch(() => null);
+    return { ok: res.ok, status: res.status, json };
+  };
+
+  // scope 'all' repairs every contested seat, scope 'one' repairs a single
+  // table + seat picked from the conflict list.
+  const loadConflictPlan = async (scope, target) => {
+    setConflictLoading(scope === 'one' ? `${target.table_number}:${target.seat_number}` : 'all');
+    setConflictResult(null);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/seat-conflicts`, {});
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Could Not Read Seat Conflicts.' });
+        return;
+      }
+      const all = Array.isArray(json.data?.conflicts) ? json.data.conflicts : [];
+      const conflicts = scope === 'one'
+        ? all.filter(c => c.table_number === target.table_number && c.seat_number === target.seat_number)
+        : all;
+      if (conflicts.length === 0) {
+        setToast({ type: 'success', text: 'No Seat Conflicts Left. Refreshing The Floor.' });
+        await fetchFloor();
+        return;
+      }
+      setConflictPlan({
+        scope,
+        conflicts,
+        players_to_move: conflicts.reduce((n, c) => n + (c.must_move?.length || 0), 0)
+      });
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Could Not Read Seat Conflicts. Check Console.' });
+    } finally {
+      setConflictLoading(null);
+    }
+  };
+
+  const executeConflictPlan = async () => {
+    const plan = conflictPlan;
+    if (!plan || (plan.conflicts || []).length === 0) return;
+    setConflictExecuting(true);
+    try {
+      const resolved = [];
+      const failed = [];
+      let printJobId = null;
+
+      if (plan.scope === 'one') {
+        // must_move holds more than one player when three entries share a
+        // chair. Each single resolve moves the next one off, so run them in
+        // order and merge the results.
+        const movers = plan.conflicts[0].must_move || [];
+        for (const m of movers) {
+          const { ok, json } = await postSeatConflict({ action: 'resolve', entry_id: m.entry_id });
+          if (!ok && !json?.data) {
+            failed.push({
+              entry_id: m.entry_id,
+              player_name: m.player_name,
+              error: json?.error?.message || 'Move Failed'
+            });
+            continue;
+          }
+          (json?.data?.resolved || []).forEach(r => resolved.push(r));
+          (json?.data?.failed || []).forEach(f => failed.push(f));
+          if (json?.data?.print_job_id) printJobId = json.data.print_job_id;
+        }
+      } else {
+        const { ok, status, json } = await postSeatConflict({ action: 'resolve_all' });
+        if (!ok && !json?.data) {
+          setToast({ type: 'error', text: json?.error?.message || `Seat Conflict Repair Failed (${status}).` });
+          return;
+        }
+        (json?.data?.resolved || []).forEach(r => resolved.push(r));
+        (json?.data?.failed || []).forEach(f => failed.push(f));
+        if (json?.data?.print_job_id) printJobId = json.data.print_job_id;
+      }
+
+      // The server already queued the cards for /commander/print-station.
+      // Print here as well so a TD with a paired printer gets them without
+      // walking over; a blocked popup loses nothing.
+      if (resolved.length > 0) {
+        printSeatChangeCards(resolved.map(r => ({
+          ...readVenueIdentity(),
+          tournament_name: floor?.tournament?.name || 'Tournament',
+          buyin_amount: floor?.tournament?.buyin_amount ?? null,
+          player_name: r.player_name,
+          from_table: r.from_table,
+          from_seat: r.from_seat,
+          to_table: r.to_table,
+          to_seat: r.to_seat,
+          chips: r.chips ?? chipsForEntry(r.entry_id),
+          timestamp: new Date().toISOString()
+        })));
+      }
+
+      setConflictResult({ resolved, failed, print_job_id: printJobId });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Seat Conflict Repair Failed. Check Console.' });
+    } finally {
+      setConflictExecuting(false);
+    }
+  };
+
+  const closeConflictSheet = () => {
+    if (conflictExecuting) return;
+    setConflictPlan(null);
+    setConflictResult(null);
+  };
+
   const handleEliminate = async (entryId, playerName) => {
     setConfirmAction({
       type: 'eliminate',
@@ -412,7 +550,18 @@ export default function TDTablesMap() {
   // Seat conflicts come from floor-view alerts: two live players holding the
   // same table + seat. Mark the table tile and the exact seat dot so the floor
   // can see which chair is double-booked without opening every table.
-  const seatConflicts = floor?.alerts?.seat_conflicts || [];
+  // floor-view emits one alert row per EXTRA occupant, so a chair shared by
+  // three players arrives as two rows for the same table + seat. Merge them so
+  // the list shows one line per contested chair carrying every name, which is
+  // also how the seat-conflicts endpoint counts them.
+  const seatConflicts = Object.values(
+    (floor?.alerts?.seat_conflicts || []).reduce((acc, c) => {
+      const key = `${c.table_number}:${c.seat_number}`;
+      if (!acc[key]) acc[key] = { table_number: c.table_number, seat_number: c.seat_number, players: [] };
+      (c.players || []).forEach(p => { if (p && !acc[key].players.includes(p)) acc[key].players.push(p); });
+      return acc;
+    }, {})
+  );
   const conflictSeatKeys = new Set(seatConflicts.map(c => `${c.table_number}:${c.seat_number}`));
   const conflictTableNumbers = new Set(seatConflicts.map(c => c.table_number));
 
@@ -637,33 +786,62 @@ export default function TDTablesMap() {
               </div>
               <div className="bg-[#EF4444]/10 border-2 border-[#EF4444]/40 rounded-2xl overflow-hidden">
                 <div className="divide-y divide-[#EF4444]/20">
-                  {seatConflicts.map((c, i) => (
-                    <button
-                      key={`${c.table_number}-${c.seat_number}-${i}`}
-                      onClick={() => {
-                        const t = tables.find(tt => tt.table_number === c.table_number);
-                        if (t) setSelectedTable(t);
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-[#EF4444]/15"
-                    >
-                      <span className="px-2 py-1 rounded-lg bg-[#EF4444] text-white text-xs font-bold font-mono flex-shrink-0">
-                        T{c.table_number}-S{c.seat_number}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#EF4444]">
-                          Table {c.table_number} Seat {c.seat_number} Has {c.players?.length || 2} Players
-                        </p>
-                        <p className="text-xs text-[#E4E6EB] truncate">
-                          {(c.players || []).filter(Boolean).join(' And ') || 'Unknown Players'}
-                        </p>
+                  {seatConflicts.map((c, i) => {
+                    const rowKey = `${c.table_number}:${c.seat_number}`;
+                    return (
+                      <div
+                        key={`${c.table_number}-${c.seat_number}-${i}`}
+                        className="w-full px-4 py-3 flex items-center gap-3"
+                      >
+                        <button
+                          onClick={() => {
+                            const t = tables.find(tt => tt.table_number === c.table_number);
+                            if (t) setSelectedTable(t);
+                          }}
+                          className="flex-1 min-w-0 flex items-center gap-3 text-left py-1 active:opacity-70"
+                        >
+                          <span className="px-2 py-1 rounded-lg bg-[#EF4444] text-white text-xs font-bold font-mono flex-shrink-0">
+                            T{c.table_number}-S{c.seat_number}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-[#EF4444]">
+                              Table {c.table_number} Seat {c.seat_number} Has {c.players?.length || 2} Players
+                            </p>
+                            <p className="text-xs text-[#E4E6EB] truncate">
+                              {(c.players || []).filter(Boolean).join(' And ') || 'Unknown Players'}
+                            </p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => loadConflictPlan('one', c)}
+                          disabled={conflictLoading !== null || conflictExecuting}
+                          className="w-11 h-11 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/40 flex items-center justify-center flex-shrink-0 active:bg-[#EF4444]/30 disabled:opacity-50"
+                          title="Resolve This Seat"
+                        >
+                          {conflictLoading === rowKey
+                            ? <Loader2 className="w-4 h-4 text-[#EF4444] animate-spin" />
+                            : <Wrench className="w-4 h-4 text-[#EF4444]" />
+                          }
+                        </button>
                       </div>
-                      <ArrowRightLeft className="w-4 h-4 text-[#EF4444] flex-shrink-0" />
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
-                <p className="px-4 py-2.5 text-xs text-[#B0B3B8] border-t border-[#EF4444]/20">
-                  Open The Table And Move One Player To An Open Seat.
-                </p>
+                <div className="px-4 py-3 border-t border-[#EF4444]/20">
+                  <button
+                    onClick={() => loadConflictPlan('all')}
+                    disabled={conflictLoading !== null || conflictExecuting}
+                    className="w-full py-3.5 rounded-xl bg-[#EF4444] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+                  >
+                    {conflictLoading === 'all'
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Reading Conflicts...</>
+                      : <><Wrench className="w-4 h-4" /> Resolve Conflicts Automatically</>
+                    }
+                  </button>
+                  <p className="mt-2 text-xs text-[#B0B3B8]">
+                    The Earliest Registered Player Keeps The Seat. Everyone After Them Moves To A Real Open Seat And Gets A Seat Change Card.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -931,6 +1109,151 @@ export default function TDTablesMap() {
                     : <><Printer className="w-4 h-4" /> Move {(balanceSuggestion.moves || []).length} &amp; Print</>
                   }
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== SEAT CONFLICT REPAIR SHEET ===== */}
+        {conflictPlan && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+            onClick={closeConflictSheet}>
+            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-[#3A3B3C] flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${conflictResult ? 'bg-[#31A24C]/20' : 'bg-[#EF4444]/20'}`}>
+                  {conflictResult
+                    ? <CheckCircle2 className="w-5 h-5 text-[#31A24C]" />
+                    : <Wrench className="w-5 h-5 text-[#EF4444]" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-white">
+                    {conflictResult ? 'Seat Conflicts Repaired' : 'Resolve Seat Conflicts'}
+                  </h3>
+                  <p className="text-xs text-[#B0B3B8]">
+                    {conflictResult
+                      ? `${conflictResult.resolved.length} Player${conflictResult.resolved.length === 1 ? '' : 's'} Moved${conflictResult.failed.length > 0 ? `, ${conflictResult.failed.length} Failed` : ''}`
+                      : `${conflictPlan.conflicts.length} Contested Seat${conflictPlan.conflicts.length === 1 ? '' : 's'}, ${conflictPlan.players_to_move} Player${conflictPlan.players_to_move === 1 ? '' : 's'} To Move`
+                    }
+                  </p>
+                </div>
+                <button onClick={closeConflictSheet}
+                  disabled={conflictExecuting}
+                  className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50 flex-shrink-0">
+                  <X className="w-5 h-5 text-[#E4E6EB]" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                {/* Plan: who keeps the chair, who gets up. This is the part the
+                    floor-view alert never says. */}
+                {!conflictResult && conflictPlan.conflicts.map(c => (
+                  <div key={`${c.table_number}-${c.seat_number}`}
+                    className="bg-[#3A3B3C]/40 rounded-xl overflow-hidden border border-[#3A3B3C]">
+                    <div className="px-3 py-2 flex items-center gap-2 border-b border-[#3A3B3C]">
+                      <span className="px-2 py-1 rounded-lg bg-[#EF4444] text-white text-xs font-bold font-mono">
+                        T{c.table_number}-S{c.seat_number}
+                      </span>
+                      <span className="text-xs text-[#B0B3B8]">
+                        Table {c.table_number}, Seat {c.seat_number}
+                      </span>
+                    </div>
+                    <div className="px-3 py-2 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-[#31A24C] flex-shrink-0" />
+                      <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                        {c.keeps_seat?.player_name || 'Player'}
+                      </span>
+                      <span className="text-xs text-[#31A24C] font-bold flex-shrink-0">Keeps The Seat</span>
+                    </div>
+                    {(c.must_move || []).map(m => (
+                      <div key={m.entry_id} className="px-3 py-2 flex items-center gap-2 border-t border-[#3A3B3C]/60">
+                        <ArrowRightLeft className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+                        <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                          {m.player_name || 'Player'}
+                        </span>
+                        <span className="text-xs text-[#B0B3B8] font-mono flex-shrink-0">
+                          {formatChips(m.current_chips)}
+                        </span>
+                        <span className="text-xs text-[#F59E0B] font-bold flex-shrink-0">Moves</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                {/* Result: exactly where each player went */}
+                {conflictResult && conflictResult.resolved.length > 0 && (
+                  <div className="space-y-1">
+                    {conflictResult.resolved.map(r => (
+                      <div key={r.entry_id} className="flex items-center gap-2 px-3 py-2.5 bg-[#3A3B3C]/50 rounded-xl">
+                        <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                          {r.player_name || 'Player'}
+                        </span>
+                        <span className="text-xs text-[#B0B3B8] font-mono flex-shrink-0">
+                          T{r.from_table}-S{r.from_seat ?? '-'}
+                        </span>
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-[#1877F2] flex-shrink-0" />
+                        <span className="text-xs font-bold text-[#31A24C] font-mono flex-shrink-0">
+                          T{r.to_table}-S{r.to_seat}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {conflictResult && conflictResult.resolved.length === 0 && (
+                  <p className="text-sm text-[#B0B3B8] text-center py-6">No Players Were Moved.</p>
+                )}
+
+                {conflictResult && conflictResult.failed.length > 0 && (
+                  <div className="bg-[#EF4444]/10 border border-[#EF4444]/40 rounded-xl overflow-hidden">
+                    <p className="px-3 py-2 text-xs font-bold text-[#EF4444] uppercase tracking-wider border-b border-[#EF4444]/20">
+                      {conflictResult.failed.length} Player{conflictResult.failed.length === 1 ? '' : 's'} Could Not Be Moved
+                    </p>
+                    <div className="divide-y divide-[#EF4444]/15">
+                      {conflictResult.failed.map(f => (
+                        <div key={f.entry_id || f.player_name} className="px-3 py-2">
+                          <p className="text-sm font-medium text-[#E4E6EB]">{f.player_name || 'Player'}</p>
+                          <p className="text-xs text-[#EF4444]">{f.error || 'Move Failed'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {conflictResult?.print_job_id && (
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl">
+                    <Printer className="w-4 h-4 text-[#1877F2] flex-shrink-0" />
+                    <p className="text-xs text-[#E4E6EB]">
+                      Seat Change Cards Queued At The Print Station.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 pb-5 pt-2 border-t border-[#3A3B3C] flex gap-3">
+                {conflictResult ? (
+                  <button onClick={closeConflictSheet}
+                    className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-base font-bold active:scale-[0.98] transition-transform">
+                    Done
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={closeConflictSheet}
+                      disabled={conflictExecuting}
+                      className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                      Cancel
+                    </button>
+                    <button onClick={executeConflictPlan}
+                      disabled={conflictExecuting || conflictPlan.players_to_move === 0}
+                      className="flex-1 py-3.5 rounded-xl bg-[#EF4444] text-white font-bold flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-50">
+                      {conflictExecuting
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Moving...</>
+                        : <><Printer className="w-4 h-4" /> Move {conflictPlan.players_to_move} &amp; Print</>
+                      }
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
