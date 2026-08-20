@@ -224,7 +224,8 @@ export default async function handler(req, res) {
                     targetType: 'poker_venue',
                     targetId: subscription.venue_id,
                     targetName: subscription.venue?.name || null,
-                    metadata: { via: 'club_switcher', role: 'owner' },
+                    // logAudit's RPC has no target_name param - carry it in metadata
+                    metadata: { via: 'club_switcher', role: 'owner', venue_name: subscription.venue?.name || null },
                     req,
                 });
             } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
@@ -288,7 +289,8 @@ export default async function handler(req, res) {
                 targetType: 'poker_venue',
                 targetId: staffRow.venue_id,
                 targetName: subscription.venue?.name || null,
-                metadata: { via: 'club_switcher', role: staffRow.role },
+                // logAudit's RPC has no target_name param - carry it in metadata
+                metadata: { via: 'club_switcher', role: staffRow.role, venue_name: subscription.venue?.name || null },
                 req,
             });
         } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
