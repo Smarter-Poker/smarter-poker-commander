@@ -11,7 +11,12 @@
  * - Returns printable receipt data for wireless printer
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+// 2026-08-20 security fix: the GET branch returns the full break plan,
+// including every affected player's name and their from/to table and seat.
+// guardWriteStaff passes GET through WITHOUT verifying anything, so that
+// seating map was readable by anyone holding the tournament id. guardStaff
+// requires a verified staff session on every method.
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id: tournamentId } = req.query;
     if (!tournamentId) return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });

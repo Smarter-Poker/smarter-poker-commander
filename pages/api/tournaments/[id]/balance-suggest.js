@@ -5,7 +5,12 @@
  * Algorithm: break table with fewest players if possible, otherwise move from fullest to emptiest
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+// 2026-08-20 security fix: this route is GET-only and returns player names,
+// table numbers and seat positions. guardWriteStaff passes GET through
+// WITHOUT checking anything (its own docstring says so), so the whole seating
+// map of any live tournament was readable by anyone holding the id. guardStaff
+// requires a verified staff session on every method.
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -31,7 +36,7 @@ export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
