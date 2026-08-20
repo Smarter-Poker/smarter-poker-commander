@@ -343,25 +343,31 @@ export default function CommanderLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#02050A] flex items-center justify-center relative overflow-hidden font-rajdhani">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden font-rajdhani bg-black">
       <SEOHead
         title="Club Commander - Sign In"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
 
+      {/* Full-screen blurred background to prevent any solid black space on widescreen monitors */}
       <div 
-        className="relative w-full max-w-[809px] mx-auto shadow-2xl" 
-        style={{ aspectRatio: '809/968' }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-3xl scale-110 opacity-60" 
+        style={{ backgroundImage: 'url(/images/commander/login-bg-v2.jpg)' }} 
+      />
+
+      <div 
+        className="relative w-full max-w-[600px] mx-auto z-10 shadow-[0_0_100px_rgba(0,0,0,0.8)]" 
+        style={{ aspectRatio: '841/1008' }}
       >
         {/* Exact User Provided Background Image */}
         <img 
-          src="/images/commander/login-bg-new.jpg" 
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none" 
-          alt="Login Background Mockup" 
+          src="/images/commander/login-bg-v2.jpg" 
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none rounded-2xl" 
+          alt="Login Background" 
         />
 
-        {/* 1. SSO Bridge Button overlay */}
+        {/* 1. SSO Bridge Button overlay / Recent Login */}
         {ssoEmail && (
           <button
             type="button"
@@ -369,24 +375,25 @@ export default function CommanderLogin() {
             disabled={ssoLoading || loading}
             style={{
               position: 'absolute',
-              top: '26.3%',
-              left: '25.7%',
-              width: '48.6%',
-              height: '6.2%',
+              top: '26.8%',
+              left: '23%',
+              width: '54%',
+              height: '5.5%',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
               zIndex: 10,
               display: 'flex',
               alignItems: 'center',
-              paddingLeft: '15%',
+              justifyContent: 'center',
               color: 'white',
-              fontSize: '14px',
-              fontWeight: '600'
+              fontSize: '15px',
+              fontWeight: '600',
+              fontFamily: 'Inter, sans-serif'
             }}
             title="Continue with SSO"
           >
-            {ssoLoading ? 'Signing In...' : ssoEmail}
+            {ssoLoading ? 'Signing In...' : `Continue As ${ssoEmail}`}
           </button>
         )}
 
@@ -397,9 +404,9 @@ export default function CommanderLogin() {
           disabled={loading}
           style={{
             position: 'absolute',
-            top: '38.0%',
-            left: '25.7%',
-            width: '48.6%',
+            top: '37.8%',
+            left: '26%',
+            width: '48%',
             height: '4.5%',
             background: 'transparent',
             border: 'none',
@@ -419,16 +426,17 @@ export default function CommanderLogin() {
             required
             style={{
               position: 'absolute',
-              top: '50.2%',
-              left: '30%',
-              width: '43.3%',
-              height: '4.3%',
+              top: '49%',
+              left: '28%',
+              width: '44%',
+              height: '4.5%',
               background: 'transparent',
               border: 'none',
               outline: 'none',
               color: 'white',
-              fontSize: '16px',
-              zIndex: 10
+              fontSize: '15px',
+              zIndex: 10,
+              fontFamily: 'Inter, sans-serif'
             }}
           />
 
@@ -440,16 +448,17 @@ export default function CommanderLogin() {
             required
             style={{
               position: 'absolute',
-              top: '58.7%',
-              left: '30%',
-              width: '38%', // Leave room for eye icon
-              height: '4.7%',
+              top: '56.5%',
+              left: '28%',
+              width: '39%', // Leave room for eye icon
+              height: '4.5%',
               background: 'transparent',
               border: 'none',
               outline: 'none',
               color: 'white',
-              fontSize: '16px',
-              zIndex: 10
+              fontSize: '15px',
+              zIndex: 10,
+              fontFamily: 'Inter, sans-serif'
             }}
           />
 
@@ -459,10 +468,10 @@ export default function CommanderLogin() {
             onClick={() => setShowPassword(!showPassword)}
             style={{
               position: 'absolute',
-              top: '58.7%',
-              left: '69%',
-              width: '5%',
-              height: '4.7%',
+              top: '56.5%',
+              left: '68%',
+              width: '6%',
+              height: '4.5%',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -478,10 +487,10 @@ export default function CommanderLogin() {
             onChange={(e) => setRememberMe(e.target.checked)}
             style={{
               position: 'absolute',
-              top: '64.5%',
-              left: '25.7%',
+              top: '62%',
+              left: '26%',
               width: '2%',
-              height: '1.7%',
+              height: '2%',
               cursor: 'pointer',
               opacity: 0.01,
               zIndex: 10
@@ -492,8 +501,8 @@ export default function CommanderLogin() {
           {rememberMe && (
             <div style={{
               position: 'absolute',
-              top: '64.5%',
-              left: '25.7%',
+              top: '62%',
+              left: '26%',
               width: '1.8%',
               height: '1.5%',
               background: '#0070f3',
@@ -513,9 +522,9 @@ export default function CommanderLogin() {
             href="#"
             style={{
               position: 'absolute',
-              top: '64.5%',
-              left: '60%',
-              width: '14%',
+              top: '62%',
+              left: '55%',
+              width: '19%',
               height: '2%',
               background: 'transparent',
               cursor: 'pointer',
@@ -530,10 +539,10 @@ export default function CommanderLogin() {
             disabled={loading}
             style={{
               position: 'absolute',
-              top: '68.0%',
-              left: '25.7%',
-              width: '48.6%',
-              height: '5.4%',
+              top: '65.2%',
+              left: '26%',
+              width: '48%',
+              height: '4.5%',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -553,12 +562,12 @@ export default function CommanderLogin() {
         {error && (
           <div style={{
             position: 'absolute',
-            top: '76%',
-            left: '25.7%',
-            width: '48.6%',
+            top: '70%',
+            left: '26%',
+            width: '48%',
             textAlign: 'center',
             color: '#F02849',
-            backgroundColor: 'rgba(0,0,0,0.7)',
+            backgroundColor: 'rgba(0,0,0,0.8)',
             padding: '4px',
             borderRadius: '4px',
             fontSize: '14px',
@@ -573,10 +582,10 @@ export default function CommanderLogin() {
           href="/commander/register"
           style={{
             position: 'absolute',
-            top: '77.9%',
-            left: '25.7%',
-            width: '48.6%',
-            height: '4.7%',
+            top: '73.5%',
+            left: '26%',
+            width: '48%',
+            height: '4.5%',
             background: 'transparent',
             cursor: 'pointer',
             zIndex: 10
