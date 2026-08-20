@@ -66,11 +66,6 @@ const ENTRY_PAYMENT_METHODS = ['cash', 'card', 'credit', 'comp', 'chips', 'trans
 // cash-drawer insert fail, so it is only forwarded when it is legal there.
 const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'comp', 'marker'];
 
-// registerPlayerForTournament returns a { status, body } pair instead of
-// writing to `res`, so the same code path serves the HTTP route AND the
-// waitlist conversion route (which registers several players in one request).
-const _result = (status, body) => ({ status, body });
-
 /**
  * Resolve the verified staff session to a real commander_staff.id.
  * verifyStaffSession can return a SYNTHETIC owner object whose `id` is an auth
@@ -138,7 +133,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
   let paymentMethod = null;
   if (rawPaymentMethod !== undefined && rawPaymentMethod !== null && rawPaymentMethod !== '') {
     if (!ENTRY_PAYMENT_METHODS.includes(rawPaymentMethod)) {
-      return _result(400, {
+      return res.status(400).json({
         success: false,
         error: {
           code: 'INVALID_PAYMENT_METHOD',
@@ -150,7 +145,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
   }
 
   if (!player_id) {
-    return _result(400, {
+    return res.status(400).json({
       success: false,
       error: { code: 'MISSING_FIELDS', message: 'player_id Required' }
     });
@@ -170,8 +165,8 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
   // so: the new row was indistinguishable from a first-time registration and the
   // two entries were never linked. reentry_of carries the busted entry's id, is
   // validated below, and is stamped on the new row.
-  const reentryOf = (typeof body?.reentry_of === 'string' && body.reentry_of.trim())
-    ? body.reentry_of.trim()
+  const reentryOf = (typeof req.body?.reentry_of === 'string' && req.body.reentry_of.trim())
+    ? req.body.reentry_of.trim()
     : null;
 
   try {
@@ -183,20 +178,15 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
       .maybeSingle();
 
     if (tError || !tournament) {
-      return _result(404, {
+      return res.status(404).json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
 
-    // Check if registration is open.
-    // 2026-08-20 fix: 'registration' is the value
-    // commander_tournaments_status_check actually allows; 'registering' is not
-    // and never matched a row. A tournament whose registration had been OPENED
-    // was therefore the one state in which nobody could register. Both are
-    // listed so an older caller sending the wrong value still resolves.
-    if (!['scheduled', 'registration', 'registering', 'running'].includes(tournament.status)) {
-      return _result(400, {
+    // Check if registration is open
+    if (!['scheduled', 'registering', 'running'].includes(tournament.status)) {
+      return res.status(400).json({
         success: false,
         error: { code: 'REGISTRATION_CLOSED', message: 'Registration Is Closed' }
       });
@@ -205,7 +195,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
     // 2026-07-25 audit fix: enforce late-registration cutoff (current_level is 0-indexed)
     if (tournament.status === 'running' && tournament.late_registration_levels != null) {
       if ((tournament.current_level + 1) > tournament.late_registration_levels) {
-        return _result(400, {
+        return res.status(400).json({
           success: false,
           error: { code: 'LATE_REG_CLOSED', message: 'Late Registration Is Closed' }
         });
@@ -229,19 +219,19 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
           tournamentId, reentry_of: reentryOf,
           code: priorErr.code, message: priorErr.message, details: priorErr.details,
         });
-        return _result(500, {
+        return res.status(500).json({
           success: false,
           error: { code: 'DB_ERROR', message: 'Failed To Read The Original Entry' }
         });
       }
       if (!prior) {
-        return _result(404, {
+        return res.status(404).json({
           success: false,
           error: { code: 'ORIGINAL_ENTRY_NOT_FOUND', message: 'The Original Entry Was Not Found In This Tournament' }
         });
       }
       if (prior.player_id && String(prior.player_id) !== String(player_id)) {
-        return _result(400, {
+        return res.status(400).json({
           success: false,
           error: {
             code: 'REENTRY_PLAYER_MISMATCH',
@@ -252,7 +242,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
       // Only a busted entry can be re-entered. A player who is still in the
       // event wants a REBUY (same entry, more chips), not a second entry.
       if (prior.status !== 'eliminated') {
-        return _result(400, {
+        return res.status(400).json({
           success: false,
           error: {
             code: 'REENTRY_NOT_ELIGIBLE',
@@ -299,7 +289,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
 
     const { data: existing } = existingResult;
     if (existing) {
-      return _result(400, {
+      return res.status(400).json({
         success: false,
         error: { code: 'ALREADY_REGISTERED', message: 'Already Registered' }
       });
@@ -312,8 +302,8 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
     const { count } = capacityResult;
     let registerAsAlternate = false;
     if (tournament.max_entries && count >= tournament.max_entries) {
-      if (body?.as_alternate === false) {
-        return _result(400, {
+      if (req.body?.as_alternate === false) {
+        return res.status(400).json({
           success: false,
           error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' }
         });
@@ -323,7 +313,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
 
     const { data: exclusion } = exclusionResult;
     if (exclusion) {
-      return _result(403, {
+      return res.status(403).json({
         success: false,
         error: {
           code: 'SELF_EXCLUDED',
@@ -352,7 +342,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
       // includes the fee, so the comparison must too).
       const newCharge = (tournament.buyin_amount || 0) + (tournament.buyin_fee || 0);
       if (todaySpend + newCharge > limits.daily_limit) {
-        return _result(403, {
+        return res.status(403).json({
           success: false,
           error: {
             code: 'LIMIT_EXCEEDED',
@@ -414,7 +404,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
     let pName = null;
     if (totalAmount > 0) {
       const { data: profile } = await getSupabase().from('profiles').select('display_name, first_name, last_name').eq('id', player_id).maybeSingle();
-      pName = body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
+      pName = req.body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
 
       // 2026-07-28 audit fix: link the cash-drawer row to the tournament
       // (commander_cash_transactions.tournament_id), and surface the insert
@@ -543,7 +533,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
 
     const registeredWord = priorEntry ? 'Re-Entered' : 'Registered';
 
-    return _result(201, {
+    return res.status(201).json({
       success: true,
       data: {
         entry,
@@ -567,9 +557,9 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
     // late registration. That is a seat collision the cashier can act on, not a
     // server fault, so it must never surface as a 500.
     if (isUniqueViolation(error)) {
-      return _result(409, { success: false, error: conflictError(error, { action: 'Registration' }) });
+      return res.status(409).json({ success: false, error: conflictError(error, { action: 'Registration' }) });
     }
-    return _result(500, {
+    return res.status(500).json({
       success: false,
       error: { code: 'SERVER_ERROR', message: 'Failed To Register' }
     });

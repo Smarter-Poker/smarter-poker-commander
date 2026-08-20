@@ -88,6 +88,11 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Blind structure validation, reported up by BlindStructureEditor. Errors
+  // block creation; warnings are displayed by the editor and do not block.
+  const [structureValidation, setStructureValidation] = useState(null);
+  const structureErrors = (structureValidation?.errors || []).filter(e => e.severity === 'error');
+
   // Suggested table count: one nine-handed table per nine entrants, minimum 2.
   // Two is the floor because automatic table breaking never fires with fewer
   // than two tables assigned to the tournament.
@@ -144,6 +149,20 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!name.trim() || !scheduledStart) return;
+
+    // The create API runs the same rules and answers 400. Stopping here means
+    // the message names the level and the reason, and the blind structure
+    // section is opened on the exact rows that are wrong.
+    if (structureErrors.length > 0) {
+      setShowBlinds(true);
+      setError(
+        `Blind Structure Cannot Be Saved: ${structureErrors[0].message}` +
+        (structureErrors.length > 1
+          ? ` And ${(structureErrors.length - 1).toLocaleString()} More Problem${structureErrors.length - 1 === 1 ? '' : 's'}.`
+          : '')
+      );
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -689,7 +708,13 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                   <Layers className="w-4 h-4 text-[#22D3EE]" />
                   Blind Structure ({blindStructure.filter(l => !l.is_break).length} Levels)
                 </span>
-                <span className="text-xs text-[#22D3EE]">{estimateDuration(blindStructure)}</span>
+                {structureErrors.length > 0 ? (
+                  <span className="text-xs font-semibold text-[#EF4444]">
+                    {structureErrors.length.toLocaleString()} Error{structureErrors.length === 1 ? '' : 's'}
+                  </span>
+                ) : (
+                  <span className="text-xs text-[#22D3EE]">{estimateDuration(blindStructure)}</span>
+                )}
               </button>
               {showBlinds && (
                 <div className="mt-2 p-3 bg-[#0A1628] rounded-lg border border-[#1E3A5F]">
@@ -697,6 +722,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                     structure={blindStructure}
                     onChange={setBlindStructure}
                     readOnly={false}
+                    onValidationChange={setStructureValidation}
                   />
                 </div>
               )}

@@ -18,6 +18,7 @@ import {
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { sendSeatNotification } from '../../../../../../src/lib/commander/twilio';
 import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
+import { notifyNextAlternates } from '../../../../../../src/lib/commander/alternateNotifications';
 
 let _supabase = null;
 function getSupabase() {
@@ -167,6 +168,11 @@ export default async function handler(req, res) {
         data: { type: 'alternate_seated', tournament_id: tournamentId }
       }).catch(err => console.warn('[promote.js] Push failed:', err.message));
     }
+
+    // The queue just moved up by one. Everyone behind this player is now in a
+    // different position and nobody would otherwise be told. Fire and forget:
+    // a push failure must never fail a seating that has already happened.
+    notifyNextAlternates(getSupabase(), tournament);
 
     await logAction({ action: 'promote_alternate', category: 'tournament' }, {
       venueId: tournament.venue_id,

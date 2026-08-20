@@ -14,6 +14,7 @@ import { TOURNAMENT_TEMPLATES, TOURNAMENT_TYPES, formatBuyin, formatChips } from
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import { validateBlindStructure } from '../../src/lib/commander/structureValidation';
 
 const ICON_MAP = {
     Trophy, Zap, Crown, Target, RefreshCw, Rocket, Crosshair };
@@ -70,6 +71,19 @@ export default function TournamentSettingsPage() {
     }
 
     async function applyTemplate(template) {
+        // The create API rejects an unrunnable structure with a 400. Catch it
+        // here first so the TD gets the specific level and reason instead of
+        // "Failed To Create Tournament".
+        const check = validateBlindStructure(template.blind_structure);
+        const hard = check.errors.filter(e => e.severity === 'error');
+        if (hard.length > 0) {
+            setToast({
+                type: 'error',
+                text: `This Template's Blind Structure Cannot Be Used: ${hard[0].message}`
+            });
+            return;
+        }
+
         setCreating(true);
         setCreateSuccess(null);
 

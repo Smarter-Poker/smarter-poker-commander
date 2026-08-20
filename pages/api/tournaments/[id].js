@@ -10,6 +10,7 @@ import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/
 import { logAction } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { structureRejection, normalizeStructure } from '../../../src/lib/commander/structureValidation';
 
 let _supabase = null;
 function getSupabase() {
@@ -198,6 +199,15 @@ async function updateTournament(req, res, id, staff) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: structErr } });
     }
 
+    // Deep structure gate. Only runs when a structure is actually being sent,
+    // so a status-only PATCH on an event with a legacy structure is untouched,
+    // but nobody can SAVE blinds that go down, a 0-minute level, an ante above
+    // the big blind, or a break on row one.
+    const blindRejection = structureRejection(req.body.blind_structure);
+    if (blindRejection) {
+      return res.status(400).json({ success: false, error: blindRejection });
+    }
+
     // 2026-08-20 audit fix: this spread the WHOLE request body into the UPDATE
     // and only removed four keys. The TD screen round-trips the tournament
     // object, which carries embedded relations (poker_venues,
@@ -222,6 +232,12 @@ async function updateTournament(req, res, id, staff) {
     const updates = { updated_at: new Date().toISOString() };
     for (const key of EDITABLE_COLUMNS) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    // Persist the canonical key shape. A client sending the legacy
+    // { small, big } rows used to store a structure no screen could read.
+    if (updates.blind_structure !== undefined) {
+      updates.blind_structure = normalizeStructure(updates.blind_structure);
     }
 
     if (Object.keys(updates).length === 1) {

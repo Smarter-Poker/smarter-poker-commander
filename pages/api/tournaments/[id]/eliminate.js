@@ -17,6 +17,7 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
+import { notifyNextAlternates } from '../../../../src/lib/commander/alternateNotifications';
 import { isUniqueViolation, conflictError, conflictMessage } from '../../../../src/lib/commander/dbErrors';
 // Shared pure payout-math helpers (same math the payout screen uses, so the
 // winner's payout here always matches position 1 there).
@@ -412,6 +413,11 @@ export default async function handler(req, res) {
         try {
           promotedAlternate = await promoteNextAlternate(getSupabase(), freshTournament);
           if (promotedAlternate) {
+            // The queue advanced. Tell the next few where they now stand.
+            // Fire and forget: the bust is already recorded and a push outage
+            // must not turn a successful elimination into a 500.
+            notifyNextAlternates(getSupabase(), freshTournament);
+
             await logAction({ action: 'promote_alternate_auto', category: 'tournament' }, {
               venueId: freshTournament.venue_id,
               staffId: _g?.id,

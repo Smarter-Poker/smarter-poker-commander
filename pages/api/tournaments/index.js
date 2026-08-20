@@ -10,6 +10,7 @@ import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/
 import { logAction } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { structureRejection, normalizeStructure } from '../../../src/lib/commander/structureValidation';
 
 let _supabase = null;
 function getSupabase() {
@@ -237,6 +238,13 @@ async function createTournament(req, res, staff) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: structErr } });
     }
 
+    // A structure that cannot be run is rejected here, not discovered by the
+    // clock at level 3 with a full field in their seats.
+    const blindRejection = structureRejection(blind_structure);
+    if (blindRejection) {
+      return res.status(400).json({ success: false, error: blindRejection });
+    }
+
     // Verify staff belongs to this venue
     if (staff.venue_id !== undefined && String(staff.venue_id) !== String(venue_id)) {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
@@ -258,7 +266,10 @@ async function createTournament(req, res, staff) {
         min_entries: min_entries || 2,
         max_entries,
         guaranteed_pool,
-        blind_structure: blind_structure || [],
+        // Stored in canonical { small_blind, big_blind, duration } shape. A
+        // caller sending the legacy { small, big } keys used to persist a
+        // structure no screen in the app could read (0/0 on the clock).
+        blind_structure: normalizeStructure(blind_structure),
         break_schedule: break_schedule || [],
         payout_structure: payout_structure || [],
         paying_places: paying_places != null ? paying_places : (Array.isArray(payout_structure) ? payout_structure.length : null),

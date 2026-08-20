@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
-import { Trophy, Search, Users, Loader2, CheckCircle2, AlertTriangle, DollarSign, UserPlus, RotateCcw, X, Printer } from 'lucide-react';
+import { Trophy, Search, Users, Loader2, CheckCircle2, AlertTriangle, DollarSign, UserPlus, RotateCcw, X, Printer, ListChecks } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import useDebounce from '../../../../src/hooks/useDebounce';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
@@ -41,6 +41,18 @@ export default function TDRegisterPlayer() {
     // where they were sitting. The cashier screen has always shown it.
     const [lastResult, setLastResult] = useState(null);
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+    // ── Cash waitlist conversion ──
+    // "The 2/5 is not going to run, put them all in the 7 o'clock" used to mean
+    // typing every name into the search above. These are the room's waiting
+    // cash players; ticking them registers them into this tournament through
+    // the same registration path (buy-in, cash drawer, seat draw, receipts).
+    const [waitlist, setWaitlist] = useState([]);
+    const [waitlistLoading, setWaitlistLoading] = useState(false);
+    const [waitlistOpen, setWaitlistOpen] = useState(false);
+    const [selectedWaitlist, setSelectedWaitlist] = useState([]);
+    const [converting, setConverting] = useState(false);
+    const [convertResult, setConvertResult] = useState(null);
 
     useEffect(() => {
         try {
@@ -233,6 +245,58 @@ export default function TDRegisterPlayer() {
         }
     };
 
+    // ── Waitlist: load, select, convert ──
+    const fetchWaitlist = useCallback(async () => {
+        const vid = venueId || tournament?.venue_id;
+        if (!vid) return;
+        setWaitlistLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/waitlist?venue_id=${vid}`);
+            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            const json = await res.json();
+            setWaitlist(Array.isArray(json?.data) ? json.data : []);
+        } catch (err) {
+            console.warn('[td/register] waitlist load failed:', err?.message || err);
+            setWaitlist([]);
+        } finally { setWaitlistLoading(false); }
+    }, [venueId, tournament]);
+
+    const toggleWaitlistOpen = () => {
+        const next = !waitlistOpen;
+        setWaitlistOpen(next);
+        if (next && waitlist.length === 0) fetchWaitlist();
+    };
+
+    const toggleWaitlistRow = (id) => {
+        setSelectedWaitlist(prev => (prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]));
+    };
+
+    const convertWaitlist = async () => {
+        if (selectedWaitlist.length === 0) return;
+        setConverting(true);
+        setConvertResult(null);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/convert-waitlist`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ waitlist_ids: selectedWaitlist })
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok || !json.success) {
+                setMessage({ type: 'error', text: json.error?.message || 'Waitlist Conversion Failed' });
+                return;
+            }
+            setConvertResult(json.data);
+            setMessage({ type: 'success', text: json.data?.message || 'Waitlist Converted.' });
+            setSelectedWaitlist([]);
+            broadcastChange('tournaments');
+            await fetchWaitlist();
+        } catch (err) {
+            console.warn('[td/register] conversion failed:', err?.message || err);
+            setMessage({ type: 'error', text: 'Network Error. Try Again.' });
+        } finally { setConverting(false); }
+    };
+
     useEffect(() => {
         if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); }
     }, [message]);
@@ -403,6 +467,113 @@ export default function TDRegisterPlayer() {
                                 <p style={{ textAlign: 'center', fontSize: 13, color: '#B0B3B8', padding: '12px 0' }}>No Players Found</p>
                             )}
                         </>
+                    )}
+                </div>
+
+                {/* ===== CASH WAITLIST CONVERSION ===== */}
+                <div style={{ background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #3A3B3C' }}>
+                    <button
+                        onClick={toggleWaitlistOpen}
+                        style={{
+                            width: '100%', minHeight: 44, background: 'none', border: 'none', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, color: '#E4E6EB' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <ListChecks size={16} color="#F59E0B" />
+                            <span style={{ fontSize: 13, fontWeight: 700 }}>Convert From Cash Waitlist</span>
+                        </span>
+                        <span style={{ fontSize: 11, color: '#B0B3B8' }}>
+                            {waitlistOpen ? 'Hide' : (waitlist.length > 0 ? `${waitlist.length.toLocaleString()} Waiting` : 'Show')}
+                        </span>
+                    </button>
+
+                    {waitlistOpen && (
+                        <div style={{ marginTop: 12 }}>
+                            {waitlistLoading ? (
+                                <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>Loading Waitlist...</p>
+                            ) : waitlist.length === 0 ? (
+                                <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>Nobody Is On The Cash Waitlist Right Now.</p>
+                            ) : (
+                                <>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+                                        {waitlist.map(w => {
+                                            const checked = selectedWaitlist.includes(w.id);
+                                            const linked = !!w.player_id;
+                                            return (
+                                                <button
+                                                    key={w.id}
+                                                    onClick={() => linked && toggleWaitlistRow(w.id)}
+                                                    disabled={!linked}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: 10, minHeight: 44,
+                                                        padding: '8px 12px', borderRadius: 10, textAlign: 'left',
+                                                        background: checked ? 'rgba(24,119,242,0.18)' : 'rgba(58,59,60,0.5)',
+                                                        border: `1px solid ${checked ? '#1877F2' : '#4A4B4C'}`,
+                                                        cursor: linked ? 'pointer' : 'not-allowed',
+                                                        opacity: linked ? 1 : 0.5, color: '#E4E6EB' }}>
+                                                    <div style={{
+                                                        width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                                                        border: `1px solid ${checked ? '#1877F2' : '#6A6B6D'}`,
+                                                        background: checked ? '#1877F2' : 'transparent',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        {checked && <CheckCircle2 size={14} color="#fff" />}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                                                            {w.player_name || 'Walk-In'}
+                                                        </p>
+                                                        <p style={{ fontSize: 10, color: '#B0B3B8', margin: 0 }}>
+                                                            {[w.game_type, w.stakes].filter(Boolean).join(' ')}
+                                                            {w.position != null ? `, Position ${Number(w.position).toLocaleString()}` : ''}
+                                                            {linked ? '' : ', No Player Account'}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button
+                                        onClick={convertWaitlist}
+                                        disabled={selectedWaitlist.length === 0 || converting}
+                                        style={{
+                                            width: '100%', minHeight: 44, marginTop: 10, borderRadius: 10, border: 'none',
+                                            background: selectedWaitlist.length > 0 ? '#F59E0B' : '#3A3B3C',
+                                            color: selectedWaitlist.length > 0 ? '#18191A' : '#B0B3B8',
+                                            fontSize: 14, fontWeight: 700,
+                                            cursor: selectedWaitlist.length > 0 && !converting ? 'pointer' : 'not-allowed',
+                                            opacity: selectedWaitlist.length > 0 && !converting ? 1 : 0.6,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        {converting
+                                            ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                            : <ListChecks size={16} />}
+                                        {converting
+                                            ? 'Converting...'
+                                            : `Register ${selectedWaitlist.length.toLocaleString()} Selected Into This Tournament`}
+                                    </button>
+                                    <p style={{ fontSize: 10, color: '#B0B3B8', margin: '6px 0 0' }}>
+                                        Each Conversion Charges The Buy-In And Runs The Normal Registration, Including The Seat Draw.
+                                    </p>
+                                </>
+                            )}
+
+                            {convertResult && (
+                                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #3A3B3C' }}>
+                                    {convertResult.converted?.map(c => (
+                                        <p key={c.waitlist_id} style={{ fontSize: 11, color: '#31A24C', margin: '0 0 2px' }}>
+                                            {c.player_name} Registered
+                                            {c.is_alternate
+                                                ? ', On The Alternates List'
+                                                : (c.table_number && c.seat_number ? `, Table ${c.table_number} Seat ${c.seat_number}` : '')}
+                                        </p>
+                                    ))}
+                                    {convertResult.skipped?.map(s => (
+                                        <p key={s.waitlist_id} style={{ fontSize: 11, color: '#F59E0B', margin: '0 0 2px' }}>
+                                            {s.player_name} Skipped: {s.message}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 

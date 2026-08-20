@@ -18,7 +18,7 @@ import {
   AlertTriangle, ChevronRight, RefreshCw, Loader2,
   LayoutGrid, UserPlus, Monitor,
   Star, Volume2, X, FileText, Coins, Layers,
-  Package, Play, Calendar
+  Package, Play, Calendar, ArrowRightLeft
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 
@@ -598,6 +598,14 @@ export default function TDControlCenter() {
             </div>
             <span className="text-white font-semibold text-sm">Color Up</span>
             <span className="text-[#B0B3B8] text-xs text-left">Race Off A Denomination</span>
+          </button>
+          <button onClick={() => navigateTo('dealers')}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
+              <ArrowRightLeft className="w-5 h-5 text-[#31A24C]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Dealer Rotation</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Who Is Down, For How Long, Who Is Next</span>
           </button>
         </div>
 

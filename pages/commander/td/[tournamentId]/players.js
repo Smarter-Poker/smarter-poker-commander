@@ -10,7 +10,7 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2, Package } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2, Package, Bell } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { buildActionReceiptsHtml, printHtml, printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
@@ -246,6 +246,27 @@ export default function TDPlayers() {
         setToast({ type: 'error', text: json?.error?.message || 'Failed To Seat Alternate.' });
       }
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Seat Alternate. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
+  // Push every waiting alternate their current queue position plus an
+  // estimated wait. The positions have always existed in this payload; this is
+  // what actually reaches the player standing in the bar.
+  const performNotifyAlternates = async () => {
+    setActionLoading('notify-alternates');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/notify-alternates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({ type: 'success', text: json.data?.message || 'Alternates Notified.' });
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Notify Alternates.' });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Notify Alternates. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -549,6 +570,25 @@ export default function TDPlayers() {
             </button>
           ))}
         </div>
+
+        {/* Alternates: tell the queue where it stands.
+            Only shown on the Alternates tab, where the positions are visible,
+            so the TD can see exactly who is about to be messaged. */}
+        {filter === 'alternate' && alternateCount > 0 && (
+          <div className="px-4 pb-3">
+            <button
+              onClick={performNotifyAlternates}
+              disabled={actionLoading === 'notify-alternates'}
+              className="w-full min-h-[44px] rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1877F2]/20 disabled:opacity-50">
+              {actionLoading === 'notify-alternates'
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Bell className="w-4 h-4" />}
+              {actionLoading === 'notify-alternates'
+                ? 'Sending...'
+                : `Notify All ${alternateCount.toLocaleString()} Alternate${alternateCount === 1 ? '' : 's'} Of Their Position`}
+            </button>
+          </div>
+        )}
 
         {/* Player List */}
         <div className="px-4 space-y-1">

@@ -2,12 +2,46 @@
  * BlindStructureEditor - Visual editor for tournament blind structures
  * Displays level table with SB/BB/Ante/Duration, break rows, add/remove
  * UI: Dark industrial sci-fi gaming theme, no emojis, Inter font
+ *
+ * VALIDATION (2026-08-20)
+ * The editor runs the shared rule set on every change and shows the result
+ * inline: blocking errors in red against the offending row, advisory warnings
+ * in amber. It reports the result upward through onValidationChange so the
+ * parent form can refuse to save a structure that would break the clock. The
+ * same rules run server-side in the tournament create/update routes, so the
+ * editor can never offer a save the API will reject.
  */
-import { useState } from 'react';
-import { Plus, Trash2, Coffee, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, Coffee, ChevronUp, ChevronDown, AlertCircle, AlertTriangle } from 'lucide-react';
+import { validateBlindStructure } from '../../../lib/commander/structureValidation';
 
-export default function BlindStructureEditor({ structure, onChange, readOnly = false }) {
+export default function BlindStructureEditor({ structure, onChange, readOnly = false, onValidationChange }) {
     const [editingIndex, setEditingIndex] = useState(null);
+
+    const validation = useMemo(
+        () => validateBlindStructure(Array.isArray(structure) ? structure : []),
+        [structure]
+    );
+    const errorList = validation.errors.filter(e => e.severity === 'error');
+    const warningList = validation.errors.filter(e => e.severity === 'warning');
+
+    // Row index -> worst severity on that row, so the table itself shows where
+    // the problem is instead of only listing it underneath.
+    const rowSeverity = useMemo(() => {
+        const map = {};
+        validation.errors.forEach(e => {
+            if (e.level_index == null) return;
+            if (e.severity === 'error' || !map[e.level_index]) map[e.level_index] = e.severity;
+        });
+        return map;
+    }, [validation]);
+
+    // Signature keeps the parent from re-rendering on every identical result.
+    const validationSignature = `${validation.valid}|${validation.errors.map(e => `${e.level_index}:${e.code}`).join(',')}`;
+    useEffect(() => {
+        if (typeof onValidationChange === 'function') onValidationChange(validation);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [validationSignature]);
 
     function updateLevel(index, field, value) {
         const updated = [...structure];
@@ -77,6 +111,49 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                 </span>
             </div>
 
+            {/* ===== VALIDATION ===== */}
+            {errorList.length > 0 && (
+                <div className="rounded-lg border border-[#EF4444]/40 bg-[#EF4444]/10 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle className="w-4 h-4 text-[#EF4444]" />
+                        <span className="text-sm font-semibold text-[#EF4444]">
+                            {errorList.length.toLocaleString()} Structure Error{errorList.length === 1 ? '' : 's'}, This Cannot Be Saved
+                        </span>
+                    </div>
+                    <ul className="space-y-1">
+                        {errorList.map((e, i) => (
+                            <li key={`bse-err-${i}`} className="text-xs text-[#E2E8F0] flex gap-2">
+                                <span className="font-mono text-[#EF4444] flex-shrink-0">
+                                    {e.level_index == null ? '--' : `#${e.level_index + 1}`}
+                                </span>
+                                <span>{e.message}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {warningList.length > 0 && (
+                <div className="rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
+                        <span className="text-sm font-semibold text-[#F59E0B]">
+                            {warningList.length.toLocaleString()} Warning{warningList.length === 1 ? '' : 's'}, Saving Is Still Allowed
+                        </span>
+                    </div>
+                    <ul className="space-y-1">
+                        {warningList.map((w, i) => (
+                            <li key={`bse-warn-${i}`} className="text-xs text-[#E2E8F0] flex gap-2">
+                                <span className="font-mono text-[#F59E0B] flex-shrink-0">
+                                    {w.level_index == null ? '--' : `#${w.level_index + 1}`}
+                                </span>
+                                <span>{w.message}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             {/* Level table */}
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -92,9 +169,15 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                     </thead>
                     <tbody>
                         {structure.map((item, idx) => {
+                            const sev = rowSeverity[idx];
+                            // Left rail marks the row the message refers to.
+                            const rowFlag = sev === 'error'
+                                ? 'border-l-2 border-l-[#EF4444]'
+                                : sev === 'warning' ? 'border-l-2 border-l-[#F59E0B]' : '';
+
                             if (item.is_break) {
                                 return (
-                                    <tr key={`break-${idx}`} className="bg-[#1E3A5F]/30">
+                                    <tr key={`break-${idx}`} className={`bg-[#1E3A5F]/30 ${rowFlag}`}>
                                         <td colSpan={readOnly ? 5 : 4} className="px-2 py-2">
                                             <div className="flex items-center gap-2">
                                                 <Coffee className="w-4 h-4 text-[#F59E0B]" />
@@ -148,7 +231,7 @@ export default function BlindStructureEditor({ structure, onChange, readOnly = f
                             return (
                                 <tr
                                     key={`level-${idx}`}
-                                    className={`border-b border-[#1E3A5F]/50 hover:bg-[#132240]/50 transition-colors ${isEditing ? 'bg-[#132240]' : ''}`}
+                                    className={`border-b border-[#1E3A5F]/50 hover:bg-[#132240]/50 transition-colors ${isEditing ? 'bg-[#132240]' : ''} ${rowFlag}`}
                                     onClick={() => !readOnly && setEditingIndex(isEditing ? null : idx)}
                                 >
                                     {/* Break-aware fallback: structures saved without a `level` field

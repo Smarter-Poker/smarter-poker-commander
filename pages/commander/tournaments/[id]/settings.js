@@ -11,7 +11,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
-import { Save, Plus, Trash2, Clock, DollarSign, Coffee, ChevronUp, ChevronDown, Loader2, Settings, Check, ArrowLeft } from 'lucide-react';
+import { Save, Plus, Trash2, Clock, DollarSign, Coffee, ChevronUp, ChevronDown, Loader2, Settings, Check, ArrowLeft, AlertTriangle, AlertCircle, ShieldCheck } from 'lucide-react';
+import { validateBlindStructure, normalizeStructure } from '../../../../src/lib/commander/structureValidation';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
@@ -289,6 +290,12 @@ export default function TournamentSettings() {
   const [templateName, setTemplateName] = useState('');
   const [templateBusy, setTemplateBusy] = useState(false);
 
+  // ── Blind structure validation ──
+  // Warnings do not block the save, but they have to be SEEN. This holds the
+  // signature of the warning set the TD has already acknowledged, so changing
+  // the structure re-arms the acknowledgement instead of carrying a stale one.
+  const [ackedWarnings, setAckedWarnings] = useState('');
+
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
 
@@ -347,7 +354,13 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
               : String(blob.satellite.seats_awarded)
           );
           setLeaderboardId(t.leaderboard_id || '');
-          setLevels(parseBlinds(t.blind_structure).length > 0 ? parseBlinds(t.blind_structure) : STRUCTURE_TEMPLATES.standard.levels);
+          // normalizeStructure repairs legacy rows that stored { big, small }
+          // instead of { big_blind, small_blind }. Nothing in the app reads
+          // those keys, so those events showed empty blinds here and 0/0 on
+          // the clock; loading through the normaliser means the next save
+          // writes the canonical keys and the event displays correctly.
+          const storedLevels = normalizeStructure(parseBlinds(t.blind_structure));
+          setLevels(storedLevels.length > 0 ? storedLevels : STRUCTURE_TEMPLATES.standard.levels);
           if (t.entry_count) setEstimatedEntries(t.entry_count);
           else if (t.current_entries) setEstimatedEntries(t.current_entries);
           // 2026-07-30: payout_structure is the canonical jsonb array of { place, pct }.
@@ -498,6 +511,18 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
 
   const saveAsTemplate = async () => {
     if (!tournament?.venue_id || !templateName.trim()) return;
+    // A broken structure saved as a template breaks every future event cloned
+    // from it, so the template path is gated the same way the save is.
+    const templateCheck = validateBlindStructure(levels);
+    const templateErrors = templateCheck.errors.filter(e => e.severity === 'error');
+    if (templateErrors.length > 0) {
+      setActiveTab('structure');
+      setToast({
+        type: 'error',
+        text: `Cannot Save Template: ${templateErrors.length.toLocaleString()} Blind Structure Error${templateErrors.length === 1 ? '' : 's'}.`
+      });
+      return;
+    }
     setTemplateBusy(true);
     const payoutPayload = customPayouts.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct) || 0 }));
     try {
@@ -546,7 +571,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
     if (tpl.buyin_amount != null) setBuyinAmount(tpl.buyin_amount);
     if (tpl.buyin_fee != null) setBuyinFee(tpl.buyin_fee);
     if (tpl.starting_chips != null) setStartingChips(tpl.starting_chips);
-    const tplLevels = parseBlinds(tpl.blind_structure);
+    const tplLevels = normalizeStructure(parseBlinds(tpl.blind_structure));
     if (tplLevels.length > 0) setLevels(tplLevels);
     if (tpl.late_registration_levels != null) setLateRegLevels(tpl.late_registration_levels);
     setRebuyAllowed(tpl.allows_rebuys || false);
@@ -564,8 +589,41 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
     setToast({ type: 'success', text: `Loaded Template "${tpl.name}".` });
   };
 
+  // ===== BLIND STRUCTURE VALIDATION =====
+  // Same rule set the create/update APIs run, so the screen can never offer a
+  // save the server will reject, and the TD sees the problem against the level
+  // it belongs to instead of as a 400 after the fact.
+  const structureCheck = validateBlindStructure(levels);
+  const structureErrorList = structureCheck.errors.filter(e => e.severity === 'error');
+  const structureWarningList = structureCheck.errors.filter(e => e.severity === 'warning');
+  // Row index -> worst severity on that row, for the inline highlight.
+  const rowSeverity = {};
+  structureCheck.errors.forEach(e => {
+    if (e.level_index == null) return;
+    if (e.severity === 'error' || !rowSeverity[e.level_index]) rowSeverity[e.level_index] = e.severity;
+  });
+  const warningSignature = structureWarningList.map(w => `${w.level_index}:${w.code}`).join('|');
+  const warningsAcknowledged = structureWarningList.length === 0 || ackedWarnings === warningSignature;
+  const saveBlocked = structureErrorList.length > 0 || !warningsAcknowledged;
+
   // ===== SAVE =====
   const saveSettings = async () => {
+    // Hard stop. A structure with blinds that go down, a 0-minute level, an
+    // ante above the big blind, or a break on row one breaks the clock for the
+    // whole event, and there is no clean mid-event repair.
+    if (structureErrorList.length > 0) {
+      setActiveTab('structure');
+      setToast({
+        type: 'error',
+        text: `Cannot Save: ${structureErrorList.length.toLocaleString()} Blind Structure Error${structureErrorList.length === 1 ? '' : 's'}. Fix Them In The Blind Structure Tab.`
+      });
+      return;
+    }
+    if (!warningsAcknowledged) {
+      setActiveTab('structure');
+      setToast({ type: 'error', text: 'Review The Blind Structure Warnings And Acknowledge Them Before Saving.' });
+      return;
+    }
     setSaving(true);
     // 2026-07-30: persist the canonical editable payout table as payout_structure
     // (array of { place, pct }) + paying_places. `custom_payouts` is not a real column.
@@ -603,9 +661,15 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           settings: buildSettings()
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) { setSaved(true); setTimeout(() => setSaved(false), 2000); broadcastChange('tournaments'); }
+      // The server runs the same structure rules. Surface ITS message rather
+      // than a generic failure, so a rejection nobody expected is readable.
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        const serverMsg = json?.error?.message;
+        setToast({ type: 'error', text: serverMsg || `Save Failed (${res.status}). Please Try Again.` });
+        return;
+      }
+      setSaved(true); setTimeout(() => setSaved(false), 2000); broadcastChange('tournaments');
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Save Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSaving(false); }
   };
@@ -658,12 +722,18 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               <p className="text-xs text-[#B0B3B8]">{name}</p>
             </div>
           </div>
-          <button onClick={saveSettings} disabled={saving}
+          <button onClick={saveSettings} disabled={saving || saveBlocked}
+            title={saveBlocked
+              ? (structureErrorList.length > 0
+                ? 'Fix The Blind Structure Errors First'
+                : 'Acknowledge The Blind Structure Warnings First')
+              : 'Save'}
             className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 ${saved ? 'bg-[#31A24C] text-white' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'
               } disabled:opacity-50`}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
               saved ? <Check className="w-4 h-4" /> :
-                <Save className="w-4 h-4" />}
+                saveBlocked ? <AlertTriangle className="w-4 h-4" /> :
+                  <Save className="w-4 h-4" />}
             {saved ? 'Saved' : 'Save'}
           </button>
         </div>
@@ -742,6 +812,72 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 </div>
               </div>
 
+              {/* ===== VALIDATION PANEL =====
+                  Errors block the save outright. Warnings are shown and can be
+                  acknowledged, because a turbo with 8-minute levels or a deep
+                  stack with 90-minute levels is a real structure, not a typo. */}
+              {structureErrorList.length > 0 && (
+                <div className="bg-[#EF4444]/10 border border-[#EF4444]/40 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-[#EF4444]" />
+                    <p className="text-sm font-semibold text-[#EF4444]">
+                      {structureErrorList.length.toLocaleString()} Structure Error{structureErrorList.length === 1 ? '' : 's'}, Saving Is Blocked
+                    </p>
+                  </div>
+                  <ul className="space-y-1">
+                    {structureErrorList.map((e, i) => (
+                      <li key={`err-${i}`} className="text-xs text-[#E4E6EB] flex gap-2">
+                        <span className="text-[#EF4444] font-mono flex-shrink-0">
+                          {e.level_index == null ? '--' : `#${e.level_index + 1}`}
+                        </span>
+                        <span>{e.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {structureWarningList.length > 0 && (
+                <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/40 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
+                    <p className="text-sm font-semibold text-[#F59E0B]">
+                      {structureWarningList.length.toLocaleString()} Warning{structureWarningList.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <ul className="space-y-1 mb-3">
+                    {structureWarningList.map((w, i) => (
+                      <li key={`warn-${i}`} className="text-xs text-[#E4E6EB] flex gap-2">
+                        <span className="text-[#F59E0B] font-mono flex-shrink-0">
+                          {w.level_index == null ? '--' : `#${w.level_index + 1}`}
+                        </span>
+                        <span>{w.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => setAckedWarnings(warningsAcknowledged ? '' : warningSignature)}
+                    className={`w-full min-h-[44px] rounded-lg text-sm font-semibold flex items-center justify-center gap-2 ${warningsAcknowledged
+                      ? 'bg-[#31A24C]/20 text-[#31A24C] border border-[#31A24C]/40'
+                      : 'bg-[#F59E0B] text-[#18191A]'}`}>
+                    {warningsAcknowledged ? <ShieldCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                    {warningsAcknowledged ? 'Warnings Acknowledged' : 'Acknowledge Warnings And Allow Saving'}
+                  </button>
+                </div>
+              )}
+
+              {structureErrorList.length === 0 && structureWarningList.length === 0 && levels.length > 0 && (
+                <div className="bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#31A24C]" />
+                  <p className="text-xs text-[#31A24C] font-medium">
+                    Structure Checks Passed, {structureCheck.summary.playing_levels.toLocaleString()} Level{structureCheck.summary.playing_levels === 1 ? '' : 's'}
+                    {structureCheck.summary.first_break_after != null
+                      ? `, First Break After Level ${structureCheck.summary.first_break_after.toLocaleString()}`
+                      : ''}
+                  </p>
+                </div>
+              )}
+
               {/* Templates */}
               <div>
                 <p className="text-xs text-[#B0B3B8] mb-2 uppercase tracking-wider">Load Template</p>
@@ -764,10 +900,16 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
                 {levels.map((level, i) => {
                   const levelNum = levels.slice(0, i + 1).filter(l => !l.is_break).length;
+                  // Inline highlight so the TD sees WHICH row is wrong without
+                  // matching a message list against the table by eye.
+                  const sev = rowSeverity[i];
+                  const rowBorder = sev === 'error'
+                    ? 'border-[#EF4444]'
+                    : sev === 'warning' ? 'border-[#F59E0B]' : null;
 
                   if (level.is_break) {
                     return (
-                      <div key={i} className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                      <div key={i} className={`bg-[#F59E0B]/10 border ${rowBorder || 'border-[#F59E0B]/30'} rounded-lg px-3 py-2 flex items-center gap-2`}>
                         <Coffee className="w-4 h-4 text-[#F59E0B]" />
                         <span className="text-sm font-medium text-[#F59E0B] flex-1">{level.label ? level.label.toUpperCase() : 'BREAK'}</span>
                         <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
@@ -783,7 +925,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   }
 
                   return (
-                    <div key={i} className="grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 items-center bg-[#242526] border border-[#3A3B3C] rounded-lg px-2 py-1.5">
+                    <div key={i} className={`grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 items-center bg-[#242526] border ${rowBorder || 'border-[#3A3B3C]'} rounded-lg px-2 py-1.5`}>
                       <span className="text-xs text-[#B0B3B8] font-mono">{levelNum}</span>
                       <input type="number" value={level.small_blind}
                         onChange={e => updateLevel(i, 'small_blind', e.target.value)}
