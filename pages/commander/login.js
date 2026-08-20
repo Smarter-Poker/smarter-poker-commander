@@ -436,6 +436,8 @@ export default function CommanderLogin() {
               color: 'white',
               fontSize: '15px',
               zIndex: 10,
+              WebkitAppearance: 'none',
+              appearance: 'none',
               fontFamily: 'Inter, sans-serif'
             }}
           />
@@ -458,6 +460,8 @@ export default function CommanderLogin() {
               color: 'white',
               fontSize: '15px',
               zIndex: 10,
+              WebkitAppearance: 'none',
+              appearance: 'none',
               fontFamily: 'Inter, sans-serif'
             }}
           />
@@ -520,6 +524,7 @@ export default function CommanderLogin() {
           {/* 7. Forgot Password Link overlay */}
           <a 
             href="#"
+            onClick={(e) => { e.preventDefault(); setError("Password recovery coming soon."); }}
             style={{
               position: 'absolute',
               top: '62%',
@@ -546,7 +551,7 @@ export default function CommanderLogin() {
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              zIndex: 10,
+              zIndex: 12,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
