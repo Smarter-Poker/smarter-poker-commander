@@ -97,6 +97,10 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [existingAccount, setExistingAccount] = useState(false);
+  const [phoneVerificationHash, setPhoneVerificationHash] = useState(null);
+  const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
+  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
 
   // Promo code
   const [promoCode, setPromoCode] = useState('');
@@ -332,6 +336,13 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handlePhoneChange = (setter) => (e) => {
     setter(new AsYouType('US').input(e.target.value));
+    if (setter === setOwnerPhone) {
+      if (phoneVerificationHash) {
+        setPhoneVerificationHash(null);
+        setPhoneVerificationCode('');
+      }
+      setPhoneVerified(false);
+    }
   };
 
   
@@ -465,8 +476,33 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     return true;
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (!validateStep(step)) return;
+
+    // Trigger SMS Verification before leaving Step 1
+    if (step === 1 && !existingAccount && !phoneVerified) {
+      if (!phoneVerificationHash) {
+        setIsVerifyingPhone(true);
+        setError('');
+        try {
+          const res = await fetch('/api/commander/verify-sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'send', phone: ownerPhone })
+          });
+          const data = await res.json();
+          if (data.hash) {
+            setPhoneVerificationHash(data.hash);
+          } else {
+            setError(data.error || 'Failed to send SMS code.');
+          }
+        } catch (err) {
+          setError('Network error sending SMS.');
+        }
+        setIsVerifyingPhone(false);
+      }
+      return; // Never proceed to step 2 from here. handleVerifyCode will do it.
+    }
 
     // When tier is locked via ?tier= query param, there is no "Select Plan"
     // step. Step 2's "Continue" button submits directly.
@@ -482,7 +518,45 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     setStep(s => Math.min(s + 1, 4));
   };
 
-  const prevStep = () => setStep(s => Math.max(s - 1, 1));
+  const prevStep = () => {
+    if (step === 1 && phoneVerificationHash) {
+      setPhoneVerificationHash(null);
+      setPhoneVerificationCode('');
+    } else {
+      setStep(s => Math.max(s - 1, 1));
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!phoneVerificationCode || phoneVerificationCode.length < 6) {
+      setError('Please enter the 6-digit code.');
+      return;
+    }
+    setIsVerifyingPhone(true);
+    setError('');
+    try {
+      const res = await fetch('/api/commander/verify-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'verify', 
+          phone: ownerPhone, 
+          code: phoneVerificationCode, 
+          hash: phoneVerificationHash 
+        })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPhoneVerified(true);
+        setStep(2);
+      } else {
+        setError(data.error || 'Invalid code. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error verifying code.');
+    }
+    setIsVerifyingPhone(false);
+  };
 
   const handleSubmit = async () => {
     // When tier is locked, step 3 is skipped; validate step 2 instead.
@@ -949,8 +1023,72 @@ const CalibrationPanel = () => {
                   zIndex: 10
                 }}
                 title="Continue to Venue Details"
+                disabled={isVerifyingPhone}
               />
             </form>
+
+            {/* PHONE VERIFICATION MODAL OVERLAY */}
+            {phoneVerificationHash && !phoneVerified && (
+              <div style={{
+                position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)',
+                zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(180deg, #111, #000)',
+                  border: '1px solid #00F0FF',
+                  padding: '40px',
+                  borderRadius: '12px',
+                  width: '400px',
+                  textAlign: 'center',
+                  boxShadow: '0 0 30px rgba(0, 240, 255, 0.2)'
+                }}>
+                  <h2 style={{ color: '#00F0FF', fontSize: '24px', marginBottom: '16px', fontWeight: 'bold' }}>Verify Phone</h2>
+                  <p style={{ color: '#AAA', marginBottom: '24px' }}>
+                    We sent a 6-digit code to <strong>{ownerPhone}</strong>.
+                  </p>
+                  <input
+                    type="text"
+                    value={phoneVerificationCode}
+                    onChange={e => setPhoneVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="------"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.5)',
+                      border: '1px solid #333',
+                      color: 'white',
+                      fontSize: '32px',
+                      textAlign: 'center',
+                      letterSpacing: '8px',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginBottom: '24px'
+                    }}
+                  />
+                  {error && <p style={{ color: '#F02849', marginBottom: '16px' }}>{error}</p>}
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      onClick={prevStep}
+                      style={{
+                        flex: 1, padding: '12px', background: 'transparent',
+                        border: '1px solid #555', color: '#FFF', borderRadius: '6px', cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleVerifyCode}
+                      disabled={isVerifyingPhone}
+                      style={{
+                        flex: 1, padding: '12px', background: '#00F0FF',
+                        border: 'none', color: '#000', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'
+                      }}
+                    >
+                      {isVerifyingPhone ? 'Checking...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </>

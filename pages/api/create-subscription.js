@@ -252,7 +252,8 @@ export default async function handler(req, res) {
         const { data: authData, error: authError } = await getSupabase().auth.admin.createUser({
           email,
           password,
-          email_confirm: true,
+          email_confirm: false, // Wait for user to verify email
+          phone_confirm: true,  // Phone verified via Twilio in Step 1!
           user_metadata: {
             full_name: ownerInfo.name,
             phone: ownerInfo.phone,
@@ -263,6 +264,13 @@ export default async function handler(req, res) {
         if (!authError && authData?.user) {
           userId = authData.user.id;
           createdUser = true;
+
+          // Trigger the Supabase email verification immediately!
+          try {
+            await getSupabase().auth.resend({ type: 'signup', email });
+          } catch (e) {
+            console.warn('[create-subscription] Failed to send verification email:', e.message);
+          }
         } else if (authError?.message?.toLowerCase().includes('already') ||
           authError?.message?.toLowerCase().includes('exists') ||
           authError?.message?.toLowerCase().includes('registered')) {
