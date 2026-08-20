@@ -329,6 +329,10 @@ export default function CommanderLogin() {
     } catch (err) {
       console.warn('OAuth Error:', err);
       setError(err.message || `Failed to sign in with ${provider}`);
+      setLoading(false);
+    }
+  }
+
   if (checkingSession) {
     return (
       <div className="min-h-screen bg-[#02050A] flex items-center justify-center">
@@ -337,18 +341,20 @@ export default function CommanderLogin() {
     );
   }
 
+  const autofillCss = `
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 50px #040914 inset !important;
+        -webkit-text-fill-color: white !important;
+        border-radius: 4px;
+    }
+  `;
+
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: `
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus, 
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 50px #040914 inset !important;
-            -webkit-text-fill-color: white !important;
-            border-radius: 4px;
-        }
-      `}} />
+      <style dangerouslySetInnerHTML={{__html: autofillCss}} />
       <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
         <SEOHead
           title="Club Commander - Sign In"
@@ -391,7 +397,7 @@ export default function CommanderLogin() {
             }}
             title="Continue with SSO"
           >
-            {ssoLoading ? 'Signing In...' : `Continue As ${ssoEmail || 'Smarter.Poker'}`}
+            {ssoLoading ? 'Signing In...' : 'Continue As ' + (ssoEmail || 'Smarter.Poker')}
           </button>
 
           {/* 2. Google OAuth Button overlay */}
@@ -575,8 +581,23 @@ export default function CommanderLogin() {
             </div>
           )}
 
-
+          {/* 9. Sign Up Button overlay */}
+          <Link
+            href="/commander/register"
+            style={{
+              position: 'absolute',
+              top: '73.5%',
+              left: '26%',
+              width: '48%',
+              height: '4.5%',
+              background: 'transparent',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Sign Up"
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
