@@ -126,8 +126,13 @@ async function handler(req, res) {
  * Hendon Mob CSV format:
  * Tournament Name, Date, Buy-in, Entries, Prize Pool
  * Position, Player Name, Prize, Country, City
+ *
+ * Exported (2026-08-20) so the end-of-event packet at
+ * /api/commander/tournaments/:id/export can serve a Hendon Mob sheet by
+ * REUSING this builder rather than growing a second copy of the format that
+ * would drift the first time Hendon changes a column.
  */
-function buildHendonMobCSV(tournament, entries) {
+export function buildHendonMobCSV(tournament, entries) {
   const lines = [];
   const venue = tournament.poker_venues;
 
@@ -208,7 +213,7 @@ function buildHendonMobCSV(tournament, entries) {
 /**
  * Build Hendon Mob JSON format
  */
-function buildHendonMobJSON(tournament, entries) {
+export function buildHendonMobJSON(tournament, entries) {
   const venue = tournament.poker_venues;
 
   const sortedEntries = [...entries].sort((a, b) => {

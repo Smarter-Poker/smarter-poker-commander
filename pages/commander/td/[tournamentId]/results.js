@@ -27,10 +27,15 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import {
     Trophy, Users, DollarSign, LayoutGrid, Monitor, FileText,
-    Download, Loader2, Printer, CheckCircle2, AlertTriangle, Clock, Ticket, Coins
+    Download, Loader2, Printer, CheckCircle2, AlertTriangle, Clock, Ticket, Coins,
+    FileJson, FileSpreadsheet, Scale, X
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
+// W-2G is assessed on NET winnings (payout minus that entry's own buy-in).
+// Same helper the server uses, so this screen and the filed tax event can
+// never disagree about who needs a form.
+import { assessW2G, entryTotalInvested, W2G_NET_THRESHOLD } from '../../../../src/lib/commander/taxEvents';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -113,6 +118,7 @@ export default function TDResults() {
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [confirmFinalize, setConfirmFinalize] = useState(false);
+    const [exportOpen, setExportOpen] = useState(false);
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
@@ -207,7 +213,10 @@ export default function TDResults() {
                 player_id: e.player_id || null,
                 rebuys: e.rebuy_count || 0,
                 addon: !!e.addon_taken,
-                invested: Number(e.total_invested) || 0,
+                // entryTotalInvested, not the raw column: a row written before
+                // the total_invested trigger existed reads 0, and a 0 wager
+                // would make every payout look like a W-2G.
+                invested: entryTotalInvested(tournament, e),
                 eliminated_at: e.eliminated_at || null,
                 knockouts: Number(e.bounties_collected) || 0,
                 bounty_winnings: Number(e.bounty_winnings ?? e.metadata?.bounty_winnings) || 0,
@@ -228,7 +237,7 @@ export default function TDResults() {
                     player_id: slot.player_id || null,
                     rebuys: entry.rebuy_count || 0,
                     addon: !!entry.addon_taken,
-                    invested: Number(entry.total_invested) || 0,
+                    invested: entryTotalInvested(tournament, entry),
                     eliminated_at: null,
                     knockouts: Number(entry.bounties_collected) || 0,
                     bounty_winnings: Number(entry.bounty_winnings ?? entry.metadata?.bounty_winnings) || 0,
@@ -238,7 +247,32 @@ export default function TDResults() {
             });
 
         return [...finished, ...projected].sort((a, b) => a.position - b.position);
-    }, [liveEntries, payoutData, dealTable, wonSeatAt]);
+        // `tournament` is a dependency because entryTotalInvested derives the
+        // wager from its prices when total_invested is missing.
+    }, [liveEntries, payoutData, dealTable, wonSeatAt, tournament]);
+
+    /**
+     * Finishers who trigger a W-2G.
+     *
+     * Net of THAT ENTRY's own buy-in, more than $5,000. Bounty winnings are
+     * deliberately not folded in: they are paid at the table as they are won,
+     * not as tournament proceeds at the window, and the server-side assessment
+     * (which is what actually files the event) reads payout_amount alone. The
+     * two must agree or the floor gets a different list from the cage.
+     */
+    const w2gRows = useMemo(() => standings
+        .map(r => ({ row: r, assessment: assessW2G({ grossPayout: r.amount, totalInvested: r.invested }) }))
+        .filter(x => x.assessment.reportable)
+        .sort((a, b) => b.assessment.net - a.assessment.net)
+        .map(({ row, assessment }) => ({
+            key: row.entry_id || `${row.position}-${row.player_name}`,
+            position: row.position,
+            player_name: row.player_name,
+            projected: row.projected,
+            gross: assessment.gross,
+            buy_in: assessment.buy_in,
+            net: assessment.net
+        })), [standings]);
 
     // Bounty winnings, whole field (not just the money places): a player can
     // take five bounties and still bust on the bubble.
@@ -406,8 +440,46 @@ export default function TDResults() {
         }
     };
 
+    // ── Event packet export ───────────────────────────────────────────────
+    /**
+     * Pull one format of the end-of-event packet and hand it to the browser.
+     *
+     * Goes through commanderFetch so the staff session travels with it: the
+     * export route is staff-guarded and venue-scoped, so a plain anchor href
+     * would just download a 401 body as a file.
+     */
+    const downloadPacket = async (format, filename) => {
+        if (!tournamentId) return;
+        setExportOpen(false);
+        setBusy(true);
+        try {
+            const res = await commanderFetch(
+                `/api/commander/tournaments/${tournamentId}/export?format=${encodeURIComponent(format)}`
+            );
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                setToast({ type: 'error', text: json?.error?.message || 'Failed To Build The Export.' });
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            setToast({ type: 'success', text: 'Export Downloaded.' });
+        } catch (err) {
+            console.warn('Export error:', err);
+            setToast({ type: 'error', text: 'Failed To Build The Export.' });
+        } finally {
+            setBusy(false);
+        }
+    };
+
     // ── CSV ───────────────────────────────────────────────────────────────
     const exportCSV = () => {
+        setExportOpen(false);
         if (standings.length === 0) return;
         const header = 'Position,Player,Payout,Prize Type,Knockouts,Bounty Winnings,Rebuys,Add-On,Total Invested,Eliminated At,Provisional\n';
         const rows = standings.map(r => [
@@ -455,9 +527,9 @@ export default function TDResults() {
                                 className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                                 <Printer className="w-4 h-4" /> Print
                             </button>
-                            <button onClick={exportCSV} disabled={loading || standings.length === 0}
+                            <button onClick={() => setExportOpen(true)} disabled={busy || loading}
                                 className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
-                                <Download className="w-4 h-4" /> CSV
+                                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export
                             </button>
                         </div>
                     </div>
@@ -522,6 +594,43 @@ export default function TDResults() {
                                 </>
                             )}
                         </div>
+
+                        {/* W-2G, before the player leaves the building */}
+                        {w2gRows.length > 0 && (
+                            <div className="rounded-xl border border-[#EF4444]/40 bg-[#EF4444]/10 overflow-hidden">
+                                <div className="px-4 py-2 border-b border-[#EF4444]/30 flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
+                                    <h3 className="text-xs font-bold text-[#EF4444] uppercase tracking-wider flex-1">
+                                        W-2G Required
+                                    </h3>
+                                    <span className="text-[10px] text-[#EF4444]">{w2gRows.length}</span>
+                                </div>
+                                <div className="divide-y divide-[#EF4444]/20">
+                                    {w2gRows.map(x => (
+                                        <div key={x.key} className="px-4 py-3 flex items-center gap-3">
+                                            <span className="w-10 text-xs font-bold text-[#B0B3B8] flex-shrink-0">
+                                                {ordinal(x.position)}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-[#E4E6EB] truncate">{x.player_name}</p>
+                                                <p className="text-[10px] text-[#B0B3B8]">
+                                                    Gross {formatMoney(x.gross)}, Buy-In {formatMoney(x.buy_in)}
+                                                    {x.projected ? ', Provisional' : ''}
+                                                </p>
+                                            </div>
+                                            <span className="text-sm font-bold text-[#EF4444] flex-shrink-0">
+                                                Net {formatMoney(x.net)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="px-4 py-2.5 text-[11px] text-[#E4E6EB] border-t border-[#EF4444]/20">
+                                    Reportable Amount Is Net Of That Entry Buy-In, Over {formatMoney(W2G_NET_THRESHOLD)}.
+                                    Collect The Taxpayer Identification Number At The Window. No TIN Is Stored By This
+                                    System, So Backup Withholding Is Never Applied Automatically.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Bounty winnings, whole field */}
                         {bountyStandings.length > 0 && (
@@ -677,6 +786,64 @@ export default function TDResults() {
                     </div>
                 )}
 
+                {/* Export sheet */}
+                {exportOpen && (
+                    <div
+                        className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+                        onClick={() => setExportOpen(false)}
+                        role="presentation"
+                    >
+                        <div
+                            className="w-full max-w-md bg-[#242526] border-t border-[#3A3B3C] rounded-t-xl p-4 pb-8 space-y-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-bold text-white">Export Event</h3>
+                                <button onClick={() => setExportOpen(false)}
+                                    className="w-11 h-11 rounded-xl flex items-center justify-center text-[#B0B3B8] active:bg-[#3A3B3C]">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <ExportOption
+                                icon={FileJson}
+                                title="Compliance Packet, JSON"
+                                subtitle="Configuration, Structure Played, Full Finishing Order, Pool Derivation, W-2G Events And The Drawer Reconciliation"
+                                onClick={() => downloadPacket('json', `event_packet_${tournamentId}.json`)}
+                                disabled={busy}
+                            />
+                            <ExportOption
+                                icon={FileSpreadsheet}
+                                title="Finishing Order, CSV"
+                                subtitle="Flat Sheet With Payouts, Bounties, Investment And Net Result"
+                                onClick={() => downloadPacket('csv', `results_${tournamentId}.csv`)}
+                                disabled={busy}
+                            />
+                            <ExportOption
+                                icon={Scale}
+                                title="Hendon Mob, CSV"
+                                subtitle="Tournament Database Import Format"
+                                onClick={() => downloadPacket('hendon_csv', `hendon_mob_${tournamentId}.csv`)}
+                                disabled={busy}
+                            />
+                            <ExportOption
+                                icon={Download}
+                                title="Screen Results, CSV"
+                                subtitle="Exactly What Is Shown Above, Including Provisional Places"
+                                onClick={exportCSV}
+                                disabled={standings.length === 0}
+                            />
+                            <ExportOption
+                                icon={Printer}
+                                title="Print Results Sheet"
+                                subtitle="Queued At The Floor Print Station"
+                                onClick={() => { setExportOpen(false); printResults(); }}
+                                disabled={busy || standings.length === 0}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {/* Toast */}
                 {toast && (
                     <div className="fixed bottom-24 left-4 right-4 z-50 flex justify-center">
@@ -716,6 +883,22 @@ function SummaryCard({ label, value, color }) {
             <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">{label}</p>
             <p className="text-lg font-bold" style={{ color: color || '#E4E6EB' }}>{value}</p>
         </div>
+    );
+}
+
+function ExportOption({ icon: Icon, title, subtitle, onClick, disabled }) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className="w-full min-h-[56px] px-4 py-3 rounded-xl bg-[#3A3B3C] text-left flex items-center gap-3 active:bg-[#4A4B4C] disabled:opacity-50"
+        >
+            <Icon className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
+            <span className="flex-1 min-w-0">
+                <span className="block text-sm font-semibold text-[#E4E6EB]">{title}</span>
+                <span className="block text-[11px] text-[#B0B3B8] leading-snug">{subtitle}</span>
+            </span>
+        </button>
     );
 }
 

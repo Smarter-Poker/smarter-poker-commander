@@ -199,13 +199,23 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
 
   const reprintW2G = async (evt) => {
     // Rebuild W-2G data from event for reprint
+    // 2026-08-20: Box 1 of a poker tournament W-2G is the NET (proceeds minus
+    // the wager), which is what the generate route now writes. The reprint used
+    // to put the gross in Box 1, so a reprint disagreed with the original form.
+    const gross = parseFloat(evt.gross_amount || 0) || 0;
+    const wager = parseFloat(evt.buy_in || 0) || 0;
+    const net = evt.net_amount === null || evt.net_amount === undefined
+      ? gross - wager
+      : (parseFloat(evt.net_amount) || 0);
     const w2g = {
-      box1_gross_winnings: evt.gross_amount,
+      box1_gross_winnings: net,
+      box1_reportable_winnings: net,
       box2_date_won: evt.event_date,
       box3_wager_type: 'Poker Tournament',
-      box4_federal_withheld: evt.withholding_amount || 0,
-      box5_transaction: `Tournament - Buy-in: $${parseFloat(evt.buy_in || 0).toFixed(2)}`,
-      box7_identical_winnings: parseFloat(evt.net_amount || 0),
+      box4_federal_withheld: evt.withholding_required ? (evt.withholding_amount || 0) : 0,
+      box5_transaction: `Poker Tournament - Proceeds: $${gross.toFixed(2)}, Wager: $${wager.toFixed(2)}`,
+      // Not applicable to a poker tournament.
+      box7_identical_winnings: 0,
       payer_name: staff?.venue_name || 'Venue',
       payer_ein: '',
       payer_address: '',

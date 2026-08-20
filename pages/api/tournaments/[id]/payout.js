@@ -9,6 +9,10 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parsePayoutStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+// W-2G is assessed on NET winnings (payout minus THAT ENTRY's own buy-in), not
+// gross. See src/lib/commander/taxEvents.js for the rule and why one entry is
+// one wager.
+import { recordTournamentTaxEvent } from '../../../../src/lib/commander/taxEvents';
 
 let _supabase = null;
 function getSupabase() {
@@ -665,7 +669,10 @@ async function handlePayout(req, res, tournamentId) {
       .from('commander_tournaments')
       // scheduled_start/actual_start are needed so points only accrue to a
       // season whose window actually contains this event.
-      .select('venue_id, buyin_amount, buyin_fee, leaderboard_id, scheduled_start, actual_start')
+      // rebuy_amount/addon_amount/ended_at are needed by the W-2G assessment:
+      // the wager it subtracts is the entry's total investment, which falls
+      // back to deriving from these prices when total_invested is missing.
+      .select('id, venue_id, buyin_amount, buyin_fee, rebuy_amount, addon_amount, ended_at, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -685,17 +692,20 @@ async function handlePayout(req, res, tournamentId) {
 
     if (error) throw error;
 
-    // Tax event tracking (>$5000)
-    if (amount >= 5000 && tournament) {
-      const totalBuyin = (tournament.buyin_amount || 0) + (tournament.buyin_fee || 0);
-      await getSupabase().from('commander_tax_events').insert({
-        venue_id: tournament.venue_id,
-        player_id,
-        event_type: 'tournament_win',
-        gross_amount: amount,
-        buy_in: totalBuyin,
-        net_amount: amount - totalBuyin,
-        withholding_required: amount >= 5000
+    // ── W-2G ──
+    // 2026-08-20 fix. This used to fire on gross >= 5000 and record the flat
+    // advertised buy-in as the wager, which was wrong twice over: a $5,000
+    // min-cash in a $5,000 event nets nothing and is not reportable, and an
+    // entry that rebought three times wagered far more than one buy-in.
+    // recordTournamentTaxEvent assesses NET of that entry's own total
+    // investment, fires only above $5,000 net, sets event_date (the tax
+    // compliance list filters on it, so events written with a NULL date were
+    // invisible), and refuses to file the same event twice.
+    let taxResult = null;
+    if (tournament && entry) {
+      taxResult = await recordTournamentTaxEvent(getSupabase(), {
+        tournament, tournamentId, entry, grossPayout: amount, playerId: player_id,
+        venueId: tournament.venue_id
       });
     }
 
@@ -704,7 +714,24 @@ async function handlePayout(req, res, tournamentId) {
       await awardTournamentPoints(tournament, tournamentId, entry);
     }
 
-    return res.status(200).json({ success: true, data: { entry } });
+    return res.status(200).json({
+      success: true,
+      data: {
+        entry,
+        // Surfaced so the cage screen can stop the player at the window
+        // instead of discovering the form after they have left.
+        w2g: taxResult ? {
+          required: taxResult.assessment.reportable,
+          recorded: taxResult.recorded,
+          gross_amount: taxResult.assessment.gross,
+          buy_in: taxResult.assessment.buy_in,
+          net_amount: taxResult.assessment.net,
+          withholding_required: taxResult.assessment.withholding_required,
+          withholding_amount: taxResult.assessment.withholding_amount,
+          note: taxResult.assessment.note
+        } : null
+      }
+    });
   } catch (error) {
     console.warn('Payout error:', error);
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Record Payout' } });
@@ -742,7 +769,9 @@ async function handleBulkPayouts(req, res, tournamentId) {
       .from('commander_tournaments')
       // scheduled_start/actual_start are needed so points only accrue to a
       // season whose window actually contains this event.
-      .select('venue_id, buyin_amount, buyin_fee, bounty_amount, tournament_type, settings, leaderboard_id, scheduled_start, actual_start')
+      // rebuy_amount/addon_amount/ended_at additionally feed the W-2G
+      // assessment below (net of that entry's own total investment).
+      .select('id, venue_id, buyin_amount, buyin_fee, rebuy_amount, addon_amount, bounty_amount, tournament_type, settings, ended_at, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
 
@@ -779,6 +808,9 @@ async function handleBulkPayouts(req, res, tournamentId) {
 
     // Update each entry
     const results = [];
+    // W-2G assessments raised by this call, echoed back so the finalize screen
+    // can name the players the cage must collect a TIN from.
+    const w2gEvents = [];
     for (const p of payouts) {
       // 2026-07-25 audit fix: identify the entry by entry_id when provided
       // (chop entries for still-active players may lack player_id); fallback
@@ -829,6 +861,44 @@ async function handleBulkPayouts(req, res, tournamentId) {
         // awarding here would score everyone off a stale or missing position.
         if (tournament && !dealOnly) {
           await awardTournamentPoints(tournament, tournamentId, entry);
+
+          // ── W-2G on the FINALIZE path ──
+          // 2026-08-20: this path recorded no tax events at all. Finalize is
+          // how nearly every event is paid out, so a room that never used the
+          // single-payout POST route filed no W-2G for anybody. Deliberately
+          // skipped in deal_only mode: a recorded chop is not yet a payout and
+          // the finishing order is not final, so filing then would report a
+          // figure that is still going to move.
+          try {
+            const taxResult = await recordTournamentTaxEvent(getSupabase(), {
+              tournament,
+              tournamentId,
+              entry,
+              grossPayout: paidAmount,
+              playerId: entry.player_id || p.player_id || null,
+              venueId: tournament.venue_id
+            });
+            if (taxResult?.assessment?.reportable) {
+              w2gEvents.push({
+                entry_id: entry.id,
+                player_id: entry.player_id || null,
+                player_name: entry.player_name || null,
+                position: p.position,
+                recorded: taxResult.recorded,
+                reason: taxResult.reason,
+                gross_amount: taxResult.assessment.gross,
+                buy_in: taxResult.assessment.buy_in,
+                net_amount: taxResult.assessment.net,
+                withholding_required: taxResult.assessment.withholding_required,
+                withholding_amount: taxResult.assessment.withholding_amount,
+                note: taxResult.assessment.note
+              });
+            }
+          } catch (taxErr) {
+            // A tax-event failure must never roll back a recorded payout: the
+            // money has already been agreed. It is logged and surfaced instead.
+            console.warn('[payout] W-2G assessment failed:', taxErr?.message || taxErr);
+          }
         }
       }
     }
@@ -852,6 +922,7 @@ async function handleBulkPayouts(req, res, tournamentId) {
         deal_only: dealOnly,
         denomination: appliedDenomination,
         rounding_remainder: roundingRemainder,
+        w2g_events: w2gEvents,
         message: dealOnly
           ? 'Deal Recorded. Play Continues And Finishing Order Is Still Assigned On Elimination.'
           : 'Final Payouts Saved.'

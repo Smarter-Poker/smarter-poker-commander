@@ -485,8 +485,186 @@ export function buildResultsHtml(receipt, options = {}) {
 /** A payout job is a results sheet only when it carries a finishing order. */
 function isResultsReceipt(receipt) {
   if (!receipt) return false;
+  if (receipt.receipt_kind === 'reconciliation') return false;
   if (receipt.receipt_kind === 'tournament_results') return true;
   return Array.isArray(receipt.results);
+}
+
+/* ── Cash Drawer Reconciliation Sheet ─────────────────────────── */
+
+/**
+ * The sheet the cage balances the drawer against at the end of an event.
+ *
+ * Deliberately NOT a summary. Every expected figure is printed next to the
+ * actual one and the difference, because a reconciliation sheet that only
+ * shows the totals tells a manager there is a problem without telling them
+ * where. The over/short line is the last thing on the money block so it is the
+ * figure the eye lands on, and every discrepancy is listed underneath in full.
+ */
+const RECONCILIATION_CSS = `
+@page { margin: 0; size: 80mm auto; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Courier New', monospace; background: #fff; color: #000; -webkit-print-color-adjust: exact; }
+.sheet { width: 72mm; padding: 5mm 4mm 8mm; margin: 0 auto; page-break-after: always; }
+.sheet:last-child { page-break-after: avoid; }
+.c { text-align: center; }
+.b { font-weight: bold; }
+.venue { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
+.venue-sub { text-align: center; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #333; margin-bottom: 2mm; }
+.title { text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; margin: 2mm 0 1mm; }
+.tourn { text-align: center; font-size: 15px; font-weight: bold; margin-bottom: 1mm; }
+.when { text-align: center; font-size: 11px; color: #333; margin-bottom: 2mm; }
+.d { border-top: 1px dashed #000; margin: 2.5mm 0; }
+.dd { border-top: 2px solid #000; margin: 2.5mm 0; }
+.sec { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 2mm 0 1mm; }
+.rw { display: flex; justify-content: space-between; font-size: 12px; line-height: 1.7; }
+.rw3 { display: flex; font-size: 11px; line-height: 1.7; }
+.rw3 .lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 1mm; }
+.rw3 .n { width: 17mm; text-align: right; }
+.big { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; line-height: 1.6; margin: 1.5mm 0; }
+.ok { font-size: 15px; font-weight: bold; text-align: center; padding: 2mm 0; border: 2px solid #000; margin: 2mm 0; }
+.bad { font-size: 15px; font-weight: bold; text-align: center; padding: 2mm 0; border: 3px double #000; margin: 2mm 0; }
+.note { font-size: 10px; line-height: 1.45; margin: 1mm 0; }
+.sign-label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-top: 4mm; }
+.sign-line { border-bottom: 1px solid #000; height: 8mm; }
+.foot { text-align: center; font-size: 10px; color: #333; margin-top: 3mm; line-height: 1.5; }
+`.trim();
+
+/** Signed money, so a short line reads "-125" and not "125". */
+function fmtSigned(v) {
+  const num = Number(v);
+  if (!Number.isFinite(num)) return '0';
+  const rounded = Math.round(num * 100) / 100;
+  const abs = Math.abs(rounded).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (rounded > 0) return `+$${abs}`;
+  if (rounded < 0) return `-$${abs}`;
+  return '$0';
+}
+
+function fmtCents(v) {
+  const num = Number(v);
+  if (!Number.isFinite(num)) return '$0';
+  return `$${(Math.round(num * 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+/** Expected / actual / difference, three columns. */
+function reconRow(label, expected, actual) {
+  const diff = (Number(actual) || 0) - (Number(expected) || 0);
+  return `<div class="rw3">
+    <span class="lbl">${escapeHtml(label)}</span>
+    <span class="n">${escapeHtml(fmtCents(expected))}</span>
+    <span class="n">${escapeHtml(fmtCents(actual))}</span>
+    <span class="n b">${escapeHtml(fmtSigned(diff))}</span>
+  </div>`;
+}
+
+function reconciliationSheetFragment(receipt) {
+  const r = receipt || {};
+  const location = [r.venue_city ?? r.venueCity, r.venue_state ?? r.venueState].filter(Boolean).join(', ');
+  const expIn = r.expected_in || {};
+  const actIn = r.actual_in || {};
+  const expOut = r.expected_out || {};
+  const actOut = r.actual_out || {};
+  const variance = r.variance || {};
+  const derivation = r.derivation || {};
+  const counts = r.counts || {};
+  const overShort = Number(variance.over_short) || 0;
+  const balanced = r.balanced === true;
+  const discrepancies = Array.isArray(r.discrepancies) ? r.discrepancies : [];
+  const unpaid = Array.isArray(r.unpaid_itm) ? r.unpaid_itm : [];
+  const w2g = Array.isArray(r.w2g_candidates) ? r.w2g_candidates : [];
+
+  const methodRows = Object.entries(actIn.by_payment_method || {})
+    .map(([method, v]) => `<div class="rw"><span>${escapeHtml(method)} x${escapeHtml(String(v?.count ?? 0))}</span><span class="b">${escapeHtml(fmtCents(v?.amount))}</span></div>`)
+    .join('');
+
+  return `<div class="sheet">
+  <div class="venue">${escapeHtml(r.venue_name ?? r.venueName ?? 'Poker Room')}</div>
+  ${location ? `<div class="venue-sub">${escapeHtml(location)}</div>` : ''}
+  <div class="title">Cash Drawer Reconciliation</div>
+  <div class="tourn">${escapeHtml(r.tournament_name ?? r.tournamentName ?? 'Tournament')}</div>
+  <div class="when">${escapeHtml(fmtDate(r.started_at || r.timestamp))}${r.ended_at ? ` &nbsp; Ended ${escapeHtml(fmtTime(r.ended_at))}` : ''}</div>
+  <div class="dd"></div>
+
+  <div class="sec">Field</div>
+  <div class="rw"><span>Entries</span><span class="b">${escapeHtml(fmtNumber(counts.entries) || '0')}</span></div>
+  <div class="rw"><span>Rebuys</span><span class="b">${escapeHtml(fmtNumber(counts.rebuys) || '0')}</span></div>
+  <div class="rw"><span>Add-Ons</span><span class="b">${escapeHtml(fmtNumber(counts.addons) || '0')}</span></div>
+  ${Number(counts.reentries) > 0 ? `<div class="rw"><span>Re-Entries</span><span class="b">${escapeHtml(fmtNumber(counts.reentries))}</span></div>` : ''}
+
+  <div class="d"></div>
+  <div class="sec">Cash In</div>
+  <div class="rw3"><span class="lbl b">Bucket</span><span class="n b">Exp</span><span class="n b">Act</span><span class="n b">Diff</span></div>
+  ${reconRow(`Buy-Ins x${Number(expIn.buyins?.count) || 0}`, expIn.buyins?.amount, actIn.by_type?.buyin?.amount)}
+  ${reconRow(`Rebuys x${Number(expIn.rebuys?.count) || 0}`, expIn.rebuys?.amount, actIn.by_type?.rebuy?.amount)}
+  ${reconRow(`Add-Ons x${Number(expIn.addons?.count) || 0}`, expIn.addons?.amount, actIn.by_type?.addon?.amount)}
+  <div class="d"></div>
+  ${reconRow('Total In', expIn.total, actIn.total)}
+  ${methodRows ? `<div class="d"></div><div class="sec">By Payment Method</div>${methodRows}` : ''}
+
+  <div class="d"></div>
+  <div class="sec">Pool Derivation</div>
+  <div class="rw"><span>House Fees</span><span class="b">${escapeHtml(fmtCents(derivation.house_fees))}</span></div>
+  ${Number(derivation.bounty_pool_collected) > 0 ? `<div class="rw"><span>Bounty Pool</span><span class="b">${escapeHtml(fmtCents(derivation.bounty_pool_collected))}</span></div>` : ''}
+  <div class="rw"><span>Prize Pool Collected</span><span class="b">${escapeHtml(fmtCents(derivation.prize_pool_collected))}</span></div>
+  ${Number(derivation.overlay) > 0 ? `<div class="rw"><span>Overlay</span><span class="b">${escapeHtml(fmtCents(derivation.overlay))}</span></div>` : ''}
+  <div class="rw"><span>Effective Prize Pool</span><span class="b">${escapeHtml(fmtCents(derivation.effective_prize_pool))}</span></div>
+
+  <div class="d"></div>
+  <div class="sec">Cash Out</div>
+  <div class="rw3"><span class="lbl b">Bucket</span><span class="n b">Exp</span><span class="n b">Act</span><span class="n b">Diff</span></div>
+  ${reconRow('Payouts', expOut.payouts, actOut.by_type?.payout?.amount)}
+  ${Number(expOut.bounty_winnings) > 0 ? reconRow('Bounty Winnings', expOut.bounty_winnings, 0) : ''}
+  <div class="d"></div>
+  ${reconRow('Total Out', expOut.total, actOut.total)}
+
+  <div class="dd"></div>
+  <div class="big"><span>Net Expected</span><span>${escapeHtml(fmtCents(variance.net?.expected))}</span></div>
+  <div class="big"><span>Net Actual</span><span>${escapeHtml(fmtCents(variance.net?.actual))}</span></div>
+  <div class="${balanced ? 'ok' : 'bad'}">
+    ${balanced ? 'BALANCED' : `${escapeHtml(String(variance.over_short_label || (overShort > 0 ? 'Over' : 'Short')).toUpperCase())} ${escapeHtml(fmtSigned(overShort))}`}
+  </div>
+
+  ${discrepancies.length > 0 ? `<div class="d"></div><div class="sec">Discrepancies (${escapeHtml(String(discrepancies.length))})</div>
+  ${discrepancies.map(d => `<div class="note">${escapeHtml(String(d?.severity || 'note').toUpperCase())}: ${escapeHtml(d?.message ?? '')}</div>`).join('')}` : ''}
+
+  ${unpaid.length > 0 ? `<div class="d"></div><div class="sec">Unpaid In The Money (${escapeHtml(String(unpaid.length))})</div>
+  ${unpaid.map(u => `<div class="rw"><span>${escapeHtml(ordinal(u?.finish_position) || '--')} ${escapeHtml(u?.player_name ?? 'Player')}</span><span class="b">${escapeHtml(fmtCents(u?.payout_amount || u?.scheduled_amount))}</span></div>`).join('')}` : ''}
+
+  ${w2g.length > 0 ? `<div class="d"></div><div class="sec">W-2G Required (${escapeHtml(String(w2g.length))})</div>
+  ${w2g.map(x => `<div class="rw"><span>${escapeHtml(x?.player_name ?? 'Player')}</span><span class="b">Net ${escapeHtml(fmtCents(x?.net_amount))}</span></div>`).join('')}
+  <div class="note">Net Of That Entry Buy-In. Collect The Taxpayer Identification Number Before The Player Leaves.</div>` : ''}
+
+  <div class="sign-label">Cashier Signature</div>
+  <div class="sign-line"></div>
+  <div class="sign-label">Manager Signature</div>
+  <div class="sign-line"></div>
+
+  <div class="d"></div>
+  <div class="foot">Printed ${escapeHtml(fmtDate(r.timestamp))} ${escapeHtml(fmtTime(r.timestamp))}</div>
+  <div class="foot">Smarter.Poker</div>
+</div>`;
+}
+
+/**
+ * Full cash drawer reconciliation sheet. One `receipt` is one tournament and
+ * carries the payload returned by
+ * GET /api/commander/tournaments/:id/reconciliation plus the venue fields.
+ *
+ * @param {object|object[]} receipt
+ * @param {object} [options]
+ * @returns {string} HTML document
+ */
+export function buildReconciliationHtml(receipt, options = {}) {
+  const list = Array.isArray(receipt) ? receipt : [receipt].filter(Boolean);
+  const title = options.title
+    || (list[0]?.tournament_name ? `Reconciliation, ${list[0].tournament_name}` : 'Cash Drawer Reconciliation');
+  return htmlDoc(title, RECONCILIATION_CSS, list.map(reconciliationSheetFragment).join('\n'));
+}
+
+/** A payout job is a reconciliation sheet only when its receipts say so. */
+function isReconciliationReceipt(receipt) {
+  return !!receipt && receipt.receipt_kind === 'reconciliation';
 }
 
 /* ── Bag And Tag Card (end of a multi-day flight) ─────────────── */
@@ -608,6 +786,7 @@ const JOB_TYPE_LABELS = {
 
 const RESULTS_JOB_TITLE = 'Tournament Results';
 const BAG_TAG_JOB_TITLE = 'Chip Bag Tags';
+const RECONCILIATION_JOB_TITLE = 'Cash Drawer Reconciliation';
 
 /**
  * Render a queued `commander_print_jobs` row into a single print document.
@@ -628,10 +807,17 @@ export function buildJobHtml(job) {
     case 'buyin':
       return buildBuyinReceiptsHtml(receipts, { title });
     case 'payout':
-      // A payout job is either a stack of per-player payout cards (the cage
-      // hands one to each finisher) or the single end-of-event results sheet.
-      // Only the second shape carries a `results` array, so the two never
-      // collide and the older per-player cards keep printing as before.
+      // A payout job is one of three things: the end-of-event cash drawer
+      // reconciliation sheet, the end-of-event results sheet, or a stack of
+      // per-player payout cards. Each shape is identified by its own marker
+      // (receipt_kind 'reconciliation', a `results` array) so the older
+      // per-player cards keep printing exactly as before.
+      if (receipts.some(isReconciliationReceipt)) {
+        return buildReconciliationHtml(
+          receipts.filter(isReconciliationReceipt),
+          { title: job?.title || RECONCILIATION_JOB_TITLE }
+        );
+      }
       if (receipts.some(isResultsReceipt)) {
         return buildResultsHtml(
           receipts.filter(isResultsReceipt),
