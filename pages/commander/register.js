@@ -969,8 +969,8 @@ export default function RegisterPage() {
                     // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
                     // I will use a very subtle white background
                     background: 'transparent',
-                    border: active ? '2px solid #1877F2' : 'none',
-                    boxShadow: active ? '0 0 10px #1877F2, inset 0 0 10px rgba(24,119,242,0.5)' : 'none',
+                    border: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '2px solid #1877F2' : 'none',
+                    boxShadow: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '0 0 10px #1877F2, inset 0 0 10px rgba(24,119,242,0.5)' : 'none',
                     borderRadius: '20px',
                     cursor: 'pointer',
                     zIndex: 10
