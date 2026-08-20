@@ -363,32 +363,20 @@ const venueId = staff?.venue_id;
 
         /* ── CARD ── */
         .cmd-card {
-          position: relative;
-          border-radius: 16px;
-          overflow: hidden;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.3s;
-          border: 3px solid #3A3B3C;
-          background: #0a0a0a;
-          padding: 6px;
-        }
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.3s;
+}
         .cmd-card:hover {
           transform: scale(1.02);
+          filter: brightness(1.15);
         }
         .cmd-card img {
           width: 100%;
-          height: 100%;
-          object-fit: fill;
+          height: auto;
           display: block;
-          border-radius: 10px;
-          background: #0a0a0a;
         }
-        .cmd-card-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.6) 100%);
-          pointer-events: none;
-        }
+        
 
         /* ── OPENED CARD VIEW ── */
         .cmd-open {
@@ -578,24 +566,10 @@ const venueId = staff?.venue_id;
                 <div
                   key={card.id}
                   className="cmd-card"
-                  style={{ boxShadow: `0 0 20px ${card.glow}30, inset 0 0 1px ${card.glow}40` }}
                   onClick={() => { setActiveCard(card.id); router.push(`/commander/dashboard?card=${card.id}`, undefined, { shallow: true }); }}
                 >
                   <img src={card.image} alt={card.title} loading="lazy" decoding="async" />
-                  <div className="cmd-card-overlay" />
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    padding: '20px 16px 14px',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
-                    zIndex: 2 }}>
-                    <div style={{
-                      color: card.glow, fontSize: 18, fontWeight: 800,
-                      textTransform: 'uppercase', letterSpacing: 1.5,
-                      textShadow: `0 0 20px ${card.glow}60, 0 2px 4px rgba(0,0,0,0.8)` }}>{card.title}</div>
-                    <div style={{
-                      color: '#94A3B8', fontSize: 11, marginTop: 2,
-                      fontWeight: 500, letterSpacing: 0.5 }}>{card.subtitle}</div>
-                  </div>
+                  
                 </div>
               ))}
             </div>
