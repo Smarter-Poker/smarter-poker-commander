@@ -4,7 +4,7 @@
  * DELETE /api/commander/waitlist/[id] - Remove player from waitlist (player or staff)
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardWriteStaff, verifyStaffSession, getUser } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -27,7 +27,12 @@ export default async function handler(req, res) {
 
     const { id } = req.query;
 
-    // ── GET: Return a single waitlist entry (public) ──────────────
+    // ── GET: Return a single waitlist entry ───────────────────────
+    // 2026-08-20 audit fix: this GET was fully public and selected '*', which
+    // includes player_name and player_phone - any entry id leaked a phone
+    // number. Access now mirrors the DELETE path below: verified venue staff
+    // see the full row, the entry's own player (Bearer) sees their own row,
+    // everyone else gets 401.
     if (req.method === 'GET') {
       try {
         const { data, error } = await getSupabase()
@@ -38,6 +43,21 @@ export default async function handler(req, res) {
 
         if (error || !data) {
           return res.status(404).json({ success: false, error: 'Waitlist entry not found' });
+        }
+
+        const sessionResult = await verifyStaffSession(req);
+        const staff = sessionResult.error ? null : sessionResult.staff;
+        const isVenueStaff = !!(staff && (staff.venue_id === undefined || staff.venue_id === null
+          || String(staff.venue_id) === String(data.venue_id)));
+
+        if (!isVenueStaff) {
+          const user = await getUser(req, res);
+          if (!user || !data.player_id || String(user.id) !== String(data.player_id)) {
+            return res.status(401).json({
+              success: false,
+              error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
+            });
+          }
         }
 
         return res.status(200).json({ success: true, data });
@@ -65,47 +85,20 @@ export default async function handler(req, res) {
         let authorized = false;
         let actingStaffId = null;
 
-        // Check staff auth first
-        const staffSession = req.headers['x-staff-session'];
-        if (staffSession) {
-          try {
-            const sessionData = JSON.parse(staffSession);
-            if (sessionData.id) {
-              const { data: staffCheck } = await getSupabase()
-                .from('commander_staff')
-                .select('id')
-                .eq('id', sessionData.id)
-                .eq('is_active', true)
-                .maybeSingle();
-              if (staffCheck) {
-                authorized = true;
-                actingStaffId = staffCheck.id;
-              }
-            } else if (sessionData.user_id && sessionData.venue_id) {
-              const { data: staffCheck } = await getSupabase()
-                .from('commander_staff')
-                .select('id')
-                .eq('user_id', sessionData.user_id)
-                .eq('venue_id', sessionData.venue_id)
-                .eq('is_active', true)
-                .maybeSingle();
-              if (staffCheck) {
-                authorized = true;
-                actingStaffId = staffCheck.id;
-              }
-              // Owner fallback
-              if (!authorized && sessionData.role === 'owner') {
-                const { data: sub } = await getSupabase()
-                  .from('commander_subscriptions')
-                  .select('id')
-                  .eq('owner_id', sessionData.user_id)
-                  .eq('venue_id', sessionData.venue_id)
-                  .in('status', ['active', 'trialing'])
-                  .maybeSingle();
-                if (sub) authorized = true;
-              }
-            }
-          } catch { /* invalid session */ }
+        // 2026-08-20 audit fix: this used to JSON.parse the raw x-staff-session
+        // header and look the claimed staff id straight up in commander_staff,
+        // with no HMAC check and no venue scoping - a forged header holding any
+        // staff row id could delete any venue's waitlist entries.
+        // verifyStaffSession validates the signature and the TTL, and the
+        // entry's venue must match the session's venue.
+        const sessionResult = await verifyStaffSession(req);
+        if (sessionResult.staff) {
+          const staffRow = sessionResult.staff;
+          if (staffRow.venue_id === undefined || staffRow.venue_id === null
+              || String(staffRow.venue_id) === String(entry.venue_id)) {
+            authorized = true;
+            actingStaffId = staffRow.id;
+          }
         }
 
         // Check player ownership via Bearer token
@@ -176,48 +169,24 @@ export default async function handler(req, res) {
     // ── PATCH: Update waitlist entry fields (e.g. check-in) ─────────
     if (req.method === 'PATCH') {
       try {
-        // Require staff auth
-        const staffSession = req.headers['x-staff-session'];
-        if (!staffSession) {
-          return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' } });
+        // 2026-08-20 audit fix: the old inline check re-parsed the UNSIGNED
+        // x-staff-session header (guardWriteStaff above already verified the
+        // signed session) and never checked that the entry belonged to the
+        // caller's venue, so any staff member could edit - including rewriting
+        // player_phone on - any other venue's waitlist entries.
+        const { data: target } = await getSupabase()
+          .from('commander_waitlist')
+          .select('id, venue_id')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (!target) {
+          return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Waitlist Entry Not Found' } });
         }
 
-        let isStaff = false;
-        try {
-          const sessionData = JSON.parse(staffSession);
-          if (sessionData.id) {
-            const { data: staff } = await getSupabase()
-              .from('commander_staff')
-              .select('id, venue_id, is_active')
-              .eq('id', sessionData.id)
-              .eq('is_active', true)
-              .maybeSingle();
-            if (staff) isStaff = true;
-          } else if (sessionData.user_id && sessionData.venue_id) {
-            const { data: staff } = await getSupabase()
-              .from('commander_staff')
-              .select('id, venue_id, is_active')
-              .eq('user_id', sessionData.user_id)
-              .eq('venue_id', sessionData.venue_id)
-              .eq('is_active', true)
-              .maybeSingle();
-            if (staff) isStaff = true;
-            // Owner fallback
-            if (!isStaff && sessionData.role === 'owner') {
-              const { data: sub } = await getSupabase()
-                .from('commander_subscriptions')
-                .select('id')
-                .eq('owner_id', sessionData.user_id)
-                .eq('venue_id', sessionData.venue_id)
-                .in('status', ['active', 'trialing'])
-                .maybeSingle();
-              if (sub) isStaff = true;
-            }
-          }
-        } catch { /* invalid session */ }
-
-        if (!isStaff) {
-          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Staff access required' } });
+        if (staff.venue_id !== undefined && staff.venue_id !== null
+            && String(staff.venue_id) !== String(target.venue_id)) {
+          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
         }
 
         // Only allow specific fields to be updated

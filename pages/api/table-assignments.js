@@ -30,24 +30,11 @@ export default async function handler(req, res) {
     const _g = await guardManager(req, res); if (!_g) return;
 
     try {
-      // Get venue_id from staff session header
-      let venueId;
-      try {
-        const staffSession = JSON.parse(req.headers['x-staff-session'] || '{}');
-        if (staffSession.venue_id) {
-          venueId = staffSession.venue_id;
-        } else if (staffSession.id) {
-          const { data: staffData } = await getSupabase()
-            .from('commander_staff')
-            .select('venue_id')
-            .eq('id', staffSession.id)
-            .eq('is_active', true)
-            .maybeSingle();
-          venueId = staffData?.venue_id;
-        } else if (staffSession.user_id) {
-          venueId = staffSession.venue_id;
-        }
-      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // 2026-08-20 audit fix: the venue used to be re-read from the RAW
+      // x-staff-session header. guardManager above already verified and
+      // resolved the session, so take the venue from its result and never
+      // parse the client-supplied header again.
+      let venueId = _g.venue_id;
 
       // Fallback: Bearer token
       if (!venueId) {
@@ -75,12 +62,8 @@ export default async function handler(req, res) {
 
       if (!venueId) return res.status(403).json({ success: false, error: 'Could not determine venue' });
 
-      // Extract staff info
-      let staffUserId = null;
-      try {
-        const sess = JSON.parse(req.headers['x-staff-session'] || '{}');
-        staffUserId = sess.user_id || sess.id || null;
-      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // Staff identity comes from the verified session, not the raw header.
+      const staffUserId = _g.user_id || _g.linked_user_id || _g.id || null;
 
       if (req.method === 'GET') return handleGet(req, res, venueId);
       if (req.method === 'PUT') return handlePut(req, res, venueId, staffUserId);

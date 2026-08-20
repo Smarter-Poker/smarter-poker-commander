@@ -6,7 +6,7 @@
  * DELETE /api/commander/promotions/[id] - Delete promotion
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -27,7 +27,10 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the detail payload includes the internal
+    // settings blob and the last ten awards with player names.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id } = req.query;
 
@@ -36,7 +39,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return getPromotion(req, res, id);
+      return getPromotion(req, res, id, _g);
     }
 
     if (req.method === 'PUT' || req.method === 'PATCH') {
@@ -57,7 +60,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function getPromotion(req, res, id) {
+async function getPromotion(req, res, id, staff) {
   try {
     const { data: promotion, error } = await getSupabase()
       .from('commander_promotions')
@@ -70,6 +73,11 @@ async function getPromotion(req, res, id) {
 
     if (error || !promotion) {
       return res.status(404).json({ success: false, error: 'Promotion not found' });
+    }
+
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(promotion.venue_id)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
     // Get recent awards
@@ -88,7 +96,7 @@ async function getPromotion(req, res, id) {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', 'private, max-age=30');
     return res.status(200).json({
       promotion,
       recent_awards: recentAwards || []

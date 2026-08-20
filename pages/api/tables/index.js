@@ -4,7 +4,7 @@
  * Reference: Phase 2 - Table CRUD
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -26,13 +26,15 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the table list embeds occupied seats with
+    // player_name, so any venue's floor and seated players were public.
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     switch (req.method) {
       case 'GET':
-        return handleGet(req, res);
+        return handleGet(req, res, _authResult);
       case 'POST':
         return handlePost(req, res, _authResult);
       default:
@@ -49,7 +51,15 @@ export default async function handler(req, res) {
   }
 }
 
-async function handleGet(req, res) {
+// 2026-08-20 audit fix: venue_id was taken from the client with no check
+// against the caller's staff session on any method.
+function venueMismatch(staff, venueId) {
+  if (!staff || staff === true) return false;
+  if (staff.venue_id === undefined || staff.venue_id === null) return false;
+  return String(staff.venue_id) !== String(venueId);
+}
+
+async function handleGet(req, res, staff) {
   try {
     const { venue_id, status } = req.query;
 
@@ -57,6 +67,13 @@ async function handleGet(req, res) {
       return res.status(400).json({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'venue_id is required' }
+      });
+    }
+
+    if (venueMismatch(staff, venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
       });
     }
 
@@ -174,6 +191,13 @@ async function handlePost(req, res, _authResult) {
       return res.status(400).json({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'venue_id and table_number are required' }
+      });
+    }
+
+    if (venueMismatch(_authResult, venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
       });
     }
 

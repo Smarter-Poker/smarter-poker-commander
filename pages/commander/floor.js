@@ -92,10 +92,14 @@ return { };
     if (!venueId) return;
     try {
       const headers = getHeaders();
+      // 2026-08-20 audit fix: these three used bare fetch with an empty header
+      // bag, which only worked because the routes were unauthenticated. They
+      // now require a staff session, so go through commanderFetch (which
+      // injects x-staff-session and the Bearer token).
       const [tablesRes, waitlistRes, gamesRes] = await Promise.all([
-        fetch(`/api/commander/tables?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
-        fetch(`/api/commander/waitlist?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
-        fetch(`/api/commander/games/venue/${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
+        commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
+        commanderFetch(`/api/commander/waitlist?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
+        commanderFetch(`/api/commander/games/venue/${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
       ]);
 
       let rawTables = Array.isArray(tablesRes.data) ? tablesRes.data : (tablesRes.data?.tables || []);

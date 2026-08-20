@@ -4,7 +4,7 @@
  * GET  /api/commander/close-day - Recent close records for a venue (history)
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -18,17 +18,20 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - writes require a signed staff session; GET is venue-scoped history.
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this used guardWriteStaff, which returns `true` for GET
+// without verifying anything, so the end-of-day close history - full financial
+// report snapshots and totals - was readable by anyone who guessed a venue_id.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'POST') return closeDay(req, res, _g);
-    if (req.method === 'GET') return listCloses(req, res);
+    if (req.method === 'GET') return listCloses(req, res, _g);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
 
   } catch (err) {
@@ -38,12 +41,25 @@ export default async function handler(req, res) {
   }
 }
 
+// 2026-08-20 audit fix: venue_id arrived from the client and was never checked
+// against the caller's staff session, so staff at venue A could read or write
+// venue B's day closes by changing one parameter.
+function venueMismatch(staff, venueId) {
+  if (!staff || staff === true) return false;
+  if (staff.venue_id === undefined || staff.venue_id === null) return false;
+  return String(staff.venue_id) !== String(venueId);
+}
+
 async function closeDay(req, res, staff) {
   const { venue_id, closed_by_name, shift_notes, report_snapshot, totals } = req.body || {};
 
   const venueId = parseInt(venue_id, 10);
   if (!Number.isInteger(venueId)) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id (integer) required' } });
+  }
+
+  if (venueMismatch(staff, venueId)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
   }
 
   try {
@@ -75,12 +91,16 @@ async function closeDay(req, res, staff) {
   }
 }
 
-async function listCloses(req, res) {
+async function listCloses(req, res, staff) {
   const { venue_id, date, limit = 30 } = req.query;
 
   const venueId = parseInt(venue_id, 10);
   if (!Number.isInteger(venueId)) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id (integer) required' } });
+  }
+
+  if (venueMismatch(staff, venueId)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
   }
 
   try {

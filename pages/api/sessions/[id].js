@@ -4,7 +4,7 @@
  * Reference: Phase 2 - Session Tracking
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -25,8 +25,12 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - a session id leaked the player's identity,
+    // buy-in totals and staff notes. The PATCH path (checkout / abandon /
+    // buy-in edits) had no venue ownership check at all, so any staff member
+    // could close out another venue's player sessions.
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     const { id } = req.query;
@@ -35,6 +39,27 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'Session ID required' }
+      });
+    }
+
+    const { data: owner } = await getSupabase()
+      .from('commander_player_sessions')
+      .select('id, venue_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Session Not Found' }
+      });
+    }
+
+    if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+        && String(owner.venue_id) !== String(_authResult.venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
       });
     }
 

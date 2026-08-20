@@ -5,7 +5,7 @@
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
 let _supabase = null;
@@ -26,10 +26,17 @@ export default async function handler(req, res) {
     }
 
 
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardWriteStaff(req, res);
-      if (!_staff) return;
+    // 2026-08-20 audit fix: the guard only ran for writes, leaving the GET
+    // public - it returns every staff clock-in/out entry plus staff names and
+    // roles for any venue_id (an employee timesheet). Staff auth now applies to
+    // both methods and the venue comes from the verified session.
+    const _staff = await guardStaff(req, res);
+    if (!_staff) return;
+
+    const _scopeVenueId = req.method === 'GET' ? req.query.venue_id : req.body?.venue_id;
+    if (_scopeVenueId && _staff.venue_id !== undefined && _staff.venue_id !== null
+        && String(_staff.venue_id) !== String(_scopeVenueId)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
       if (req.method === 'GET') return handleGet(req, res);

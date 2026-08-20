@@ -340,7 +340,26 @@ async function getBalances(req, res) {
     const { venue_id, history } = req.query;
 
     // If history=true, return comp log for the venue
+    // 2026-08-20 audit fix: this branch ran BEFORE any authentication (the
+    // handler-level guardWriteStaff passes GET straight through), so the whole
+    // comp ledger for any venue - member names, amounts, reasons - was public.
+    // It now requires a verified staff session scoped to that venue.
     if (history && venue_id) {
+      const historySession = await verifyStaffSession(req);
+      if (!historySession.staff) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'AUTH_REQUIRED', message: 'Staff Authentication Required' }
+        });
+      }
+      if (historySession.staff.venue_id !== undefined && historySession.staff.venue_id !== null
+          && String(historySession.staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
+        });
+      }
+
       const { data: logs, error } = await getSupabase()
         .from('commander_member_comp_log')
         .select('*')

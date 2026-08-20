@@ -120,6 +120,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
+import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 function StatCard({ title, value, change, icon: Icon, color = '#1877F2' }) {
   const hasChange = change !== undefined && change !== null;
@@ -253,9 +254,12 @@ export default function AnalyticsPage() {
       // Convert period to days; fetch 2x to get previous period for comparison
       const periodDays = period === 'week' ? 7 : period === 'month' ? 30 : 365;
 const headers = { };
+      // 2026-08-20 audit fix: both analytics routes authenticate off the
+      // Authorization header, which a bare fetch with an empty header bag never
+      // sent. commanderFetch injects the Bearer token and the staff session.
       const [dailyRes, playersRes] = await Promise.all([
-        fetch(`/api/commander/analytics/daily?venue_id=${venueId}&days=${periodDays * 2}`, { headers }).catch(() => ({ ok: false })),
-        fetch(`/api/commander/analytics/players?venue_id=${venueId}&limit=10`, { headers }).catch(() => ({ ok: false }))
+        commanderFetch(`/api/commander/analytics/daily?venue_id=${venueId}&days=${periodDays * 2}`, { headers }).catch(() => ({ ok: false })),
+        commanderFetch(`/api/commander/analytics/players?venue_id=${venueId}&limit=10`, { headers }).catch(() => ({ ok: false }))
       ]);
 
       if (!dailyRes || !dailyRes.ok) throw new Error(`Daily analytics failed (${dailyRes?.status || 'network error'})`);

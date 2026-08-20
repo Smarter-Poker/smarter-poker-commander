@@ -4,7 +4,7 @@
  * POST /api/commander/marketplace/dealers - Register as freelance dealer
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -25,7 +25,12 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything. listDealers selects '*' from
+    // commander_dealer_marketplace, which carries contact_email and
+    // contact_phone, so the freelance dealers' personal contact details were
+    // scrapeable by anyone.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'GET') {
       return listDealers(req, res);

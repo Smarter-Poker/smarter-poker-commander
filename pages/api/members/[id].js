@@ -5,7 +5,7 @@
  * DELETE: Deactivate member (soft delete)
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -19,21 +19,42 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this used guardWriteStaff, which returns `true` for GET
+// without verifying anything. The GET returns a full commander_members row -
+// legal name, date of birth, government ID number, address, phone, email and
+// comp balance - so the entire member database was readable by member id.
+// PUT/DELETE were staff-gated but had no venue ownership check at all, so any
+// staff member at any venue could edit or suspend any other venue's members.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-      // Auth guard: require staff auth for write operations
-      const _authResult = await guardWriteStaff(req, res);
+      const _authResult = await guardStaff(req, res);
       if (!_authResult) return;
 
       const { id } = req.query;
 
       if (!id) {
           return res.status(400).json({ success: false, error: 'Member ID is required' });
+      }
+
+      // Venue ownership: the member must belong to the caller's venue.
+      const { data: owner } = await getSupabase()
+          .from('commander_members')
+          .select('id, venue_id')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (!owner) {
+          return res.status(404).json({ success: false, error: 'Member Not Found' });
+      }
+
+      if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+          && String(owner.venue_id) !== String(_authResult.venue_id)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
       }
 
       if (req.method === 'GET') {

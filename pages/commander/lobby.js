@@ -19,6 +19,7 @@ import useWakeLock from '../../src/hooks/useWakeLock';
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
+import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 export default function LobbyDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-lobby'); }, []);
@@ -37,10 +38,14 @@ export default function LobbyDisplay() {
     try {
 const headers = { };
       const opts = signal ? { headers, signal } : { headers };
+      // 2026-08-20 audit fix: the tables and waitlist reads used bare fetch with
+      // no auth headers, which only worked because those routes were public
+      // (the waitlist one leaked player phone numbers). They now require a
+      // staff session, so route them through commanderFetch.
       const [tablesRes, waitlistRes, tournamentsRes] = await Promise.all([
-        fetch(`/api/commander/tables?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch(`/api/commander/waitlist?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch(`/api/commander/tournaments?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] }))
+        commanderFetch(`/api/commander/tables?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
+        commanderFetch(`/api/commander/waitlist?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
+        commanderFetch(`/api/commander/tournaments?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] }))
       ]);
 
       // Tables: data may be {tables: []} or array directly

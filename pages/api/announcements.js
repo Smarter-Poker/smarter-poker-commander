@@ -28,18 +28,24 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // For GET requests we try staff session first, then allow unauthenticated (display pages)
-    // For write requests, guardWriteStaff handles auth
-    let venueId = req.query.venue_id;
-
+    // 2026-08-20 audit fix: the GET used to fall through unauthenticated for
+    // "display pages", but every in-app caller (displays/announcements.js and
+    // notifications.js) already sends a staff session through commanderFetch,
+    // and the response includes drafts scheduled for the future plus author_id.
+    // The read is now staff-only and venue-scoped to the verified session.
     if (req.method === 'GET') {
-      // Try to get venue_id from staff session if not in query
-      if (!venueId) {
-        try {
-          const result = await verifyStaffSession(req);
-          if (result.staff) venueId = result.staff.venue_id;
-        } catch (e) { console.warn('[App] Handled exception:', e); }
+      const result = await verifyStaffSession(req);
+      if (result.error) {
+        return res.status(result.error.status || 401).json({ success: false, error: result.error });
       }
+      const sessionVenueId = result.staff.venue_id;
+      const venueId = sessionVenueId ?? req.query.venue_id;
+
+      if (req.query.venue_id && sessionVenueId !== undefined && sessionVenueId !== null
+          && String(req.query.venue_id) !== String(sessionVenueId)) {
+        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+      }
+
       if (!venueId) return res.status(400).json({ success: false, error: 'venue_id required' });
 
       try {
@@ -75,7 +81,13 @@ export default async function handler(req, res) {
     // POST - Create announcement
     if (req.method === 'POST') {
       const { venue_id: vid, title, message, type, priority, expires_at, starts_at } = req.body;
-      const targetVenueId = vid || staff.venue_id;
+      // 2026-08-20 audit fix: venue_id came off the body unchecked, so staff at
+      // venue A could post announcements onto venue B's display screens.
+      const targetVenueId = staff.venue_id ?? vid;
+      if (vid && staff.venue_id !== undefined && staff.venue_id !== null
+          && String(vid) !== String(staff.venue_id)) {
+        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+      }
       if (!targetVenueId || !message) {
         return res.status(400).json({ success: false, error: 'venue_id and message required' });
       }

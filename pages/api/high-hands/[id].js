@@ -6,7 +6,7 @@
  * DELETE /api/commander/high-hands/:id - Delete high hand
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -27,7 +27,10 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - any high hand id returned the player name,
+    // hole cards, board and prize amount.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id } = req.query;
 
@@ -36,7 +39,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return getHighHand(req, res, id);
+      return getHighHand(req, res, id, _g);
     }
 
     if (req.method === 'PUT') {
@@ -57,7 +60,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function getHighHand(req, res, id) {
+async function getHighHand(req, res, id, staff) {
   try {
     const { data: highHand, error } = await getSupabase()
       .from('commander_high_hands')
@@ -69,6 +72,11 @@ async function getHighHand(req, res, id) {
 
     if (!highHand) {
       return res.status(404).json({ success: false, error: 'High hand not found' });
+    }
+
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(highHand.venue_id)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
     return res.status(200).json({ high_hand: highHand });

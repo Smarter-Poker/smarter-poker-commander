@@ -4,7 +4,7 @@
  * Per API_REFERENCE.md
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -18,13 +18,15 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this route is GET-only and used guardWriteStaff, which
+// returns `true` for GET without verifying anything - league standings (player
+// names, avatars and lifetime earnings) were public for any league id.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     if (req.method !== 'GET') {

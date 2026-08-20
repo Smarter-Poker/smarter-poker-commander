@@ -5,7 +5,7 @@
  * POST /api/commander/high-hands - Record new high hand
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -27,10 +27,13 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the high hand log (player names, cards,
+    // prize amounts) was readable for any venue_id.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'GET') {
-      return listHighHands(req, res);
+      return listHighHands(req, res, _g);
     }
 
     if (req.method === 'POST') {
@@ -47,7 +50,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function listHighHands(req, res) {
+async function listHighHands(req, res, staff) {
   try {
     const {
       venue_id,
@@ -61,6 +64,11 @@ async function listHighHands(req, res) {
 
     if (!venue_id) {
       return res.status(400).json({ error: 'Venue ID required' });
+    }
+
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(venue_id)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
     }
 
     let query = getSupabase()

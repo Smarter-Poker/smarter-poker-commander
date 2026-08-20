@@ -4,7 +4,7 @@
  * Reference: Phase 2 - Service Requests
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -27,15 +27,18 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything, and venue_id was optional on the GET - so
+    // omitting it returned EVERY venue's open service requests (player ids,
+    // seat/table, free-text notes) to an anonymous caller.
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     switch (req.method) {
       case 'GET':
-        return handleGet(req, res);
+        return handleGet(req, res, _authResult);
       case 'POST':
-        return handlePost(req, res);
+        return handlePost(req, res, _authResult);
       default:
         return res.status(405).json({
           success: false,
@@ -50,9 +53,38 @@ export default async function handler(req, res) {
   }
 }
 
-async function handleGet(req, res) {
+function scopedVenue(staff, venueId) {
+  if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null) {
+    return staff.venue_id;
+  }
+  return venueId;
+}
+
+function venueMismatch(staff, venueId) {
+  if (!staff || staff === true) return false;
+  if (staff.venue_id === undefined || staff.venue_id === null) return false;
+  if (!venueId) return false;
+  return String(staff.venue_id) !== String(venueId);
+}
+
+async function handleGet(req, res, staff) {
   try {
-    const { venue_id, game_id, status, limit = 50 } = req.query;
+    const { game_id, status, limit = 50 } = req.query;
+
+    if (venueMismatch(staff, req.query.venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
+      });
+    }
+
+    const venue_id = scopedVenue(staff, req.query.venue_id);
+    if (!venue_id) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'venue_id is required' }
+      });
+    }
 
     let query = getSupabase()
       .from('commander_service_requests')
@@ -112,7 +144,7 @@ async function handleGet(req, res) {
   }
 }
 
-async function handlePost(req, res) {
+async function handlePost(req, res, staff) {
   try {
     const {
       venue_id,
@@ -136,6 +168,14 @@ async function handlePost(req, res) {
       return res.status(400).json({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: `Invalid request_type. Must be: ${VALID_REQUEST_TYPES.join(', ')}` }
+      });
+    }
+
+    // 2026-08-20 audit fix: venue_id came off the body unchecked.
+    if (venueMismatch(staff, venue_id)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
       });
     }
 

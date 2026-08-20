@@ -5,7 +5,7 @@
  * POST /api/commander/promotions/[id]/awards - Create award
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -26,7 +26,10 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the award list carries player names and
+    // prize values.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id: promotionId } = req.query;
 
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return listAwards(req, res, promotionId);
+      return listAwards(req, res, promotionId, _g);
     }
 
     if (req.method === 'POST') {
@@ -52,9 +55,22 @@ export default async function handler(req, res) {
   }
 }
 
-async function listAwards(req, res, promotionId) {
+async function listAwards(req, res, promotionId, staff) {
   try {
     const { status, limit = 50, offset = 0 } = req.query;
+
+    // 2026-08-20 audit fix: venue ownership on the promotion being read.
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null) {
+      const { data: promo } = await getSupabase()
+        .from('commander_promotions')
+        .select('id, venue_id')
+        .eq('id', promotionId)
+        .maybeSingle();
+      if (!promo) return res.status(404).json({ error: 'Promotion Not Found' });
+      if (String(promo.venue_id) !== String(staff.venue_id)) {
+        return res.status(403).json({ error: 'You Are Not Staff At This Venue' });
+      }
+    }
 
     let query = getSupabase()
       .from('commander_promotion_awards')
@@ -77,7 +93,7 @@ async function listAwards(req, res, promotionId) {
 
     if (error) throw error;
 
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', 'private, max-age=30');
     return res.status(200).json({
       awards: data,
       total: count,

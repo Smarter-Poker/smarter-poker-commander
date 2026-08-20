@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       if (req.method === 'GET') {
           return handleList(req, res, _authResult);
       } else if (req.method === 'POST') {
-          return handleCreate(req, res);
+          return handleCreate(req, res, _authResult);
       }
       return res.status(405).json({ success: false, error: 'Method not allowed' });
 
@@ -109,7 +109,7 @@ async function handleList(req, res, staff) {
     });
 }
 
-async function handleCreate(req, res) {
+async function handleCreate(req, res, staff) {
     const {
         venue_id,
         first_name,
@@ -133,6 +133,13 @@ async function handleCreate(req, res) {
             success: false,
             error: 'venue_id, first_name, and last_name are required',
         });
+    }
+
+    // 2026-08-20 audit fix: venue_id came straight off the body, so staff at
+    // venue A could enroll members into venue B's roster.
+    if (staff && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
     try {

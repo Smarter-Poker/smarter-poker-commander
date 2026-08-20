@@ -74,6 +74,33 @@ function getSupabase() {
     return _supabase;
 }
 
+// GET is the public live clock, polled every 15 seconds by the live page, every
+// TV display and every kiosk in the room, so it reads columns instead of `*`.
+// The multi-day, engine and audit columns on commander_tournaments are never
+// referenced by this response.
+const CLOCK_TOURNAMENT_COLUMNS = [
+  'id', 'venue_id', 'name', 'status', 'current_level', 'current_entries',
+  'players_remaining', 'average_stack', 'total_chips_in_play', 'blind_structure',
+  'settings', 'updated_at', 'buyin_amount', 'rebuy_amount', 'addon_amount',
+  'guaranteed_pool', 'actual_prizepool', 'payout_structure', 'paying_places',
+  'final_payouts'
+].join(', ');
+
+// See floor-view.js: the same clock_state backfill used to fire from this
+// public GET on every poll from every display, and commander_clock_write
+// restamps levelStartedAt each time, so a busy room could hold the level timer
+// at full duration indefinitely. Throttled per process, guarded in the database.
+const CLOCK_BACKFILL_TTL_MS = 60 * 1000;
+const _clockBackfillAt = new Map();
+function claimClockBackfill(tournamentId) {
+  const now = Date.now();
+  const last = _clockBackfillAt.get(tournamentId);
+  if (last && now - last < CLOCK_BACKFILL_TTL_MS) return false;
+  if (_clockBackfillAt.size > 500) _clockBackfillAt.clear();
+  _clockBackfillAt.set(tournamentId, now);
+  return true;
+}
+
 // Auth: GET is PUBLIC (live clock page); POST clock actions require STAFF_WRITE.
 export default async function handler(req, res) {
   try {
@@ -115,11 +142,45 @@ export default async function handler(req, res) {
 
 async function getClockState(req, res, tournamentId) {
   try {
-    const { data: tournament, error } = await getSupabase()
-      .from('commander_tournaments')
-      .select('*')
-      .eq('id', tournamentId)
-      .maybeSingle();
+    // This is the live clock. clock.timeRemaining is recomputed from Date.now()
+    // on every request, so an ETag would change on essentially every poll and
+    // never produce a 304 - conditional responses are not worth adding here.
+    // What IS worth stating explicitly is that nothing may cache it: the route
+    // is public and kiosks often sit behind a venue proxy, and a proxy applying
+    // heuristic freshness to a 200 with no validators would freeze the clock on
+    // every screen in the room.
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+
+    // Decide up front whether the caller wants the heavy entries scan, so the
+    // tournament row and the entries list can go out in one batch instead of
+    // two serial round trips. Public live pages poll this with
+    // ?include=chips,payouts.
+    const include = String(req.query.include || '')
+      .split(',')
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean);
+    const wantsEntries = include.includes('chips') || include.includes('payouts');
+
+    const [tournamentRes, entriesRes] = await Promise.all([
+      getSupabase()
+        .from('commander_tournaments')
+        .select(CLOCK_TOURNAMENT_COLUMNS)
+        .eq('id', tournamentId)
+        .maybeSingle(),
+      wantsEntries
+        ? getSupabase()
+            .from('commander_tournament_entries')
+            // finish_position and payout_amount were selected here but never
+            // read: the chips list and the payout table are both derived from
+            // the columns below.
+            .select('player_name, status, table_number, seat_number, current_chips, rebuy_count, addon_taken')
+            .eq('tournament_id', tournamentId)
+            .neq('status', 'cancelled')
+            .limit(5000)
+        : Promise.resolve({ data: null })
+    ]);
+
+    const { data: tournament, error } = tournamentRes;
 
     if (error || !tournament) {
       return res.status(404).json({
@@ -146,12 +207,32 @@ async function getClockState(req, res, tournamentId) {
         pausedAt: null,
         pausedDuration: 0
       };
-      // Atomic jsonb_set on settings.clock_state so a concurrent settings write
-      // from another tablet is never clobbered by this backfill.
-      await getSupabase().rpc('commander_clock_write', {
-        p_tournament_id: tournamentId,
-        p_clock_state: clockState
-      });
+      // Throttled per process and guarded in the database, so a room full of
+      // displays polling a tournament with no clock_state produces ONE write
+      // rather than one per poll per device. The response never depends on it:
+      // clockState above is already the value being returned.
+      if (claimClockBackfill(tournamentId)) {
+        try {
+          const { error: guardErr } = await getSupabase()
+            .from('commander_tournaments')
+            .update({ settings: { ...settings, clock_state: clockState } })
+            .eq('id', tournamentId)
+            // `->>` not `->`: a stored JSON null (left behind by the clock
+            // `end` action) must count as "no clock state" too.
+            .is('settings->>clock_state', null);
+          // Fallback for any PostgREST build that will not filter on a jsonb
+          // path. Atomic jsonb_set on settings.clock_state so a concurrent
+          // settings write from another tablet is never clobbered.
+          if (guardErr) {
+            await getSupabase().rpc('commander_clock_write', {
+              p_tournament_id: tournamentId,
+              p_clock_state: clockState
+            });
+          }
+        } catch (backfillErr) {
+          console.warn('[clock.js] Clock backfill skipped:', backfillErr?.message || backfillErr);
+        }
+      }
     }
 
     // Calculate time remaining in level
@@ -173,21 +254,11 @@ async function getClockState(req, res, tournamentId) {
     // ?include=chips,payouts adds per-player chip counts and the live payout
     // table. This is intentionally public display data, name, table, seat and
     // stack only. No phones, ids, or metadata.
-    const include = String(req.query.include || '')
-      .split(',')
-      .map(s => s.trim().toLowerCase())
-      .filter(Boolean);
     let publicChips;
     let publicPayouts;
 
-    if (include.includes('chips') || include.includes('payouts')) {
-      const { data: allEntries } = await getSupabase()
-        .from('commander_tournament_entries')
-        .select('player_name, status, table_number, seat_number, current_chips, rebuy_count, addon_taken, finish_position, payout_amount')
-        .eq('tournament_id', tournamentId)
-        .neq('status', 'cancelled')
-        .limit(5000);
-      const entries = allEntries || [];
+    if (wantsEntries) {
+      const entries = entriesRes.data || [];
 
       if (include.includes('chips')) {
         publicChips = {

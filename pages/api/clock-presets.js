@@ -6,7 +6,7 @@
  * DELETE /api/commander/clock-presets?id=UUID  - Delete preset
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -27,20 +27,16 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-      const staff = await guardWriteStaff(req, res);
+      // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+      // without verifying anything. The GET then resolved its venue by
+      // JSON.parse'ing the UNSIGNED x-staff-session header, so any caller could
+      // read a chosen venue's clock presets - and with no header at all the
+      // query ran unfiltered and returned presets across ALL venues.
+      const staff = await guardStaff(req, res);
       if (!staff) return;
 
-      // For GET, staff may be `true` (read-only). For writes, it's the staff object.
-      const venueId = typeof staff === 'object' ? staff.venue_id : null;
-
-      // Resolve venue_id for read-only
-      let resolvedVenueId = venueId;
-      if (!resolvedVenueId) {
-          try {
-              const session = JSON.parse(req.headers['x-staff-session'] || '{}');
-              resolvedVenueId = session.venue_id;
-          } catch (e) { console.warn('[App] Handled exception:', e); }
-      }
+      const venueId = staff.venue_id ?? null;
+      const resolvedVenueId = venueId;
 
       if (req.method === 'GET') {
           try {
@@ -58,7 +54,8 @@ export default async function handler(req, res) {
               const { data, error } = await query;
               if (error) throw error;
 
-              res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+              // Venue-scoped and session-dependent - never share at the CDN edge.
+              res.setHeader('Cache-Control', 'private, max-age=30');
       return res.status(200).json({ success: true, data: data || [] });
           } catch (err) {
               return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });

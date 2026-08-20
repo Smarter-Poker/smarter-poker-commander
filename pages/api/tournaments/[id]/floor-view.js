@@ -24,6 +24,44 @@ function getSupabase() {
     return _supabase;
 }
 
+// Hot path. Every TD screen and every table tablet polls this route, so it
+// selects columns instead of `*`: the tournament row carries break_schedule,
+// day_end_chip_counts and a dozen multi-day columns nothing here reads, and an
+// entry row carries cashier/payment/notes columns that never reach the client.
+const TOURNAMENT_COLUMNS = [
+  'id', 'venue_id', 'name', 'status', 'tournament_type', 'buyin_amount', 'buyin_fee',
+  'starting_chips', 'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'rebuy_end_level',
+  'allows_addon', 'addon_amount', 'addon_chips', 'late_registration_levels',
+  'guaranteed_pool', 'actual_start', 'scheduled_start', 'payout_structure',
+  'bounty_amount', 'actual_prizepool', 'paying_places', 'max_entries',
+  'blind_structure', 'settings', 'current_level'
+].join(', ');
+
+const ENTRY_COLUMNS = [
+  'id', 'player_id', 'player_name', 'status', 'table_number', 'seat_number',
+  'current_chips', 'rebuy_count', 'addon_taken', 'finish_position', 'eliminated_at',
+  'payout_amount', 'registered_at', 'created_at', 'metadata'
+].join(', ');
+
+// Clock backfill throttle. A tournament that was never properly started has no
+// settings.clock_state, and this GET used to write one on EVERY request. With
+// 20 tablets polling that is 40 writes a minute, and because
+// commander_clock_write stamps levelStartedAt = now() unconditionally, each of
+// those writes restarted the level timer - the clock could never run down.
+// The write is now memoised per process AND guarded at the database level, so
+// only the first caller in the room actually persists anything.
+const CLOCK_BACKFILL_TTL_MS = 60 * 1000;
+const _clockBackfillAt = new Map();
+function claimClockBackfill(tournamentId) {
+  const now = Date.now();
+  const last = _clockBackfillAt.get(tournamentId);
+  if (last && now - last < CLOCK_BACKFILL_TTL_MS) return false;
+  // Bound the map so a long-lived instance cannot leak across many events.
+  if (_clockBackfillAt.size > 500) _clockBackfillAt.clear();
+  _clockBackfillAt.set(tournamentId, now);
+  return true;
+}
+
 // Auth: STAFF READ. guardWriteStaff left this GET fully public, which exposed
 // player names, phones, chip counts and entry metadata to anyone with the URL.
 // guardStaff requires a valid signed staff session on every method.
@@ -44,58 +82,68 @@ export default async function handler(req, res) {
     try {
       // Staff is already validated by guardWriteStaff at the handler level
 
-      // Get tournament with full details
-      const { data: tournament, error: tErr } = await getSupabase()
-        .from('commander_tournaments')
-        .select('*')
-        .eq('id', tournamentId)
-        .maybeSingle();
+      // The tournament row and the entries list depend only on the id, so they
+      // go out together. Serialising them cost a full network round trip to
+      // Supabase on every poll from every device for no reason.
+      const [tournamentRes, entriesRes] = await Promise.all([
+        getSupabase()
+          .from('commander_tournaments')
+          .select(TOURNAMENT_COLUMNS)
+          .eq('id', tournamentId)
+          .maybeSingle(),
+        // Get ALL entries (active + eliminated + registered) - Up to 5000 to prevent cutoff on massive fields
+        getSupabase()
+          .from('commander_tournament_entries')
+          .select(ENTRY_COLUMNS)
+          .eq('tournament_id', tournamentId)
+          .order('table_number', { ascending: true })
+          .order('seat_number', { ascending: true })
+          .limit(5000)
+      ]);
+
+      const { data: tournament, error: tErr } = tournamentRes;
       if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
 
-
-      // Get ALL entries (active + eliminated + registered) - Up to 5000 to prevent cutoff on massive fields
-      const { data: allEntries } = await getSupabase()
-        .from('commander_tournament_entries')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('table_number', { ascending: true })
-        .order('seat_number', { ascending: true })
-        .limit(5000);
-
-      const entries = allEntries || [];
+      const entries = entriesRes.data || [];
       const activeEntries = entries.filter(e => ['active', 'seated'].includes(e.status));
       const eliminatedEntries = entries.filter(e => e.status === 'eliminated');
       const registeredEntries = entries.filter(e => e.status === 'registered');
 
-      // Batch fetch profile avatars for linked players
-      const avatarMap = {};
-      const playerIds = [...new Set(entries.map(e => e.player_id).filter(Boolean))];
-      if (playerIds.length > 0) {
-        const { data: profiles } = await getSupabase()
-          .from('profiles')
-          .select('id, avatar_url, display_name')
-              .limit(500)
-          .in('id', playerIds);
-        if (profiles) {
-          profiles.forEach(p => { avatarMap[p.id] = { avatar_url: p.avatar_url, display_name: p.display_name }; });
-        }
-      }
-
       // Build table map - get real max_seats from commander_tables
       const tableNumbers = [...new Set(activeEntries.map(e => e.table_number).filter(Boolean))].sort((a, b) => a - b);
 
-      // Query actual table configs for max_seats
-      let tableConfigs = {};
-      if (tableNumbers.length > 0) {
-        const { data: dbTables } = await getSupabase()
-          .from('commander_tables')
-          .select('table_number, max_seats')
-          .eq('venue_id', tournament.venue_id)
-          .in('table_number', tableNumbers)
+      // Avatars and table configs are independent of each other, so the second
+      // pair of lookups also goes out together. Four serial round trips on the
+      // busiest route in the room is now two.
+      const playerIds = [...new Set(entries.map(e => e.player_id).filter(Boolean))];
+      const [profilesRes, dbTablesRes] = await Promise.all([
+        playerIds.length > 0
+          ? getSupabase()
+              .from('profiles')
+              .select('id, avatar_url, display_name')
+              .limit(500)
+              .in('id', playerIds)
+          : Promise.resolve({ data: null }),
+        tableNumbers.length > 0
+          ? getSupabase()
+              .from('commander_tables')
+              .select('table_number, max_seats')
+              .eq('venue_id', tournament.venue_id)
+              .in('table_number', tableNumbers)
               .limit(100)
-        if (dbTables) {
-          dbTables.forEach(t => { tableConfigs[t.table_number] = t.max_seats || 9; });
-        }
+          : Promise.resolve({ data: null })
+      ]);
+
+      // Batch fetch profile avatars for linked players
+      const avatarMap = {};
+      if (profilesRes.data) {
+        profilesRes.data.forEach(p => { avatarMap[p.id] = { avatar_url: p.avatar_url, display_name: p.display_name }; });
+      }
+
+      // Query actual table configs for max_seats
+      const tableConfigs = {};
+      if (dbTablesRes.data) {
+        dbTablesRes.data.forEach(t => { tableConfigs[t.table_number] = t.max_seats || 9; });
       }
 
       const tableCounts = {};
@@ -120,7 +168,10 @@ export default async function handler(req, res) {
             rebuy_count: e.rebuy_count || 0,
             addon_taken: e.addon_taken || false,
             locked: e.metadata?.locked_seat || false,
-            avatar_url: avatarMap[e.player_id]?.avatar_url || null
+            // Omitted rather than null when there is no linked profile: every
+            // consumer tests truthiness, and a null per seat is dead weight on
+            // a 500 seat field polled by the whole room.
+            avatar_url: avatarMap[e.player_id]?.avatar_url || undefined
           }));
 
         const count = tableCounts[tn];
@@ -231,13 +282,42 @@ export default async function handler(req, res) {
           pausedAt: null,
           pausedDuration: 0
         };
-        // Persist so this only happens once. Atomic jsonb_set via RPC so a
-        // concurrent settings write from a TD tablet is never clobbered.
-        await getSupabase().rpc('commander_clock_write', {
-          p_tournament_id: tournamentId,
-          p_clock_state: clockState,
-          p_updates: tournament.actual_start ? {} : { actual_start: clockState.levelStartedAt }
-        });
+        // Persist so this only happens once. Two guards, because this is a GET
+        // that 20 tablets hit every 30 seconds:
+        //   1. claimClockBackfill throttles a warm instance to one attempt per
+        //      tournament per minute.
+        //   2. The UPDATE carries `settings->>clock_state is null`, so a second
+        //      instance racing the first writes zero rows instead of stamping a
+        //      fresh levelStartedAt and restarting the level timer. The text
+        //      arrow is deliberate: `->` would miss a stored JSON null (which
+        //      is what the clock `end` action leaves behind), `->>` treats a
+        //      missing key and a JSON null alike.
+        // The read never depends on the write: clockState is already computed
+        // locally, so a failed backfill degrades to "try again next poll".
+        if (claimClockBackfill(tournamentId)) {
+          try {
+            const patch = {
+              settings: { ...tournamentSettings, clock_state: clockState },
+              ...(tournament.actual_start ? {} : { actual_start: clockState.levelStartedAt })
+            };
+            const { error: guardErr } = await getSupabase()
+              .from('commander_tournaments')
+              .update(patch)
+              .eq('id', tournamentId)
+              .is('settings->>clock_state', null);
+            // Fallback for any PostgREST build that will not filter on a jsonb
+            // path: the RPC is unguarded but still correct for a single writer.
+            if (guardErr) {
+              await getSupabase().rpc('commander_clock_write', {
+                p_tournament_id: tournamentId,
+                p_clock_state: clockState,
+                p_updates: tournament.actual_start ? {} : { actual_start: clockState.levelStartedAt }
+              });
+            }
+          } catch (backfillErr) {
+            console.warn('[floor-view] Clock backfill skipped:', backfillErr?.message || backfillErr);
+          }
+        }
       }
 
       // 2026-08-19 fix: accept duration_minutes as well as duration (clock.js
@@ -288,6 +368,9 @@ export default async function handler(req, res) {
             started_at: tournament.actual_start,
             actual_start: tournament.actual_start,
             scheduled_start: tournament.scheduled_start,
+            // commander_tournaments has no game_type column (the variant lives
+            // in `variant`), so this has always serialised as absent. Left in
+            // place so the column projection above is not blamed for it.
             game_type: tournament.game_type,
             payout_structure: tournament.payout_structure,
             custom_payouts: tournament.payout_structure,
@@ -366,11 +449,14 @@ export default async function handler(req, res) {
           alternates: alternateQueue.map((e, i) => ({
             entry_id: e.id,
             player_name: avatarMap[e.player_id]?.display_name || e.player_name,
-            queue_position: i + 1,
-            registered_at: e.registered_at || e.created_at,
-            avatar_url: avatarMap[e.player_id]?.avatar_url || null
+            queue_position: i + 1
           })),
-          // Full entries list for Players tab - includes ALL statuses
+          // Full entries list for Players tab - includes ALL statuses.
+          // Deliberately narrow: a 500 player field is serialised here every 30
+          // seconds for every tablet and TV in the room. player_phone and the
+          // metadata jsonb blob were shipped to every unattended kiosk and read
+          // by nothing, and starting_chips was only ever the tournament default
+          // repeated once per row (consumers read tournament.starting_chips).
           entries: entries.map(e => ({
             entry_id: e.id,
             player_name: avatarMap[e.player_id]?.display_name || e.player_name,
@@ -379,7 +465,6 @@ export default async function handler(req, res) {
             table_number: e.table_number,
             seat_number: e.seat_number,
             current_chips: e.current_chips,
-            starting_chips: e.starting_chips || tournament.starting_chips,
             rebuy_count: e.rebuy_count || 0,
             addon_taken: e.addon_taken || false,
             finish_position: e.finish_position,
@@ -387,9 +472,7 @@ export default async function handler(req, res) {
             payout_amount: e.payout_amount,
             registered_at: e.registered_at || e.created_at,
             queue_position: alternatePositions.get(e.id),
-            phone: e.player_phone,
-            metadata: e.metadata,
-            avatar_url: avatarMap[e.player_id]?.avatar_url || null,
+            avatar_url: avatarMap[e.player_id]?.avatar_url || undefined,
           })),
           eliminated: eliminatedEntries
             .sort((a, b) => (b.finish_position || 999) - (a.finish_position || 999))

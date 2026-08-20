@@ -5,7 +5,7 @@
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { captureException } from '../../../../src/lib/commander/errorMonitoring';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -19,13 +19,15 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this route is GET-only and used guardWriteStaff, which
+// returns `true` for GET without verifying anything - every active player
+// session at any venue (names, buy-ins, comps, notes) was public.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     if (req.method !== 'GET') {
@@ -41,6 +43,14 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'venueId is required' }
+      });
+    }
+
+    if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+        && String(_authResult.venue_id) !== String(venueId)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
       });
     }
 

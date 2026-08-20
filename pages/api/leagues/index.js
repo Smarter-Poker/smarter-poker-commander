@@ -4,7 +4,7 @@
  * Per API_REFERENCE.md
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -25,7 +25,10 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the league list (organizer ids, member
+    // venues, prize pools) was public.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'POST') return createLeague(req, res);
     if (req.method !== 'GET') {

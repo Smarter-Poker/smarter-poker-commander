@@ -4,7 +4,7 @@
  * GET /api/commander/dealers/rotations - Get current rotations
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardWriteStaff, guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -55,27 +55,19 @@ async function getRotations(req, res) {
     });
   }
 
-  // Light auth for GET (read-only) - matches tables API pattern
-  const staffSession = req.headers['x-staff-session'];
-  if (!staffSession) {
-    return res.status(401).json({
+  // 2026-08-20 audit fix: this "light auth" JSON.parse'd the raw
+  // x-staff-session header and trusted its venue_id with no signature check, so
+  // any caller could send {"venue_id": N} and read that venue's dealer rotation
+  // (dealer names and employee ids). guardStaff verifies the HMAC and the TTL,
+  // and the venue now comes from the verified session.
+  const staff = await guardStaff(req, res);
+  if (!staff) return;
+
+  if (staff.venue_id !== undefined && staff.venue_id !== null
+      && String(staff.venue_id) !== String(venue_id)) {
+    return res.status(403).json({
       success: false,
-      error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
-    });
-  }
-  let sessionData;
-  try {
-    sessionData = JSON.parse(staffSession);
-    if (String(sessionData.venue_id) !== String(venue_id)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'FORBIDDEN', message: 'Venue mismatch' }
-      });
-    }
-  } catch {
-    return res.status(401).json({
-      success: false,
-      error: { code: 'INVALID_SESSION', message: 'Invalid session format' }
+      error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
     });
   }
 

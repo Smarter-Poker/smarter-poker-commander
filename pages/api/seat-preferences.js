@@ -4,7 +4,7 @@
  * POST /api/commander/seat-preferences - Save/update preferences
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -32,14 +32,11 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardWriteStaff(req, res);
-      if (!_staff) return;
-    }
+    // 2026-08-20 audit fix: the guard only ran for writes, so the GET returned
+    // any player's seat preferences and staff notes for a bare player_id.
+    const _staff = await guardStaff(req, res);
+    if (!_staff) return;
 
-
-    // Auth guard: require user auth for writes
     if (req.method === 'GET') return getPreferences(req, res);
     if (req.method === 'POST') return savePreferences(req, res);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
