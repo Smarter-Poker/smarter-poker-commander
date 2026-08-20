@@ -428,9 +428,9 @@ export default function CommanderLogin() {
               required
               style={{
                 position: 'absolute',
-                top: '50.4%',
-                left: '30%',
-                width: '42%',
+                top: '49.8%',
+                left: '32%',
+                width: '40%',
                 height: '4.5%',
                 background: 'transparent',
                 border: 'none',
@@ -438,8 +438,7 @@ export default function CommanderLogin() {
                 color: 'white',
                 fontSize: 'min(17px, 3vw)',
                 zIndex: 10,
-                fontFamily: 'Inter, sans-serif',
-                paddingTop: '0.5%'
+                fontFamily: 'Inter, sans-serif'
               }}
             />
 
@@ -451,9 +450,9 @@ export default function CommanderLogin() {
               required
               style={{
                 position: 'absolute',
-                top: '58.5%',
-                left: '30%',
-                width: '37%', // Leave room for eye icon
+                top: '57.6%',
+                left: '32%',
+                width: '35%', // Leave room for eye icon
                 height: '4.5%',
                 background: 'transparent',
                 border: 'none',
@@ -461,8 +460,7 @@ export default function CommanderLogin() {
                 color: 'white',
                 fontSize: 'min(17px, 3vw)',
                 zIndex: 10,
-                fontFamily: 'Inter, sans-serif',
-                paddingTop: '0.5%'
+                fontFamily: 'Inter, sans-serif'
               }}
             />
 
@@ -472,7 +470,7 @@ export default function CommanderLogin() {
               onClick={() => setShowPassword(!showPassword)}
               style={{
                 position: 'absolute',
-                top: '58.5%',
+                top: '57.6%',
                 left: '68%',
                 width: '6%',
                 height: '4.5%',
