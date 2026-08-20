@@ -9,7 +9,6 @@
  */
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Image from 'next/image';
 import SEOHead from '../../src/components/seo/SEOHead';
 import Link from 'next/link';
 import { Loader2, Eye, EyeOff, ArrowRight, Mail, Lock, ChevronRight, UserPlus, ShieldCheck, AlertCircle, Check } from 'lucide-react';
