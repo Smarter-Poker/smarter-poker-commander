@@ -108,7 +108,7 @@ export default function RegisterPage() {
   });
 
   // ─── Step 3: Plan ───────────────────────────────────────────────
-  const [selectedTier, setSelectedTier] = useState(lockedTier || 'home_games');
+  const [selectedTier, setSelectedTier] = useState(lockedTier || 'home_game');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Address is required only for the club tier. Home games + charity: optional.
@@ -1055,7 +1055,7 @@ export default function RegisterPage() {
           {/* Plan 1: Home Games */}
           <button
             type="button"
-            onClick={() => setSelectedTier('home_games')}
+            onClick={() => setSelectedTier('home_game')}
             style={{
               position: 'absolute',
               top: '40.5%',
@@ -1063,16 +1063,16 @@ export default function RegisterPage() {
               width: '70.4%',
               height: '7.1%',
               background: 'transparent',
-              border: selectedTier === 'home_games' ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'home_game' ? '2px solid #1877F2' : 'none',
               borderRadius: '8px',
-              boxShadow: selectedTier === 'home_games' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'home_game' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
             title="Home Games"
           >
              {/* Optional circle fill */}
-             {selectedTier === 'home_games' && (
+             {selectedTier === 'home_game' && (
                <div style={{
                  position: 'absolute',
                  top: '51%',
@@ -1265,7 +1265,7 @@ export default function RegisterPage() {
 
 
   if (step === 4) {
-    const displayPlan = selectedTier === 'home_games' ? 'Home Games' : 
+    const displayPlan = selectedTier === 'home_game' ? 'Home Games' : 
                         selectedTier === 'charity' ? 'Charity' : 'Clubs';
 
     return (
