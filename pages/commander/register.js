@@ -460,6 +460,262 @@ export default function RegisterPage() {
     );
   }
 
+
+  if (step === 1) {
+    const autofillCss = `
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active {
+          transition: background-color 9999s ease-in-out 0s;
+          -webkit-text-fill-color: white !important;
+      }
+    `;
+
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{__html: autofillCss}} />
+        <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+          <Head>
+            <title>Club Commander - Register</title>
+            <meta name="description" content="Club Commander Poker Room Management Tool." />
+            <meta name="robots" content="noindex" />
+          </Head>
+
+          <div className="relative w-full h-full z-10">
+            {/* Stretch the image to fill the screen */}
+            <img 
+              src="/images/commander/register-bg-v1.jpg" 
+              className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+              alt="Register Background" 
+            />
+
+            <form style={{ display: 'contents' }} onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+              {/* Name Input */}
+              <input
+                type="text"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '45.5%',
+                  left: '19%',
+                  width: '62%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Email Input */}
+              <input
+                type="email"
+                value={ownerEmail}
+                onChange={(e) => setOwnerEmail(e.target.value)}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '53.2%',
+                  left: '19%',
+                  width: '62%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Phone Input */}
+              <input
+                type="tel"
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                style={{
+                  position: 'absolute',
+                  top: '60.9%',
+                  left: '19%',
+                  width: '62%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Existing Account Checkbox */}
+              <input
+                type="checkbox"
+                checked={existingAccount}
+                onChange={(e) => setExistingAccount(e.target.checked)}
+                style={{
+                  position: 'absolute',
+                  top: '67.3%',
+                  left: '19.4%',
+                  width: '2%',
+                  height: '1.8%',
+                  cursor: 'pointer',
+                  opacity: 0.01,
+                  zIndex: 10
+                }}
+                title="I Already Have A Smarter.Poker Account"
+              />
+              {existingAccount && (
+                <div style={{
+                  position: 'absolute',
+                  top: '67.3%',
+                  left: '19.4%',
+                  width: '1.2%',
+                  height: '1.8%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                  zIndex: 9
+                }}>
+                  <span className="text-white">✓</span>
+                </div>
+              )}
+
+              {/* Password Input */}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required={!existingAccount}
+                style={{
+                  position: 'absolute',
+                  top: '73.5%',
+                  left: '19%',
+                  width: '31%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Confirm Password Input */}
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required={!existingAccount}
+                style={{
+                  position: 'absolute',
+                  top: '73.5%',
+                  left: '52%',
+                  width: '31%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Promo Code Input */}
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                style={{
+                  position: 'absolute',
+                  top: '83.3%',
+                  left: '19%',
+                  width: '52%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Apply Promo Button */}
+              <button
+                type="button"
+                onClick={handleCheckPromo}
+                style={{
+                  position: 'absolute',
+                  top: '83.3%',
+                  left: '73%',
+                  width: '9%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Apply Promo"
+              />
+
+              {/* Error Message */}
+              {error && (
+                <div style={{
+                  position: 'absolute',
+                  top: '88%',
+                  left: '18%',
+                  width: '64%',
+                  textAlign: 'center',
+                  color: '#F02849',
+                  backgroundColor: 'rgba(0,0,0,0.8)',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  zIndex: 10
+                }}>
+                  {error}
+                </div>
+              )}
+
+              {/* Continue to Venue Details Button */}
+              <button
+                type="submit"
+                style={{
+                  position: 'absolute',
+                  top: '90%',
+                  left: '51%',
+                  width: '31%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Continue to Venue Details"
+              />
+            </form>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Original return for steps 2-4
   return (
     <div className="min-h-screen bg-[#18191A]">
       <Head><title>{headerTitle}</title></Head>
