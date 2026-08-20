@@ -362,16 +362,16 @@ const venueId = staff?.venue_id;
         }
 
         /* ── CARD ── */
-        .cmd-card {
+        .cmd-dashboard-card {
   position: relative;
   cursor: pointer;
   transition: transform 0.2s, filter 0.3s;
 }
-        .cmd-card:hover {
+        .cmd-dashboard-card:hover {
           transform: scale(1.02);
           filter: brightness(1.15);
         }
-        .cmd-card img {
+        .cmd-dashboard-card img {
           width: 100%;
           height: auto;
           display: block;
@@ -565,7 +565,7 @@ const venueId = staff?.venue_id;
               {filteredCards.map(card => (
                 <div
                   key={card.id}
-                  className="cmd-card"
+                  className="cmd-dashboard-card"
                   onClick={() => { setActiveCard(card.id); router.push(`/commander/dashboard?card=${card.id}`, undefined, { shallow: true }); }}
                 >
                   <img src={card.image} alt={card.title} loading="lazy" decoding="async" />
