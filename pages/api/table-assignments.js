@@ -122,7 +122,12 @@ async function handleGet(req, res, venueId) {
     .from('commander_tournaments')
     .select('id, name, status, game_type, buyin_amount, max_entries')
     .eq('venue_id', venueId)
-    .in('status', ['scheduled', 'registering', 'running', 'paused', 'late_registration'])
+    // 2026-08-20: 'registering' is not a value the status CHECK allows (the
+    // real value is 'registration'), so a tournament that had opened
+    // registration never appeared in the table-assignments dropdown and could
+    // not be given tables. 'registering'/'late_registration' kept as harmless
+    // legacy aliases.
+    .in('status', ['scheduled', 'registration', 'registering', 'running', 'paused', 'final_table', 'hand_for_hand', 'late_registration'])
     .order('created_at', { ascending: false });
 
   // Get session counts per table (fallback player count)

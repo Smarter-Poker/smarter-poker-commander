@@ -67,6 +67,15 @@ export default function TDControlCenter() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
 
+  // ── Table assignment state ──
+  // floor-view derives its tables[] from SEATED ENTRIES, so a table that is
+  // assigned but still empty is invisible to it. Auto-break and the seat draw
+  // both read commander_tables, so the setup check has to read that directly.
+  const [tableSetup, setTableSetup] = useState(null);
+  const [assignModal, setAssignModal] = useState(false);
+  const [assignCount, setAssignCount] = useState('4');
+  const [assigning, setAssigning] = useState(false);
+
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
 
@@ -97,17 +106,61 @@ export default function TDControlCenter() {
     }
   }, [tournamentId]);
 
+  const fetchTables = useCallback(async (signal) => {
+    if (!tournamentId) return;
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/tables`, { ...(signal ? { signal } : {}) });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.success) setTableSetup(json.data);
+    } catch (err) {
+      if (err.name !== 'AbortError') console.warn('Table setup check failed:', err);
+    }
+  }, [tournamentId]);
+
   // Initial load + Realtime subscription + 5-min fallback poll
   useTournamentRealtime(tournamentId, fetchFloor);
   useEffect(() => {
     const _c = new AbortController();
     fetchFloor(_c.signal);
+    fetchTables(_c.signal);
     pollRef.current = setInterval(() => fetchFloor(_c.signal), 300000); // 5-min fallback (realtime handles instant updates)
     return () => {
       _c.abort();
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [fetchFloor]);
+  }, [fetchFloor, fetchTables]);
+
+  const handleAssignTables = async () => {
+    const count = parseInt(assignCount, 10);
+    if (!Number.isInteger(count) || count < 1) {
+      setToast({ type: 'error', text: 'Enter How Many Tables To Assign.' });
+      return;
+    }
+    setAssigning(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/tables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count })
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Tables Could Not Be Assigned.' });
+        return;
+      }
+      setToast({ type: 'success', text: json.data?.message || 'Tables Assigned.' });
+      setAssignModal(false);
+      await fetchTables();
+      await fetchFloor();
+      broadcastChange('tables');
+    } catch (err) {
+      console.warn('Assign tables failed:', err);
+      setToast({ type: 'error', text: 'Tables Could Not Be Assigned.' });
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   // Memoize sorted activity entries (prevents re-sorting 5000 entries on every render)
   const sortedActivityEntries = useMemo(() => {
@@ -240,6 +293,53 @@ export default function TDControlCenter() {
             </div>
           </div>
         </div>
+
+        {/* ===== TABLE SETUP BANNER =====
+            Fewer than two commander_tables rows carrying this tournament_id
+            means tournamentAutoBreak.js returns null on every call and the
+            seat draw has to invent table numbers. Neither failure surfaces
+            anywhere, so the room can run all night without a table ever
+            breaking. Say so, and fix it in one tap. */}
+        {tableSetup && tableSetup.assigned_count < 2 && (
+          <div className="px-4 pt-3">
+            <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <LayoutGrid className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[#F59E0B] text-sm font-bold">
+                    {tableSetup.assigned_count === 0 ? 'No Tables Assigned' : 'Only One Table Assigned'}
+                  </p>
+                  <p className="text-[#B0B3B8] text-xs mt-1">
+                    Assign Tables To Enable The Seat Draw And Automatic Table Breaking.
+                    {tableSetup.available_count > 0
+                      ? ` ${tableSetup.available_count} Table${tableSetup.available_count === 1 ? '' : 's'} Free Right Now.`
+                      : ' No Free Tables In The Room Right Now.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    const suggested = tournament.max_entries
+                      ? Math.max(2, Math.ceil(Number(tournament.max_entries) / 9))
+                      : 4;
+                    setAssignCount(String(Math.max(2, suggested - (tableSetup.assigned_count || 0))));
+                    setAssignModal(true);
+                  }}
+                  className="flex-1 h-11 rounded-xl bg-[#F59E0B] text-black text-sm font-bold active:opacity-90"
+                >
+                  Assign Tables
+                </button>
+                <button
+                  onClick={() => router.push('/commander/table-assignments')}
+                  className="flex-1 h-11 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C]"
+                >
+                  Table Assignments
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ===== ALERT BANNER ===== */}
         {(alerts.seat_conflicts?.length > 0 || alerts.imbalanced || alerts.can_break_table || stats.late_reg_open) && (
@@ -517,6 +617,48 @@ export default function TDControlCenter() {
                 ) : (
                   <div className="p-8 text-center text-[#B0B3B8]">No Activity Yet</div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== ASSIGN TABLES MODAL ===== */}
+        {assignModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
+            onClick={() => !assigning && setAssignModal(false)}>
+            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4"
+              onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white">Assign Tables</h3>
+              <p className="text-[#B0B3B8] text-sm">
+                Reserves Free Tables In Table Number Order For This Tournament.
+                A Table Running A Cash Game Or Another Tournament Is Never Taken.
+              </p>
+              <div>
+                <label className="block text-xs font-bold text-[#B0B3B8] uppercase tracking-wider mb-2">
+                  How Many Tables
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={assignCount}
+                  onChange={e => setAssignCount(e.target.value)}
+                  className="w-full h-12 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 text-[#E4E6EB] text-base focus:outline-none focus:border-[#1877F2]"
+                />
+                <p className="text-[#B0B3B8] text-xs mt-2">
+                  Currently Assigned: {tableSetup?.assigned_count || 0}. Free In The Room: {tableSetup?.available_count || 0}.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setAssignModal(false)} disabled={assigning}
+                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={handleAssignTables} disabled={assigning}
+                  className="flex-1 py-3 rounded-xl bg-[#F59E0B] text-black text-base font-bold active:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {assigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <LayoutGrid className="w-4 h-4" />}
+                  Assign
+                </button>
               </div>
             </div>
           </div>

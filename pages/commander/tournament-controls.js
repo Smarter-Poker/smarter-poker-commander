@@ -34,7 +34,13 @@ const STATUS_COLORS = {
     break: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'On Break' },
     paused: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'Paused' }, // 2026-08-04 audit fix: paused tournaments were unstyled
     final_table: { bg: 'bg-[#8B5CF6]/10', text: 'text-[#8B5CF6]', label: 'Final Table' },
+    // 2026-08-20 audit fix: the real commander_tournaments value is
+    // 'registration'. Only the legacy 'registering' spelling was mapped, so a
+    // tournament that had opened registration rendered with the grey
+    // "Scheduled" fallback pill.
+    registration: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', label: 'Registration' },
     registering: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', label: 'Registration' },
+    hand_for_hand: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', label: 'Hand For Hand' },
     scheduled: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', label: 'Scheduled' } };
 
 export default function TournamentDirector() {
@@ -76,10 +82,25 @@ export default function TournamentDirector() {
 
     // 2026-08-04 audit fix: include 'paused' - the clock API sets status 'paused',
     // and without it a paused tournament vanished from both tabs of this selector.
-    const currentStatuses = ['running', 'paused', 'break', 'final_table', 'registering'];
+    // 2026-08-20 audit fix: 'registration' (the value actually stored in
+    // commander_tournaments; only the legacy 'registering' spelling was listed)
+    // and 'hand_for_hand'. A tournament in either state matched NEITHER tab and
+    // was unreachable from the one page built for reaching the TD console.
+    const currentStatuses = ['running', 'paused', 'break', 'final_table', 'hand_for_hand', 'registration', 'registering'];
     const currentTournaments = tournaments.filter(t => currentStatuses.includes(t.status));
-    const upcomingTournaments = tournaments.filter(t => t.status === 'scheduled');
+    // Catch-all rather than status === 'scheduled': any future status value is
+    // still reachable instead of silently disappearing from both tabs.
+    const upcomingTournaments = tournaments.filter(t => !currentStatuses.includes(t.status));
     const displayList = tab === 'current' ? currentTournaments : upcomingTournaments;
+
+    // A freshly created tournament is 'scheduled'. Land on the tab that has it
+    // rather than on an empty "No Live Tournaments" panel.
+    useEffect(() => {
+        if (loading) return;
+        if (currentTournaments.length === 0 && upcomingTournaments.length > 0) setTab('upcoming');
+        // Runs once per load result, not on every user tab click.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loading, currentTournaments.length, upcomingTournaments.length]);
 
     return (
         <CommanderLayout title="Tournament Director | Commander" backHref="/commander/dashboard?card=tournaments">

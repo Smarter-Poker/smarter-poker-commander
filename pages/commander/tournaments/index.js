@@ -397,7 +397,24 @@ export default function CommanderTournamentsPage() {
                         </p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                        {/* Card root is a <button>, so the inner action is a span */}
+                        {/* Card root is a <button>, so the inner action is a span.
+                            This page had no route into the TD console at all -
+                            the only way in was the detail page or the separate
+                            tournament-controls selector. */}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          title="Tournament Director"
+                          aria-label="Open Tournament Director"
+                          onClick={e => { e.stopPropagation(); router.push(`/commander/td/${t.id}`); }}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); router.push(`/commander/td/${t.id}`); } }}
+                          style={{
+                            width: 34, height: 34, borderRadius: 9, background: 'rgba(245,158,11,0.14)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          <Sliders size={15} style={{ color: '#F59E0B' }} />
+                        </span>
                         <span
                           role="button"
                           tabIndex={0}
@@ -477,7 +494,21 @@ export default function CommanderTournamentsPage() {
       <CreateTournamentModal
         isOpen={showCreateModal}
         onClose={() => setShowCreate(false)}
-        onSubmit={() => fetchTournaments(true)}
+        onSubmit={(created, meta) => {
+          // Creating a tournament used to discard the row it just made and sit
+          // on the list. Go straight to the Tournament Director console, which
+          // is where every next action (seat draw, clock, register) lives.
+          if (meta?.tableWarning) {
+            setToast({ type: 'error', text: meta.tableWarning });
+            fetchTournaments(true);
+            return;
+          }
+          if (created?.id) {
+            router.push(`/commander/td/${created.id}`);
+            return;
+          }
+          fetchTournaments(true);
+        }}
         venueId={venueId}
       />
 

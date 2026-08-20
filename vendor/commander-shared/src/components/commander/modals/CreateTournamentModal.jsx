@@ -8,7 +8,7 @@ import { memo, useState, useEffect } from 'react';
 import {
   X, Trophy, Loader2,
   ChevronLeft, Zap, Crown, Target, RefreshCw, Rocket, Crosshair,
-  Check, Settings, Layers, CalendarDays
+  Check, Settings, Layers, CalendarDays, LayoutGrid
 } from 'lucide-react';
 import BlindStructureEditor from '../tournaments/BlindStructureEditor';
 import {
@@ -53,6 +53,9 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
   const [scheduledStart, setScheduledStart] = useState('');
   const [maxEntries, setMaxEntries] = useState('');
   const [guaranteedPool, setGuaranteedPool] = useState('');
+  // '' means "follow the suggestion" so the default keeps tracking max_entries
+  // until the TD types a number of their own.
+  const [tableCount, setTableCount] = useState('');
   const [lateRegLevels, setLateRegLevels] = useState(6);
   const [blindStructure, setBlindStructure] = useState(SCRATCH_BLINDS);
   const [showBlinds, setShowBlinds] = useState(false);
@@ -84,6 +87,16 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Suggested table count: one nine-handed table per nine entrants, minimum 2.
+  // Two is the floor because automatic table breaking never fires with fewer
+  // than two tables assigned to the tournament.
+  const suggestedTables = maxEntries
+    ? Math.max(2, Math.ceil((parseInt(maxEntries, 10) || 0) / 9))
+    : 2;
+  const effectiveTableCount = tableCount === ''
+    ? suggestedTables
+    : Math.max(0, parseInt(tableCount, 10) || 0);
 
   // Set default scheduled start
   useEffect(() => {
@@ -187,6 +200,33 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
       const data = await res.json();
 
       if (data.success) {
+        const created = data.data?.tournament || data.data;
+        const newId = created?.id;
+
+        // Assign physical tables. Without commander_tables rows carrying this
+        // tournament_id, automatic table breaking never fires and the seat
+        // draw has no real table numbers to draw against. Non-fatal: the
+        // tournament exists either way, the TD is just told what failed.
+        let tableWarning = null;
+        if (newId && effectiveTableCount > 0) {
+          try {
+            const tr = await fetch(`/api/commander/tournaments/${newId}/tables`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-staff-session': staffSession || '',
+              },
+              body: JSON.stringify({ count: effectiveTableCount }),
+            });
+            const tj = await tr.json().catch(() => null);
+            if (!tr.ok || !tj?.success) {
+              tableWarning = tj?.error?.message || 'Tables Could Not Be Assigned Automatically.';
+            }
+          } catch (tableErr) {
+            console.warn('Table assignment skipped:', tableErr);
+            tableWarning = 'Tables Could Not Be Assigned Automatically.';
+          }
+        }
         // Sync to Club Page
         if (postToClubPage) {
           try {
@@ -219,7 +259,9 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
         }
 
         broadcastChange('tournaments');
-        onSubmit(data.data?.tournament || data.data);
+        // Second argument carries the non-fatal table-assignment warning so the
+        // caller can toast it instead of losing it behind the closing modal.
+        onSubmit(created, { tableWarning, tables_requested: effectiveTableCount });
         resetForm();
         onClose();
       } else {
@@ -242,6 +284,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
     setStartingChips(10000);
     setMaxEntries('');
     setGuaranteedPool('');
+    setTableCount('');
     setBlindStructure([...SCRATCH_BLINDS]);
     setAllowsRebuys(false);
     setAllowsAddon(false);
@@ -592,6 +635,27 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                   className="cmd-input w-full h-10"
                 />
               </div>
+            </div>
+
+            {/* Tables */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4 text-[#22D3EE]" />
+                How Many Tables
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={tableCount === '' ? String(suggestedTables) : tableCount}
+                onChange={(e) => setTableCount(e.target.value)}
+                className="cmd-input w-full h-10"
+              />
+              <p className="text-xs text-[#64748B] mt-1">
+                Tables Are Reserved For This Event The Moment It Is Created. Assigning At Least
+                Two Enables Automatic Table Breaking And Gives The Seat Draw Real Table Numbers.
+                Set To 0 To Assign Them Later.
+              </p>
             </div>
 
             {/* Late Registration */}
