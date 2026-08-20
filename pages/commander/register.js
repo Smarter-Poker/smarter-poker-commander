@@ -332,6 +332,39 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     setter(new AsYouType('US').input(e.target.value));
   };
 
+  
+  const handlePlaceSelected = (place) => {
+    if (!place || !place.address_components) return;
+    
+    let city = '';
+    let state = '';
+    let zip = '';
+    let streetNumber = '';
+    let route = '';
+
+    for (const component of place.address_components) {
+      const type = component.types[0];
+      if (type === 'locality' || type === 'sublocality' || type === 'neighborhood' || type === 'administrative_area_level_3') {
+        if (!city) city = component.long_name;
+      }
+      if (type === 'administrative_area_level_1') state = component.short_name;
+      if (type === 'postal_code') zip = component.long_name;
+      if (type === 'street_number') streetNumber = component.long_name;
+      if (type === 'route') route = component.long_name;
+    }
+    
+    // For clubs we need full address, for home games we need at least city/state
+    const address = streetNumber && route ? `${streetNumber} ${route}` : place.name || '';
+    
+    setClubInfo(prev => ({
+      ...prev,
+      address,
+      city,
+      state,
+      zip
+    }));
+  };
+
   const handleClubInfoChange = (e) => {
     const { name, value } = e.target;
     if (name === 'phone') {
