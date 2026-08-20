@@ -152,8 +152,23 @@ export default async function handler(req, res) {
         return 0;
       };
 
-      // Calculate payout if in the money
-      const payoutAmount = payoutForPosition(finishPosition);
+      // Calculate payout if in the money.
+      // 2026-08-20 fix: when a deal/chop has been recorded (final_payouts, or
+      // an amount already stamped on the entry by the Deal Calculator), that
+      // agreed amount WINS. Previously every bust after a deal overwrote the
+      // negotiated figure with the structure amount for that finish position,
+      // silently paying players something other than what they agreed to.
+      const dealTable = Array.isArray(tournament.final_payouts) ? tournament.final_payouts : [];
+      const dealRow = dealTable.find(d =>
+        (d.entry_id && String(d.entry_id) === String(entry_id)) ||
+        (d.player_id && entry.player_id && String(d.player_id) === String(entry.player_id))
+      );
+      const dealAmount = dealRow != null ? Number(dealRow.amount) || 0 : null;
+      const preRecordedAmount = dealTable.length > 0 ? Number(entry.payout_amount) || 0 : 0;
+
+      const payoutAmount = dealAmount != null
+        ? dealAmount
+        : (preRecordedAmount > 0 ? preRecordedAmount : payoutForPosition(finishPosition));
       const payoutPosition = payoutAmount > 0 ? finishPosition : null;
 
       // Update eliminated player. The status predicate makes a double-tap
@@ -248,7 +263,16 @@ export default async function handler(req, res) {
         if (winner) {
           // Winner payout: exactly position 1 of the same structure + pool
           // math used above (and by payout.js), so the numbers always agree.
-          const winnerAmount = payoutForPosition(1);
+          // A recorded deal wins over the structure, same as for busts.
+          const winnerDealRow = dealTable.find(d =>
+            (d.entry_id && String(d.entry_id) === String(winner.id)) ||
+            (d.player_id && winner.player_id && String(d.player_id) === String(winner.player_id))
+          );
+          const winnerAmount = winnerDealRow != null
+            ? (Number(winnerDealRow.amount) || 0)
+            : (dealTable.length > 0 && Number(winner.payout_amount) > 0
+                ? Number(winner.payout_amount)
+                : payoutForPosition(1));
 
           await getSupabase()
             .from('commander_tournament_entries')

@@ -16,6 +16,7 @@ import {
   isOneSignalConfigured
 } from '../../../../../../src/lib/commander/pushNotifications';
 import { findOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
+import { sendSeatNotification } from '../../../../../../src/lib/commander/twilio';
 
 let _supabase = null;
 function getSupabase() {
@@ -150,21 +151,29 @@ export default async function handler(req, res) {
     });
 
 
-    // Upgrade to the max: Send an SMS notification if the player has a phone number
+    // SMS notification when the player has a phone number on the entry.
+    // 2026-08-20 fix: the first version of this block called
+    // sendSeatNotification without importing it, which threw a ReferenceError
+    // and 500'd every promotion for a player with a phone. Import added, real
+    // venue name fetched, and the send made fire-and-forget so a Twilio
+    // outage can never fail the seating itself.
     if (promoted.player_phone) {
-      try {
-        const venueName = 'Your Poker Room'; // Optional enhancement: fetch venue name
+      (async () => {
+        const { data: venue } = await getSupabase()
+          .from('venues')
+          .select('name')
+          .eq('id', tournament.venue_id)
+          .maybeSingle();
         await sendSeatNotification(
           promoted.player_phone,
-          venueName,
-          `Tournament (Table ${tableNumber}, Seat ${seatNumber})`,
+          venue?.name || 'Your Poker Room',
+          `${tournament.name} (Table ${tableNumber}, Seat ${seatNumber})`,
           { timeout: 5 }
         );
-      } catch (err) {
-        console.warn('Failed to send SMS notification', err);
-      }
+      })().catch(err => console.warn('[promote.js] SMS notification failed:', err?.message || err));
     }
-    
+
+
     return res.status(200).json({
       success: true,
       data: {

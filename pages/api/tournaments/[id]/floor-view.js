@@ -227,6 +227,13 @@ export default async function handler(req, res) {
         remaining_seconds = Math.max(0, Math.floor((levelDuration - elapsed) / 1000));
       }
 
+      // Queue order for waiting alternates (first registered is next up).
+      const alternateQueue = entries
+        .filter(e => e.status === 'alternate')
+        .sort((a, b) =>
+          new Date(a.registered_at || a.created_at || 0) - new Date(b.registered_at || b.created_at || 0));
+      const alternatePositions = new Map(alternateQueue.map((e, i) => [e.id, i + 1]));
+
       return res.status(200).json({
         success: true,
         data: {
@@ -321,6 +328,15 @@ export default async function handler(req, res) {
             on_break: clockState?.on_break || false
           },
           tables,
+          // Waiting alternates in queue order, so the floor can see who is
+          // next up and tell a player their position without guessing.
+          alternates: alternateQueue.map((e, i) => ({
+            entry_id: e.id,
+            player_name: avatarMap[e.player_id]?.display_name || e.player_name,
+            queue_position: i + 1,
+            registered_at: e.registered_at || e.created_at,
+            avatar_url: avatarMap[e.player_id]?.avatar_url || null
+          })),
           // Full entries list for Players tab - includes ALL statuses
           entries: entries.map(e => ({
             entry_id: e.id,
@@ -336,7 +352,8 @@ export default async function handler(req, res) {
             finish_position: e.finish_position,
             eliminated_at: e.eliminated_at,
             payout_amount: e.payout_amount,
-            registered_at: e.created_at,
+            registered_at: e.registered_at || e.created_at,
+            queue_position: alternatePositions.get(e.id),
             phone: e.player_phone,
             metadata: e.metadata,
             avatar_url: avatarMap[e.player_id]?.avatar_url || null,

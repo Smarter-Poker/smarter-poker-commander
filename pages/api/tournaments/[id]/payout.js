@@ -339,7 +339,19 @@ async function handlePayout(req, res, tournamentId) {
 async function handleBulkPayouts(req, res, tournamentId) {
   try {
     const { payouts } = req.body;
-    // payouts = [{ player_id, position, amount }, ...]
+    // payouts = [{ entry_id?, player_id?, position, amount }, ...]
+    //
+    // 2026-08-20 fix: deal_only mode. Applying a chop to players who are still
+    // seated/active used to stamp status winner/cashed plus a finish_position
+    // on each of them. The stats trigger counts only seated/active, so a deal
+    // instantly dropped players_remaining to zero and every display showed the
+    // tournament as finished while the players were still playing it out.
+    // With deal_only (the default for the Deal Calculator) the money is
+    // recorded against the entries and in final_payouts, but status and
+    // finish_position are left alone so play continues and eliminate.js
+    // assigns the real finishing order. Send deal_only: false to force the
+    // old finalize-now behavior (paying out a completed tournament).
+    const dealOnly = req.body?.deal_only !== false;
 
     if (!payouts || !Array.isArray(payouts)) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'payouts Array Required' } });
@@ -358,15 +370,20 @@ async function handleBulkPayouts(req, res, tournamentId) {
       // 2026-07-25 audit fix: identify the entry by entry_id when provided
       // (chop entries for still-active players may lack player_id); fallback
       // to player_id, and skip rows with neither identifier.
+      // In deal_only mode record the money without ending anyone's tournament.
+      const updatePayload = dealOnly
+        ? { payout_amount: p.amount, payout_position: p.position }
+        : {
+            finish_position: p.position,
+            payout_amount: p.amount,
+            payout_position: p.position,
+            // Only 1st place is the winner; every other paid finish is 'cashed'.
+            status: Number(p.position) === 1 ? 'winner' : 'cashed'
+          };
+
       let updateQuery = getSupabase()
         .from('commander_tournament_entries')
-        .update({
-          finish_position: p.position,
-          payout_amount: p.amount,
-          payout_position: p.position,
-          // Only 1st place is the winner; every other paid finish is 'cashed'.
-          status: Number(p.position) === 1 ? 'winner' : 'cashed'
-        })
+        .update(updatePayload)
         .eq('tournament_id', tournamentId);
 
       if (p.entry_id) {
@@ -383,8 +400,10 @@ async function handleBulkPayouts(req, res, tournamentId) {
 
       if (!error && entry) {
         results.push(entry);
-        // Auto-award leaderboard points
-        if (tournament) {
+        // Auto-award leaderboard points only when finishing order is final.
+        // In deal_only mode finish_position is intentionally not set yet, so
+        // awarding here would score everyone off a stale or missing position.
+        if (tournament && !dealOnly) {
           await awardTournamentPoints(tournament, tournamentId, entry);
         }
       }
@@ -403,7 +422,14 @@ async function handleBulkPayouts(req, res, tournamentId) {
 
     return res.status(200).json({
       success: true,
-      data: { updated: results.length, payouts: results }
+      data: {
+        updated: results.length,
+        payouts: results,
+        deal_only: dealOnly,
+        message: dealOnly
+          ? 'Deal Recorded. Play Continues And Finishing Order Is Still Assigned On Elimination.'
+          : 'Final Payouts Saved.'
+      }
     });
   } catch (error) {
     console.warn('Bulk payout error:', error);

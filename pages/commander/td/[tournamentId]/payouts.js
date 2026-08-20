@@ -460,11 +460,14 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/payout`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payouts })
+                // deal_only: the money is recorded now, but the players are
+                // still in the tournament. Statuses and finishing order stay
+                // untouched so play continues normally.
+                body: JSON.stringify({ payouts, deal_only: true })
             });
             const json = await res.json().catch(() => null);
             if (json?.success) {
-                setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved.` });
+                setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved. Play Continues.` });
                 await onApplied();
                 onClose();
             } else {

@@ -14,6 +14,7 @@ import { guardStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
+import { findOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -113,6 +114,32 @@ export default async function handler(req, res) {
       });
     }
 
+    // eliminate.js clears table_number/seat_number on a bust, so a restored
+    // player comes back with no seat and would be invisible on the floor map
+    // and in table counts. Put them back in an open seat.
+    let seatAssignment = null;
+    if (!restored.table_number || !restored.seat_number) {
+      try {
+        const open = await findOpenSeat(getSupabase(), tournament);
+        if (open) {
+          const { data: reseated } = await getSupabase()
+            .from('commander_tournament_entries')
+            .update({ table_number: open.table_number, seat_number: open.seat_number })
+            .eq('id', entryId)
+            .eq('tournament_id', tournamentId)
+            .select()
+            .maybeSingle();
+          if (reseated) {
+            seatAssignment = { table_number: open.table_number, seat_number: open.seat_number };
+            restored.table_number = reseated.table_number;
+            restored.seat_number = reseated.seat_number;
+          }
+        }
+      } catch (seatErr) {
+        console.warn('[restore.js] Re-seat failed (entry restored without a seat):', seatErr.message);
+      }
+    }
+
     // Claw back the bounty that the eliminator collected for this bust.
     let bountyReversed = false;
     if ((tournament.bounty_amount || 0) > 0 && entry.eliminated_by) {
@@ -154,7 +181,10 @@ export default async function handler(req, res) {
       data: {
         entry: restored,
         bounty_reversed: bountyReversed,
-        message: 'Elimination Undone. Player Is Back In The Field.'
+        seat_assignment: seatAssignment || undefined,
+        message: seatAssignment
+          ? `Elimination Undone. Player Is Back In At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+          : 'Elimination Undone. Player Is Back In The Field. Assign A Seat Manually.'
       }
     });
   } catch (err) {

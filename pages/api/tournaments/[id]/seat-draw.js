@@ -186,17 +186,25 @@ export default async function handler(req, res) {
     }
 
     // Apply assignments. Sequential batched updates; each is a single-row write.
+    // Chips are granted ONLY to entries that do not have a stack yet. A player
+    // who already has chips (already active, or rebought before the draw ran)
+    // must never be reset to the starting stack by a seat draw. Likewise an
+    // already-'active' player keeps that status rather than being demoted.
     const chips = tournament.starting_chips || 0;
     const errors = [];
     for (const a of assignments) {
+      const source = toSeat.find(e => e.id === a.entry_id);
+      const hasChips = Number(source?.current_chips) > 0;
+      const payload = {
+        table_number: a.table_number,
+        seat_number: a.seat_number,
+        status: source?.status === 'active' ? 'active' : 'seated'
+      };
+      if (!hasChips && chips > 0) payload.current_chips = chips;
+
       const { error } = await getSupabase()
         .from('commander_tournament_entries')
-        .update({
-          table_number: a.table_number,
-          seat_number: a.seat_number,
-          status: 'seated',
-          current_chips: chips > 0 ? chips : undefined
-        })
+        .update(payload)
         .eq('id', a.entry_id)
         .eq('tournament_id', tournamentId);
       if (error) errors.push({ entry_id: a.entry_id, message: error.message });

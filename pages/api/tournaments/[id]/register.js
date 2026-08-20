@@ -458,17 +458,47 @@ async function handleUnregister(req, res, tournamentId, staff) {
       });
     }
 
+    // 2026-08-20: alternates can cancel too (they were stuck before, the
+    // filter only matched status 'registered').
     const { error } = await getSupabase()
       .from('commander_tournament_entries')
       .update({
         status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
         notes: 'Registration cancelled'
       })
       .eq('tournament_id', tournamentId)
       .eq('player_id', player_id)
-      .eq('status', 'registered');
+      .in('status', ['registered', 'alternate']);
 
     if (error) throw error;
+
+    // A cancellation can free a spot in a previously full field: promote the
+    // longest-waiting alternate to 'registered' (seat comes at the draw).
+    let promotedAlternate = null;
+    try {
+      const { data: alternates } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('id, player_name')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'alternate')
+        .order('registered_at', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const next = alternates && alternates[0];
+      if (next) {
+        const { data: flipped } = await getSupabase()
+          .from('commander_tournament_entries')
+          .update({ status: 'registered' })
+          .eq('id', next.id)
+          .eq('status', 'alternate')
+          .select('id, player_name, status')
+          .maybeSingle();
+        if (flipped) promotedAlternate = flipped;
+      }
+    } catch (altErr) {
+      console.warn('[register.js] Alternate promotion after cancel failed:', altErr.message);
+    }
 
     // Audit log
     await logAction({ action: 'unregister_player', category: 'tournament' }, {
@@ -482,7 +512,10 @@ async function handleUnregister(req, res, tournamentId, staff) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Registration Cancelled' }
+      data: {
+        message: 'Registration Cancelled',
+        promoted_alternate: promotedAlternate || undefined
+      }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
