@@ -109,7 +109,35 @@ export default function RegisterPage() {
 
   // ─── Step 3: Plan ───────────────────────────────────────────────
   const [selectedTier, setSelectedTier] = useState(lockedTier || 'home_game');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  // --- UI CALIBRATION SYSTEM ---
+  const [calib, setCalib] = useState({
+    'NLH': { l: 15.3, w: 7.6, t: 78.6, h: 2.5 },
+    'PLO': { l: 23.3, w: 7.6, t: 78.6, h: 2.5 },
+    'PLO8': { l: 31.3, w: 7.6, t: 78.6, h: 2.5 },
+    'LIMIT HE': { l: 39.4, w: 10.4, t: 78.6, h: 2.5 },
+    'STUD': { l: 50.3, w: 8.4, t: 78.6, h: 2.5 },
+    'MIXED': { l: 59.1, w: 8.4, t: 78.6, h: 2.5 },
+    'TOURNAMENTS': { l: 68.1, w: 14.6, t: 78.6, h: 2.5 },
+    'dot_home': { l: 4.3, t: 51 },
+    'dot_charity': { l: 4.3, t: 51 },
+    'dot_club': { l: 4.3, t: 51 },
+    'checkmark': { l: 15.3, t: 75.7 }
+  });
+  const [activeCalib, setActiveCalib] = useState('NLH');
+  const [showCalib, setShowCalib] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'c' && e.shiftKey && e.altKey) {
+        setShowCalib(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+  // ------------------------------
 
   // Address is required only for the club tier. Home games + charity: optional.
   const isAddressRequired = selectedTier === 'club';
@@ -460,6 +488,42 @@ export default function RegisterPage() {
     );
   }
 
+
+const CalibrationPanel = () => {
+    if (!showCalib) return null;
+    return (
+      <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.9)', padding: 20, zIndex: 9999, color: 'white', border: '1px solid #1877F2', borderRadius: 8, width: 300}}>
+        <div style={{marginBottom: 10}}><b>UI Calibrator</b> (Alt+Shift+C to hide)</div>
+        <select value={activeCalib} onChange={e => setActiveCalib(e.target.value)} style={{color:'black', marginBottom:10, width: '100%', padding: 4}}>
+          {Object.keys(calib).map(k => <option key={k} value={k}>{k}</option>)}
+        </select>
+        
+        <div style={{marginBottom: 8}}>
+          Left: {calib[activeCalib]?.l}%
+          <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.l || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], l: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+        </div>
+        <div style={{marginBottom: 8}}>
+          Top: {calib[activeCalib]?.t}%
+          <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.t || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], t: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+        </div>
+        {calib[activeCalib]?.w !== undefined && (
+          <div style={{marginBottom: 8}}>
+            Width: {calib[activeCalib]?.w}%
+            <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.w || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], w: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+          </div>
+        )}
+        {calib[activeCalib]?.h !== undefined && (
+          <div style={{marginBottom: 8}}>
+            Height: {calib[activeCalib]?.h}%
+            <input type="range" min="0" max="100" step="0.1" value={calib[activeCalib]?.h || 0} onChange={e => setCalib({...calib, [activeCalib]: {...calib[activeCalib], h: parseFloat(e.target.value)}})} style={{width:'100%'}} />
+          </div>
+        )}
+        
+        <textarea readOnly value={JSON.stringify(calib, null, 2)} style={{width: '100%', height: 150, color: 'black', marginTop: 10, fontSize: 10, fontFamily: 'monospace'}} />
+      </div>
+    );
+  };
+  // ------------------------------
 
   if (step === 1) {
     const autofillCss = `
@@ -925,15 +989,11 @@ export default function RegisterPage() {
               />
 
               {/* Games Offered Toggles */}
-              {[
-                { label: 'NLH', l: 15.3, w: 7.6 },
-                { label: 'PLO', l: 23.3, w: 7.6 },
-                { label: 'PLO8', l: 31.3, w: 7.6 },
-                { label: 'LIMIT HE', l: 39.4, w: 10.4 },
-                { label: 'STUD', l: 50.3, w: 8.4 },
-                { label: 'MIXED', l: 59.1, w: 8.4 },
-                { label: 'TOURNAMENTS', l: 68.1, w: 14.6 }
-              ].map(({ label, l, w }) => (
+              {['NLH', 'PLO', 'PLO8', 'LIMIT HE', 'STUD', 'MIXED', 'TOURNAMENTS'].map(label => {
+                const c = calib[label] || { l: 0, w: 0, t: 0, h: 0 };
+                const l = c.l;
+                const w = c.w;
+                return (
                 <button
                   key={label}
                   type="button"
@@ -961,10 +1021,10 @@ export default function RegisterPage() {
                   }}
                   style={{
                     position: 'absolute',
-                    top: '78.6%',
+                    top: `${c.t}%`,
                     left: `${l}%`,
                     width: `${w}%`,
-                    height: '2.5%',
+                    height: `${c.h}%`,
                     // Using a subtle 15% opacity white background for selected state per user feedback to have NO OVERLAYS.
                     // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
                     // I will use a very subtle white background
@@ -977,7 +1037,8 @@ export default function RegisterPage() {
                   }}
                   title={label}
                 />
-              ))}
+              );
+            })}
 
               {/* Back Button */}
               <button
@@ -1029,6 +1090,7 @@ export default function RegisterPage() {
               }} title="Sign In" />
             </form>
           </div>
+          <CalibrationPanel />
         </div>
       </>
     );
@@ -1075,8 +1137,8 @@ export default function RegisterPage() {
              {selectedTier === 'home_game' && (
                <div style={{
                  position: 'absolute',
-                 top: '51%',
-                 left: '4.3%',
+                 top: `${calib.dot_home.t}%`,
+                 left: `${calib.dot_home.l}%`,
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1109,8 +1171,8 @@ export default function RegisterPage() {
              {selectedTier === 'charity' && (
                <div style={{
                  position: 'absolute',
-                 top: '51%',
-                 left: '4.3%',
+                 top: `${calib.dot_charity.t}%`,
+                 left: `${calib.dot_charity.l}%`,
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1143,8 +1205,8 @@ export default function RegisterPage() {
              {selectedTier === 'club' && (
                <div style={{
                  position: 'absolute',
-                 top: '51%',
-                 left: '4.3%',
+                 top: `${calib.dot_club.t}%`,
+                 left: `${calib.dot_club.l}%`,
                  transform: 'translateY(-50%)',
                  width: '12px',
                  height: '12px',
@@ -1162,8 +1224,8 @@ export default function RegisterPage() {
             onChange={(e) => setAgreedToTerms(e.target.checked)}
             style={{
               position: 'absolute',
-              top: '75.7%',
-              left: '15.3%',
+              top: `${calib.checkmark.t}%`,
+              left: `${calib.checkmark.l}%`,
               width: '2.2%',
               height: '2.2%',
               cursor: 'pointer',
