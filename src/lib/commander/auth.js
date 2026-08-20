@@ -1,5 +1,5 @@
 /**
- * Commander auth — local implementation (2026-07-25 security audit).
+ * Commander auth - local implementation (2026-07-25 security audit).
  *
  * History:
  *  - 2026-05-12: getUser/guardUser overridden locally to accept Bearer tokens
@@ -8,7 +8,7 @@
  *  - 2026-07-25: the remaining guards are now ALSO implemented locally, fixing
  *    two P0s found in the Club Commander audit:
  *      1. verifyStaffSession trusted the raw client-supplied x-staff-session
- *         JSON with no signature — any caller could forge a staff/owner
+ *         JSON with no signature - any caller could forge a staff/owner
  *         identity. Sessions are now HMAC-signed server-side (SUPABASE_JWT_SECRET,
  *         same secret pinSession.js uses) and verified on every request.
  *      2. Staff lookups matched only linked_user_id while registration wrote
@@ -46,7 +46,7 @@ function getAdminClient() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PIN verification (bcrypt-hashed — local override)
+// PIN verification (bcrypt-hashed - local override)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -270,16 +270,16 @@ export async function verifyStaffSession(req) {
     return { error: { status: 401, code: 'INVALID_SESSION', message: 'Invalid Session Format' } };
   }
 
-  // Signature gate — unsigned/forged sessions are rejected. Sessions issued
+  // Signature gate - unsigned/forged sessions are rejected. Sessions issued
   // before the 2026-07-25 deploy lack `sig`; those users must log in again.
   if (!verifySessionSignature(sessionData)) {
-    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired — Please Sign In Again' } };
+    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired - Please Sign In Again' } };
   }
 
-  // Path 1: PIN-based staff terminal — session contains staff row `id`
+  // Path 1: PIN-based staff terminal - session contains staff row `id`
   if (sessionData.id) {
     if (Date.now() - sessionData.session_ts > PIN_SESSION_TTL_MS) {
-      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'PIN session expired — please re-enter your PIN' } };
+      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'PIN session expired - please re-enter your PIN' } };
     }
 
     const { data: staff, error: staffError } = await getAdminClient()
@@ -295,20 +295,32 @@ export async function verifyStaffSession(req) {
     return { staff };
   }
 
-  // Path 2: Owner login — session contains `user_id` + `venue_id`
+  // Path 2: Owner login - session contains `user_id` + `venue_id`
   if (sessionData.user_id && sessionData.venue_id) {
     if (Date.now() - sessionData.session_ts > OWNER_SESSION_TTL_MS) {
-      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session expired — please sign in again' } };
+      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session expired - please sign in again' } };
     }
 
-    const { data: staff } = await getAdminClient()
+    // 2026-08-20 fix: a user can have MULTIPLE staff rows at one venue
+    // (e.g. an owner row plus a linked floor/brush test row). The old
+    // .limit(1).maybeSingle() picked whichever row Postgres returned first,
+    // silently DOWNGRADING owner sessions to a lesser role (surfaced as
+    // random 'Manager Role Required' 403s). The session role is HMAC-signed,
+    // so prefer the row matching it; a session claiming a role the user has
+    // no row for still falls back to their real row (no escalation: a
+    // forged role cannot be signed, and an unmatched signed role only
+    // matters for owners, which the subscription check below verifies).
+    const { data: staffRows } = await getAdminClient()
       .from('commander_staff')
       .select('id, venue_id, role, is_active, linked_user_id, user_id, display_name, permissions')
       .or(userMatchFilter(sessionData.user_id))
       .eq('venue_id', sessionData.venue_id)
       .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
+
+    const staff = (staffRows || []).find(s => s.role === sessionData.role)
+      || (staffRows || [])[0]
+      || null;
 
     if (staff) return { staff };
 
@@ -377,7 +389,7 @@ export async function guardManager(req, res, venueId = null) {
 /**
  * Require staff auth only for write methods; GET passes through.
  * NOTE: routes serving PII or venue-scoped data on GET must add their own
- * read-side guard — a bare `guardWriteStaff` means the GET is public.
+ * read-side guard - a bare `guardWriteStaff` means the GET is public.
  */
 export async function guardWriteStaff(req, res) {
   if (req.method === 'GET') return true;
