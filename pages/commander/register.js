@@ -753,7 +753,7 @@ export default function RegisterPage() {
                 required
                 style={{
                   position: 'absolute',
-                  top: '42.6%',
+                  top: '42.2%',
                   left: '18%',
                   width: '63%',
                   height: '4.2%',
@@ -775,7 +775,7 @@ export default function RegisterPage() {
                 required={isAddressRequired}
                 style={{
                   position: 'absolute',
-                  top: '49.7%',
+                  top: '49.3%',
                   left: '18%',
                   width: '63%',
                   height: '4.2%',
@@ -797,7 +797,7 @@ export default function RegisterPage() {
                 required={isAddressRequired}
                 style={{
                   position: 'absolute',
-                  top: '56.8%',
+                  top: '56.4%',
                   left: '18%',
                   width: '21%',
                   height: '4.2%',
@@ -818,8 +818,8 @@ export default function RegisterPage() {
                 required={isAddressRequired}
                 style={{
                   position: 'absolute',
-                  top: '56.8%',
-                  left: '43.5%',
+                  top: '56.4%',
+                  left: '45.2%',
                   width: '15%',
                   height: '4.2%',
                   background: 'transparent',
@@ -845,8 +845,8 @@ export default function RegisterPage() {
                 required={isAddressRequired}
                 style={{
                   position: 'absolute',
-                  top: '56.8%',
-                  left: '65%',
+                  top: '56.4%',
+                  left: '66.8%',
                   width: '17%',
                   height: '4.2%',
                   background: 'transparent',
@@ -866,7 +866,7 @@ export default function RegisterPage() {
                 onChange={e => setClubInfo({ ...clubInfo, phone: e.target.value })}
                 style={{
                   position: 'absolute',
-                  top: '63.9%',
+                  top: '63.5%',
                   left: '18%',
                   width: '29%',
                   height: '4.2%',
@@ -887,7 +887,7 @@ export default function RegisterPage() {
                 onChange={e => setClubInfo({ ...clubInfo, website: e.target.value })}
                 style={{
                   position: 'absolute',
-                  top: '63.9%',
+                  top: '63.5%',
                   left: '52.5%',
                   width: '29%',
                   height: '4.2%',
@@ -910,7 +910,7 @@ export default function RegisterPage() {
                 required
                 style={{
                   position: 'absolute',
-                  top: '71.1%',
+                  top: '70.7%',
                   left: '18%',
                   width: '63%',
                   height: '4.2%',
@@ -968,10 +968,9 @@ export default function RegisterPage() {
                     // Using a subtle 15% opacity white background for selected state per user feedback to have NO OVERLAYS.
                     // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
                     // I will use a very subtle white background
-                    background: clubInfo.gamesOffered.includes({
-                      'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'
-                    }[label]) ? 'rgba(24, 119, 242, 0.3)' : 'transparent',
-                    border: 'none',
+                    background: 'transparent',
+                    border: active ? '2px solid #1877F2' : 'none',
+                    boxShadow: active ? '0 0 10px #1877F2, inset 0 0 10px rgba(24,119,242,0.5)' : 'none',
                     borderRadius: '20px',
                     cursor: 'pointer',
                     zIndex: 10
