@@ -2,6 +2,30 @@
  * Commander Tables API - GET/POST /api/commander/tables
  * List tables or create new table
  * Reference: Phase 2 - Table CRUD
+ *
+ * DEAD COLUMNS - DO NOT TRUST (documented 2026-08-20)
+ * ---------------------------------------------------
+ * `commander_tables.occupied_seats` and `commander_tables.player_count` are
+ * real columns with a default of 0, and this route returns them because it
+ * selects `*`. Nothing in this codebase writes either one, and production
+ * already proves they have drifted: ten rows carry non-zero values and on most
+ * of them the two columns disagree with each other (occupied_seats 3 alongside
+ * player_count 5 on the same table).
+ *
+ * They are deliberately NOT maintained. A denormalised seat count fed from
+ * every seating path (seat.js, seat-draw.js, the claim-seat RPC, table breaks,
+ * eliminations, cash sit-downs) is exactly how a counter drifts, and there is
+ * no single write path to hang it on. The columns are left in place rather
+ * than dropped so no deploy can race a schema change.
+ *
+ * Live occupancy comes from rows, not counters:
+ *   - cash:       commander_table_seats where status = 'occupied'
+ *                 (merged onto each table below as `seats`)
+ *   - tournament: commander_tournament_entries with a table_number/seat_number
+ *                 and status in ('seated','active') - see
+ *                 pages/api/tournaments/[id]/tables.js
+ *
+ * If you need a count, derive it. Do not read these two columns.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
@@ -99,14 +123,18 @@ async function handleGet(req, res, staff) {
       if (result.error) throw result.error;
       data = result.data;
 
-      // Also fetch seat occupancy data
+      // Also fetch seat occupancy data. This is the ONLY trustworthy cash-side
+      // occupancy source on this route (see the dead-column note at the top).
+      // 2026-08-20 audit fix: the limit was 100, which is fewer rows than a
+      // 12-table room fills. The truncated tail silently read as empty seats,
+      // so the lobby board under-counted a busy room.
       try {
         const { data: seats } = await getSupabase()
           .from('commander_table_seats')
           .select('table_number, seat_number, status, player_name, seated_at')
           .eq('venue_id', venue_id)
           .eq('status', 'occupied')
-          .limit(100);
+          .limit(5000);
         // Merge seats into table data
         if (seats && data) {
           const seatsByTable = {};

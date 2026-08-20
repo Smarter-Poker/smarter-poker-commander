@@ -108,15 +108,46 @@ export default async function handler(req, res) {
     }
 
     // Resolve tables.
+    //
+    // 2026-08-20 audit fix: this filtered `.neq('status', 'closed')`, but
+    // commander_tables_status_check only allows available/in_use/reserved/
+    // maintenance. 'closed' belongs to the LEGACY `tables` table, not this one,
+    // so the predicate excluded nothing and merely read as if it did.
+    //
+    // The real "do not seat players here" state is 'maintenance' (a broken or
+    // pulled table). 'reserved' is deliberately still included: a room that
+    // reserves a table for this tournament (final table, overflow) still wants
+    // the draw to use it, and excluding it would start dropping tables that
+    // were included before today. Assignment sets status to 'in_use' anyway
+    // (see tables.js handleAssign), so in practice only a hand-edited row is
+    // anything else.
+    //
+    // The `status.is.null` leg matters: status is nullable, and a bare
+    // `.neq('status', ...)` evaluates to NULL for a null status and would
+    // silently drop that table out of the draw.
     let tables = [];
-    const { data: dbTables } = await getSupabase()
+    const { data: dbTables, error: tablesErr } = await getSupabase()
       .from('commander_tables')
       .select('table_number, max_seats')
       .eq('venue_id', tournament.venue_id)
       .eq('tournament_id', tournamentId)
-      .neq('status', 'closed')
+      .or('status.is.null,status.neq.maintenance')
       .order('table_number', { ascending: true })
       .limit(200);
+
+    // A discarded error here is worse than it looks: the code falls through to
+    // synthesizing tables 1..N, so a transient read failure would seat the
+    // whole field at table numbers that may not exist in the physical room.
+    if (tablesErr) {
+      console.error('[seat-draw.js] commander_tables read failed', {
+        tournamentId, venueId: tournament.venue_id,
+        code: tablesErr.code, message: tablesErr.message, details: tablesErr.details,
+      });
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DB_ERROR', message: 'Failed To Read The Tournament Table List' }
+      });
+    }
 
     if (dbTables && dbTables.length > 0) {
       tables = dbTables.map(t => ({ table_number: t.table_number, max_seats: t.max_seats || 9 }));

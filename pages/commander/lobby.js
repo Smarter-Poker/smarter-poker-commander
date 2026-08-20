@@ -21,6 +21,26 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
+/**
+ * Live occupied-seat count for one commander_tables row.
+ *
+ * 2026-08-20 audit fix: this used to read `t.occupied_seats || t.player_count`.
+ * Both are DEAD COLUMNS - nothing in the codebase writes either one, and the
+ * production values have already drifted apart from each other (see the
+ * dead-column note at the top of pages/api/tables/index.js). The lobby TV was
+ * therefore drawing seat dots and "Open Seats" counts from stale numbers.
+ *
+ * Occupancy is derived from rows instead: the `seats` array the tables API
+ * merges in from commander_table_seats (status = 'occupied'), falling back to
+ * the joined live commander_games row's current_players.
+ */
+function tableOccupancy(t) {
+  if (Array.isArray(t?.seats)) return t.seats.length;
+  const games = Array.isArray(t?.commander_games) ? t.commander_games : [];
+  const live = games.find(g => g && g.status !== 'closed');
+  return Number(live?.current_players) || 0;
+}
+
 export default function LobbyDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-lobby'); }, []);
   const router = useRouter();
@@ -85,17 +105,29 @@ const headers = { };
 
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
 
-  // Group active tables by game type
+  // Group active tables by game type.
+  //
+  // KNOWN NO-OP (flagged 2026-08-20, deliberately left as-is): 'active' is not
+  // a commander_tables status. The CHECK constraint allows only available /
+  // in_use / reserved / maintenance, so this filter matches nothing and the
+  // cash-game section of the lobby TV is permanently blank. It was NOT flipped
+  // here because the correct replacement is a product call, not a mechanical
+  // one: `mode === 'cash' && status === 'in_use'` would show the right tables,
+  // but commander_table_seats is barely populated in production, so every one
+  // of them would advertise a full rack of open seats to walk-ins. Decide the
+  // seat-tracking story first, then change this line.
   const activeTables = tables.filter(t => t.status === 'active');
   const gameGroups = {};
   activeTables.forEach(t => {
     const key = `${t.game_type || 'Cash'} ${t.stakes || ''}`.trim();
     if (!gameGroups[key]) gameGroups[key] = { tables: [], totalSeats: 0, openSeats: 0 };
     gameGroups[key].tables.push(t);
-    const max = t.max_seats || t.seats || 9;
-    const occupied = t.occupied_seats || t.player_count || 0;
+    // `t.seats` is the occupied-seat ARRAY merged in by the tables API, so it
+    // must never be used as a seat COUNT fallback for max_seats.
+    const max = t.max_seats || 9;
+    const occupied = tableOccupancy(t);
     gameGroups[key].totalSeats += max;
-    gameGroups[key].openSeats += (max - occupied);
+    gameGroups[key].openSeats += Math.max(0, max - occupied);
   });
 
   const GAME_COLORS = {
@@ -181,9 +213,10 @@ const headers = { };
                       <div className="divide-y divide-white/5">
                         {group.tables.map(t => {
                           const tNum = t.table_number || t.number;
-                          const max = t.max_seats || t.seats || 9;
-                          const occupied = t.occupied_seats || t.player_count || 0;
-                          const open = max - occupied;
+                          // `t.seats` is the occupied-seat array, not a count.
+                          const max = t.max_seats || 9;
+                          const occupied = tableOccupancy(t);
+                          const open = Math.max(0, max - occupied);
                           return (
                             <div key={t.id || tNum} className="px-6 py-3 flex items-center justify-between">
                               <div className="flex items-center gap-4">

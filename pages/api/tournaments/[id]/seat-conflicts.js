@@ -34,7 +34,11 @@ function getSupabase() {
 
 // SEAT OCCUPANCY. Two players can only fight over a chair if both are IN one,
 // so 'bagged' (multi-day, chips in a bag, no seat) is deliberately excluded.
-const LIVE_STATUSES = ['seated', 'active'];
+// 'registered' IS included: a player seated before the clock starts keeps that
+// status until play begins, and production has 52 such entries holding real
+// seats. Leaving them out hid every pre-start double-booking, which is the
+// exact case this tool exists to find.
+const LIVE_STATUSES = ['registered', 'seated', 'active'];
 
 async function loadConflicts(tournamentId) {
   const { data, error } = await getSupabase()

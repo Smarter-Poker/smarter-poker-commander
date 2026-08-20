@@ -84,7 +84,11 @@ export default async function handler(req, res) {
         .eq('seat_number', to_seat)
         // SEAT OCCUPANCY: only a player physically in the chair blocks it.
         // 'bagged' excluded on purpose (they hold no seat).
-        .in('status', ['active', 'seated'])
+        // 2026-08-20: 'registered' MUST be included. A player seated before the
+        // clock starts keeps status 'registered' until play begins, and
+        // production currently has 52 such entries holding real seats. Omitting
+        // them let a move drop a player straight on top of one of them.
+        .in('status', ['active', 'seated', 'registered'])
         .neq('id', entry_id)
         .limit(1);
 

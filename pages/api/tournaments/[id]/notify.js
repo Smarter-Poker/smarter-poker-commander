@@ -92,7 +92,45 @@ export default async function handler(req, res) {
           let sentCount = 0;
 
           if (player_id) {
-              // Single player notification
+              // Single player notification.
+              // 2026-08-20 audit fix: player_id was taken from the body and
+              // pushed to verbatim, with no check that the player is even in
+              // this tournament. Staff-only route, so this is not an escalation
+              // path, but one mistyped id sent "Your Seat Is Ready: Table 4,
+              // Seat 7" to an unrelated player with no trace of why.
+              // 'cancelled' entries are excluded: that registration was
+              // reversed and refunded, so the player is not in the field.
+              const { data: entryRows, error: pErr } = await getSupabase()
+                  .from('commander_tournament_entries')
+                  .select('id, status')
+                  .eq('tournament_id', tournamentId)
+                  .eq('player_id', player_id)
+                  .neq('status', 'cancelled')
+                  .limit(1);
+
+              // 22P02 is Postgres invalid_text_representation: player_id is a
+              // uuid column, so a malformed id is a caller typo, not an outage.
+              // Fall through to the same clear 404 rather than a bare 500.
+              if (pErr && pErr.code !== '22P02') {
+                  console.error('[notify.js] participant check failed', {
+                      tournamentId, code: pErr.code, message: pErr.message, details: pErr.details,
+                  });
+                  return res.status(500).json({
+                      success: false,
+                      error: { code: 'DB_ERROR', message: 'Failed To Verify The Target Player' }
+                  });
+              }
+
+              if (pErr || !entryRows || entryRows.length === 0) {
+                  return res.status(404).json({
+                      success: false,
+                      error: {
+                          code: 'PLAYER_NOT_IN_TOURNAMENT',
+                          message: 'That Player Has No Active Entry In This Tournament. Check The Player Before Sending.'
+                      }
+                  });
+              }
+
               targetUserIds = [player_id];
           } else {
               // Mass notification to all active/registered players.

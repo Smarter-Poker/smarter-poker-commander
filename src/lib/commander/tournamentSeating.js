@@ -22,7 +22,15 @@ export async function findOpenSeat(supabase, tournament) {
       .select('table_number, max_seats')
       .eq('venue_id', tournament.venue_id)
       .eq('tournament_id', tournamentId)
-      .neq('status', 'closed')
+      // 2026-08-20 audit fix: was `.neq('status', 'closed')`, a permanent
+      // no-op. commander_tables_status_check allows only available/in_use/
+      // reserved/maintenance, so no row is ever 'closed' ('closed' is a status
+      // of the legacy `tables` table). 'maintenance' is the state that really
+      // means "do not seat anyone here"; 'reserved' stays in the pool so the
+      // predicate does not start excluding tables it used to include. Kept
+      // identical to seat-draw.js on purpose. The `status.is.null` leg is
+      // required because status is nullable and a bare .neq would drop nulls.
+      .or('status.is.null,status.neq.maintenance')
       .limit(200),
     supabase
       .from('commander_tournament_entries')
@@ -78,6 +86,13 @@ export async function findOpenSeat(supabase, tournament) {
  *
  *   Prefer this over findOpenSeat + a separate update: the read-then-write
  *   pattern is what put duplicate seat assignments into production.
+ *
+ *   The RPC's table pool now filters `ct.status IS DISTINCT FROM 'maintenance'`
+ *   (migration commander_claim_open_seat_maintenance_filter), matching
+ *   findOpenSeat and seat-draw.js, so the atomic path and the JS paths agree
+ *   about which tables are seatable. It also counts 'registered' entries as
+ *   occupying a chair: a player seated before the clock starts keeps that
+ *   status, and production had 52 such entries holding real seats.
  */
 export async function claimOpenSeat(supabase, tournamentId, entryId, expectedStatus = null) {
   const { data, error } = await supabase.rpc('commander_claim_open_seat', {

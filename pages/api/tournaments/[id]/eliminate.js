@@ -102,28 +102,34 @@ export default async function handler(req, res) {
       // shortened the field and handed every subsequent bust a finish position
       // that was already taken, corrupting the finishing order and the payouts
       // derived from it.
-      const { count: remainingCount } = await getSupabase()
-        .from('commander_tournament_entries')
-        .select('*', { count: 'exact', head: true })
-        .eq('tournament_id', tournamentId)
-        .in('status', ['seated', 'active', 'bagged'])
+      // 2026-08-20: the count and the "is this place already taken" probe used
+      // to be separate statements, so two players busting at the same instant
+      // on different tables could both read the same remaining count, both find
+      // the place unclaimed (neither had written yet), and both be recorded in
+      // it. The finishing order was then wrong, and since payouts are derived
+      // from finish position, so was the money. commander_claim_finish_position
+      // counts the field, picks the highest unclaimed place and performs the
+      // elimination in ONE statement behind a lock on the tournament row, so
+      // concurrent busts serialize instead of colliding.
+      const { data: claimRows, error: claimError } = await getSupabase()
+        .rpc('commander_claim_finish_position', {
+          p_entry_id: entry_id,
+          p_tournament_id: tournamentId,
+          p_eliminated_by: eliminated_by_id || null
+        });
 
-      let finishPosition = remainingCount;
+      if (claimError) throw claimError;
 
-      // Race guard: two near-simultaneous eliminations can read the same
-      // remaining count. If this finish position is already claimed by another
-      // entry, step down to the next unclaimed one (per-entry, so re-entries
-      // that busted earlier keep their own positions).
-      while (finishPosition > 1) {
-        const { count: taken } = await getSupabase()
-          .from('commander_tournament_entries')
-          .select('id', { count: 'exact', head: true })
-          .eq('tournament_id', tournamentId)
-          .eq('finish_position', finishPosition)
-          .neq('id', entry_id);
-        if (!taken) break;
-        finishPosition -= 1;
+      const claim = Array.isArray(claimRows) ? claimRows[0] : claimRows;
+      if (!claim || claim.finish_position == null) {
+        return res.status(409).json({
+          success: false,
+          error: { code: 'ALREADY_ELIMINATED', message: 'Player Was Already Eliminated By Another Request' }
+        });
       }
+
+      const finishPosition = claim.finish_position;
+      const remainingCount = (claim.remaining_after ?? 0) + 1;
 
       // ── Prize pool + payout structure (single source of math, shared with
       // payout.js so the amounts always agree) ──
@@ -179,24 +185,19 @@ export default async function handler(req, res) {
       // Update eliminated player. The status predicate makes a double-tap
       // safe: only an entry still in the tournament can be eliminated, so of
       // two racing requests exactly one wins and the other gets a 409.
+      // The RPC above already set status, eliminated_at, eliminated_by,
+      // finish_position and released the seat, and it only ever matches an
+      // entry that was still in the tournament. All that is left is the money,
+      // which is computed in JS because it needs the structure, the pool, the
+      // guarantee and any recorded deal.
       const { data: eliminated, error: updateError } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
-          status: 'eliminated',
-          eliminated_at: new Date().toISOString(),
-          eliminated_by: eliminated_by_id || null,
-          finish_position: finishPosition,
           payout_amount: payoutAmount,
-          payout_position: payoutPosition,
-          table_number: null,
-          seat_number: null,
+          payout_position: payoutPosition
         })
         .eq('id', entry_id)
-        // Still-alive statuses. 'bagged' is included: a player who bagged and
-        // then forfeits (no-show on Day 2, or a floor ruling) has to be
-        // bustable, and without it the update matched zero rows and the TD was
-        // told the player "was already eliminated".
-        .in('status', ['registered', 'seated', 'active', 'bagged'])
+        .eq('tournament_id', tournamentId)
         .select(`
           *,
           profiles (id, display_name, avatar_url)
@@ -206,7 +207,10 @@ export default async function handler(req, res) {
       if (updateError) throw updateError;
 
       if (!eliminated) {
-        return res.status(409).json({ success: false, error: { code: 'ALREADY_ELIMINATED', message: 'Player Was Already Eliminated By Another Request' } });
+        // The elimination itself succeeded (the RPC returned a row), so this is
+        // only the payout write failing to find the entry. Surface the claimed
+        // row rather than telling the TD the bust did not happen.
+        console.warn('[eliminate.js] payout write matched no row after a successful claim', { entry_id, tournamentId });
       }
 
       // Handle bounty if applicable. Runs AFTER the race-guarded elimination
@@ -379,7 +383,9 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         data: {
-          entry: eliminated,
+          // Fall back to the row the atomic claim returned if the payout write
+          // could not re-read it, so the client always gets the busted entry.
+          entry: eliminated || claim.entry,
           finishPosition,
           payoutAmount,
           inTheMoney: payoutAmount > 0,

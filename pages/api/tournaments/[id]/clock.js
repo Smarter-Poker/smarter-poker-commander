@@ -690,15 +690,25 @@ async function handleClockAction(req, res, tournamentId, staff) {
         const stakesStr = `${sb}/${bb}` + (newLevel.ante ? ` (${newLevel.ante}a)` : '');
 
         // Push the new blinds to all active tables for this tournament (Commander ecosystem)
+        // 2026-08-20 audit fix: was `.neq('status', 'closed')`. commander_tables
+        // has no 'closed' status (the CHECK allows available/in_use/reserved/
+        // maintenance) so the predicate matched every row and only looked like
+        // a guard. 'maintenance' is the real "table is out of play" state.
+        // `status.is.null` is included because status is nullable and a bare
+        // .neq skips nulls. Matches seat-draw.js and tournamentSeating.js.
         await getSupabase()
           .from('commander_tables')
           .update({
             stakes: stakesStr
           })
           .eq('tournament_id', tournamentId)
-          .neq('status', 'closed');
+          .or('status.is.null,status.neq.maintenance');
 
         // Push the new blinds to all active tables for this tournament (Club Arena legacy ecosystem)
+        // NOTE: 'closed' IS a real status on the legacy `tables` table
+        // (tables_status_check allows waiting/active/running/paused/closed), so
+        // this predicate is deliberate and is NOT the same bug as the one above.
+        // Do not "make it consistent" with the commander_tables filter.
         await getSupabase()
           .from('tables')
           .update({

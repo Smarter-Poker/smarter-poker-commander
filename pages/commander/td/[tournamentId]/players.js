@@ -166,8 +166,18 @@ export default function TDPlayers() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (!res.ok) return { success: false, error: 'API Error' };
-    return res.json();
+    // 2026-08-20 audit fix: a non-2xx response threw the server's
+    // { code, message } envelope away and substituted the bare string
+    // 'API Error', so every rejected action (add-on already taken, player not
+    // active, seat conflict) reached the TD with no reason attached. Parse the
+    // body either way and let the caller read error.message.
+    let json = null;
+    try { json = await res.json(); } catch { json = null; }
+    if (json && typeof json === 'object') return json;
+    return {
+      success: false,
+      error: { code: 'API_ERROR', message: `Request Failed (${res.status}).` }
+    };
   };
 
   const confirmEliminate = (player) => {
@@ -303,15 +313,28 @@ export default function TDPlayers() {
           success = true;
           printBluetoothReceipt(player, 'Rebuy', floor?.tournament?.rebuy_cost, floor?.tournament?.rebuy_chips || floor?.tournament?.starting_chips);
         } else {
-          setToast({ type: 'error', text: res.error || 'Rebuy Failed.' });
+          // 2026-08-20 audit fix: `res.error` is the { code, message } envelope,
+          // not a string. Passing the object straight to the toast rendered it
+          // as a React child and threw, so a failed rebuy showed no reason at
+          // all. Read .message, same as the eliminate branch above.
+          setToast({ type: 'error', text: res.error?.message || 'Rebuy Failed.' });
         }
       } else if (type === 'addon') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/addon`, {});
         if (res.success) {
           success = true;
           printBluetoothReceipt(player, 'Add-on', floor?.tournament?.addon_cost, floor?.tournament?.addon_chips || floor?.tournament?.starting_chips);
+          // The add-on window is advisory: the API sells the add-on regardless
+          // and flags it when the clock is not on the scheduled break, so the
+          // TD finds out at the moment of sale instead of at the audit.
+          if (res.data?.outside_addon_window) {
+            setToast({
+              type: 'warning',
+              text: res.data.addon_window_note || 'Add-On Sold Outside The Scheduled Add-On Break.'
+            });
+          }
         } else {
-          setToast({ type: 'error', text: res.error || 'Add-On Failed.' });
+          setToast({ type: 'error', text: res.error?.message || 'Add-On Failed.' });
         }
       } else if (type === 'restore_force') {
         // performRestore handles toast, refetch, and closing the sheet itself
@@ -877,7 +900,12 @@ export default function TDPlayers() {
         <div style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
           padding: '12px 20px', borderRadius: 12,
-          background: toast.type === 'success' ? '#22C55E' : '#EF4444',
+          // 'warning' (amber) is used for advisories such as an add-on sold
+          // outside the scheduled add-on break: the action DID succeed, so
+          // painting it error-red would read as a failed sale.
+          background: toast.type === 'success' ? '#22C55E'
+            : toast.type === 'warning' ? '#F59E0B'
+              : '#EF4444',
           color: '#fff', fontSize: 13, fontWeight: 600,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           display: 'flex', alignItems: 'center', gap: 8,

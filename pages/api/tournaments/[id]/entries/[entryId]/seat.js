@@ -91,7 +91,13 @@ export default async function handler(req, res) {
         // 'bagged' is deliberately excluded (bag-and-tag nulls their seat, so
         // they could not match anyway, and including it would keep a released
         // chair blocked forever).
-        .in('status', ['active', 'seated'])
+        // 2026-08-20: 'registered' MUST be included. A player seated before the
+        // clock starts keeps status 'registered' until play begins, and
+        // production currently has 52 such entries holding real seats. Omitting
+        // them made this probe report an occupied chair as free, so the TD
+        // could assign two players to it, which is exactly the double-booking
+        // the seat conflict repair tool exists to clean up.
+        .in('status', ['active', 'seated', 'registered'])
         .neq('id', entryId)
         .limit(1);
 
