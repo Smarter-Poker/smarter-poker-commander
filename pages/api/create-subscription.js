@@ -140,6 +140,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid subscription tier' });
     }
 
+    let userId = null;
+    let venueId = null;
+    let createdUser = false;
+    let createdVenue = false;
+
+    const doRollback = async () => {
+      try {
+        if (createdVenue && venueId) {
+          console.warn('[Rollback] Deleting orphaned venue:', venueId);
+          await getSupabase().from('poker_venues').delete().eq('id', venueId);
+        }
+        if (createdUser && userId) {
+          console.warn('[Rollback] Deleting orphaned user:', userId);
+          await getSupabase().auth.admin.deleteUser(userId);
+        }
+      } catch (rollbackErr) {
+        console.error('[Rollback Failed]', rollbackErr);
+      }
+    };
+
     try {
       const email = ownerInfo.email?.toLowerCase().trim();
       if (!email) {
@@ -187,7 +207,7 @@ export default async function handler(req, res) {
         }
       }
 
-      let userId = null;
+
 
       if (existingAccount) {
         // ─── Path A: Existing account ──────────────────────────────────
@@ -242,6 +262,7 @@ export default async function handler(req, res) {
 
         if (!authError && authData?.user) {
           userId = authData.user.id;
+          createdUser = true;
         } else if (authError?.message?.toLowerCase().includes('already') ||
           authError?.message?.toLowerCase().includes('exists') ||
           authError?.message?.toLowerCase().includes('registered')) {
@@ -263,7 +284,6 @@ export default async function handler(req, res) {
       }
 
       // ─── 2. Create or find the venue (handle optional address) ─────
-      let venueId;
       const venueAddress = clubInfo.address?.trim() || null;
       const venueCity = clubInfo.city?.trim() || null;
       const venueState = clubInfo.state?.trim() || null;
@@ -338,14 +358,17 @@ export default async function handler(req, res) {
 
         if (venueError) {
           console.warn('Venue creation error:', venueError);
+          await doRollback();
           return res.status(400).json({ error: 'Failed to create venue: ' + venueError.message });
         }
 
         if (!newVenue) {
+          await doRollback();
           return res.status(500).json({ error: 'Venue creation returned no data' });
         }
 
         venueId = newVenue.id;
+        createdVenue = true;
       }
 
       // ─── Free Trial Eligibility Check (Anti-Fraud) ───────────────────
@@ -371,6 +394,7 @@ export default async function handler(req, res) {
 
       if (requiresPaymentNow && hasRealStripeConfig) {
         if (!paymentMethodId) {
+           await doRollback();
            return res.status(400).json({ error: 'Free trial already used. A valid payment method is required to activate an additional venue.' });
         }
         
@@ -471,9 +495,11 @@ export default async function handler(req, res) {
 
         if (subError) {
           console.warn('Subscription creation error:', subError);
+          await doRollback();
           return res.status(500).json({ error: 'Failed to create subscription' });
         }
         if (!newSub) {
+          await doRollback();
           return res.status(500).json({ error: 'Subscription creation returned no data' });
         }
         subscriptionData = newSub;
@@ -592,6 +618,12 @@ export default async function handler(req, res) {
 
     } catch (error) {
       console.warn('Registration error:', error);
+      
+      // ─── ROLLBACK ORPHANED RECORDS ───
+      if (typeof doRollback === 'function') {
+        await doRollback();
+      }
+      
       return res.status(500).json({ error: error.message || 'Registration failed' });
     }
 

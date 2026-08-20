@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Head from 'next/head';
 import Link from 'next/link';
+import Autocomplete from 'react-google-autocomplete';
+import { AsYouType, isValidPhoneNumber } from 'libphonenumber-js';
 import {
   COMMANDER_FREE_MODE,
   COMMANDER_FREE_TAGLINE,
@@ -752,7 +754,8 @@ const CalibrationPanel = () => {
               />
 
               {/* Honeypot */}
-              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />\n              {/* Email Input */}
+              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              {/* Email Input */}
               <input
                 type="email"
                 value={ownerEmail}
@@ -1103,7 +1106,7 @@ const CalibrationPanel = () => {
               <input
                 type="tel"
                 value={clubInfo.phone}
-                onChange={e => setClubInfo({ ...clubInfo, phone: e.target.value })}
+                onChange={e => setClubInfo({ ...clubInfo, phone: new AsYouType('US').input(e.target.value) })}
                 style={{
                   position: 'absolute',
                   top: '63.5%',
@@ -1671,7 +1674,8 @@ const CalibrationPanel = () => {
               </p>
 
               <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label><input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} /></div>
-              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />\n              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label><input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" /></div>
+              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label><input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" /></div>
               <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number *</label><input type="tel" value={ownerPhone} onChange={handlePhoneChange(setOwnerPhone)} className={inputClass} placeholder="(555) 555-5555" /></div>
 
               {/* Existing account toggle */}
@@ -1742,29 +1746,27 @@ const CalibrationPanel = () => {
                 <input type="text" name="name" value={clubInfo.name} onChange={handleClubInfoChange} className={inputClass} placeholder={isHomeGameFlow ? 'e.g. Saturday Night Hold’em' : 'Enter Your Venue Name'} />
               </div>
 
-              {!isHomeGameFlow && (
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">Street Address{isAddressRequired ? ' *' : ' (Optional)'}</label>
-                  <input type="text" name="address" value={clubInfo.address} onChange={handleClubInfoChange} className={inputClass} placeholder={isAddressRequired ? 'Required For Club Tier' : 'Optional For Home Games & Charity'} />
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">City{(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
-                  <input type="text" name="city" value={clubInfo.city} onChange={handleClubInfoChange} className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">State{(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
-                  <select name="state" value={clubInfo.state} onChange={handleClubInfoChange} className={inputClass}>
-                    <option value="">Select</option>
-                    {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">ZIP{isAddressRequired ? ' *' : ''}</label>
-                  <input type="text" name="zip" value={clubInfo.zip} onChange={handleClubInfoChange} className={inputClass} />
-                </div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Search Location {(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+                  onPlaceSelected={handlePlaceSelected}
+                  options={{
+                    types: ['address', 'establishment', '(cities)'],
+                    componentRestrictions: { country: 'us' },
+                  }}
+                  defaultValue={clubInfo.address || clubInfo.city}
+                  className={inputClass}
+                  placeholder="Start typing your address or city..."
+                />
+                
+                {(clubInfo.city || clubInfo.address) && (
+                  <div className="mt-3 p-3 bg-[#3A3B3C]/40 rounded-lg text-sm text-[#E4E6EB]">
+                    <span className="block text-[#B0B3B8] text-xs uppercase tracking-wider mb-1">Extracted Details:</span>
+                    {clubInfo.address && <div>{clubInfo.address}</div>}
+                    {clubInfo.city && <div>{clubInfo.city}, {clubInfo.state} {clubInfo.zip}</div>}
+                  </div>
+                )}
               </div>
 
               {!isHomeGameFlow && (
