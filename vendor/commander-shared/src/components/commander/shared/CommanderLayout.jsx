@@ -778,14 +778,18 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           color: #ccc;
           border-color: rgba(255,255,255,0.25);
         }
+        .cmd-hamburger img {
+          width: 24px;
+          height: 24px;
+        }
       `}</style>
 
       <CommanderErrorBoundary>
         {/* ── GLOBAL HEADER BAR ── */}
-        <div className="cmd-global-header">
-          <div className="cmd-global-left">
-            <button className="cmd-hamburger" onClick={() => setMenuOpen(true)}>
-              <img src="/images/commander/btn-hamburger.png" alt="Menu" />
+        <div className="cmd-global-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
+          <div className="cmd-global-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button className="cmd-hamburger" onClick={() => setMenuOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+              <img src="/images/commander/btn-hamburger.png" alt="Menu" style={{ width: '36px', height: '36px' }} />
             </button>
             {hideBack ? (
               /* Dashboard: show HUB button */
