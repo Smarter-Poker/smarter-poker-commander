@@ -160,9 +160,37 @@ export default async function handler(req, res) {
         Math.max(collectedPool, tournament.guaranteed_pool || 0);
       const overlayAmount = Math.max(0, (tournament.guaranteed_pool || 0) - collectedPool);
 
-      // Check late registration
+      // Check late registration.
+      // 2026-08-20 fix: this used current_level <= late_registration_levels
+      // while register.js and entries.js close registration when
+      // (current_level + 1) > late_registration_levels. The two disagreed by a
+      // full level, so the console advertised late reg as OPEN for a level in
+      // which the registration endpoints were already rejecting players, and
+      // the cashier only found out when the buy-in bounced.
+      const lateRegLevels = tournament.late_registration_levels || 0;
+      const currentLevelNumber = (tournament.current_level || 0) + 1;
       const lateRegOpen = tournament.status === 'running' &&
-        (tournament.current_level || 0) <= (tournament.late_registration_levels || 0);
+        currentLevelNumber <= lateRegLevels;
+
+      // Seat conflicts: two live players holding the same table + seat. The
+      // floor has to know, otherwise the first the room hears about it is two
+      // players arguing over one chair. Historic data contains these, and the
+      // read-then-write seating path that created them is now atomic.
+      const seatOwners = new Map();
+      const seatConflicts = [];
+      for (const e of activeEntries) {
+        if (!e.table_number || !e.seat_number) continue;
+        const key = `${e.table_number}:${e.seat_number}`;
+        if (seatOwners.has(key)) {
+          seatConflicts.push({
+            table_number: e.table_number,
+            seat_number: e.seat_number,
+            players: [seatOwners.get(key), avatarMap[e.player_id]?.display_name || e.player_name].filter(Boolean)
+          });
+        } else {
+          seatOwners.set(key, avatarMap[e.player_id]?.display_name || e.player_name);
+        }
+      }
 
       // Imbalance check
       const imbalanced = tableNumbers.length >= 2 && (maxCount - minCount >= 2);
@@ -308,13 +336,17 @@ export default async function handler(req, res) {
             average_stack: avgStack,
             tables_active: tableNumbers.length,
             late_reg_open: lateRegOpen,
+            // Levels of late reg left INCLUDING the one being played: at level
+            // number N with a cutoff of L there are (L - N + 1) left, which is
+            // 1 during the final late-reg level and 0 once it closes. The old
+            // form used the raw array index and read one level high.
             levels_until_late_reg_closes: lateRegOpen
-              ? (tournament.late_registration_levels || 0) - currentLevel
+              ? Math.max(0, lateRegLevels - currentLevelNumber + 1)
               : 0,
             // True once the re-entry window closes - signals that auto-break is now active
-            re_entry_period_over: currentLevel > Math.max(
+            re_entry_period_over: currentLevelNumber > Math.max(
               tournament.rebuy_end_level || 0,
-              tournament.late_registration_levels || 0
+              lateRegLevels
             ),
 
             player_stacks: activeEntries
@@ -325,7 +357,8 @@ export default async function handler(req, res) {
             imbalanced,
             can_break_table: canBreakTable,
             hand_for_hand: clockState?.hand_for_hand || false,
-            on_break: clockState?.on_break || false
+            on_break: clockState?.on_break || false,
+            seat_conflicts: seatConflicts
           },
           tables,
           // Waiting alternates in queue order, so the floor can see who is

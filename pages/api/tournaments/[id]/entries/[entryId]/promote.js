@@ -15,7 +15,7 @@ import {
   sendPushNotification,
   isOneSignalConfigured
 } from '../../../../../../src/lib/commander/pushNotifications';
-import { findOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
+import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { sendSeatNotification } from '../../../../../../src/lib/commander/twilio';
 
 let _supabase = null;
@@ -78,6 +78,7 @@ export default async function handler(req, res) {
 
     let tableNumber = Number(req.body?.table_number) || null;
     let seatNumber = Number(req.body?.seat_number) || null;
+    let promoted = null;
 
     if (tableNumber && seatNumber) {
       // Explicit seat: verify it is open.
@@ -96,33 +97,49 @@ export default async function handler(req, res) {
           error: { code: 'SEAT_OCCUPIED', message: 'That Seat Is Occupied' }
         });
       }
-    } else {
-      const open = await findOpenSeat(getSupabase(), tournament);
-      if (!open) {
+      // Explicit seat requested and verified free: claim it directly, but only
+      // while the entry is still an alternate (guards a double-tap).
+      const { data: promotedExplicit, error: explicitError } = await getSupabase()
+        .from('commander_tournament_entries')
+        .update({
+          status: 'seated',
+          table_number: tableNumber,
+          seat_number: seatNumber,
+          current_chips: tournament.starting_chips || 0
+        })
+        .eq('id', entryId)
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'alternate')
+        .select()
+        .maybeSingle();
+      if (explicitError) throw explicitError;
+      if (!promotedExplicit) {
         return res.status(409).json({
           success: false,
-          error: { code: 'NO_OPEN_SEATS', message: 'No Open Seats Available. Break A Seat Free Or Add A Table.' }
+          error: { code: 'ALREADY_PROMOTED', message: 'Alternate Was Already Seated By Another Client' }
         });
       }
-      tableNumber = open.table_number;
-      seatNumber = open.seat_number;
+      promoted = promotedExplicit;
+    } else {
+      // Atomic: the seat is chosen and claimed in one locked statement, so two
+      // simultaneous promotions can never be handed the same seat.
+      const seat = await claimOpenSeat(getSupabase(), tournamentId, entryId, 'alternate');
+      if (!seat) {
+        return res.status(409).json({
+          success: false,
+          error: { code: 'NO_OPEN_SEATS', message: 'No Open Seats Available, Or The Alternate Was Just Seated. Break A Seat Free Or Add A Table.' }
+        });
+      }
+      tableNumber = seat.table_number;
+      seatNumber = seat.seat_number;
+      const { data: claimed } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select()
+        .eq('id', entryId)
+        .maybeSingle();
+      promoted = claimed;
     }
 
-    const { data: promoted, error: promoteError } = await getSupabase()
-      .from('commander_tournament_entries')
-      .update({
-        status: 'seated',
-        table_number: tableNumber,
-        seat_number: seatNumber,
-        current_chips: tournament.starting_chips || 0
-      })
-      .eq('id', entryId)
-      .eq('tournament_id', tournamentId)
-      .eq('status', 'alternate')
-      .select()
-      .maybeSingle();
-
-    if (promoteError) throw promoteError;
     if (!promoted) {
       return res.status(409).json({
         success: false,

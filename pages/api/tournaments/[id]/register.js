@@ -15,7 +15,7 @@ import {
 } from '../../../../src/lib/commander/pushNotifications';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
-import { findOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
+import { claimOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -329,22 +329,18 @@ async function handleRegister(req, res, tournamentId, staff) {
     let seatAssignment = null;
     if (!registerAsAlternate && tournament.status === 'running' && entry) {
       try {
-        const open = await findOpenSeat(getSupabase(), tournament);
-        if (open) {
+        // Atomic claim: picking and taking the seat in one locked statement
+        // stops a late registration and an alternate promotion landing in the
+        // same chair.
+        const seat = await claimOpenSeat(getSupabase(), tournamentId, entry.id, 'registered');
+        if (seat) {
+          seatAssignment = seat;
           const { data: seatedEntry } = await getSupabase()
             .from('commander_tournament_entries')
-            .update({
-              status: 'seated',
-              table_number: open.table_number,
-              seat_number: open.seat_number,
-              current_chips: tournament.starting_chips || 0
-            })
-            .eq('id', entry.id)
-            .eq('status', 'registered')
             .select()
+            .eq('id', entry.id)
             .maybeSingle();
           if (seatedEntry) {
-            seatAssignment = { table_number: open.table_number, seat_number: open.seat_number };
             entry.status = seatedEntry.status;
             entry.table_number = seatedEntry.table_number;
             entry.seat_number = seatedEntry.seat_number;

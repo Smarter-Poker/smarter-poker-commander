@@ -14,7 +14,7 @@ import { guardStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
-import { findOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
+import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -120,17 +120,17 @@ export default async function handler(req, res) {
     let seatAssignment = null;
     if (!restored.table_number || !restored.seat_number) {
       try {
-        const open = await findOpenSeat(getSupabase(), tournament);
-        if (open) {
+        // Atomic claim so the restored player cannot be dropped into a seat
+        // another request is taking at the same moment.
+        const seat = await claimOpenSeat(getSupabase(), tournamentId, entryId, 'active');
+        if (seat) {
+          seatAssignment = seat;
           const { data: reseated } = await getSupabase()
             .from('commander_tournament_entries')
-            .update({ table_number: open.table_number, seat_number: open.seat_number })
-            .eq('id', entryId)
-            .eq('tournament_id', tournamentId)
             .select()
+            .eq('id', entryId)
             .maybeSingle();
           if (reseated) {
-            seatAssignment = { table_number: open.table_number, seat_number: open.seat_number };
             restored.table_number = reseated.table_number;
             restored.seat_number = reseated.seat_number;
           }

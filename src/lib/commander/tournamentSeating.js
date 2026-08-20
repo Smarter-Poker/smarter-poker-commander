@@ -65,6 +65,32 @@ export async function findOpenSeat(supabase, tournament) {
   return null;
 }
 
+/**
+ * claimOpenSeat(supabase, tournamentId, entryId, expectedStatus)
+ *   Atomically finds AND claims the best open seat for an entry via the
+ *   commander_claim_open_seat RPC, which locks the tournament row so two
+ *   concurrent callers cannot be handed the same seat. Returns
+ *   { table_number, seat_number } or null when the floor is full (or the
+ *   entry no longer has expectedStatus).
+ *
+ *   Prefer this over findOpenSeat + a separate update: the read-then-write
+ *   pattern is what put duplicate seat assignments into production.
+ */
+export async function claimOpenSeat(supabase, tournamentId, entryId, expectedStatus = null) {
+  const { data, error } = await supabase.rpc('commander_claim_open_seat', {
+    p_entry_id: entryId,
+    p_tournament_id: tournamentId,
+    p_expected_status: expectedStatus
+  });
+  if (error) {
+    console.warn('[tournamentSeating] claimOpenSeat failed:', error.message);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || row.table_number == null || row.seat_number == null) return null;
+  return { table_number: row.table_number, seat_number: row.seat_number };
+}
+
 export async function promoteNextAlternate(supabase, tournament) {
   const { data: alternates } = await supabase
     .from('commander_tournament_entries')
@@ -78,22 +104,16 @@ export async function promoteNextAlternate(supabase, tournament) {
   const next = alternates && alternates[0];
   if (!next) return null;
 
-  const open = await findOpenSeat(supabase, tournament);
-  if (!open) return null;
+  // Atomic claim: status is checked and the seat is taken in one statement,
+  // so a second promotion racing this one gets a different seat (or nothing).
+  const seat = await claimOpenSeat(supabase, tournament.id, next.id, 'alternate');
+  if (!seat) return null;
 
-  const { data: promoted, error } = await supabase
+  const { data: promoted } = await supabase
     .from('commander_tournament_entries')
-    .update({
-      status: 'seated',
-      table_number: open.table_number,
-      seat_number: open.seat_number,
-      current_chips: tournament.starting_chips || 0
-    })
-    .eq('id', next.id)
-    .eq('status', 'alternate')
     .select()
+    .eq('id', next.id)
     .maybeSingle();
 
-  if (error || !promoted) return null;
-  return promoted;
+  return promoted || null;
 }
