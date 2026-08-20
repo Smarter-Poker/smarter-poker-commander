@@ -265,23 +265,46 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
             }
         }
 
-        // ── Release the broken table (ONLY if all players successfully moved) ──
+        // ── Close and release the broken table (ONLY if all players moved) ──
+        let tableClosed = false;
         if (errors.length === 0) {
             // NOTE: commander_tables has NO updated_at column - including it
             // makes PostgREST reject the UPDATE and the table is never released.
+            // 2026-08-20: also clear table_purpose. Leaving it set to
+            // 'tournament' on a released table made player-unseat.js and
+            // player-scan-in.js (which test `mode === 'tournament' ||
+            // table_purpose === 'tournament'`) keep treating a closed table as
+            // a live tournament table.
             const { error: releaseErr } = await getSupabase()
                 .from('commander_tables')
                 .update({
                     mode: 'inactive',
+                    table_purpose: null,
                     tournament_id: null,
+                    game_type: null,
+                    stakes: null,
                     status: 'available',
-                    assigned_at: null
+                    assigned_at: null,
+                    assigned_by: null
                 })
                 .eq('venue_id', tournament.venue_id)
                 .eq('tournament_id', tournamentId)
                 .eq('table_number', breakCandidate.table_number);
             if (releaseErr) {
                 console.warn(`[auto-break] Table ${breakCandidate.table_number} release failed:`, releaseErr.message);
+            } else {
+                tableClosed = true;
+            }
+
+            // Any cash-style table session rows left pointing at the broken
+            // table would keep it looking occupied on the tablets.
+            const { error: sessionErr } = await getSupabase()
+                .from('commander_table_seats')
+                .delete()
+                .eq('venue_id', tournament.venue_id)
+                .eq('table_number', breakCandidate.table_number);
+            if (sessionErr) {
+                console.warn(`[auto-break] Seat cleanup for table ${breakCandidate.table_number} failed:`, sessionErr.message);
             }
         } else {
             console.warn(`[auto-break] Table ${breakCandidate.table_number} not released because ${errors.length} player moves failed.`);
@@ -306,12 +329,44 @@ export async function checkAndExecuteAutoBreak(tournamentId, tournament) {
 
         console.info(`[auto-break] Table ${breakCandidate.table_number} auto-broken: ${moved.length} players moved (level ${currentLevel})`);
 
+        // Queue the seat-change cards server-side. The break may have been
+        // triggered from a table tablet or a background level advance, neither
+        // of which can open a print window, so the floor print station is the
+        // only reliable place for these cards to come out.
+        let printJobId = null;
+        if (receipts.length > 0) {
+            const { data: job, error: jobErr } = await getSupabase()
+                .from('commander_print_jobs')
+                .insert({
+                    venue_id: tournament.venue_id,
+                    tournament_id: tournamentId,
+                    job_type: 'table_break',
+                    status: 'queued',
+                    title: `Table ${breakCandidate.table_number} Broken, ${receipts.length} Seat Change Cards`,
+                    payload: { receipts, broken_table: breakCandidate.table_number },
+                    receipt_count: receipts.length,
+                    source: 'auto_break',
+                    table_number: breakCandidate.table_number
+                })
+                .select('id')
+                .maybeSingle();
+            if (jobErr) {
+                console.error('[auto-break] print job enqueue failed', {
+                    tournamentId, code: jobErr.code, message: jobErr.message, details: jobErr.details
+                });
+            } else {
+                printJobId = job?.id || null;
+            }
+        }
+
         return {
             executed: true,
             break_table: breakCandidate.table_number,
+            table_closed: tableClosed,
             players_moved: moved.length,
             moves: moved,
             receipts,
+            print_job_id: printJobId,
             errors: errors.length > 0 ? errors : undefined
         };
 

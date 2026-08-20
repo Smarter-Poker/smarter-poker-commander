@@ -13,6 +13,7 @@ import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync'
 import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2 } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
+import { buildActionReceiptsHtml, printHtml, printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -170,83 +171,34 @@ export default function TDPlayers() {
       color: '#31A24C' });
   };
 
+  // Rebuy / add-on card, rendered by the shared template module.
+  // Returns false when the popup was blocked so the floor gets told.
   const printBluetoothReceipt = (player, actionType, cost, chips) => {
-    const pw = window.open('', '_blank', 'width=400,height=600');
-    if (!pw) return;
-
-    const tournamentName = floor?.tournament?.name || 'Tournament';
-    const timestamp = new Date().toLocaleTimeString();
-
-    pw.document.write(`<!DOCTYPE html><html><head><title>${actionType} Receipt</title>
-      <style>@page{margin:0;size:80mm auto}body{font-family:'Courier New',monospace;margin:0;color:#000;-webkit-print-color-adjust:exact;}
-      .r{width:72mm;padding:4mm;margin:0 auto;page-break-after:always;border-bottom:1px dashed #000}
-      .r:last-child{page-break-after:avoid}.c{text-align:center}.b{font-weight:bold}
-      .lg{font-size:20px}.md{font-size:14px}.sm{font-size:11px}
-      .d{border-top:1px dashed #000;margin:3mm 0}.rw{display:flex;justify-content:space-between}
-      </style></head><body>
-      <div class="r">
-        <div class="c b md">${tournamentName}</div>
-        <div class="c sm">${actionType.toUpperCase()} RECEIPT</div><div class="d"></div>
-        <div class="c b lg" style="margin:2mm 0">${player.player_name || 'Player'}</div><div class="d"></div>
-        ${cost ? `<div class="rw md"><span>Cost:</span><span class="b">$${cost}</span></div>` : ''}
-        ${chips ? `<div class="rw md"><span>Chips Added:</span><span class="b">${Number(chips).toLocaleString()}</span></div>` : ''}
-        <div class="d"></div>
-        <div class="c sm" style="margin-top:2mm;opacity:.6">${timestamp}</div>
-        <div class="c sm" style="opacity:.4;margin-top:1mm">Smarter.Poker</div>
-      </div></body></html>`);
-    pw.document.close();
-    setTimeout(() => { pw.print(); pw.close(); }, 500);
+    const html = buildActionReceiptsHtml([{
+      tournamentName: floor?.tournament?.name || 'Tournament',
+      actionType,
+      playerName: player?.player_name || 'Player',
+      cost,
+      chips
+    }], { title: `${actionType} Receipt` });
+    const printed = printHtml(html, { title: `${actionType} Receipt` });
+    if (!printed) {
+      setToast({ type: 'error', text: `Popup Blocked. The ${actionType} Receipt Did Not Print.` });
+    }
+    return printed;
   };
 
-  const printAutoBreakReceipts = (autoBreak) => {
-    if (!autoBreak?.receipts?.length) return;
-    const pw = window.open('', '_blank', 'width=420,height=700');
-    if (!pw) return;
-    const receipts = autoBreak.receipts;
-    pw.document.write(`<!DOCTYPE html><html><head><title>Seat Change Cards</title>
-<style>
-@page { margin: 0; size: 80mm auto; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; font-size: 15px; }
-.card { width: 72mm; margin: 0 auto; padding: 7mm 5mm 9mm; border-bottom: 2px dashed #000; page-break-after: always; }
-.card:last-child { page-break-after: avoid; border-bottom: none; }
-.logo-wrap { text-align: center; margin-bottom: 3mm; }
-.logo-wrap img { max-width: 36mm; max-height: 20mm; object-fit: contain; }
-.venue-name { text-align: center; font-size: 24px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; margin-bottom: 1mm; }
-.venue-location { text-align: center; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; margin-bottom: 2mm; }
-.receipt-type { text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1.5mm; }
-.tourn-name { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 4mm; }
-.divider { border-top: 1px solid #000; margin: 4mm 0; }
-.field-row { display: flex; align-items: baseline; margin: 4mm 0; font-size: 15px; }
-.field-label { font-weight: bold; min-width: 20mm; }
-.field-val { font-size: 17px; font-weight: bold; text-transform: uppercase; }
-.boxes { display: flex; gap: 8mm; justify-content: center; margin: 7mm 0; }
-.box-wrap { text-align: center; width: 90px; }
-.box-title { font-size: 14px; font-weight: bold; margin-bottom: 1.5mm; }
-.box-num { border: 2.5px solid #000; font-size: 30px; font-weight: 900; padding: 3mm 0; width: 90px; display: block; text-align: center; line-height: 1.1; }
-.footer-line { font-size: 13px; margin: 1.5mm 0; }
-.customer-copy { text-align: center; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin-top: 4mm; }
-</style></head><body>
-${receipts.map(r => `<div class="card">
-  ${r.venue_logo_url ? `<div class="logo-wrap"><img src="${r.venue_logo_url}" alt="${r.venue_name}"  loading="lazy" /></div>` : ''}
-  <div class="venue-name">${r.venue_name || 'Club'}</div>
-  ${(r.venue_city || r.venue_state) ? `<div class="venue-location">${[r.venue_city, r.venue_state].filter(Boolean).join(', ')}</div>` : ''}
-  <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` - $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
-  <div class="divider"></div>
-  <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
-  <div class="divider"></div>
-  <div class="boxes">
-    <div class="box-wrap"><div class="box-title">Table</div><span class="box-num">${r.to_table}</span></div>
-    <div class="box-wrap"><div class="box-title">Seat</div><span class="box-num">${r.to_seat}</span></div>
-  </div>
-  <div class="divider"></div>
-  <div class="footer-line">${new Date(r.timestamp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}&nbsp;&nbsp;${new Date(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-  <div class="customer-copy">&mdash; Dealer's Copy &mdash;</div>
-</div>`).join('')}
-</body></html>`);
-    pw.document.close();
-    setTimeout(() => { pw.print(); pw.close(); }, 500);
+  // Seat change cards from the shared template module (dealer copy + player copy).
+  // The server already queued these for the floor print station, so a blocked
+  // popup is a warning here, not a lost card.
+  const printAutoBreakReceipts = (autoBreakResult) => {
+    const receipts = autoBreakResult?.receipts || [];
+    if (receipts.length === 0) return false;
+    const printed = printSeatChangeCards(receipts);
+    if (!printed) {
+      setToast({ type: 'error', text: 'Popup Blocked. Seat Change Cards Are Waiting At The Print Station.' });
+    }
+    return printed;
   };
 
   // Seat a waiting alternate into a random open seat via the promote endpoint

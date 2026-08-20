@@ -17,7 +17,7 @@ import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
   Monitor, DollarSign, Gift, Calendar, Tv, Activity, BarChart3,
   AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle, Timer
-, ChevronDown, LayoutGrid } from 'lucide-react';
+, ChevronDown, LayoutGrid, Printer } from 'lucide-react';
 import CommanderErrorBoundary from './CommanderErrorBoundary';
 import FloorCallAlert from './FloorCallAlert';
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../../lib/commander/tierConfig';
@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { divider: true },
   { label: 'Tournaments', href: '/commander/tournaments', icon: Trophy },
   { label: 'Tournament Director', href: '/commander/tournament-controls', icon: Timer },
+  { label: 'Print Station', href: '/commander/print-station', icon: Printer },
   { label: 'Dealers', href: '/commander/dealers', icon: Users },
   { label: 'Kiosk', href: '/commander/kiosk', icon: Monitor },
   { divider: true },

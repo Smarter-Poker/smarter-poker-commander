@@ -94,6 +94,9 @@ export default function TabletDisplay() {
     const [error, setError] = useState(null);
     const [now, setNow] = useState(Date.now());
     const lastFetchAt = useRef(Date.now());
+    // Tournament clock (only fetched when this table is a tournament table)
+    const [clockData, setClockData] = useState(null);
+    const clockAnchorRef = useRef({ remaining: null, at: 0, running: false });
 
     // Resolve venue_id from query or localStorage
     const venueId = venue || (() => {
@@ -234,6 +237,43 @@ export default function TabletDisplay() {
         return () => { if (currentChannel) supabase.removeChannel(currentChannel); };
     }, [tableNumber, venueId, fetchData]);
 
+    /* ─── Tournament Clock ─────────────────────────────────────── */
+    // tablet-data already tells us the table is in tournament mode and which
+    // tournament it belongs to. GET /clock is the public live-clock endpoint
+    // (staff auth is only required for POST), so this unauthenticated kiosk
+    // can read the level, blinds and remaining seconds directly.
+    const tournamentId = data?.table?.tournament_id || null;
+    const isTournamentTable = data?.table?.mode === 'tournament' && !!tournamentId;
+
+    const fetchClock = useCallback(async () => {
+        if (!tournamentId) return;
+        try {
+            const res = await fetch(`/api/commander/tournaments/${tournamentId}/clock`);
+            if (!res.ok) return;
+            const json = await res.json();
+            if (!json.success) return;
+            setClockData(json.data);
+            const remaining = json.data?.clock?.timeRemaining;
+            clockAnchorRef.current = {
+                remaining: typeof remaining === 'number' ? remaining : null,
+                at: Date.now(),
+                running: !!json.data?.clock?.isRunning && !json.data?.clock?.isPaused };
+        } catch (err) {
+            console.warn('Tablet clock fetch error:', err);
+        }
+    }, [tournamentId]);
+
+    useEffect(() => {
+        if (!tournamentId) {
+            setClockData(null);
+            clockAnchorRef.current = { remaining: null, at: 0, running: false };
+            return;
+        }
+        fetchClock();
+        const poll = setInterval(fetchClock, 30000);
+        return () => clearInterval(poll);
+    }, [tournamentId, fetchClock]);
+
     /* ─── Computed Values ──────────────────────────────────────── */
 
     const adjustTime = useCallback((apiTimeRemaining) => {
@@ -251,6 +291,24 @@ export default function TabletDisplay() {
     const stakes = table?.stakes || '';
     const tableNum = parseInt(tableNumber) || 0;
     const isActive = table?.status === 'in_use';
+
+    // Tournament display values. `now` ticks every second, so the level clock
+    // counts down locally between the 30s clock polls and re-anchors on each.
+    const tournamentName = clockData?.tournament?.name || '';
+    const currentBlind = clockData?.currentBlind || null;
+    const isBreakLevel = !!currentBlind?.isBreak;
+    const levelLabel = isBreakLevel
+        ? (currentBlind?.label || 'Break')
+        : `Level ${Number(currentBlind?.level || (clockData?.tournament?.current_level || 0) + 1).toLocaleString()}`;
+    const blindsLabel = currentBlind && (currentBlind.smallBlind || currentBlind.bigBlind)
+        ? `${Number(currentBlind.smallBlind || 0).toLocaleString()} / ${Number(currentBlind.bigBlind || 0).toLocaleString()}${currentBlind.ante ? `, Ante ${Number(currentBlind.ante).toLocaleString()}` : ''}`
+        : '';
+    const levelRemaining = (() => {
+        const a = clockAnchorRef.current;
+        if (a.remaining === null || a.remaining === undefined) return null;
+        if (!a.running) return a.remaining;
+        return Math.max(0, a.remaining - Math.floor((now - a.at) / 1000));
+    })();
 
     // Build seat array
     const seatArr = Array.from({ length: maxSeats }, (_, i) => {
@@ -293,7 +351,45 @@ export default function TabletDisplay() {
             </Head>
 
             <div style={fullScreenStyle}>
-                {/* NO header - fullscreen table view matching table-tablets.js */}
+                {/* NO header for cash tables - fullscreen table view matching table-tablets.js */}
+
+                {/* ── Tournament header (tournament tables only) ─────────── */}
+                {isTournamentTable && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: 16, padding: '10px 24px',
+                        background: 'rgba(20,20,20,0.92)', borderBottom: '1px solid rgba(255,215,0,0.25)',
+                        flexShrink: 0, zIndex: 10 }}>
+                        <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 2 }}>
+                                {venueName || 'Poker Room'} · Table {tableNum}
+                            </div>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: '#FFD700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {tournamentName || 'Tournament'}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexShrink: 0 }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                                    {isBreakLevel ? 'Status' : 'Level'}
+                                </div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: '#E4E6EB' }}>{levelLabel}</div>
+                            </div>
+                            {!isBreakLevel && blindsLabel && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Blinds</div>
+                                    <div style={{ fontSize: 20, fontWeight: 800, color: '#E4E6EB' }}>{blindsLabel}</div>
+                                </div>
+                            )}
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Time Left</div>
+                                <div style={{ fontSize: 22, fontWeight: 900, color: '#31A24C', fontFamily: 'monospace' }}>
+                                    {levelRemaining === null ? '--:--' : formatTime(levelRemaining)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Table Visual (full height) ─────────── */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 24px', overflow: 'hidden' }}>
@@ -315,16 +411,37 @@ export default function TabletDisplay() {
                                     <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
                                         {venueName || 'Poker Room'}
                                     </div>
-                                    <div style={{ fontSize: 32, fontWeight: 900, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                                        {gameType}
-                                    </div>
-                                    <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: 700 }}>
-                                        {stakes}
-                                    </div>
-                                    {!isActive && (
-                                        <div style={{ fontSize: 14, color: '#1877F2', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                            Table Open
-                                        </div>
+                                    {isTournamentTable ? (
+                                        <>
+                                            <div style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 0.5 }}>
+                                                {tournamentName || 'Tournament'}
+                                            </div>
+                                            <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.75)', marginTop: 4, fontWeight: 700 }}>
+                                                {levelLabel}
+                                            </div>
+                                            {!isBreakLevel && blindsLabel && (
+                                                <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontWeight: 700 }}>
+                                                    {blindsLabel}
+                                                </div>
+                                            )}
+                                            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 8, fontWeight: 600, letterSpacing: 1 }}>
+                                                {Number(occupiedCount).toLocaleString()} At This Table
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div style={{ fontSize: 32, fontWeight: 900, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                                {gameType}
+                                            </div>
+                                            <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: 700 }}>
+                                                {stakes}
+                                            </div>
+                                            {!isActive && (
+                                                <div style={{ fontSize: 14, color: '#1877F2', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                                                    Table Open
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
@@ -417,6 +534,18 @@ export default function TabletDisplay() {
                                                     maxWidth: 140 }}>
                                                     {isOccupied ? fullName : 'Open'}
                                                 </div>
+                                                {isOccupied && seat.player?.is_tournament_player && (
+                                                    <div style={{
+                                                        fontSize: 14, fontWeight: 700, color: '#FFD700',
+                                                        fontFamily: 'monospace', lineHeight: 1.3 }}>
+                                                        {Number(seat.player.current_chips || 0).toLocaleString()}
+                                                    </div>
+                                                )}
+                                                {isOccupied && seat.player?.is_tournament_player && (
+                                                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                                                        Seat {seat.number}
+                                                    </div>
+                                                )}
                                                 {timerText && (
                                                     <div style={{
                                                         fontSize: 14, fontWeight: 700, color: timerColor,

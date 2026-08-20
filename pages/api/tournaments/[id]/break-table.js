@@ -9,6 +9,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
 
 let _supabase = null;
 function getSupabase() {
@@ -199,22 +200,43 @@ export default async function handler(req, res) {
         }
       }
 
-      // Release the broken table back to inactive (ONLY if all players successfully moved)
+      // Release the broken table back to inactive (ONLY if all players successfully moved).
+      // 2026-08-20 audit fix, matching tournamentAutoBreak.js: table_purpose was
+      // left set to 'tournament', so player-unseat.js and player-scan-in.js
+      // (which test `mode === 'tournament' || table_purpose === 'tournament'`)
+      // kept treating a closed table as a live tournament table. game_type and
+      // stakes were left stale for the same reason. The release is also scoped
+      // to this tournament so a second event's identically numbered table is
+      // not released along with it.
       if (errors.length === 0) {
-        const { error: releaseError } = await getSupabase()
+        const { data: released, error: releaseError } = await getSupabase()
           .from('commander_tables')
           .update({
             mode: 'inactive',
+            table_purpose: null,
             tournament_id: null,
+            game_type: null,
+            stakes: null,
             status: 'available',
             assigned_at: null,
+            assigned_by: null,
           })
           .eq('venue_id', tournament.venue_id)
-          .eq('table_number', table_number);
+          .eq('tournament_id', tournamentId)
+          .eq('table_number', breakTableNum)
+          .select('id');
+
+        // A zero-row update is not a PostgREST error. Without this the table
+        // could stay flagged as an active tournament table silently.
+        if (!releaseError && (!released || released.length === 0)) {
+          console.warn('[tournaments/break-table] release matched no rows', {
+            venue_id: tournament.venue_id, tournament_id: tournamentId, table_number: breakTableNum
+          });
+        }
 
         if (releaseError) {
           console.error('[tournaments/break-table] commander_tables release failed', {
-            venue_id: tournament.venue_id, table_number,
+            venue_id: tournament.venue_id, tournament_id: tournamentId, table_number: breakTableNum,
             code: releaseError.code, message: releaseError.message, details: releaseError.details,
           });
           errors.push({ table_number, error: releaseError.message });
@@ -239,6 +261,23 @@ export default async function handler(req, res) {
         timestamp: now
       }));
 
+      // Queue the cards server-side. This endpoint is called from the TD tablet
+      // table map, which historically threw the receipts array away entirely:
+      // players were relocated and no card was ever printed. The queue makes the
+      // floor print station the reliable place for them to come out.
+      let printJobId = null;
+      if (receipts.length > 0) {
+        const job = await enqueueSeatChangeReceipts(getSupabase(), {
+          venueId: tournament.venue_id,
+          tournamentId,
+          receipts,
+          brokenTable: breakTableNum,
+          source: 'manual_break',
+          createdBy: _g?.id || null
+        });
+        printJobId = job?.id || null;
+      }
+
       return res.status(200).json({
         success: errors.length === 0,
         data: {
@@ -246,6 +285,7 @@ export default async function handler(req, res) {
           players_moved: results.length,
           moves: results,
           receipts,
+          print_job_id: printJobId,
           errors: errors.length > 0 ? errors : undefined
         }
       });

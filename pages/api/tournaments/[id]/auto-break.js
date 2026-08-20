@@ -14,6 +14,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
 
 let _supabase = null;
 function getSupabase() {
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
       if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
       if (req.method === 'GET') return handleCheck(req, res, tournament);
-      if (req.method === 'POST') return handleExecute(req, res, tournament);
+      if (req.method === 'POST') return handleExecute(req, res, tournament, _g);
       return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     } catch (err) {
       console.warn('Auto-break error:', err);
@@ -242,7 +243,7 @@ function generateAssignments(playersToMove, destinationTables) {
 }
 
 // POST: Execute the break
-async function handleExecute(req, res, tournament) {
+async function handleExecute(req, res, tournament, staff) {
   const { break_table, assignments } = req.body;
 
   if (!break_table || !Array.isArray(assignments) || assignments.length === 0) {
@@ -380,21 +381,45 @@ async function handleExecute(req, res, tournament) {
   // 2026-07-28 audit fix: commander_tables has no updated_at column - including
   // it made PostgREST reject this UPDATE, so the broken table was never released
   // back to the pool. The discarded error is now surfaced.
+  // 2026-08-20 audit fix, matching tournamentAutoBreak.js:
+  //  1. table_purpose was left set to 'tournament' on the released table, so
+  //     player-unseat.js / player-scan-in.js (which test `mode === 'tournament'
+  //     || table_purpose === 'tournament'`) kept treating a closed table as a
+  //     live tournament table. game_type/stakes were left stale for the same
+  //     reason.
+  //  2. the release was scoped by venue_id + table_number ONLY. With two
+  //     events running in one room, "Table 5" exists for both, and breaking
+  //     one tournament's table 5 released the other tournament's table 5 too.
+  //     Scope by tournament_id.
   if (errors.length === 0) {
-    const { error: releaseError } = await getSupabase()
+    const { data: released, error: releaseError } = await getSupabase()
       .from('commander_tables')
       .update({
         mode: 'inactive',
+        table_purpose: null,
         tournament_id: null,
+        game_type: null,
+        stakes: null,
         status: 'available',
-        assigned_at: null
+        assigned_at: null,
+        assigned_by: null
       })
       .eq('venue_id', tournament.venue_id)
-      .eq('table_number', break_table);
+      .eq('tournament_id', tournament.id)
+      .eq('table_number', break_table)
+      .select('id');
+
+    // A zero-row update is not a PostgREST error. Without this the table could
+    // stay flagged as an active tournament table and nobody would ever know.
+    if (!releaseError && (!released || released.length === 0)) {
+      console.warn('[tournaments/auto-break] release matched no rows', {
+        venue_id: tournament.venue_id, tournament_id: tournament.id, table_number: break_table
+      });
+    }
 
     if (releaseError) {
       console.error('[tournaments/auto-break] commander_tables release failed', {
-        venue_id: tournament.venue_id, table_number: break_table,
+        venue_id: tournament.venue_id, tournament_id: tournament.id, table_number: break_table,
         code: releaseError.code, message: releaseError.message, details: releaseError.details,
       });
       errors.push({ table_number: break_table, error: releaseError.message });
@@ -418,6 +443,23 @@ async function handleExecute(req, res, tournament) {
     timestamp: new Date().toISOString()
   }));
 
+  // Queue the seat-change cards server-side. The caller may be a table tablet
+  // or a screen whose popup is blocked; either way the cards must still come
+  // out at the floor print station. enqueueSeatChangeReceipts never throws, so
+  // a queue failure cannot roll back a break that already moved players.
+  let printJobId = null;
+  if (receipts.length > 0) {
+    const job = await enqueueSeatChangeReceipts(getSupabase(), {
+      venueId: tournament.venue_id,
+      tournamentId: tournament.id,
+      receipts,
+      brokenTable: Number(break_table),
+      source: 'auto_break_manual',
+      createdBy: staff?.id || null
+    });
+    printJobId = job?.id || null;
+  }
+
   return res.status(200).json({
     success: errors.length === 0,
     data: {
@@ -425,6 +467,7 @@ async function handleExecute(req, res, tournament) {
       players_moved: moved.length,
       moves: moved,
       receipts,
+      print_job_id: printJobId,
       errors: errors.length > 0 ? errors : undefined
     }
   });

@@ -226,6 +226,10 @@ export default function TableTabletsPage() {
     const [lockedTournamentId, setLockedTournamentId] = useState(null);
     // Chip count input
     const [chipCountInput, setChipCountInput] = useState(null);
+    // Tournament Director consequences the floor must see (auto-break, alternate seated)
+    const [tournamentNotice, setTournamentNotice] = useState(null); // { title, lines: [] }
+    const [lastBustedEntry, setLastBustedEntry] = useState(null); // { tournament_id, entry_id, player_name }
+    const [restoreConfirm, setRestoreConfirm] = useState(null); // 409 PAYOUT_RECORDED confirm-then-force
 
     useEffect(() => {
         try {
@@ -839,10 +843,30 @@ const headers = { 'Content-Type': 'application/json' };
                 method: 'POST', headers,
                 body: JSON.stringify({ entry_id: entryId }) });
             const json = await parseApiResponse(res);
-            if (json.entry || json.success) {
-                const pos = json.finishPosition ? ` - finished ${json.finishPosition}${['st', 'nd', 'rd'][json.finishPosition - 1] || 'th'}` : '';
-                const payout = json.payoutAmount ? ` · $${json.payoutAmount.toLocaleString()}` : '';
+            if (json.success) {
+                // 2026-08-20 fix: eliminate answers { success, data: {...} }. These
+                // four fields were read off the top level, so finish position and
+                // payout never rendered, and auto_break / promoted_alternate - the
+                // two things the floor MUST see - were discarded entirely.
+                const d = json.data || {};
+                const pos = d.finishPosition ? ` - finished ${d.finishPosition}${['st', 'nd', 'rd'][d.finishPosition - 1] || 'th'}` : '';
+                const payout = d.payoutAmount ? ` · $${d.payoutAmount.toLocaleString()}` : '';
                 setToast({ type: 'success', text: `${playerName} eliminated${pos}${payout}` });
+                setLastBustedEntry({ tournament_id: tournamentId, entry_id: entryId, player_name: playerName });
+                const noticeLines = [];
+                if (d.promoted_alternate) {
+                    noticeLines.push(`Alternate ${d.promoted_alternate.player_name} Was Seated At Table ${d.promoted_alternate.table_number}, Seat ${d.promoted_alternate.seat_number}.`);
+                }
+                if (d.auto_break && d.auto_break.executed) {
+                    const ab = d.auto_break;
+                    const moved = Number(ab.players_moved || 0);
+                    noticeLines.push(ab.print_job_id
+                        ? `Table ${ab.break_table} Was Broken, ${moved.toLocaleString()} Card${moved === 1 ? '' : 's'} Queued At The Print Station.`
+                        : `Table ${ab.break_table} Was Broken, ${moved.toLocaleString()} Player${moved === 1 ? '' : 's'} Moved.`);
+                }
+                if (noticeLines.length > 0) {
+                    setTournamentNotice({ title: `${playerName} Busted Out`, lines: noticeLines });
+                }
                 setShowPlayerMenu(null);
                 broadcastChange('tables');
                 // If during rebuy/late-reg, notify cashier
@@ -863,6 +887,87 @@ const headers = { 'Content-Type': 'application/json' };
             } else {
                 setToast({ type: 'error', text: json.error || 'Failed to bust player' });
             }
+        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        setPlayerActionLoading(false);
+    };
+
+    const rebuyTournamentPlayer = async (tournamentId, entryId, playerName) => {
+        setPlayerActionLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${entryId}/rebuy`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}) });
+            const json = await parseApiResponse(res);
+            if (json.success) {
+                const d = json.data || {};
+                setToast({ type: 'success', text: `Rebuy ${Number(d.rebuy_number || 1).toLocaleString()} for ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} chips` });
+                setShowPlayerMenu(null);
+                broadcastChange('tables');
+                broadcastChange('cashier');
+                fetchAll();
+            } else {
+                setToast({ type: 'error', text: json.error || 'Rebuy failed' });
+            }
+        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        setPlayerActionLoading(false);
+    };
+
+    const addonTournamentPlayer = async (tournamentId, entryId, playerName) => {
+        setPlayerActionLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${entryId}/addon`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}) });
+            const json = await parseApiResponse(res);
+            if (json.success) {
+                const d = json.data || {};
+                setToast({ type: 'success', text: `Add-on for ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} chips` });
+                setShowPlayerMenu(null);
+                broadcastChange('tables');
+                broadcastChange('cashier');
+                fetchAll();
+            } else {
+                setToast({ type: 'error', text: json.error || 'Add-on failed' });
+            }
+        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        setPlayerActionLoading(false);
+    };
+
+    // Undo an accidental bust. A 409 PAYOUT_RECORDED means money is already
+    // recorded against the entry - confirm with the floor, then retry forced.
+    // This reads the raw body instead of parseApiResponse because the decision
+    // hinges on error.code, which parseApiResponse flattens to a message.
+    const restoreTournamentEntry = async (tournamentId, entryId, playerName, force = false) => {
+        setPlayerActionLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${entryId}/restore`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(force ? { force: true } : {}) });
+            let raw = null;
+            try { raw = await res.json(); } catch (e) { /* empty or non-JSON body */ }
+            const errMsg = (raw && (raw.error?.message || (typeof raw.error === 'string' ? raw.error : null))) || null;
+            if (res.status === 409 && raw?.error?.code === 'PAYOUT_RECORDED' && !force) {
+                setRestoreConfirm({
+                    tournament_id: tournamentId,
+                    entry_id: entryId,
+                    player_name: playerName,
+                    message: errMsg || 'A Payout Is Recorded For This Entry.' });
+                setPlayerActionLoading(false);
+                return;
+            }
+            if (!res.ok || raw?.success === false) {
+                setToast({ type: 'error', text: errMsg || 'Undo bust failed' });
+                setPlayerActionLoading(false);
+                return;
+            }
+            setRestoreConfirm(null);
+            setLastBustedEntry(null);
+            setShowPlayerMenu(null);
+            setTournamentNotice({
+                title: `${playerName} Is Back In`,
+                lines: [raw?.data?.message || 'Elimination Undone.'] });
+            broadcastChange('tables');
+            fetchAll();
         } catch { setToast({ type: 'error', text: 'Network error' }); }
         setPlayerActionLoading(false);
     };
@@ -1930,6 +2035,11 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1877F2', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
                                     { label: 'Bust Player', icon: React.createElement(Skull, { size: iconSize }), color: '#EF4444', action: async () => { if (!confirm('Bust ' + pName + '?')) return; if (entryId && tournId) { await bustTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
                                     { label: 'Update Chip Count', icon: React.createElement(Coins, { size: iconSize }), color: '#FFD700', action: () => { setChipCountInput(''); } },
+                                    { label: 'Rebuy', icon: React.createElement(Coins, { size: iconSize }), color: '#31A24C', action: async () => { if (entryId && tournId) { await rebuyTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
+                                    { label: 'Add-On', icon: React.createElement(Coins, { size: iconSize }), color: '#22c55e', action: async () => { if (entryId && tournId) { await addonTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
+                                    ...(lastBustedEntry && lastBustedEntry.tournament_id === tournId
+                                        ? [{ label: `Undo Bust, ${lastBustedEntry.player_name}`, icon: React.createElement(Clock, { size: iconSize }), color: '#8A8D91', action: async () => { await restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); } }]
+                                        : []),
                                 ] : [
                                     { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1877F2', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
                                     { label: 'Remove Player', icon: React.createElement(XCircle, { size: iconSize }), color: '#EF4444', action: () => removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number) },
@@ -1993,6 +2103,59 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             );
                         })()}
                         <button onClick={() => { haptic('light'); setShowPlayerMenu(null); setChipCountInput(null); }} style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 12, background: '#3A3B3C', border: 'none', color: '#8A8D91', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── TOURNAMENT NOTICE (auto-break, promoted alternate, restore) ── */}
+            {tournamentNotice && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10004, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => { haptic('light'); setTournamentNotice(null); }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                        <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 800, color: '#fff' }}>{tournamentNotice.title}</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+                            {(tournamentNotice.lines || []).map((line, i) => (
+                                <p key={i} style={{ margin: 0, fontSize: 14, color: '#B0B3B8', lineHeight: 1.45 }}>{line}</p>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            {lastBustedEntry && (
+                                <button onClick={() => { haptic(); restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); }}
+                                    disabled={playerActionLoading}
+                                    style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#3A3B3C', border: '1px solid #4E4F50', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                    Undo Bust
+                                </button>
+                            )}
+                            <button onClick={() => { haptic('light'); setTournamentNotice(null); }}
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#1877F2', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                Got It
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── UNDO BUST CONFIRMATION (409 PAYOUT_RECORDED) ── */}
+            {restoreConfirm && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => { haptic('light'); setRestoreConfirm(null); }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', textAlign: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', margin: '0 auto 12px', background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <AlertTriangle size={28} color="#F59E0B" />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#fff' }}>Payout Already Recorded</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: 14, color: '#B0B3B8', lineHeight: 1.45 }}>{restoreConfirm.message}</p>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => { haptic('light'); setRestoreConfirm(null); }}
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#3A3B3C', border: 'none', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                Cancel
+                            </button>
+                            <button onClick={() => { haptic('heavy'); restoreTournamentEntry(restoreConfirm.tournament_id, restoreConfirm.entry_id, restoreConfirm.player_name, true); }}
+                                disabled={playerActionLoading}
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#EF4444', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                Undo Anyway
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

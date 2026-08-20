@@ -14,6 +14,7 @@ import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync'
 import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText, Square } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
+import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -124,82 +125,17 @@ export default function TDClock() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [floor?.clock?.clock_state?.status]);
 
-  // ── Seat Change Card - matches tournament buy-in receipt format ──
-  const printAutoBreakReceipts = (autoBreak) => {
-    if (!autoBreak?.receipts?.length) return;
-    const pw = window.open('', '_blank', 'width=420,height=700');
-    if (!pw) return;
-    const receipts = autoBreak.receipts;
-    pw.document.write(`<!DOCTYPE html><html><head><title>Seat Change Cards</title>
-<style>
-@page { margin: 0; size: 80mm auto; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; font-size: 12px; }
-.card {
-  width: 72mm; margin: 0 auto; padding: 5mm 4mm 6mm;
-  border-bottom: 2px dashed #000;
-  page-break-after: always;
-}
-.card:last-child { page-break-after: avoid; border-bottom: none; }
-/* HEADER ── Venue name large at top like POTAWATOMI */
-.venue-name {
-  text-align: center; font-size: 20px; font-weight: 900;
-  letter-spacing: 1px; text-transform: uppercase;
-  line-height: 1.1; margin-bottom: 1mm;
-}
-.venue-sub { text-align: center; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #444; margin-bottom: 2mm; }
-.receipt-type { text-align: center; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1mm; }
-.tourn-name { text-align: center; font-size: 11px; font-weight: bold; margin-bottom: 3mm; }
-.divider { border-top: 1px solid #000; margin: 2.5mm 0; }
-/* PLAYER ROW */
-.field-row { display: flex; align-items: baseline; margin: 2mm 0; font-size: 11px; }
-.field-label { font-weight: bold; min-width: 18mm; }
-.field-val { font-size: 11px; text-transform: uppercase; }
-/* TWO BOXES ── Table | Seat - exactly like the reference photo */
-.boxes { display: flex; gap: 4mm; justify-content: center; margin: 4mm 0 2mm; }
-.box-wrap { text-align: center; flex: 1; }
-.box-title { font-size: 11px; font-weight: bold; margin-bottom: 1mm; }
-.box-num {
-  border: 2px solid #000;
-  font-size: 30px; font-weight: 900;
-  padding: 2mm 0; min-width: 22mm;
-  display: block; text-align: center;
-  line-height: 1.1;
-}
-/* Previous seat + chips */
-.moved-from { font-size: 9px; text-align: center; color: #555; margin-top: 1mm; }
-.chips-row { display: flex; justify-content: space-between; font-size: 10px; margin: 2mm 0; }
-/* FOOTER */
-.footer-line { font-size: 9px; margin: 1mm 0; }
-.customer-copy { text-align: center; font-size: 9px; font-weight: bold; letter-spacing: 1px; margin-top: 3mm; }
-</style></head><body>
-${receipts.map(r => `<div class="card">
-  <div class="venue-name">${r.venue_name || 'Smarter Poker'}</div>
-  <div class="venue-sub">Poker Room</div>
-  <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` - $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
-  <div class="divider"></div>
-  <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
-  <div class="divider"></div>
-  <div class="boxes">
-    <div class="box-wrap">
-      <div class="box-title">Table</div>
-      <span class="box-num">${r.to_table}</span>
-    </div>
-    <div class="box-wrap">
-      <div class="box-title">Seat</div>
-      <span class="box-num">${r.to_seat}</span>
-    </div>
-  </div>
-  <div class="moved-from">Moved From Table ${r.from_table}, Seat ${r.from_seat}</div>
-  ${r.chips ? `<div class="divider"></div><div class="chips-row"><span>Chip Count:</span><span><b>${Number(r.chips).toLocaleString()}</b></span></div>` : ''}
-  <div class="divider"></div>
-  <div class="footer-line">${new Date(r.timestamp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}&nbsp;&nbsp;${new Date(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-  <div class="customer-copy">Customer Copy</div>
-</div>`).join('')}
-</body></html>`);
-    pw.document.close();
-    setTimeout(() => { pw.print(); pw.close(); }, 500);
+  // ── Seat Change Cards ──
+  // Shared template module: identical paper on every screen and at the floor
+  // print station, dealer copy + player copy, from-seat and chip count included.
+  const printAutoBreakReceipts = (autoBreakResult) => {
+    const receipts = autoBreakResult?.receipts || [];
+    if (receipts.length === 0) return false;
+    const printed = printSeatChangeCards(receipts);
+    if (!printed) {
+      setToast({ type: 'error', text: 'Popup Blocked. Seat Change Cards Are Waiting At The Print Station.' });
+    }
+    return printed;
   };
 
   const clockAction = async (action) => {

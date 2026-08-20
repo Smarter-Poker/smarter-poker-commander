@@ -14,6 +14,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import useDebounce from '../../src/hooks/useDebounce';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import { buildBuyinReceiptHtml, printHtml } from '../../src/lib/commander/receiptTemplates';
 
 export default function TournamentRegistration() {
     const router = useRouter();
@@ -90,144 +91,10 @@ const headers = { };
         return String(now.getTime()).slice(-4);
     };
 
-    // Build a professional casino-grade receipt HTML (Potawatomi-style, 80mm thermal)
-    const buildReceiptHtml = ({
-        copyLabel, playerName, tournamentName, buyinAmount, buyinFee,
-        staffName, venueName, venueCity, venueState, scheduledStart,
-        startingChips, tableNumber, seatNumber, playerId, receiptNum
-    }) => {
-        const total = (buyinAmount || 0) + (buyinFee || 0);
-        const fmtMoney = (v) => `$ ${parseFloat(v || 0).toFixed(2)}`;
-
-        // Tournament date formatted like "02/17/2026    4:00 pm"
-        const tournDate = scheduledStart
-            ? new Date(scheduledStart).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
-            : '';
-        const tournTime = scheduledStart
-            ? new Date(scheduledStart).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase()
-            : '';
-
-        // "Received By" timestamp - written-out format like "February 17, 2026  7:53 pm"
-        const now = new Date();
-        const receivedDate = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-        const receivedTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-
-        // Map copy labels to receipt-style labels
-        const copyMap = { 'PLAYER COPY': 'CUSTOMER COPY', 'DEALER COPY': 'DEALER COPY', 'CASHIER COPY': 'CAGE COPY' };
-        const displayCopy = copyMap[copyLabel] || copyLabel;
-
-        return `<!DOCTYPE html><html><head><title>${displayCopy}</title>
-<style>
-@page { margin: 0; size: 80mm auto; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Times New Roman', Georgia, serif; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; }
-.receipt { width: 72mm; padding: 5mm 4mm; margin: 0 auto; }
-.center { text-align: center; }
-
-/* Venue Header */
-.venue-name {
-  font-size: 28px; font-weight: bold; text-transform: uppercase;
-  letter-spacing: 1.5px; margin-bottom: 1mm; line-height: 1.2;
-}
-.venue-sub { font-size: 15px; letter-spacing: 3px; text-transform: uppercase; color: #333; }
-
-/* Title */
-.receipt-title {
-  font-size: 20px; font-weight: bold; margin: 3mm 0 1mm; text-transform: uppercase;
-}
-
-/* Event */
-.event-name { font-size: 17px; margin: 1mm 0; }
-.event-date { font-size: 17px; margin: 2mm 0; }
-.event-date-label { font-weight: bold; }
-
-/* Player */
-.player-name { font-size: 17px; font-weight: bold; margin: 2mm 0 0; }
-.player-name-label { font-weight: bold; }
-.player-id { font-size: 16px; margin: 0 0 2mm; padding-left: 2mm; }
-
-/* Financial */
-.fin-row { display: flex; justify-content: flex-end; align-items: baseline; font-size: 16px; line-height: 1.8; }
-.fin-label { font-weight: bold; text-align: right; margin-right: 2mm; }
-.fin-value { min-width: 24mm; text-align: right; font-weight: bold; }
-.fin-total-row { display: flex; justify-content: flex-end; align-items: baseline; font-size: 18px; line-height: 2; font-weight: bold; }
-.fin-total-label { font-weight: bold; text-align: right; margin-right: 2mm; }
-.fin-total-value { min-width: 24mm; text-align: right; font-weight: bold; }
-
-/* Divider */
-.divider { border-top: 1px solid #000; margin: 2.5mm 0; }
-
-/* Table / Seat Boxes */
-.seat-grid { display: flex; justify-content: center; gap: 8mm; margin: 3mm 0; }
-.seat-box { text-align: center; }
-.seat-box-label { font-size: 17px; font-weight: bold; margin-bottom: 1mm; }
-.seat-box-value {
-  border: 2.5px solid #000; font-size: 42px; font-weight: bold;
-  min-width: 24mm; min-height: 18mm; display: flex; align-items: center;
-  justify-content: center; padding: 2mm 5mm;
-}
-
-/* Footer */
-.received { font-size: 16px; margin: 2mm 0; }
-.received-label { font-weight: bold; }
-.receipt-num { font-size: 22px; font-weight: bold; margin: 2mm 0; }
-.legal { font-size: 11px; color: #333; line-height: 1.3; margin: 2mm 2mm; text-align: center; }
-.copy-label { font-size: 15px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin-top: 2mm; }
-</style></head><body>
-<div class="receipt">
-
-<!-- Venue Header -->
-<div class="center venue-name">${venueName || 'POKER ROOM'}</div>
-${venueCity || venueState ? `<div class="center venue-sub">${[venueCity, venueState].filter(Boolean).join(', ')}</div>` : ''}
-
-<!-- Title -->
-<div class="center receipt-title">TOURNAMENT BUY-IN RECEIPT</div>
-
-<!-- Event Name -->
-<div class="event-name">${tournamentName || ''}</div>
-
-<!-- Tournament Date -->
-${scheduledStart ? `<div class="event-date"><span class="event-date-label">Tournament Date:</span>  ${tournDate}    ${tournTime}</div>` : ''}
-
-<!-- Player Name -->
-<div class="player-name"><span class="player-name-label">Name:</span>  ${(playerName || '').toUpperCase()}</div>
-${playerId ? `<div class="player-id">${String(playerId).slice(-7)}</div>` : ''}
-
-<!-- Financial Breakdown -->
-<div class="divider"></div>
-${buyinAmount > 0 ? `<div class="fin-row"><span class="fin-label">Buy In:</span><span class="fin-value">${fmtMoney(buyinAmount)}</span></div>` : ''}
-${buyinFee > 0 ? `<div class="fin-row"><span class="fin-label">Entry Fee:</span><span class="fin-value">${fmtMoney(buyinFee)}</span></div>` : ''}
-${total > 0 ? `<div class="fin-total-row"><span class="fin-total-label">Total Buy In Amount:</span><span class="fin-total-value">${fmtMoney(total)}</span></div>` : ''}
-
-<!-- Table & Seat Boxes -->
-<div class="divider"></div>
-<div class="seat-grid">
-  <div class="seat-box">
-    <div class="seat-box-label">Table</div>
-    <div class="seat-box-value">${tableNumber || '--'}</div>
-  </div>
-  <div class="seat-box">
-    <div class="seat-box-label">Seat</div>
-    <div class="seat-box-value">${seatNumber || '--'}</div>
-  </div>
-</div>
-
-<!-- Received By -->
-<div class="received"><span class="received-label">Received By:</span>  ${staffName || ''}</div>
-<div class="received">${receivedDate}   ${receivedTime}</div>
-
-<!-- Receipt Number -->
-<div class="divider"></div>
-<div class="center receipt-num">${receiptNum || ''}</div>
-
-<!-- Legal Disclaimer -->
-<div class="legal">Management reserves the right to modify, suspend, or cancel this promotion at its sole discretion and without prior notice.</div>
-
-<!-- Copy Label -->
-<div class="center copy-label">${displayCopy}</div>
-
-</div></body></html>`;
-    };
+    // Casino-grade 80mm buy-in receipt.
+    // The template moved to src/lib/commander/receiptTemplates.js so the floor
+    // print station can reprint a byte-identical receipt from a queued job.
+    const buildReceiptHtml = (opts) => buildBuyinReceiptHtml(opts, opts?.copyLabel);
 
     // Rapid-fire print multiple receipt copies based on tournament settings
     const printTournamentReceipts = ({
@@ -247,19 +114,20 @@ ${total > 0 ? `<div class="fin-total-row"><span class="fin-total-label">Total Bu
 
         const receiptNum = generateReceiptNum();
 
-        // Print each copy with a staggered delay to avoid popup blocking
+        // Print each copy with a staggered delay to avoid popup blocking.
+        // printHtml returns false when the browser blocked the window, so the
+        // cashier is told instead of the receipt vanishing.
         copies.forEach((copyLabel, index) => {
             setTimeout(() => {
-                const printWindow = window.open('', '_blank', 'width=400,height=600');
-                if (!printWindow) return;
                 const html = buildReceiptHtml({
                     copyLabel, playerName, tournamentName, buyinAmount, buyinFee,
                     staffName, venueName, venueCity, venueState,
                     scheduledStart, startingChips, tableNumber, seatNumber, playerId, receiptNum
                 });
-                printWindow.document.write(html);
-                printWindow.document.close();
-                setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                const printed = printHtml(html, { title: copyLabel });
+                if (!printed) {
+                    setMessage({ type: 'error', text: 'Popup Blocked. Allow Popups To Print Receipts.' });
+                }
             }, index * 800);
         });
     };
