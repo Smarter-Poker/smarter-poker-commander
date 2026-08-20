@@ -658,7 +658,7 @@ export default function RegisterPage() {
               {/* Apply Promo Button */}
               <button
                 type="button"
-                onClick={handleCheckPromo}
+                
                 style={{
                   position: 'absolute',
                   top: '83.3%',
