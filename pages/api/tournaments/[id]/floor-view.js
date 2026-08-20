@@ -150,7 +150,10 @@ export default async function handler(req, res) {
       // 2026-08-19 fix: dropped the dead tournament.prize_pool read (not a column)
       // and applied the guarantee: the advertised pool is max(collected, guarantee),
       // TableCaptain-style, so overlays display correctly.
-      const collectedPool = (entries.length * (tournament.buyin_amount || 0)) +
+      // Cancelled entries never paid (their money row is reversed), so they
+      // must not count toward the pool. Alternates DID pay at sign-up.
+      const paidEntryCount = entries.filter(e => e.status !== 'cancelled').length;
+      const collectedPool = (paidEntryCount * (tournament.buyin_amount || 0)) +
         (totalRebuys * (tournament.rebuy_amount || 0)) +
         (totalAddons * (tournament.addon_amount || 0));
       const prizePool = tournament.actual_prizepool ||
@@ -284,10 +287,11 @@ export default async function handler(req, res) {
             total_levels: blindStructure.length
           },
           stats: {
-            total_entries: entries.length,
+            total_entries: paidEntryCount,
             players_remaining: activeEntries.length,
             players_eliminated: eliminatedEntries.length,
             players_registered: registeredEntries.length,
+            players_alternate: entries.filter(e => e.status === 'alternate').length,
             total_rebuys: totalRebuys,
             total_addons: totalAddons,
             prize_pool: prizePool,

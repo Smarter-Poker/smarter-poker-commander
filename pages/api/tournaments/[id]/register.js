@@ -15,6 +15,7 @@ import {
 } from '../../../../src/lib/commander/pushNotifications';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { findOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -192,12 +193,20 @@ async function handleRegister(req, res, tournamentId, staff) {
       });
     }
 
+    // Full field: instead of a hard reject, offer the alternates list
+    // (TableCaptain waitlist behavior). The alternate pays now and is seated
+    // automatically as seats free up during registration. Pass
+    // as_alternate: false to keep the old hard-reject behavior.
     const { count } = capacityResult;
+    let registerAsAlternate = false;
     if (tournament.max_entries && count >= tournament.max_entries) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' }
-      });
+      if (req.body?.as_alternate === false) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' }
+        });
+      }
+      registerAsAlternate = true;
     }
 
     const { data: exclusion } = exclusionResult;
@@ -255,7 +264,7 @@ async function handleRegister(req, res, tournamentId, staff) {
         tournament_id: tournamentId,
         player_id,
         registration_method: 'app',
-        status: 'registered',
+        status: registerAsAlternate ? 'alternate' : 'registered',
         cashier_staff_id: cashierStaffId,
         payment_method: paymentMethod
       })
@@ -313,17 +322,54 @@ async function handleRegister(req, res, tournamentId, staff) {
 
     // Note: current_entries is auto-updated by the update_tournament_stats trigger
 
-    // XP system removed
+    // --- Random Seat Draw For Late Registrations ---
+    // While the tournament is running, a new registrant is seated immediately
+    // at a random open seat on the least-occupied table (TableCaptain behavior).
+    // Pre-start registrations stay 'registered' until the seat draw runs.
+    let seatAssignment = null;
+    if (!registerAsAlternate && tournament.status === 'running' && entry) {
+      try {
+        const open = await findOpenSeat(getSupabase(), tournament);
+        if (open) {
+          const { data: seatedEntry } = await getSupabase()
+            .from('commander_tournament_entries')
+            .update({
+              status: 'seated',
+              table_number: open.table_number,
+              seat_number: open.seat_number,
+              current_chips: tournament.starting_chips || 0
+            })
+            .eq('id', entry.id)
+            .eq('status', 'registered')
+            .select()
+            .maybeSingle();
+          if (seatedEntry) {
+            seatAssignment = { table_number: open.table_number, seat_number: open.seat_number };
+            entry.status = seatedEntry.status;
+            entry.table_number = seatedEntry.table_number;
+            entry.seat_number = seatedEntry.seat_number;
+            entry.current_chips = seatedEntry.current_chips;
+          }
+        }
+      } catch (seatErr) {
+        console.warn('[register.js] Auto-seat failed (entry stays registered):', seatErr.message);
+      }
+    }
 
     // --- Push Notification: Registration Confirmation ---
     if (player_id && isOneSignalConfigured()) {
       const startTime = tournament.scheduled_start
         ? new Date(tournament.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : 'TBD';
+      const pushMessage = registerAsAlternate
+        ? `The Field Is Full. You Are On The Alternates List For ${tournament.name}. We Will Seat You As Soon As A Seat Opens.`
+        : seatAssignment
+          ? `You Are Registered For ${tournament.name}! Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+          : `You're Registered For ${tournament.name}! Starts At ${startTime}.`;
       await sendPushNotification({
         externalUserIds: [player_id],
-        title: 'Registration Confirmed',
-        message: `You're Registered For ${tournament.name}! Starts At ${startTime}.`,
+        title: registerAsAlternate ? 'Added To Alternates List' : 'Registration Confirmed',
+        message: pushMessage,
         url: `/hub/commander/tournament/${tournamentId}/my-status`,
         data: { type: 'tournament_registered', tournament_id: tournamentId }
       }).catch(err => console.warn('[register.js] Push failed:', err.message));
@@ -358,7 +404,16 @@ async function handleRegister(req, res, tournamentId, staff) {
 
     return res.status(201).json({
       success: true,
-      data: { entry }
+      data: {
+        entry,
+        is_alternate: registerAsAlternate || undefined,
+        seat_assignment: seatAssignment || undefined,
+        message: registerAsAlternate
+          ? 'Field Is Full. Player Added To The Alternates List.'
+          : seatAssignment
+            ? `Registered And Seated At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+            : 'Registered.'
+      }
     });
   } catch (error) {
     console.warn('Register error:', error);

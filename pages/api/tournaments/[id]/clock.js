@@ -15,6 +15,13 @@ import {
 } from '../../../../src/lib/commander/pushNotifications';
 import { checkAndExecuteAutoBreak } from '../../../../src/lib/commander/tournamentAutoBreak';
 import { logAction } from '../../../../src/lib/commander/audit';
+// Shared payout math so the public Payouts tab always matches the TD screen.
+import {
+  generatePayoutTable,
+  normalizePayoutSlot,
+  effectivePrizePool,
+  allocateAmounts
+} from './payout';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -147,6 +154,81 @@ async function getClockState(req, res, tournamentId) {
 
     const nextBlind = blindStructure[currentLevel + 1] || null;
 
+    // Optional public live-event data (TableCaptain live page parity):
+    // ?include=chips,payouts adds per-player chip counts and the live payout
+    // table. This is intentionally public display data, name, table, seat and
+    // stack only. No phones, ids, or metadata.
+    const include = String(req.query.include || '')
+      .split(',')
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean);
+    let publicChips;
+    let publicPayouts;
+
+    if (include.includes('chips') || include.includes('payouts')) {
+      const { data: allEntries } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('player_name, status, table_number, seat_number, current_chips, rebuy_count, addon_taken, finish_position, payout_amount')
+        .eq('tournament_id', tournamentId)
+        .neq('status', 'cancelled')
+        .limit(5000);
+      const entries = allEntries || [];
+
+      if (include.includes('chips')) {
+        publicChips = {
+          updated_at: tournament.updated_at,
+          players: entries
+            .filter(e => ['seated', 'active'].includes(e.status))
+            .sort((a, b) => (b.current_chips || 0) - (a.current_chips || 0))
+            .map(e => ({
+              player_name: e.player_name || 'Player',
+              table_number: e.table_number,
+              seat_number: e.seat_number,
+              chips: e.current_chips || 0
+            }))
+        };
+      }
+
+      if (include.includes('payouts')) {
+        const totalRebuys = entries.reduce((s, e) => s + (e.rebuy_count || 0), 0);
+        const totalAddons = entries.filter(e => e.addon_taken).length;
+        const collected = (entries.length * (tournament.buyin_amount || 0)) +
+          (totalRebuys * (tournament.rebuy_amount || 0)) +
+          (totalAddons * (tournament.addon_amount || 0));
+        const pool = effectivePrizePool(tournament, collected);
+
+        // Deal overrides win; otherwise the saved structure; otherwise the
+        // standard field-size-band table.
+        let table;
+        if (Array.isArray(tournament.final_payouts) && tournament.final_payouts.length > 0) {
+          table = tournament.final_payouts.map((p, i) => ({
+            position: p.position || i + 1,
+            amount: Math.round(Number(p.amount) || 0)
+          }));
+        } else {
+          let slots = Array.isArray(tournament.payout_structure)
+            ? tournament.payout_structure.map(normalizePayoutSlot)
+            : [];
+          if (slots.length === 0) slots = generatePayoutTable(entries.length, tournament.paying_places);
+          const amounts = allocateAmounts(slots, pool);
+          table = slots.map((s, i) => ({
+            position: s.position || i + 1,
+            percentage: s.percentage,
+            amount: s.amount != null && !s.percentage ? Math.round(Number(s.amount)) : amounts[i]
+          }));
+        }
+
+        publicPayouts = {
+          prize_pool: pool,
+          collected_pool: collected,
+          overlay_amount: Math.max(0, (tournament.guaranteed_pool || 0) - collected),
+          guaranteed_pool: tournament.guaranteed_pool || 0,
+          is_deal: Array.isArray(tournament.final_payouts) && tournament.final_payouts.length > 0,
+          places: table
+        };
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: {
@@ -197,7 +279,10 @@ async function getClockState(req, res, tournamentId) {
           isBreak: b.is_break || false,
           label: b.label || null,
           isCurrent: i === currentLevel
-        }))
+        })),
+        // Present only when requested via ?include=
+        chips: publicChips,
+        payouts: publicPayouts
       }
     });
   } catch (error) {

@@ -111,7 +111,7 @@ export function generatePayoutTable(fieldSize, payingPlaces = null) {
 
 // Effective prize pool: actual_prizepool (when set) wins, otherwise
 // max(collected, guaranteed_pool).
-function effectivePrizePool(tournament, collected) {
+export function effectivePrizePool(tournament, collected) {
   const actual = Number(tournament?.actual_prizepool) || 0;
   if (actual > 0) return actual;
   return Math.max(collected, Number(tournament?.guaranteed_pool) || 0);
@@ -120,7 +120,7 @@ function effectivePrizePool(tournament, collected) {
 // Allocate whole-dollar amounts from percentage slots so they sum to the pool.
 // Each slot is floored; when the structure totals ~100%, the rounding
 // remainder is added to 1st place so the amounts sum to the pool exactly.
-function allocateAmounts(slots, pool) {
+export function allocateAmounts(slots, pool) {
   const amounts = slots.map(s => Math.floor(pool * (s.percentage || 0) / 100));
   const totalPct = slots.reduce((s, p) => s + (p.percentage || 0), 0);
   if (amounts.length > 0 && Math.abs(totalPct - 100) <= 0.5) {

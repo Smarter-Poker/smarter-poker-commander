@@ -16,6 +16,8 @@ import { checkAndExecuteAutoBreak } from '../../../../src/lib/commander/tourname
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parsePayoutStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { logAction } from '../../../../src/lib/commander/audit';
+import { promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
 // Shared pure payout-math helpers (same math the payout screen uses, so the
 // winner's payout here always matches position 1 there).
 import { generatePayoutTable, normalizePayoutSlot } from './payout';
@@ -302,6 +304,36 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
 
+      // --- ALTERNATE AUTO-SEAT (waitlist behavior) ---
+      // While registration is still open, a bust frees a seat: the
+      // longest-waiting alternate is seated into it automatically before any
+      // table-consolidation logic runs.
+      let promotedAlternate = null;
+      if (freshTournament && freshTournament.status === 'running' &&
+          freshTournament.late_registration_levels != null &&
+          ((freshTournament.current_level || 0) + 1) <= freshTournament.late_registration_levels) {
+        try {
+          promotedAlternate = await promoteNextAlternate(getSupabase(), freshTournament);
+          if (promotedAlternate) {
+            await logAction({ action: 'promote_alternate_auto', category: 'tournament' }, {
+              venueId: freshTournament.venue_id,
+              staffId: _g?.id,
+              targetId: promotedAlternate.id,
+              targetType: 'commander_tournament_entries',
+              targetName: promotedAlternate.player_name || 'Player',
+              metadata: {
+                tournament_id: tournamentId,
+                table_number: promotedAlternate.table_number,
+                seat_number: promotedAlternate.seat_number
+              },
+              req
+            });
+          }
+        } catch (altErr) {
+          console.warn('[eliminate.js] Alternate auto-seat failed:', altErr.message);
+        }
+      }
+
       const autoBreakResult = freshTournament?.status !== 'completed'
         ? await checkAndExecuteAutoBreak(tournamentId, freshTournament || tournament)
         : null;
@@ -316,6 +348,13 @@ export default async function handler(req, res) {
           inTheMoney: payoutAmount > 0,
           bountiesAwarded: bountiesCollected,
           remainingPlayers: remainingCount - 1,
+          // Present when a waiting alternate was auto-seated into the freed seat
+          promoted_alternate: promotedAlternate ? {
+            entry_id: promotedAlternate.id,
+            player_name: promotedAlternate.player_name,
+            table_number: promotedAlternate.table_number,
+            seat_number: promotedAlternate.seat_number
+          } : undefined,
           // Included when a table was automatically broken - frontend uses this to print receipts
           auto_break: autoBreakResult || undefined
         }
