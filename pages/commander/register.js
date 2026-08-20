@@ -138,7 +138,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     if (!showCalib) return {};
     
     return {
-      style: { cursor: 'move', outline: activeCalib === idKey ? '2px dashed #1877F2' : '2px dotted rgba(255,255,255,0.5)' },
+      style: { cursor: 'move', outline: (idKey.startsWith('dot_') || idKey.startsWith('check')) ? 'none' : (activeCalib === idKey ? '2px dashed #1877F2' : '2px dotted rgba(255,255,255,0.5)') },
       onPointerDown: (e) => {
         e.preventDefault();
         e.stopPropagation();
