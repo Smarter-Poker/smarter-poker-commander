@@ -121,13 +121,13 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     'MIXED': { l: 59.6, w: 8.4, t: 78.8, h: 3 },
     'TOURNAMENTS': { l: 68.8, w: 14.6, t: 78.8, h: 2.9 },
     'plan_home': { l: 14.8, t: 40.4, w: 70.4, h: 7.8 },
-    'plan_charity': { l: 14.8, t: 49.9, w: 70.4, h: 7.1 },
-    'plan_club': { l: 14.8, t: 59.3, w: 70.4, h: 7.1 },
+    'plan_charity': { l: 14.8, t: 49, w: 70.3, h: 7.8 },
+    'plan_club': { l: 14.78, t: 57.88, w: 70.4, h: 7.7 },
     'dot_home': { l: 3.8, t: 48.2, w: 2.6, h: 21.6 },
-    'dot_charity': { l: 4.1, t: 53.6, w: 2.3, h: 22.5 },
-    'dot_club': { l: 3.9, t: 55.1, w: 2.6, h: 24.6 },
+    'dot_charity': { l: 4, t: 49, w: 2.4, h: 21.2 },
+    'dot_club': { l: 3.9, t: 47.4, w: 2.6, h: 21.3 },
     'checkbox_agree': { l: 14.9, t: 75.2, w: 2.5, h: 2.5 },
-    'checkmark': { l: 14.67, t: 75.29, w: 2, h: 2.2 }
+    'checkmark': { l: 14.66, t: 75.28, w: 3.1, h: 2.6 }
   });
   const [activeCalib, setActiveCalib] = useState('NLH');
   const [showCalib, setShowCalib] = useState(false);
