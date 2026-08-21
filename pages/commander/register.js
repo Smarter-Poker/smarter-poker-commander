@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Head from 'next/head';
 import Link from 'next/link';
 import PhotonAutocomplete from '../../src/components/ui/PhotonAutocomplete';
+import PasswordStrength from '../../src/components/ui/PasswordStrength';
 import { AsYouType, isValidPhoneNumber } from 'libphonenumber-js';
 import {
   COMMANDER_FREE_MODE,
@@ -930,6 +931,9 @@ const CalibrationPanel = () => {
                   fontFamily: 'Inter, sans-serif'
                 }}
               />
+              <div style={{ position: 'absolute', top: '78.5%', left: '19%', width: '31%', zIndex: 10 }}>
+                <PasswordStrength password={password} />
+              </div>
 
               {/* Confirm Password Input */}
               <input
@@ -1860,8 +1864,15 @@ const CalibrationPanel = () => {
 
               {!existingAccount && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Create Password *</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputClass} placeholder="Min 8 Characters" /></div>
-                  <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Confirm Password *</label><input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} /></div>
+                  <div>
+                    <label className="block text-sm text-[#B0B3B8] mb-1.5">Create Password *</label>
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputClass} placeholder="Min 8 Characters" />
+                    <PasswordStrength password={password} />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[#B0B3B8] mb-1.5">Confirm Password *</label>
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} />
+                  </div>
                 </div>
               )}
 
