@@ -1861,10 +1861,34 @@ const CalibrationPanel = () => {
                   : 'First, Set Up Your Login Credentials. You Can Add Venue Details Next.'}
               </p>
 
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label><input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} /></div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label>
+                <div className="relative">
+                  <input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} style={{ paddingRight: '40px' }} />
+                  {ownerName.trim().length >= 2 && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
               <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label><input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" /></div>
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number *</label><input type="tel" value={ownerPhone} onChange={handlePhoneChange(setOwnerPhone)} className={inputClass} placeholder="(555) 555-5555" /></div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label>
+                <div className="relative">
+                  <input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" style={{ paddingRight: '40px' }} />
+                  {ownerEmail.includes('@') && ownerEmail.includes('.') && ownerEmail.length > 5 && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number *</label>
+                <div className="relative">
+                  <input type="tel" value={ownerPhone} onChange={handlePhoneChange(setOwnerPhone)} className={inputClass} placeholder="(555) 555-5555" style={{ paddingRight: '40px' }} />
+                  {ownerPhone && isValidPhoneNumber(ownerPhone, 'US') && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
 
               {/* Existing account toggle */}
               <div className="flex items-center gap-3 p-4 bg-[#3A3B3C]/40 rounded-lg">
@@ -1949,7 +1973,12 @@ const CalibrationPanel = () => {
                 <label className="block text-sm text-[#B0B3B8] mb-1.5">
                   {isHomeGameFlow ? 'Home Game Name *' : 'Club/Venue Name *'}
                 </label>
-                <input type="text" name="name" value={clubInfo.name} onChange={handleClubInfoChange} className={inputClass} placeholder={isHomeGameFlow ? 'e.g. Saturday Night Hold’em' : 'Enter Your Venue Name'} />
+                <div className="relative">
+                  <input type="text" name="name" value={clubInfo.name} onChange={handleClubInfoChange} className={inputClass} placeholder={isHomeGameFlow ? 'e.g. Saturday Night Hold’em' : 'Enter Your Venue Name'} style={{ paddingRight: '40px' }} />
+                  {clubInfo.name.trim().length >= 2 && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
               </div>
 
               <div>
