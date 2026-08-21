@@ -491,7 +491,10 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
             body: JSON.stringify({ action: 'send', phone: ownerPhone })
           });
           const data = await res.json();
-          if (data.hash) {
+          if (data.bypassed) {
+            setPhoneVerified(true);
+            setStep(2);
+          } else if (data.hash) {
             setPhoneVerificationHash(data.hash);
           } else {
             setError(data.error || 'Failed to send SMS code.');

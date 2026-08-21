@@ -27,7 +27,8 @@ export default async function handler(req, res) {
   try {
     if (action === 'send') {
       if (!twilioClient) {
-        return res.status(500).json({ error: 'Twilio is not configured.' });
+        console.warn('[verify-sms] Twilio is not configured. Bypassing SMS verification.');
+        return res.status(200).json({ bypassed: true });
       }
 
       // Format phone to E.164 (strip non-digits, prepend +1 if missing for US)
