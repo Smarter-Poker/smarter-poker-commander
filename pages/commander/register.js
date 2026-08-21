@@ -1184,32 +1184,55 @@ const CalibrationPanel = () => {
                 }}
               />
 
-              {/* Address Input via Google Autocomplete */}
-              <Autocomplete
-                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
-                onPlaceSelected={handlePlaceSelected}
-                options={{
-                  types: ['address', 'establishment', '(cities)'],
-                  componentRestrictions: { country: 'us' },
-                }}
-                defaultValue={clubInfo.address}
-                onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
-                required={isAddressRequired}
-                style={{
-                  position: 'absolute',
-                  top: '49.3%',
-                  left: '18%',
-                  width: '63%',
-                  height: '4.2%',
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: 'white',
-                  fontSize: 'min(17px, 3vw)',
-                  zIndex: 10,
-                  fontFamily: 'Inter, sans-serif'
-                }}
-              />
+              {/* Address Input (Fallback to standard input if no API key) */}
+              {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                <Autocomplete
+                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                  onPlaceSelected={handlePlaceSelected}
+                  options={{
+                    types: ['address', 'establishment', '(cities)'],
+                    componentRestrictions: { country: 'us' },
+                  }}
+                  defaultValue={clubInfo.address}
+                  onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
+                  required={isAddressRequired}
+                  style={{
+                    position: 'absolute',
+                    top: '49.3%',
+                    left: '18%',
+                    width: '63%',
+                    height: '4.2%',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'white',
+                    fontSize: 'min(17px, 3vw)',
+                    zIndex: 10,
+                    fontFamily: 'Inter, sans-serif'
+                  }}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={clubInfo.address}
+                  onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
+                  required={isAddressRequired}
+                  style={{
+                    position: 'absolute',
+                    top: '49.3%',
+                    left: '18%',
+                    width: '63%',
+                    height: '4.2%',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'white',
+                    fontSize: 'min(17px, 3vw)',
+                    zIndex: 10,
+                    fontFamily: 'Inter, sans-serif'
+                  }}
+                />
+              )}
 
               {/* City Input */}
               <input
