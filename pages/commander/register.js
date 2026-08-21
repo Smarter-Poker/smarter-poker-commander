@@ -88,6 +88,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [registrationResult, setRegistrationResult] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [preCheckDone, setPreCheckDone] = useState(false);
 
   // ─── Step 1: Account fields ─────────────────────────────────────
@@ -1797,6 +1798,15 @@ const CalibrationPanel = () => {
   return (
     <div className="min-h-screen bg-[#18191A]">
       <Head><title>{headerTitle}</title></Head>
+      <style>{`
+        @keyframes slideUpFade {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-step {
+          animation: slideUpFade 0.3s ease-out forwards;
+        }
+      `}</style>
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Logo */}
@@ -1843,7 +1853,7 @@ const CalibrationPanel = () => {
           {/* Step 1: Create Account                                     */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-step">
               <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">Create Your Account</h2>
               <p className="text-sm text-[#8A8D91] mb-4">
                 {isHomeGameFlow
@@ -1866,12 +1876,23 @@ const CalibrationPanel = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-[#B0B3B8] mb-1.5">Create Password *</label>
-                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputClass} placeholder="Min 8 Characters" />
+                    <div className="relative">
+                      <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className={inputClass} style={{ paddingRight: '40px' }} placeholder="Min 8 Characters" />
+                      <button type="button" tabIndex="-1" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8D91] hover:text-[#E4E6EB]">
+                        {showPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        )}
+                      </button>
+                    </div>
                     <PasswordStrength password={password} />
                   </div>
                   <div>
                     <label className="block text-sm text-[#B0B3B8] mb-1.5">Confirm Password *</label>
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} />
+                    <div className="relative">
+                      <input type={showPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} style={{ paddingRight: '40px' }} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1914,7 +1935,7 @@ const CalibrationPanel = () => {
           {/* Step 2: Venue / Home Game Details                          */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-step">
               <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">
                 {isHomeGameFlow ? 'Home Game Details' : 'Venue Details'}
               </h2>
@@ -2008,7 +2029,7 @@ const CalibrationPanel = () => {
           {/* Step 3: Select Plan  (skipped when ?tier= locks the plan)  */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 3 && !lockedTier && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-step">
               <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">Select Your Plan</h2>
               <div className="grid gap-4">
                 {Object.entries(TIERS || {}).map(([key, tier]) => (
@@ -2038,7 +2059,7 @@ const CalibrationPanel = () => {
           {/* Step 4: Complete                                            */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 4 && (
-            <div className="text-center space-y-6">
+            <div className="text-center space-y-6 animate-step">
               <div className="w-20 h-20 bg-[#31A24C] rounded-full flex items-center justify-center mx-auto text-4xl text-white">✓</div>
               <h2 className="text-2xl font-bold text-[#E4E6EB]">
                 {isHomeGameFlow ? 'You’re All Set!' : 'Welcome To Club Commander!'}
