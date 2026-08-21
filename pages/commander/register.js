@@ -1922,16 +1922,13 @@ const CalibrationPanel = () => {
 
               <div>
                 <label className="block text-sm text-[#B0B3B8] mb-1.5">Search Location {(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
-                <Autocomplete
-                  apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+                <PhotonAutocomplete
                   onPlaceSelected={handlePlaceSelected}
-                  options={{
-                    types: ['address', 'establishment', '(cities)'],
-                    componentRestrictions: { country: 'us' },
-                  }}
                   defaultValue={clubInfo.address || clubInfo.city}
-                  className={inputClass}
+                  onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
                   placeholder="Start typing your address or city..."
+                  className={inputClass}
+                  style={{ position: 'relative', width: '100%', zIndex: 20 }}
                 />
                 
                 {(clubInfo.city || clubInfo.address) && (

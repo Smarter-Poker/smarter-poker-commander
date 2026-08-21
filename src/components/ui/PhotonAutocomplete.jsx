@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onChange, style, placeholder, required }) {
+export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onChange, style, className, placeholder, required }) {
   const [query, setQuery] = useState(defaultValue || '');
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -147,9 +147,9 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
   };
 
   return (
-    <div ref={wrapperRef} style={{ position: 'absolute', top: style?.top, left: style?.left, width: style?.width, height: style?.height, zIndex: style?.zIndex || 10 }}>
+    <div ref={wrapperRef} style={{ position: style?.position || 'absolute', top: style?.top, left: style?.left, width: style?.width, height: style?.height, zIndex: style?.zIndex || 10 }}>
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <input
+        <input className={className}
           type="text"
           value={query}
           onChange={handleInputChange}
@@ -158,7 +158,7 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
           placeholder={placeholder || 'Street Address'}
           required={required}
           autoComplete="off"
-          style={{
+          style={className ? { width: '100%', height: '100%', paddingRight: '40px' } : {
             width: '100%',
             height: '100%',
             background: style?.background || 'transparent',
@@ -167,7 +167,7 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
             color: style?.color || 'white',
             fontSize: style?.fontSize || 'min(17px, 3vw)',
             fontFamily: style?.fontFamily || 'Inter, sans-serif',
-            paddingRight: '40px' // Make room for loader/clear btn
+            paddingRight: '40px'
           }}
         />
         
