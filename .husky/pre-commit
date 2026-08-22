@@ -1,4 +1,8 @@
 #!/bin/sh
+
+# One working tree per agent (rule 1a). Runs FIRST: if this commit should
+# not be happening in this directory at all, there is no point checking it.
+bash "$(git rev-parse --show-toplevel)/scripts/guard-shared-clone.sh"
 # Commander pre-commit hook — Phase 3.2 scaffold completion (2026-04-27)
 #
 # Mirrors the World Hub pre-commit pattern at a smaller surface area:
