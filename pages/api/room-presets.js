@@ -30,25 +30,11 @@ export default async function handler(req, res) {
     const _g = await guardManager(req, res); if (!_g) return;
 
     try {
-      // Get venue_id from the guard result (staff session)
-      let venueId;
-      try {
-        const staffSession = JSON.parse(req.headers['x-staff-session'] || '{}');
-        if (staffSession.venue_id) {
-          venueId = staffSession.venue_id;
-        } else if (staffSession.id) {
-          const { data: staffData } = await getSupabase()
-            .from('commander_staff')
-            .select('venue_id')
-            .eq('id', staffSession.id)
-            .eq('is_active', true)
-            .maybeSingle();
-          venueId = staffData?.venue_id;
-        } else if (staffSession.user_id) {
-          // Owner login path
-          venueId = staffSession.venue_id;
-        }
-      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // 2026-08-20 audit fix: the venue used to be re-read from the RAW
+      // x-staff-session header. guardManager above already verified and
+      // resolved the session, so take the venue from its result and never
+      // parse the client-supplied header again.
+      let venueId = _g.venue_id;
 
       // Fallback: try Bearer token for backward compatibility
       if (!venueId) {
@@ -59,11 +45,14 @@ export default async function handler(req, res) {
             const { data: authData } = await getSupabase().auth.getUser(token);
             const user = authData?.user;
             if (user) {
+              // MULTI-CLUB FIX: limit(1) — unscoped maybeSingle errors for
+              // users with staff rows at 2+ venues
               const { data: staff } = await getSupabase()
                 .from('commander_staff')
                 .select('venue_id')
-                .eq('user_id', user.id)
+                .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
                 .eq('is_active', true)
+                .limit(1)
                 .maybeSingle();
               venueId = staff?.venue_id;
             }
@@ -73,16 +62,12 @@ export default async function handler(req, res) {
 
       if (!venueId) return res.status(403).json({ success: false, error: 'Could not determine venue' });
 
-      // Extract role info for permission checks
-      let staffRole = 'owner'; // default for owner logins
-      let staffName = 'Staff';
-      let staffUserId = null;
-      try {
-        const sess = JSON.parse(req.headers['x-staff-session'] || '{}');
-        staffRole = sess.role || 'owner';
-        staffName = sess.name || sess.venue_name || 'Staff';
-        staffUserId = sess.user_id || sess.id || null;
-      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // 2026-08-20 audit fix: role/name/identity came from the RAW header and
+      // defaulted to 'owner' when it failed to parse. They now come from the
+      // session guardManager already verified.
+      const staffRole = _g.role || 'owner';
+      const staffName = _g.display_name || 'Staff';
+      const staffUserId = _g.user_id || _g.linked_user_id || _g.id || null;
 
       // Helper: normalize a preset row from DB into frontend-friendly shape
       // DB stores { tables: [...], promotions: [...], tournaments: [...] } all inside `tables` JSONB
@@ -115,7 +100,7 @@ export default async function handler(req, res) {
       // POST - Create or Apply
       if (req.method === 'POST') {
         // ═══════════════════════════════════════════════════════════════
-        // APPLY PRESET — Opens tables, activates promotions, creates tournaments
+        // APPLY PRESET - Opens tables, activates promotions, creates tournaments
         // ═══════════════════════════════════════════════════════════════
         if (req.query.action === 'apply' && req.query.id) {
           const { data: rawPreset, error: fetchErr } = await getSupabase()
@@ -197,7 +182,7 @@ export default async function handler(req, res) {
               // Calculate scheduled start from offset or explicit time
               let scheduledStart;
               if (tmpl.start_time) {
-                // start_time is "HH:MM" format — combine with today's date
+                // start_time is "HH:MM" format - combine with today's date
                 const [h, m] = tmpl.start_time.split(':').map(Number);
                 scheduledStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
               } else if (tmpl.start_time_offset_minutes) {

@@ -6,6 +6,7 @@
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { verifyStaffSession } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -47,26 +48,40 @@ export default async function handler(req, res) {
       const { range = 'today' } = req.query;
       const { start, end } = getDateRange(range);
 
-      // Get venue from staff record, with owner fallback
+      // MULTI-CLUB FIX (2026-08-20): resolve the ACTIVE venue from the
+      // HMAC-verified staff session first — it pins the venue the user
+      // actually switched to. The old path took "the user's first staff
+      // row / first subscription", which errored (multi-row maybeSingle)
+      // or reported the WRONG venue for multi-club owners and multi-venue
+      // staff.
       let staffVenueId = null;
-      const { data: staffRow } = await getSupabase()
-        .from('commander_staff')
-        .select('venue_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (staffRow) {
-        staffVenueId = staffRow.venue_id;
-      } else {
-        // Fallback: check if user is a venue owner via subscription
-        const { data: sub } = await getSupabase()
-          .from('commander_subscriptions')
+      try {
+        const sessionResult = await verifyStaffSession(req);
+        if (sessionResult.staff?.venue_id) staffVenueId = sessionResult.staff.venue_id;
+      } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+
+      if (!staffVenueId) {
+        // Legacy fallback for callers without a signed session header
+        const { data: staffRow } = await getSupabase()
+          .from('commander_staff')
           .select('venue_id')
-          .eq('owner_id', user.id)
-          .in('status', ['active', 'trialing'])
+          .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
+          .eq('is_active', true)
           .limit(1)
           .maybeSingle();
-        if (sub) staffVenueId = sub.venue_id;
+        if (staffRow) {
+          staffVenueId = staffRow.venue_id;
+        } else {
+          const { data: sub } = await getSupabase()
+            .from('commander_subscriptions')
+            .select('venue_id')
+            .eq('owner_id', user.id)
+            .in('status', ['active', 'trialing'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (sub) staffVenueId = sub.venue_id;
+        }
       }
       if (!staffVenueId) return res.status(403).json({ success: false, error: 'Staff access required' });
       const staff = { venue_id: staffVenueId };

@@ -1,5 +1,5 @@
 /**
- * Club Commander — Next.js App Root
+ * Club Commander - Next.js App Root
  * Loads global CSS (Tailwind + Commander design tokens) for all pages.
  * Was entirely missing, which caused ALL Tailwind classes to produce no output.
  */

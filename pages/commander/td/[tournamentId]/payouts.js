@@ -1,10 +1,10 @@
 /**
- * Tournament Director — Payouts Calculator & Manager
+ * Tournament Director - Payouts Calculator & Manager
  * /commander/td/[tournamentId]/payouts
  * Auto-calculates payouts from payout structure, allows live override for deals/chops
  * UI: Dark theme, SmarterPoker colors, Inter font, 44px+ touch targets
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
@@ -14,10 +14,15 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import {
     Trophy, Users, DollarSign, LayoutGrid, Monitor,
     Calculator, Save, RefreshCw, Loader2, FileText,
-    ChevronDown, ChevronUp, AlertTriangle
+    ChevronDown, ChevronUp, AlertTriangle, Handshake, X, Coins, Ticket
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { calculateICM } from '../../../../src/lib/commander/icm-utils';
+// Recording a payout and PAYING it are different events. This screen records
+// them; the Cage Payouts card is where the money actually leaves the drawer,
+// and it is the same component the Results screen renders.
+import CagePayoutsCard from '../../../../src/components/commander/tournaments/CagePayoutsCard';
+import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/payoutPayments';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -35,6 +40,14 @@ function formatMoney(n) {
     return '$' + Number(n).toLocaleString();
 }
 
+// Cash denominations the cage can actually pay in. 1 means exact dollars.
+const DENOMINATIONS = [
+    { value: 1, label: 'Exact' },
+    { value: 5, label: '$5' },
+    { value: 25, label: '$25' },
+    { value: 100, label: '$100' },
+];
+
 export default function TDPayouts() {
 
     useEffect(() => { busEmit.sessionStart('commander-td-tournamentId-payouts'); }, []);
@@ -43,8 +56,22 @@ export default function TDPayouts() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [calcData, setCalcData] = useState(null);
+    // Entry rows, needed for the cage window: what has been RECORDED against
+    // each entry (payout_amount) and whether it has been PAID (payout_status /
+    // paid_at). The calculated table cannot answer either question.
+    const [entries, setEntries] = useState([]);
+    // Drives whether Save records money only (deal) or finalizes the finishing
+    // order. The payout route does not return the tournament status, so it is
+    // read from the clock route alongside the payout calculation.
+    const [tournamentStatus, setTournamentStatus] = useState(null);
     const [overrides, setOverrides] = useState({});
     const [showICM, setShowICM] = useState(false);
+    const [showDealCalc, setShowDealCalc] = useState(false);
+    // Denomination the table is rounded to. null means "not chosen yet on this
+    // screen", so the tournament's own settings.payout_denomination is used and
+    // adopted into state on the first load.
+    const [denomination, setDenomination] = useState(null);
+    const [savingDenom, setSavingDenom] = useState(false);
 
     // 2026-07-25 audit fix: toast state lived only in the ICMCalculator child but
     // is rendered (and set) here; hoist it with an auto-dismiss effect.
@@ -58,9 +85,25 @@ export default function TDPayouts() {
     const fetchPayouts = useCallback(async () => {
         if (!tournamentId) return;
         try {
-            const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate`, {});
+            // The denomination is sent as a preview parameter so the table
+            // re-renders instantly. It is persisted separately by
+            // applyDenomination below, which is what eliminate.js reads.
+            const denomParam = denomination === null ? '' : `&denomination=${denomination}`;
+            const [json, clockJson, entriesJson] = await Promise.all([
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/payout?mode=calculate${denomParam}`, {}),
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/clock`, {}).catch(() => null),
+                commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/entries`, {}).catch(() => null)
+            ]);
+            if (clockJson?.success) setTournamentStatus(clockJson.data?.tournament?.status || null);
+            if (entriesJson?.success) {
+                setEntries(Array.isArray(entriesJson.data?.entries) ? entriesJson.data.entries : []);
+            }
             if (json.success) {
                 setCalcData(json.data);
+                // Adopt the tournament's own setting the first time through.
+                if (denomination === null && json.data?.denomination != null) {
+                    setDenomination(Number(json.data.denomination) || 1);
+                }
                 // Initialize overrides from calculated amounts
                 const initial = {};
                 (json.data.calculated_payouts || []).forEach(p => {
@@ -79,13 +122,50 @@ export default function TDPayouts() {
         } finally {
             setLoading(false);
         }
-    }, [tournamentId]);
+    }, [tournamentId, denomination]);
 
     useTournamentRealtime(tournamentId, fetchPayouts);
     useEffect(() => { const _c = new AbortController(); fetchPayouts(_c.signal); return () => _c.abort(); }, [fetchPayouts]);
 
     const handleOverride = (position, value) => {
         setOverrides(prev => ({ ...prev, [position]: parseInt(value) || 0 }));
+    };
+
+    /**
+     * Change the denomination the payouts round to.
+     *
+     * The table re-renders immediately off the preview parameter, and the
+     * choice is persisted to settings.payout_denomination so that every bust
+     * (eliminate.js) and the public live page round the same way. The clock
+     * state inside settings is preserved server-side by the tournament route.
+     */
+    const applyDenomination = async (value) => {
+        const next = Number(value) || 1;
+        setDenomination(next);
+        if (!tournamentId) return;
+        setSavingDenom(true);
+        try {
+            const current = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}`, {}).catch(() => null);
+            const existingSettings = current?.data?.tournament?.settings;
+            const settings = (existingSettings && typeof existingSettings === 'object') ? existingSettings : {};
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: { ...settings, payout_denomination: next } })
+            });
+            const json = await res.json().catch(() => null);
+            if (!res.ok || !json?.success) {
+                setToast({
+                    type: 'error',
+                    text: 'Denomination Previewed But Not Saved. Busts Will Still Use The Old Setting.'
+                });
+            }
+        } catch (err) {
+            console.warn('Save denomination error:', err);
+            setToast({ type: 'error', text: 'Denomination Previewed But Not Saved.' });
+        } finally {
+            setSavingDenom(false);
+        }
     };
 
     const handleSave = async () => {
@@ -101,19 +181,36 @@ export default function TDPayouts() {
                 amount: overrides[p.position] !== undefined ? overrides[p.position] : p.amount
             })).filter(p => p.entry_id || p.player_id);
 
+            // deal_only true records the money without ending anyone's
+            // tournament, which is the right default while play continues. Once
+            // the tournament is completed this same button is what finalizes the
+            // result, so send deal_only false to stamp the finishing order.
+            const isFinalizing = tournamentStatus === 'completed';
+
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/payout`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payouts })
+                body: JSON.stringify({ payouts, deal_only: !isFinalizing })
             });
+            const json = await res.json().catch(() => null);
 
-            if (res.ok) {
+            if (res.ok && json?.success) {
+                setToast({
+                    type: 'success',
+                    text: json.data?.message || (isFinalizing
+                        ? 'Payouts Saved And Finishing Order Recorded.'
+                        : 'Payouts Saved. Play Continues.')
+                });
                 await fetchPayouts();
                 broadcastChange('tournaments');
+            } else {
+                // 2026-08-20 fix: a failed save was silent, so a TD could not tell
+                // a rejected save from a successful one.
+                setToast({ type: 'error', text: json?.error?.message || 'Failed To Save Payouts. Please Try Again.' });
             }
         } catch (err) {
             console.warn('Save payouts error:', err);
-            setToast({ type: 'error', text: 'Failed to save payouts. Please try again.' });
+            setToast({ type: 'error', text: 'Failed To Save Payouts. Please Try Again.' });
         } finally {
             setSaving(false);
         }
@@ -123,10 +220,39 @@ export default function TDPayouts() {
         router.push(`/commander/td/${tournamentId}${path}`);
     };
 
+    /**
+     * The cage window's rows.
+     *
+     * Built from the ENTRIES, not from the calculated table, because that is
+     * what the pay endpoint reads: it refuses to pay an entry whose
+     * payout_amount has not been recorded, so a place that has only been
+     * calculated (or typed into an override box and not saved) is deliberately
+     * not payable yet. Save the payouts first, then pay them.
+     */
+    const cageRows = useMemo(() => (entries || [])
+        .filter(e => e.status !== 'cancelled' && Number(e.payout_amount) > 0)
+        .map(e => ({
+            entry_id: e.id,
+            player_name: e.profiles?.display_name || e.player_name || 'Player',
+            position: Number(e.payout_position) || Number(e.finish_position) || null,
+            amount: Number(e.payout_amount) || 0,
+            paid: isEntryPaid(e),
+            paid_at: e.paid_at || null,
+            payout_status: entryPayoutStatus(e),
+            projected: false
+        }))
+        .sort((a, b) => (a.position || 9999) - (b.position || 9999)), [entries]);
+
     const totalOverridden = Object.values(overrides || {}).reduce((sum, v) => sum + (v || 0), 0);
     const totalCalc = calcData?.calculated_payouts?.reduce((sum, p) => sum + p.amount, 0) || 0;
     const prizePool = calcData?.prize_pool || 0;
     const diff = totalOverridden - prizePool;
+    const activeDenom = denomination === null ? (calcData?.denomination ?? 1) : denomination;
+    const roundingRemainder = Number(calcData?.rounding_remainder) || 0;
+    const isSatellite = !!calcData?.is_satellite;
+    const seatValue = Number(calcData?.seat_value) || 0;
+    const seatsAwarded = Number(calcData?.seats_awarded) || 0;
+    const bountyPool = Number(calcData?.bounty_pool) || 0;
 
     if (!router.isReady) return null;
 
@@ -149,12 +275,16 @@ export default function TDPayouts() {
                     <div className="flex items-center justify-between max-w-2xl mx-auto">
                         <div>
                             <h1 className="text-lg font-bold text-white">Payout Calculator</h1>
-                            <p className="text-xs text-[#B0B3B8]">Auto-calculate or override for deals</p>
+                            <p className="text-xs text-[#B0B3B8]">
+                                {tournamentStatus === 'completed'
+                                    ? 'Save Records The Final Result'
+                                    : 'Auto-Calculate Or Override For Deals'}
+                            </p>
                         </div>
                         <button onClick={handleSave} disabled={saving}
                             className="px-4 py-2 rounded-xl bg-[#31A24C] text-white text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Save
+                            {tournamentStatus === 'completed' ? 'Finalize' : 'Save'}
                         </button>
                     </div>
                 </div>
@@ -182,16 +312,82 @@ export default function TDPayouts() {
                             <div>
                                 <p className="text-sm font-medium text-[#EF4444]">Overlay Alert</p>
                                 <p className="text-xs text-[#B0B3B8]">
-                                    Guaranteed {formatMoney(calcData.guaranteed)} exceeds prize pool by {formatMoney(calcData.guaranteed - prizePool)}
+                                    Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Prize Pool By {formatMoney(calcData.guaranteed - prizePool)} Overlay
                                 </p>
                             </div>
                         </div>
                     )}
 
+                    {isSatellite && (
+                        <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <Ticket className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
+                            <div>
+                                <p className="text-sm font-medium text-[#1877F2]">Satellite, Paying Seats</p>
+                                <p className="text-xs text-[#B0B3B8]">
+                                    {seatsAwarded.toLocaleString()} Seat{seatsAwarded === 1 ? '' : 's'} At {formatMoney(seatValue)} Each.
+                                    Any Money Left Over Is Paid To The Next Finisher As A Cash Bubble Prize.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {bountyPool > 0 && (
+                        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <Coins className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+                            <div>
+                                <p className="text-sm font-medium text-[#F59E0B]">
+                                    Bounty Pool {formatMoney(bountyPool)}
+                                </p>
+                                <p className="text-xs text-[#B0B3B8]">
+                                    Held Out Of The Prize Pool And Paid On Knockouts, {formatMoney(calcData?.bounty_per_entry)} Per Entry.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Denomination Rounding */}
+                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <Coins className="w-4 h-4 text-[#B0B3B8]" />
+                                <span className="text-sm font-medium text-[#E4E6EB]">Round Payouts To</span>
+                            </div>
+                            {savingDenom && <Loader2 className="w-4 h-4 text-[#1877F2] animate-spin" />}
+                        </div>
+                        <div className="flex gap-2">
+                            {DENOMINATIONS.map(d => (
+                                <button key={d.value}
+                                    onClick={() => applyDenomination(d.value)}
+                                    disabled={savingDenom || isSatellite}
+                                    className={`flex-1 h-11 rounded-xl text-sm font-medium disabled:opacity-50 ${activeDenom === d.value
+                                        ? 'bg-[#1877F2] text-white'
+                                        : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>
+                                    {d.label}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-[#B0B3B8] mt-2">
+                            {isSatellite
+                                ? 'Satellites Pay Whole Seats, So There Is Nothing To Round.'
+                                : activeDenom > 1
+                                    ? `Every Place Is Floored To The Nearest $${activeDenom.toLocaleString()} And The Remainder Goes To 1st Place.`
+                                    : 'Places Are Paid To The Exact Dollar.'}
+                        </p>
+                        {!isSatellite && activeDenom > 1 && roundingRemainder !== 0 && (
+                            <p className="text-xs text-[#F59E0B] mt-1">
+                                {roundingRemainder > 0
+                                    ? `${formatMoney(roundingRemainder)} Of Rounding Went To 1st Place.`
+                                    : `1st Place Gave Up ${formatMoney(Math.abs(roundingRemainder))} So Every Paying Place Keeps At Least One $${activeDenom.toLocaleString()} Unit.`}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Payout Table */}
                     <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
                         <div className="px-4 py-3 border-b border-[#3A3B3C] flex items-center justify-between">
-                            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Payout Breakdown</h2>
+                            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                                {isSatellite ? 'Seat Breakdown' : 'Payout Breakdown'}
+                            </h2>
                             <button onClick={fetchPayouts} className="text-[#1877F2] text-xs flex items-center gap-1">
                                 <RefreshCw className="w-3 h-3" /> Recalculate
                             </button>
@@ -218,12 +414,18 @@ export default function TDPayouts() {
                                             <p className="text-sm text-[#E4E6EB] truncate">
                                                 {slot.player_name || <span className="text-[#B0B3B8] italic">TBD</span>}
                                             </p>
-                                            <p className="text-xs text-[#B0B3B8]">{slot.percentage}%</p>
+                                            <p className="text-xs text-[#B0B3B8]">
+                                                {slot.is_seat
+                                                    ? `Seat, ${formatMoney(slot.amount)} Value`
+                                                    : slot.is_bubble
+                                                        ? 'Bubble, Cash Prize'
+                                                        : `${slot.percentage}%`}
+                                            </p>
                                         </div>
 
                                         {/* Auto Amount */}
-                                        <div className="text-right text-xs text-[#B0B3B8] flex-shrink-0 w-16">
-                                            {formatMoney(slot.amount)}
+                                        <div className={`text-right text-xs flex-shrink-0 w-16 ${slot.is_seat ? 'text-[#1877F2] font-medium' : 'text-[#B0B3B8]'}`}>
+                                            {slot.is_seat ? 'Seat' : formatMoney(slot.amount)}
                                         </div>
 
                                         {/* Override Input */}
@@ -254,11 +456,29 @@ export default function TDPayouts() {
                             </div>
                             {Math.abs(diff) > 0 && (
                                 <p className="text-xs text-[#B0B3B8] mt-1">
-                                    {diff > 0 ? `${formatMoney(diff)} over prize pool` : `${formatMoney(Math.abs(diff))} remaining`}
+                                    {diff > 0 ? `${formatMoney(diff)} Over Prize Pool` : `${formatMoney(Math.abs(diff))} Remaining`}
                                 </p>
                             )}
                         </div>
                     </div>
+
+                    {/* Cage window: money actually leaving the drawer */}
+                    <CagePayoutsCard
+                        tournamentId={tournamentId}
+                        rows={cageRows}
+                        setToast={setToast}
+                        onRefresh={async () => { await fetchPayouts(); broadcastChange('tournaments'); }}
+                    />
+
+                    {/* Deal Calculator */}
+                    <button onClick={() => setShowDealCalc(true)}
+                        className="w-full bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3 flex items-center justify-between active:bg-[#3A3B3C]">
+                        <div className="flex items-center gap-2">
+                            <Handshake className="w-4 h-4 text-[#31A24C]" />
+                            <span className="text-sm font-medium text-[#E4E6EB]">Deal Calculator</span>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-[#B0B3B8] rotate-[-90deg]" />
+                    </button>
 
                     {/* ICM Calculator Toggle */}
                     <button onClick={() => setShowICM(!showICM)}
@@ -282,6 +502,18 @@ export default function TDPayouts() {
                         />
                     )}
                 </div>
+
+                {/* ===== DEAL CALCULATOR SHEET ===== */}
+                {showDealCalc && (
+                    <DealCalculator
+                        tournamentId={tournamentId}
+                        calcData={calcData}
+                        overrides={overrides}
+                        setToast={setToast}
+                        onClose={() => setShowDealCalc(false)}
+                        onApplied={async () => { await fetchPayouts(); broadcastChange('tournaments'); }}
+                    />
+                )}
 
                 {/* Bottom Nav */}
                 <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
@@ -325,7 +557,253 @@ export default function TDPayouts() {
 }
 
 /**
- * Simple ICM Calculator — input chip counts, output equity-based payouts
+ * Deal Calculator - bottom sheet with Even Chop / Chip Chop / ICM modes.
+ * Operates on the remaining players (floor-view entries with current chips)
+ * and the remaining prize money (sum of unpaid payout places, editable).
+ * Per-player results are whole dollars summing exactly to the chopped amount
+ * (rounding remainder fixed on the largest stack). Optional Reserve For 1st
+ * is taken off the top and goes to the eventual 1st place finisher (added to
+ * the chip leader line when the deal is applied).
+ */
+const DEAL_MODES = [
+    { key: 'even', label: 'Even Chop' },
+    { key: 'chip', label: 'Chip Chop' },
+    { key: 'icm', label: 'ICM' },
+];
+
+function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, onApplied }) {
+    const [players, setPlayers] = useState(null); // null = loading
+    const [mode, setMode] = useState('icm');
+    const [moneyInput, setMoneyInput] = useState('');
+    const [reserveInput, setReserveInput] = useState('');
+    const [applying, setApplying] = useState(false);
+
+    // Load remaining players from floor-view (entries carry entry_id + chips)
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                // Payload split: the deal calculator needs the remaining
+                // players with their stacks, and the chip board as a fallback
+                // when no entry rows come back. Nothing else on this payload.
+                const res = await commanderFetch(
+                    `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,stacks,entries`,
+                    {}
+                );
+                const json = await res.json().catch(() => null);
+                if (cancelled) return;
+                let remaining = [];
+                if (json?.success) {
+                    // Remaining players for the chop calculator. FIELD list:
+                    // a 'bagged' player is still in the tournament and still
+                    // owns their stack, so they must be in any deal. Leaving
+                    // them out would have split the prize pool between fewer
+                    // players than were actually left.
+                    remaining = (json.data?.entries || [])
+                        .filter(e => ['active', 'seated', 'bagged'].includes(e.status))
+                        .map(e => ({
+                            entry_id: e.entry_id,
+                            player_id: e.user_id || null,
+                            name: e.player_name || 'Player',
+                            chips: Math.max(0, Number(e.current_chips) || 0)
+                        }));
+                    if (remaining.length === 0) {
+                        // Fallback: stacks only (cannot apply, but can still calculate)
+                        remaining = (json.data?.stats?.player_stacks || []).map(p => ({
+                            entry_id: null, player_id: null,
+                            name: p.name || 'Player',
+                            chips: Math.max(0, Number(p.chips) || 0)
+                        }));
+                    }
+                }
+                remaining.sort((a, b) => b.chips - a.chips);
+                setPlayers(remaining);
+                // Prefill Money To Chop: sum of the unpaid payout places, which
+                // are positions 1..N for the N remaining players.
+                const slots = (calcData?.calculated_payouts || []).filter(p => p.position <= remaining.length);
+                const prefill = slots.reduce((sum, p) => sum + (overrides?.[p.position] !== undefined ? overrides[p.position] : (p.amount || 0)), 0);
+                setMoneyInput(prefill > 0 ? String(Math.round(prefill)) : '');
+            } catch (err) {
+                console.warn('Deal calc floor fetch:', err);
+                if (!cancelled) setPlayers([]);
+            }
+        })();
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tournamentId]);
+
+    const n = players?.length || 0;
+    const money = Math.max(0, Math.round(Number(moneyInput) || 0));
+    const reserve = Math.min(money, Math.max(0, Math.round(Number(reserveInput) || 0)));
+    const chopAmount = money - reserve;
+
+    // Per-player whole-dollar amounts summing exactly to chopAmount
+    let amounts = [];
+    if (n > 0 && chopAmount >= 0) {
+        const chips = players.map(p => p.chips);
+        const totalChips = chips.reduce((s, c) => s + c, 0);
+        let raw;
+        if (mode === 'even') {
+            raw = players.map(() => chopAmount / n);
+        } else if (mode === 'chip') {
+            raw = chips.map(c => totalChips > 0 ? (c / totalChips) * chopAmount : chopAmount / n);
+        } else {
+            // ICM: scale the remaining payout places to the chopped amount
+            const baseSlots = (calcData?.calculated_payouts || []).filter(p => p.position <= n);
+            let prizes = baseSlots.map(p => (overrides?.[p.position] !== undefined ? overrides[p.position] : (p.amount || 0)));
+            const baseSum = prizes.reduce((s, a) => s + a, 0);
+            prizes = baseSum > 0 ? prizes.map(a => (a / baseSum) * chopAmount) : [chopAmount];
+            raw = totalChips > 0
+                ? calculateICM(chips, prizes).map(r => r.equity || 0)
+                : players.map(() => chopAmount / n);
+        }
+        amounts = raw.map(v => Math.round(v));
+        // Fix the rounding remainder on the largest stack (index 0, sorted desc)
+        const drift = chopAmount - amounts.reduce((s, a) => s + a, 0);
+        if (drift !== 0) amounts[0] += drift;
+    }
+
+    const canApply = n > 0 && money > 0 && !applying && players.every(p => p.entry_id);
+
+    const applyDeal = async () => {
+        if (!canApply) return;
+        setApplying(true);
+        try {
+            // Positions assigned by chip count; the reserve rides on the chip
+            // leader line (1st place) so the totals reconcile.
+            const payouts = players.map((p, i) => ({
+                entry_id: p.entry_id,
+                player_id: p.player_id,
+                position: i + 1,
+                amount: (amounts[i] || 0) + (i === 0 ? reserve : 0)
+            }));
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/payout`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                // deal_only: the money is recorded now, but the players are
+                // still in the tournament. Statuses and finishing order stay
+                // untouched so play continues normally.
+                body: JSON.stringify({ payouts, deal_only: true })
+            });
+            const json = await res.json().catch(() => null);
+            if (json?.success) {
+                setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved. Play Continues.` });
+                await onApplied();
+                onClose();
+            } else {
+                setToast({ type: 'error', text: json?.error?.message || 'Failed To Apply Deal.' });
+            }
+        } catch (err) {
+            console.warn('Apply deal error:', err);
+            setToast({ type: 'error', text: 'Failed To Apply Deal. Check Console.' });
+        } finally {
+            setApplying(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#3A3B3C]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
+                            <Handshake className="w-5 h-5 text-[#31A24C]" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Deal Calculator</h3>
+                            <p className="text-xs text-[#B0B3B8]">{n} Player{n === 1 ? '' : 's'} Remaining</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose}
+                        className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C]">
+                        <X className="w-5 h-5 text-[#E4E6EB]" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                    {players === null ? (
+                        <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin" /></div>
+                    ) : n === 0 ? (
+                        <p className="text-sm text-[#B0B3B8] text-center py-8">No Remaining Players Found</p>
+                    ) : (
+                        <>
+                            {/* Mode Tabs */}
+                            <div className="flex gap-2">
+                                {DEAL_MODES.map(m => (
+                                    <button key={m.key} onClick={() => setMode(m.key)}
+                                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${mode === m.key
+                                            ? 'bg-[#1877F2] text-white'
+                                            : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>
+                                        {m.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Inputs */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-[#B0B3B8] mb-1 block">Money To Chop</label>
+                                    <input type="number" value={moneyInput} onChange={e => setMoneyInput(e.target.value)}
+                                        placeholder="Amount"
+                                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-[#B0B3B8] mb-1 block">Reserve For 1st (Optional)</label>
+                                    <input type="number" value={reserveInput} onChange={e => setReserveInput(e.target.value)}
+                                        placeholder="0"
+                                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                                </div>
+                            </div>
+
+                            {/* Results */}
+                            <div className="bg-[#18191A] rounded-xl border border-[#3A3B3C] divide-y divide-[#3A3B3C]">
+                                {players.map((p, i) => (
+                                    <div key={p.entry_id || `${p.name}-${i}`} className="px-4 py-3 flex items-center gap-3">
+                                        <span className="w-7 h-7 rounded-full bg-[#3A3B3C] text-[#B0B3B8] flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-[#E4E6EB] truncate">{p.name}</p>
+                                            <p className="text-xs text-[#B0B3B8]">{p.chips.toLocaleString()} Chips</p>
+                                        </div>
+                                        <span className="text-base font-bold text-[#31A24C]">${(amounts[i] || 0).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {reserve > 0 && (
+                                <p className="text-xs text-[#F59E0B]">
+                                    Plus ${reserve.toLocaleString()} Reserved For 1st Place. It Goes To Whoever Finishes 1st (Added To The Chip Leader Line When Applied).
+                                </p>
+                            )}
+
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-sm text-[#B0B3B8]">Total{reserve > 0 ? ' (Chop + Reserve)' : ''}</span>
+                                <span className="text-base font-bold text-white">${money.toLocaleString()}</span>
+                            </div>
+
+                            {!players.every(p => p.entry_id) && (
+                                <p className="text-xs text-[#B0B3B8]">Entry Records Were Not Found For Every Player, So This Deal Can Be Calculated But Not Applied.</p>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-5 pb-5 pt-3 border-t border-[#3A3B3C] flex gap-3">
+                    <button onClick={onClose}
+                        className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Close</button>
+                    <button onClick={applyDeal} disabled={!canApply}
+                        className="flex-1 py-3.5 rounded-xl bg-[#31A24C] text-white font-bold active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+                        {applying ? <><Loader2 className="w-4 h-4 animate-spin" /> Applying...</> : 'Apply As Deal'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Simple ICM Calculator - input chip counts, output equity-based payouts
  */
 function ICMCalculator({ payouts, prizePool, onApply }) {
     const [chipInputs, setChipInputs] = useState({});
@@ -355,7 +833,7 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
         // and EVERY later place at `(1 - prob) * prob`. Those terms are not a
         // probability distribution and do not sum to 1, so the allocated equity
         // never summed to the prize pool. Heads-up 80/20 on a $10,000 pool paying
-        // 6000/4000 produced 5440 / 1840 — it handed the short stack $1,840 where
+        // 6000/4000 produced 5440 / 1840 - it handed the short stack $1,840 where
         // true ICM gives $4,400, and left $2,720 of real money assigned to nobody.
         // Three-way equal stacks on $10,000 produced 2778 each, totalling $8,334.
         // Every deal struck off this screen mis-allocated the pool.
@@ -377,14 +855,14 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
 
     return (
         <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-3">
-            <p className="text-xs text-[#B0B3B8]">Enter chip counts for remaining players to calculate chip-chop values:</p>
+            <p className="text-xs text-[#B0B3B8]">Enter Chip Counts For Remaining Players To Calculate Chip-Chop Values:</p>
             <div className="space-y-2">
                 {payouts.filter(p => p.player_name).map(p => (
                     <div key={p.position} className="flex items-center gap-3">
                         <span className="text-sm text-[#E4E6EB] w-28 truncate">{p.player_name}</span>
                         <input
                             type="number"
-                            placeholder="Chip count"
+                            placeholder="Chip Count"
                             value={chipInputs[p.position] || ''}
                             onChange={e => setChipInputs(prev => ({ ...prev, [p.position]: parseInt(e.target.value) || 0 }))}
                             className="flex-1 px-3 py-2 rounded-lg bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-sm"
@@ -402,7 +880,7 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
                 <div className="space-y-2 pt-2 border-t border-[#3A3B3C]">
                     {results.map(r => (
                         <div key={r.position} className="flex items-center justify-between px-2 py-1.5">
-                            <span className="text-sm text-[#E4E6EB]">{r.percentage}% equity</span>
+                            <span className="text-sm text-[#E4E6EB]">{r.percentage}% Equity</span>
                             <span className="text-sm font-bold text-[#31A24C]">{formatMoney(r.equity)}</span>
                         </div>
                     ))}

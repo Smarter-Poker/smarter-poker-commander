@@ -6,7 +6,7 @@
  * DELETE - Deactivate plan (requires ?id=)
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -20,19 +20,28 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
   if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
     if (!applyRateLimit(req, res, LIMITS.write)) return;
   }
 
-  // Auth guard: require staff auth for write operations
-  const _authResult = await guardWriteStaff(req, res);
+  // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+  // without verifying anything - a venue's full membership price list was
+  // public. Worse, venue_id came straight off the query string on POST/PUT/
+  // DELETE too, so any staff member could create, edit or deactivate another
+  // venue's membership plans.
+  const _authResult = await guardStaff(req, res);
   if (!_authResult) return;
 
   const { venue_id, id, include_inactive } = req.query;
   if (!venue_id) return res.status(400).json({ success: false, error: 'venue_id required' });
+
+  if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+      && String(_authResult.venue_id) !== String(venue_id)) {
+    return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+  }
 
   // GET - List plans (auto-seeds defaults if none exist)
   if (req.method === 'GET') {

@@ -1,5 +1,5 @@
 /**
- * Spatial Floor Map — Drag-&-Drop Canvas
+ * Spatial Floor Map - Drag-&-Drop Canvas
  * /commander/floor
  *
  * A 2D canvas where poker table ovals are positioned to
@@ -92,10 +92,14 @@ return { };
     if (!venueId) return;
     try {
       const headers = getHeaders();
+      // 2026-08-20 audit fix: these three used bare fetch with an empty header
+      // bag, which only worked because the routes were unauthenticated. They
+      // now require a staff session, so go through commanderFetch (which
+      // injects x-staff-session and the Bearer token).
       const [tablesRes, waitlistRes, gamesRes] = await Promise.all([
-        fetch(`/api/commander/tables?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
-        fetch(`/api/commander/waitlist?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
-        fetch(`/api/commander/games/venue/${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
+        commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
+        commanderFetch(`/api/commander/waitlist?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
+        commanderFetch(`/api/commander/games/venue/${venueId}`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
       ]);
 
       let rawTables = Array.isArray(tablesRes.data) ? tablesRes.data : (tablesRes.data?.tables || []);
@@ -164,7 +168,7 @@ return { };
   useEffect(() => { if (venueId) fetchAll(); }, [venueId, fetchAll]);
   useEffect(() => {
     if (!venueId) return;
-    const poll = setInterval(fetchAll, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchAll, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [venueId, fetchAll]);
@@ -194,7 +198,7 @@ return { };
     finally { setSaving(false); }
   };
 
-  // Drag handlers — works for both mouse and touch
+  // Drag handlers - works for both mouse and touch
   const getEventPos = (e) => {
     if (e.touches && e.touches.length > 0) {
       return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
@@ -275,7 +279,7 @@ return { };
 
   return (
     <CommanderLayout title="Floor Map" backHref="/commander/dashboard?card=floor">
-      <SEOHead title="Commander — Floor Map" description="Spatial poker room floor map." noindex={true} />
+      <SEOHead title="Commander - Floor Map" description="Spatial Poker Room Floor Map." noindex={true} />
       <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#E4E6EB', fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column' }}>
 
         {/* Top bar */}
@@ -285,7 +289,7 @@ return { };
               <Activity size={16} color="#31A24C" /> Floor Map
             </h1>
             <p style={{ fontSize: 11, color: '#6A6B6D', margin: 0 }}>
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tables.length} tables
+              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tables.length} Tables
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -301,7 +305,7 @@ return { };
 
             {/* Edit/View toggle */}
             <button onClick={() => { setEditMode(!editMode); setSelectedTable(null); }}
-              title={editMode ? 'Lock layout' : 'Unlock to edit'}
+              title={editMode ? 'Lock Layout' : 'Unlock To Edit'}
               style={{
                 background: 'none', border: 'none', padding: 6,
                 cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
@@ -526,7 +530,7 @@ return { };
                       <Users size={14} color="#B0B3B8" />
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{occupied}/{maxSeats}</span>
                       {occupied < maxSeats && occupied > 0 && (
-                        <span style={{ fontSize: 11, color: '#31A24C' }}>{maxSeats - occupied} open</span>
+                        <span style={{ fontSize: 11, color: '#31A24C' }}>{maxSeats - occupied} Open</span>
                       )}
                     </div>
                     {elapsed && (
@@ -563,7 +567,7 @@ return { };
             backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
             <Unlock size={14} color="#F59E0B" />
             <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>
-              Drag tables to match your room layout · {hasChanges ? 'Unsaved changes' : 'No changes'}
+              Drag Tables To Match Your Room Layout · {hasChanges ? 'Unsaved Changes' : 'No Changes'}
             </span>
           </div>
         )}

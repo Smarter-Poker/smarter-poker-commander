@@ -1,5 +1,5 @@
 /**
- * Staff Schedule Shifts API — GET/POST/DELETE /api/commander/schedule/shifts
+ * Staff Schedule Shifts API - GET/POST/DELETE /api/commander/schedule/shifts
  * Manages weekly shift assignments for all staff roles
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   }
 }
 
-/** GET — fetch shifts for a week (7 days from week_start) */
+/** GET - fetch shifts for a week (7 days from week_start) */
 async function handleGet(req, res) {
     const { venue_id, week_start } = req.query;
     if (!venue_id || !week_start) {
@@ -81,7 +81,7 @@ async function handleGet(req, res) {
     }
 }
 
-/** POST — create a new shift */
+/** POST - create a new shift */
 async function handlePost(req, res) {
     const { venue_id, staff_id, staff_name, staff_role, shift_date, start_time, end_time, notes } = req.body;
 
@@ -128,7 +128,7 @@ async function handlePost(req, res) {
     }
 }
 
-/** DELETE — remove a shift */
+/** DELETE - remove a shift */
 async function handleDelete(req, res) {
     const { id, venue_id } = req.query;
     if (!id || !venue_id) {

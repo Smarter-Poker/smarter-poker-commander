@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       // 2026-07-25 audit fix: demo requests land in commander_onboarding_leads
-      // while landing-page signups land in commander_leads — query BOTH and
+      // while landing-page signups land in commander_leads - query BOTH and
       // merge, tagging each row with source 'landing' | 'onboarding'.
       const { status } = req.query;
 

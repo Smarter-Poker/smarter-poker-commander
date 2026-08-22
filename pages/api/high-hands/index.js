@@ -5,7 +5,7 @@
  * POST /api/commander/high-hands - Record new high hand
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -20,17 +20,20 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the high hand log (player names, cards,
+    // prize amounts) was readable for any venue_id.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'GET') {
-      return listHighHands(req, res);
+      return listHighHands(req, res, _g);
     }
 
     if (req.method === 'POST') {
@@ -47,7 +50,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function listHighHands(req, res) {
+async function listHighHands(req, res, staff) {
   try {
     const {
       venue_id,
@@ -61,6 +64,11 @@ async function listHighHands(req, res) {
 
     if (!venue_id) {
       return res.status(400).json({ error: 'Venue ID required' });
+    }
+
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(venue_id)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
     }
 
     let query = getSupabase()
@@ -82,17 +90,20 @@ async function listHighHands(req, res) {
 
     if (error) throw error;
 
-    // Get current high hand (highest rank today)
+    // Get current high hand (highest rank today). hand_rank is TEXT holding a
+    // numeric score, so ordering it in SQL sorts lexicographically ("10" < "2").
+    // Fetch today's verified hands and pick the max by numeric value in JS.
     const today = new Date().toISOString().split('T')[0];
-    const { data: currentHigh } = await getSupabase()
+    const { data: verifiedToday } = await getSupabase()
       .from('commander_high_hands')
       .select('*')
       .eq('venue_id', venue_id)
       .gte('created_at', `${today}T00:00:00`)
-      .not('verified_at', 'is', null)
-      .order('hand_rank', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .not('verified_at', 'is', null);
+    const currentHigh = (verifiedToday || []).reduce(
+      (best, h) => ((Number(h.hand_rank) || 0) > (Number(best?.hand_rank) || 0) ? h : best),
+      null
+    );
 
     return res.status(200).json({
       high_hands: data,
@@ -110,7 +121,7 @@ async function listHighHands(req, res) {
 async function createHighHand(req, res, staff) {
   try {
     // 2026-07-25 audit fix: identity comes from the verified x-staff-session
-    // (guardWriteStaff at the handler) — requiring a Bearer JWT and a user_id
+    // (guardWriteStaff at the handler) - requiring a Bearer JWT and a user_id
     // staff lookup blocked PIN-terminal staff, who have no JWT.
     const {
       venue_id,
@@ -135,7 +146,7 @@ async function createHighHand(req, res, staff) {
       return res.status(400).json({ error: 'player_id or player_name required' });
     }
 
-    // 2026-07-25 audit fix: venue scoping — session staff must belong to the
+    // 2026-07-25 audit fix: venue scoping - session staff must belong to the
     // venue this high hand is being recorded for.
     if (!staff || String(staff.venue_id) !== String(venue_id)) {
       return res.status(403).json({ error: 'You are not authorized to record high hands for this venue' });
@@ -146,8 +157,8 @@ async function createHighHand(req, res, staff) {
       promotion_id: promotion_id || null,
       player_id: player_id || null,
       player_name: player_name || null,
-      hand_description,
-      hand_cards: hand_cards || null,
+      notes: hand_description,
+      cards: hand_cards || null,
       board_cards: board_cards || null,
       hand_rank: hand_rank || null,
       game_id: game_id || null,

@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
       // Get all time sessions in range per table
       // 2026-07-28 audit fix: commander_table_sessions has no duration_minutes
-      // column — selecting it errored the whole query (error was discarded), so
+      // column - selecting it errored the whole query (error was discarded), so
       // this report showed zero hours for every table. Duration is derived from
       // started_at/ended_at instead (an open session is measured only to the
       // end of the reporting window; see below).

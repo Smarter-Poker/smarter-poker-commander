@@ -5,7 +5,12 @@
  * Algorithm: break table with fewest players if possible, otherwise move from fullest to emptiest
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+// 2026-08-20 security fix: this route is GET-only and returns player names,
+// table numbers and seat positions. guardWriteStaff passes GET through
+// WITHOUT checking anything (its own docstring says so), so the whole seating
+// map of any live tournament was readable by anyone holding the id. guardStaff
+// requires a verified staff session on every method.
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -26,21 +31,21 @@ function findAvailableSeat(maxSeats, occupiedSeats) {
   return null;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     try {
@@ -52,36 +57,65 @@ export default async function handler(req, res) {
         .select('id, venue_id')
         .eq('id', tournamentId)
         .maybeSingle();
-      if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
       // Get all active entries with table/seat info
-      const { data: entries } = await getSupabase()
+      const { data: entries, error: eErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, player_name, table_number, seat_number, status, current_chips, metadata')
         .eq('tournament_id', tournamentId)
+        // SEAT OCCUPANCY: balancing moves people between chairs, and a
+        // 'bagged' player is not in one. Excluded on purpose.
         .in('status', ['active', 'seated']);
 
+      // A discarded read error here used to look identical to "no players" and
+      // the TD was told the tables were balanced when nothing had been read.
+      if (eErr) {
+        console.error('[tournaments/balance-suggest] entries read failed', {
+          tournamentId, code: eErr.code, message: eErr.message, details: eErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Read Tournament Entries' } });
+      }
+
       if (!entries || entries.length === 0) {
-        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'No active players' } });
+        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'No Active Players' } });
       }
 
       // Get unique table numbers from entries
       // 2026-07-25 audit fix: .limit() is a query-builder method, not an Array
-      // method — calling it on this array threw a TypeError.
+      // method - calling it on this array threw a TypeError.
       const tableNumbers = [...new Set(entries.map(e => e.table_number).filter(Boolean))];
       if (tableNumbers.length < 2) {
-        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'Only one table active' } });
+        return res.status(200).json({ success: true, data: { type: 'none', moves: [], message: 'Only One Table Active' } });
       }
 
       // Get table configs
-      const { data: tables } = await getSupabase()
+      const { data: tables, error: tblErr } = await getSupabase()
         .from('commander_tables')
         .select('id, table_number, max_seats, status')
         .eq('venue_id', tournament.venue_id)
         .in('table_number', tableNumbers)
-            .limit(100)
+        .limit(200);
 
-      const maxSeats = tables?.[0]?.max_seats || 9;
+      if (tblErr) {
+        console.error('[tournaments/balance-suggest] commander_tables read failed', {
+          venue_id: tournament.venue_id, code: tblErr.code, message: tblErr.message, details: tblErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Read Table Configuration' } });
+      }
+
+      // Seat capacity is PER TABLE. Reading tables[0].max_seats and applying it
+      // to every table suggested seat 9 on an 8-handed table (and hid the real
+      // open seat on a 10-handed one) whenever a room mixes table sizes.
+      const seatsByTable = {};
+      for (const t of (tables || [])) {
+        if (t && t.table_number != null) seatsByTable[t.table_number] = t.max_seats || 9;
+      }
+      const maxSeatsFor = (tn) => seatsByTable[tn] || 9;
+      // Conservative denominator for "can the field fit on fewer tables" - the
+      // SMALLEST table capacity, so a break is never suggested that will not fit.
+      const capacities = Object.values(seatsByTable).map(Number).filter(Number.isFinite);
+      const minTableCapacity = capacities.length > 0 ? Math.min(...capacities) : 9;
 
       // Count players per table
       const tableCounts = {};
@@ -91,7 +125,7 @@ export default async function handler(req, res) {
       });
 
       const totalPlayers = entries.length;
-      const minTablesNeeded = Math.ceil(totalPlayers / maxSeats);
+      const minTablesNeeded = Math.ceil(totalPlayers / minTableCapacity);
       const moves = [];
 
       // --- CAN WE BREAK A TABLE? ---
@@ -110,7 +144,7 @@ export default async function handler(req, res) {
         const assignedSeats = {}; // track seats we're assigning in this batch
 
         for (const player of playersToMove) {
-          while (destIdx < otherCounts.length && otherCounts[destIdx].count >= maxSeats) destIdx++;
+          while (destIdx < otherCounts.length && otherCounts[destIdx].count >= maxSeatsFor(otherCounts[destIdx].tn)) destIdx++;
           if (destIdx >= otherCounts.length) destIdx = 0;
 
           const targetTable = otherCounts[destIdx].tn;
@@ -119,7 +153,7 @@ export default async function handler(req, res) {
             .map(e => e.seat_number)
             .concat(assignedSeats[targetTable] || []);
 
-          const seat = findAvailableSeat(maxSeats, occupied);
+          const seat = findAvailableSeat(maxSeatsFor(targetTable), occupied);
           if (seat) {
             moves.push({
               entry_id: player.id,
@@ -143,7 +177,7 @@ export default async function handler(req, res) {
             table_to_break: tableToBreak,
             moves,
             table_counts: tableCounts,
-            message: `Break Table ${tableToBreak} — move ${playersToMove.length} players`
+            message: `Break Table ${tableToBreak}, Move ${playersToMove.length} Players`
           }
         });
       }
@@ -169,7 +203,7 @@ export default async function handler(req, res) {
           const occupied = entries
             .filter(e => e.table_number === toTable)
             .map(e => e.seat_number);
-          const seat = findAvailableSeat(maxSeats, occupied);
+          const seat = findAvailableSeat(maxSeatsFor(toTable), occupied);
 
           if (seat) {
             moves.push({
@@ -191,25 +225,25 @@ export default async function handler(req, res) {
             moves,
             table_counts: tableCounts,
             message: moves.length > 0
-              ? `Move ${moves[0].player_name} from Table ${fromTable} to Table ${toTable}`
-              : 'No valid moves found'
+              ? `Move ${moves[0].player_name} From Table ${fromTable} To Table ${toTable}`
+              : 'No Valid Moves Found'
           }
         });
       }
 
       return res.status(200).json({
         success: true,
-        data: { type: 'none', moves: [], table_counts: tableCounts, message: 'Tables are balanced' }
+        data: { type: 'none', moves: [], table_counts: tableCounts, message: 'Tables Are Balanced' }
       });
 
     } catch (err) {
       console.warn('Balance suggest error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

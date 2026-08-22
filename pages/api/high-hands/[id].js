@@ -6,7 +6,7 @@
  * DELETE /api/commander/high-hands/:id - Delete high hand
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -20,14 +20,17 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - any high hand id returned the player name,
+    // hole cards, board and prize amount.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id } = req.query;
 
@@ -36,7 +39,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return getHighHand(req, res, id);
+      return getHighHand(req, res, id, _g);
     }
 
     if (req.method === 'PUT') {
@@ -57,7 +60,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function getHighHand(req, res, id) {
+async function getHighHand(req, res, id, staff) {
   try {
     const { data: highHand, error } = await getSupabase()
       .from('commander_high_hands')
@@ -71,6 +74,11 @@ async function getHighHand(req, res, id) {
       return res.status(404).json({ success: false, error: 'High hand not found' });
     }
 
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(highHand.venue_id)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+    }
+
     return res.status(200).json({ high_hand: highHand });
   } catch (error) {
     console.warn('Get high hand error:', error);
@@ -81,7 +89,7 @@ async function getHighHand(req, res, id) {
 async function updateHighHand(req, res, id, staff) {
   try {
     // 2026-07-25 audit fix: identity comes from the verified x-staff-session
-    // (guardWriteStaff) — the Bearer-JWT + user_id lookup blocked PIN-terminal
+    // (guardWriteStaff) - the Bearer-JWT + user_id lookup blocked PIN-terminal
     // staff. Venue scoping is preserved against the record being written.
 
     // Get existing high hand
@@ -127,8 +135,8 @@ async function updateHighHand(req, res, id, staff) {
       // Regular update
       if (player_id !== undefined) updates.player_id = player_id;
       if (player_name !== undefined) updates.player_name = player_name;
-      if (hand_description !== undefined) updates.hand_description = hand_description;
-      if (hand_cards !== undefined) updates.hand_cards = hand_cards;
+      if (hand_description !== undefined) updates.notes = hand_description;
+      if (hand_cards !== undefined) updates.cards = hand_cards;
       if (board_cards !== undefined) updates.board_cards = board_cards;
       if (hand_rank !== undefined) updates.hand_rank = hand_rank;
       if (prize_amount !== undefined) updates.prize_amount = prize_amount;
@@ -159,7 +167,7 @@ async function updateHighHand(req, res, id, staff) {
 async function deleteHighHand(req, res, id, staff) {
   try {
     // 2026-07-25 audit fix: identity comes from the verified x-staff-session
-    // (guardWriteStaff) — the Bearer-JWT + user_id lookup blocked PIN-terminal
+    // (guardWriteStaff) - the Bearer-JWT + user_id lookup blocked PIN-terminal
     // staff. Venue scoping and the manager/owner role check are preserved.
 
     // Get existing high hand

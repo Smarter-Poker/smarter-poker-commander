@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -118,7 +118,10 @@ async function getDailyAnalytics(req, res) {
       promotions_awarded: 0
     });
 
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    // 2026-08-20 audit fix: venue-scoped, manager-only analytics must not sit
+    // in a shared CDN cache where an unauthenticated request to the same URL
+    // would be served the cached body.
+    res.setHeader('Cache-Control', 'private, max-age=30');
     return res.status(200).json({
       analytics: data,
       summary,

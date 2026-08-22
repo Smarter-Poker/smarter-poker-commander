@@ -27,7 +27,7 @@ const VALID_TYPES = ['seat_available', 'tournament_starting', 'called_for_seat',
 const VALID_CHANNELS = ['sms', 'push', 'email', 'in_app'];
 const VALID_TARGETS = ['all', 'waitlist', 'seated'];
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
 
     try {
       // 2026-07-25 audit fix: use the staff object already verified by the
-      // guard — the legacy inline re-auth looked up commander_staff by
+      // guard - the legacy inline re-auth looked up commander_staff by
       // sessionData.id, which 401'd owner sessions (no staff row).
       const staff = _g;
 
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2026-07-25 audit fix: broadcast announcements — recipients are
+      // 2026-07-25 audit fix: broadcast announcements - recipients are
       // resolved server-side from the venue's waitlist / active sessions.
       if (type === 'announcement') {
         const tgt = target || 'all';

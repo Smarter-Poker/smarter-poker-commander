@@ -17,7 +17,7 @@ import { useRouter } from 'next/router';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { Shield, Timer, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
-// 2026-07-25 audit fix: commanderFetch removed — its 401 redirect sent players to staff login
+// 2026-07-25 audit fix: commanderFetch removed - its 401 redirect sent players to staff login
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 
 function formatCountdown(seconds) {
@@ -52,10 +52,10 @@ export default function PlayerCheckIn() {
   const [now, setNow] = useState(new Date());
 
   
-  // fetchMember declared first — must precede useEffect/useCommanderSync that reference it
+  // fetchMember declared first - must precede useEffect/useCommanderSync that reference it
   const fetchMember = async () => {
     try {
-      // 2026-07-25 audit fix: this is a player page with no staff session —
+      // 2026-07-25 audit fix: this is a player page with no staff session -
       // the old staff-guarded /api/commander/dealer/scan call always 401'd and
       // commanderFetch then hard-redirected players to staff login. Use the
       // public self-check-in endpoint with plain fetch instead.
@@ -66,7 +66,7 @@ export default function PlayerCheckIn() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) {
-        setError(json.error || 'Member not found');
+        setError(json.error || 'Member Not Found');
         setLoading(false);
         return;
       }
@@ -77,7 +77,7 @@ export default function PlayerCheckIn() {
       // already_seated now carries table/seat/time directly (no staff sessions call)
       setActiveSession(json.data.already_seated || null);
     } catch (err) {
-      setError('Failed to load member data');
+      setError('Failed To Load Member Data');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ useEffect(() => {
 
     if (!code) return;
     fetchMember();
-    const poll = setInterval(fetchMember, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchMember, 30000); // fallback - real-time sync handles instant updates
     return () => clearInterval(poll);
   }, [code]);
 
@@ -98,7 +98,7 @@ useEffect(() => {
     return getVenueId();
   });
 
-  // Commander Data Bus — sync member status in real-time
+  // Commander Data Bus - sync member status in real-time
   useCommanderSync(venueId, fetchMember, { entities: ['members', 'tables'] });
 
   // Local countdown ticker
@@ -142,7 +142,7 @@ useEffect(() => {
   return (
     <>
       <SEOHead
-        title="Commander — Details"
+        title="Commander - Details"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -187,7 +187,7 @@ useEffect(() => {
           : 'bg-[#F59E0B]/10 border-[#F59E0B]/30'
           }`}>
           <Timer className="w-8 h-8 mx-auto mb-2" style={{ color: timeBalance > 0 ? '#1877F2' : '#F59E0B' }} />
-          <p className="text-3xl font-bold text-white">{timeBalance} min</p>
+          <p className="text-3xl font-bold text-white">{timeBalance} Min</p>
           <p className="text-sm text-[#B0B3B8]">Time Balance On Card</p>
           {timeBalance === 0 && (
             <p className="text-xs text-[#F59E0B] mt-2">Visit The Kiosk Or Front Desk To Add Time</p>
@@ -203,20 +203,20 @@ useEffect(() => {
             }}>
             <p className="text-sm text-[#B0B3B8] mb-1">Currently Seated</p>
             <p className="text-lg font-bold text-white mb-3">
-              Table {activeSession.table_number} — Seat {activeSession.seat_number}
+              Table {activeSession.table_number}, Seat {activeSession.seat_number}
             </p>
             <p className="text-5xl font-mono font-bold mb-1" style={{ color: getTimeColor(t) }}>
               {t !== null && t !== undefined ? formatCountdown(t) : '--:--'}
             </p>
             <p className="text-sm" style={{ color: getTimeColor(t) }}>
-              {t <= 0 ? 'Time Expired — Add more time' :
-                t <= 300 ? 'Time is running out!' :
-                  t <= 900 ? 'Time is getting low' :
-                    'Time remaining'}
+              {t <= 0 ? 'Time Expired, Add More Time' :
+                t <= 300 ? 'Time Is Running Out!' :
+                  t <= 900 ? 'Time Is Getting Low' :
+                    'Time Remaining'}
             </p>
             {t <= 900 && t > 0 && (
               <p className="text-xs text-[#F59E0B] mt-3">
-                Visit the kiosk or ask a dealer to add more time
+                Visit The Kiosk Or Ask A Dealer To Add More Time
               </p>
             )}
           </div>
@@ -243,7 +243,7 @@ useEffect(() => {
               <div className="bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl p-4 text-center">
                 <CheckCircle2 className="w-6 h-6 text-[#31A24C] mx-auto mb-2" />
                 <p className="text-sm text-[#31A24C] font-medium">
-                  Ready to play! Show this screen to a dealer to be seated.
+                  Ready To Play! Show This Screen To A Dealer To Be Seated.
                 </p>
               </div>
             )}

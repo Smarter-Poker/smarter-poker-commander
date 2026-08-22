@@ -9,10 +9,18 @@
  *   - User → smarter.poker/commander/* → Vercel rewrite → commander.smarter.poker
  *   - This middleware runs on commander.smarter.poker
  *   - Validates the .smarter.poker-domain Supabase cookie + admin PIN
+ *
+ * [2026-08-19] Added resolveAnonKey() guard — fixes "Legacy API keys are
+ * disabled" in the middleware Supabase pre-check (same fix applied to supabase.js).
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { verifyPinSession, readSessionCookieFromHeader } from './src/lib/auth/pinSession.js';
+import { resolveAnonKey } from './src/lib/supabaseKeys.js';
+
+// Resolve the anon key once at module load — swaps legacy JWT for publishable key
+const _resolvedAnon = resolveAnonKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY_RESOLVED = _resolvedAnon.key;
 
 const ADMIN_PATH_REGEX = /^\/commander\/admin(\/.*)?$/;
 // 2026-07-25 audit fix: middleware runs BEFORE next.config rewrites, so the
@@ -43,8 +51,8 @@ export async function middleware(req: NextRequest) {
     // {getAll,setAll}. Map req/res cookies into that new shape so the
     // session-refresh roundtrip survives the rewrite hop.
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://kuklfnapbkmacvwxktbh.supabase.co',
+      SUPABASE_ANON_KEY_RESOLVED,
       {
         cookies: {
           getAll: () => req.cookies.getAll(),

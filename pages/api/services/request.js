@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: PLAYER — verified Bearer user submits their own service request
+// Auth: PLAYER - verified Bearer user submits their own service request
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
     // 2026-07-25 audit fix: this is the player in-seat service request endpoint;
     // the guardOwnerStaff gate blocked players entirely. Require a verified
-    // player user instead — player_id below is derived from this user.
+    // player user instead - player_id below is derived from this user.
     const user = await guardUser(req, res);
     if (!user) return;
 
@@ -86,14 +86,14 @@ export default async function handler(req, res) {
         .insert({
           player_id: user.id,
           venue_id: venue_id,
-          table_id: table_id ? parseInt(table_id) : null,
           request_type,
-          details,
-          status: 'pending',
-          metadata: {
+          details: {
+            ...(details || {}),
+            table_id: table_id ? parseInt(table_id) : null,
             table_number,
             seat_number
-          }
+          },
+          status: 'pending'
         })
         .select()
         .maybeSingle();

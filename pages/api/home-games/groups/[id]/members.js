@@ -95,8 +95,7 @@ async function listMembers(req, res, groupId) {
       .from('commander_home_members')
       .select(`
         *,
-        profiles:user_id (id, display_name, avatar_url),
-        invited_by_profile:invited_by (id, display_name)
+        profiles:user_id (id, display_name, avatar_url)
       `)
       .eq('group_id', groupId)
       .order('joined_at', { ascending: false })
@@ -207,7 +206,7 @@ async function joinOrInvite(req, res, groupId) {
     // User joining themselves. CRITICAL: join_home_group checks
     //   auth.uid() <> p_caller_user_id → UNAUTHORIZED
     // so we must use a user-JWT-scoped client (not service role). And the
-    // correct parameter name is p_caller_user_id, not p_user_id — the old
+    // correct parameter name is p_caller_user_id, not p_user_id - the old
     // code triggered PostgREST 42883 "function does not exist" every time.
     const userClient = getUserScopedClient(token);
     const { data: result, error: rpcError } = await userClient.rpc('join_home_group', {

@@ -3,7 +3,7 @@
  * GET: Returns member data needed for card generation (client-side rendering)
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -17,14 +17,17 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this route is GET-only and used guardWriteStaff, which
+// returns `true` for GET without verifying anything - so the whole member row
+// (name, date of birth, government ID number, address, phone, email, QR code)
+// was public to anyone with a member id.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
     try {
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
       if (req.method !== 'GET') {
@@ -45,6 +48,12 @@ export default async function handler(req, res) {
 
       if (error || !member) {
           return res.status(404).json({ success: false, error: 'Member not found' });
+      }
+
+      // Venue ownership: staff may only print cards for their own venue.
+      if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+          && String(member.venue_id) !== String(_authResult.venue_id)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
       }
 
       // Generate QR code URL

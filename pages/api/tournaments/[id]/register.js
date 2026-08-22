@@ -15,6 +15,8 @@ import {
 } from '../../../../src/lib/commander/pushNotifications';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { claimOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
+import { isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -26,7 +28,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -47,27 +49,32 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
 // 2026-07-28: commander_tournament_entries.payment_method is CHECK-constrained.
 const ENTRY_PAYMENT_METHODS = ['cash', 'card', 'credit', 'comp', 'chips', 'transfer', 'other'];
-// commander_cash_transactions.payment_method has a NARROWER CHECK — passing an
+// commander_cash_transactions.payment_method has a NARROWER CHECK - passing an
 // entry-only value ('credit'/'chips'/'transfer'/'other') would make the whole
 // cash-drawer insert fail, so it is only forwarded when it is legal there.
 const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'comp', 'marker'];
 
+// registerPlayerForTournament returns a { status, body } pair instead of
+// writing to `res`, so the same code path serves the HTTP route AND the
+// waitlist conversion route (which registers several players in one request).
+const _result = (status, body) => ({ status, body });
+
 /**
  * Resolve the verified staff session to a real commander_staff.id.
  * verifyStaffSession can return a SYNTHETIC owner object whose `id` is an auth
- * user id, not a commander_staff row — writing that into cashier_staff_id would
+ * user id, not a commander_staff row - writing that into cashier_staff_id would
  * violate the FK and reject the entire registration insert. Returns null when
  * the session does not map to a real staff row (attribution left NULL rather
  * than faked).
@@ -93,20 +100,49 @@ async function resolveCashierStaffId(staff) {
 }
 
 async function handleRegister(req, res, tournamentId, staff) {
-  const { player_id } = req.body;
+  const result = await registerPlayerForTournament({
+    tournamentId,
+    body: req.body || {},
+    staff,
+    req
+  });
+  return res.status(result.status).json(result.body);
+}
+
+/**
+ * Register one player into one tournament.
+ *
+ * Extracted from the POST handler (2026-08-20) so the waitlist conversion
+ * route can reuse it instead of re-implementing capacity checks, the
+ * self-exclusion gate, spending limits, the cash-drawer write, the late-reg
+ * cutoff and the auto-seat. Every one of those is a rule the cage depends on;
+ * a second copy would drift.
+ *
+ * Returns { status, body } instead of writing to `res` so it can be called
+ * from another route in a loop.
+ *
+ * @param {object}   args
+ * @param {string}   args.tournamentId
+ * @param {object}   args.body   - the register payload (player_id, payment_method, reentry_of, as_alternate, player_name)
+ * @param {object}   args.staff  - the verified staff session
+ * @param {object}   args.req    - the original request, for audit attribution
+ * @returns {Promise<{ status: number, body: object }>}
+ */
+export async function registerPlayerForTournament({ tournamentId, body = {}, staff, req }) {
+  const { player_id } = body;
 
   // payment_method is optional. Reject an unknown value outright rather than
-  // silently coercing it — a wrong payment method on a money row is worse than
+  // silently coercing it - a wrong payment method on a money row is worse than
   // a missing one.
-  const rawPaymentMethod = req.body?.payment_method;
+  const rawPaymentMethod = body?.payment_method;
   let paymentMethod = null;
   if (rawPaymentMethod !== undefined && rawPaymentMethod !== null && rawPaymentMethod !== '') {
     if (!ENTRY_PAYMENT_METHODS.includes(rawPaymentMethod)) {
-      return res.status(400).json({
+      return _result(400, {
         success: false,
         error: {
           code: 'INVALID_PAYMENT_METHOD',
-          message: `payment_method must be one of: ${ENTRY_PAYMENT_METHODS.join(', ')}`,
+          message: `payment_method Must Be One Of: ${ENTRY_PAYMENT_METHODS.join(', ')}`,
         },
       });
     }
@@ -114,11 +150,29 @@ async function handleRegister(req, res, tournamentId, staff) {
   }
 
   if (!player_id) {
-    return res.status(400).json({
+    return _result(400, {
       success: false,
-      error: { code: 'MISSING_FIELDS', message: 'player_id required' }
+      error: { code: 'MISSING_FIELDS', message: 'player_id Required' }
     });
   }
+
+  // RE-ENTRY vs REBUY (2026-08-20)
+  //
+  // A REBUY tops up the SAME entry: same row, rebuy_count + 1, one entry in the
+  // field. It lives at entries/[entryId]/rebuy.
+  //
+  // A RE-ENTRY is a brand new entry after a bust: a NEW row with its own
+  // starting stack, counting as an ADDITIONAL entry toward the prize pool. The
+  // busted row is left exactly as it is, so it keeps its finish_position and any
+  // payout already recorded against it.
+  //
+  // The floor screens already routed Re-Entry here, but they sent nothing to say
+  // so: the new row was indistinguishable from a first-time registration and the
+  // two entries were never linked. reentry_of carries the busted entry's id, is
+  // validated below, and is stamped on the new row.
+  const reentryOf = (typeof body?.reentry_of === 'string' && body.reentry_of.trim())
+    ? body.reentry_of.trim()
+    : null;
 
   try {
     // Get tournament details
@@ -129,28 +183,84 @@ async function handleRegister(req, res, tournamentId, staff) {
       .maybeSingle();
 
     if (tError || !tournament) {
-      return res.status(404).json({
+      return _result(404, {
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Tournament not found' }
+        error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
 
-    // Check if registration is open
-    if (!['scheduled', 'registering', 'running'].includes(tournament.status)) {
-      return res.status(400).json({
+    // Check if registration is open.
+    // 2026-08-20 fix: 'registration' is the value
+    // commander_tournaments_status_check actually allows; 'registering' is not
+    // and never matched a row. A tournament whose registration had been OPENED
+    // was therefore the one state in which nobody could register. Both are
+    // listed so an older caller sending the wrong value still resolves.
+    if (!['scheduled', 'registration', 'registering', 'running'].includes(tournament.status)) {
+      return _result(400, {
         success: false,
-        error: { code: 'REGISTRATION_CLOSED', message: 'Registration is closed' }
+        error: { code: 'REGISTRATION_CLOSED', message: 'Registration Is Closed' }
       });
     }
 
     // 2026-07-25 audit fix: enforce late-registration cutoff (current_level is 0-indexed)
     if (tournament.status === 'running' && tournament.late_registration_levels != null) {
       if ((tournament.current_level + 1) > tournament.late_registration_levels) {
-        return res.status(400).json({
+        return _result(400, {
           success: false,
-          error: { code: 'LATE_REG_CLOSED', message: 'Late registration is closed' }
+          error: { code: 'LATE_REG_CLOSED', message: 'Late Registration Is Closed' }
         });
       }
+    }
+
+    // Validate the re-entry link before anything is written. A bad link is
+    // rejected outright rather than quietly dropped: an unlinked re-entry looks
+    // exactly like a first-time registration in every report.
+    let priorEntry = null;
+    if (reentryOf) {
+      const { data: prior, error: priorErr } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('id, player_id, player_name, status, finish_position, payout_amount, metadata')
+        .eq('id', reentryOf)
+        .eq('tournament_id', tournamentId)
+        .maybeSingle();
+
+      if (priorErr) {
+        console.error('[tournaments/register] reentry_of lookup failed', {
+          tournamentId, reentry_of: reentryOf,
+          code: priorErr.code, message: priorErr.message, details: priorErr.details,
+        });
+        return _result(500, {
+          success: false,
+          error: { code: 'DB_ERROR', message: 'Failed To Read The Original Entry' }
+        });
+      }
+      if (!prior) {
+        return _result(404, {
+          success: false,
+          error: { code: 'ORIGINAL_ENTRY_NOT_FOUND', message: 'The Original Entry Was Not Found In This Tournament' }
+        });
+      }
+      if (prior.player_id && String(prior.player_id) !== String(player_id)) {
+        return _result(400, {
+          success: false,
+          error: {
+            code: 'REENTRY_PLAYER_MISMATCH',
+            message: 'The Original Entry Belongs To A Different Player. Re-Entry Must Be For The Same Player.'
+          }
+        });
+      }
+      // Only a busted entry can be re-entered. A player who is still in the
+      // event wants a REBUY (same entry, more chips), not a second entry.
+      if (prior.status !== 'eliminated') {
+        return _result(400, {
+          success: false,
+          error: {
+            code: 'REENTRY_NOT_ELIGIBLE',
+            message: `That Player Is Still In The Tournament (Status ${prior.status}). Use Rebuy Instead Of Re-Entry.`
+          }
+        });
+      }
+      priorEntry = prior;
     }
 
     // Parallel validation: existing registration, capacity, exclusions, and spending limits
@@ -166,7 +276,10 @@ async function handleRegister(req, res, tournamentId, staff) {
         .from('commander_tournament_entries')
         .select('id', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId)
-        .in('status', ['registered', 'seated', 'active'])
+        // Field size against max_entries. A 'bagged' player still occupies an
+        // entry in the event, so they count: without this a multi-day field
+        // would appear to have room and the room could oversell Day 2.
+        .in('status', ['registered', 'seated', 'active', 'bagged'])
         .limit(100),
       getSupabase()
         .from('commander_self_exclusions')
@@ -186,27 +299,35 @@ async function handleRegister(req, res, tournamentId, staff) {
 
     const { data: existing } = existingResult;
     if (existing) {
-      return res.status(400).json({
+      return _result(400, {
         success: false,
-        error: { code: 'ALREADY_REGISTERED', message: 'Already registered' }
+        error: { code: 'ALREADY_REGISTERED', message: 'Already Registered' }
       });
     }
 
+    // Full field: instead of a hard reject, offer the alternates list
+    // (TableCaptain waitlist behavior). The alternate pays now and is seated
+    // automatically as seats free up during registration. Pass
+    // as_alternate: false to keep the old hard-reject behavior.
     const { count } = capacityResult;
+    let registerAsAlternate = false;
     if (tournament.max_entries && count >= tournament.max_entries) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'TOURNAMENT_FULL', message: 'Tournament is full' }
-      });
+      if (body?.as_alternate === false) {
+        return _result(400, {
+          success: false,
+          error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' }
+        });
+      }
+      registerAsAlternate = true;
     }
 
     const { data: exclusion } = exclusionResult;
     if (exclusion) {
-      return res.status(403).json({
+      return _result(403, {
         success: false,
         error: {
           code: 'SELF_EXCLUDED',
-          message: 'You have an active self-exclusion and cannot register at this time.',
+          message: 'You Have An Active Self-Exclusion And Cannot Register At This Time.',
           exclusion_type: exclusion.exclusion_type,
           expires_at: exclusion.expires_at
         }
@@ -227,12 +348,15 @@ async function handleRegister(req, res, tournamentId, staff) {
 
       const todaySpend = (todayEntries || []).reduce((sum, e) => sum + (e.total_invested || 0), 0);
 
-      if (todaySpend + tournament.buyin_amount > limits.daily_limit) {
-        return res.status(403).json({
+      // The new charge is buy-in PLUS fee (total_invested on prior entries
+      // includes the fee, so the comparison must too).
+      const newCharge = (tournament.buyin_amount || 0) + (tournament.buyin_fee || 0);
+      if (todaySpend + newCharge > limits.daily_limit) {
+        return _result(403, {
           success: false,
           error: {
             code: 'LIMIT_EXCEEDED',
-            message: `Registration would exceed your daily limit of $${limits.daily_limit}`,
+            message: `Registration Would Exceed Your Daily Limit Of $${limits.daily_limit}`,
             current_spend: todaySpend,
             limit: limits.daily_limit
           }
@@ -252,9 +376,22 @@ async function handleRegister(req, res, tournamentId, staff) {
         tournament_id: tournamentId,
         player_id,
         registration_method: 'app',
-        status: 'registered',
+        status: registerAsAlternate ? 'alternate' : 'registered',
         cashier_staff_id: cashierStaffId,
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        // Re-entry marker. Stored on the row itself so the link travels with the
+        // entry and is visible without joining the audit log. The ORIGINAL entry
+        // is deliberately not touched: it keeps its finish_position and its
+        // recorded payout, which is what the finishing order and the money
+        // reports read.
+        ...(priorEntry ? {
+          metadata: {
+            is_reentry: true,
+            reentry_of: priorEntry.id,
+            reentry_at: new Date().toISOString(),
+            reentry_from_finish_position: priorEntry.finish_position ?? null
+          }
+        } : {})
       })
       .select()
       .maybeSingle();
@@ -262,7 +399,7 @@ async function handleRegister(req, res, tournamentId, staff) {
     if (error) {
       console.error('[tournaments/register] commander_tournament_entries insert failed', {
         tournamentId, player_id, cashier_staff_id: cashierStaffId,
-        payment_method: paymentMethod,
+        payment_method: paymentMethod, reentry_of: priorEntry?.id || null,
         code: error.code, message: error.message, details: error.details,
       });
       throw error;
@@ -277,11 +414,11 @@ async function handleRegister(req, res, tournamentId, staff) {
     let pName = null;
     if (totalAmount > 0) {
       const { data: profile } = await getSupabase().from('profiles').select('display_name, first_name, last_name').eq('id', player_id).maybeSingle();
-      pName = req.body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
+      pName = body.player_name || profile?.display_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Player';
 
       // 2026-07-28 audit fix: link the cash-drawer row to the tournament
       // (commander_cash_transactions.tournament_id), and surface the insert
-      // error — this write previously discarded it, so a rejected buy_in row
+      // error - this write previously discarded it, so a rejected buy_in row
       // left the registration recorded with no matching cash liability.
       const { error: cashTxError } = await getSupabase().from('commander_cash_transactions').insert({
         venue_id: tournament.venue_id,
@@ -310,17 +447,50 @@ async function handleRegister(req, res, tournamentId, staff) {
 
     // Note: current_entries is auto-updated by the update_tournament_stats trigger
 
-    // XP system removed
+    // --- Random Seat Draw For Late Registrations ---
+    // While the tournament is running, a new registrant is seated immediately
+    // at a random open seat on the least-occupied table (TableCaptain behavior).
+    // Pre-start registrations stay 'registered' until the seat draw runs.
+    let seatAssignment = null;
+    if (!registerAsAlternate && tournament.status === 'running' && entry) {
+      try {
+        // Atomic claim: picking and taking the seat in one locked statement
+        // stops a late registration and an alternate promotion landing in the
+        // same chair.
+        const seat = await claimOpenSeat(getSupabase(), tournamentId, entry.id, 'registered');
+        if (seat) {
+          seatAssignment = seat;
+          const { data: seatedEntry } = await getSupabase()
+            .from('commander_tournament_entries')
+            .select()
+            .eq('id', entry.id)
+            .maybeSingle();
+          if (seatedEntry) {
+            entry.status = seatedEntry.status;
+            entry.table_number = seatedEntry.table_number;
+            entry.seat_number = seatedEntry.seat_number;
+            entry.current_chips = seatedEntry.current_chips;
+          }
+        }
+      } catch (seatErr) {
+        console.warn('[register.js] Auto-seat failed (entry stays registered):', seatErr.message);
+      }
+    }
 
     // --- Push Notification: Registration Confirmation ---
     if (player_id && isOneSignalConfigured()) {
       const startTime = tournament.scheduled_start
         ? new Date(tournament.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : 'TBD';
+      const pushMessage = registerAsAlternate
+        ? `The Field Is Full. You Are On The Alternates List For ${tournament.name}. We Will Seat You As Soon As A Seat Opens.`
+        : seatAssignment
+          ? `You Are Registered For ${tournament.name}! Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+          : `You're Registered For ${tournament.name}! Starts At ${startTime}.`;
       await sendPushNotification({
         externalUserIds: [player_id],
-        title: 'Registration Confirmed',
-        message: `You're registered for ${tournament.name}! Starts at ${startTime}.`,
+        title: registerAsAlternate ? 'Added To Alternates List' : 'Registration Confirmed',
+        message: pushMessage,
         url: `/hub/commander/tournament/${tournamentId}/my-status`,
         data: { type: 'tournament_registered', tournament_id: tournamentId }
       }).catch(err => console.warn('[register.js] Push failed:', err.message));
@@ -333,7 +503,7 @@ async function handleRegister(req, res, tournamentId, staff) {
           .from('social_stories')
           .insert({
             author_id: player_id,
-            content: `Just registered for ${tournament.name}! Let's go!`,
+            content: `Just Registered For ${tournament.name}! Let's Go!`,
             media_type: 'text',
             background_color: 'linear-gradient(135deg, #1877F2 0%, #0A5DC2 100%)'
           });
@@ -342,26 +512,66 @@ async function handleRegister(req, res, tournamentId, staff) {
       }
     }
 
-    // Audit log
-    await logAction({ action: 'register_player', category: 'tournament' }, {
-      venueId: tournament.venue_id,
-      staffId: staff.id,
-      targetId: player_id,
-      targetType: 'commander_tournament_entries',
-      targetName: pName || 'Player',
-      metadata: { tournament_id: tournamentId, amount: totalAmount },
-      req
-    });
+    // Audit log. A re-entry is recorded as its own action so the cage can tell
+    // second entries from first entries without diffing the entries table.
+    await logAction(
+      priorEntry
+        ? { action: 'reenter_player', category: 'tournament' }
+        : { action: 'register_player', category: 'tournament' },
+      {
+        venueId: tournament.venue_id,
+        staffId: staff.id,
+        targetId: player_id,
+        targetType: 'commander_tournament_entries',
+        targetName: pName || 'Player',
+        metadata: {
+          tournament_id: tournamentId,
+          amount: totalAmount,
+          entry_id: entry?.id || null,
+          // logAudit accepts targetName but does not forward it to
+          // log_audit_event, so the name is carried here where it persists.
+          player_name: pName || null,
+          ...(priorEntry ? {
+            is_reentry: true,
+            reentry_of: priorEntry.id,
+            original_finish_position: priorEntry.finish_position ?? null
+          } : {})
+        },
+        req
+      }
+    );
 
-    return res.status(201).json({
+    const registeredWord = priorEntry ? 'Re-Entered' : 'Registered';
+
+    return _result(201, {
       success: true,
-      data: { entry }
+      data: {
+        entry,
+        is_alternate: registerAsAlternate || undefined,
+        seat_assignment: seatAssignment || undefined,
+        // Present only on a true re-entry. The original entry is untouched and
+        // its finish position is echoed back so the floor can see the link.
+        is_reentry: priorEntry ? true : undefined,
+        reentry_of: priorEntry ? priorEntry.id : undefined,
+        original_finish_position: priorEntry ? (priorEntry.finish_position ?? null) : undefined,
+        message: registerAsAlternate
+          ? 'Field Is Full. Player Added To The Alternates List.'
+          : seatAssignment
+            ? `${registeredWord} And Seated At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+            : `${registeredWord}.`
+      }
     });
   } catch (error) {
     console.warn('Register error:', error);
-    return res.status(500).json({
+    // uq_commander_entries_live_seat can reject the auto-seat that follows a
+    // late registration. That is a seat collision the cashier can act on, not a
+    // server fault, so it must never surface as a 500.
+    if (isUniqueViolation(error)) {
+      return _result(409, { success: false, error: conflictError(error, { action: 'Registration' }) });
+    }
+    return _result(500, {
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to register' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Register' }
     });
   }
 }
@@ -372,36 +582,75 @@ async function handleUnregister(req, res, tournamentId, staff) {
   if (!player_id) {
     return res.status(400).json({
       success: false,
-      error: { code: 'MISSING_FIELDS', message: 'player_id required' }
+      error: { code: 'MISSING_FIELDS', message: 'player_id Required' }
     });
   }
 
   try {
-    // Check tournament status
+    // Check tournament status (venue_id is needed for the audit log below;
+    // previously only status was selected, so the log recorded undefined,
+    // and a missing tournament crashed the log call).
     const { data: tournament } = await getSupabase()
       .from('commander_tournaments')
-      .select('status')
+      .select('status, venue_id')
       .eq('id', tournamentId)
       .maybeSingle();
 
-    if (tournament?.status === 'running' || tournament?.status === 'completed') {
-      return res.status(400).json({
+    if (!tournament) {
+      return res.status(404).json({
         success: false,
-        error: { code: 'TOURNAMENT_STARTED', message: 'Cannot unregister after tournament starts' }
+        error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
 
+    if (tournament.status === 'running' || tournament.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'TOURNAMENT_STARTED', message: 'Cannot Unregister After Tournament Starts' }
+      });
+    }
+
+    // 2026-08-20: alternates can cancel too (they were stuck before, the
+    // filter only matched status 'registered').
     const { error } = await getSupabase()
       .from('commander_tournament_entries')
       .update({
         status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
         notes: 'Registration cancelled'
       })
       .eq('tournament_id', tournamentId)
       .eq('player_id', player_id)
-      .eq('status', 'registered');
+      .in('status', ['registered', 'alternate']);
 
     if (error) throw error;
+
+    // A cancellation can free a spot in a previously full field: promote the
+    // longest-waiting alternate to 'registered' (seat comes at the draw).
+    let promotedAlternate = null;
+    try {
+      const { data: alternates } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('id, player_name')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'alternate')
+        .order('registered_at', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const next = alternates && alternates[0];
+      if (next) {
+        const { data: flipped } = await getSupabase()
+          .from('commander_tournament_entries')
+          .update({ status: 'registered' })
+          .eq('id', next.id)
+          .eq('status', 'alternate')
+          .select('id, player_name, status')
+          .maybeSingle();
+        if (flipped) promotedAlternate = flipped;
+      }
+    } catch (altErr) {
+      console.warn('[register.js] Alternate promotion after cancel failed:', altErr.message);
+    }
 
     // Audit log
     await logAction({ action: 'unregister_player', category: 'tournament' }, {
@@ -415,14 +664,17 @@ async function handleUnregister(req, res, tournamentId, staff) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Registration cancelled' }
+      data: {
+        message: 'Registration Cancelled',
+        promoted_alternate: promotedAlternate || undefined
+      }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Unregister error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to unregister' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Unregister' }
     });
   }
 }

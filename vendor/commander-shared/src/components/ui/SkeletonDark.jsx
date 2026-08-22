@@ -1,5 +1,5 @@
 /**
- * SkeletonDark — shimmer placeholder for dark-theme Commander/Club Arena pages
+ * SkeletonDark - shimmer placeholder for dark-theme Commander/Club Arena pages
  *
  * Usage:
  *   import SkeletonDark from '../ui/SkeletonDark';
@@ -80,7 +80,7 @@ function WaitlistRow() {
     );
 }
 
-// ── Poker room — table grid card
+// ── Poker room - table grid card
 function PokerTableCard() {
     return (
         <div style={{

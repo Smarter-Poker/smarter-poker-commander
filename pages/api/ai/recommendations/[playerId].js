@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Require staff auth — exposes player session history and preferences
+    // Require staff auth - exposes player session history and preferences
     const staff = await guardStaff(req, res);
     if (!staff) return;
 
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
     try {
       // 2026-07-25 audit fix: scope all player-history queries to the staff
-      // member's own venue — any staff could previously read a player's
+      // member's own venue - any staff could previously read a player's
       // cross-venue history. Also fixed the nonexistent total_minutes column
       // (real column: total_time_minutes).
       const { data: sessions, error: sessionsError } = await getSupabase()

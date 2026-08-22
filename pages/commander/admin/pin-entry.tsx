@@ -7,7 +7,7 @@
  *
  * 2026-07-25 audit fixes:
  *  - Token lookup now checks the storage keys this app actually uses
- *    ('commander-auth', 'smarter-poker-auth') in addition to the sb-* keys —
+ *    ('commander-auth', 'smarter-poker-auth') in addition to the sb-* keys -
  *    previously the Bearer header was never attached and every verify 401'd.
  *  - First-time setup: when the server answers PIN_NOT_SET (409), the page
  *    switches to an enrollment form that calls /api/admin/pin-setup.
@@ -32,13 +32,13 @@ export default function PinEntry() {
     try {
       const supaToken = readSupabaseAccessToken();
       if (!supaToken) {
-        setError('You must be signed in first. Open /commander/login, sign in, then return here.');
+        setError('You Must Be Signed In First. Open /commander/login, Sign In, Then Return Here.');
         return;
       }
 
       if (mode === 'setup') {
         if (pin !== confirmPin) {
-          setError('PINs do not match');
+          setError('PINs Do Not Match');
           return;
         }
         const s = await fetch('/api/admin/pin-setup', {
@@ -52,12 +52,12 @@ export default function PinEntry() {
         });
         if (!s.ok) {
           const j = await s.json().catch(() => ({}));
-          setError(j.error || `PIN setup failed (${s.status})`);
+          setError(j.error || `PIN Setup Failed (${s.status})`);
           return;
         }
-        // Enrolled — fall through to verify with the same PIN.
+        // Enrolled - fall through to verify with the same PIN.
         setMode('verify');
-        setNotice('PIN created. Verifying...');
+        setNotice('PIN Created. Verifying...');
       }
 
       const r = await fetch('/api/admin/pin-verify', {
@@ -71,7 +71,12 @@ export default function PinEntry() {
       });
 
       if (r.ok) {
-        const next = (router.query.next as string) || '/commander/admin';
+        // Only allow same-origin relative paths - an absolute or
+        // protocol-relative ?next= would be an open redirect.
+        const rawNext = router.query.next as string;
+        const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+          ? rawNext
+          : '/commander/admin';
         router.replace(next);
         return;
       }
@@ -79,13 +84,13 @@ export default function PinEntry() {
       const j = await r.json().catch(() => ({}));
       if (r.status === 409 || j.code === 'PIN_NOT_SET') {
         setMode('setup');
-        setNotice('No admin PIN exists for this account yet. Create one now.');
+        setNotice('No Admin PIN Exists For This Account Yet. Create One Now.');
         setError(null);
         return;
       }
-      setError(j.error || `Verification failed (${r.status})`);
+      setError(j.error || `Verification Failed (${r.status})`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error');
+      setError(err instanceof Error ? err.message : 'Network Error');
     } finally {
       setLoading(false);
     }
@@ -96,8 +101,8 @@ export default function PinEntry() {
       <h1>{mode === 'setup' ? 'Create Admin PIN' : 'Admin PIN'}</h1>
       <p style={{color: '#666'}}>
         {mode === 'setup'
-          ? 'Choose a 4-12 character PIN to protect commander admin.'
-          : 'Enter your 4-12 character PIN to access commander admin.'}
+          ? 'Choose A 4-12 Character PIN To Protect Commander Admin.'
+          : 'Enter Your 4-12 Character PIN To Access Commander Admin.'}
       </p>
       <form onSubmit={handleSubmit}>
         <input

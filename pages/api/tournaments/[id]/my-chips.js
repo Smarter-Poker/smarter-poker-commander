@@ -23,7 +23,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: USER — requires authenticated user
+// Auth: USER - requires authenticated user
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -37,8 +37,9 @@ export default async function handler(req, res) {
       if (!_staff) return;
     }
 
-      if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+      if (!['GET', 'POST'].includes(req.method)) {
+          res.setHeader('Allow', ['GET', 'POST']);
+          return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
       }
 
       const { id: tournamentId } = req.query;
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
       // Authenticate player
       const authHeader = req.headers.authorization;
       if (!authHeader) {
-          return res.status(401).json({ success: false, error: 'Authentication required' });
+          return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' } });
       }
 
       const token = authHeader.replace('Bearer ', '');
@@ -54,14 +55,56 @@ export default async function handler(req, res) {
       const user = authData?.user;
 
       if (authError || !user) {
-          return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+          return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Invalid Or Expired Token' } });
+      }
+
+      // GET returns the player's own live status, including their place in the
+      // alternates queue. The hub page cannot compute that itself because RLS
+      // hides other players' entries.
+      if (req.method === 'GET') {
+          const { data: myEntry } = await getSupabase()
+              .from('commander_tournament_entries')
+              .select('id, status, table_number, seat_number, current_chips, rebuy_count, addon_taken, finish_position, payout_amount, registered_at, created_at')
+              .eq('tournament_id', tournamentId)
+              .eq('player_id', user.id)
+              .neq('status', 'cancelled')
+              .order('registered_at', { ascending: false, nullsFirst: false })
+              .limit(1)
+              .maybeSingle();
+
+          if (!myEntry) {
+              return res.status(200).json({ success: true, data: { entry: null, queue_position: null } });
+          }
+
+          let queuePosition = null;
+          let alternatesAhead = null;
+          if (myEntry.status === 'alternate') {
+              const { data: queue } = await getSupabase()
+                  .from('commander_tournament_entries')
+                  .select('id, registered_at, created_at')
+                  .eq('tournament_id', tournamentId)
+                  .eq('status', 'alternate')
+                  .order('registered_at', { ascending: true, nullsFirst: false })
+                  .order('created_at', { ascending: true })
+                  .limit(500);
+              const idx = (queue || []).findIndex(q => q.id === myEntry.id);
+              if (idx >= 0) {
+                  queuePosition = idx + 1;
+                  alternatesAhead = idx;
+              }
+          }
+
+          return res.status(200).json({
+              success: true,
+              data: { entry: myEntry, queue_position: queuePosition, alternates_ahead: alternatesAhead }
+          });
       }
 
       try {
           const { chips } = req.body;
 
           if (chips === undefined || chips === null || isNaN(Number(chips)) || Number(chips) < 0) {
-              return res.status(400).json({ success: false, error: 'Valid chip count required' });
+              return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Valid Chip Count Required' } });
           }
 
           // Verify tournament exists and is running
@@ -72,11 +115,11 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (tErr || !tournament) {
-              return res.status(404).json({ success: false, error: 'Tournament not found' });
+              return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
           }
 
           if (!['running', 'break', 'final_table'].includes(tournament.status)) {
-              return res.status(400).json({ success: false, error: 'Tournament is not currently running' });
+              return res.status(400).json({ success: false, error: { code: 'NOT_RUNNING', message: 'Tournament Is Not Currently Running' } });
           }
 
           // Find the player's active entry
@@ -85,11 +128,16 @@ export default async function handler(req, res) {
               .select('id, player_id, current_chips, status, metadata')
               .eq('tournament_id', tournamentId)
               .eq('player_id', user.id)
+              // Player self-reported chip count. 'bagged' excluded on purpose:
+              // between days the bagged count recorded by the floor is the
+              // authoritative number and a player must not be able to type
+              // over it. (The route also gates on a running tournament, and
+              // bag-and-tag leaves the event 'paused'.)
               .in('status', ['active', 'seated', 'registered'])
               .maybeSingle();
 
           if (eErr || !entry) {
-              return res.status(404).json({ success: false, error: 'You are not registered in this tournament' });
+              return res.status(404).json({ success: false, error: { code: 'NOT_REGISTERED', message: 'You Are Not Registered In This Tournament' } });
           }
 
           // Update chip count
@@ -111,7 +159,7 @@ export default async function handler(req, res) {
 
           if (updateErr) {
               console.warn('Update chips error:', updateErr);
-              return res.status(500).json({ success: false, error: 'Failed to update chips' });
+              return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Update Chips' } });
           }
 
           return res.status(200).json({
@@ -124,12 +172,12 @@ export default async function handler(req, res) {
           });
       } catch (err) {
           console.warn('My chips error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

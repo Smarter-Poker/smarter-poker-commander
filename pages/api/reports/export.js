@@ -97,7 +97,7 @@ export default async function handler(req, res) {
 
       // Fetch sessions for the day
       // 2026-07-28 audit fix: commander_sessions has no player_id/check_in_time/
-      // check_out_time columns — the real ones are user_id/started_at/ended_at.
+      // check_out_time columns - the real ones are user_id/started_at/ended_at.
       // The bad names errored the query and the error was discarded, so
       // "Unique Players" silently printed 0 on every exported report.
       // NOTE (unresolved, reported to the owner): commander_sessions.venue_id is
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
         });
 
         // 2026-07-25 audit fix: escape each cell (replicates the exports/index.js
-        // helper) — quote cells, double embedded quotes, and guard leading
+        // helper) - quote cells, double embedded quotes, and guard leading
         // =,+,-,@ against spreadsheet formula injection. Raw joins broke rows
         // containing commas/quotes and allowed formula injection.
         const csvContent = csvRows.map(row => row.map(escapeCsvCell).join(',')).join('\n');

@@ -5,7 +5,7 @@
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { captureException } from '../../../src/lib/commander/errorMonitoring';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -23,29 +23,36 @@ function getSupabase() {
 // Average wait time per position (minutes) - simple initial estimate
 const AVERAGE_WAIT_PER_POSITION = 15;
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the waitlist GET selects '*' from
+    // commander_waitlist, which carries player_name and player_phone, so every
+    // venue's live waitlist (names plus phone numbers) was public. Staff auth is
+    // now required on every method.
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     // ── GET: Return all active waitlist entries for the venue ──────────────
     if (req.method === 'GET') {
       try {
-        // Determine venue_id from staff token or query param
-        let venue_id = req.query.venue_id;
-        if (!venue_id && typeof _authResult === 'object' && _authResult.venue_id) {
-          venue_id = _authResult.venue_id;
-        }
+        // Venue scope always comes from the verified staff session. A query
+        // venue_id is only honoured when it matches that session.
+        const venue_id = _authResult.venue_id ?? req.query.venue_id;
 
-        // SECURITY: venue_id is mandatory — without it, all venues' data would leak
+        // SECURITY: venue_id is mandatory - without it, all venues' data would leak
         if (!venue_id) {
           return res.status(400).json({ success: false, error: 'venue_id is required' });
+        }
+
+        if (req.query.venue_id && _authResult.venue_id !== undefined && _authResult.venue_id !== null
+            && String(req.query.venue_id) !== String(_authResult.venue_id)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
         }
 
         const query = getSupabase()
@@ -63,7 +70,9 @@ export default async function handler(req, res) {
           return res.status(500).json({ success: false, error: 'Internal server error' });
         }
 
-        res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+        // 2026-08-20 audit fix: was a shared CDN cache (s-maxage) on a response
+        // that varies by staff session and carries player phone numbers.
+        res.setHeader('Cache-Control', 'private, max-age=15');
         return res.status(200).json({ success: true, data: data || [] });
       } catch (error) {
         captureException(error, { action: 'waitlist_get', endpoint: '/api/commander/waitlist' });
@@ -90,7 +99,7 @@ export default async function handler(req, res) {
         player_phone,
         signup_method = 'app'
       } = req.body;
-      // 2026-07-25 audit fix: commander_games.game_type is now lowercase — store lowercase, compare case-insensitively
+      // 2026-07-25 audit fix: commander_games.game_type is now lowercase - store lowercase, compare case-insensitively
       const game_type = (rawGameType || '').toLowerCase();
 
       // Validation
@@ -112,6 +121,16 @@ export default async function handler(req, res) {
             code: 'VALIDATION_ERROR',
             message: 'Either player_id or player_name is required'
           }
+        });
+      }
+
+      // 2026-08-20 audit fix: venue_id came straight off the body, so staff at
+      // venue A could add players to venue B's waitlist.
+      if (_authResult && _authResult.venue_id !== undefined && _authResult.venue_id !== null
+          && String(_authResult.venue_id) !== String(venue_id)) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
         });
       }
 

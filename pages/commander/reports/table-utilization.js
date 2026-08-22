@@ -48,7 +48,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/table-utilization?
   return (
     <>
       <SEOHead
-        title="Commander — Table Utilization"
+        title="Commander - Table Utilization"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -105,7 +105,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/table-utilization?
                           </div>
                           <div>
                             <p className="text-sm font-medium text-white">{t.table_name || `Table ${t.table_number}`}</p>
-                            <p className="text-xs text-[#B0B3B8]">{t.max_seats} seats — {t.current_mode}</p>
+                            <p className="text-xs text-[#B0B3B8]">{t.max_seats} Seats, {t.current_mode}</p>
                           </div>
                         </div>
                         <div className="text-right">

@@ -44,9 +44,9 @@ const EVENT_TYPES = {
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 60) return 'Just Now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m Ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h Ago`;
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -81,7 +81,7 @@ export default function ActivityFeed() {
         allEvents.push({
           id: `inc-${i.id}`,
           type: i.priority === 'high' ? 'incident' : 'floor_call',
-          message: i.description || i.type || 'Incident reported',
+          message: i.description || i.type || 'Incident Reported',
           detail: i.table_number ? `Table ${i.table_number}` : '',
           timestamp: i.created_at,
           actor: i.reported_by
@@ -93,8 +93,8 @@ export default function ActivityFeed() {
         allEvents.push({
           id: `ci-${m.id}`,
           type: 'check_in',
-          message: `${m.first_name} ${m.last_name} checked in`,
-          detail: m.membership_tier ? `${m.membership_tier} member` : '',
+          message: `${m.first_name} ${m.last_name} Checked In`,
+          detail: m.membership_tier ? `${m.membership_tier} Member` : '',
           timestamp: m.last_visit
         });
       });
@@ -105,7 +105,7 @@ export default function ActivityFeed() {
           allEvents.push({
             id: `sess-${s.id}`,
             type: 'seated',
-            message: `${s.player_name || 'Player'} seated`,
+            message: `${s.player_name || 'Player'} Seated`,
             detail: s.table_number ? `Table ${s.table_number} Seat ${s.seat_number}` : '',
             timestamp: s.started_at || s.created_at
           });
@@ -117,7 +117,7 @@ export default function ActivityFeed() {
         allEvents.push({
           id: `wl-${w.id}`,
           type: w.status === 'called' ? 'waitlist_called' : 'waitlist_added',
-          message: `${w.player_name || w.name || 'Player'} ${w.status === 'called' ? 'called from' : 'joined'} waitlist`,
+          message: `${w.player_name || w.name || 'Player'} ${w.status === 'called' ? 'Called From' : 'Joined'} Waitlist`,
           detail: w.game_type || '',
           timestamp: w.updated_at || w.created_at
         });
@@ -130,7 +130,7 @@ export default function ActivityFeed() {
     finally { setLoading(false); }
   }, []);
 
-  // Commander Data Bus — sync activity feed across tabs
+  // Commander Data Bus - sync activity feed across tabs
   useCommanderSync(getVenueId(), fetchEvents, { entities: ['members', 'tables', 'waitlist', 'incidents'] });
 
   // Initial fetch + clock for relative timestamps
@@ -154,7 +154,7 @@ export default function ActivityFeed() {
   return (
     <CommanderLayout title="Activity" backHref="/commander/dashboard?card=reports">
       <SEOHead
-        title="Commander — Activity Log"
+        title="Commander - Activity Log"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />

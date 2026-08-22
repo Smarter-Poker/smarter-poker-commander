@@ -21,14 +21,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // 2026-07-25 audit fix: auth is handled per-method below — POST accepts either
+    // 2026-07-25 audit fix: auth is handled per-method below - POST accepts either
     // a verified staff session or a Bearer player redeeming their own balance, so
     // the blanket guardWriteStaff (staff-only) gate was removed.
 

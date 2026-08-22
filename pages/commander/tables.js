@@ -26,7 +26,8 @@ const PURPOSE_COLORS = {
   cash_game: { bg: 'rgba(49,162,76,0.15)', border: '#31A24C', text: '#31A24C', label: 'Cash Game' },
   tournament: { bg: 'rgba(255,215,0,0.15)', border: '#FFD700', text: '#FFD700', label: 'Tournament' } };
 
-const GAME_TYPES = ['NLH', 'PLO', 'NLO8', 'PLO8', 'Mixed', 'Stud', 'Razz', 'Draw'];
+// 2026-08-04 audit fix: must match /api/games VALID_GAME_TYPES - NLO8/PLO8/Draw were rejected with 400
+const GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'Mixed', 'Limit', 'Stud', 'Razz'];
 const COMMON_STAKES = ['$1/$2', '$1/$3', '$2/$5', '$5/$10', '$10/$20', '$25/$50'];
 
 // Arc-length parameterized ellipse for equal visual spacing of seats
@@ -164,7 +165,7 @@ const headers = { };
 
     setLoading(false);
 
-    // Fetch active dealer rotations — maps table_number to dealer_name
+    // Fetch active dealer rotations - maps table_number to dealer_name
     try {
       const rotRes = await commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers });
       if (!rotRes.ok) throw new Error(`Rotation fetch failed (${rotRes.status})`);
@@ -192,7 +193,7 @@ const headers = { };
   // Auto-refresh every 15s
   useEffect(() => {
     if (!venueId) return;
-    const interval = setInterval(fetchTables, 30000); // fallback — real-time sync handles instant updates
+    const interval = setInterval(fetchTables, 30000); // fallback - real-time sync handles instant updates
     return () => clearInterval(interval);
   }, [venueId, fetchTables]);
 
@@ -246,11 +247,11 @@ const res = await commanderFetch('/api/commander/games', {
     requestConfirm('Close this game? Players will be unseated.', async () => {
       setActionLoading(true);
       try {
+        // 2026-08-04 audit fix: use DELETE - it closes the game AND clears the
+        // table's current_game_id. PATCH {status:'closed'} left current_game_id
+        // set, so the follow-up table PATCH to 'available' always failed 400.
         const res1 = await commanderFetch(`/api/commander/games/${gameId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'closed' })
-        });
+          method: 'DELETE' });
         if (!res1.ok) throw new Error('Failed to close game');
         if (selectedTable) {
           const res2 = await commanderFetch(`/api/commander/tables/${selectedTable.id}`, {
@@ -377,14 +378,14 @@ const res = await commanderFetch('/api/commander/tables', {
   return (
     <CommanderLayout title={`Table Management | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=floor">
       <>
-        <SEOHead title="Commander — Tables & Floor" description="Club Commander Poker Room Management Tool." noindex={true} />
+        <SEOHead title="Commander - Tables & Floor" description="Club Commander Poker Room Management Tool." noindex={true} />
         <div className="cmd-page" style={{ minHeight: '100vh', background: '#18191A', fontFamily: 'Inter, sans-serif' }}>
 
           {/* Header */}
           <header style={{ position: 'sticky', top: 0, zIndex: 50, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #3A3B3C', background: '#242526' }}>
             <div>
               <h1 style={{ color: '#fff', fontWeight: 700, fontSize: '18px' }}>Tables and Floor</h1>
-              <p style={{ color: '#B0B3B8', fontSize: '13px' }}>{venue?.name} — {tables.length} Tables ({activeTables.length} active)</p>
+              <p style={{ color: '#B0B3B8', fontSize: '13px' }}>{venue?.name} - {tables.length} Tables ({activeTables.length} active)</p>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
@@ -411,7 +412,7 @@ const res = await commanderFetch('/api/commander/tables', {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-                {/* ═══ ACTIVE TABLES — Oval Visualization ═══ */}
+                {/* ═══ ACTIVE TABLES - Oval Visualization ═══ */}
                 {activeTables.length > 0 && (
                   <div>
                     <h2 style={{ color: '#1877F2', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
@@ -426,7 +427,7 @@ const res = await commanderFetch('/api/commander/tables', {
                         const tableSessions = sessions[tNum] || [];
                         const isSelected = selectedTableId === table.id;
 
-                        // Build seat array — merge sessions, table_seats, then fill with anonymous badges
+                        // Build seat array - merge sessions, table_seats, then fill with anonymous badges
                         const seatArr = Array.from({ length: maxSeats }, (_, i) => {
                           const seatNum = i + 1;
                           // Priority 1: session data (has time_remaining)
@@ -639,7 +640,7 @@ const res = await commanderFetch('/api/commander/tables', {
                                     <div style={{ color: '#B0B3B8', fontSize: '13px', marginTop: '2px' }}>
                                       <Users size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
                                       {occupiedCount} / {maxSeats} players
-                                      {game.started_at && ` — Running ${formatDuration(game.started_at)}`}
+                                      {game.started_at && ` - Running ${formatDuration(game.started_at)}`}
                                     </div>
                                   </div>
                                   <button
@@ -716,7 +717,7 @@ const res = await commanderFetch('/api/commander/tables', {
                   </div>
                 )}
 
-                {/* ═══ IDLE TABLES — Compact Grid ═══ */}
+                {/* ═══ IDLE TABLES - Compact Grid ═══ */}
                 {idleTables.length > 0 && (
                   <div>
                     <h2 style={{ color: '#B0B3B8', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>

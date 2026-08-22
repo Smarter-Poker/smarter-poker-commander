@@ -23,7 +23,7 @@ export default function ArenaLedgerPage() {
   return (
     <CommanderLayout title="Arena Ledger" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Arena Ledger"
+        title="Commander - Arena Ledger"
         description="Immutable Live Audit Trail"
         noindex={true}
       />

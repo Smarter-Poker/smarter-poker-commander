@@ -43,7 +43,7 @@ function formatTime(seconds) {
 }
 
 function ordinal(n) {
-  if (!n) return '—';
+  if (!n) return '-';
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
@@ -107,7 +107,10 @@ export default function TournamentPublic() {
       if (cRes.data) {
         const cd = cRes.data;
         setClock({
+          // currentBlind.level from the clock API is already the break-aware display number
           current_level: cd.currentBlind?.level || cd.tournament?.current_level || null,
+          is_break: !!cd.currentBlind?.isBreak,
+          break_label: cd.currentBlind?.label || null,
           time_remaining: cd.clock?.timeRemaining ?? null,
           is_running: cd.clock?.isRunning || false,
           blinds: cd.currentBlind ? {
@@ -130,14 +133,16 @@ export default function TournamentPublic() {
 
     const _c = new AbortController();
     fetchData(_c.signal);
-    const poll = setInterval(() => fetchData(_c.signal), 30000); // fallback — real-time sync handles instant updates
-    return () => { _c.abort(); clearInterval(poll); };
+    return () => { _c.abort(); };
   }, [id, fetchData, router.isReady]);
 
-  // Supabase Realtime — instant sync when tournament data changes
-  useTournamentRealtime(id, fetchData);
+  // Supabase Realtime - instant sync when tournament data changes, with the
+  // fallback poll adapting: 30s while the channel is unproven (unchanged),
+  // 5 minutes once it has actually delivered an event to this page. This is
+  // the public live page, so it is polled by every player in the room at once.
+  useTournamentRealtime(id, fetchData, { poll: true });
 
-  // EventBus — refresh on cross-page mutations
+  // EventBus - refresh on cross-page mutations
   useEffect(() => {
     const unsub = eventBus.on(EventType.DATA_MUTATED, (e) => {
       const relevant = ['tournament_updated', 'tournament_registration', 'tournament_created'];
@@ -161,8 +166,8 @@ export default function TournamentPublic() {
   // Local clock tick
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const title = tournament ? `${tournament.name} — Tournament Results` : 'Tournament';
-    const text = tournament ? `Check out ${tournament.name} — $${tournament.buyin_amount || 0} buy-in tournament` : '';
+    const title = tournament ? `${tournament.name} - Tournament Results` : 'Tournament';
+    const text = tournament ? `Check Out ${tournament.name}, $${tournament.buyin_amount || 0} Buy-In Tournament` : '';
 
     if (navigator.share) {
       try {
@@ -223,9 +228,9 @@ export default function TournamentPublic() {
         setTimeout(() => setPosted(false), 3000);
       } else {
         // 2026-07-25 audit fix: surface non-OK responses instead of failing silently
-        setToast({ type: 'error', text: 'Could not post to your page. Please try again.' });
+        setToast({ type: 'error', text: 'Could Not Post To Your Page. Please Try Again.' });
       }
-    } catch (err) { console.warn('Post error:', err); setToast({ type: 'error', text: 'Action failed: Post. Please try again.' }); }
+    } catch (err) { console.warn('Post error:', err); setToast({ type: 'error', text: 'Post Failed. Please Try Again.' }); }
     finally { setPosting(false); }
   };
 
@@ -248,7 +253,8 @@ export default function TournamentPublic() {
   const blindStructure = parseBlinds(t.blind_structure);
   const payoutStructure = t.payout_structure || t.custom_payouts || [];
   const allEntries = entries.length || t.current_entries || 0;
-  const prizePool = allEntries * (t.buyin_amount || 0);
+  // 2026-08-04 audit fix: prefer the recorded prize pool over the buy-in estimate
+  const prizePool = t.actual_prizepool || allEntries * (t.buyin_amount || 0);
   const isCompleted = t.status === 'completed';
   const isLive = ['running', 'break', 'final_table'].includes(t.status);
 
@@ -258,8 +264,8 @@ export default function TournamentPublic() {
     .sort((a, b) => a.finish_position - b.finish_position);
 
   // Dynamic SEO
-  const pageTitle = t.name ? `${t.name} — ${isCompleted ? 'Results' : isLive ? 'Live' : 'Tournament'}` : 'Tournament';
-  const pageDesc = `${t.name || 'Tournament'} — $${t.buyin_amount || 0} Buy-In | ${allEntries} Entries | $${prizePool.toLocaleString()} Prize Pool`;
+  const pageTitle = t.name ? `${t.name} - ${isCompleted ? 'Results' : isLive ? 'Live' : 'Tournament'}` : 'Tournament';
+  const pageDesc = `${t.name || 'Tournament'} - $${t.buyin_amount || 0} Buy-In | ${allEntries} Entries | $${prizePool.toLocaleString()} Prize Pool`;
   const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   return (
@@ -289,7 +295,7 @@ export default function TournamentPublic() {
           {t.scheduled_start && (
             <p className="text-sm text-[#B0B3B8] mt-1">
               {new Date(t.scheduled_start).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              {' at '}
+              {' At '}
               {new Date(t.scheduled_start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </p>
           )}
@@ -303,7 +309,7 @@ export default function TournamentPublic() {
             <button onClick={handlePostToMyPage} disabled={posting || posted}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold ${posted ? 'bg-[#31A24C]/20 border border-[#31A24C]/40 text-[#31A24C]' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'} disabled:opacity-60`}>
               {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : posted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {posted ? 'Posted!' : 'Post to My Page'}
+              {posted ? 'Posted!' : 'Post To My Page'}
             </button>
           </div>
         </div>
@@ -312,7 +318,7 @@ export default function TournamentPublic() {
         {clock && isLive && (
           <div className="mx-4 mt-4 bg-[#242526] border border-[#3A3B3C] rounded-2xl p-5 text-center">
             <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">
-              {t.status === 'break' ? 'Break' : `Level ${clock.current_level || '?'}`}
+              {(t.status === 'break' || clock.is_break) ? (clock.break_label || 'Break') : `Level ${clock.current_level || '?'}`}
             </p>
             <p className="text-5xl font-mono font-bold text-white mb-2">
               {formatTime(clock.time_remaining)}
@@ -320,7 +326,7 @@ export default function TournamentPublic() {
             {clock.blinds && (
               <p className="text-lg text-[#1877F2] font-semibold">
                 Blinds: {clock.blinds.small_blind?.toLocaleString()}/{clock.blinds.big_blind?.toLocaleString()}
-                {clock.blinds.ante > 0 && ` (ante ${clock.blinds.ante?.toLocaleString()})`}
+                {clock.blinds.ante > 0 && ` (Ante ${clock.blinds.ante?.toLocaleString()})`}
               </p>
             )}
           </div>
@@ -375,16 +381,18 @@ export default function TournamentPublic() {
               <span className="text-sm font-bold text-white capitalize">{t.tournament_type}</span>
             </div>
           )}
-          {t.late_registration_level && (
+          {/* 2026-08-04 audit fix: real columns are late_registration_levels / guaranteed_pool -
+              the old field names never existed so these rows never rendered */}
+          {t.late_registration_levels && (
             <div className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
               <span className="text-sm text-[#B0B3B8]">Late Reg</span>
-              <span className="text-sm font-bold text-white">Through Level {t.late_registration_level}</span>
+              <span className="text-sm font-bold text-white">Through Level {t.late_registration_levels}</span>
             </div>
           )}
-          {t.guarantee_amount > 0 && (
+          {t.guaranteed_pool > 0 && (
             <div className="flex items-center justify-between px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl">
               <span className="text-sm text-[#F59E0B]">Guaranteed</span>
-              <span className="text-sm font-bold text-[#F59E0B]">${t.guarantee_amount?.toLocaleString()}</span>
+              <span className="text-sm font-bold text-[#F59E0B]">${t.guaranteed_pool?.toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -394,7 +402,7 @@ export default function TournamentPublic() {
           <div className="px-4 mt-4">
             <button onClick={() => setShowResults(!showResults)}
               className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-              <span className="text-sm font-semibold text-white">Final Standings ({finalStandings.length} places)</span>
+              <span className="text-sm font-semibold text-white">Final Standings ({finalStandings.length} Places)</span>
               {showResults ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
             </button>
             {showResults && (
@@ -425,7 +433,7 @@ export default function TournamentPublic() {
           <div className="px-4 mt-4">
             <button onClick={() => setShowStructure(!showStructure)}
               className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-              <span className="text-sm font-semibold text-white">Blind Structure ({blindStructure.length} levels)</span>
+              <span className="text-sm font-semibold text-white">Blind Structure ({blindStructure.filter(l => !l.is_break).length} Levels)</span>
               {showStructure ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
             </button>
             {showStructure && (
@@ -441,23 +449,29 @@ export default function TournamentPublic() {
                     </tr>
                   </thead>
                   <tbody>
-                    {blindStructure.map((level, i) => {
-                      const isCurrent = clock?.current_level === (i + 1);
-                      const isBreakLvl = level.is_break;
-                      return (
-                        <tr key={i} className={`border-b border-[#3A3B3C]/50 ${isCurrent ? 'bg-[#1877F2]/10 text-[#1877F2]' :
-                          isBreakLvl ? 'bg-[#F59E0B]/5 text-[#F59E0B]' : 'text-white'
-                          }`}>
-                          <td className="px-3 py-2 font-medium">
-                            {isBreakLvl ? 'Break' : i + 1}{isCurrent ? ' *' : ''}
-                          </td>
-                          <td className="px-3 py-2 text-right">{isBreakLvl ? '-' : level.small_blind?.toLocaleString()}</td>
-                          <td className="px-3 py-2 text-right">{isBreakLvl ? '-' : level.big_blind?.toLocaleString()}</td>
-                          <td className="px-3 py-2 text-right">{isBreakLvl ? '-' : (level.ante || 0).toLocaleString()}</td>
-                          <td className="px-3 py-2 text-right">{level.duration || 20}</td>
-                        </tr>
-                      );
-                    })}
+                    {(() => {
+                      // Break-aware numbering: current_level is the display number,
+                      // so compare it against a counter that skips break rows.
+                      let displayNum = 0;
+                      return blindStructure.map((level, i) => {
+                        const isBreakLvl = level.is_break;
+                        if (!isBreakLvl) displayNum++;
+                        const isCurrent = !isBreakLvl && !clock?.is_break && clock?.current_level === displayNum;
+                        return (
+                          <tr key={i} className={`border-b border-[#3A3B3C]/50 ${isCurrent ? 'bg-[#1877F2]/10 text-[#1877F2]' :
+                            isBreakLvl ? 'bg-[#F59E0B]/5 text-[#F59E0B]' : 'text-white'
+                            }`}>
+                            <td className="px-3 py-2 font-medium">
+                              {isBreakLvl ? (level.label || 'Break') : displayNum}{isCurrent ? ' *' : ''}
+                            </td>
+                            <td className="px-3 py-2 text-right">{isBreakLvl ? '-' : level.small_blind?.toLocaleString()}</td>
+                            <td className="px-3 py-2 text-right">{isBreakLvl ? '-' : level.big_blind?.toLocaleString()}</td>
+                            <td className="px-3 py-2 text-right">{isBreakLvl ? '-' : (level.ante || 0).toLocaleString()}</td>
+                            <td className="px-3 py-2 text-right">{(level.duration ?? level.duration_minutes) || 20}</td>
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -470,7 +484,7 @@ export default function TournamentPublic() {
           <div className="px-4 mt-3">
             <button onClick={() => setShowPayouts(!showPayouts)}
               className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-              <span className="text-sm font-semibold text-white">Payouts ({payoutStructure.length} places)</span>
+              <span className="text-sm font-semibold text-white">Payouts ({payoutStructure.length} Places)</span>
               {showPayouts ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
             </button>
             {showPayouts && (
@@ -498,7 +512,7 @@ export default function TournamentPublic() {
           </div>
         )}
 
-        {/* Chip Counts Leaderboard (live — during running/break/final_table) */}
+        {/* Chip Counts Leaderboard (live - during running/break/final_table) */}
         {isLive && entries
             .filter(e => (e.status === 'active' || e.status === 'playing' || e.status === 'seated') && e.current_chips > 0)
             .sort((a, b) => (b.current_chips || 0) - (a.current_chips || 0))
@@ -507,7 +521,7 @@ export default function TournamentPublic() {
             <button onClick={() => setShowChipCounts(!showChipCounts)}
               className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
               <span className="text-sm font-semibold text-white">
-                Chip Counts ({entries.filter(e => (e.status === 'active' || e.status === 'playing' || e.status === 'seated') && e.current_chips > 0).length} players)
+                Chip Counts ({entries.filter(e => (e.status === 'active' || e.status === 'playing' || e.status === 'seated') && e.current_chips > 0).length} Players)
               </span>
               {showChipCounts ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
             </button>

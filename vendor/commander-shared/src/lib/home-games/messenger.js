@@ -8,13 +8,13 @@
  *  to send 1:1 direct messages inside the platform's internal messenger.
  *
  *  The messenger uses three tables:
- *    social_conversations            — the thread itself
- *    social_conversation_participants — membership (2 rows for a 1:1 DM)
- *    social_messages                 — the actual content
+ *    social_conversations            - the thread itself
+ *    social_conversation_participants - membership (2 rows for a 1:1 DM)
+ *    social_messages                 - the actual content
  *
  *  Before today, two RPCs existed (fn_get_or_create_conversation and
  *  fn_send_message) that were supposed to encapsulate this logic. On audit
- *  they turned out to be broken stubs — fn_get_or_create_conversation just
+ *  they turned out to be broken stubs - fn_get_or_create_conversation just
  *  returned a random UUID without touching any table, and fn_send_message
  *  wrote to an unused `messages` table while the real UI reads from
  *  `social_messages`. So we do it inline against the real tables.
@@ -65,7 +65,7 @@ export async function getOrCreateDirectConversation(supabase, userA, userB) {
       }
     }
 
-    // None exists — create a fresh one
+    // None exists - create a fresh one
     const { data: newConv, error: newErr } = await supabase
       .from('social_conversations')
       .insert({ is_group: false })
@@ -81,7 +81,7 @@ export async function getOrCreateDirectConversation(supabase, userA, userB) {
         { conversation_id: newConv.id, user_id: userB },
       ]);
     if (partErr) {
-      // Best-effort cleanup — orphan participants OR orphan conversation.
+      // Best-effort cleanup - orphan participants OR orphan conversation.
       // Leave the conversation row; future retries will find it and
       // succeed on the participant insert.
       console.warn('[messenger] participant insert failed:', partErr.message);
@@ -115,7 +115,7 @@ export async function sendDirectMessage(supabase, { conversationId, senderId, co
     if (insErr) throw insErr;
 
     // Bump conversation last_message_at + preview so the inbox sorts right
-    // and shows a snippet. Best-effort — not worth failing the dispatch.
+    // and shows a snippet. Best-effort - not worth failing the dispatch.
     const previewText = String(content).replace(/\s+/g, ' ').slice(0, 240);
     try {
       await supabase

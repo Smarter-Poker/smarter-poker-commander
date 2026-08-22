@@ -38,7 +38,7 @@ const NOTIFICATION_TYPES = [
     'custom'
 ];
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
       if (req.method !== 'POST') {
           res.setHeader('Allow', ['POST']);
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
       }
 
       const { id: tournamentId } = req.query;
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       if (!type || !NOTIFICATION_TYPES.includes(type)) {
           return res.status(400).json({
               success: false,
-              error: `Invalid type. Must be one of: ${NOTIFICATION_TYPES.join(', ')}`
+              error: { code: 'VALIDATION_ERROR', message: `Invalid Type. Must Be One Of: ${NOTIFICATION_TYPES.join(', ')}` }
           });
       }
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (tErr || !tournament) {
-              return res.status(404).json({ success: false, error: 'Tournament not found' });
+              return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
           }
 
           const venueName = tournament.poker_venues?.name || 'Venue';
@@ -92,26 +92,80 @@ export default async function handler(req, res) {
           let sentCount = 0;
 
           if (player_id) {
-              // Single player notification
+              // Single player notification.
+              // 2026-08-20 audit fix: player_id was taken from the body and
+              // pushed to verbatim, with no check that the player is even in
+              // this tournament. Staff-only route, so this is not an escalation
+              // path, but one mistyped id sent "Your Seat Is Ready: Table 4,
+              // Seat 7" to an unrelated player with no trace of why.
+              // 'cancelled' entries are excluded: that registration was
+              // reversed and refunded, so the player is not in the field.
+              const { data: entryRows, error: pErr } = await getSupabase()
+                  .from('commander_tournament_entries')
+                  .select('id, status')
+                  .eq('tournament_id', tournamentId)
+                  .eq('player_id', player_id)
+                  .neq('status', 'cancelled')
+                  .limit(1);
+
+              // 22P02 is Postgres invalid_text_representation: player_id is a
+              // uuid column, so a malformed id is a caller typo, not an outage.
+              // Fall through to the same clear 404 rather than a bare 500.
+              if (pErr && pErr.code !== '22P02') {
+                  console.error('[notify.js] participant check failed', {
+                      tournamentId, code: pErr.code, message: pErr.message, details: pErr.details,
+                  });
+                  return res.status(500).json({
+                      success: false,
+                      error: { code: 'DB_ERROR', message: 'Failed To Verify The Target Player' }
+                  });
+              }
+
+              if (pErr || !entryRows || entryRows.length === 0) {
+                  return res.status(404).json({
+                      success: false,
+                      error: {
+                          code: 'PLAYER_NOT_IN_TOURNAMENT',
+                          message: 'That Player Has No Active Entry In This Tournament. Check The Player Before Sending.'
+                      }
+                  });
+              }
+
               targetUserIds = [player_id];
           } else {
-              // Mass notification to all active/registered players
-              const { data: entries } = await getSupabase()
+              // Mass notification to all active/registered players.
+              // 2026-08-20 audit fix: .limit(100) silently truncated the target
+              // list, so in any field over 100 entries most players were never
+              // told the tournament was starting and the response still said
+              // the broadcast succeeded.
+              const { data: entries, error: eErr } = await getSupabase()
                   .from('commander_tournament_entries')
                   .select('player_id')
                   .eq('tournament_id', tournamentId)
-                  .in('status', ['registered', 'seated', 'active'])
-                  .limit(100);
+                  // Everyone still in the event, including 'bagged'. A bagged
+                  // player is between days, not out: the resume-time
+                  // announcement is aimed squarely at them.
+                  .in('status', ['registered', 'seated', 'active', 'bagged'])
+                  .limit(5000);
 
-              targetUserIds = (entries || [])
+              if (eErr) {
+                  console.error('[notify.js] entries read failed', {
+                      tournamentId, code: eErr.code, message: eErr.message, details: eErr.details,
+                  });
+                  return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Read Tournament Entries' } });
+              }
+
+              // De-duplicate: a re-entry player has more than one row and would
+              // otherwise get the same push twice.
+              targetUserIds = [...new Set((entries || [])
                   .map(e => e.player_id)
-                  .filter(Boolean);
+                  .filter(Boolean))];
           }
 
           if (targetUserIds.length === 0) {
               return res.status(200).json({
                   success: true,
-                  data: { sent: 0, message: 'No players to notify' }
+                  data: { sent: 0, message: 'No Players To Notify' }
               });
           }
 
@@ -133,7 +187,6 @@ export default async function handler(req, res) {
               } catch (pushErr) {
                   console.warn('[notify.js] Push notification error:', pushErr.message);
               }
-          } else {
           }
 
           // Also insert in-app notifications for each player
@@ -156,27 +209,34 @@ export default async function handler(req, res) {
               .from('commander_notifications')
               .insert(notificationRows);
 
+          // The empty `if (insertErr) {}` swallowed every in-app write failure,
+          // so the TD saw "notified" while nothing had been recorded.
           if (insertErr) {
+              console.error('[notify.js] commander_notifications insert failed', {
+                  tournamentId, rows: notificationRows.length,
+                  code: insertErr.code, message: insertErr.message, details: insertErr.details,
+              });
           }
 
           return res.status(200).json({
               success: true,
               data: {
                   sent: sentCount,
-                  in_app: targetUserIds.length,
+                  in_app: insertErr ? 0 : targetUserIds.length,
+                  in_app_error: insertErr ? insertErr.message : undefined,
                   type,
                   message: notification.body
               }
           });
       } catch (error) {
           console.warn('[notify.js] Error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -187,75 +247,82 @@ function buildNotification(type, ctx) {
         case 'tournament_starting':
             return {
                 title: `${tournamentName} Starting Now`,
-                body: `${tournamentName} at ${venueName} is starting! Please take your seat.`
+                body: `${tournamentName} At ${venueName} Is Starting! Please Take Your Seat.`
             };
 
         case 'seat_assignment':
             return {
                 title: 'Seat Assignment',
                 body: table_number
-                    ? `Your seat is ready: Table ${table_number}${seat_number ? `, Seat ${seat_number}` : ''} — ${tournamentName}`
-                    : `Your seat is ready for ${tournamentName}. Check the floor for your assignment.`
+                    ? `Your Seat Is Ready: Table ${table_number}${seat_number ? `, Seat ${seat_number}` : ''}, ${tournamentName}`
+                    : `Your Seat Is Ready For ${tournamentName}. Check The Floor For Your Assignment.`
             };
 
         case 'level_up': {
             const blinds = parseBlindStructure(tournament?.blind_structure);
             const level = tournament?.current_level || 0;
             const current = blinds?.[level];
+            // Break rows share the array with playing levels, so the index is
+            // not the level number. Count non-break rows up to the current index.
+            let displayLevel = 0;
+            for (let i = 0; i <= level && i < (blinds?.length || 0); i++) {
+                if (!blinds[i]?.is_break) displayLevel++;
+            }
+            if (displayLevel === 0) displayLevel = level + 1;
             return {
-                title: `Level ${level + 1} — ${tournamentName}`,
+                title: `Level ${displayLevel}, ${tournamentName}`,
                 body: current
-                    ? `Blinds now ${current.small_blind?.toLocaleString()}/${current.big_blind?.toLocaleString()}${current.ante ? ` ante ${current.ante.toLocaleString()}` : ''}`
-                    : `Level ${level + 1} has started.`
+                    ? `Blinds Now ${current.small_blind?.toLocaleString()}/${current.big_blind?.toLocaleString()}${current.ante ? ` Ante ${current.ante.toLocaleString()}` : ''}`
+                    : `Level ${displayLevel} Has Started.`
             };
         }
 
         case 'break':
             return {
                 title: 'Break Time',
-                body: `${tournamentName} is on break. Play resumes shortly.`
+                body: `${tournamentName} Is On Break. Play Resumes Shortly.`
             };
 
         case 'break_ending':
             return {
                 title: 'Break Ending',
-                body: `Break is ending soon. Please return to your seat for ${tournamentName}.`
+                body: `Break Is Ending Soon. Please Return To Your Seat For ${tournamentName}.`
             };
 
         case 'final_table':
             return {
                 title: 'Final Table!',
-                body: `${tournamentName} has reached the Final Table! Good luck!`
+                body: `${tournamentName} Has Reached The Final Table! Good Luck!`
             };
 
         case 'elimination':
             return {
                 title: 'Tournament Result',
-                body: customMessage || `Thank you for playing ${tournamentName}!`
+                body: customMessage || `Thank You For Playing ${tournamentName}!`
             };
 
         case 'itm':
             return {
                 title: 'In The Money!',
-                body: customMessage || `Congratulations! You cashed in ${tournamentName}!`
+                body: customMessage || `Congratulations! You Cashed In ${tournamentName}!`
             };
 
         case 'winner':
             return {
                 title: 'Tournament Winner!',
-                body: customMessage || `Congratulations! You won ${tournamentName}!`
+                body: customMessage || `Congratulations! You Won ${tournamentName}!`
             };
 
         case 'custom':
             return {
                 title: tournamentName,
-                body: customMessage || 'You have a new tournament notification.'
+                body: customMessage || 'You Have A New Tournament Notification.'
             };
 
         default:
             return {
                 title: tournamentName,
-                body: 'Tournament notification'
+                body: 'Tournament Notification'
             };
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Clock & Broadcast
+ * Tournament Director - Clock & Broadcast
  * /commander/td/[tournamentId]/clock
  * Large countdown display optimized for TV casting via HDMI/Airplay
  * Full clock controls, break management, H4H, final table mode
@@ -11,9 +11,10 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Play, Pause, SkipForward, SkipBack, Loader2, RefreshCw, Maximize, Minimize, Coffee, Hand, Star, Volume2, Plus, Minus, DollarSign, FileText, Square, Timer, UserPlus, Coins, Megaphone } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
+import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -21,6 +22,66 @@ const NAV_ITEMS = [
   { key: 'reports', path: '/reports' }, { key: 'clock', path: '/clock' },
 ];
 const NAV_ICONS = { control: Trophy, tables: LayoutGrid, players: Users, payouts: DollarSign, reports: FileText, clock: Monitor };
+
+function formatClock(seconds) {
+  const s = Number(seconds);
+  if (!Number.isFinite(s) || s < 0) return '--:--';
+  const m = Math.floor(s / 60);
+  const rem = Math.floor(s % 60);
+  return `${m}:${String(rem).padStart(2, '0')}`;
+}
+
+// ── Floor announcements ────────────────────────────────────────────────────
+// One tap = the banner on every clock display (message.js writes
+// settings.clock_state.current_message) AND the matching push to every
+// registered player (notify.js). The two used to be separate screens and the
+// push side had no caller at all, so nobody outside the room ever heard a
+// break call.
+const FLOOR_ANNOUNCEMENTS = [
+  {
+    key: 'break', label: 'Break Time', icon: Coffee, color: '#F59E0B',
+    message: 'Break Time', messageType: 'announcement', durationSeconds: 300,
+    notifyType: 'break'
+  },
+  {
+    key: 'break_ending', label: 'Break Ending, Two Minutes', icon: Timer, color: '#F59E0B',
+    message: 'Break Ending, Two Minutes', messageType: 'alert', durationSeconds: 120,
+    notifyType: 'break_ending'
+  },
+  {
+    key: 'registration_closing', label: 'Registration Closing', icon: UserPlus, color: '#EF4444',
+    message: 'Registration Closing', messageType: 'alert', durationSeconds: 300,
+    notifyType: 'custom',
+    notifyMessage: 'Registration Is Closing. This Is The Last Call To Enter Or Re-Enter.'
+  },
+  {
+    key: 'final_table', label: 'Final Table', icon: Star, color: '#1877F2',
+    message: 'Final Table', messageType: 'announcement', durationSeconds: 300,
+    notifyType: 'final_table'
+  },
+  {
+    key: 'color_up', label: 'Color Up', icon: Coins, color: '#31A24C',
+    message: 'Color Up', messageType: 'announcement', durationSeconds: 300,
+    notifyType: 'custom',
+    notifyMessage: 'Color Up In Progress. Please Stack Your Chips For The Race.'
+  }
+];
+
+// Approximate wall-clock time late registration closes: remaining seconds of
+// the current level plus the full duration of every structure row (breaks
+// included, since they delay it) up to and including the late-reg cutoff index.
+function lateRegCloseDate(blindStructure, currentLevelIdx, remainingSeconds, lateRegLevels) {
+  if (!Array.isArray(blindStructure) || blindStructure.length === 0) return null;
+  const cutoff = Math.min(Number(lateRegLevels) || 0, blindStructure.length - 1);
+  const idx = Number(currentLevelIdx) || 0;
+  if (idx > cutoff) return null;
+  let secs = Math.max(0, Number(remainingSeconds) || 0);
+  for (let i = idx + 1; i <= cutoff; i++) {
+    const row = blindStructure[i];
+    secs += ((row?.duration ?? row?.duration_minutes ?? 0) * 60);
+  }
+  return new Date(Date.now() + secs * 1000);
+}
 
 export default function TDClock() {
 
@@ -34,6 +95,9 @@ export default function TDClock() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [showMessage, setShowMessage] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  // Key of the floor announcement currently being sent (banner + push).
+  const [announcing, setAnnouncing] = useState(null);
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -53,7 +117,12 @@ export default function TDClock() {
 
     if (!tournamentId) return;
     try {
-      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
+      // Payload split: the TD clock draws the header, the clock, the counts
+      // and the break/H4H flags. No entry list, no table map, no chip board.
+      const res = await commanderFetch(
+        `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,clock,stats,alerts`,
+        { ...(signal ? { signal } : {}) }
+      );
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -65,10 +134,12 @@ export default function TDClock() {
     finally { setLoading(false); }
   }, [tournamentId]);
 
-  useTournamentRealtime(tournamentId, fetchFloor);
-  useEffect(() => { const controller = new AbortController(); fetchFloor(controller.signal); const i = setInterval(() => fetchFloor(controller.signal), 30000); return () => { controller.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
+  // Realtime first: 30s fallback while the channel is unproven, 5 minutes
+  // once it has delivered. The countdown ticks locally in between either way.
+  useTournamentRealtime(tournamentId, fetchFloor, { poll: true });
+  useEffect(() => { const controller = new AbortController(); fetchFloor(controller.signal); return () => { controller.abort(); }; }, [fetchFloor]);
 
-  // Client-side countdown — only restart interval when clock status changes (not on every tick)
+  // Client-side countdown - only restart interval when clock status changes (not on every tick)
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     const cs = floor?.clock?.clock_state;
@@ -107,92 +178,38 @@ export default function TDClock() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [floor?.clock?.clock_state?.status]);
 
-  // ── Seat Change Card — matches tournament buy-in receipt format ──
-  const printAutoBreakReceipts = (autoBreak) => {
-    if (!autoBreak?.receipts?.length) return;
-    const pw = window.open('', '_blank', 'width=420,height=700');
-    if (!pw) return;
-    const receipts = autoBreak.receipts;
-    pw.document.write(`<!DOCTYPE html><html><head><title>Seat Change Cards</title>
-<style>
-@page { margin: 0; size: 80mm auto; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; font-size: 12px; }
-.card {
-  width: 72mm; margin: 0 auto; padding: 5mm 4mm 6mm;
-  border-bottom: 2px dashed #000;
-  page-break-after: always;
-}
-.card:last-child { page-break-after: avoid; border-bottom: none; }
-/* HEADER ── Venue name large at top like POTAWATOMI */
-.venue-name {
-  text-align: center; font-size: 20px; font-weight: 900;
-  letter-spacing: 1px; text-transform: uppercase;
-  line-height: 1.1; margin-bottom: 1mm;
-}
-.venue-sub { text-align: center; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #444; margin-bottom: 2mm; }
-.receipt-type { text-align: center; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1mm; }
-.tourn-name { text-align: center; font-size: 11px; font-weight: bold; margin-bottom: 3mm; }
-.divider { border-top: 1px solid #000; margin: 2.5mm 0; }
-/* PLAYER ROW */
-.field-row { display: flex; align-items: baseline; margin: 2mm 0; font-size: 11px; }
-.field-label { font-weight: bold; min-width: 18mm; }
-.field-val { font-size: 11px; text-transform: uppercase; }
-/* TWO BOXES ── Table | Seat — exactly like the reference photo */
-.boxes { display: flex; gap: 4mm; justify-content: center; margin: 4mm 0 2mm; }
-.box-wrap { text-align: center; flex: 1; }
-.box-title { font-size: 11px; font-weight: bold; margin-bottom: 1mm; }
-.box-num {
-  border: 2px solid #000;
-  font-size: 30px; font-weight: 900;
-  padding: 2mm 0; min-width: 22mm;
-  display: block; text-align: center;
-  line-height: 1.1;
-}
-/* Previous seat + chips */
-.moved-from { font-size: 9px; text-align: center; color: #555; margin-top: 1mm; }
-.chips-row { display: flex; justify-content: space-between; font-size: 10px; margin: 2mm 0; }
-/* FOOTER */
-.footer-line { font-size: 9px; margin: 1mm 0; }
-.customer-copy { text-align: center; font-size: 9px; font-weight: bold; letter-spacing: 1px; margin-top: 3mm; }
-</style></head><body>
-${receipts.map(r => `<div class="card">
-  <div class="venue-name">${r.venue_name || 'Smarter Poker'}</div>
-  <div class="venue-sub">Poker Room</div>
-  <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` — $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
-  <div class="divider"></div>
-  <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
-  <div class="divider"></div>
-  <div class="boxes">
-    <div class="box-wrap">
-      <div class="box-title">Table</div>
-      <span class="box-num">${r.to_table}</span>
-    </div>
-    <div class="box-wrap">
-      <div class="box-title">Seat</div>
-      <span class="box-num">${r.to_seat}</span>
-    </div>
-  </div>
-  <div class="moved-from">Moved from Table ${r.from_table}, Seat ${r.from_seat}</div>
-  ${r.chips ? `<div class="divider"></div><div class="chips-row"><span>Chip Count:</span><span><b>${Number(r.chips).toLocaleString()}</b></span></div>` : ''}
-  <div class="divider"></div>
-  <div class="footer-line">${new Date(r.timestamp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}&nbsp;&nbsp;${new Date(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-  <div class="customer-copy">Customer Copy</div>
-</div>`).join('')}
-</body></html>`);
-    pw.document.close();
-    setTimeout(() => { pw.print(); pw.close(); }, 500);
+  // ── Seat Change Cards ──
+  // Shared template module: identical paper on every screen and at the floor
+  // print station, dealer copy + player copy, from-seat and chip count included.
+  const printAutoBreakReceipts = (autoBreakResult) => {
+    const receipts = autoBreakResult?.receipts || [];
+    if (receipts.length === 0) return false;
+    const printed = printSeatChangeCards(receipts);
+    if (!printed) {
+      setToast({ type: 'error', text: 'Popup Blocked. Seat Change Cards Are Waiting At The Print Station.' });
+    }
+    return printed;
   };
 
   const clockAction = async (action) => {
     setActionLoading(action);
     try {
+      const body = { action };
+      // Optimistic-concurrency guard: send the level index this screen believes
+      // is current so two displays cannot double-advance (API 409s on conflict).
+      if (action === 'next_level') body.from_level = floor?.clock?.current_level ?? 0;
+      if (action === 'add_time' || action === 'subtract_time') body.seconds = 60;
       const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/clock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify(body)
       });
+      if (res.status === 409) {
+        // Another display already advanced the level, just refresh state
+        await fetchFloor();
+        broadcastChange('tournaments');
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -203,12 +220,12 @@ ${receipts.map(r => `<div class="card">
           await fetchFloor();
           broadcastChange('tournaments');
         } else {
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Clock action failed. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Clock Action Failed. Please Try Again.' });
         }
       } else {
-        setToast({ type: 'error', text: 'Clock action failed.' });
+        setToast({ type: 'error', text: 'Clock Action Failed.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Clock action failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Clock Action Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -223,15 +240,15 @@ ${receipts.map(r => `<div class="card">
       if (res.ok) {
         const json = await res.json();
         if (!json.success) {
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Failed to toggle Hand-for-Hand. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Failed To Toggle Hand-For-Hand. Please Try Again.' });
         } else {
           await fetchFloor();
           broadcastChange('tournaments');
         }
       } else {
-        setToast({ type: 'error', text: 'Failed to toggle Hand-for-Hand.' });
+        setToast({ type: 'error', text: 'Failed To Toggle Hand-For-Hand.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Hand-for-Hand toggle failed.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Hand-For-Hand Toggle Failed.' }); }
   };
 
   const triggerFinalTable = async () => {
@@ -245,28 +262,99 @@ ${receipts.map(r => `<div class="card">
       if (res.ok) {
         const json = await res.json();
         if (!json.success) {
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Final table action failed. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Final Table Action Failed. Please Try Again.' });
         } else {
           await fetchFloor();
           broadcastChange('tournaments');
         }
       } else {
-        setToast({ type: 'error', text: 'Final table action failed.' });
+        setToast({ type: 'error', text: 'Final Table Action Failed.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Final table action failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Final Table Action Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
   const sendMessage = async () => {
     if (!messageText.trim()) return;
-    const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: messageText, type: 'announcement', duration_seconds: 60 })
-    });
-    if (res.ok) {
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageText, type: 'announcement', duration_seconds: 60 })
+      });
+      const json = await res.json().catch(() => null);
+      // A failed broadcast used to leave the modal open with no explanation.
+      if (!res.ok || !json?.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Broadcast Failed. Please Try Again.' });
+        return;
+      }
       setMessageText('');
       setShowMessage(false);
+      setToast({ type: 'success', text: 'Message Is On The Clock Displays.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Broadcast Failed. Check Console.' });
+    }
+  };
+
+  // One tap: banner on the displays (message.js) + push to players (notify.js).
+  // The two calls are independent, so a push failure never swallows the banner
+  // and the TD is told exactly which half landed.
+  const sendFloorAnnouncement = async (item) => {
+    if (announcing) return;
+    setAnnouncing(item.key);
+    try {
+      const [msgRes, pushRes] = await Promise.all([
+        commanderFetch(`/api/commander/tournaments/${tournamentId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: item.message,
+            type: item.messageType,
+            duration_seconds: item.durationSeconds
+          })
+        }).catch(() => null),
+        commanderFetch(`/api/commander/tournaments/${tournamentId}/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: item.notifyType,
+            message: item.notifyMessage || item.message
+          })
+        }).catch(() => null)
+      ]);
+
+      const msgJson = msgRes ? await msgRes.json().catch(() => null) : null;
+      const pushJson = pushRes ? await pushRes.json().catch(() => null) : null;
+      const bannerOk = !!(msgRes && msgRes.ok && msgJson?.success);
+      const pushOk = !!(pushRes && pushRes.ok && pushJson?.success);
+      const notified = pushJson?.data?.in_app ?? pushJson?.data?.sent ?? 0;
+
+      if (!bannerOk && !pushOk) {
+        setToast({
+          type: 'error',
+          text: msgJson?.error?.message || pushJson?.error?.message || 'Announcement Failed. Please Try Again.'
+        });
+      } else if (!bannerOk) {
+        setToast({ type: 'error', text: 'Push Sent, But The Display Banner Failed.' });
+      } else if (!pushOk) {
+        setToast({ type: 'error', text: `"${item.message}" Is On The Displays, But The Push Failed.` });
+      } else {
+        setToast({
+          type: 'success',
+          text: `"${item.message}" On The Displays, ${notified} Player${notified === 1 ? '' : 's'} Notified.`
+        });
+      }
+
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn(err);
+      setToast({ type: 'error', text: 'Announcement Failed. Check Console.' });
+    } finally {
+      setAnnouncing(null);
     }
   };
 
@@ -298,10 +386,21 @@ ${receipts.map(r => `<div class="card">
   const isRunning = clockState.status === 'running';
   const isPaused = clockState.status === 'paused';
 
+  // Break state has two sources and the screen showed neither: the manual
+  // toggle (settings.clock_state.on_break, surfaced as alerts.on_break) and a
+  // scheduled break ROW in the structure (row.is_break with its own duration).
+  const blindStructure = Array.isArray(tournament.blind_structure) ? tournament.blind_structure : [];
+  const currentRow = blindStructure[clock.current_level ?? 0] || null;
+  const rowIsBreak = !!currentRow?.is_break;
+  const breakRowMinutes = currentRow ? (currentRow.duration ?? currentRow.duration_minutes ?? 0) : 0;
+  const manualBreak = !!alerts.on_break;
+  const onBreak = manualBreak || rowIsBreak;
+  const breakSecondsLeft = clockSeconds ?? clockState.remaining_seconds ?? null;
+
   return (
-    <CommanderLayout title="Commander — Clock" backHref={`/commander/td/${tournamentId}`}>
+    <CommanderLayout title="Commander - Clock" backHref={`/commander/td/${tournamentId}`}>
       <SEOHead
-        title="Commander — Clock"
+        title="Commander - Clock"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -343,6 +442,79 @@ ${receipts.map(r => `<div class="card">
         {/* Controls Section */}
         {!isFullscreen && (
           <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center">
+            {/* Late Reg indicator + approximate wall-clock close time */}
+            {stats.late_reg_open && (() => {
+              const closeAt = lateRegCloseDate(
+                tournament.blind_structure,
+                clock.current_level || 0,
+                clockSeconds ?? clockState.remaining_seconds,
+                tournament.late_registration_levels
+              );
+              return (
+                <div className="mb-4 px-4 py-2 rounded-xl bg-[#31A24C]/10 border border-[#31A24C]/30 text-center">
+                  <p className="text-xs font-bold text-[#31A24C] uppercase tracking-wider">Late Reg Open</p>
+                  {closeAt && (
+                    <p className="text-[11px] text-[#B0B3B8] mt-0.5">
+                      Late Reg Closes ~{closeAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            {/* ON BREAK state, with the scheduled-break countdown */}
+            {onBreak && (
+              <div className="w-full max-w-lg mb-5 p-4 rounded-2xl bg-[#F59E0B]/10 border-2 border-[#F59E0B]/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#F59E0B]/20 flex items-center justify-center flex-shrink-0">
+                    <Coffee className="w-6 h-6 text-[#F59E0B]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-base font-bold text-[#F59E0B] uppercase tracking-wider">On Break</h2>
+                    <p className="text-xs text-[#B0B3B8] truncate">
+                      {rowIsBreak
+                        ? `${currentRow?.label || 'Scheduled Break'}${breakRowMinutes > 0 ? `, ${breakRowMinutes} Min` : ''}`
+                        : 'Manual Break, Clock Paused'}
+                    </p>
+                  </div>
+                  {rowIsBreak && (
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-3xl font-bold text-white tabular-nums leading-none">
+                        {formatClock(breakSecondsLeft)}
+                      </p>
+                      <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider mt-1">Break Remaining</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  {manualBreak && (
+                    <button
+                      onClick={() => clockAction('break')}
+                      disabled={!!actionLoading}
+                      className="flex-1 h-12 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+                    >
+                      {actionLoading === 'break'
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Ending Break...</>
+                        : <><Play className="w-4 h-4" /> End Break And Resume Play</>
+                      }
+                    </button>
+                  )}
+                  {rowIsBreak && !manualBreak && (
+                    <button
+                      onClick={() => clockAction('next_level')}
+                      disabled={!!actionLoading}
+                      className="flex-1 h-12 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+                    >
+                      {actionLoading === 'next_level'
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting Level...</>
+                        : <><SkipForward className="w-4 h-4" /> End Break, Start Next Level</>
+                      }
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Controls */}
             <div className="flex items-center gap-3 mb-6">
               <button onClick={() => clockAction('prev_level')} disabled={!!actionLoading}
@@ -391,6 +563,41 @@ ${receipts.map(r => `<div class="card">
                 disabled={stats.players_remaining > 10} />
               <ActionChip icon={Volume2} label="Announce" onClick={() => setShowMessage(true)} />
               <ActionChip icon={Maximize} label="Fullscreen" onClick={toggleFullscreen} />
+              <ActionChip icon={Square} label="End Event" onClick={() => setShowEndConfirm(true)}
+                active={true} activeColor="#EF4444" disabled={!!actionLoading} />
+            </div>
+
+            {/* ===== FLOOR ANNOUNCEMENTS (single tap: banner + push) ===== */}
+            <div className="w-full max-w-lg mt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Megaphone className="w-4 h-4 text-[#1877F2]" />
+                <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider">
+                  Floor Announcements
+                </h2>
+              </div>
+              <p className="text-xs text-[#B0B3B8] mb-3">
+                Each One Sets The Banner On Every Clock Display And Pushes To Every Registered Player.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {FLOOR_ANNOUNCEMENTS.map(item => {
+                  const Icon = item.icon;
+                  const busy = announcing === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => sendFloorAnnouncement(item)}
+                      disabled={!!announcing}
+                      className="h-14 px-4 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold flex items-center gap-3 text-left active:bg-[#3A3B3C] transition-colors disabled:opacity-50"
+                    >
+                      {busy
+                        ? <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" style={{ color: item.color }} />
+                        : <Icon className="w-5 h-5 flex-shrink-0" style={{ color: item.color }} />
+                      }
+                      <span className="flex-1 min-w-0 truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -417,6 +624,31 @@ ${receipts.map(r => `<div class="card">
                 <button onClick={sendMessage} disabled={!messageText.trim()}
                   className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
                   <Volume2 className="w-4 h-4" /> Broadcast
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* End Tournament Confirmation */}
+        {showEndConfirm && (
+          <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4"
+            onClick={() => setShowEndConfirm(false)}>
+            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]" onClick={e => e.stopPropagation()}>
+              <div className="text-center mb-4">
+                <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: '#EF444420' }}>
+                  <Square className="w-7 h-7 text-[#EF4444]" />
+                </div>
+                <h3 className="text-lg font-bold text-white">End Tournament?</h3>
+                <p className="text-sm text-[#B0B3B8] mt-1">This Marks The Tournament Completed And Stops The Clock. This Cannot Be Undone.</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowEndConfirm(false)}
+                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                <button onClick={async () => { setShowEndConfirm(false); await clockAction('end'); }}
+                  disabled={actionLoading === 'end'}
+                  className="flex-1 py-3 rounded-xl bg-[#EF4444] text-white font-bold active:opacity-80 disabled:opacity-50">
+                  {actionLoading === 'end' ? 'Ending...' : 'End Tournament'}
                 </button>
               </div>
             </div>

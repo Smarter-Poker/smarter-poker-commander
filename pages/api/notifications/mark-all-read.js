@@ -2,7 +2,7 @@
  * Mark All Notifications Read API
  * POST - Mark all user's notifications as read
  */
-// 2026-07-25 audit fix: dual auth — the old code required BOTH a staff-session
+// 2026-07-25 audit fix: dual auth - the old code required BOTH a staff-session
 // guard and a Bearer JWT, blocking players (no staff session) and PIN staff
 // (no JWT). Now: a Bearer user marks their own rows read; a verified staff
 // session marks the venue's rows read.

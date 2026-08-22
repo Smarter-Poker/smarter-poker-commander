@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
       // Fetch group details for each membership
       // 2026-07-25 audit fix: removed stray .limit(100) chained onto a JS array
-      // (arrays have no .limit — it crashed the endpoint).
+      // (arrays have no .limit - it crashed the endpoint).
       const groupIds = [...new Set((memberships || []).map(m => m.group_id).filter(Boolean))];
 
       let groupsMap = {};
@@ -71,14 +71,37 @@ export default async function handler(req, res) {
         // prefer_same_table/accept_split do not exist on this table.
         const { data: groups } = await getSupabase()
           .from('commander_waitlist_groups')
-          .select(`
-            id, game_type, stakes, status:group_status, created_at,
-            poker_venues:venue_id (id, name, city, state),
-            profiles:leader_id (id, display_name, avatar_url)
-          `)
+          .select('id, game_type, stakes, status:group_status, created_at, venue_id, leader_id')
           .in('id', groupIds)
               .limit(100);
-        (groups || []).forEach(g => { groupsMap[g.id] = g; });
+
+        // 2026-07-29 wiring fix: commander_waitlist_groups has no FK to
+        // poker_venues or profiles, so the venue and leader cannot be
+        // PostgREST-embedded off the group (errors PGRST200). Fetch them via
+        // separate keyed queries and attach as poker_venues/profiles.
+        const venueIds = [...new Set((groups || []).map(g => g.venue_id).filter(Boolean))];
+        const leaderIds = [...new Set((groups || []).map(g => g.leader_id).filter(Boolean))];
+        const venuesMap = {};
+        const leadersMap = {};
+        if (venueIds.length > 0) {
+          const { data: venues } = await getSupabase()
+            .from('poker_venues')
+            .select('id, name, city, state')
+            .in('id', venueIds);
+          (venues || []).forEach(v => { venuesMap[v.id] = v; });
+        }
+        if (leaderIds.length > 0) {
+          const { data: leaders } = await getSupabase()
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .in('id', leaderIds);
+          (leaders || []).forEach(l => { leadersMap[l.id] = l; });
+        }
+        (groups || []).forEach(g => {
+          g.poker_venues = venuesMap[g.venue_id] || null;
+          g.profiles = leadersMap[g.leader_id] || null;
+          groupsMap[g.id] = g;
+        });
       }
 
       // Separate active squads and completed ones

@@ -7,7 +7,7 @@ import { guardManager } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
-// 2026-07-25 audit fix: guarded construction — `new Stripe(undefined)` throws
+// 2026-07-25 audit fix: guarded construction - `new Stripe(undefined)` throws
 // at import and 500s the route before auth even runs.
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   if (!_staff) return;
 
   // 2026-07-25 audit fix: removed the hardcoded fallback secret that was
-  // committed to source ('commander-setup-2026') — the env secret is now
+  // committed to source ('commander-setup-2026') - the env secret is now
   // required, and the route fails closed when it is unset.
   const { secret } = req.query;
   if (!process.env.ADMIN_SETUP_SECRET || secret !== process.env.ADMIN_SETUP_SECRET) {

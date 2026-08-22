@@ -68,10 +68,10 @@ const data = await commanderFetchJSON(`/api/commander/admin/leads?status=${statu
         }
         setStats(computedStats);
       } else {
-        setError(data.error?.message || data.error || 'Failed to load leads');
+        setError(data.error?.message || data.error || 'Failed To Load Leads');
       }
     } catch (err) {
-      setError('Failed to load leads');
+      setError('Failed To Load Leads');
     } finally {
       setLoading(false);
     }
@@ -97,11 +97,11 @@ const res = await commanderFetch('/api/commander/admin/leads', {
     } catch (err) {
       setLoading(false);
       console.warn('Failed to update status:', err);
-      setError('Failed to update lead status. Please try again.');
+      setError('Failed To Update Lead Status. Please Try Again.');
     }
   }
 
-  // 2026-07-25 audit fix: guard against undefined leads/fields — landing-page
+  // 2026-07-25 audit fix: guard against undefined leads/fields - landing-page
   // leads may lack venue_name/contact_name/city.
   const safeLeads = Array.isArray(leads) ? leads : [];
   const filteredLeads = debouncedSearchTerm
@@ -123,7 +123,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
   return (
     <>
       <SEOHead
-        title="Commander — Leads"
+        title="Commander - Leads"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -216,7 +216,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
               <div className="p-8 text-center text-red-400">{error}</div>
             ) : filteredLeads.length === 0 ? (
               <div className="p-8 text-center text-[#B0B3B8]">
-                {searchTerm ? `No leads matching "${searchTerm}"` : 'No leads found'}
+                {searchTerm ? `No Leads Matching "${searchTerm}"` : 'No Leads Found'}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -250,7 +250,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                     {filteredLeads.map((lead) => {
                       const statusConfig = STATUS_CONFIG[lead.status] || STATUS_CONFIG.new;
                       // 2026-07-25 audit fix: removed the per-row CommanderLayout
-                      // wrapper — a full layout inside <tbody> is invalid markup
+                      // wrapper - a full layout inside <tbody> is invalid markup
                       return (
                           <tr
                             key={lead.id}
@@ -265,7 +265,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                                 <div>
                                   <div className="font-medium text-white">{lead.venue_name}</div>
                                   <div className="text-sm text-[#B0B3B8]">
-                                    {lead.current_system || 'No current system'}
+                                    {lead.current_system || 'No Current System'}
                                   </div>
                                 </div>
                               </div>
@@ -367,7 +367,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                     </div>
                     <div>
                       <div className="text-sm text-[#B0B3B8] mb-1">Tables</div>
-                      <div className="text-white">{selectedLead.table_count || 'Not specified'}</div>
+                      <div className="text-white">{selectedLead.table_count || 'Not Specified'}</div>
                     </div>
                   </div>
 

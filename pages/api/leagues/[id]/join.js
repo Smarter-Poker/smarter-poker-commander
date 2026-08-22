@@ -17,8 +17,8 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: USER — players join leagues with their own Bearer JWT
-// 2026-07-25 audit fix: removed the guardOwnerStaff gate — it required an
+// Auth: USER - players join leagues with their own Bearer JWT
+// 2026-07-25 audit fix: removed the guardOwnerStaff gate - it required an
 // owner/manager staff session, so no player could ever join a league. The
 // handler body below already authenticates the Bearer user and joins them
 // as themselves (identity from the verified token, never the body).

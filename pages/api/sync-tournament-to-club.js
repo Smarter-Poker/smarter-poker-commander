@@ -82,7 +82,7 @@ function formatTournamentPost(tournament) {
     return lines.join('\n');
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -93,12 +93,12 @@ export default async function handler(req, res) {
           return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
 
-      // Auth guard — require staff authentication
+      // Auth guard - require staff authentication
       const staff = await guardStaff(req, res);
       if (!staff) return;
 
       // 2026-07-25 audit fix: supabaseUrl/supabaseServiceKey were undefined
-      // identifiers — check the env vars getSupabase() actually uses.
+      // identifiers - check the env vars getSupabase() actually uses.
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL ||
           !(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
           return res.status(500).json({ success: false, error: 'Server configuration error' });
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
               .limit(1);
 
           if (!pages || pages.length === 0) {
-              // No Club Page exists for this venue — skip silently
+              // No Club Page exists for this venue - skip silently
               return res.status(200).json({
                   success: true,
                   synced: false,

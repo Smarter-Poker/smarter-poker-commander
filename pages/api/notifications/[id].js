@@ -3,7 +3,7 @@
  * PATCH - Mark notification as read
  * DELETE - Delete a notification
  */
-// 2026-07-25 audit fix: dual auth — the old code required BOTH a Bearer JWT
+// 2026-07-25 audit fix: dual auth - the old code required BOTH a Bearer JWT
 // and a staff session, blocking players from marking their own notifications
 // and PIN staff from mutating venue ones. Now: a Bearer user may mutate rows
 // whose player_id is their own; a verified staff session may mutate rows

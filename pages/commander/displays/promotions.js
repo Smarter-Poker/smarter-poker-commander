@@ -1,5 +1,5 @@
 /**
- * Promotions TV Display — Player-Facing
+ * Promotions TV Display - Player-Facing
  * /commander/displays/promotions
  * Full-screen display for TV via wireless HDMI transmitter
  * Shows: active promotions with prize values, countdown timers, highhand leaders
@@ -44,7 +44,7 @@ export default function PromotionsDisplay() {
     return getVenueId();
   });
 
-  // Central club branding — logo + name from Settings
+  // Central club branding - logo + name from Settings
   const { clubName, logoUrl: clubLogoUrl } = useClubBranding();
 
   const fetchData = useCallback(async () => {
@@ -135,7 +135,7 @@ export default function PromotionsDisplay() {
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
   const current = promotions[currentIndex];
 
-  // Format prize value — returns empty string if nothing to show
+  // Format prize value - returns empty string if nothing to show
   const formatPrize = (promo) => {
     if (!promo) return '';
     if (promo.prize_value && Number(promo.prize_value) > 0) {
@@ -163,7 +163,7 @@ export default function PromotionsDisplay() {
   return (
     <CommanderLayout title="Promotions Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
-              title="Commander — Promotions Display"
+              title="Commander - Promotions Display"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
@@ -189,7 +189,7 @@ export default function PromotionsDisplay() {
           borderBottom: '3px solid rgba(255,255,255,0.15)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Club Logo — uploaded from Settings, or initial letter fallback */}
+            {/* Club Logo - uploaded from Settings, or initial letter fallback */}
             <div style={{
               width: 56, height: 56, borderRadius: 14,
               background: 'rgba(255,255,255,0.15)',
@@ -276,7 +276,7 @@ export default function PromotionsDisplay() {
                 </p>
               </div>
 
-              {/* Promo Name — LARGE */}
+              {/* Promo Name - LARGE */}
               <h2 style={{
                 fontSize: 'clamp(36px, 5vw, 72px)',
                 fontWeight: 900,
@@ -288,7 +288,7 @@ export default function PromotionsDisplay() {
                 {current.name}
               </h2>
 
-              {/* Prize Amount — HERO SIZE */}
+              {/* Prize Amount - HERO SIZE */}
               {formatPrize(current) && (
                 <p className="shimmer" style={{
                   fontSize: 'clamp(64px, 10vw, 120px)',
@@ -344,7 +344,7 @@ export default function PromotionsDisplay() {
           </div>
         )}
 
-        {/* ── DEALER TICKER — 2x size, raised up, 100% slower ── */}
+        {/* ── DEALER TICKER - 2x size, raised up, 100% slower ── */}
         <DealerTicker
           accentColor="#F59E0B"
           bgColor="rgba(0,0,0,0.95)"

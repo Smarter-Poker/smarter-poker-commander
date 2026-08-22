@@ -1,8 +1,8 @@
 /**
  * W-2G Tax Compliance API
- * GET /api/commander/tax/w2g — List tax events for venue
- * POST /api/commander/tax/w2g — Generate W-2G for a tax event
- * PATCH /api/commander/tax/w2g — Update tax event (SSN, acknowledge, notes)
+ * GET /api/commander/tax/w2g - List tax events for venue
+ * POST /api/commander/tax/w2g - Generate W-2G for a tax event
+ * PATCH /api/commander/tax/w2g - Update tax event (SSN, acknowledge, notes)
  *
  * IRS W-2G: Required for poker tournament winnings >= $5,000 (net of buy-in)
  * Federal withholding: 24% on reportable gambling winnings
@@ -24,7 +24,7 @@ function getSupabase() {
 
 const FEDERAL_WITHHOLDING_RATE = 0.24;
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -127,7 +127,7 @@ async function generateW2G(req, res, staff) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'tax_event_id required' } });
   }
 
-  // 2026-07-25 audit fix: generating a W-2G updates the tax event — manager role required.
+  // 2026-07-25 audit fix: generating a W-2G updates the tax event - manager role required.
   if (!['owner', 'manager'].includes(staff.role)) {
     return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager role required' } });
   }
@@ -172,30 +172,55 @@ async function generateW2G(req, res, staff) {
       ? `${venue.address || ''}, ${venue.city || ''}, ${venue.state || ''} ${venue.zip || ''}`.trim()
       : '';
 
-    // Calculate withholding
-    const grossAmount = parseFloat(event.gross_amount);
-    const buyIn = parseFloat(event.buy_in || 0);
-    const netWinnings = grossAmount - buyIn;
-    const withholdingAmount = Math.round(netWinnings * FEDERAL_WITHHOLDING_RATE * 100) / 100;
+    // ── The reportable figure ──
+    // 2026-08-20 fix. Box 1 of a poker tournament W-2G is the NET winnings
+    // (proceeds minus the wager), not the gross. The form used to print the
+    // gross in Box 1 and the net in Box 7, which is the wrong box for both
+    // numbers: Box 7 is "winnings from identical wagers", which does not apply
+    // to a poker tournament at all.
+    const grossAmount = parseFloat(event.gross_amount) || 0;
+    const buyIn = parseFloat(event.buy_in || 0) || 0;
+    const storedNet = event.net_amount === null || event.net_amount === undefined
+      ? null
+      : parseFloat(event.net_amount);
+    const netWinnings = Number.isFinite(storedNet) ? storedNet : (grossAmount - buyIn);
+
+    // Withholding is BACKUP withholding, and only applies when the winner did
+    // not furnish a TIN. It is never assumed: it comes off the flag already
+    // recorded on the event (see src/lib/commander/taxEvents.js for why this
+    // system cannot determine TIN status on its own).
+    const withholdingRequired = !!event.withholding_required;
+    const withholdingRate = withholdingRequired
+      ? (parseFloat(event.withholding_rate) || FEDERAL_WITHHOLDING_RATE)
+      : 0;
+    const withholdingAmount = withholdingRequired
+      ? Math.round(netWinnings * withholdingRate * 100) / 100
+      : 0;
 
     // Generate W-2G form data
     const w2gData = {
-      // Box 1: Reportable winnings
-      box1_gross_winnings: grossAmount,
+      // Box 1: Reportable winnings. For a poker tournament this is the NET.
+      box1_gross_winnings: netWinnings,
+      box1_reportable_winnings: netWinnings,
       // Box 2: Date won
       box2_date_won: event.event_date,
       // Box 3: Type of wager
       box3_wager_type: 'Poker Tournament',
-      // Box 4: Federal income tax withheld
+      // Box 4: Federal income tax withheld (backup withholding only)
       box4_federal_withheld: withholdingAmount,
       // Box 5: Transaction (tournament details)
-      box5_transaction: `Tournament - Buy-in: $${buyIn.toFixed(2)}`,
+      box5_transaction: `Poker Tournament - Proceeds: $${grossAmount.toFixed(2)}, Wager: $${buyIn.toFixed(2)}`,
       // Box 6: Race (N/A for poker)
       box6_race: '',
-      // Box 7: Winnings from identical wagers
-      box7_identical_winnings: netWinnings,
+      // Box 7: Winnings from identical wagers. Not applicable to a poker
+      // tournament, so it is reported as zero rather than duplicating Box 1.
+      box7_identical_winnings: 0,
       // Box 8: Cashier (N/A)
       box8_cashier: '',
+      // Context, not a form box.
+      gross_proceeds: grossAmount,
+      wager: buyIn,
+      withholding_required: withholdingRequired,
       // Payer info
       payer_name: payer_name || venue?.name || 'Venue',
       payer_ein: payer_ein || '',
@@ -214,9 +239,12 @@ async function generateW2G(req, res, staff) {
       .from('commander_tax_events')
       .update({
         w2g_generated: true,
+        // Only stamp a rate when withholding actually applies; a rate on an
+        // event with no withholding reads as money taken that never was.
         withholding_amount: withholdingAmount,
-        withholding_rate: FEDERAL_WITHHOLDING_RATE,
-        // 2026-07-25 audit fix: removed player_ssn_last4 write — column does not exist.
+        withholding_rate: withholdingRequired ? withholdingRate : null,
+        net_amount: netWinnings,
+        // 2026-07-25 audit fix: removed player_ssn_last4 write - column does not exist.
         w2g_document_url: `w2g://${tax_event_id}` // Reference for retrieval
       })
       .eq('id', tax_event_id)
@@ -230,7 +258,7 @@ async function generateW2G(req, res, staff) {
       data: {
         w2g: w2gData,
         tax_event: updated,
-        message: `W-2G generated for ${playerName} — $${grossAmount.toFixed(2)} gross, $${withholdingAmount.toFixed(2)} withheld`
+        message: `W-2G Generated For ${playerName}. Reportable Net $${netWinnings.toFixed(2)} (Proceeds $${grossAmount.toFixed(2)} Less Wager $${buyIn.toFixed(2)}), $${withholdingAmount.toFixed(2)} Withheld.`
       }
     });
   } catch (error) {
@@ -240,7 +268,7 @@ async function generateW2G(req, res, staff) {
 }
 
 async function updateTaxEvent(req, res, staff) {
-  // 2026-07-25 audit fix: removed player_ssn_last4 handling — the column does not
+  // 2026-07-25 audit fix: removed player_ssn_last4 handling - the column does not
   // exist and SSN data must not be written through this API.
   const { tax_event_id, notes, player_acknowledged } = req.body;
 

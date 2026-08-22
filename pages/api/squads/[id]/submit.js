@@ -58,18 +58,13 @@ export default async function handler(req, res) {
       }
 
       // Get squad with members
+      // 2026-07-29 wiring fix: commander_waitlist_group_members has no FK to
+      // commander_waitlist_groups, so members cannot be embedded off the group
+      // (errors PGRST200). Fetch the group, then members (the nested profiles
+      // embed off members is valid: player_id -> profiles FK), separately.
       const { data: squad, error: squadError } = await getSupabase()
         .from('commander_waitlist_groups')
-        .select(`
-          *,
-          commander_waitlist_group_members (
-            id,
-            player_id,
-            member_status,
-            joined_at,
-            profiles (id, display_name, phone)
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
@@ -80,6 +75,12 @@ export default async function handler(req, res) {
         });
       }
 
+      const { data: squadMembers } = await getSupabase()
+        .from('commander_waitlist_group_members')
+        .select('id, player_id, member_status, joined_at, profiles (id, display_name, phone)')
+        .eq('group_id', id);
+      squad.commander_waitlist_group_members = squadMembers || [];
+
       // Verify user is the leader
       if (squad.leader_id !== user.id) {
         return res.status(403).json({
@@ -89,7 +90,7 @@ export default async function handler(req, res) {
       }
 
       // Verify squad is in forming status (not yet submitted)
-      // 2026-07-25 audit fix: real column is group_status — squad.status was
+      // 2026-07-25 audit fix: real column is group_status - squad.status was
       // always undefined, so every submit 400'd as ALREADY_SUBMITTED.
       if (squad.group_status !== 'forming') {
         return res.status(400).json({
@@ -98,7 +99,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2026-07-25 audit fix: members DO have member_status — only submit
+      // 2026-07-25 audit fix: members DO have member_status - only submit
       // accepted members, not pending invitations.
       const members = (squad.commander_waitlist_group_members || [])
         .filter(m => !m.member_status || m.member_status === 'active');

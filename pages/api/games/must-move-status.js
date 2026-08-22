@@ -1,5 +1,5 @@
 /**
- * Must-Move Games Management API — Chain-Based
+ * Must-Move Games Management API - Chain-Based
  * GET /api/commander/games/must-move-status?venue_id=X
  *   Returns active games grouped by type+stakes with chain-ordered must-move relationships.
  *   Chain example: T7 → T4 → T1 (players move one step at a time, not all to main).
@@ -8,7 +8,7 @@
  *   Body: { must_move_game_id, target_game_id }
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -22,17 +22,22 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - the GET returns every occupied seat with
+    // player_name and buyin_amount for the requested venue, so any venue's
+    // seated players were public. The POST moves a player between tables and
+    // took raw game ids with no venue ownership check.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
-    if (req.method === 'GET') return handleGet(req, res);
-    if (req.method === 'POST') return handlePost(req, res);
+    if (req.method === 'GET') return handleGet(req, res, _g);
+    if (req.method === 'POST') return handlePost(req, res, _g);
     return res.status(405).json({ success: false, error: 'Method not allowed' });
 
   } catch (err) {
@@ -42,10 +47,19 @@ export default async function handler(req, res) {
   }
 }
 
-async function handleGet(req, res) {
+function venueMismatch(staff, venueId) {
+  if (!staff || staff === true) return false;
+  if (staff.venue_id === undefined || staff.venue_id === null) return false;
+  return String(staff.venue_id) !== String(venueId);
+}
+
+async function handleGet(req, res, staff) {
   try {
     const { venue_id } = req.query;
     if (!venue_id) return res.status(400).json({ success: false, error: 'venue_id required' });
+    if (venueMismatch(staff, venue_id)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+    }
 
     // Get all active games
     const { data: games, error } = await getSupabase()
@@ -212,7 +226,7 @@ async function handleGet(req, res) {
   }
 }
 
-async function handlePost(req, res) {
+async function handlePost(req, res, staff) {
   try {
     // Accept both old format (main_game_id) and new format (target_game_id)
     const { must_move_game_id, target_game_id, main_game_id } = req.body;
@@ -220,6 +234,20 @@ async function handlePost(req, res) {
 
     if (!must_move_game_id || !actualTargetId) {
       return res.status(400).json({ success: false, error: 'must_move_game_id and target_game_id required' });
+    }
+
+    // 2026-08-20 audit fix: both game ids came straight off the body, so staff
+    // at venue A could move venue B's players between venue B's tables.
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null) {
+      const { data: scopedGames } = await getSupabase()
+        .from('commander_games')
+        .select('id')
+        .eq('venue_id', staff.venue_id)
+        .in('id', [must_move_game_id, actualTargetId]);
+
+      if ((scopedGames || []).length !== 2) {
+        return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+      }
     }
 
     // Get the must-move game's oldest occupied seat (first in line to move)
@@ -286,7 +314,7 @@ async function handlePost(req, res) {
       .eq('id', mmGame?.table_id)
       .maybeSingle();
 
-    // Move the player (INSERT FIRST, THEN DELETE — if insert fails, player stays at source):
+    // Move the player (INSERT FIRST, THEN DELETE - if insert fails, player stays at source):
     // 1. Insert a new seat at the target game FIRST
     const { error: insertError } = await getSupabase().from('commander_seats').insert({
       game_id: actualTargetId,
@@ -302,7 +330,7 @@ async function handlePost(req, res) {
       return res.status(500).json({ success: false, error: 'Failed to seat player at target table' });
     }
 
-    // 2. Delete their seat at the must-move table (safe — player already seated at target)
+    // 2. Delete their seat at the must-move table (safe - player already seated at target)
     await getSupabase().from('commander_seats').delete().eq('id', playerToMove.id);
 
     // 3. Update player counts using actual seat counts (not stale fields)

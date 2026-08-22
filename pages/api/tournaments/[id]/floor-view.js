@@ -9,10 +9,14 @@
  * - Stats (entries, rebuys, addons, prize pool, avg stack)
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parseBlindStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+// Shared pool math so the floor console quotes the same prize pool as the
+// payouts screen, the public live page and every bust.
+import { collectedPrizePool, collectedBountyPool, bountyPortionPerEntry } from './payout';
+import { entryBountyValue, entryBountyWinnings } from '../../../../src/lib/commander/tournamentBounty';
 
 let _supabase = null;
 function getSupabase() {
@@ -24,12 +28,200 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Hot path. Every TD screen and every table tablet polls this route, so it
+// selects columns instead of `*`: the tournament row carries break_schedule and
+// a pile of cashier columns nothing here reads, and an entry row carries
+// cashier/payment/notes columns that never reach the client.
+// The multi-day flags ARE read: the Control Center needs to know whether to
+// offer End Day / Resume Day at all. day_end_chip_counts is still excluded -
+// it is an unbounded per-player blob and the bagged stack already lives on
+// each entry's current_chips.
+const TOURNAMENT_COLUMNS = [
+  'id', 'venue_id', 'name', 'status', 'tournament_type', 'buyin_amount', 'buyin_fee',
+  'starting_chips', 'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'rebuy_end_level',
+  'allows_addon', 'addon_amount', 'addon_chips', 'late_registration_levels',
+  'guaranteed_pool', 'actual_start', 'scheduled_start', 'payout_structure',
+  'bounty_amount', 'actual_prizepool', 'paying_places', 'max_entries',
+  'blind_structure', 'settings', 'current_level',
+  'is_multi_day', 'total_days', 'current_day', 'flight_label', 'resume_time'
+].join(', ');
+
+const ENTRY_COLUMNS = [
+  'id', 'player_id', 'player_name', 'status', 'table_number', 'seat_number',
+  'current_chips', 'rebuy_count', 'addon_taken', 'finish_position', 'eliminated_at',
+  'payout_amount', 'registered_at', 'created_at', 'metadata', 'bounties_collected'
+].join(', ');
+
+// bounty_value/bounty_winnings arrive with migration
+// 20260821130000_commander_entry_bounty_columns.sql. This is the hottest route
+// in the room, so the column presence is probed ONCE per process and the
+// answer reused: a deploy landing before the migration costs exactly one
+// failed select, then falls back to the metadata copy the bounty writer keeps.
+const ENTRY_COLUMNS_WITH_BOUNTY = `${ENTRY_COLUMNS}, bounty_value, bounty_winnings`;
+let _entriesHaveBountyColumns = null;
+function isMissingColumn(error) {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' ||
+    /column .* does not exist/i.test(String(error.message || ''));
+}
+
+// ── Payload split (?include=) ────────────────────────────────────────────────
+// Every TD screen, every table tablet and every TV used to receive the WHOLE
+// floor view on every poll, including the full entry list (up to 5000 rows),
+// no matter how little of it the screen rendered. The TV clock polls this
+// route every 3 seconds and reads nothing but the tournament, the clock, the
+// stats and the two alert flags.
+//
+// COMPATIBILITY DECISION: a request with no `include` parameter still gets
+// exactly the payload it got before, every section, player_stacks included.
+// Only a caller that opts in by naming the sections it wants gets a reduced
+// body. That keeps any caller outside this repo (a kiosk on an old bundle, a
+// bookmarked screen, the World Hub) working untouched, and means a missed
+// caller degrades to "as slow as yesterday" rather than "renders blank".
+const INCLUDE_PARTS = [
+  'tournament',   // always present, this is the cheap header every screen needs
+  'clock',
+  'stats',
+  'stacks',       // stats.player_stacks, one row per remaining player
+  'alerts',
+  'tables',
+  'alternates',
+  'entries',      // the expensive one
+  'eliminated'
+];
+
+/**
+ * Parse ?include=a,b,c into a Set of sections.
+ * Returns null when the caller did not opt in, which means "send everything"
+ * (the legacy payload). Unknown tokens are ignored, and a parameter that
+ * names nothing valid also falls back to everything: an unreadable filter
+ * must never silently strip data a screen depends on.
+ */
+export function parseInclude(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const wanted = String(raw)
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(s => INCLUDE_PARTS.includes(s));
+  if (wanted.length === 0) return null;
+  const set = new Set(wanted);
+  set.add('tournament');
+  return set;
+}
+
+/**
+ * Slice the entry list for a paginated caller.
+ * No entries_limit means the whole list, exactly as before.
+ * @returns {{ rows: Array, page: object|null }}
+ */
+export function paginateEntries(rows, query) {
+  const total = rows.length;
+  const rawLimit = query?.entries_limit;
+  if (rawLimit === undefined || rawLimit === null || rawLimit === '') {
+    return { rows, page: null };
+  }
+  // An unreadable limit is not a reason to hand back one row: fall back to
+  // the whole list, the same as a caller that never asked to paginate.
+  const rawNum = Number(rawLimit);
+  if (!Number.isFinite(rawNum) || rawNum <= 0) return { rows, page: null };
+  const limit = Math.min(5000, Math.floor(rawNum));
+  const rawOffset = Number(query?.entries_offset);
+  const offset = Math.min(
+    Number.isFinite(rawOffset) && rawOffset > 0 ? Math.floor(rawOffset) : 0,
+    total
+  );
+  const slice = rows.slice(offset, offset + limit);
+  return {
+    rows: slice,
+    page: {
+      limit,
+      offset,
+      returned: slice.length,
+      total,
+      has_more: offset + slice.length < total,
+      next_offset: offset + slice.length < total ? offset + slice.length : null
+    }
+  };
+}
+
+function selectEntries(tournamentId, columns) {
+  return getSupabase()
+    .from('commander_tournament_entries')
+    .select(columns)
+    .eq('tournament_id', tournamentId)
+    .order('table_number', { ascending: true })
+    .order('seat_number', { ascending: true })
+    .limit(5000);
+}
+
+/**
+ * Last manual chip correction for an entry, or undefined when the stack has
+ * never been overwritten by hand.
+ *
+ * entries/[entryId]/chips.js appends { from, to, delta, by, at } to
+ * metadata.chip_corrections on every correction (capped at the last 20). Only
+ * the newest one is published here: this route is polled by every tablet and TV
+ * in the room, so the whole array must not go over the wire.
+ *
+ * Falls back to the older single-shot metadata.previous_chips shape so entries
+ * corrected before the history existed still show something.
+ */
+function lastChipCorrection(entry) {
+  const meta = entry?.metadata;
+  if (!meta || typeof meta !== 'object') return undefined;
+
+  const history = Array.isArray(meta.chip_corrections) ? meta.chip_corrections : null;
+  if (history && history.length > 0) {
+    const last = history[history.length - 1];
+    if (!last || typeof last !== 'object') return undefined;
+    return {
+      from: last.from ?? null,
+      to: last.to ?? null,
+      delta: last.delta ?? ((Number(last.to) || 0) - (Number(last.from) || 0)),
+      by: last.by ?? null,
+      at: last.at ?? null,
+      total_corrections: history.length
+    };
+  }
+
+  if (meta.previous_chips == null || !meta.chip_updated_at) return undefined;
+  return {
+    from: meta.previous_chips,
+    to: entry.current_chips ?? null,
+    delta: (Number(entry.current_chips) || 0) - (Number(meta.previous_chips) || 0),
+    by: meta.updated_by ?? null,
+    at: meta.chip_updated_at,
+    total_corrections: 1
+  };
+}
+
+// Clock backfill throttle. A tournament that was never properly started has no
+// settings.clock_state, and this GET used to write one on EVERY request. With
+// 20 tablets polling that is 40 writes a minute, and because
+// commander_clock_write stamps levelStartedAt = now() unconditionally, each of
+// those writes restarted the level timer - the clock could never run down.
+// The write is now memoised per process AND guarded at the database level, so
+// only the first caller in the room actually persists anything.
+const CLOCK_BACKFILL_TTL_MS = 60 * 1000;
+const _clockBackfillAt = new Map();
+function claimClockBackfill(tournamentId) {
+  const now = Date.now();
+  const last = _clockBackfillAt.get(tournamentId);
+  if (last && now - last < CLOCK_BACKFILL_TTL_MS) return false;
+  // Bound the map so a long-lived instance cannot leak across many events.
+  if (_clockBackfillAt.size > 500) _clockBackfillAt.clear();
+  _clockBackfillAt.set(tournamentId, now);
+  return true;
+}
+
+// Auth: STAFF READ. guardWriteStaff left this GET fully public, which exposed
+// player names, phones, chip counts and entry metadata to anyone with the URL.
+// guardStaff requires a valid signed staff session on every method.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
@@ -39,61 +231,106 @@ export default async function handler(req, res) {
     const { id: tournamentId } = req.query;
     if (!tournamentId) return res.status(400).json({ success: false, error: 'Tournament ID required' });
 
+    // null = no opt-in = the legacy payload, every section.
+    const include = parseInclude(req.query.include);
+    const want = (part) => !include || include.has(part);
+    // Anything derived from the entry list. A caller asking for nothing but
+    // the tournament header and the clock skips the 5000 row scan entirely.
+    const needsEntries = want('stats') || want('stacks') || want('alerts') ||
+      want('tables') || want('alternates') || want('entries') || want('eliminated');
+    // Display names and avatars only matter to the sections that render people.
+    const needsProfiles = want('tables') || want('entries') || want('alternates') ||
+      want('eliminated') || want('stacks');
+    // max_seats feeds the table map and the imbalance maths.
+    const needsTableConfigs = want('tables') || want('alerts');
+
     try {
       // Staff is already validated by guardWriteStaff at the handler level
 
-      // Get tournament with full details
-      const { data: tournament, error: tErr } = await getSupabase()
-        .from('commander_tournaments')
-        .select('*')
-        .eq('id', tournamentId)
-        .maybeSingle();
+      // The tournament row and the entries list depend only on the id, so they
+      // go out together. Serialising them cost a full network round trip to
+      // Supabase on every poll from every device for no reason.
+      const [tournamentRes, entriesRes] = await Promise.all([
+        getSupabase()
+          .from('commander_tournaments')
+          .select(TOURNAMENT_COLUMNS)
+          .eq('id', tournamentId)
+          .maybeSingle(),
+        // Get ALL entries (active + eliminated + registered) - Up to 5000 to prevent cutoff on massive fields
+        needsEntries
+          ? selectEntries(tournamentId, _entriesHaveBountyColumns === false ? ENTRY_COLUMNS : ENTRY_COLUMNS_WITH_BOUNTY)
+          : Promise.resolve({ data: [], error: null })
+      ]);
+
+      const { data: tournament, error: tErr } = tournamentRes;
       if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
 
+      let entriesResult = entriesRes;
+      if (entriesResult.error && isMissingColumn(entriesResult.error)) {
+        // Pre-migration deploy: retry once without the bounty columns and
+        // remember, so this costs one failed select per process, not per poll.
+        _entriesHaveBountyColumns = false;
+        entriesResult = await selectEntries(tournamentId, ENTRY_COLUMNS);
+      } else if (needsEntries && !entriesResult.error) {
+        // Only a real select proves anything. A skipped one must not flip the
+        // memo back to true and undo a previously detected missing column.
+        _entriesHaveBountyColumns = true;
+      }
 
-      // Get ALL entries (active + eliminated + registered) - Up to 5000 to prevent cutoff on massive fields
-      const { data: allEntries } = await getSupabase()
-        .from('commander_tournament_entries')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('table_number', { ascending: true })
-        .order('seat_number', { ascending: true })
-        .limit(5000);
-
-      const entries = allEntries || [];
+      const entries = entriesResult.data || [];
+      // TWO different questions, two different lists. Conflating them is what
+      // made a bagged player vanish from the field.
+      //   activeEntries  = "who is physically holding a chair right now"
+      //                    -> table map, occupancy, imbalance, seat conflicts.
+      //   remainingEntries = "who is still alive in this tournament"
+      //                    -> players remaining, total chips, average stack.
+      // A 'bagged' player (multi-day, chips in a bag overnight) is in the
+      // second list and NOT the first: they are still in the event but they
+      // are not sitting anywhere.
       const activeEntries = entries.filter(e => ['active', 'seated'].includes(e.status));
+      const baggedEntries = entries.filter(e => e.status === 'bagged');
+      const remainingEntries = entries.filter(e => ['active', 'seated', 'bagged'].includes(e.status));
       const eliminatedEntries = entries.filter(e => e.status === 'eliminated');
       const registeredEntries = entries.filter(e => e.status === 'registered');
 
-      // Batch fetch profile avatars for linked players
-      const avatarMap = {};
-      const playerIds = [...new Set(entries.map(e => e.player_id).filter(Boolean))];
-      if (playerIds.length > 0) {
-        const { data: profiles } = await getSupabase()
-          .from('profiles')
-          .select('id, avatar_url, display_name')
-              .limit(500)
-          .in('id', playerIds);
-        if (profiles) {
-          profiles.forEach(p => { avatarMap[p.id] = { avatar_url: p.avatar_url, display_name: p.display_name }; });
-        }
-      }
-
-      // Build table map — get real max_seats from commander_tables
+      // Build table map - get real max_seats from commander_tables.
+      // Seat occupancy: bagged players hold no seat, so activeEntries.
       const tableNumbers = [...new Set(activeEntries.map(e => e.table_number).filter(Boolean))].sort((a, b) => a - b);
 
-      // Query actual table configs for max_seats
-      let tableConfigs = {};
-      if (tableNumbers.length > 0) {
-        const { data: dbTables } = await getSupabase()
-          .from('commander_tables')
-          .select('table_number, max_seats')
-          .eq('venue_id', tournament.venue_id)
-          .in('table_number', tableNumbers)
+      // Avatars and table configs are independent of each other, so the second
+      // pair of lookups also goes out together. Four serial round trips on the
+      // busiest route in the room is now two.
+      const playerIds = needsProfiles
+        ? [...new Set(entries.map(e => e.player_id).filter(Boolean))]
+        : [];
+      const [profilesRes, dbTablesRes] = await Promise.all([
+        playerIds.length > 0
+          ? getSupabase()
+              .from('profiles')
+              .select('id, avatar_url, display_name')
+              .limit(500)
+              .in('id', playerIds)
+          : Promise.resolve({ data: null }),
+        needsTableConfigs && tableNumbers.length > 0
+          ? getSupabase()
+              .from('commander_tables')
+              .select('table_number, max_seats')
+              .eq('venue_id', tournament.venue_id)
+              .in('table_number', tableNumbers)
               .limit(100)
-        if (dbTables) {
-          dbTables.forEach(t => { tableConfigs[t.table_number] = t.max_seats || 9; });
-        }
+          : Promise.resolve({ data: null })
+      ]);
+
+      // Batch fetch profile avatars for linked players
+      const avatarMap = {};
+      if (profilesRes.data) {
+        profilesRes.data.forEach(p => { avatarMap[p.id] = { avatar_url: p.avatar_url, display_name: p.display_name }; });
+      }
+
+      // Query actual table configs for max_seats
+      const tableConfigs = {};
+      if (dbTablesRes.data) {
+        dbTablesRes.data.forEach(t => { tableConfigs[t.table_number] = t.max_seats || 9; });
       }
 
       const tableCounts = {};
@@ -106,7 +343,9 @@ export default async function handler(req, res) {
       const maxCount = countValues.length > 0 ? Math.max(...countValues) : 0;
       const minCount = countValues.length > 0 ? Math.min(...countValues) : 0;
 
-      const tables = tableNumbers.map(tn => {
+      // Built only for callers that render the table map. The counts above are
+      // still computed either way: the imbalance alerts need them.
+      const tables = !want('tables') ? [] : tableNumbers.map(tn => {
         const maxSeats = tableConfigs[tn] || 9;
         const players = activeEntries
           .filter(e => e.table_number === tn)
@@ -118,7 +357,10 @@ export default async function handler(req, res) {
             rebuy_count: e.rebuy_count || 0,
             addon_taken: e.addon_taken || false,
             locked: e.metadata?.locked_seat || false,
-            avatar_url: avatarMap[e.player_id]?.avatar_url || null
+            // Omitted rather than null when there is no linked profile: every
+            // consumer tests truthiness, and a null per seat is dead weight on
+            // a 500 seat field polled by the whole room.
+            avatar_url: avatarMap[e.player_id]?.avatar_url || undefined
           }));
 
         const count = tableCounts[tn];
@@ -141,20 +383,78 @@ export default async function handler(req, res) {
       // Calculate stats
       const totalRebuys = entries.reduce((sum, e) => sum + (e.rebuy_count || 0), 0);
       const totalAddons = entries.filter(e => e.addon_taken).length;
-      const totalChips = activeEntries.reduce((sum, e) => sum + (e.current_chips || 0), 0);
-      const avgStack = activeEntries.length > 0 ? Math.round(totalChips / activeEntries.length) : 0;
-      // 2026-07-25 audit fix: rebuy_cost/addon_cost are not real columns —
+      // Field maths: bagged players still own their chips and are still in the
+      // tournament, so they count toward total chips and the average stack.
+      // Excluding them made the average stack jump overnight and made the
+      // chip-leader board drop the overnight leader entirely.
+      const totalChips = remainingEntries.reduce((sum, e) => sum + (e.current_chips || 0), 0);
+      const avgStack = remainingEntries.length > 0 ? Math.round(totalChips / remainingEntries.length) : 0;
+      // 2026-07-25 audit fix: rebuy_cost/addon_cost are not real columns,
       // use rebuy_amount/addon_amount so rebuys and add-ons count in the pool.
-      const prizePool = tournament.actual_prizepool || tournament.prize_pool ||
-        (entries.length * (tournament.buyin_amount || 0)) +
-        (totalRebuys * (tournament.rebuy_amount || 0)) +
-        (totalAddons * (tournament.addon_amount || 0));
+      // 2026-08-19 fix: dropped the dead tournament.prize_pool read (not a column)
+      // and applied the guarantee: the advertised pool is max(collected, guarantee),
+      // TableCaptain-style, so overlays display correctly.
+      // Cancelled entries never paid (their money row is reversed), so they
+      // must not count toward the pool. Alternates DID pay at sign-up.
+      // 2026-08-21 fix: the bounty slice of a bounty/PKO buy-in is bounty
+      // money, never prize money (house rule: charge = buyin + fee,
+      // prize = buyin - bounty). Counting the whole buy-in as prize pool
+      // double counted every bounty event. collectedPrizePool is the one
+      // definition shared with payout.js, eliminate.js and clock.js.
+      const paidEntryCount = entries.filter(e => e.status !== 'cancelled').length;
+      const collectedPool = collectedPrizePool(tournament, {
+        entries: paidEntryCount, rebuys: totalRebuys, addons: totalAddons
+      });
+      const bountyPool = collectedBountyPool(tournament, {
+        entries: paidEntryCount, rebuys: totalRebuys
+      });
+      const bountyPerEntry = bountyPortionPerEntry(tournament);
+      const prizePool = tournament.actual_prizepool ||
+        Math.max(collectedPool, tournament.guaranteed_pool || 0);
+      const overlayAmount = Math.max(0, (tournament.guaranteed_pool || 0) - collectedPool);
 
-      // Check late registration
+      // Check late registration.
+      // 2026-08-20 fix: this used current_level <= late_registration_levels
+      // while register.js and entries.js close registration when
+      // (current_level + 1) > late_registration_levels. The two disagreed by a
+      // full level, so the console advertised late reg as OPEN for a level in
+      // which the registration endpoints were already rejecting players, and
+      // the cashier only found out when the buy-in bounced.
+      const lateRegLevels = tournament.late_registration_levels || 0;
+      const currentLevelNumber = (tournament.current_level || 0) + 1;
       const lateRegOpen = tournament.status === 'running' &&
-        (tournament.current_level || 0) <= (tournament.late_registration_levels || 0);
+        currentLevelNumber <= lateRegLevels;
 
-      // Imbalance check
+      // Seat conflicts: two live players holding the same table + seat. The
+      // floor has to know, otherwise the first the room hears about it is two
+      // players arguing over one chair. Historic data contains these, and the
+      // read-then-write seating path that created them is now atomic.
+      // 2026-08-20 fix: this used to push one row per EXTRA occupant, so a chair
+      // shared by three players produced two rows for the same seat, each
+      // naming only two of them. The console rendered duplicate fix buttons and
+      // disagreed with the seat-conflicts endpoint's count. Group by seat and
+      // emit one row carrying every occupant.
+      const seatOccupants = new Map();
+      for (const e of activeEntries) {
+        if (!e.table_number || !e.seat_number) continue;
+        const key = `${e.table_number}:${e.seat_number}`;
+        if (!seatOccupants.has(key)) seatOccupants.set(key, []);
+        seatOccupants.get(key).push(avatarMap[e.player_id]?.display_name || e.player_name);
+      }
+      const seatConflicts = [];
+      for (const [key, names] of seatOccupants) {
+        if (names.length < 2) continue;
+        const [tableNumber, seatNumber] = key.split(':').map(Number);
+        seatConflicts.push({
+          table_number: tableNumber,
+          seat_number: seatNumber,
+          player_count: names.length,
+          players: names.filter(Boolean)
+        });
+      }
+
+      // Imbalance check. Occupancy question: activeEntries only. A bagged
+      // field would otherwise look like it needed a table broken.
       const imbalanced = tableNumbers.length >= 2 && (maxCount - minCount >= 2);
       const avgMaxSeats = tableNumbers.length > 0
         ? Math.round(tableNumbers.reduce((sum, tn) => sum + (tableConfigs[tn] || 9), 0) / tableNumbers.length)
@@ -186,23 +486,58 @@ export default async function handler(req, res) {
       // Auto-initialize clock_state for running tournaments that were never properly started
       if (!clockState && ['running', 'break', 'final_table'].includes(tournament.status)) {
         // 2026-07-25 audit fix: when backfilling mid-tournament use now as
-        // levelStartedAt — using actual_start made the level appear long expired.
+        // levelStartedAt - using actual_start made the level appear long expired.
         clockState = {
           isRunning: tournament.status === 'running',
           levelStartedAt: new Date().toISOString(),
           pausedAt: null,
           pausedDuration: 0
         };
-        // Persist so this only happens once — store in settings to bypass schema cache issues
-        const updatedSettings = { ...tournamentSettings, clock_state: clockState };
-        await getSupabase()
-          .from('commander_tournaments')
-          .update({ settings: updatedSettings, actual_start: tournament.actual_start || clockState.levelStartedAt })
-          .eq('id', tournamentId);
+        // Persist so this only happens once. Two guards, because this is a GET
+        // that 20 tablets hit every 30 seconds:
+        //   1. claimClockBackfill throttles a warm instance to one attempt per
+        //      tournament per minute.
+        //   2. The UPDATE carries `settings->>clock_state is null`, so a second
+        //      instance racing the first writes zero rows instead of stamping a
+        //      fresh levelStartedAt and restarting the level timer. The text
+        //      arrow is deliberate: `->` would miss a stored JSON null (which
+        //      is what the clock `end` action leaves behind), `->>` treats a
+        //      missing key and a JSON null alike.
+        // The read never depends on the write: clockState is already computed
+        // locally, so a failed backfill degrades to "try again next poll".
+        if (claimClockBackfill(tournamentId)) {
+          try {
+            const patch = {
+              settings: { ...tournamentSettings, clock_state: clockState },
+              ...(tournament.actual_start ? {} : { actual_start: clockState.levelStartedAt })
+            };
+            const { error: guardErr } = await getSupabase()
+              .from('commander_tournaments')
+              .update(patch)
+              .eq('id', tournamentId)
+              .is('settings->>clock_state', null);
+            // Fallback for any PostgREST build that will not filter on a jsonb
+            // path: the RPC is unguarded but still correct for a single writer.
+            if (guardErr) {
+              await getSupabase().rpc('commander_clock_write', {
+                p_tournament_id: tournamentId,
+                p_clock_state: clockState,
+                p_updates: tournament.actual_start ? {} : { actual_start: clockState.levelStartedAt }
+              });
+            }
+          } catch (backfillErr) {
+            console.warn('[floor-view] Clock backfill skipped:', backfillErr?.message || backfillErr);
+          }
+        }
       }
 
-      if (currentBlinds && currentBlinds.duration && clockState && clockState.levelStartedAt) {
-        const levelDuration = currentBlinds.duration * 60 * 1000;
+      // 2026-08-19 fix: accept duration_minutes as well as duration (clock.js
+      // already did; this route returning 0 made every TD screen show 0:00).
+      const currentLevelMinutes = currentBlinds
+        ? (currentBlinds.duration ?? currentBlinds.duration_minutes ?? 0)
+        : 0;
+      if (currentLevelMinutes > 0 && clockState && clockState.levelStartedAt) {
+        const levelDuration = currentLevelMinutes * 60 * 1000;
         const elapsed = clockState.isRunning
           ? Date.now() - new Date(clockState.levelStartedAt).getTime() - (clockState.pausedDuration || 0)
           : clockState.pausedAt
@@ -211,10 +546,63 @@ export default async function handler(req, res) {
         remaining_seconds = Math.max(0, Math.floor((levelDuration - elapsed) / 1000));
       }
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          tournament: {
+      // Queue order for waiting alternates (first registered is next up).
+      const alternateQueue = entries
+        .filter(e => e.status === 'alternate')
+        .sort((a, b) =>
+          new Date(a.registered_at || a.created_at || 0) - new Date(b.registered_at || b.created_at || 0));
+      const alternatePositions = new Map(alternateQueue.map((e, i) => [e.id, i + 1]));
+
+      // Full entries list for the Players tab, ALL statuses.
+      // Deliberately narrow: a 500 player field is serialised here for every
+      // tablet and TV in the room. player_phone and the metadata jsonb blob
+      // were shipped to every unattended kiosk and read by nothing, and
+      // starting_chips was only ever the tournament default repeated once per
+      // row (consumers read tournament.starting_chips).
+      // Takes the rows to serialise so a paginated caller only pays to map
+      // the page it asked for.
+      const buildEntryRows = (rows) => rows.map(e => ({
+            entry_id: e.id,
+            player_name: avatarMap[e.player_id]?.display_name || e.player_name,
+            user_id: e.player_id,
+            status: e.status,
+            table_number: e.table_number,
+            seat_number: e.seat_number,
+            current_chips: e.current_chips,
+            rebuy_count: e.rebuy_count || 0,
+            addon_taken: e.addon_taken || false,
+            finish_position: e.finish_position,
+            eliminated_at: e.eliminated_at,
+            payout_amount: e.payout_amount,
+            registered_at: e.registered_at || e.created_at,
+            queue_position: alternatePositions.get(e.id),
+            avatar_url: avatarMap[e.player_id]?.avatar_url || undefined,
+            // Bounty state, only for tournaments that actually pay knockouts.
+            // The TD needs the head value to read a PKO knockout out loud, and
+            // the winnings to reconcile the cage.
+            ...(bountyPerEntry > 0 ? {
+              knockouts: e.bounties_collected || 0,
+              // A player who is out has no head left to win.
+              bounty_value: ['eliminated', 'cancelled', 'winner', 'cashed'].includes(e.status)
+                ? 0
+                : entryBountyValue(tournament, e),
+              bounty_winnings: entryBountyWinnings(e)
+            } : {}),
+            // Most recent manual chip correction, so the Players tab can show
+            // that a stack was overwritten and by how much without anyone
+            // opening the audit log. The full capped history lives on
+            // metadata.chip_corrections; only the tail is shipped because this
+            // payload goes to every tablet and TV in the room.
+            last_chip_correction: lastChipCorrection(e),
+      }));
+
+      // ── Response assembly ─────────────────────────────────────
+      // Each section is attached only when the caller asked for it. A caller
+      // that passed no ?include gets every section, byte for byte what this
+      // route has always returned.
+      const data = {};
+
+      data.tournament = {
             id: tournament.id,
             venue_id: tournament.venue_id,
             name: tournament.name,
@@ -234,19 +622,42 @@ export default async function handler(req, res) {
             addon_chips: tournament.addon_chips,
             late_registration_levels: tournament.late_registration_levels,
             guaranteed_pool: tournament.guaranteed_pool,
-            started_at: tournament.actual_start || tournament.started_at,
+            started_at: tournament.actual_start,
             actual_start: tournament.actual_start,
             scheduled_start: tournament.scheduled_start,
+            // commander_tournaments has no game_type column (the variant lives
+            // in `variant`), so this has always serialised as absent. Left in
+            // place so the column projection above is not blamed for it.
             game_type: tournament.game_type,
             payout_structure: tournament.payout_structure,
-            custom_payouts: tournament.custom_payouts,
+            custom_payouts: tournament.payout_structure,
+            bounty_amount: tournament.bounty_amount,
+            actual_prizepool: tournament.actual_prizepool,
+            paying_places: tournament.paying_places,
             clock_color: tournament.settings?.clock_color,
             max_entries: tournament.max_entries,
             blind_structure: blindStructure,
             settings: tournament.settings || {},
-          },
-          clock: {
+            // Multi-day. The Control Center gates End Day / Resume Day on
+            // is_multi_day, and shows Day N Of M from these.
+            is_multi_day: tournament.is_multi_day || false,
+            total_days: tournament.total_days || 1,
+            current_day: tournament.current_day || 1,
+            flight_label: tournament.flight_label || null,
+            resume_time: tournament.resume_time || null,
+      };
+
+      if (want('clock')) data.clock = {
             current_level: currentLevel,
+            // Break rows share the array with playing levels, so the index is not
+            // the level number. display_level counts playing levels only.
+            display_level: (() => {
+              let n = 0;
+              for (let i = 0; i <= currentLevel && i < blindStructure.length; i++) {
+                if (!blindStructure[i]?.is_break) n++;
+              }
+              return n;
+            })(),
             current_blinds: currentBlinds,
             next_blinds: nextBlinds,
             after_break_blinds: afterBreakBlinds,
@@ -257,60 +668,89 @@ export default async function handler(req, res) {
               started_at: tournament.actual_start,
             },
             total_levels: blindStructure.length
-          },
-          stats: {
-            total_entries: entries.length,
-            players_remaining: activeEntries.length,
+      };
+
+      if (want('stats')) data.stats = {
+            total_entries: paidEntryCount,
+            // Field count: bagged players are still in the tournament. This is
+            // the number the TD reads out, the number eliminate.js derives a
+            // finish position from, and the number the payout screen sizes the
+            // prize pool against, so it MUST include them.
+            players_remaining: remainingEntries.length,
+            // Of which are bagged (multi-day, no seat until the day resumes).
+            players_bagged: baggedEntries.length,
+            // Physically seated right now. Separate from players_remaining so
+            // a screen that needs seat occupancy does not have to guess.
+            players_seated: activeEntries.length,
             players_eliminated: eliminatedEntries.length,
             players_registered: registeredEntries.length,
+            players_alternate: entries.filter(e => e.status === 'alternate').length,
             total_rebuys: totalRebuys,
             total_addons: totalAddons,
             prize_pool: prizePool,
+            collected_pool: collectedPool,
+            overlay_amount: overlayAmount,
+            // Bounty money collected, held OUT of the prize pool. Together the
+            // two reconcile to what the cage actually took (plus fees).
+            bounty_pool: bountyPool,
+            bounty_per_entry: bountyPerEntry,
             total_chips: totalChips,
             average_stack: avgStack,
             tables_active: tableNumbers.length,
             late_reg_open: lateRegOpen,
+            // Levels of late reg left INCLUDING the one being played: at level
+            // number N with a cutoff of L there are (L - N + 1) left, which is
+            // 1 during the final late-reg level and 0 once it closes. The old
+            // form used the raw array index and read one level high.
             levels_until_late_reg_closes: lateRegOpen
-              ? (tournament.late_registration_levels || 0) - currentLevel
+              ? Math.max(0, lateRegLevels - currentLevelNumber + 1)
               : 0,
-            // True once the re-entry window closes — signals that auto-break is now active
-            re_entry_period_over: currentLevel > Math.max(
-              tournament.rebuy_levels || 0,
-              tournament.late_registration_levels || 0
+            // True once the re-entry window closes - signals that auto-break is now active
+            re_entry_period_over: currentLevelNumber > Math.max(
+              tournament.rebuy_end_level || 0,
+              lateRegLevels
             ),
 
-            player_stacks: activeEntries
-              .filter(e => e.current_chips > 0)
-              .map(e => ({ name: avatarMap[e.player_id]?.display_name || e.player_name, chips: e.current_chips }))
-          },
-          alerts: {
+            // Chip counts board: a bagged stack is a real stack and the
+            // overnight chip leader is usually the headline of the day.
+            // One row per remaining player, so it is opt-out for the screens
+            // that only need the counts (?include= without `stacks`).
+            ...(want('stacks') ? {
+              player_stacks: remainingEntries
+                .filter(e => e.current_chips > 0)
+                .map(e => ({ name: avatarMap[e.player_id]?.display_name || e.player_name, chips: e.current_chips }))
+            } : {})
+      };
+
+      if (want('alerts')) data.alerts = {
             imbalanced,
             can_break_table: canBreakTable,
             hand_for_hand: clockState?.hand_for_hand || false,
-            on_break: clockState?.on_break || false
-          },
-          tables,
-          // Full entries list for Players tab — includes ALL statuses
-          entries: entries.map(e => ({
+            on_break: clockState?.on_break || false,
+            seat_conflicts: seatConflicts
+      };
+
+      if (want('tables')) data.tables = tables;
+
+      // Waiting alternates in queue order, so the floor can see who is
+      // next up and tell a player their position without guessing.
+      if (want('alternates')) data.alternates = alternateQueue.map((e, i) => ({
             entry_id: e.id,
             player_name: avatarMap[e.player_id]?.display_name || e.player_name,
-            user_id: e.user_id,
-            status: e.status,
-            table_number: e.table_number,
-            seat_number: e.seat_number,
-            current_chips: e.current_chips,
-            starting_chips: e.starting_chips || tournament.starting_chips,
-            rebuy_count: e.rebuy_count || 0,
-            addon_taken: e.addon_taken || false,
-            finish_position: e.finish_position,
-            eliminated_at: e.eliminated_at,
-            payout_amount: e.payout_amount,
-            registered_at: e.created_at,
-            phone: e.phone,
-            metadata: e.metadata,
-            avatar_url: avatarMap[e.player_id]?.avatar_url || null,
-          })),
-          eliminated: eliminatedEntries
+            queue_position: i + 1
+      }));
+
+      if (want('entries')) {
+        // Pagination is a payload control, not a database one: the stats,
+        // the table map and the alerts all have to see the WHOLE field, so
+        // the rows are read either way and only the slice is serialised.
+        // No entries_limit means the whole list, exactly as before.
+        const { rows: entryPage, page: entriesPageMeta } = paginateEntries(entries, req.query);
+        if (entriesPageMeta) data.entries_page = entriesPageMeta;
+        data.entries = buildEntryRows(entryPage);
+      }
+
+      if (want('eliminated')) data.eliminated = eliminatedEntries
             .sort((a, b) => (b.finish_position || 999) - (a.finish_position || 999))
             .slice(0, 20)
             .map(e => ({
@@ -319,9 +759,9 @@ export default async function handler(req, res) {
               finish_position: e.finish_position,
               eliminated_at: e.eliminated_at,
               payout_amount: e.payout_amount
-            }))
-        }
-      });
+            }));
+
+      return res.status(200).json({ success: true, data });
     } catch (err) {
       console.warn('Floor view error:', err);
       return res.status(500).json({ success: false, error: 'Internal server error' });

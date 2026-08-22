@@ -49,7 +49,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/waitlist-metrics?v
   return (
     <>
       <SEOHead
-        title="Commander — Waitlist Metrics"
+        title="Commander - Waitlist Metrics"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -75,7 +75,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/waitlist-metrics?v
             <div className="bg-gradient-to-br from-[#1877F2]/20 to-[#A855F7]/10 border border-[#1877F2]/30 rounded-2xl p-5 text-center">
               <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Average Wait Time</p>
               <p className="text-4xl font-bold text-white">{wt.average_minutes || 0}<span className="text-lg text-[#B0B3B8] ml-1">Min</span></p>
-              <p className="text-sm text-[#B0B3B8] mt-1">Median {wt.median_minutes || 0}m — Max {wt.max_minutes || 0}m</p>
+              <p className="text-sm text-[#B0B3B8] mt-1">Median {wt.median_minutes || 0}m, Max {wt.max_minutes || 0}m</p>
             </div>
 
             {/* Key metrics */}
@@ -107,11 +107,11 @@ const json = await commanderFetchJSON(`/api/commander/reports/waitlist-metrics?v
                     <div key={i} className="bg-[#3A3B3C]/30 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold text-white">{g.game}</p>
-                        <span className="text-xs text-[#B0B3B8]">{g.total} entries</span>
+                        <span className="text-xs text-[#B0B3B8]">{g.total} Entries</span>
                       </div>
                       <div className="grid grid-cols-4 gap-2 text-center">
                         <div><p className="text-sm font-bold text-[#31A24C]">{g.conversion_rate}%</p><p className="text-[10px] text-[#6A6B6D]">Seated</p></div>
-                        <div><p className="text-sm font-bold text-[#EF4444]">{g.no_show}</p><p className="text-[10px] text-[#6A6B6D]">No-show</p></div>
+                        <div><p className="text-sm font-bold text-[#EF4444]">{g.no_show}</p><p className="text-[10px] text-[#6A6B6D]">No-Show</p></div>
                         <div><p className="text-sm font-bold text-white">{g.avg_wait}m</p><p className="text-[10px] text-[#6A6B6D]">Avg Wait</p></div>
                         <div><p className="text-sm font-bold text-white">{g.seated}</p><p className="text-[10px] text-[#6A6B6D]">Seated</p></div>
                       </div>
@@ -151,7 +151,7 @@ const json = await commanderFetchJSON(`/api/commander/reports/waitlist-metrics?v
             {/* Currently waiting */}
             {s.currently_waiting > 0 && (
               <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-2xl p-4 text-center">
-                <p className="text-sm text-[#F59E0B] font-medium">{s.currently_waiting} player{s.currently_waiting !== 1 ? 's' : ''} currently waiting</p>
+                <p className="text-sm text-[#F59E0B] font-medium">{s.currently_waiting} Player{s.currently_waiting !== 1 ? 's' : ''} Currently Waiting</p>
               </div>
             )}
           </div>

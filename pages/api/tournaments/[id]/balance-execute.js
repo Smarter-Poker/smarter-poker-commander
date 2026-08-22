@@ -7,6 +7,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -18,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -29,32 +30,65 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
-    if (!tournamentId) return res.status(400).json({ success: false, error: 'Tournament ID required' });
+    if (!tournamentId) return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
 
     try {
 
       const { moves } = req.body;
       if (!Array.isArray(moves) || moves.length === 0) {
-        return res.status(400).json({ success: false, error: 'moves array required' });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'moves Array Required' } });
       }
 
       const results = [];
       const errors = [];
       const timestamp = new Date().toISOString();
 
+      // --- Reject duplicate destinations INSIDE the batch itself ---
+      // Two moves naming the same (table, seat) both used to succeed, silently
+      // double-seating a table. break-table.js already guarded this; this route
+      // did not.
+      const seatKeys = new Set();
+      for (const m of moves) {
+        if (m.to_table === undefined || m.to_seat === undefined) continue;
+        const key = `${m.to_table}-${m.to_seat}`;
+        if (seatKeys.has(key)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'DUPLICATE_SEAT', message: `Duplicate Assignment: Table ${m.to_table} Seat ${m.to_seat}` }
+          });
+        }
+        seatKeys.add(key);
+      }
+
       // --- RACE CONDITION GUARD: Verify all destination seats are still empty ---
-      const { data: conflictingSeats } = await getSupabase()
+      // Scoped to the destination tables only, so the read is bounded by table
+      // count rather than field size (an unbounded/truncated read in a 1000+
+      // entry tournament silently skipped seats and missed real conflicts).
+      const destTables = [...new Set(moves.map(m => m.to_table).filter(t => t !== undefined && t !== null))];
+      const { data: conflictingSeats, error: cErr } = await getSupabase()
         .from('commander_tournament_entries')
-        .select('table_number, seat_number, player_name')
+        .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
+        // SEAT OCCUPANCY: balancing moves people between chairs, and a
+        // 'bagged' player is not in one. Excluded on purpose.
         .in('status', ['active', 'seated'])
-            .limit(100);
+        .in('table_number', destTables.length > 0 ? destTables : [-1]);
+
+      // A discarded error here made the guard pass on an empty result and the
+      // batch went on to overwrite live seats.
+      if (cErr) {
+        console.error('[tournaments/balance-execute] seat conflict read failed', {
+          tournamentId, code: cErr.code, message: cErr.message, details: cErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seats' } });
+      }
 
       const occupiedList = (conflictingSeats || []).filter(e =>
+        !moves.some(m => m.entry_id === e.id) &&
         moves.some(m => m.to_table === e.table_number && m.to_seat === e.seat_number)
       );
 
@@ -62,25 +96,37 @@ export default async function handler(req, res) {
         const e = occupiedList[0];
         return res.status(409).json({
           success: false,
-          error: `Balance aborted: Seat ${e.seat_number} at Table ${e.table_number} is now occupied by ${e.player_name}`
+          error: { code: 'SEAT_OCCUPIED', message: `Balance Aborted: Seat ${e.seat_number} At Table ${e.table_number} Is Now Occupied By ${e.player_name}` }
         });
       }
 
       for (const move of moves) {
         if (!move.entry_id || move.to_table === undefined || move.to_seat === undefined) {
-          errors.push({ entry_id: move.entry_id, error: 'Missing to_table or to_seat' });
+          errors.push({ entry_id: move.entry_id, error: 'Missing to_table Or to_seat' });
           continue;
         }
 
-        const { data: entry } = await getSupabase()
+        const { data: entry, error: readErr } = await getSupabase()
           .from('commander_tournament_entries')
-          .select('table_number, seat_number, player_name, metadata')
+          .select('table_number, seat_number, player_name, status, metadata')
           .eq('id', move.entry_id)
           .eq('tournament_id', tournamentId)
           .maybeSingle();
 
+        if (readErr) {
+          errors.push({ entry_id: move.entry_id, error: readErr.message });
+          continue;
+        }
         if (!entry) {
-          errors.push({ entry_id: move.entry_id, error: 'Entry not found' });
+          errors.push({ entry_id: move.entry_id, error: 'Entry Not Found' });
+          continue;
+        }
+        // Only live players can be balanced. Moving an eliminated or cancelled
+        // entry parks a dead player on a live seat that the floor then cannot fill.
+        // Only a player currently in a chair can be moved out of it. A
+        // 'bagged' player has no seat, so a balance move is meaningless.
+        if (!['active', 'seated'].includes(entry.status)) {
+          errors.push({ entry_id: move.entry_id, error: `Player Is Not Active (Status: ${entry.status})` });
           continue;
         }
 
@@ -96,10 +142,22 @@ export default async function handler(req, res) {
               move_reason: move.reason || 'balance'
             }
           })
-          .eq('id', move.entry_id);
+          .eq('id', move.entry_id)
+          // Scope to this tournament so a stray entry_id cannot be moved.
+          .eq('tournament_id', tournamentId);
 
         if (uErr) {
-          errors.push({ entry_id: move.entry_id, error: uErr.message });
+          // A single collision must not abort the batch: the other moves are
+          // legitimate and the floor still wants them applied.
+          // uq_commander_entries_live_seat rejects a destination chair that was
+          // filled after the pre-flight conflict read above.
+          errors.push(rowConflict(uErr, {
+            entryId: move.entry_id,
+            playerName: entry.player_name,
+            tableNumber: move.to_table,
+            seatNumber: move.to_seat,
+            action: 'Table Balance'
+          }));
         } else {
           results.push({
             entry_id: move.entry_id,
@@ -112,23 +170,29 @@ export default async function handler(req, res) {
         }
       }
 
+      const collided = countCollisions(errors);
+
       return res.status(200).json({
         success: errors.length === 0,
         data: {
           executed: results.length,
           failed: errors.length,
+          seat_collisions: collided,
           moves: results,
-          errors: errors.length > 0 ? errors : undefined
+          errors: errors.length > 0 ? errors : undefined,
+          message: errors.length === 0
+            ? `${results.length} Move${results.length === 1 ? '' : 's'} Applied.`
+            : `${results.length} Move${results.length === 1 ? '' : 's'} Applied, ${errors.length} Failed${collided > 0 ? `, ${collided} Because The Destination Seat Was Already Taken` : ''}. Re-Run Balance After Refreshing The Table Map.`
         }
       });
     } catch (err) {
       console.warn('Balance execute error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

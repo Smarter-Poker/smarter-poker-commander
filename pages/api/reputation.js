@@ -1,11 +1,11 @@
 /**
  * Player Reputation API
- * GET /api/commander/reputation?player_id=X — Get player reputation score
- * POST /api/commander/reputation — Submit a reputation review
- * GET /api/commander/reputation?venue_id=X — Get all player scores for venue
+ * GET /api/commander/reputation?player_id=X - Get player reputation score
+ * POST /api/commander/reputation - Submit a reputation review
+ * GET /api/commander/reputation?venue_id=X - Get all player scores for venue
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -19,18 +19,20 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - anyone could pull any player's reputation
+    // score and the free-text staff reviews written about them.
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
-    if (req.method === 'GET') return getReputation(req, res);
+    if (req.method === 'GET') return getReputation(req, res, _authResult);
     // 2026-07-25 audit fix: pass the verified staff session so the reviewer
     // identity is derived server-side instead of trusted from the body.
     if (req.method === 'POST') return submitReview(req, res, _authResult);
@@ -43,8 +45,12 @@ export default async function handler(req, res) {
   }
 }
 
-async function getReputation(req, res) {
-  const { player_id, venue_id, limit = 20 } = req.query;
+async function getReputation(req, res, staff) {
+  const { player_id, limit = 20 } = req.query;
+  // Venue scope comes from the verified staff session.
+  const venue_id = (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null)
+    ? staff.venue_id
+    : req.query.venue_id;
 
   try {
     if (player_id) {
@@ -119,7 +125,7 @@ async function getReputation(req, res) {
 
 async function submitReview(req, res, staff) {
   // 2026-07-25 audit fix: reviewer_id/reviewer_type are no longer accepted from
-  // the request body — any caller could impersonate another reviewer. The
+  // the request body - any caller could impersonate another reviewer. The
   // reviewer is the verified staff session; there is no player review path in
   // this endpoint (POST is staff-gated), so reviewer_type is always 'staff'.
   const { player_id, reliability, sportsmanship, etiquette, communication, comment, context } = req.body;

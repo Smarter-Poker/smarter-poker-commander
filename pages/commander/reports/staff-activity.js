@@ -27,7 +27,8 @@ export default function StaffActivity() {
       const { signal } = controller;
       try {
 const json = await commanderFetchJSON('/api/commander/incidents?status=all&limit=50', {});
-        if (json.success) setActivities(json.data || []);
+        // Incidents API nests under data.incidents - data itself is an object
+        if (json.success) setActivities(json.data?.incidents || (Array.isArray(json.data) ? json.data : []));
       } catch (err) { console.warn(err); }
       finally { setLoading(false); }
     };
@@ -38,13 +39,16 @@ const json = await commanderFetchJSON('/api/commander/incidents?status=all&limit
     setAuditLoading(true);
     try {
 const params = new URLSearchParams();
-      if (filters.category) params.set('action_category', filters.category);
-      if (filters.dateFrom) params.set('date_from', filters.dateFrom);
-      if (filters.dateTo) params.set('date_to', filters.dateTo);
+      // The audit-logs API requires venue_id and nests its payload under data
+      let venueId = null;
+      try { venueId = JSON.parse(getStaffSession() || '{}').venue_id; } catch { /* ignore */ }
+      if (!venueId) { setAuditLoading(false); return; }
+      params.set('venue_id', venueId);
+      if (filters.action) params.set('action', filters.action);
 
       const data = await commanderFetchJSON(`/api/commander/admin/audit-logs?${params}`, {});
-      if (data.logs) {
-        setAuditLogs(data.logs);
+      if (data.success && data.data) {
+        setAuditLogs(data.data.logs || []);
       }
     } catch (err) {
       console.warn('Audit logs fetch error:', err);
@@ -71,7 +75,7 @@ const params = new URLSearchParams();
     <CommanderLayout title="Staff Activity" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Staff Activity"
+          title="Commander - Staff Activity"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -112,10 +116,10 @@ const params = new URLSearchParams();
                   {activities.map(a => (
                     <div key={a.id} className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 flex items-start gap-3">
                       <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
-                        style={{ backgroundColor: typeColors[a.type] || '#B0B3B8' }} />
+                        style={{ backgroundColor: typeColors[a.incident_type] || '#B0B3B8' }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-[#B0B3B8] uppercase">{a.type?.replace('_', ' ')}</span>
+                          <span className="text-xs font-medium text-[#B0B3B8] uppercase">{a.incident_type?.replace('_', ' ')}</span>
                           {a.table_number && <span className="text-xs text-[#B0B3B8]">• Table {a.table_number}</span>}
                           <span className="text-xs text-[#B0B3B8]/50">
                             {a.created_at ? new Date(a.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
@@ -123,10 +127,10 @@ const params = new URLSearchParams();
                         </div>
                         <p className="text-sm text-[#E4E6EB]">{a.description}</p>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${a.status === 'open' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
-                        a.status === 'resolved' ? 'bg-[#31A24C]/20 text-[#31A24C]' :
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${a.incident_status === 'open' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
+                        a.incident_status === 'resolved' ? 'bg-[#31A24C]/20 text-[#31A24C]' :
                           'bg-[#3A3B3C] text-[#B0B3B8]'
-                        }`}>{a.status}</span>
+                        }`}>{a.incident_status}</span>
                     </div>
                   ))}
                 </div>

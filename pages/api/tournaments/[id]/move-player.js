@@ -8,6 +8,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { seatConflictResponse } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -19,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -30,12 +31,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId } = req.query;
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     try {
@@ -48,12 +49,12 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) {
-        return res.status(404).json({ success: false, error: 'Tournament not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
 
       const { entry_id, to_table, to_seat } = req.body;
       if (!entry_id || to_table === undefined || to_seat === undefined) {
-        return res.status(400).json({ success: false, error: 'entry_id, to_table, and to_seat required' });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'entry_id, to_table, And to_seat Required' } });
       }
 
       // Get the entry
@@ -64,26 +65,46 @@ export default async function handler(req, res) {
         .eq('tournament_id', tournamentId)
         .maybeSingle();
       if (eErr || !entry) {
-        return res.status(404).json({ success: false, error: 'Entry not found' });
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
       }
-      if (entry.status === 'eliminated') {
-        return res.status(400).json({ success: false, error: 'Cannot move eliminated player' });
+      // Only live players hold seats. 'eliminated' was the only status blocked,
+      // so a cancelled, cashed, bagged or winner entry could still be parked on
+      // a live seat that the floor then could not fill.
+      if (!['registered', 'seated', 'active', 'alternate'].includes(entry.status)) {
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Move A Player With Status ${entry.status}` } });
       }
 
-      // Check destination seat is not occupied
-      const { data: existing } = await getSupabase()
+      // Check destination seat is not occupied.
+      // .maybeSingle() throws when two rows share the seat (exactly the state
+      // this guard exists to catch) and the discarded error let the move through.
+      const { data: existingRows, error: occErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, player_name')
         .eq('tournament_id', tournamentId)
         .eq('table_number', to_table)
         .eq('seat_number', to_seat)
-        .in('status', ['active', 'seated'])
-        .maybeSingle();
+        // SEAT OCCUPANCY: only a player physically in the chair blocks it.
+        // 'bagged' excluded on purpose (they hold no seat).
+        // 2026-08-20: 'registered' MUST be included. A player seated before the
+        // clock starts keeps status 'registered' until play begins, and
+        // production currently has 52 such entries holding real seats. Omitting
+        // them let a move drop a player straight on top of one of them.
+        .in('status', ['active', 'seated', 'registered'])
+        .neq('id', entry_id)
+        .limit(1);
 
+      if (occErr) {
+        console.error('[tournaments/move-player] seat occupancy read failed', {
+          tournamentId, code: occErr.code, message: occErr.message, details: occErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seat' } });
+      }
+
+      const existing = (existingRows || [])[0];
       if (existing) {
         return res.status(409).json({
           success: false,
-          error: `Seat ${to_seat} at Table ${to_table} is occupied by ${existing.player_name}`
+          error: { code: 'SEAT_OCCUPIED', message: `Seat ${to_seat} At Table ${to_table} Is Occupied By ${existing.player_name}` }
         });
       }
 
@@ -107,7 +128,16 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (uErr) {
-        return res.status(500).json({ success: false, error: 'Failed to move player' });
+        // The occupancy probe above is a read. Between it and this write another
+        // device can fill the chair, and uq_commander_entries_live_seat now
+        // rejects the loser with 23505 rather than double-booking the seat.
+        if (seatConflictResponse(res, uErr, {
+          tableNumber: to_table, seatNumber: to_seat, action: 'Player Move'
+        })) return;
+        console.error('[tournaments/move-player] move write failed', {
+          tournamentId, entry_id, code: uErr.code, message: uErr.message, details: uErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Move Player' } });
       }
 
       return res.status(200).json({
@@ -125,12 +155,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Move player error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

@@ -3,7 +3,7 @@
  * GET - Fetch daily summary report for a venue
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -17,13 +17,16 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this route is GET-only and used guardWriteStaff, which
+// returns `true` for GET without verifying anything - the full daily business
+// report (player counts, hours, tournament buy-ins and prize pools) was public
+// for any venue_id.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     if (req.method !== 'GET') {
@@ -34,6 +37,11 @@ export default async function handler(req, res) {
 
     if (!venue_id) {
       return res.status(400).json({ success: false, error: 'venue_id is required' });
+    }
+
+    if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+        && String(_authResult.venue_id) !== String(venue_id)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
     const reportDate = date || new Date().toISOString().split('T')[0];

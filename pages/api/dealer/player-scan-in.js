@@ -1,5 +1,5 @@
 /**
- * Player Scan-In API — QR self-scan open; member_number fallback is staff-only
+ * Player Scan-In API - QR self-scan open; member_number fallback is staff-only
  * POST /api/commander/dealer/player-scan-in
  *
  * Combined scan + seat in one call for the tablet.
@@ -60,9 +60,9 @@ export default async function handler(req, res) {
               .eq('qr_code', lookupCode)
               .limit(1);
 
-          // Fallback to member_number — 2026-07-29 (decision B): member numbers are
+          // Fallback to member_number - 2026-07-29 (decision B): member numbers are
           // sequential (JAQK-00001, 00002, ...), so an open member_number lookup would
-          // let anyone seat a member by guessing — and scanning a member in claims and
+          // let anyone seat a member by guessing - and scanning a member in claims and
           // zeroes their prepaid time balance. The QR path keeps its entropy and stays
           // open for player self-scan; the typed-number fallback now requires a verified
           // staff session (the "card won't scan, staff types the number" case). When no
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
 
           const isTimeBilledVenue = venueType === 'texas';
 
-          // ── 2b. Tournament table check — NEVER bill time for tournaments ──
+          // ── 2b. Tournament table check - NEVER bill time for tournaments ──
           // Tournaments use a one-time seat fee (rake), not time-based billing.
           let isTournamentTable = false;
           {
@@ -217,7 +217,7 @@ export default async function handler(req, res) {
               }
 
               if (!seatNum) {
-                  return res.status(400).json({ success: false, error: 'Table is full — no seats available.' });
+                  return res.status(400).json({ success: false, error: 'Table is full - no seats available.' });
               }
           } else {
               // Check if requested seat is occupied
@@ -243,8 +243,8 @@ export default async function handler(req, res) {
           const playerName = `${member.first_name} ${member.last_name}`.trim();
           // Tournament tables: allocate 0 time (no clock). Cash: allocate full balance.
           //
-          // 2026-07-28 audit fix: this read member.time_balance_minutes — fetched
-          // several statements earlier — allocated it onto the new session, and
+          // 2026-07-28 audit fix: this read member.time_balance_minutes - fetched
+          // several statements earlier - allocated it onto the new session, and
           // then in a separate write set the balance to 0. Two concurrent
           // scan-ins for the same member both read the same balance, both
           // created a session carrying the full balance, and both zeroed it, so
@@ -318,7 +318,7 @@ export default async function handler(req, res) {
           // ── 7. Visit tracking ──
           // The time deduction that used to live in this update is now done
           // atomically by commander_claim_member_time_minutes above (and only
-          // for time-billed tables — tournaments still deduct nothing). These
+          // for time-billed tables - tournaments still deduct nothing). These
           // columns are not money and are left as a plain update.
           await getSupabase()
               .from('commander_members')

@@ -5,7 +5,7 @@
  * POST /api/commander/comps/rates - Create comp rate
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -19,17 +19,20 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - a venue's comp rate card (rates, tiers and
+    // multipliers, i.e. commercial configuration) was readable by venue_id.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'GET') {
-      return listRates(req, res);
+      return listRates(req, res, _g);
     }
 
     if (req.method === 'POST') {
@@ -46,9 +49,19 @@ export default async function handler(req, res) {
   }
 }
 
-async function listRates(req, res) {
+async function listRates(req, res, staff) {
   try {
-    const { venue_id, active_only = 'true' } = req.query;
+    const { active_only = 'true' } = req.query;
+    // Venue scope comes from the verified staff session; a query venue_id is
+    // only honoured when it matches it.
+    if (req.query.venue_id && staff && staff !== true
+        && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(req.query.venue_id)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
+    }
+    const venue_id = (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null)
+      ? staff.venue_id
+      : req.query.venue_id;
 
     // If no venue_id, return a default rate for display purposes
     if (!venue_id) {
@@ -63,7 +76,7 @@ async function listRates(req, res) {
 
       const ratePerHour = defaultRates?.[0]?.comp_value || 1;
 
-      res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+      res.setHeader('Cache-Control', 'private, max-age=30');
     return res.status(200).json({
         success: true,
         data: {

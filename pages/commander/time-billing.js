@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
-import { DollarSign, Clock, Loader2, Package, Trash2, Save, RefreshCw } from 'lucide-react';
+import { DollarSign, Clock, Loader2, Package, Trash2, Save, RefreshCw, Play, StopCircle, CreditCard, X } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
 import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
@@ -44,6 +44,8 @@ export default function TimeBilling() {
   const [stopping, setStopping] = useState(null);
   const [payModal, setPayModal] = useState(null);
   const [payAmount, setPayAmount] = useState('');
+  const [startForm, setStartForm] = useState({ player_name: '', table_number: '', seat_number: '' });
+  const [starting, setStarting] = useState(false);
 
   const [now, setNow] = useState(Date.now());
   const [filter, setFilter] = useState('active');
@@ -76,62 +78,33 @@ export default function TimeBilling() {
   const lockPin = () => { setVerifiedStaff(null); setPinCacheExpiry(0); };
 
   const fetchData = useCallback(async () => {
-    const controller = new AbortController();
-    const { signal } = controller;
     try {
 const venueId = getVenueId();
 const headers = { };
 
-      // Fetch tables to know which are active
-      const tabRes = await commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers });
-      if (!tabRes.ok) throw new Error(`Tables fetch failed (${tabRes.status})`);
-      const tabJson = await tabRes.json();
-      const tablesArr = tabJson.success
-        ? (Array.isArray(tabJson.data) ? tabJson.data : tabJson.data?.tables || [])
-        : [];
-      setTables(tablesArr);
+      // Fetch tables for the start-session table/seat picker (non-fatal)
+      try {
+        const tabRes = await commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers });
+        if (tabRes.ok) {
+          const tabJson = await tabRes.json();
+          const tablesArr = tabJson.success
+            ? (Array.isArray(tabJson.data) ? tabJson.data : tabJson.data?.tables || [])
+            : [];
+          setTables(tablesArr);
+        }
+      } catch { /* non-fatal */ }
 
-      // Fetch active sessions from ALL tables (unified commander_table_sessions)
-      const activeTables = tablesArr.filter(t => t.status === 'in_use');
-      const allSessions = [];
-
-      await Promise.all(activeTables.map(async (t) => {
-        const tNum = t.table_number || t.number;
-        try {
-          const sRes = await commanderFetch(`/api/commander/dealer/sessions?table=${tNum}`, { headers });
-          if (!sRes.ok) throw new Error(`Sessions fetch failed (${sRes.status})`);
-          const sJson = await sRes.json();
-          if (sJson.success && sJson.data) {
-            sJson.data.forEach(s => allSessions.push({
-              ...s,
-              id: s.session_id,
-              status: s.is_expired ? 'expired' : 'active',
-              started_at: s.started_at,
-              rate_per_hour: t.rate_per_hour || pricing.time_billing_rate || 0 }));
-          }
-        } catch { /* non-fatal */ }
-      }));
-
-      // Also fetch completed/ended sessions for history view
-      if (filter === 'completed') {
-        try {
-          const histRes = await commanderFetch(`/api/commander/time-billing/sessions?venue_id=${venueId}`, { headers });
-          if (!histRes.ok) throw new Error(`History fetch failed (${histRes.status})`);
-          const histJson = await histRes.json();
-          if (histJson.success) {
-            const completed = (histJson.data || []).filter(s => s.status === 'completed');
-            setSessions([...allSessions, ...completed]);
-            return;
-          }
-        } catch { /* fall through */ }
-      }
-
-      setSessions(allSessions);
+      // Load all time-billing sessions (active + completed) from the unified
+      // commander_table_sessions API. Status is filtered client-side below.
+      const sRes = await commanderFetch(`/api/commander/time-billing/sessions?venue_id=${venueId}`, { headers });
+      if (!sRes.ok) throw new Error(`Sessions fetch failed (${sRes.status})`);
+      const sJson = await sRes.json();
+      if (sJson.success) setSessions(sJson.data || []);
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
-  }, [filter, pricing.time_billing_rate]);
+  }, []);
 
-  useEffect(() => { fetchData(); const i = setInterval(fetchData, 30000); return () => clearInterval(i); }, [fetchData]); // fallback — real-time sync handles instant updates
+  useEffect(() => { fetchData(); const i = setInterval(fetchData, 30000); return () => clearInterval(i); }, [fetchData]); // fallback - real-time sync handles instant updates
 
   // Memoized venueId for Supabase sync (avoid function call per render)
   const [syncVenueId] = useState(() => getVenueId());
@@ -270,44 +243,81 @@ const res = await commanderFetch('/api/commander/settings', {
   const doStopSession = async (sessionId, staff) => {
     setStopping(sessionId);
     try {
-const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/end`, {
-        method: 'POST'});
+      // Atomic server-side stop: sets status, ended_at, duration_minutes and
+      // total_charge on the session in a single statement (no client
+      // read-modify-write).
+      const res = await commanderFetch(`/api/commander/time-billing/sessions/${sessionId}/stop`, {
+        method: 'POST' });
       if (res.ok) {
         const json = await res.json();
-        // Print time billing receipt
         if (json.success && json.data) {
-          const session = sessions.find(s => s.id === sessionId || s.session_id === sessionId);
-          if (session) {
-            printTimeBillingReceipt({
-              ...session,
-              duration_minutes: json.data.elapsed_minutes,
-              total_charge: calculateCharge(session.started_at, session.rate_per_hour || pricing.time_billing_rate || 0),
-              staff_name: staff?.display_name || 'Staff' });
+          const updated = json.data;
+          const charge = parseFloat(updated.total_charge || 0);
 
+          // Print time billing receipt
+          printTimeBillingReceipt({
+            player_name: updated.player_name,
+            table_number: updated.table_number,
+            seat_number: updated.seat_number,
+            rate_per_hour: updated.rate_per_hour,
+            duration_minutes: updated.duration_minutes,
+            total_charge: charge,
+            staff_name: staff?.display_name || 'Staff' });
+
+          // Record the charge as a cashier transaction. The cashier contract
+          // accepts type ∈ {buy_in, cash_out, add_on, time_purchase, membership,
+          // void} and a POSITIVE amount - the old 'time_charge' type / negative
+          // amount were rejected. Include session_id + idempotency_key.
+          if (charge > 0) {
             const venueId = getVenueId();
-            const res = await commanderFetch(`/api/commander/cashier`, {
+            await commanderFetch(`/api/commander/cashier`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 venue_id: venueId,
-                player_id: session.player_id,
-                transaction_type: 'time_charge',
-                amount: -calculateCharge(session.started_at, session.rate_per_hour || pricing.time_billing_rate || 0),
-                payment_method: 'system',
-                created_at: new Date().toISOString(),
-                description: `Auto-charge: Time Billing session stopped (${json.data.elapsed_minutes}m)`,
-                duration_minutes: json.data.elapsed_minutes,
-                total_charge: calculateCharge(session.started_at, session.rate_per_hour || pricing.time_billing_rate || 0),
-                staff_name: staff?.display_name || 'Staff' })
+                session_id: sessionId,
+                player_name: updated.player_name,
+                table_number: updated.table_number,
+                seat_number: updated.seat_number,
+                type: 'time_purchase',
+                amount: charge,
+                payment_method: 'cash',
+                idempotency_key: `time_stop_${sessionId}`,
+                notes: `Time Billing session stopped (${updated.duration_minutes || 0}m)`,
+                pin_verified_by: staff?.id })
             });
-            if (res.ok) {
-              await fetchData();
-              broadcastChange('tables');
-            }
           }
+          await fetchData();
+          broadcastChange('tables');
         }
       }
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
     finally { setStopping(null); }
+  };
+
+  // Start a new time-billing session
+  const handleStartSession = async () => {
+    if (!startForm.player_name.trim()) { setToast({ type: 'error', text: 'Player name required' }); return; }
+    setStarting(true);
+    try {
+      const res = await commanderFetch('/api/commander/time-billing/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          player_name: startForm.player_name.trim(),
+          table_number: startForm.table_number ? parseInt(startForm.table_number) : null,
+          seat_number: startForm.seat_number ? parseInt(startForm.seat_number) : null,
+          rate_per_hour: pricing.time_billing_rate || undefined
+        })
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      const json = await res.json();
+      if (json.success) {
+        setStartForm({ player_name: '', table_number: '', seat_number: '' });
+        await fetchData();
+        broadcastChange('tables');
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    finally { setStarting(false); }
   };
 
   const printTimeBillingReceipt = (session) => {
@@ -380,6 +390,16 @@ const res = await commanderFetch(`/api/commander/time-billing/sessions/${payModa
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
   };
 
+  // Open the payment modal, prefilling the outstanding balance
+  const openPayModal = (session) => {
+    const due = session.status === 'completed'
+      ? parseFloat(session.total_charge || 0)
+      : calculateCharge(session.started_at, session.rate_per_hour || pricing.time_billing_rate || 0);
+    const outstanding = Math.max(0, due - parseFloat(session.amount_paid || 0));
+    setPayModal(session);
+    setPayAmount(outstanding > 0 ? outstanding.toFixed(2) : '');
+  };
+
   const activeSessions = sessions.filter(s => s.status === 'active');
   const completedSessions = sessions.filter(s => s.status === 'completed');
   const displaySessions = filter === 'active' ? activeSessions : completedSessions;
@@ -415,7 +435,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
   return (
     <CommanderLayout title="Time Billing" backHref="/commander/dashboard">
       <SEOHead
-        title="Commander — Time Billing"
+        title="Commander - Time Billing"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -424,11 +444,98 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
         {/* Sub-header with stats and actions */}
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
-            <p className="text-xs text-[#B0B3B8]">{activeSessions.length} active sessions</p>
+            <p className="text-lg font-bold text-white leading-none">{formatMoney(totalActive)} <span className="text-xs text-[#B0B3B8] font-normal">due</span></p>
+            <p className="text-xs text-[#B0B3B8] mt-0.5">{activeSessions.length} active · {formatMoney(totalCollected)} collected</p>
           </div>
           <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
+        </div>
+
+        {/* Session management: start, filter, active/completed list */}
+        <div className="px-4 py-3 space-y-3">
+          {/* Start a new session */}
+          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Play className="w-5 h-5 text-[#31A24C]" />
+              <h3 className="text-sm font-bold text-white">Start Session</h3>
+              <div className="flex-1" />
+              <span className="text-[10px] text-[#B0B3B8]">{formatMoney(pricing.time_billing_rate)}/hr</span>
+            </div>
+            <div className="grid grid-cols-12 gap-2">
+              <input type="text" value={startForm.player_name} placeholder="Player name"
+                onChange={e => setStartForm(f => ({ ...f, player_name: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleStartSession(); }}
+                className="col-span-6 px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm focus:outline-none focus:border-[#1877F2]" />
+              <input type="number" value={startForm.table_number} placeholder="Table" min={1}
+                onChange={e => setStartForm(f => ({ ...f, table_number: e.target.value }))}
+                className="col-span-2 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1877F2]" />
+              <input type="number" value={startForm.seat_number} placeholder="Seat" min={1}
+                onChange={e => setStartForm(f => ({ ...f, seat_number: e.target.value }))}
+                className="col-span-2 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1877F2]" />
+              <button onClick={handleStartSession} disabled={starting || !startForm.player_name.trim()}
+                className="col-span-2 flex items-center justify-center px-2 py-2 rounded-lg bg-[#31A24C] text-white text-sm font-bold disabled:opacity-50">
+                {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start'}
+              </button>
+            </div>
+          </div>
+
+          {/* Active / Completed filter */}
+          <div className="flex gap-2">
+            <button onClick={() => setFilter('active')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${filter === 'active' ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+              Active ({activeSessions.length})
+            </button>
+            <button onClick={() => setFilter('completed')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${filter === 'completed' ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+              Completed ({completedSessions.length})
+            </button>
+          </div>
+
+          {/* Session list */}
+          {filtered.length === 0 ? (
+            <p className="text-xs text-[#64748B] text-center py-6">No {filter} sessions</p>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(s => {
+                const charge = s.status === 'completed'
+                  ? parseFloat(s.total_charge || 0)
+                  : calculateCharge(s.started_at, s.rate_per_hour || pricing.time_billing_rate || 0);
+                const paid = parseFloat(s.amount_paid || 0);
+                return (
+                  <div key={s.id} className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{s.player_name}</p>
+                        <p className="text-[11px] text-[#B0B3B8]">
+                          T{s.table_number || '-'} S{s.seat_number || '-'} · {s.status === 'completed' ? `${s.duration_minutes || 0}m` : formatDuration(s.started_at)}
+                          {' · '}{formatMoney(s.rate_per_hour || pricing.time_billing_rate || 0)}/hr
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-mono font-bold text-white">{formatMoney(charge)}</p>
+                        {paid > 0 && <p className="text-[10px] text-[#31A24C]">paid {formatMoney(paid)}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      {s.status === 'active' && (
+                        <button onClick={() => requestPinFor('stop', s)} disabled={stopping === s.id}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#EF4444] text-white text-xs font-medium disabled:opacity-50">
+                          {stopping === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <StopCircle className="w-3.5 h-3.5" />}
+                          Stop
+                        </button>
+                      )}
+                      <button onClick={() => openPayModal(s)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#31A24C] text-white text-xs font-medium">
+                        <CreditCard className="w-3.5 h-3.5" />
+                        Pay
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Pricing & Packages */}
@@ -489,7 +596,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
             </div>
 
             {(!pricing.bulk_time_packages || pricing.bulk_time_packages.length === 0) ? (
-              <p className="text-xs text-[#64748B] text-center py-3">No bulk packages — click + Add to create a deal</p>
+              <p className="text-xs text-[#64748B] text-center py-3">No bulk packages - click + Add to create a deal</p>
             ) : (
               <div className="space-y-3">
                 {pricing.bulk_time_packages.map((pkg, idx) => {
@@ -613,7 +720,62 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
       </div>
       <style>{`
 `}</style>
-    
+
+      {/* PAYMENT MODAL */}
+      {payModal && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => { setPayModal(null); setPayAmount(''); }}>
+          <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-5 h-5 text-[#31A24C]" />
+              <h3 className="text-base font-bold text-white flex-1">Record Payment</h3>
+              <button onClick={() => { setPayModal(null); setPayAmount(''); }} className="p-1 text-[#B0B3B8]"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-[#B0B3B8] mb-3">{payModal.player_name} - T{payModal.table_number || '-'} S{payModal.seat_number || '-'}</p>
+            <label className="text-[10px] text-[#B0B3B8] block mb-1">Amount ($)</label>
+            <input type="number" min="0" step="0.01" value={payAmount} autoFocus
+              onChange={e => setPayAmount(e.target.value)}
+              className="w-full px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-2xl font-mono text-center focus:outline-none focus:border-[#1877F2] mb-4" />
+            <button onClick={() => requestPinFor('payment')} disabled={!payAmount || parseFloat(payAmount) <= 0}
+              className="w-full py-3 rounded-lg bg-[#31A24C] text-white text-sm font-bold disabled:opacity-50">
+              Confirm Payment
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PIN KEYPAD MODAL */}
+      {pinStep && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-5 w-full max-w-xs">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-base font-bold text-white">Enter Staff PIN</h3>
+              <button onClick={() => { setPinStep(false); setPinDigits(''); setPinError(''); setPendingAction(null); }} className="p-1 text-[#B0B3B8]"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-[11px] text-[#B0B3B8] mb-4">{pendingAction?.type === 'stop' ? 'Authorize stopping this session' : 'Authorize this payment'}</p>
+            <div className="flex justify-center gap-3 mb-4">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className={`w-4 h-4 rounded-full ${i < pinDigits.length ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`} />
+              ))}
+            </div>
+            {pinError && <p className="text-center text-xs text-[#EF4444] mb-3">{pinError}</p>}
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                <button key={n} onClick={() => handlePinDigit(String(n))} disabled={pinVerifying}
+                  className="py-3 rounded-lg bg-[#3A3B3C] text-white text-lg font-bold active:bg-[#4A4B4C] disabled:opacity-50">{n}</button>
+              ))}
+              <button onClick={() => setPinDigits('')} disabled={pinVerifying}
+                className="py-3 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C] disabled:opacity-50">Clear</button>
+              <button onClick={() => handlePinDigit('0')} disabled={pinVerifying}
+                className="py-3 rounded-lg bg-[#3A3B3C] text-white text-lg font-bold active:bg-[#4A4B4C] disabled:opacity-50">0</button>
+              <button onClick={() => setPinDigits(d => d.slice(0, -1))} disabled={pinVerifying}
+                className="py-3 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C] disabled:opacity-50">Del</button>
+            </div>
+            {pinVerifying && <div className="flex justify-center mt-4"><Loader2 className="w-5 h-5 text-[#1877F2] animate-spin" /></div>}
+          </div>
+        </div>
+      )}
+
       {/* TOAST */}
       {toast && (
         <div style={{

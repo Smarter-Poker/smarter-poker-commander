@@ -5,7 +5,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
-// Lazy getter — prevents SSG/SSR crashes when env vars aren't available at module load time.
+// Lazy getter - prevents SSG/SSR crashes when env vars aren't available at module load time.
 let _supabase;
 function getSupabase() {
   if (!_supabase) {

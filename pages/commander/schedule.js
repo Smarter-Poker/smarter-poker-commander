@@ -1,5 +1,5 @@
 /**
- * Staff Schedule — Weekly Shift Planner
+ * Staff Schedule - Weekly Shift Planner
  * /commander/schedule
  * SmarterPoker Dark Theme
  * 
@@ -86,34 +86,34 @@ const ROLE_COLORS = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// MOCK DATA — 6 MONTHS OF SCHEDULES
+// MOCK DATA - 6 MONTHS OF SCHEDULES
 // ═══════════════════════════════════════════════════════════════
 
 const MOCK_STAFF = [
-  // Dealers — Club JAQK Demo Staff
+  // Dealers - Club JAQK Demo Staff
   { id: 'demo-d1', display_name: 'Marcus Chen', role: 'dealer', is_active: true },
   { id: 'demo-d2', display_name: 'Sarah Williams', role: 'dealer', is_active: true },
   { id: 'demo-d3', display_name: 'Jake Morrison', role: 'dealer', is_active: true },
   { id: 'demo-d4', display_name: 'Lisa Park', role: 'dealer', is_active: true },
   { id: 'demo-d5', display_name: 'Tommy Nguyen', role: 'dealer', is_active: true },
   { id: 'demo-d6', display_name: 'Rachel Adams', role: 'dealer', is_active: true },
-  // Floor — Club JAQK Demo Staff
+  // Floor - Club JAQK Demo Staff
   { id: 'demo-f1', display_name: 'Mike Torres', role: 'floor', is_active: true },
   { id: 'demo-f2', display_name: 'Diana Reyes', role: 'floor', is_active: true },
   { id: 'demo-f3', display_name: 'Chris Banks', role: 'floor', is_active: true },
-  // Cashier — Club JAQK Demo Staff
+  // Cashier - Club JAQK Demo Staff
   { id: 'demo-c1', display_name: 'Amy Rodriguez', role: 'cashier', is_active: true },
   { id: 'demo-c2', display_name: 'Kevin Patel', role: 'cashier', is_active: true },
   { id: 'demo-c3', display_name: 'Nina Foster', role: 'cashier', is_active: true },
-  // Security — Club JAQK Demo Staff
+  // Security - Club JAQK Demo Staff
   { id: 'demo-s1', display_name: 'Ray Johnson', role: 'security', is_active: true },
   { id: 'demo-s2', display_name: 'Victor Cruz', role: 'security', is_active: true },
   { id: 'demo-s3', display_name: 'Tony Martinez', role: 'security', is_active: true },
-  // Manager — Club JAQK Demo Staff
+  // Manager - Club JAQK Demo Staff
   { id: 'demo-m1', display_name: 'Daniel Bekavac', role: 'manager', is_active: true },
 ];
 
-// Shift patterns by role — realistic poker room schedules
+// Shift patterns by role - realistic poker room schedules
 const SHIFT_PATTERNS = {
   dealer: [
     { start: '10:00', end: '18:00' },  // Day
@@ -144,22 +144,22 @@ const SHIFT_PATTERNS = {
 
 // Staff weekly schedule patterns (which days each person works)
 const STAFF_SCHEDULES = {
-  'demo-d1': [1, 2, 3, 4, 5],       // Mon—Fri
-  'demo-d2': [0, 1, 2, 3, 4],       // Sun—Thu
-  'demo-d3': [2, 3, 4, 5, 6],       // Tue—Sat
-  'demo-d4': [0, 3, 4, 5, 6],       // Sun, Wed—Sat
-  'demo-d5': [1, 2, 5, 6, 0],       // Mon, Tue, Fri—Sun
-  'demo-d6': [0, 1, 4, 5, 6],       // Sun, Mon, Thu—Sat
-  'demo-f1': [1, 2, 3, 4, 5],       // Mon—Fri
+  'demo-d1': [1, 2, 3, 4, 5],       // Mon-Fri
+  'demo-d2': [0, 1, 2, 3, 4],       // Sun-Thu
+  'demo-d3': [2, 3, 4, 5, 6],       // Tue-Sat
+  'demo-d4': [0, 3, 4, 5, 6],       // Sun, Wed-Sat
+  'demo-d5': [1, 2, 5, 6, 0],       // Mon, Tue, Fri-Sun
+  'demo-d6': [0, 1, 4, 5, 6],       // Sun, Mon, Thu-Sat
+  'demo-f1': [1, 2, 3, 4, 5],       // Mon-Fri
   'demo-f2': [0, 2, 3, 5, 6],       // Sun, Tue, Wed, Fri, Sat
-  'demo-f3': [0, 1, 4, 5, 6],       // Sun, Mon, Thu—Sat
-  'demo-c1': [1, 2, 3, 4, 5],       // Mon—Fri
-  'demo-c2': [0, 2, 4, 5, 6],       // Sun, Tue, Thu—Sat
+  'demo-f3': [0, 1, 4, 5, 6],       // Sun, Mon, Thu-Sat
+  'demo-c1': [1, 2, 3, 4, 5],       // Mon-Fri
+  'demo-c2': [0, 2, 4, 5, 6],       // Sun, Tue, Thu-Sat
   'demo-c3': [0, 1, 3, 5, 6],       // Sun, Mon, Wed, Fri, Sat
-  'demo-s1': [0, 1, 2, 3],          // Sun—Wed (security 12hr shifts, fewer days)
-  'demo-s2': [3, 4, 5, 6],          // Wed—Sat
+  'demo-s1': [0, 1, 2, 3],          // Sun-Wed (security 12hr shifts, fewer days)
+  'demo-s2': [3, 4, 5, 6],          // Wed-Sat
   'demo-s3': [0, 1, 5, 6],          // Sun, Mon, Fri, Sat
-  'demo-m1': [1, 2, 3, 4, 5],       // Mon—Fri
+  'demo-m1': [1, 2, 3, 4, 5],       // Mon-Fri
 };
 
 // Preferred shift index per staff member (which shift pattern they usually work)
@@ -234,7 +234,7 @@ export default function StaffSchedule() {
   }, [toast]);
   const [usingMockData, setUsingMockData] = useState(false);
 
-  // Post-write cooldown — suppress Supabase Realtime echo after local writes
+  // Post-write cooldown - suppress Supabase Realtime echo after local writes
   // When we create/delete a shift, the DB change fires a Realtime event
   // back to this same tab. Without this guard, we get a double-fetch.
   const lastWriteRef = useRef(0);
@@ -247,7 +247,7 @@ return { 'Content-Type': 'application/json' };
   const fetchData = useCallback(async () => {
     const venueId = getVenueId();
     if (!venueId) {
-      // No venue — use mock data
+      // No venue - use mock data
       setAllStaff(MOCK_STAFF);
       setShifts(generateMockShifts());
       setUsingMockData(true);
@@ -290,13 +290,13 @@ return { 'Content-Type': 'application/json' };
 
   useEffect(() => { const _c = new AbortController(); fetchData(_c.signal); return () => _c.abort(); }, [fetchData]);
 
-  // Commander Data Bus — sync staff/schedule across tabs
+  // Commander Data Bus - sync staff/schedule across tabs
   // Listen for both 'staff' changes (new employees) and 'settings' changes (schedule shifts)
   // Use a guarded callback to skip Supabase echo refetches within WRITE_COOLDOWN_MS of a local write
   const guardedFetch = useCallback(() => {
     const elapsed = Date.now() - lastWriteRef.current;
     if (elapsed < WRITE_COOLDOWN_MS) {
-      // Skip — this is a Supabase echo from our own write
+      // Skip - this is a Supabase echo from our own write
       return;
     }
     fetchData();
@@ -405,7 +405,7 @@ return { 'Content-Type': 'application/json' };
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Computed — filter shifts for current week
+  // Computed - filter shifts for current week
   const weekDays = getWeekDays(weekStart);
   const weekLabel = `${weekDays[0].month} ${weekDays[0].dayNum} – ${weekDays[6].month} ${weekDays[6].dayNum}`;
   const weekDates = new Set(weekDays.map(d => d.date));
@@ -425,16 +425,16 @@ return { 'Content-Type': 'application/json' };
 
   return (
     <CommanderLayout title="Staff Schedule" backHref="/commander/dashboard?card=staff">
-      <SEOHead title="Commander — Staff Schedule" description="Weekly Staff Scheduling For Club Commander." noindex={true} />
+      <SEOHead title="Commander - Staff Schedule" description="Weekly Staff Scheduling For Club Commander." noindex={true} />
 
-      {/* ══ EXTERIOR FRAME — 2px border matching other Commander pages ══ */}
+      {/* ══ EXTERIOR FRAME - 2px border matching other Commander pages ══ */}
       <div style={{ minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), -apple-system, sans-serif", border: '2px solid #3A3B3C' }}>
 
         {/* Demo Banner */}
         {usingMockData && (
           <div style={{ background: '#1877F215', borderBottom: '2px solid #1877F230', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertCircle size={14} color="#1877F2" />
-            <span style={{ fontSize: 12, color: '#1877F2', fontWeight: 600 }}>Demo Mode — Showing Sample Schedule Data (6 Months)</span>
+            <span style={{ fontSize: 12, color: '#1877F2', fontWeight: 600 }}>Demo Mode - Showing Sample Schedule Data (6 Months)</span>
           </div>
         )}
 
@@ -614,7 +614,7 @@ return { 'Content-Type': 'application/json' };
                                     >
                                       <p style={{ margin: 0, lineHeight: 1.3 }}>{formatTime12(s.start_time)}</p>
                                       <p style={{ margin: 0, lineHeight: 1.3 }}>{formatTime12(s.end_time)}</p>
-                                      {/* Delete on hover — using CSS class isn't available, show always on mobile */}
+                                      {/* Delete on hover - using CSS class isn't available, show always on mobile */}
                                       <button
                                         onClick={(e) => { e.stopPropagation(); deleteShift(s.id); }}
                                         style={{
@@ -653,7 +653,7 @@ return { 'Content-Type': 'application/json' };
                             fontSize: 14, fontWeight: 800, margin: 0,
                             color: personHours >= 40 ? '#EF4444' : personHours > 0 ? 'white' : '#3A3B3C'
                           }}>
-                            {personHours > 0 ? `${personHours}h` : '—'}
+                            {personHours > 0 ? `${personHours}h` : '-'}
                           </p>
                         </td>
                       </tr>
@@ -787,7 +787,7 @@ function AddShiftModal({ allStaff, defaultDate, defaultStaffId, weekDays, onClos
               <option value="">Select Employee...</option>
               {allStaff.map(s => (
                 <option key={s.id} value={s.id}>
-                  {titleCase(s.display_name || s.name || 'Staff')} — {titleCase(s.role || 'staff')}
+                  {titleCase(s.display_name || s.name || 'Staff')} - {titleCase(s.role || 'staff')}
                 </option>
               ))}
             </select>

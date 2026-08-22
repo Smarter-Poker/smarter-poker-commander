@@ -54,12 +54,12 @@ return { 'x-staff-session': staff };
 
   useEffect(() => {
     fetchData();
-    const poll = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [fetchData]);
 
-  // Commander Data Bus — instant sync when dealers change
+  // Commander Data Bus - instant sync when dealers change
   useCommanderSync(venueIdRef.current, fetchData, { entities: ['dealers'] });
 
   // Wake lock
@@ -92,7 +92,7 @@ return { 'x-staff-session': staff };
   return (
     <CommanderLayout title="Dealer Rotation Display" backHref="/commander/dashboard?card=displays">
       <SEOHead
-              title="Commander — Dealer Display"
+              title="Commander - Dealer Display"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />

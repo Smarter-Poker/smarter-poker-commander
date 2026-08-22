@@ -77,14 +77,14 @@ const res = await commanderFetch('/api/commander/notifications/send', {
       // responses instead of a generic connection error
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setError(body?.error?.message || body?.error || `Failed to send announcement (${res.status})`);
+        setError(body?.error?.message || body?.error || `Failed To Send Announcement (${res.status})`);
         return;
       }
 
       const data = await res.json();
 
       if (data.success) {
-        setSuccess(`Sent to ${data.data?.sent_count || 0} players`);
+        setSuccess(`Sent To ${data.data?.sent_count || 0} Players`);
         setRecentAnnouncements(prev => [
           {
             id: Date.now(),
@@ -100,10 +100,10 @@ const res = await commanderFetch('/api/commander/notifications/send', {
         busEmit.celebration('confetti');
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(data.error?.message || 'Failed to send announcement');
+        setError(data.error?.message || 'Failed To Send Announcement');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSending(false);
     }
@@ -122,10 +122,10 @@ const res = await commanderFetch('/api/commander/notifications/send', {
   }
 
   return (
-    <CommanderLayout title="Announcements | {venue?.name || 'Commander'}" backHref="/commander/dashboard?card=displays">
+    <CommanderLayout title={`Announcements | ${venue?.name || 'Commander'}`} backHref="/commander/dashboard?card=displays">
       <>
         <SEOHead
-          title="Commander — Announcements"
+          title="Commander - Announcements"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -153,7 +153,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
               {/* Target Selection */}
               <div>
                 <label className="block text-sm font-medium text-[#B0B3B8] mb-2">
-                  Send to
+                  Send To
                 </label>
                 <div className="flex gap-2">
                   {[
@@ -209,7 +209,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
                   className="w-full px-3 py-2 cmd-input resize-none"
                 />
                 <p className="text-xs text-[#3A3B3C] mt-1">
-                  {message.length}/160 characters
+                  {message.length}/160 Characters
                 </p>
               </div>
 
@@ -244,7 +244,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
                     <div key={ann.id} className="p-4">
                       <p className="text-white">{ann.message}</p>
                       <div className="flex items-center gap-4 mt-2 text-xs text-[#B0B3B8]">
-                        <span>Sent to {ann.sent_count} players</span>
+                        <span>Sent To {ann.sent_count} Players</span>
                         <span>{new Date(ann.sent_at).toLocaleTimeString()}</span>
                       </div>
                     </div>

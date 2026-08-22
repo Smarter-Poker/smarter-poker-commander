@@ -6,7 +6,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
-// Note: No auth guard — this is a public lead capture form. Protected by IP rate limiting.
+// Note: No auth guard - this is a public lead capture form. Protected by IP rate limiting.
 
 let _supabase = null;
 function getSupabase() {

@@ -53,7 +53,7 @@ export default function DailyPresetsPage() {
   const [autoCompSuccess, setAutoCompSuccess] = useState(null);
   const [autoCompDirty, setAutoCompDirty] = useState(false);
 
-  // Form state — now includes promotions, tournaments, and schedule
+  // Form state - now includes promotions, tournaments, and schedule
   const [form, setForm] = useState({
     name: '', description: '',
     tables: [],
@@ -109,12 +109,12 @@ const res = await commanderFetch('/api/commander/settings', {
         const data = await res.json();
         if (data.success) {
           setHardStopDirty(false);
-          setHardStopSuccess('Hard Stop settings saved');
+          setHardStopSuccess('Hard Stop Settings Saved');
           broadcastChange('settings');
           setTimeout(() => setHardStopSuccess(null), 3000);
         }
       }
-    } catch (e) { console.warn("[room-presets.js]", e); setError('Action failed. Please check your connection and try again.'); }
+    } catch (e) { console.warn("[room-presets.js]", e); setError('Action Failed. Please Check Your Connection And Try Again.'); }
     finally { setHardStopSaving(false); }
   }
 
@@ -132,12 +132,12 @@ const res = await commanderFetch('/api/commander/settings', {
         const data = await res.json();
         if (data.success) {
           setAutoCompDirty(false);
-          setAutoCompSuccess('Hourly comp rate saved');
+          setAutoCompSuccess('Hourly Comp Rate Saved');
           broadcastChange('settings');
           setTimeout(() => setAutoCompSuccess(null), 3000);
         }
       }
-    } catch (e) { console.warn("[room-presets.js]", e); setError('Action failed. Please check your connection and try again.'); }
+    } catch (e) { console.warn("[room-presets.js]", e); setError('Action Failed. Please Check Your Connection And Try Again.'); }
     finally { setAutoCompSaving(false); }
   }
 
@@ -163,7 +163,7 @@ const res = await commanderFetch('/api/commander/settings', {
 
   useEffect(() => { if (staff) fetchData(); }, [staff, fetchData]);
 
-  // Commander Data Bus — sync settings/tables across tabs
+  // Commander Data Bus - sync settings/tables across tabs
   const venueId = staff?.venue_id || '';
   useCommanderSync(venueId, fetchData, { entities: ['settings', 'tables', 'tournaments'] });
 
@@ -172,11 +172,11 @@ const res = await commanderFetch('/api/commander/settings', {
     const promoCount = (preset.promotions || []).length;
     const tourneyCount = (preset.tournaments || []).length;
     const parts = [];
-    if (tableCount > 0) parts.push(`${tableCount} table${tableCount !== 1 ? 's' : ''}`);
-    if (promoCount > 0) parts.push(`${promoCount} promotion${promoCount !== 1 ? 's' : ''}`);
-    if (tourneyCount > 0) parts.push(`${tourneyCount} tournament${tourneyCount !== 1 ? 's' : ''}`);
+    if (tableCount > 0) parts.push(`${tableCount} Table${tableCount !== 1 ? 's' : ''}`);
+    if (promoCount > 0) parts.push(`${promoCount} Promotion${promoCount !== 1 ? 's' : ''}`);
+    if (tourneyCount > 0) parts.push(`${tourneyCount} Tournament${tourneyCount !== 1 ? 's' : ''}`);
 
-    if (!confirm(`Launch "${preset.name}"?\n\nThis will activate: ${parts.join(', ') || 'nothing configured'}`)) return;
+    if (!confirm(`Launch "${preset.name}"?\n\nThis Will Activate: ${parts.join(', ') || 'Nothing Configured'}`)) return;
     setApplying(preset.id);
     setError(null);
     try {
@@ -186,10 +186,10 @@ const res = await commanderFetch('/api/commander/settings', {
         const json = await res.json();
         if (json.success) {
           const results = [];
-          if (json.data.games_opened > 0) results.push(`${json.data.games_opened} games opened`);
-          if (json.data.promotions_activated > 0) results.push(`${json.data.promotions_activated} promotions activated`);
-          if (json.data.tournaments_created > 0) results.push(`${json.data.tournaments_created} tournaments created`);
-          setSuccess(`"${preset.name}" launched — ${results.join(', ') || 'preset applied'}`);
+          if (json.data.games_opened > 0) results.push(`${json.data.games_opened} Games Opened`);
+          if (json.data.promotions_activated > 0) results.push(`${json.data.promotions_activated} Promotions Activated`);
+          if (json.data.tournaments_created > 0) results.push(`${json.data.tournaments_created} Tournaments Created`);
+          setSuccess(`"${preset.name}" Launched, ${results.join(', ') || 'Preset Applied'}`);
           setTimeout(() => setSuccess(null), 5000);
           fetchData();
           broadcastChange('tables');
@@ -197,12 +197,12 @@ const res = await commanderFetch('/api/commander/settings', {
           broadcastChange('tournaments');
           broadcastChange('settings');
         } else {
-          setError(json.error || 'Failed to apply preset');
+          setError(json.error || 'Failed To Apply Preset');
         }
       } else {
-        setError('Failed to apply preset');
+        setError('Failed To Apply Preset');
       }
-    } catch { setError('Failed to apply preset'); }
+    } catch { setError('Failed To Apply Preset'); }
     finally { setApplying(null); }
   }
 
@@ -287,9 +287,9 @@ const res = await commanderFetch('/api/commander/settings', {
 
   // ── Save ──
   async function handleSave() {
-    if (!form.name) { setError('Preset name required'); return; }
+    if (!form.name) { setError('Preset Name Required'); return; }
     if (form.tables.length === 0 && form.promotions.length === 0 && form.tournaments.length === 0) {
-      setError('Add at least one table, promotion, or tournament configuration');
+      setError('Add At Least One Table, Promotion, Or Tournament Configuration');
       return;
     }
     setError(null);
@@ -303,7 +303,7 @@ const res = await commanderFetch('/api/commander/settings', {
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
-          setSuccess(editingId ? 'Preset updated' : 'Preset created');
+          setSuccess(editingId ? 'Preset Updated' : 'Preset Created');
           setTimeout(() => setSuccess(null), 3000);
           setShowForm(false);
           setEditingId(null);
@@ -311,16 +311,16 @@ const res = await commanderFetch('/api/commander/settings', {
           fetchData();
           broadcastChange('settings');
         } else {
-          setError(json.error || 'Failed to save');
+          setError(json.error || 'Failed To Save');
         }
       } else {
-        setError('Failed to save preset');
+        setError('Failed To Save Preset');
       }
-    } catch { setError('Failed to save preset'); }
+    } catch { setError('Failed To Save Preset'); }
   }
 
   async function handleDelete(preset) {
-    if (!confirm(`Delete "${preset.name}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete "${preset.name}"? This Cannot Be Undone.`)) return;
     try {
       const res = await commanderFetch(`/api/commander/room-presets?id=${preset.id}`, {
         method: 'DELETE'});
@@ -331,7 +331,7 @@ const res = await commanderFetch('/api/commander/settings', {
           broadcastChange('settings');
         }
       }
-    } catch (err) { console.warn(err); setError('Action failed. Please check your connection and try again.'); }
+    } catch (err) { console.warn(err); setError('Action Failed. Please Check Your Connection And Try Again.'); }
   }
 
   function startEdit(preset) {
@@ -368,7 +368,7 @@ const res = await commanderFetch('/api/commander/settings', {
     <CommanderLayout title={`Daily Presets | ${venueName || 'Commander'}`} backHref="/commander/dashboard?card=staff">
       <>
         <SEOHead
-          title="Commander — Room Presets"
+          title="Commander - Room Presets"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -386,7 +386,7 @@ const res = await commanderFetch('/api/commander/settings', {
             {hardStopSuccess && <div className="p-3 bg-[#31A24C]/10 rounded-xl text-sm text-[#31A24C] font-medium flex items-center gap-2"><CheckCircle className="w-4 h-4" />{hardStopSuccess}</div>}
             {error && <div className="p-3 bg-[#EF4444]/10 rounded-xl text-sm text-[#EF4444] flex items-center gap-2"><AlertCircle className="w-4 h-4" />{error}</div>}
 
-            {/* Hard Stop — Charity + Club only */}
+            {/* Hard Stop - Charity + Club only */}
             {canHardStop && (
               <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
                 <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
@@ -431,7 +431,7 @@ const res = await commanderFetch('/api/commander/settings', {
                       <div className="p-3 bg-[#F59E0B]/10 rounded-lg flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-[#F59E0B] mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-[#F59E0B]">
-                          At {hardStopTime ? new Date(`2000-01-01T${hardStopTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'the set time'}, all open tables will be closed, all active sessions ended, and the room set to closed.
+                          At {hardStopTime ? new Date(`2000-01-01T${hardStopTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'The Set Time'}, All Open Tables Will Be Closed, All Active Sessions Ended, And The Room Set To Closed.
                         </p>
                       </div>
                     </>
@@ -533,7 +533,7 @@ const res = await commanderFetch('/api/commander/settings', {
                       <div className="flex items-center gap-2">
                         <Layout className="w-4 h-4 text-[#1877F2]" />
                         <span className="text-sm font-semibold text-white">Tables</span>
-                        {form.tables.length > 0 && <span className="text-xs text-[#B0B3B8]">({getTotalTables(form.tables)} total)</span>}
+                        {form.tables.length > 0 && <span className="text-xs text-[#B0B3B8]">({getTotalTables(form.tables)} Total)</span>}
                       </div>
                       <button onClick={addTableRow} className="text-xs text-[#1877F2] hover:text-[#1877F2]/80 flex items-center gap-1">
                         <Plus className="w-3 h-3" /> Add
@@ -552,7 +552,7 @@ const res = await commanderFetch('/api/commander/settings', {
                                     className="flex-1 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white">
                                     <option value="">{row.short_code ? `${row.short_code} ${row.stakes || ''}`.trim() : 'Select Game Type...'}</option>
                                     {gameTypes.map(gt => (
-                                      <option key={gt.id} value={gt.id}>{gt.short_code} — {gt.name} {gt.stakes}</option>
+                                      <option key={gt.id} value={gt.id}>{gt.short_code} - {gt.name} {gt.stakes}</option>
                                     ))}
                                   </select>
                                 ) : (
@@ -605,7 +605,7 @@ const res = await commanderFetch('/api/commander/settings', {
                     <div className="p-3 bg-[#31A24C]/5 border-b border-[#3A3B3C] flex items-center gap-2">
                       <Gift className="w-4 h-4 text-[#31A24C]" />
                       <span className="text-sm font-semibold text-white">Promotions To Activate</span>
-                      {form.promotions.length > 0 && <span className="text-xs text-[#B0B3B8]">({form.promotions.length} selected)</span>}
+                      {form.promotions.length > 0 && <span className="text-xs text-[#B0B3B8]">({form.promotions.length} Selected)</span>}
                     </div>
                     <div className="p-3">
                       {promotions.length === 0 ? (
@@ -630,7 +630,7 @@ const res = await commanderFetch('/api/commander/settings', {
                                   <p className="text-xs text-[#B0B3B8]">{promo.promotion_type?.replace(/_/g, ' ')}</p>
                                 </div>
                               </div>
-                              {promo.is_active && <span className="text-[10px] text-[#31A24C] font-medium">ACTIVE</span>}
+                              {promo.is_active && <span className="text-[10px] text-[#31A24C] font-medium">Active</span>}
                             </button>
                           ))}
                         </div>
@@ -717,7 +717,7 @@ const res = await commanderFetch('/api/commander/settings', {
                     <div className="p-3 bg-[#8B5CF6]/5 border-b border-[#3A3B3C] flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-[#8B5CF6]" />
                       <span className="text-sm font-semibold text-white">Auto-Launch Schedule</span>
-                      <span className="text-xs text-[#B0B3B8]">(optional)</span>
+                      <span className="text-xs text-[#B0B3B8]">(Optional)</span>
                     </div>
                     <div className="p-3 space-y-3">
                       <div className="flex items-center gap-3">
@@ -746,7 +746,7 @@ const res = await commanderFetch('/api/commander/settings', {
                         <div className="p-3 bg-[#8B5CF6]/10 rounded-lg flex items-start gap-2">
                           <Clock className="w-4 h-4 text-[#8B5CF6] mt-0.5 flex-shrink-0" />
                           <p className="text-xs text-[#8B5CF6]">
-                            This preset will auto-launch at <strong>{new Date(`2000-01-01T${form.start_time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</strong> on {form.day_of_week.map(d => DAY_LABELS[d]).join(', ')}
+                            This Preset Will Auto-Launch At <strong>{new Date(`2000-01-01T${form.start_time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</strong> On {form.day_of_week.map(d => DAY_LABELS[d]).join(', ')}
                           </p>
                         </div>
                       )}
@@ -805,17 +805,17 @@ const res = await commanderFetch('/api/commander/settings', {
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {tableCount > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1877F2]/10 text-[#1877F2] text-xs font-medium">
-                              <Layout className="w-3 h-3" /> {tableCount} table{tableCount !== 1 ? 's' : ''}
+                              <Layout className="w-3 h-3" /> {tableCount} Table{tableCount !== 1 ? 's' : ''}
                             </span>
                           )}
                           {promoCount > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#31A24C]/10 text-[#31A24C] text-xs font-medium">
-                              <Gift className="w-3 h-3" /> {promoCount} promo{promoCount !== 1 ? 's' : ''}
+                              <Gift className="w-3 h-3" /> {promoCount} Promo{promoCount !== 1 ? 's' : ''}
                             </span>
                           )}
                           {tourneyCount > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] text-xs font-medium">
-                              <Trophy className="w-3 h-3" /> {tourneyCount} tourney{tourneyCount !== 1 ? 's' : ''}
+                              <Trophy className="w-3 h-3" /> {tourneyCount} Tourney{tourneyCount !== 1 ? 's' : ''}
                             </span>
                           )}
                           {hasSchedule && (
@@ -861,7 +861,7 @@ const res = await commanderFetch('/api/commander/settings', {
 
                         {preset.last_applied_at && (
                           <p className="text-[10px] text-[#B0B3B8] mb-3">
-                            Last launched: {new Date(preset.last_applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            Last Launched: {new Date(preset.last_applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </p>
                         )}
 
@@ -891,7 +891,7 @@ const res = await commanderFetch('/api/commander/settings', {
             )}
 
             {/* ════════════════════════════════════════════════════════════════
-                STARTER PRESET TEMPLATES — 6 unique configurations
+                STARTER PRESET TEMPLATES - 6 unique configurations
             ════════════════════════════════════════════════════════════════ */}
             <div className="mt-8">
               <div className="flex items-center gap-3 mb-4">
@@ -899,13 +899,13 @@ const res = await commanderFetch('/api/commander/settings', {
                 <span className="text-xs text-[#B0B3B8] font-semibold uppercase tracking-wider">Starter Templates</span>
                 <div className="flex-1 h-px bg-[#3A3B3C]" />
               </div>
-              <p className="text-sm text-[#B0B3B8] text-center mb-4">Quick-Start Configurations — Click To Use As A Starting Point</p>
+              <p className="text-sm text-[#B0B3B8] text-center mb-4">Quick-Start Configurations, Click To Use As A Starting Point</p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[
                   {
                     name: 'Weeknight Cash',
-                    description: 'Standard evening session — 3 tables for regular weeknight traffic',
-                    icon: '🌙',
+                    description: 'Standard Evening Session, 3 Tables For Regular Weeknight Traffic',
+                    icon: 'Night',
                     color: '#1877F2',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/3', count: 2, max_players: 9 },
@@ -916,8 +916,8 @@ const res = await commanderFetch('/api/commander/settings', {
                   },
                   {
                     name: 'Weekend Warriors',
-                    description: 'Peak hours — 6 tables across NLH and PLO for maximum action',
-                    icon: '🔥',
+                    description: 'Peak Hours, 6 Tables Across NLH And PLO For Maximum Action',
+                    icon: 'Hot',
                     color: '#EF4444',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/3', count: 3, max_players: 9 },
@@ -929,8 +929,8 @@ const res = await commanderFetch('/api/commander/settings', {
                   },
                   {
                     name: 'Tournament Thursday',
-                    description: 'Cash game + weekly freezeout tournament combo',
-                    icon: '🏆',
+                    description: 'Cash Game + Weekly Freezeout Tournament Combo',
+                    icon: 'Trophy',
                     color: '#F59E0B',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/2', count: 2, max_players: 9 }
@@ -942,8 +942,8 @@ const res = await commanderFetch('/api/commander/settings', {
                   },
                   {
                     name: 'High Stakes Night',
-                    description: '3 premium tables for high-roller action',
-                    icon: '💎',
+                    description: '3 Premium Tables For High-Roller Action',
+                    icon: 'Premium',
                     color: '#8B5CF6',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '5/10', count: 2, max_players: 9 },
@@ -954,8 +954,8 @@ const res = await commanderFetch('/api/commander/settings', {
                   },
                   {
                     name: 'Sunday Special',
-                    description: 'Full day — cash games + bounty tournament for the Sunday crowd',
-                    icon: '☀️',
+                    description: 'Full Day, Cash Games + Bounty Tournament For The Sunday Crowd',
+                    icon: 'Sun',
                     color: '#31A24C',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/3', count: 2, max_players: 9 },
@@ -968,8 +968,8 @@ const res = await commanderFetch('/api/commander/settings', {
                   },
                   {
                     name: 'Minimal Monday',
-                    description: 'Single table for slow nights — low overhead, easy to manage',
-                    icon: '🎯',
+                    description: 'Single Table For Slow Nights, Low Overhead, Easy To Manage',
+                    icon: 'Simple',
                     color: '#6B7280',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/2', count: 1, max_players: 9 }
@@ -994,7 +994,7 @@ const res = await commanderFetch('/api/commander/settings', {
                       ))}
                       {tmpl.tournaments.map((t, i) => (
                         <span key={`t${i}`} className="text-[10px] px-2 py-0.5 rounded-md bg-[#F59E0B]/10 text-[#F59E0B] font-medium">
-                          🏆 {t.name}
+                          Tournament: {t.name}
                         </span>
                       ))}
                     </div>

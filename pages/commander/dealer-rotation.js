@@ -1,7 +1,7 @@
 /**
- * Dealer Rotation Manager — Complete Rebuild
+ * Dealer Rotation Manager - Complete Rebuild
  * /commander/dealer-rotation
- * 
+ *
  * Floor managers use this to:
  * - See all active dealers grouped by status (Dealing / Break / Available)
  * - Push dealers to new tables with visual countdown timer
@@ -76,11 +76,11 @@ export default function DealerRotation() {
       const [dealersRes, tablesRes, rotationsRes, gamesRes] = await Promise.all([
         commanderFetch(`/api/commander/dealers?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({})),
         commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({})),
-        commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers }).then(r => r.json()).catch(() => ({})),
+        commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}&include_ended=1`, { headers }).then(r => r.json()).catch(() => ({})),
         commanderFetch(`/api/commander/games/venue/${venueId}`, { headers }).then(r => r.json()).catch(() => ({}))
       ]);
 
-      // Parse dealers — API returns { dealers: [...] } or { data: { dealers: [...] } }
+      // Parse dealers - API returns { dealers: [...] } or { data: { dealers: [...] } }
       const dealersArr = dealersRes.data?.dealers || dealersRes.dealers || (Array.isArray(dealersRes.data) ? dealersRes.data : []);
       setDealers(dealersArr.filter(d => d.is_active !== false));
 
@@ -88,11 +88,11 @@ export default function DealerRotation() {
       const tablesArr = tablesRes.data?.tables || (Array.isArray(tablesRes.data) ? tablesRes.data : []);
       setTables(tablesArr);
 
-      // Parse games — API returns { data: { games: [...] } }
+      // Parse games - API returns { data: { games: [...] } }
       const gamesArr = gamesRes.data?.games || (Array.isArray(gamesRes.data) ? gamesRes.data : []);
       setGames(gamesArr);
 
-      // Parse rotations — API returns { rotations: [...] } — split active vs history
+      // Parse rotations - API returns { rotations: [...] } - split active vs history
       const allRotations = rotationsRes.data?.rotations || (Array.isArray(rotationsRes.data) ? rotationsRes.data : []);
       const active = allRotations.filter(r => !r.ended_at);
       const ended = allRotations.filter(r => r.ended_at);
@@ -105,12 +105,12 @@ export default function DealerRotation() {
   useEffect(() => {
     const _c = new AbortController();
     fetchData(_c.signal);
-    const poll = setInterval(() => fetchData(_c.signal), 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(() => fetchData(_c.signal), 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { _c.abort(); clearInterval(poll); clearInterval(clock); };
   }, [fetchData]);
 
-  // Commander Data Bus — sync dealers + tables across tabs
+  // Commander Data Bus - sync dealers + tables across tabs
   useCommanderSync(getVenueId(), fetchData, { entities: ['dealers', 'tables', 'games'] });
 
   // ── Actions ──────────────────────────────────────────
@@ -135,7 +135,7 @@ export default function DealerRotation() {
         broadcastChange('dealers');
         broadcastChange('tables');
       }
-    } catch (err) { console.warn(`[DealerRotation] ${action} error:`, err); setToast({ type: 'error', text: `Action failed: ${action}. Please try again.` }); }
+    } catch (err) { console.warn(`[DealerRotation] ${action} error:`, err); setToast({ type: 'error', text: `Action Failed: ${action}. Please Try Again.` }); }
     finally { setActionLoading(null); }
   };
 
@@ -207,7 +207,7 @@ export default function DealerRotation() {
 
   return (
     <CommanderLayout title="Dealer Rotation" backHref="/commander/dashboard?card=floor">
-      <SEOHead title="Commander — Dealer Rotation" description="Club Commander Dealer Rotation Manager" noindex={true} />
+      <SEOHead title="Commander - Dealer Rotation" description="Club Commander Dealer Rotation Manager" noindex={true} />
 
       <style>{`
         .dr-page { min-height: 100vh; background: #0a0a0a; color: #E4E6EB; font-family: 'Inter', sans-serif; }
@@ -315,7 +315,7 @@ export default function DealerRotation() {
               <div className="dr-warning-box">
                 <div className="dr-warning-title">
                   <AlertTriangle style={{ width: 16, height: 16 }} />
-                  {unassignedTables.length} Active Table{unassignedTables.length > 1 ? 's' : ''} Without a Dealer
+                  {unassignedTables.length} Active Table{unassignedTables.length > 1 ? 's' : ''} Without A Dealer
                 </div>
                 <div className="dr-warning-detail">
                   Tables: {unassignedTables.map(t => `T${t.table_number}`).join(', ')}
@@ -419,7 +419,7 @@ export default function DealerRotation() {
               </div>
             )}
             {showHistory && history.length === 0 && (
-              <div className="dr-empty" style={{ marginTop: 8 }}>No rotation history yet today</div>
+              <div className="dr-empty" style={{ marginTop: 8 }}>No Rotation History Yet Today</div>
             )}
           </div>
 
@@ -441,7 +441,7 @@ export default function DealerRotation() {
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{d.name || d.display_name}</div>
                     <div className="dr-break-time">
-                      {d.break_started_at ? `${minutesSince(d.break_started_at)}m on break` : 'On break'}
+                      {d.break_started_at ? `${minutesSince(d.break_started_at)}m On Break` : 'On Break'}
                     </div>
                   </div>
                   <button className="dr-return-btn" onClick={() => returnFromBreak(d.id)}
@@ -490,7 +490,7 @@ export default function DealerRotation() {
               <div style={{ fontSize: 12, color: '#666', lineHeight: 1.8 }}>
                 <div>Active Tables: <b style={{ color: '#ccc' }}>{activeTables.length}</b></div>
                 <div>Total Rotations Today: <b style={{ color: '#ccc' }}>{history.length + rotations.length}</b></div>
-                <div>Avg Time at Table: <b style={{ color: '#ccc' }}>
+                <div>Avg Time At Table: <b style={{ color: '#ccc' }}>
                   {dealingDealers.length > 0
                     ? `${Math.round(dealingDealers.reduce((sum, d) => sum + minutesSince(getActiveRotation(d.id)?.started_at), 0) / dealingDealers.length)}m`
                     : '--'}
@@ -500,7 +500,7 @@ export default function DealerRotation() {
           </div>
         </div>
       </div>
-    
+
       {/* TOAST */}
       {toast && (
         <div style={{

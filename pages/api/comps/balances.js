@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 async function awardComp(req, res, staffAuth) {
   try {
     // staffAuth: { id, venue_id, role, is_active } from guardWriteStaff
-    // display_name comes from request body (authorized_by) — set by PIN verifier
+    // display_name comes from request body (authorized_by) - set by PIN verifier
     const staffRecord = staffAuth;
 
     // ── ROLE CHECK: Only owner, manager, dualrate can issue comps ──
@@ -74,7 +74,7 @@ async function awardComp(req, res, staffAuth) {
       return res.status(400).json({ success: false, error: 'amount or membership_days required' });
     }
 
-    // Get the member — check commander_members first, then commander_staff
+    // Get the member - check commander_members first, then commander_staff
     let member = null;
 
     // Attempt 1: Direct lookup in commander_members by ID
@@ -144,21 +144,21 @@ async function awardComp(req, res, staffAuth) {
 
     if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
 
-    // Check membership status — provide specific messaging
+    // Check membership status - provide specific messaging
     // BYPASS for free_membership comps: the whole point is to renew/activate membership
     const isMembershipComp = comp_category === 'free_membership' || (membership_days && parseInt(membership_days) > 0);
     const mStatus = (member.membership_status || 'active').toLowerCase();
     if (!isMembershipComp) {
       if (mStatus === 'expired') {
         const expDate = member.membership_expires ? new Date(member.membership_expires).toLocaleDateString() : 'unknown';
-        return res.status(403).json({ success: false, error: `Membership Expired (${expDate}) — Please Renew Before Issuing Comps` });
+        return res.status(403).json({ success: false, error: `Membership Expired (${expDate}) - Please Renew Before Issuing Comps` });
       }
       if (mStatus === 'suspended') {
-        return res.status(403).json({ success: false, error: 'Membership Is Suspended — Cannot Issue Comps To This Member' });
+        return res.status(403).json({ success: false, error: 'Membership Is Suspended - Cannot Issue Comps To This Member' });
       }
     }
     if (mStatus === 'banned') {
-      return res.status(403).json({ success: false, error: 'Member Is Banned — Cannot Issue Comps' });
+      return res.status(403).json({ success: false, error: 'Member Is Banned - Cannot Issue Comps' });
     }
 
     // Verify staff is at the same venue as the member
@@ -199,7 +199,7 @@ async function awardComp(req, res, staffAuth) {
           p_earned_delta: compCost > 0 ? compCost : 0,
           p_redeemed_delta: 0,
           p_type: type || 'award',
-          p_reason: reason || `Free Membership — ${days} days`,
+          p_reason: reason || `Free Membership - ${days} days`,
           p_authorized_by: authorized_by || 'Staff',
           p_authorized_pin: authorized_pin || false,
           p_processed_by: staffRecord.id,
@@ -236,7 +236,7 @@ async function awardComp(req, res, staffAuth) {
       // 2026-07-28 audit fix: time_balance_minutes, comp_balance and
       // comp_lifetime_earned were all read, added to in JS and written back in a
       // single update, so a concurrent write to ANY of them between the read and
-      // the write was erased — and a partial failure could move some columns and
+      // the write was erased - and a partial failure could move some columns and
       // not others. commander_txn_award_comp applies all three deltas and writes
       // the ledger row in one transaction.
       const { data: compResult, error: updateErr } = await getSupabase()
@@ -249,12 +249,12 @@ async function awardComp(req, res, staffAuth) {
           p_earned_delta: dollarValue > 0 ? dollarValue : 0,
           p_redeemed_delta: 0,
           p_type: type || 'award',
-          p_reason: reason || `Free Time — ${timeLabel}`,
+          p_reason: reason || `Free Time - ${timeLabel}`,
           p_authorized_by: authorized_by || 'Staff',
           p_authorized_pin: authorized_pin || false,
           p_processed_by: staffRecord.id,
           p_comp_category: 'free_time',
-          p_notes: `${timeMinutes} minutes${notes ? ' — ' + notes : ''}`,
+          p_notes: `${timeMinutes} minutes${notes ? ' - ' + notes : ''}`,
           p_idempotency_key: idempotencyKey
         });
 
@@ -289,7 +289,7 @@ async function awardComp(req, res, staffAuth) {
     // by hand. That is a correct guard but the wrong shape for a comp desk: it
     // fails a legitimate concurrent award rather than composing it. The RPC does
     // comp_balance = comp_balance + delta in one statement, so both awards land
-    // and neither is lost — no retry, no 409 — and it writes the ledger row in
+    // and neither is lost - no retry, no 409 - and it writes the ledger row in
     // the same transaction rather than as a separate insert whose failure was
     // only logged.
     const { data: compResult, error: updateErr } = await getSupabase()
@@ -340,7 +340,26 @@ async function getBalances(req, res) {
     const { venue_id, history } = req.query;
 
     // If history=true, return comp log for the venue
+    // 2026-08-20 audit fix: this branch ran BEFORE any authentication (the
+    // handler-level guardWriteStaff passes GET straight through), so the whole
+    // comp ledger for any venue - member names, amounts, reasons - was public.
+    // It now requires a verified staff session scoped to that venue.
     if (history && venue_id) {
+      const historySession = await verifyStaffSession(req);
+      if (!historySession.staff) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'AUTH_REQUIRED', message: 'Staff Authentication Required' }
+        });
+      }
+      if (historySession.staff.venue_id !== undefined && historySession.staff.venue_id !== null
+          && String(historySession.staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
+        });
+      }
+
       const { data: logs, error } = await getSupabase()
         .from('commander_member_comp_log')
         .select('*')
@@ -391,7 +410,7 @@ async function getBalances(req, res) {
       const token = authHeader.replace('Bearer ', '');
       const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (authError || !user) return res.status(401).json({ success: false, error: 'Session expired — please refresh the page' });
+      if (authError || !user) return res.status(401).json({ success: false, error: 'Session expired - please refresh the page' });
       userId = user.id;
     }
 
@@ -517,7 +536,7 @@ async function getBalances(req, res) {
 }
 
 // ═══════════════════════════════════════════
-// PATCH — Void / Revoke a comp
+// PATCH - Void / Revoke a comp
 // ═══════════════════════════════════════════
 async function voidComp(req, res, staffAuth) {
   try {
@@ -576,7 +595,7 @@ async function voidComp(req, res, staffAuth) {
     // `Math.max(0, <value read earlier> - amount)` and written back. Two
     // problems, both fixed by expressing the reversal as a delta applied by
     // commander_txn_award_comp:
-    //   * read-modify-write — a concurrent comp between the read and the write
+    //   * read-modify-write - a concurrent comp between the read and the write
     //     was erased, and the membership/time/dollar columns could half-apply.
     //   * Math.max(0, ...) silently clamped. Voiding a $50 comp against a $20
     //     balance quietly zeroed it and logged a $50 reversal, so the ledger and
@@ -593,7 +612,7 @@ async function voidComp(req, res, staffAuth) {
       // Also reverse the comp_lifetime_earned for the dollar cost
       if (originalAmount > 0) redeemedDelta = originalAmount;
     } else if (compCategory === 'free_time') {
-      // Reverse time_balance_minutes — parse from notes (e.g., "120 minutes")
+      // Reverse time_balance_minutes - parse from notes (e.g., "120 minutes")
       const minuteMatch = (logEntry.notes || '').match(/^(\d+)\s*minutes/);
       if (minuteMatch) timeDelta = -parseInt(minuteMatch[1]);
       // Also reverse dollar comp_balance
@@ -637,7 +656,7 @@ async function voidComp(req, res, staffAuth) {
         p_notes: `VOID-REF:${comp_log_id} | ${void_reason || 'Voided by staff'}`,
         // Keyed on the comp being voided, so a double-tapped void reverses once
         // however many times it is submitted. This is the guard the
-        // notes LIKE 'VOID-REF:...' lookup above was meant to be — that lookup
+        // notes LIKE 'VOID-REF:...' lookup above was meant to be - that lookup
         // could never match, because commander_member_comp_log had no notes
         // column until the 2026-07-28 migration.
         p_idempotency_key: `void:${comp_log_id}`

@@ -4,7 +4,7 @@
  * POST /api/commander/marketplace/dealers - Register as freelance dealer
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -18,14 +18,19 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything. listDealers selects '*' from
+    // commander_dealer_marketplace, which carries contact_email and
+    // contact_phone, so the freelance dealers' personal contact details were
+    // scrapeable by anyone.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method === 'GET') {
       return listDealers(req, res);
@@ -90,7 +95,7 @@ async function listDealers(req, res) {
     const { data, error, count } = await query;
 
     if (error) {
-      // Missing-table guard — migration archived at
+      // Missing-table guard - migration archived at
       // supabase/migrations/archive/20260127_commander_remaining_tables.sql,
       // never applied to production. Return empty list with clear flag.
       if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
@@ -193,7 +198,7 @@ async function registerDealer(req, res) {
         status: 'active',
         verified: false
       })
-      // 2026-07-25 audit fix: dropped the `profiles:dealer_id (...)` embed — the
+      // 2026-07-25 audit fix: dropped the `profiles:dealer_id (...)` embed - the
       // FK it requires doesn't exist (PGRST200 after the row was inserted; same
       // issue as the listDealers fix above). Plain select of the inserted row.
       .select()

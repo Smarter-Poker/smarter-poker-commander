@@ -1,5 +1,5 @@
 /**
- * Tournament Clock Display — Full Tournament Director Clone
+ * Tournament Clock Display - Full Tournament Director Clone
  * /commander/tournaments/[id]/clock-display
  * 
  * Features matching TheTournamentDirector.net:
@@ -60,7 +60,23 @@ function formatElapsed(startTime) {
   return `0:${m.toString().padStart(2, '0')}`;
 }
 
-// Chip denominations removed — replaced by prize payouts + chip leaders in right panel
+// Chip denominations removed - replaced by prize payouts + chip leaders in right panel
+
+// Approximate wall-clock time late registration closes: remaining seconds of
+// the current level plus the full duration of every structure row (breaks
+// included, since they delay it) up to and including the late-reg cutoff index.
+function lateRegCloseDate(blindStructure, currentLevelIdx, remainingSeconds, lateRegLevels) {
+  if (!Array.isArray(blindStructure) || blindStructure.length === 0) return null;
+  const cutoff = Math.min(Number(lateRegLevels) || 0, blindStructure.length - 1);
+  const idx = Number(currentLevelIdx) || 0;
+  if (idx > cutoff) return null;
+  let secs = Math.max(0, Number(remainingSeconds) || 0);
+  for (let i = idx + 1; i <= cutoff; i++) {
+    const row = blindStructure[i];
+    secs += ((row?.duration ?? row?.duration_minutes ?? 0) * 60);
+  }
+  return new Date(Date.now() + secs * 1000);
+}
 
 const DEFAULT_THEME = {
   background: '#0D192E', text: '#ffffff', accent: '#1877F2',
@@ -140,7 +156,7 @@ export default function ClockDisplay() {
     };
   }, [activeScreen, data?.stats?.players_remaining, data?.tournament?.payout_structure, data?.stats?.payouts]);
 
-  // (Current Time display removed — wall clock no longer needed)
+  // (Current Time display removed - wall clock no longer needed)
 
   // Burn-in prevention
   useEffect(() => {
@@ -186,7 +202,15 @@ const json = await commanderFetchJSON('/api/commander/clock-presets', { });
   const fetchData = useCallback(async (signal) => {
     if (!id) return;
     try {
-const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, { ...(signal ? { signal } : {}) });
+      // Payload split: the TV clock renders the header, the clock, the stats
+      // (chip leaders and ICM read player_stacks) and the two alert flags. It
+      // never renders the entry list, the table map, the alternates queue or
+      // the eliminated feed, and this screen polls harder than anything else
+      // in the building, so it asks for exactly what it draws.
+      const res = await commanderFetch(
+        `/api/commander/tournaments/${id}/floor-view?include=tournament,clock,stats,stacks,alerts`,
+        { ...(signal ? { signal } : {}) }
+      );
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -207,14 +231,15 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
             const blindStructure = parseBlinds(json.data.tournament?.blind_structure);
             const currentLvl = json.data.clock?.current_level || 0;
             const levelData = blindStructure[currentLvl];
-            if (levelData?.duration) {
-              setSeconds(levelData.duration * 60);
+            const levelMinutes = levelData ? (levelData.duration ?? levelData.duration_minutes ?? 0) : 0;
+            if (levelMinutes > 0) {
+              setSeconds(levelMinutes * 60);
             }
           }
         }
         isRunningRef.current = cs?.status === 'running';
 
-        // Sound alerts — detect level change
+        // Sound alerts - detect level change
         const currentLevel = json.data.clock?.current_level;
         const displayOpts = preset?.display_options || {};
         if (prevLevelRef.current !== null && currentLevel !== prevLevelRef.current) {
@@ -225,23 +250,34 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
         prevLevelRef.current = currentLevel;
 
         // Load preset if tournament has clock_preset_id
-        if (!preset && json.data.tournament?.clock_preset_id) {
-          fetchPreset(json.data.tournament.clock_preset_id);
+        // 2026-08-04 audit fix: the preset id is stored in settings.clock_preset_id
+        // (floor-view has no top-level clock_preset_id) - read both locations.
+        const presetId = json.data.tournament?.clock_preset_id || json.data.tournament?.settings?.clock_preset_id;
+        if (!preset && presetId) {
+          fetchPreset(presetId);
         }
       }
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
   }, [id, preset, fetchPreset]);
 
-  // Initial fetch and polling fallback
+  // Initial fetch. The fallback poll now lives in useCommanderSync below.
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
-    const poll = setInterval(() => fetchData(controller.signal), 3000);
-    return () => { controller.abort(); clearInterval(poll); };
+    return () => { controller.abort(); };
   }, [fetchData]);
 
-  // Instant Real-Time Synchronization
-  useCommanderSync(venueId, fetchData, { entities: ['tournaments'] });
+  // Instant Real-Time Synchronization + adaptive fallback poll.
+  // This screen used to poll every 3 seconds, forever, on every TV in the
+  // building. It still does whenever the realtime channel is not proven, so
+  // nothing about the worst case changed. Once the venue channel is
+  // SUBSCRIBED and has actually delivered an event, a level change reaches
+  // this screen over the channel in about a second and the poll drops to a
+  // 15 second safety net. The countdown ticks locally either way.
+  useCommanderSync(venueId, fetchData, {
+    entities: ['tournaments'],
+    poll: { fastMs: 3000, slowMs: 15000 }
+  });
 
   // Sound alert playback
   const playAlert = (type) => {
@@ -287,13 +323,14 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, 
       isRunningRef.current = false;
 
       if (isLastLevel) {
-        // On the final level — reset local timer to the full level duration immediately
+        // On the final level - reset local timer to the full level duration immediately
         // so the display never hits 0:00 for more than one tick, then call API to persist.
-        const lastLevelDuration = blindStructure[currentLevelIdx]?.duration || 20;
+        const lastRow = blindStructure[currentLevelIdx];
+        const lastLevelDuration = (lastRow?.duration ?? lastRow?.duration_minutes ?? 20);
         setSeconds(lastLevelDuration * 60);
       }
 
-      // Always call next_level — the API handles both normal and final-level extension
+      // Always call next_level - the API handles both normal and final-level extension
       // 2026-07-25 audit fix: send from_level so concurrent displays cannot
       // double-advance (the API 409s when the level already moved).
       clockAction('next_level', isLastLevel, { from_level: currentLevelIdx });
@@ -328,7 +365,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
         body: JSON.stringify({ action, ...extraBody })
       });
       if (res.status === 409) {
-        // Another display already advanced the level — refresh state instead of erroring
+        // Another display already advanced the level - refresh state instead of erroring
         fetchData();
         setActionLoading(false);
         return;
@@ -336,14 +373,17 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        const res2 = await commanderFetch(`/api/commander/tournaments/${id}/floor-view`, { });
+        const res2 = await commanderFetch(
+          `/api/commander/tournaments/${id}/floor-view?include=tournament,clock,stats,stacks,alerts`,
+          { }
+        );
         if (!res2.ok) throw new Error(`Request failed (${res2.status})`);
         const json2 = await res2.json();
         if (json2.success) {
           setData(json2.data);
           const cs = json2.data.clock?.clock_state;
           // Don't override seconds if the caller already set a fresh local value
-          // (e.g. final-level reset) — the server re-read might return 0 briefly
+          // (e.g. final-level reset) - the server re-read might return 0 briefly
           if (!skipSecondsOverride && cs?.remaining_seconds !== undefined && cs.remaining_seconds > 0) {
             setSeconds(cs.remaining_seconds);
           }
@@ -375,7 +415,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
     show_chip_chop: false, show_chip_colors: false, show_next_round: true,
     show_schedule_preview: false, show_seating: false };
 
-  // Chip leaders — unique by name, top 20 sorted by stack
+  // Chip leaders - unique by name, top 20 sorted by stack
   const uniqueLeaders = [];
   const seenNames = new Set();
   for (const p of (stats.player_stacks || []).sort((a, b) => b.chips - a.chips)) {
@@ -397,7 +437,15 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
   const displaySeconds = seconds ?? clockState.remaining_seconds ?? 0;
   const isBreak = alerts.on_break;
   const isH4H = alerts.hand_for_hand;
-  const currentLevel = (clock.current_level || 0) + 1;
+  const blindStructure = parseBlinds(t.blind_structure);
+  const currentLevelIdx = clock.current_level || 0;
+  const currentRow = blindStructure[currentLevelIdx] || null;
+  const rowIsBreak = !!currentRow?.is_break;
+  // Break-aware level number: prefer the API's display_level, else count only
+  // non-break rows up to (and including) the current array index.
+  const currentLevel = clock.display_level ?? (blindStructure.length
+    ? blindStructure.slice(0, currentLevelIdx + 1).filter(l => !l.is_break).length
+    : currentLevelIdx + 1);
   const gameType = t.game_type || 'No Limit Texas Hold \'Em';
 
   const totalEntries = stats.total_entries || 0;
@@ -408,16 +456,12 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
   const prizePool = stats.prize_pool || 0;
   const payouts = t.payout_structure || t.custom_payouts || stats.payouts || [];
 
-  // Dynamic payouts — only show remaining positions for remaining players
+  // Dynamic payouts - only show remaining positions for remaining players
   const remainingPayouts = payouts.filter((_, i) => i < playersIn);
-
-  const blindStructure = parseBlinds(t.blind_structure);
 
   // Calculate next break accurately: remaining seconds in current level + duration of future levels until break
   let nextBreakSec = clockState.next_break_seconds; // If API provided it, use it
   if (!nextBreakSec && blindStructure.length > 0) {
-    const currentLevelIdx = clock.current_level || 0;
-
     // Are there any future breaks?
     const hasFutureBreak = blindStructure.some((l, i) => i > currentLevelIdx && l.is_break);
 
@@ -427,7 +471,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
       // Add full duration of any levels between now and the break
       for (let i = currentLevelIdx + 1; i < blindStructure.length; i++) {
         if (blindStructure[i].is_break) break; // Found the break, stop adding
-        secsUntilBreak += (blindStructure[i].duration || 0) * 60;
+        secsUntilBreak += (blindStructure[i].duration ?? blindStructure[i].duration_minutes ?? 0) * 60;
       }
       nextBreakSec = secsUntilBreak > 0 ? secsUntilBreak : null;
     } else {
@@ -451,7 +495,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
 
   return (
     <>
-      <SEOHead title="Commander — Clock Display" description="Club Commander Poker Room Management Tool." noindex={true} />
+      <SEOHead title="Commander - Clock Display" description="Club Commander Poker Room Management Tool." noindex={true} />
 
       {/* Ticker animations */}
       <style>{`
@@ -484,7 +528,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
               <div style={{ fontSize: 96, fontWeight: 800, fontFamily: "var(--font-inter), 'Segoe UI', sans-serif", fontFeatureSettings: "'zero' 0", color: handTimerSeconds <= 10 ? '#EF4444' : '#fff' }}>
                 {handTimerSeconds}
               </div>
-              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>Click to dismiss</div>
+              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>Click To Dismiss</div>
             </div>
           </div>
         )}
@@ -492,16 +536,16 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
         {/* ===== MANAGEMENT CONTROLS ===== */}
         {showControls && (
           <div style={S.controlBar} onClick={e => e.stopPropagation()}>
-            <button style={{ ...S.controlBtn, background: 'rgba(239,68,68,0.3)', borderColor: '#EF4444' }} onClick={() => clockAction('previous_level')} disabled={actionLoading}>
+            <button style={{ ...S.controlBtn, background: 'rgba(239,68,68,0.3)', borderColor: '#EF4444' }} onClick={() => clockAction('prev_level')} disabled={actionLoading}>
               ← Prev Level
             </button>
             {data?.clock?.clock_state?.status === 'running' ? (
               <button style={{ ...S.controlBtn, ...S.controlBtnPrimary, background: 'rgba(245,158,11,0.3)', borderColor: '#F59E0B' }} onClick={() => clockAction('pause')} disabled={actionLoading}>
-                ⏸ Pause
+                Pause
               </button>
             ) : (
               <button style={{ ...S.controlBtn, ...S.controlBtnPrimary, background: 'rgba(49,162,76,0.3)', borderColor: '#31A24C' }} onClick={() => clockAction('resume')} disabled={actionLoading}>
-                ▶ Resume
+                Resume
               </button>
             )}
             <button style={{ ...S.controlBtn, background: 'rgba(24,119,242,0.3)', borderColor: '#1877F2' }} onClick={() => clockAction('next_level')} disabled={actionLoading}>
@@ -546,22 +590,23 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
           <div style={S.messageBanner}>{currentMessage.text}</div>
         )}
 
-        {/* ===== MAIN CONTENT — SCREEN SWITCHER ===== */}
+        {/* ===== MAIN CONTENT - SCREEN SWITCHER ===== */}
         {activeScreen === SCREENS.CLOCK && (
           <>
             <div style={S.main}>
-              {/* LEFT — Stats */}
+              {/* LEFT - Stats */}
               <div style={S.leftPanel}>
-                <StatCell label="Round" value={isBreak ? 'Break' : currentLevel} />
+                <StatCell label="Round" value={(isBreak || rowIsBreak) ? (currentRow?.label || 'Break') : currentLevel} />
                 <StatCell label="Entries" value={totalEntries} />
                 <StatCell label="Players In" value={playersIn} />
-                {t.rebuy_allowed && <StatCell label="Rebuys" value={totalRebuys} />}
+                {t.allows_rebuys && <StatCell label="Rebuys" value={totalRebuys} />}{/* 2026-08-04 audit fix: floor-view exposes allows_rebuys, not rebuy_allowed */}
                 <StatCell label="Chip Count" value={formatChipCount(totalChips)} />
                 <StatCell label="Avg Stack" value={formatChipCount(avgStack)} />
                 <StatCell label="Total Pot" value={formatMoney(prizePool)} />
+                {(stats.overlay_amount || 0) > 0 && <StatCell label="Overlay" value={formatMoney(stats.overlay_amount)} />}
               </div>
 
-              {/* CENTER — Clock + Blinds + Top 3 Leaders */}
+              {/* CENTER - Clock + Blinds + Top 3 Leaders */}
               <div style={S.centerPanel}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
                   {isH4H && <div style={S.h4hBanner}>HAND FOR HAND</div>}
@@ -582,28 +627,43 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                   {(blinds.ante || 0) > 0 && <div style={{ ...S.blindsAnte, color: '#FFFFFF' }}>BB Ante: {(blinds.ante || 0).toLocaleString()}</div>}
                 </div>
 
+                {/* Late Reg indicator + approximate wall-clock close time */}
+                {stats.late_reg_open && (() => {
+                  const closeAt = lateRegCloseDate(blindStructure, currentLevelIdx, displaySeconds, t.late_registration_levels);
+                  return (
+                    <div style={{ width: '100%', textAlign: 'center', padding: '4px 8px', fontSize: 20, fontWeight: 600, flexShrink: 0 }}>
+                      <span style={{ color: '#31A24C' }}>Late Reg Open</span>
+                      {closeAt && (
+                        <span style={{ opacity: 0.7, marginLeft: 10 }}>
+                          Late Reg Closes ~{closeAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {nextBlinds && Object.keys(nextBlinds || {}).length > 0 && (
                   <div style={S.nextRound}>
                     {nextBlinds.is_break ? (
                       <>
-                        <div><strong>Next Round</strong> — BREAK ({nextBlinds.duration || 0} min)</div>
+                        <div><strong>Next Round</strong> - BREAK ({nextBlinds.duration ?? nextBlinds.duration_minutes ?? 0} Min)</div>
                         {afterBreakBlinds && (
                           <div style={{ fontSize: '0.78em', opacity: 0.75, marginTop: 4 }}>
                             After Break: {(afterBreakBlinds.small_blind || 0).toLocaleString()} / {(afterBreakBlinds.big_blind || 0).toLocaleString()}
-                            {(afterBreakBlinds.ante || 0) > 0 && <> — BB Ante: {(afterBreakBlinds.ante || 0).toLocaleString()}</>}
+                            {(afterBreakBlinds.ante || 0) > 0 && <> - BB Ante: {(afterBreakBlinds.ante || 0).toLocaleString()}</>}
                           </div>
                         )}
                       </>
                     ) : (
                       <>
-                        <strong>Next Round</strong> — Blinds: {(nextBlinds.small_blind || 0).toLocaleString()} / {(nextBlinds.big_blind || 0).toLocaleString()}
+                        <strong>Next Round</strong> - Blinds: {(nextBlinds.small_blind || 0).toLocaleString()} / {(nextBlinds.big_blind || 0).toLocaleString()}
                         {(nextBlinds.ante || 0) > 0 && <> | BB Ante: {(nextBlinds.ante || 0).toLocaleString()}</>}
                       </>
                     )}
                   </div>
                 )}
 
-                {/* Top 3 Chip Leaders — fixed under Next Round */}
+                {/* Top 3 Chip Leaders - fixed under Next Round */}
                 {top3Leaders.length > 0 && (
                   <div style={S.top3Container}>
                     <div style={S.top3Header}>CURRENT CHIP LEADERS</div>
@@ -618,14 +678,14 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                 )}
               </div>
 
-              {/* RIGHT — Next Break (compact) + Payouts Ticker */}
+              {/* RIGHT - Next Break (compact) + Payouts Ticker */}
               <div style={S.rightPanel}>
                 <div style={S.nextBreakCompact}>
                   <div style={S.statLabel}>Next Break</div>
                   <div style={S.statValue}>{nextBreakSec ? formatClock(nextBreakSec) : '--:--'}</div>
                 </div>
 
-                {/* Payouts — all white, auto-scrolling ticker (dynamic) */}
+                {/* Payouts - all white, auto-scrolling ticker (dynamic) */}
                 {remainingPayouts.length > 0 && (
                   <div style={S.rightSection}>
                     <div style={S.rightSectionHeader}>Remaining Payouts</div>
@@ -649,7 +709,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
               </div>
             </div>
 
-            {/* BOTTOM — Chip Leaders horizontal sports ticker (top 20) */}
+            {/* BOTTOM - Chip Leaders horizontal sports ticker (top 20) */}
             {top20Leaders.length > 0 && (
               <div style={S.sportsTickerBar}>
                 <div className="sports-ticker" style={S.sportsTickerTrack}>
@@ -677,7 +737,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                 return (
                   <React.Fragment key={i}>
                     <span style={{ opacity: 0.5, textAlign: 'right' }}>{place}</span>
-                    <span>—</span>
+                    <span>-</span>
                     <span style={{ color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#fff' }}>{formatMoney(amount)}</span>
                   </React.Fragment>
                 );
@@ -697,16 +757,18 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
               <span style={{ fontWeight: 700, opacity: 0.5, fontSize: 13 }}>Big</span>
               <span style={{ fontWeight: 700, opacity: 0.5, fontSize: 13 }}>Ante</span>
               <span style={{ fontWeight: 700, opacity: 0.5, fontSize: 13 }}>Time</span>
-              {blindStructure.slice(Math.max(0, (clock.current_level || 0) - 1), (clock.current_level || 0) + 6).map((level, i) => {
-                const levelNum = Math.max(0, (clock.current_level || 0) - 1) + i + 1;
-                const isCurrent = levelNum === currentLevel;
+              {blindStructure.slice(Math.max(0, currentLevelIdx - 1), currentLevelIdx + 6).map((level, i) => {
+                const rowIdx = Math.max(0, currentLevelIdx - 1) + i;
+                // Break-aware display number: count only non-break rows up to this row
+                const levelNum = blindStructure.slice(0, rowIdx + 1).filter(l => !l.is_break).length;
+                const isCurrent = rowIdx === currentLevelIdx;
                 return (
                   <React.Fragment key={i}>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff', fontWeight: isCurrent ? 800 : 600 }}>{level.is_break ? 'Break' : levelNum}</span>
+                    <span style={{ color: isCurrent ? '#1877F2' : '#fff', fontWeight: isCurrent ? 800 : 600 }}>{level.is_break ? (level.label || 'Break') : levelNum}</span>
                     <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.is_break ? '-' : (level.small_blind || 0).toLocaleString()}</span>
                     <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.is_break ? '-' : (level.big_blind || 0).toLocaleString()}</span>
                     <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.is_break ? '-' : (level.ante || 0).toLocaleString()}</span>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.duration || '-'}m</span>
+                    <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{(level.duration ?? level.duration_minutes) || '-'}m</span>
                   </React.Fragment>
                 );
               })}
@@ -747,7 +809,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
               }} style={{
                 padding: '6px 14px', borderRadius: 6, border: '2px solid rgba(24,119,242,0.5)',
                 background: 'rgba(24,119,242,0.15)', color: '#1877F2', fontSize: 12,
-                fontWeight: 700, cursor: 'pointer' }}>Load from Tournament</button>
+                fontWeight: 700, cursor: 'pointer' }}>Load From Tournament</button>
               <button onClick={() => {
                 setEditableStacks([...editableStacks, { name: `Player ${editableStacks.length + 1}`, chips: 0 }]);
               }} style={{
@@ -839,17 +901,17 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, opacity: 0.4 }}>
                 <div style={{ fontSize: 20, fontWeight: 700 }}>No Players Entered</div>
-                <div style={{ fontSize: 14 }}>Click "Load from Tournament" or "+ Add Player" to begin</div>
+                <div style={{ fontSize: 14 }}>Click "Load From Tournament" Or "+ Add Player" To Begin</div>
               </div>
             )}
           </div>
         )}
 
-        {/* Footer removed — payouts now displayed in right panel */}
+        {/* Footer removed - payouts now displayed in right panel */}
 
         {/* Branding */}
         <div style={{ position: 'absolute', bottom: 4, right: 12, opacity: 0.15, fontSize: 10, color: '#fff' }}>
-          Powered by Smarter.Poker
+          Powered By Smarter.Poker
         </div>
       </div>
     </>
@@ -923,7 +985,7 @@ const S = {
     background: 'rgba(0,0,0,0.15)', border: '2px solid rgba(255,255,255,0.12)',
     width: '100%', textAlign: 'center', padding: '20px 12px', fontSize: 27, lineHeight: 1.5, flexShrink: 0,
     overflow: 'hidden' },
-  // Right panel sections — Prizes + Chip Leaders
+  // Right panel sections - Prizes + Chip Leaders
   rightSection: {
     flex: 1, display: 'flex', flexDirection: 'column',
     background: 'rgba(255,255,255,0.04)',
@@ -937,7 +999,7 @@ const S = {
   top3Row: {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '2px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' },
-  // Next Break — compact fixed-height box in right panel
+  // Next Break - compact fixed-height box in right panel
   nextBreakCompact: {
     background: 'rgba(255,255,255,0.06)', border: '2px solid rgba(255,255,255,0.15)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',

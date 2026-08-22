@@ -38,14 +38,14 @@ export default function ResponsibleGaming() {
     setLoading(true);
     try {
       const json = await commanderFetchJSON(`/api/commander/members?venue_id=${venueId}&limit=200`);
-      if (json.success) setMembers(json.data || []);
+      if (json.success) setMembers(json.data?.members || []);
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [venueId]);
 
   useEffect(() => { const _c = new AbortController(); fetchMembers(_c.signal); return () => _c.abort(); }, [fetchMembers]);
 
-  // Commander Data Bus — sync when members or exclusions change
+  // Commander Data Bus - sync when members or exclusions change
   useCommanderSync(venueId || '', fetchMembers, { entities: ['members'] });
 
   // Search/check specific player
@@ -108,7 +108,7 @@ export default function ResponsibleGaming() {
     <CommanderLayout title="Responsible Gaming" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Responsible Gaming"
+          title="Commander - Responsible Gaming"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -164,7 +164,7 @@ export default function ResponsibleGaming() {
               {searchResult && (
                 <div className="mt-3 space-y-2">
                   {!searchResult.found ? (
-                    <div className="py-4 text-center text-[#6A6B6D] text-sm">No players found for &quot;{searchResult.query}&quot;</div>
+                    <div className="py-4 text-center text-[#6A6B6D] text-sm">No Players Found For &quot;{searchResult.query}&quot;</div>
                   ) : (
                     searchResult.players.map((p, i) => (
                       <div key={i} className={`rounded-xl p-3 flex items-center gap-3 ${p.is_excluded ? 'bg-[#EF4444]/10 border border-[#EF4444]/30' : 'bg-[#31A24C]/10 border border-[#31A24C]/30'
@@ -179,11 +179,11 @@ export default function ResponsibleGaming() {
                           </p>
                           {p.is_excluded ? (
                             <p className="text-xs text-[#EF4444] font-medium">
-                              EXCLUDED — Do not seat this player
-                              {p.exclusion?.expires_at && ` (until ${new Date(p.exclusion.expires_at).toLocaleDateString()})`}
+                              Excluded, Do Not Seat This Player
+                              {p.exclusion?.expires_at && ` (Until ${new Date(p.exclusion.expires_at).toLocaleDateString()})`}
                             </p>
                           ) : (
-                            <p className="text-xs text-[#31A24C]">Clear — OK To Seat</p>
+                            <p className="text-xs text-[#31A24C]">Clear, OK To Seat</p>
                           )}
                         </div>
                         {p.is_excluded && (
@@ -202,8 +202,8 @@ export default function ResponsibleGaming() {
               <div className="space-y-3">
                 {[
                   { icon: Search, text: 'Always Check New Players Before Seating', color: '#1877F2' },
-                  { icon: Ban, text: 'Self-excluded Players Must Be Denied Entry To Gaming Areas', color: '#EF4444' },
-                  { icon: Clock, text: 'Monitor For Signs Of Problem Gambling (chasing Losses, Extended Sessions)', color: '#F59E0B' },
+                  { icon: Ban, text: 'Self-Excluded Players Must Be Denied Entry To Gaming Areas', color: '#EF4444' },
+                  { icon: Clock, text: 'Monitor For Signs Of Problem Gambling (Chasing Losses, Extended Sessions)', color: '#F59E0B' },
                   { icon: Shield, text: 'Offer Responsible Gaming Resources When Asked', color: '#31A24C' },
                 ].map((g, i) => (
                   <div key={i} className="flex items-start gap-3">

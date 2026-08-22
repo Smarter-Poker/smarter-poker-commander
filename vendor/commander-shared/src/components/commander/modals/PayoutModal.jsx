@@ -122,7 +122,7 @@ export default function PayoutModal({
 
   async function handleSaveStructure() {
     if (Math.abs(totalPercentage - 100) > 0.5) {
-      setError('Payout percentages must total 100%');
+      setError('Payout Percentages Must Total 100%');
       return;
     }
 
@@ -149,10 +149,10 @@ export default function PayoutModal({
         onSubmit?.({ payouts, prizePool, payingPlaces });
         onClose();
       } else {
-        setError(data.error?.message || 'Failed to save payout structure');
+        setError(data.error?.message || 'Failed To Save Payout Structure');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }

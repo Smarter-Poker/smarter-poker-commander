@@ -12,7 +12,7 @@
  *
  * Body: { qr_code, table_number, venue_id }
  *
- * Auth: STAFF — the tablet ships a signed x-staff-session header, so a dealer
+ * Auth: STAFF - the tablet ships a signed x-staff-session header, so a dealer
  * rotation can only be created from an authenticated tablet, never anonymously.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
                   // row from an unauthenticated request whenever name matching failed.
                   // The 2026-07-25 hardening prohibits exactly that ("an unauthenticated
                   // endpoint must not create display rows for arbitrary venues"), so an
-                  // unregistered dealer now gets a generic 404 — the same way the display
+                  // unregistered dealer now gets a generic 404 - the same way the display
                   // heartbeat 404s an unregistered device. Dealer records are created
                   // through the authenticated dealers API.
                   return res.status(404).json({
@@ -210,7 +210,7 @@ export default async function handler(req, res) {
               success: true,
               data: {
                   // 2026-07-28 audit fix: minimum the screen needs. Dropped id,
-                  // first_name, last_name, member_number and member_type — no caller
+                  // first_name, last_name, member_number and member_type - no caller
                   // reads them. The tablets render only name, photo_url, started_at.
                   dealer: {
                       name: dealerName,

@@ -124,7 +124,7 @@ export default function ArenaLedger({ clubId }) {
 
     connectChannel();
 
-    // Polling fallback — every 15s in case Realtime is down
+    // Polling fallback - every 15s in case Realtime is down
     const poll = setInterval(fetchLogs, 15000);
 
     return () => {

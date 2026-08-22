@@ -41,8 +41,11 @@ const json = await commanderFetchJSON('/api/commander/tournaments?status=complet
     try {
 const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/entries?status=all`, {});
       if (json.success) {
+        // Entries API nests under data.entries - data itself is an object
+        const entries = Array.isArray(json.data?.entries) ? json.data.entries
+          : (Array.isArray(json.data) ? json.data : []);
         setTournaments(prev => prev.map(t =>
-          t.id === tournamentId ? { ...t, entries: json.data } : t
+          t.id === tournamentId ? { ...t, entries } : t
         ));
       }
     } catch (err) { console.warn(err); }
@@ -52,7 +55,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId
     <CommanderLayout title="Tournament Results" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Tournament Results"
+          title="Commander - Tournament Results"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -78,8 +81,8 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold text-white truncate">{t.name}</p>
                       <div className="flex items-center gap-3 text-xs text-[#B0B3B8] mt-0.5">
-                        <span>{t.start_time ? new Date(t.start_time).toLocaleDateString() : '--'}</span>
-                        <span>{t.total_entries || '?'} entries</span>
+                        <span>{(t.start_time || t.scheduled_start) ? new Date(t.start_time || t.scheduled_start).toLocaleDateString() : '--'}</span>
+                        <span>{t.total_entries || t.current_entries || '?'} Entries</span>
                         <span className="text-[#31A24C] font-medium">${(t.actual_prizepool || t.prize_pool || 0).toLocaleString()}</span>
                       </div>
                     </div>
@@ -110,7 +113,7 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId
                       </div>
                       {t.entries.length > 20 && (
                         <p className="text-xs text-[#B0B3B8] text-center mt-2">
-                          Showing top 20 of {t.entries.length} entries
+                          Showing Top 20 Of {t.entries.length} Entries
                         </p>
                       )}
                     </div>

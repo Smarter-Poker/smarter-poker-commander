@@ -235,7 +235,7 @@ async function updateEvent(req, res, id) {
 
       // Update member stats
       // 2026-07-25 audit fix: supabase rpc() reports failures via the returned
-      // error, not a rejection — log it (non-fatal) instead of swallowing.
+      // error, not a rejection - log it (non-fatal) instead of swallowing.
       try {
         const { error: statsError } = await getSupabase().rpc('increment_home_game_stats', {
           p_game_id: id
@@ -250,17 +250,17 @@ async function updateEvent(req, res, id) {
       return res.status(200).json({ event: updated, message: 'Game completed' });
     }
 
-    // Regular update — explicit ALLOW-LIST, same pattern as groups/[id] F67.
+    // Regular update - explicit ALLOW-LIST, same pattern as groups/[id] F67.
     // Prior code took the full req.body, stripped 8 fields, and wrote the
     // rest. A host could smuggle:
-    //   • status                  — bypass start/complete/cancel actions,
+    //   • status                  - bypass start/complete/cancel actions,
     //                               revert a completed game back to scheduled
-    //   • cancelled_at            — backdate a cancellation to dodge flake
+    //   • cancelled_at            - backdate a cancellation to dodge flake
     //                               strikes or refund policies
-    //   • address_visible_to      — arbitrary value (CHECK would catch most
+    //   • address_visible_to      - arbitrary value (CHECK would catch most
     //                               but any valid enum change bypasses UX)
-    //   • completed_at            — fake completion timestamp
-    //   • rsvp_closes_at          — edit without the safety checks the UI
+    //   • completed_at            - fake completion timestamp
+    //   • rsvp_closes_at          - edit without the safety checks the UI
     //                               would normally impose
     // Allow-list covers every field the "edit event" UI actually exposes.
     const EDITABLE = [
@@ -293,7 +293,7 @@ async function updateEvent(req, res, id) {
       }
     }
 
-    // Validate address_visible_to if present — DB CHECK exists but we want
+    // Validate address_visible_to if present - DB CHECK exists but we want
     // a clean 400 rather than a 500.
     if (Object.prototype.hasOwnProperty.call(updates, 'address_visible_to')) {
       const ALLOWED_AVT = ['all','rsvp','approved'];

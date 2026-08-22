@@ -1,5 +1,5 @@
 /**
- * SERVER-SIDE AUTH UTILITY — Phase 4.1d (ESM + Web Crypto port, 2026-04-25)
+ * SERVER-SIDE AUTH UTILITY - Phase 4.1d (ESM + Web Crypto port, 2026-04-25)
  *
  * Verifies Supabase JWT (HS256) locally without network calls. Returns
  * the decoded payload or null.
@@ -22,7 +22,7 @@
  *     supabase.auth.getUser in supabaseServerClient.js)
  *   - getServerUserWithFallback(): 2 callers
  *     (pages/api/user/get-header-stats.js, pages/api/notifications/list.js)
- *     — both already do `await getServerUserWithFallback(...)`.
+ *     - both already do `await getServerUserWithFallback(...)`.
  *
  * So the sync→async breaking-change cost on callers was effectively
  * zero. Only the fallback internals need to add `await`.
@@ -59,7 +59,7 @@ export async function verifySupabaseJwt(token, secret) {
 
   const [headerB64, payloadB64, signatureB64] = parts;
 
-  // Parse header — must be HS256
+  // Parse header - must be HS256
   let header;
   try {
     header = JSON.parse(bytesToString(base64UrlDecode(headerB64)));
@@ -134,7 +134,7 @@ export async function getServerUser(req) {
     if (!secret) {
       if (!_warnedMissingSecret) {
         _warnedMissingSecret = true;
-        console.warn('[serverAuth] SUPABASE_JWT_SECRET not set — JWT verification disabled.');
+        console.warn('[serverAuth] SUPABASE_JWT_SECRET not set - JWT verification disabled.');
       }
       return null;
     }

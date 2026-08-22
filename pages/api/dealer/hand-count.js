@@ -3,8 +3,8 @@
  * POST /api/commander/dealer/hand-count
  *
  * Actions:
- *   increment — +1 on commander_tables.hands_dealt AND active rotation hands_dealt
- *   reset     — set commander_tables.hands_dealt = 0 (rotation count preserved)
+ *   increment - +1 on commander_tables.hands_dealt AND active rotation hands_dealt
+ *   reset     - set commander_tables.hands_dealt = 0 (rotation count preserved)
  *
  * Body: { table_number: number, action: 'increment' | 'reset' }
  * Returns: { success, hands_dealt }
@@ -17,6 +17,7 @@
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { guardStaff } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -39,21 +40,13 @@ export default async function handler(req, res) {
       }
 
       try {
-          // Auth — same pattern as other dealer endpoints
-          const authHeader = req.headers.authorization;
-          if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
-          const token = authHeader.replace('Bearer ', '');
-          const { data: authData } = await getSupabase().auth.getUser(token);
-          const user = authData?.user;
-          if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
-
-          const { data: staff } = await getSupabase()
-              .from('commander_staff')
-              .select('venue_id')
-              .eq('user_id', user.id)
-              .eq('is_active', true)
-              .maybeSingle();
-          if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
+          // 2026-08-06: dealer tablets authenticate with the signed x-staff-session
+          // header (PIN sessions), NOT a Supabase JWT. Accept it via guardStaff like
+          // the sibling dealer routes (session-action.js) so PIN-only tablets are no
+          // longer 401'd into the /commander/login redirect. Venue scoping comes from
+          // the HMAC-verified staff row.
+          const staff = await guardStaff(req, res);
+          if (!staff) return;
 
           const { table_number, action } = req.body;
           if (!table_number) return res.status(400).json({ success: false, error: 'table_number required' });
@@ -136,7 +129,7 @@ export default async function handler(req, res) {
               if (upErr) throw upErr;
           }
 
-          // Prevent caching — each request must hit the server
+          // Prevent caching - each request must hit the server
           res.setHeader('Cache-Control', 'no-store');
           return res.status(200).json({ success: true, hands_dealt: newCount });
       } catch (err) {

@@ -1,5 +1,5 @@
 /**
- * DealerTicker — Shared scrolling ticker for dealer push/break + club promos
+ * DealerTicker - Shared scrolling ticker for dealer push/break + club promos
  * 
  * Drop into any display page (waitlist desk, tournament clock, etc.)
  * Fetches dealer rotation data AND club promos/announcements, rendering
@@ -11,12 +11,12 @@
  *   - Custom ticker messages from venue settings
  * 
  * Props:
- *   accentColor: string (hex) — ticker text color (default: #D4AF37 gold)
- *   bgColor: string (hex) — background color (default: transparent)
- *   fontSize: number — font size in px (default: 18)
- *   borderColor: string — top border color (default: #333)
- *   speed: number — scroll speed in seconds (default: 25)
- *   showBorder: boolean — show top border (default: true)
+ *   accentColor: string (hex) - ticker text color (default: #D4AF37 gold)
+ *   bgColor: string (hex) - background color (default: transparent)
+ *   fontSize: number - font size in px (default: 18)
+ *   borderColor: string - top border color (default: #333)
+ *   speed: number - scroll speed in seconds (default: 25)
+ *   showBorder: boolean - show top border (default: true)
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useCommanderSync } from '../../../lib/commander/useCommanderSync';
@@ -66,13 +66,13 @@ export default function DealerTicker({
             const rotationsArr = rRes.data?.rotations || (Array.isArray(rRes.data) ? rRes.data : []);
             setRotations(rotationsArr.filter(r => !r.ended_at));
 
-            // Promotions — only active ones
+            // Promotions - only active ones
             // API returns { data: { promotions: [...] } }
             const promosArr = pRes.data?.promotions || (Array.isArray(pRes.data) ? pRes.data : []);
             const promos = promosArr.filter(p => p.is_active !== false && p.status !== 'ended');
             setPromotions(promos);
 
-            // Announcements — only non-expired
+            // Announcements - only non-expired
             // API returns { data: { announcements: [...] } }
             const now = new Date();
             const annsArr = aRes.data?.announcements || (Array.isArray(aRes.data) ? aRes.data : []);
@@ -90,11 +90,11 @@ export default function DealerTicker({
 
     useEffect(() => {
         fetchAllData();
-        const poll = setInterval(fetchAllData, 60000); // fallback — real-time sync handles instant updates
+        const poll = setInterval(fetchAllData, 60000); // fallback - real-time sync handles instant updates
         return () => clearInterval(poll);
     }, [fetchAllData]);
 
-    // Real-time sync — instant updates for dealer rotations, promotions, announcements
+    // Real-time sync - instant updates for dealer rotations, promotions, announcements
     const [venueId] = useState(() => {
         try { return JSON.parse(localStorage.getItem('commander_staff') || '{}').venue_id || null; } catch { return null; }
     });
@@ -160,7 +160,7 @@ export default function DealerTicker({
         };
         const label = typeLabels[type] || '🎯 PROMO';
         if (amount > 0) {
-            parts.push(`${label}: ${name} — $${Number(amount).toLocaleString()}`);
+            parts.push(`${label}: ${name} - $${Number(amount).toLocaleString()}`);
         } else if (name) {
             parts.push(`${label}: ${name}`);
         }

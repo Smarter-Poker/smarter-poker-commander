@@ -1,5 +1,5 @@
 /**
- * useClubBranding — Commander-local override (2026-07-26 audit follow-up).
+ * useClubBranding - Commander-local override (2026-07-26 audit follow-up).
  *
  * Previously re-exported the shared package. The only consumer
  * (pages/commander/displays/promotions.js) already imports this local path,
@@ -82,7 +82,7 @@ export default function useClubBranding() {
         setLogoUrl(url);
         setClubName(staff.venue_name || json.data.venue_name || 'Poker Room');
 
-        // Cache it — previously unreachable because the line above threw.
+        // Cache it - previously unreachable because the line above threw.
         localStorage.setItem(CACHE_KEY, JSON.stringify({
           logo_url: url,
           fetched_at: now

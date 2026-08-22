@@ -72,11 +72,11 @@ const endDate = new Date().toISOString().split('T')[0];
       // → workers VM (10.0.0.3:8081/cron/commander-daily-aggregate). Manual
       // refresh just re-fetches current data; if yesterday's aggregate hasn't
       // run yet, it'll appear after the next scheduled fire.
-      setToast({ type: 'info', msg: 'Aggregation runs automatically daily at 03:00 UTC. Re-fetching current data…' });
+      setToast({ type: 'info', msg: 'Aggregation Runs Automatically Daily At 03:00 UTC. Re-Fetching Current Data…' });
       fetchAnalytics();
     } catch (err) {
       setLoading(false);
-      setToast({ type: 'error', msg: 'Network error' });
+      setToast({ type: 'error', msg: 'Network Error' });
     }
     finally { setRefreshing(false); setTimeout(() => setToast(null), 3000); }
   };
@@ -110,7 +110,7 @@ const endDate = new Date().toISOString().split('T')[0];
   return (
     <>
       <SEOHead
-        title="Commander — Analytics Daily"
+        title="Commander - Analytics Daily"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -123,7 +123,7 @@ const endDate = new Date().toISOString().split('T')[0];
           <BarChart3 size={22} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 17 }}>Analytics Daily</div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>Aggregated Daily Metrics (auto-runs At 4 AM)</div>
+            <div style={{ fontSize: 12, opacity: 0.85 }}>Aggregated Daily Metrics (Auto-Runs At 4 AM)</div>
           </div>
           <button onClick={handleManualRefresh} disabled={refreshing}
             style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8, padding: '6px 12px', color: 'white', cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
@@ -162,13 +162,13 @@ const endDate = new Date().toISOString().split('T')[0];
               {/* Period Summary */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 16 }}>
                 {[
-                  { label: 'Total Sessions', val: totals.sessions, avg: avg(totals.sessions) + '/day', icon: Users, color: '#1877F2' },
-                  { label: 'Unique Players', val: totals.players, avg: avg(totals.players) + '/day', icon: Users, color: '#31A24C' },
-                  { label: 'Table Hours', val: totals.tableHours.toFixed(0), avg: avg(totals.tableHours) + '/day', icon: Clock, color: '#F59E0B' },
-                  { label: 'Time Revenue', val: fmt(totals.timeRevenue), avg: fmt(totals.timeRevenue / Math.max(totals.days, 1)) + '/day', icon: DollarSign, color: '#31A24C' },
+                  { label: 'Total Sessions', val: totals.sessions, avg: avg(totals.sessions) + '/Day', icon: Users, color: '#1877F2' },
+                  { label: 'Unique Players', val: totals.players, avg: avg(totals.players) + '/Day', icon: Users, color: '#31A24C' },
+                  { label: 'Table Hours', val: totals.tableHours.toFixed(0), avg: avg(totals.tableHours) + '/Day', icon: Clock, color: '#F59E0B' },
+                  { label: 'Time Revenue', val: fmt(totals.timeRevenue), avg: fmt(totals.timeRevenue / Math.max(totals.days, 1)) + '/Day', icon: DollarSign, color: '#31A24C' },
                   { label: 'Tournament Fees', val: fmt(totals.tournamentFees), avg: '', icon: Trophy, color: '#9333EA' },
                   { label: 'Net Drop', val: fmt(totals.netDrop), avg: '', icon: CreditCard, color: totals.netDrop >= 0 ? '#31A24C' : '#EF4444' },
-                  { label: 'Waitlist Seated', val: `${totals.waitlistSeated}/${totals.waitlistEntries}`, avg: totals.waitlistEntries > 0 ? `${Math.round(totals.waitlistSeated / totals.waitlistEntries * 100)}% conv` : '', icon: TrendingUp, color: '#1877F2' },
+                  { label: 'Waitlist Seated', val: `${totals.waitlistSeated}/${totals.waitlistEntries}`, avg: totals.waitlistEntries > 0 ? `${Math.round(totals.waitlistSeated / totals.waitlistEntries * 100)}% Conv` : '', icon: TrendingUp, color: '#1877F2' },
                   { label: 'Incidents', val: totals.incidents, avg: '', icon: AlertTriangle, color: '#EF4444' },
                 ].map(c => (
                   <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 14, border: '2px solid #E4E6EB' }}>
@@ -231,7 +231,7 @@ const endDate = new Date().toISOString().split('T')[0];
 
               {/* Day-by-Day Detail */}
               <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #E4E6EB' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1C2526', marginBottom: 12 }}>Day-by-Day Detail</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1C2526', marginBottom: 12 }}>Day-By-Day Detail</div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>

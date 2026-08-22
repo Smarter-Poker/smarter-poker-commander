@@ -1,5 +1,5 @@
 /**
- * Commander admin PIN session helper — server-side only.
+ * Commander admin PIN session helper - server-side only.
  *
  * Phase 3.6 of the optimization plan replaces the legacy client-side
  * PIN gate (which left admin HTML visible without auth) with a
@@ -8,7 +8,7 @@
  * Cookie shape:
  *   commander_admin_session = base64url({userId, exp})
  *   Signed with HMAC-SHA256 using SUPABASE_JWT_SECRET (same secret
- *   used elsewhere — keeps secret count down).
+ *   used elsewhere - keeps secret count down).
  *
  * Lifecycle:
  *   - 30 min sliding window

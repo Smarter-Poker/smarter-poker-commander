@@ -1,7 +1,7 @@
 /**
- * Player Activity Report — Expanded
+ * Player Activity Report - Expanded
  * /commander/reports/player-activity
- * TC equivalent: "Player Reports" — deep player analytics
+ * TC equivalent: "Player Reports" - deep player analytics
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
@@ -35,8 +35,9 @@ const headers = { };
       ]);
       if (!membersRes.ok) throw new Error(`Request failed (${membersRes.status})`);
       const [membersJson, sessionsJson] = await Promise.all([membersRes.json(), sessionsRes.json()]);
-      if (membersJson.success) setPlayers(membersJson.data || []);
-      if (sessionsJson.success) setSessions(sessionsJson.data || []);
+      // Members API nests under data.members - data itself is an object
+      if (membersJson.success) setPlayers(membersJson.data?.members || (Array.isArray(membersJson.data) ? membersJson.data : []));
+      if (sessionsJson.success) setSessions(Array.isArray(sessionsJson.data) ? sessionsJson.data : []);
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [sortBy]);
@@ -87,7 +88,7 @@ const headers = { };
   return (
     <>
       <SEOHead
-        title="Commander — Player Activity"
+        title="Commander - Player Activity"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -117,7 +118,7 @@ const headers = { };
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
                   { label: 'Total Members', value: players.length, icon: Users, color: '#1877F2' },
-                  { label: 'Active (period)', value: recentPlayers.length, icon: TrendingUp, color: '#31A24C' },
+                  { label: 'Active (Period)', value: recentPlayers.length, icon: TrendingUp, color: '#31A24C' },
                   { label: 'Regulars (5+)', value: regulars.length, icon: Star, color: '#F59E0B' },
                   { label: 'New (30d)', value: newThisMonth.length, icon: Users, color: '#8B5CF6' },
                   { label: 'Avg Session', value: `${avgSessionMinutes}m`, icon: Clock, color: '#EF4444' },
@@ -168,7 +169,7 @@ const headers = { };
                       return (
                         <div key={label}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="text-[#E4E6EB]">{label} visits</span>
+                            <span className="text-[#E4E6EB]">{label} Visits</span>
                             <span className="text-[#B0B3B8]">{count} ({pct}%)</span>
                           </div>
                           <div className="w-full bg-[#3A3B3C] rounded-full h-2">
@@ -239,11 +240,11 @@ const headers = { };
                               <div className="grid grid-cols-3 gap-2 mb-3">
                                 <div className="bg-[#242526] rounded-lg p-2 text-center">
                                   <p className="text-xs text-[#B0B3B8]">Phone</p>
-                                  <p className="text-sm text-white">{p.phone || '—'}</p>
+                                  <p className="text-sm text-white">{p.phone || '-'}</p>
                                 </div>
                                 <div className="bg-[#242526] rounded-lg p-2 text-center">
                                   <p className="text-xs text-[#B0B3B8]">Email</p>
-                                  <p className="text-sm text-white truncate">{p.email || '—'}</p>
+                                  <p className="text-sm text-white truncate">{p.email || '-'}</p>
                                 </div>
                                 <div className="bg-[#242526] rounded-lg p-2 text-center">
                                   <p className="text-xs text-[#B0B3B8]">Tier</p>
@@ -257,7 +258,7 @@ const headers = { };
                                     {playerSessions.map(s => (
                                       <div key={s.id} className="flex items-center justify-between bg-[#242526] rounded-lg px-3 py-2 text-xs">
                                         <span className="text-white">{s.game_type || 'Cash'} {s.stakes || ''}</span>
-                                        <span className="text-[#B0B3B8]">{s.duration_minutes ? `${s.duration_minutes}m` : '—'}</span>
+                                        <span className="text-[#B0B3B8]">{s.duration_minutes ? `${s.duration_minutes}m` : '-'}</span>
                                         <span className="text-[#B0B3B8]">{s.started_at ? new Date(s.started_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
                                       </div>
                                     ))}

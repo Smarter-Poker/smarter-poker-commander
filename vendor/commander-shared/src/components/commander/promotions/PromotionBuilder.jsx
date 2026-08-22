@@ -54,7 +54,7 @@ const TEMPLATE_DEFAULTS = {
   happy_hour: { name: 'Happy Hour', description: 'Double comp points during happy hour! 4 PM - 7 PM daily.', prize_type: 'points', prize_amount: '50', start_time: '16:00', end_time: '19:00', game_types: ['all'], max_winners: 99 },
   new_player: { name: 'New Player Freeroll', description: 'First-time players receive a free tournament entry worth $1,000!', prize_type: 'freeroll', prize_amount: '1000', game_types: ['all'], max_winners: 1 },
   referral: { name: 'Bring a Friend Bonus', description: 'Refer a friend and both of you receive a cash bonus when they play their first session!', prize_type: 'cash', prize_amount: '50', game_types: ['all'], max_winners: 99 },
-  loyalty: { name: 'Loyalty Double Points', description: 'Earn double comp points all weekend long — Friday through Sunday.', prize_type: 'points', prize_amount: '', prize_description: '2x points', is_recurring: true, recurring_days: [5, 6, 0], game_types: ['all'], max_winners: 99 },
+  loyalty: { name: 'Loyalty Double Points', description: 'Earn double comp points all weekend long - Friday through Sunday.', prize_type: 'points', prize_amount: '', prize_description: '2x points', is_recurring: true, recurring_days: [5, 6, 0], game_types: ['all'], max_winners: 99 },
   drawing: { name: 'Prize Drawing', description: 'Earn 1 raffle ticket every hour of play. Drawing held at closing!', prize_type: 'cash', prize_amount: '500', game_types: ['all'], max_winners: 1 },
   custom: { name: '', description: '', prize_type: 'cash', prize_amount: '', game_types: ['all'], max_winners: 1 }
 };

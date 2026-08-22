@@ -1,5 +1,5 @@
 /**
- * Commander auth — local implementation (2026-07-25 security audit).
+ * Commander auth - local implementation (2026-07-25 security audit).
  *
  * History:
  *  - 2026-05-12: getUser/guardUser overridden locally to accept Bearer tokens
@@ -8,7 +8,7 @@
  *  - 2026-07-25: the remaining guards are now ALSO implemented locally, fixing
  *    two P0s found in the Club Commander audit:
  *      1. verifyStaffSession trusted the raw client-supplied x-staff-session
- *         JSON with no signature — any caller could forge a staff/owner
+ *         JSON with no signature - any caller could forge a staff/owner
  *         identity. Sessions are now HMAC-signed server-side (SUPABASE_JWT_SECRET,
  *         same secret pinSession.js uses) and verified on every request.
  *      2. Staff lookups matched only linked_user_id while registration wrote
@@ -25,7 +25,6 @@ import crypto from 'crypto';
 
 // Constants + pure helpers still come from the shared package (no behavior).
 export {
-  verifyPin,
   COMP_ROLES,
   DEFAULT_PERMISSIONS,
   SENSITIVE_ROUTES,
@@ -44,6 +43,49 @@ function getAdminClient() {
     _admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   }
   return _admin;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIN verification (bcrypt-hashed - local override)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Verify a staff PIN for a venue and return the staff row (or null).
+ *
+ * 2026-08-07: this was re-exported from the shared package, where it compared
+ * `commander_staff.pin_code` with a PLAINTEXT equality filter. PINs are now
+ * bcrypt-hashed into `pin_hash` (with a BEFORE INSERT/UPDATE trigger keeping
+ * future writes hashed). fn_verify_staff_pin checks the hash and falls back to
+ * the legacy plaintext column for any row not yet hashed, so a staff member can
+ * never be locked out mid-migration.
+ */
+export async function verifyPin(venueId, pinCode) {
+  if (venueId === undefined || venueId === null || !pinCode) return null;
+
+  const { data: staffId, error: rpcError } = await getAdminClient()
+    .rpc('fn_verify_staff_pin', { p_venue_id: String(venueId), p_pin: String(pinCode) });
+
+  if (rpcError) {
+    console.warn('[commander-auth] fn_verify_staff_pin failed:', rpcError.message || rpcError);
+    return null;
+  }
+  if (!staffId) return null;
+
+  const { data: staff, error } = await getAdminClient()
+    .from('commander_staff')
+    .select(`
+      *,
+      profiles (
+        id,
+        display_name,
+        avatar_url
+      )
+    `)
+    .eq('id', staffId)
+    .maybeSingle();
+
+  if (error || !staff) return null;
+  return staff;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -228,16 +270,16 @@ export async function verifyStaffSession(req) {
     return { error: { status: 401, code: 'INVALID_SESSION', message: 'Invalid Session Format' } };
   }
 
-  // Signature gate — unsigned/forged sessions are rejected. Sessions issued
+  // Signature gate - unsigned/forged sessions are rejected. Sessions issued
   // before the 2026-07-25 deploy lack `sig`; those users must log in again.
   if (!verifySessionSignature(sessionData)) {
-    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired — Please Sign In Again' } };
+    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired - Please Sign In Again' } };
   }
 
-  // Path 1: PIN-based staff terminal — session contains staff row `id`
+  // Path 1: PIN-based staff terminal - session contains staff row `id`
   if (sessionData.id) {
     if (Date.now() - sessionData.session_ts > PIN_SESSION_TTL_MS) {
-      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'PIN session expired — please re-enter your PIN' } };
+      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'PIN session expired - please re-enter your PIN' } };
     }
 
     const { data: staff, error: staffError } = await getAdminClient()
@@ -250,23 +292,47 @@ export async function verifyStaffSession(req) {
     if (staffError || !staff) {
       return { error: { status: 401, code: 'INVALID_STAFF', message: 'Staff Member Not Found Or Inactive' } };
     }
+
+    // 2026-08-20 audit fix: every venue-ownership check added across the API
+    // is written as "if the session has a venue_id, it must match", so a staff
+    // row with a NULL venue_id would silently skip ALL of them. Such a row can
+    // never legitimately reach this point anyway - fn_verify_staff_pin filters
+    // on `s.venue_id::text = p_venue_id`, so a venueless row cannot produce a
+    // PIN session - but failing closed here means the downstream checks can
+    // never be defeated by a row that lost its venue.
+    if (staff.venue_id === undefined || staff.venue_id === null) {
+      return { error: { status: 403, code: 'NO_VENUE', message: 'This Staff Account Is Not Assigned To A Venue' } };
+    }
+
     return { staff };
   }
 
-  // Path 2: Owner login — session contains `user_id` + `venue_id`
+  // Path 2: Owner login - session contains `user_id` + `venue_id`
   if (sessionData.user_id && sessionData.venue_id) {
     if (Date.now() - sessionData.session_ts > OWNER_SESSION_TTL_MS) {
-      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session expired — please sign in again' } };
+      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session expired - please sign in again' } };
     }
 
-    const { data: staff } = await getAdminClient()
+    // 2026-08-20 fix: a user can have MULTIPLE staff rows at one venue
+    // (e.g. an owner row plus a linked floor/brush test row). The old
+    // .limit(1).maybeSingle() picked whichever row Postgres returned first,
+    // silently DOWNGRADING owner sessions to a lesser role (surfaced as
+    // random 'Manager Role Required' 403s). The session role is HMAC-signed,
+    // so prefer the row matching it; a session claiming a role the user has
+    // no row for still falls back to their real row (no escalation: a
+    // forged role cannot be signed, and an unmatched signed role only
+    // matters for owners, which the subscription check below verifies).
+    const { data: staffRows } = await getAdminClient()
       .from('commander_staff')
       .select('id, venue_id, role, is_active, linked_user_id, user_id, display_name, permissions')
       .or(userMatchFilter(sessionData.user_id))
       .eq('venue_id', sessionData.venue_id)
       .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
+
+    const staff = (staffRows || []).find(s => s.role === sessionData.role)
+      || (staffRows || [])[0]
+      || null;
 
     if (staff) return { staff };
 
@@ -335,7 +401,7 @@ export async function guardManager(req, res, venueId = null) {
 /**
  * Require staff auth only for write methods; GET passes through.
  * NOTE: routes serving PII or venue-scoped data on GET must add their own
- * read-side guard — a bare `guardWriteStaff` means the GET is public.
+ * read-side guard - a bare `guardWriteStaff` means the GET is public.
  */
 export async function guardWriteStaff(req, res) {
   if (req.method === 'GET') return true;

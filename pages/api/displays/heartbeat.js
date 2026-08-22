@@ -3,7 +3,7 @@
  * POST /api/commander/displays/heartbeat
  *
  * Tablets ping this every 30s so the admin knows which are online.
- * 2026-07-25 audit fix: no longer auto-registers devices — an unauthenticated
+ * 2026-07-25 audit fix: no longer auto-registers devices - an unauthenticated
  * endpoint must not create display rows for arbitrary venues. Registration
  * happens via the authenticated displays API; this endpoint only updates
  * existing rows.
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
           const deviceId = `tablet-${venue_id}-table-${tableNum}`;
           const now = new Date().toISOString();
 
-          // 2026-07-25 audit fix: UPDATE only — never create rows from an
+          // 2026-07-25 audit fix: UPDATE only - never create rows from an
           // unauthenticated heartbeat. Unregistered devices get a 404.
           const { data: updated, error } = await getSupabase()
               .from('commander_table_displays')

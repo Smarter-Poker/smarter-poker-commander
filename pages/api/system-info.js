@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       const user = authData?.user;
       if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
 
-      // 2026-07-25 audit fix: staff rows link via user_id OR linked_user_id —
+      // 2026-07-25 audit fix: staff rows link via user_id OR linked_user_id -
       // matching only user_id locked out staff linked the other way.
       const { data: staff } = await getSupabase()
         .from('commander_staff')
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
           },
           recent_log: recentLog || [],
           server_time: new Date().toISOString(),
-          uptime_note: 'Cloud-hosted — 99.9% uptime SLA'
+          uptime_note: 'Cloud-hosted - 99.9% uptime SLA'
         }
       });
     } catch (err) {

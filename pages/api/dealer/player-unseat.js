@@ -1,5 +1,5 @@
 /**
- * Player Unseat API — Staff-guarded tablet endpoint
+ * Player Unseat API - Staff-guarded tablet endpoint
  * POST /api/commander/dealer/player-unseat
  *
  * Removes a player from a table. Returns unused time to member balance (Texas mode).
@@ -55,14 +55,14 @@ export default async function handler(req, res) {
       // Making it mandatory would buy no security here: this route is
       // unauthenticated, so an attacker simply supplies whatever venue_id they
       // like and reaches any venue either way. The real defect is the ACCIDENTAL
-      // case — table_number/seat_number are not globally unique, so two clubs
+      // case - table_number/seat_number are not globally unique, so two clubs
       // both have a table 1 seat 1 and an unscoped match silently ends whichever
       // session the planner happened to return first. That matters here because
       // this route has financial side effects (credits time_balance_minutes,
       // awards comps, writes commander_member_comp_log).
       //
       // So: scope by venue when we are given one, and otherwise require the
-      // table+seat pair to resolve to exactly ONE session — refusing with 409 if
+      // table+seat pair to resolve to exactly ONE session - refusing with 409 if
       // it genuinely collides across venues. That fails loudly in precisely the
       // case that used to be silently wrong, and breaks no caller. (An earlier
       // revision today made this a hard 400 and broke three callers that had
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
           if (!hasVenueId && !session_id && sessions?.length > 1) {
               return res.status(409).json({
                   success: false,
-                  error: 'table_number/seat_number matches sessions at more than one venue — supply venue_id to disambiguate'
+                  error: 'table_number/seat_number matches sessions at more than one venue - supply venue_id to disambiguate'
               });
           }
 
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
               if (table_number && seat_number) {
                   try {
                       // Follow-up A: this fallback CLEARS the seat it finds, so an
-                      // unscoped table+seat match here is a cross-venue WRITE — it can
+                      // unscoped table+seat match here is a cross-venue WRITE - it can
                       // empty another club's occupied seat. Same rule as above: scope
                       // when we have a venue, otherwise demand an unambiguous match.
                       let seatQuery = getSupabase()
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
                       if (!hasVenueId && seatRows?.length > 1) {
                           return res.status(409).json({
                               success: false,
-                              error: 'table_number/seat_number matches occupied seats at more than one venue — supply venue_id to disambiguate'
+                              error: 'table_number/seat_number matches occupied seats at more than one venue - supply venue_id to disambiguate'
                           });
                       }
 
@@ -135,7 +135,9 @@ export default async function handler(req, res) {
                           await getSupabase()
                               .from('commander_table_seats')
                               .update({ status: 'empty', player_name: null, member_id: null, seated_at: null })
-                              .eq('id', seatRow.id);
+                              .eq('venue_id', seatRow.venue_id)
+                              .eq('table_number', seatRow.table_number)
+                              .eq('seat_number', seatRow.seat_number);
 
                           return res.status(200).json({
                               success: true,
@@ -166,7 +168,7 @@ export default async function handler(req, res) {
           // 2026-07-28 audit fix: this wrote status='ended' unconditionally, so
           // two concurrent unseats (a double-tapped tablet button is enough)
           // both saw an active session, both ended it, and BOTH ran the
-          // time refund and the auto-comp below — the member got the unused
+          // time refund and the auto-comp below - the member got the unused
           // minutes back twice and was comped twice for one session. Atomic
           // arithmetic alone does not fix that; the payout has to belong to
           // whichever caller actually performs the active -> ended transition.
@@ -192,7 +194,7 @@ export default async function handler(req, res) {
               });
           }
 
-          // Return unused time to member balance (Texas cash games ONLY — NEVER tournaments)
+          // Return unused time to member balance (Texas cash games ONLY - NEVER tournaments)
           // Tournament tables use a one-time seat fee; no time was deducted, so none to return.
           let isTournamentSession = false;
           if (session.venue_id && session.table_number) {

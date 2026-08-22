@@ -22,11 +22,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// In-memory rate limit store (resets on deploy — acceptable for PIN auth)
-const attempts = new Map();
+// Rate limiting lives in Postgres (commander_rate_limits, via fn_rate_limit_hit),
+// NOT in process memory. The previous in-memory Map gave every Vercel lambda
+// instance its own counter and reset on each deploy, so a burst spread across
+// instances was never throttled: 14 consecutive wrong-PIN attempts reached
+// production with zero lockouts. A shared counter closes that brute-force path.
 const MAX_PER_MINUTE = 5;
-const LOCKOUT_AFTER = 10;
-const LOCKOUT_MS = 5 * 60 * 1000;
+const WINDOW_MINUTES = 1;
+const LOCKOUT_MINUTES = 5;
 
 function getKey(req, venueId) {
   const fwd = req.headers['x-forwarded-for'];
@@ -34,15 +37,65 @@ function getKey(req, venueId) {
   return `${ip}:${venueId}`;
 }
 
-function checkRate(key) {
-  const now = Date.now();
-  let e = attempts.get(key);
-  if (!e) { e = { count: 0, start: now, fails: 0, lockUntil: 0 }; attempts.set(key, e); }
-  if (e.lockUntil > now) return { ok: false, retry: Math.ceil((e.lockUntil - now) / 1000), reason: 'LOCKED_OUT' };
-  if (now - e.start > 60000) { e.count = 0; e.start = now; }
-  if (e.count >= MAX_PER_MINUTE) return { ok: false, retry: Math.ceil((e.start + 60000 - now) / 1000), reason: 'RATE_LIMITED' };
-  e.count++;
+async function checkRate(key) {
+  const { data, error } = await getSupabase().rpc('fn_rate_limit_hit', {
+    p_identifier: key,
+    p_endpoint: 'staff/verify-pin',
+    p_max_requests: MAX_PER_MINUTE,
+    p_window_minutes: WINDOW_MINUTES,
+    p_lockout_minutes: LOCKOUT_MINUTES,
+  });
+
+  // Fail OPEN if the limiter itself errors: PIN verification depends on this same
+  // database, so a hard failure here would lock out every legitimate staff member
+  // without adding any protection. Log loudly instead.
+  if (error) {
+    console.warn('[verify-pin] rate limiter unavailable:', error.message || error);
+    return { ok: true };
+  }
+
+  if (data && data.allowed === false) {
+    return { ok: false, retry: data.retry_after || 60, reason: data.reason || 'RATE_LIMITED' };
+  }
   return { ok: true };
+}
+
+// Venue-scoped FAILURE throttle. Per-IP limiting alone does not stop a
+// distributed attack: a burst from a rotating pool of source IPs gives each IP
+// its own counter, so none reaches the threshold (measured against production).
+// The venue being guessed cannot be rotated, so it is throttled too. Only
+// FAILURES count, so a busy room's successful logins never trip it, and the
+// threshold is generous so an attacker cannot cheaply lock a room's staff out.
+const VENUE_MAX_FAILURES = 25;
+const VENUE_WINDOW_MINUTES = 5;
+const VENUE_LOCKOUT_MINUTES = 2;
+const VENUE_FAIL_ENDPOINT = 'staff/verify-pin:fail';
+
+async function venueLockoutSeconds(venueId) {
+  const { data, error } = await getSupabase().rpc('fn_rate_limit_blocked', {
+    p_identifier: `venue:${venueId}`,
+    p_endpoint: VENUE_FAIL_ENDPOINT,
+    p_identifier_type: 'venue',
+  });
+  if (error) {
+    console.warn('[verify-pin] venue lockout check unavailable:', error.message || error);
+    return 0;
+  }
+  return Number(data) || 0;
+}
+
+async function recordVenueFailure(venueId) {
+  const { error } = await getSupabase().rpc('fn_rate_limit_hit', {
+    p_identifier: `venue:${venueId}`,
+    p_endpoint: VENUE_FAIL_ENDPOINT,
+    p_max_requests: VENUE_MAX_FAILURES,
+    p_window_minutes: VENUE_WINDOW_MINUTES,
+    p_lockout_minutes: VENUE_LOCKOUT_MINUTES,
+    p_identifier_type: 'venue',
+  });
+  if (error) {
+    console.warn('[verify-pin] venue failure counter unavailable:', error.message || error);
+  }
 }
 
 export default async function handler(req, res) {
@@ -62,7 +115,7 @@ export default async function handler(req, res) {
       }
 
       const key = getKey(req, venue_id);
-      const rl = checkRate(key);
+      const rl = await checkRate(key);
       if (!rl.ok) {
         res.setHeader('Retry-After', rl.retry);
         return res.status(429).json({
@@ -71,25 +124,42 @@ export default async function handler(req, res) {
         });
       }
 
-      const { data: staffRows, error } = await getSupabase()
-        .from('commander_staff')
-        .select('id, venue_id, role, is_active, display_name, permissions, profiles ( id, display_name, avatar_url )')
-        .eq('venue_id', venue_id)
-        .eq('pin_code', pin_code)
-        .eq('is_active', true)
-        .limit(1);
-
-      const staff = staffRows?.[0] || null;
-
-      if (error || !staff) {
-        const e = attempts.get(key);
-        if (e) { e.fails++; if (e.fails >= LOCKOUT_AFTER) { e.lockUntil = Date.now() + LOCKOUT_MS; e.fails = 0; } }
-        return res.status(200).json({ success: true, data: { valid: false, staff: null, permissions: null } });
+      // Distributed-attack guard: too many recent FAILURES against this venue
+      // from any source. Peek only - this check never increments the counter.
+      const venueLock = await venueLockoutSeconds(venue_id);
+      if (venueLock > 0) {
+        res.setHeader('Retry-After', venueLock);
+        return res.status(429).json({
+          success: false,
+          error: { code: 'VENUE_LOCKED_OUT', message: `Too many failed attempts. Try again in ${venueLock}s.` }
+        });
       }
 
-      // Success — reset failures
-      const e = attempts.get(key);
-      if (e) e.fails = 0;
+      // 2026-08-07 security fix: this compared the PLAINTEXT `pin_code` column.
+      // PINs are now bcrypt-hashed into commander_staff.pin_hash (a BEFORE
+      // INSERT/UPDATE trigger keeps future writes hashed). fn_verify_staff_pin
+      // matches the hash and falls back to the legacy plaintext column for any
+      // row not yet hashed, so no staff member can be locked out mid-migration.
+      const { data: staffId, error: rpcError } = await getSupabase()
+        .rpc('fn_verify_staff_pin', { p_venue_id: String(venue_id), p_pin: String(pin_code) });
+
+      let staff = null;
+      let error = rpcError;
+
+      if (!rpcError && staffId) {
+        const { data: staffRow, error: rowError } = await getSupabase()
+          .from('commander_staff')
+          .select('id, venue_id, role, is_active, display_name, permissions, profiles ( id, display_name, avatar_url )')
+          .eq('id', staffId)
+          .maybeSingle();
+        staff = staffRow || null;
+        error = rowError;
+      }
+
+      if (error || !staff) {
+        await recordVenueFailure(venue_id);
+        return res.status(200).json({ success: true, data: { valid: false, staff: null, permissions: null } });
+      }
 
       const permissions = { ...DEFAULT_PERMISSIONS[staff.role], ...(staff.permissions || {}) };
       const name = staff.profiles?.display_name || staff.display_name || staff.role.charAt(0).toUpperCase() + staff.role.slice(1);

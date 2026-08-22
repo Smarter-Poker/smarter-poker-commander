@@ -1,10 +1,10 @@
 /**
- * Public Waitlist Join API — POST /api/commander/waitlist/public-join
+ * Public Waitlist Join API - POST /api/commander/waitlist/public-join
  * Allows authenticated players to add themselves to a venue waitlist via web.
  * Sets signup_method = 'web' automatically.
  *
  * Auth: Verifies Supabase JWT from Authorization header (Bearer token).
- * Does NOT require staff auth — only a valid logged-in user.
+ * Does NOT require staff auth - only a valid logged-in user.
  *
  * Also: cleans up expired web entries (>1 hour, not checked in) on each call.
  */
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
       const token = authHeader.replace('Bearer ', '').trim();
 
-      // Try to parse the token — it might be a raw JWT or a JSON object with access_token
+      // Try to parse the token - it might be a raw JWT or a JSON object with access_token
       let accessToken = token;
       try {
           const parsed = JSON.parse(token);
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
 
       try {
           const { venue_id, game_type: rawGameType, stakes, player_phone, player_name } = req.body;
-          const game_type = (rawGameType || '').toUpperCase();
+          const game_type = (rawGameType || '').toLowerCase();
 
           // Validation
           if (!venue_id || !game_type || !stakes) {
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
               .from('commander_waitlist')
               .select('id')
               .eq('venue_id', venue_id)
-              .eq('game_type', game_type)
+              .ilike('game_type', game_type)
               .eq('stakes', stakes)
               .eq('player_id', user.id)
               .eq('status', 'waiting')
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
               .from('commander_games')
               .select('id')
               .eq('venue_id', venue_id)
-              .eq('game_type', game_type)
+              .ilike('game_type', game_type)
               .eq('stakes', stakes)
               .in('status', ['waiting', 'running'])
               .maybeSingle();

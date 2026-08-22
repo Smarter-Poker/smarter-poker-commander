@@ -1,5 +1,5 @@
 /**
- * useBusBridge — Cross-Tab EventBus ↔ BroadcastChannel Bridge
+ * useBusBridge - Cross-Tab EventBus ↔ BroadcastChannel Bridge
  * ═══════════════════════════════════════════════════════════════
  *
  * Bridges the in-page EventBus with the cross-tab BroadcastChannel:

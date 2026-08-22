@@ -15,7 +15,7 @@
  *
  *  KEY DESIGN CHOICE:
  *    The RPCs (rpc_hg_*) call auth.uid() internally for authz. For that to
- *    resolve, we MUST pass the user's JWT through to the supabase client —
+ *    resolve, we MUST pass the user's JWT through to the supabase client -
  *    not the service-role key. So we create a per-request supabase client
  *    with `Authorization: Bearer <token>` in the headers, and invoke the
  *    RPC via that client. Inside the RPC, auth.uid() then equals the
@@ -23,9 +23,9 @@
  *    work as designed.
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const { applyRateLimit, LIMITS } = require('../apiRateLimit');
-const { getServerUserWithFallback } = require('../serverAuth');
+import { createClient } from '@supabase/supabase-js';
+import { applyRateLimit, LIMITS } from '../apiRateLimit';
+import { getServerUserWithFallback } from '../serverAuth';
 
 // Lazy-initialised service-role client used ONLY for the initial JWT
 // verification handshake when serverAuth falls back to supabase.auth.getUser.
@@ -110,7 +110,7 @@ function mapRpcError(err) {
       return { status: 400, error: errName, message: raw };
 
     default:
-      // Unknown error — log and 500. Don't leak internals.
+      // Unknown error - log and 500. Don't leak internals.
       if (typeof console !== 'undefined') {
         console.warn('[home-games rpcBridge] unmapped error', code, raw);
       }
@@ -164,4 +164,5 @@ async function bridgeRequest(req, res, { method = 'POST', limit } = {}) {
   return { ok: true, user, supabase, token };
 }
 
-module.exports = { bridgeRequest, mapRpcError, LIMITS, getUserScopedClient };
+export { bridgeRequest, mapRpcError, LIMITS, getUserScopedClient };
+export default { bridgeRequest, mapRpcError, LIMITS, getUserScopedClient };

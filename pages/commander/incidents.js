@@ -15,12 +15,12 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 
 const INCIDENT_TYPES = [
-  { value: 'dispute', label: 'Player Dispute', emoji: '⚔️' },
-  { value: 'rules_violation', label: 'Rules Violation', emoji: '📋' },
+  { value: 'dispute', label: 'Player Dispute', emoji: '' },
+  { value: 'rules_violation', label: 'Rules Violation', emoji: '' },
   { value: 'behavior', label: 'Behavior Issue', emoji: '' },
-  { value: 'safety', label: 'Safety Concern', emoji: '🛡️' },
-  { value: 'equipment', label: 'Equipment Issue', emoji: '🔧' },
-  { value: 'other', label: 'Other', emoji: '📝' }
+  { value: 'safety', label: 'Safety Concern', emoji: '' },
+  { value: 'equipment', label: 'Equipment Issue', emoji: '' },
+  { value: 'other', label: 'Other', emoji: '' }
 ];
 
 const SEVERITY_LEVELS = [
@@ -37,9 +37,9 @@ function IncidentCard({ incident, onClick }) {
   // Time elapsed
   const elapsed = (() => {
     const mins = Math.floor((Date.now() - new Date(incident.created_at).getTime()) / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
-    return `${Math.floor(mins / 1440)}d ago`;
+    if (mins < 60) return `${mins}m Ago`;
+    if (mins < 1440) return `${Math.floor(mins / 60)}h Ago`;
+    return `${Math.floor(mins / 1440)}d Ago`;
   })();
 
   return (
@@ -71,7 +71,7 @@ function IncidentCard({ incident, onClick }) {
             borderRadius: 6,
             fontSize: 11,
             fontWeight: 600 }}>
-            {typeInfo.emoji} {typeInfo.label}
+            {typeInfo.label}
           </span>
         </div>
         {incident.resolved ? (
@@ -171,7 +171,7 @@ function CreateIncidentModal({ onSubmit, onClose }) {
                     fontSize: 13,
                     fontWeight: 600,
                     textAlign: 'left' }}>
-                  {type.emoji} {type.label}
+                  {type.label}
                 </button>
               ))}
             </div>
@@ -206,7 +206,7 @@ function CreateIncidentModal({ onSubmit, onClose }) {
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6 }}>Table #</label>
               <input type="text" value={formData.table_number}
                 onChange={(e) => setFormData(prev => ({ ...prev, table_number: e.target.value }))}
-                placeholder="e.g. 5"
+                placeholder="E.g. 5"
                 style={{ width: '100%', height: 44, padding: '0 12px', background: '#18191A', border: '2px solid #3A3B3C', borderRadius: 8, color: 'white', fontSize: 14, boxSizing: 'border-box' }} />
             </div>
             <div>
@@ -274,7 +274,7 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
               {incident.severity?.toUpperCase()}
             </span>
             <span style={{ background: '#3A3B3C', color: '#B0B3B8', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-              {typeInfo.emoji} {typeInfo.label}
+              {typeInfo.label}
             </span>
             {incident.resolved && (
               <span style={{ background: '#31A24C15', color: '#31A24C', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -385,7 +385,7 @@ export default function IncidentsPage() {
     if (venueId) fetchIncidents();
   }, [venueId]);
 
-  // Commander Data Bus — sync incidents across tabs
+  // Commander Data Bus - sync incidents across tabs
   useCommanderSync(venueId, fetchIncidents, { entities: ['incidents'] });
 
   async function fetchIncidents(signal) {
@@ -396,13 +396,13 @@ const data = await commanderFetchJSON(`/api/commander/incidents?venue_id=${venue
         setIncidents(data.data?.incidents || []);
       } else {
         // 2026-07-25 audit fix: surface API-level failures via toast
-        setToast({ type: 'error', text: data.error?.message || data.error || 'Failed to load incidents.' });
+        setToast({ type: 'error', text: data.error?.message || data.error || 'Failed To Load Incidents.' });
       }
     } catch (err) {
       console.warn('Fetch incidents failed:', err);
       setIncidents([]);
       // 2026-07-25 audit fix: surface fetch failures via toast
-      setToast({ type: 'error', text: 'Failed to load incidents.' });
+      setToast({ type: 'error', text: 'Failed To Load Incidents.' });
     } finally { setLoading(false); }
   }
 
@@ -422,14 +422,14 @@ const res = await commanderFetch('/api/commander/incidents', {
           busEmit.screenShake('medium');
         } else {
           // 2026-07-25 audit fix: surface API-level failures via toast
-          setToast({ type: 'error', text: result.error?.message || result.error || 'Create incident failed. Please try again.' });
+          setToast({ type: 'error', text: result.error?.message || result.error || 'Create Incident Failed. Please Try Again.' });
         }
       } else {
         // 2026-07-25 audit fix: surface non-OK responses via toast
         const body = await res.json().catch(() => null);
-        setToast({ type: 'error', text: body?.error?.message || body?.error || `Create incident failed (${res.status}).` });
+        setToast({ type: 'error', text: body?.error?.message || body?.error || `Create Incident Failed (${res.status}).` });
       }
-    } catch (err) { console.warn('Create incident failed:', err); setToast({ type: 'error', text: 'Action failed: Create incident failed. Please try again.' }); }
+    } catch (err) { console.warn('Create incident failed:', err); setToast({ type: 'error', text: 'Action Failed: Create Incident Failed. Please Try Again.' }); }
   setLoading(false);
   }
 
@@ -448,14 +448,14 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
           broadcastChange('incidents');
         } else {
           // 2026-07-25 audit fix: surface API-level failures via toast
-          setToast({ type: 'error', text: json.error?.message || json.error || 'Resolve incident failed. Please try again.' });
+          setToast({ type: 'error', text: json.error?.message || json.error || 'Resolve Incident Failed. Please Try Again.' });
         }
       } else {
         // 2026-07-25 audit fix: surface non-OK responses via toast
         const body = await res.json().catch(() => null);
-        setToast({ type: 'error', text: body?.error?.message || body?.error || `Resolve incident failed (${res.status}).` });
+        setToast({ type: 'error', text: body?.error?.message || body?.error || `Resolve Incident Failed (${res.status}).` });
       }
-    } catch (err) { console.warn('Resolve incident failed:', err); setToast({ type: 'error', text: 'Action failed: Resolve incident failed. Please try again.' }); }
+    } catch (err) { console.warn('Resolve incident failed:', err); setToast({ type: 'error', text: 'Action Failed: Resolve Incident Failed. Please Try Again.' }); }
   }
 
   const filteredIncidents = incidents
@@ -486,7 +486,7 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
 
   return (
     <CommanderLayout title="Incidents" backHref="/commander/dashboard?card=staff">
-      <SEOHead title="Commander — Incidents" description="Incident management." noindex={true} />
+      <SEOHead title="Commander - Incidents" description="Incident Management." noindex={true} />
       <div style={{ minHeight: '100vh', background: '#18191A', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
         {/* Header */}
@@ -528,7 +528,7 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
               <Search size={16} color="#65676B" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input type="text" value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search incidents..."
+                placeholder="Search Incidents..."
                 style={{ width: '100%', height: 40, paddingLeft: 36, paddingRight: 12, background: '#242526', border: '2px solid #3A3B3C', borderRadius: 10, color: 'white', fontSize: 13, boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -568,7 +568,7 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
             <div style={{ background: '#242526', borderRadius: 12, padding: 48, textAlign: 'center', border: '2px solid #3A3B3C' }}>
               <Shield size={36} color="#3A3B3C" style={{ margin: '0 auto 8px' }} />
               <p style={{ color: '#65676B', fontSize: 14 }}>
-                {searchQuery ? 'No Incidents Match Your Search' : 'No Incidents Reported — All Clear'}
+                {searchQuery ? 'No Incidents Match Your Search' : 'No Incidents Reported. All Clear'}
               </p>
             </div>
           )}

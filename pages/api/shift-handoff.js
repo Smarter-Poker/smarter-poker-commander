@@ -1,11 +1,11 @@
 /**
  * Shift Handoff API
- * POST /api/commander/shift-handoff — Create new handoff (outgoing floor)
- * GET /api/commander/shift-handoff — List handoffs for venue
- * PATCH /api/commander/shift-handoff — Acknowledge handoff (incoming floor)
+ * POST /api/commander/shift-handoff - Create new handoff (outgoing floor)
+ * GET /api/commander/shift-handoff - List handoffs for venue
+ * PATCH /api/commander/shift-handoff - Acknowledge handoff (incoming floor)
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -19,18 +19,22 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - shift handoff notes (issues, VIP alerts,
+    // pending actions, a full floor snapshot) were public for any venue_id.
+    // The PATCH acknowledged handoffs by bare id with no venue check.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
-    if (req.method === 'POST') return createHandoff(req, res);
-    if (req.method === 'GET') return listHandoffs(req, res);
-    if (req.method === 'PATCH') return acknowledgeHandoff(req, res);
+    if (req.method === 'POST') return createHandoff(req, res, _g);
+    if (req.method === 'GET') return listHandoffs(req, res, _g);
+    if (req.method === 'PATCH') return acknowledgeHandoff(req, res, _g);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
 
   } catch (err) {
@@ -40,11 +44,21 @@ export default async function handler(req, res) {
   }
 }
 
-async function createHandoff(req, res) {
+function venueMismatch(staff, venueId) {
+  if (!staff || staff === true) return false;
+  if (staff.venue_id === undefined || staff.venue_id === null) return false;
+  return String(staff.venue_id) !== String(venueId);
+}
+
+async function createHandoff(req, res, staff) {
   const { venue_id, staff_name, notes, issues, vip_alerts, pending_actions, incoming_staff_name } = req.body;
 
   if (!venue_id || !staff_name) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id and staff_name required' } });
+  }
+
+  if (venueMismatch(staff, venue_id)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
   }
 
   try {
@@ -59,13 +73,13 @@ async function createHandoff(req, res) {
 
     // Snapshot current floor state
     // 2026-07-25 audit fix: snapshot queries used status values that are never
-    // written — tables are 'in_use' when occupied, games are 'waiting'/'running',
+    // written - tables are 'in_use' when occupied, games are 'waiting'/'running',
     // and incidents use the incident_status column (there is no status column).
     const [tablesRes, waitlistRes, incidentsRes, gamesRes] = await Promise.all([
       getSupabase().from('commander_tables').select('id, table_number, table_name, status, game_type, stakes, max_seats').eq('venue_id', venue_id).eq('status', 'in_use'),
       getSupabase().from('commander_waitlist').select('id').eq('venue_id', venue_id).eq('status', 'waiting'),
       getSupabase().from('commander_incidents').select('id').eq('venue_id', venue_id).eq('incident_status', 'open'),
-      getSupabase().from('commander_games').select('id, table_number, game_type, stakes, current_players, max_players, status').eq('venue_id', venue_id).in('status', ['waiting', 'running'])
+      getSupabase().from('commander_games').select('id, table_id, game_type, stakes, current_players, max_players, status').eq('venue_id', venue_id).in('status', ['waiting', 'running'])
     ]);
 
     const tables = tablesRes.data || [];
@@ -78,7 +92,7 @@ async function createHandoff(req, res) {
 
     // Build table snapshot with player counts from games
     const tableSnapshot = tables.map(t => {
-      const game = games.find(g => String(g.table_number) === String(t.table_number));
+      const game = games.find(g => String(g.table_id) === String(t.id));
       return {
         table_number: t.table_number,
         table_name: t.table_name,
@@ -118,11 +132,15 @@ async function createHandoff(req, res) {
   }
 }
 
-async function listHandoffs(req, res) {
+async function listHandoffs(req, res, staff) {
   const { venue_id, limit = 20, status: filterStatus } = req.query;
 
   if (!venue_id) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id required' } });
+  }
+
+  if (venueMismatch(staff, venue_id)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
   }
 
   try {
@@ -145,11 +163,25 @@ async function listHandoffs(req, res) {
   }
 }
 
-async function acknowledgeHandoff(req, res) {
+async function acknowledgeHandoff(req, res, staff) {
   const { handoff_id, staff_name } = req.body;
 
   if (!handoff_id || !staff_name) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'handoff_id and staff_name required' } });
+  }
+
+  const { data: target } = await getSupabase()
+    .from('commander_shift_handoffs')
+    .select('id, venue_id')
+    .eq('id', handoff_id)
+    .maybeSingle();
+
+  if (!target) {
+    return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Handoff Not Found' } });
+  }
+
+  if (venueMismatch(staff, target.venue_id)) {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' } });
   }
 
   try {

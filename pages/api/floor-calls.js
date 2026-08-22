@@ -5,7 +5,7 @@
  * PUT  /api/commander/floor-calls - Acknowledge/resolve a floor call
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -27,23 +27,39 @@ const VALID_REASONS = [
 const VALID_PRIORITIES = ['urgent', 'high', 'normal', 'low'];
 const VALID_STATUSES = ['pending', 'acknowledged', 'en_route', 'resolved', 'cancelled'];
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard: require staff auth for all operations
-    const staffResult = await guardWriteStaff(req, res);
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything. Worse, venue_id was optional on the GET, so
+    // omitting it dumped EVERY venue's floor calls - disputes, security
+    // incidents and their free-text descriptions - to an anonymous caller.
+    const staffResult = await guardStaff(req, res);
     if (!staffResult) return;
+
+    const scopedVenueId = (staffResult.venue_id !== undefined && staffResult.venue_id !== null)
+      ? staffResult.venue_id
+      : null;
 
     try {
       // GET - List floor calls with filters
       if (req.method === 'GET') {
-        // Floor calls are polled by multiple staff devices — 10s CDN cache prevents fan-out
-        res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+        // Response varies by staff session - never share it at the CDN edge.
+        res.setHeader('Cache-Control', 'private, max-age=10');
         const { venue_id, status, reason, priority, responded_by, limit = '50' } = req.query;
+
+        if (scopedVenueId !== null && venue_id && String(venue_id) !== String(scopedVenueId)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+        }
+
+        const effectiveVenueId = scopedVenueId !== null ? scopedVenueId : venue_id;
+        if (!effectiveVenueId) {
+          return res.status(400).json({ success: false, error: 'venue_id is required' });
+        }
 
         let query = getSupabase()
           .from('commander_floor_calls')
@@ -51,7 +67,7 @@ export default async function handler(req, res) {
           .order('created_at', { ascending: false })
           .limit(Math.min(parseInt(limit) || 50, 500));
 
-        if (venue_id) query = query.eq('venue_id', venue_id);
+        query = query.eq('venue_id', effectiveVenueId);
 
         if (status) {
           // Support comma-separated statuses: status=pending,acknowledged
@@ -84,8 +100,14 @@ export default async function handler(req, res) {
         const safeReason = VALID_REASONS.includes(reason) ? reason : 'other';
         const safePriority = VALID_PRIORITIES.includes(priority) ? priority : 'normal';
 
+        // 2026-08-20 audit fix: venue_id came off the body unchecked.
+        if (scopedVenueId !== null && venue_id && String(venue_id) !== String(scopedVenueId)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+        }
+        const callVenueId = scopedVenueId !== null ? scopedVenueId : (venue_id || null);
+
         const { data, error } = await getSupabase().from('commander_floor_calls').insert({
-          venue_id: venue_id || null,
+          venue_id: callVenueId,
           table_number,
           reason: safeReason,
           description: description || '',
@@ -99,7 +121,7 @@ export default async function handler(req, res) {
 
         // Also log to activity feed (non-blocking)
         await getSupabase().from('commander_activity_log').insert({
-          venue_id: venue_id || null,
+          venue_id: callVenueId,
           event_type: safePriority === 'urgent' ? 'incident' : 'floor_call',
           message: `Floor call at Table ${table_number}: ${safeReason.replace(/_/g, ' ')}`,
           detail: description || '',
@@ -122,11 +144,21 @@ export default async function handler(req, res) {
         }
 
         // Fetch existing call for response time computation
+        // 2026-08-20 audit fix: the update ran on a bare id, so any staff member
+        // could acknowledge, resolve or cancel another venue's floor calls.
         const { data: existing } = await getSupabase()
           .from('commander_floor_calls')
-          .select('created_at, responded_at')
+          .select('created_at, responded_at, venue_id')
           .eq('id', id)
           .maybeSingle();
+
+        if (!existing) {
+          return res.status(404).json({ success: false, error: 'Floor Call Not Found' });
+        }
+
+        if (scopedVenueId !== null && String(existing.venue_id) !== String(scopedVenueId)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+        }
 
         const now = new Date().toISOString();
         const updates = { status };

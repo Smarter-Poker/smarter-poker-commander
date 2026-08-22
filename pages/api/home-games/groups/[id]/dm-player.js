@@ -5,13 +5,13 @@
  * Opens a 1:1 DM from the authenticated caller to another user inside a
  * home-games context. Two routing modes:
  *
- *   (a) Roster DM (default) — if no `game_id` in body, calls
+ *   (a) Roster DM (default) - if no `game_id` in body, calls
  *       `start_home_group_roster_dm(p_group_id, p_from_user_id, p_to_user_id, p_initial_message)`.
  *       Used when a host/admin clicks "Message" on a roster row.
  *       RPC gates: caller must be group owner/admin; target must be an
  *       approved member or follower and not banned.
  *
- *   (b) Game DM — if `game_id` is present in body, calls
+ *   (b) Game DM - if `game_id` is present in body, calls
  *       `start_home_game_player_dm(p_game_id, p_from_user_id, p_to_user_id, p_initial_message)`.
  *       Used for player↔player DMs tied to a specific game (e.g., late-RSVP
  *       handoff). RPC gates: both users must be approved members of the game's

@@ -1,9 +1,9 @@
 /**
- * Membership Plans — Image-Based Layout with JS Click Detection
+ * Membership Plans - Image-Based Layout with JS Click Detection
  * /commander/membership-plans
  *
  * Uses the exact mockup image as the page.
- * Clicks anywhere on the image are detected via JS — the Y position
+ * Clicks anywhere on the image are detected via JS - the Y position
  * relative to the image determines which plan card was tapped.
  * The edit popover appears directly on top of the clicked card.
  */
@@ -23,7 +23,7 @@ const PRICE_SUFFIX = { daily: ' Per Day', weekly: ' Per Week', monthly: ' Per Mo
 // Y% positioning: centered within each card zone (measured from background image)
 const PRICE_TEXT_Y = { daily: 32.5, weekly: 45, monthly: 58, yearly: 71 };
 
-// Card zones in the source image — measured as percentage of image height
+// Card zones in the source image - measured as percentage of image height
 // Each entry: [topPercent, bottomPercent]
 const CARD_ZONES = {
   daily: [27, 38],
@@ -72,7 +72,7 @@ export default function MembershipPlansPage() {
 
   useEffect(() => { if (venueId) { const _c = new AbortController(); fetchPlans(_c.signal); return () => _c.abort(); } }, [venueId]);
 
-  // Commander Data Bus — sync plans
+  // Commander Data Bus - sync plans
   useCommanderSync(venueId, fetchPlans, { entities: ['settings'] });
 
   async function fetchPlans(signal) {
@@ -113,7 +113,7 @@ const data = await commanderFetchJSON(`/api/commander/membership-plans?venue_id=
         return;
       }
     }
-    // Click was outside any card zone — do nothing
+    // Click was outside any card zone - do nothing
   }, [planByTier]);
 
   function closeEditor() {
@@ -134,7 +134,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
         headers: { 'Content-Type': 'application/json' || '' },
         body: JSON.stringify({ [field]: price })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       setSuccess('Price Updated!');
@@ -153,7 +153,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
   return (
     <CommanderLayout title="Membership Plans" backHref="/commander/dashboard">
       <SEOHead
-              title="Commander — Membership Plans"
+              title="Commander - Membership Plans"
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
@@ -174,7 +174,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
           display: block;
           cursor: pointer;
         }
-        /* Inline edit popover — positioned absolutely over the card */
+        /* Inline edit popover - positioned absolutely over the card */
         .mp-edit-popover {
           position: absolute;
           left: 8%;
@@ -272,7 +272,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
           white-space: nowrap;
         }
         .mp-btn-cancel:hover { border-color: #666; color: #fff; }
-        /* Dynamic price overlay — white text centered in the right-side gap of each card */
+        /* Dynamic price overlay - white text centered in the right-side gap of each card */
         .mp-price-overlay {
           position: absolute;
           left: 72%;
@@ -350,7 +350,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
             {/* Scrim to dismiss popover when clicking outside */}
             {editingId && <div className="mp-scrim" onClick={closeEditor} />}
 
-            {/* Full-width background image — click detection via JS */}
+            {/* Full-width background image - click detection via JS */}
             <img
               ref={imgRef}
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/commander/membership-plans-bg-user-clean.jpg`}
@@ -360,7 +360,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
               onClick={handleImageClick}
              loading="lazy" />
 
-            {/* Dynamic price overlays — positioned on each card zone */}
+            {/* Dynamic price overlays - positioned on each card zone */}
             {PLAN_ORDER.map(tier => {
               const plan = planByTier[tier];
               if (!plan) return null;
@@ -378,7 +378,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
               );
             })}
 
-            {/* Inline edit popover — anchored directly over the clicked card */}
+            {/* Inline edit popover - anchored directly over the clicked card */}
             {editingPlan && editingZone && (() => {
               const [topPct, bottomPct] = editingZone;
               const midPct = (topPct + bottomPct) / 2;

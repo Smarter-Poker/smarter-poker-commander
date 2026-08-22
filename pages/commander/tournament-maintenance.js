@@ -1,5 +1,5 @@
 /**
- * Tournament Maintenance — Calendar View
+ * Tournament Maintenance - Calendar View
  * See entire tournament schedule and make corrections to scheduled tournaments
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -32,7 +32,7 @@ export default function TournamentMaintenance() {
     }, []);
 
     const fetchTournaments = useCallback(async () => {
-        // 2026-07-25 audit fix: the list API requires venue_id — omit and it 400s
+        // 2026-07-25 audit fix: the list API requires venue_id - omit and it 400s
         if (!staff?.venue_id) return;
         setLoading(true);
         try {
@@ -46,7 +46,7 @@ export default function TournamentMaintenance() {
 
     useEffect(() => { if (staff) { const _c = new AbortController(); fetchTournaments(_c.signal); return () => _c.abort(); } }, [staff, fetchTournaments]);
 
-    // Commander Data Bus — sync tournaments across tabs
+    // Commander Data Bus - sync tournaments across tabs
     useCommanderSync(staff?.venue_id || '', fetchTournaments, { entities: ['tournaments'] });
 
     // Calendar helpers
@@ -89,7 +89,7 @@ export default function TournamentMaintenance() {
 
     return (
         <CommanderLayout title="Tournament Maintenance | Commander" backHref="/commander/dashboard?card=tournaments">
-            <SEOHead title="Commander — Tournament Maintenance" description="Tournament schedule calendar" noindex={true} />
+            <SEOHead title="Commander - Tournament Maintenance" description="Tournament schedule calendar" noindex={true} />
             <div className="cmd-page">
                 <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
 
@@ -100,7 +100,7 @@ export default function TournamentMaintenance() {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-white">Tournament Maintenance</h1>
-                            <p className="text-sm text-[#64748B]">View schedule and make corrections to tournaments</p>
+                            <p className="text-sm text-[#64748B]">View Schedule And Make Corrections To Tournaments</p>
                         </div>
                     </div>
 
@@ -170,7 +170,7 @@ export default function TournamentMaintenance() {
                                                 })}
                                                 {dayTournaments.length > 3 && (
                                                     <div className={`text-[7px] leading-[10px] font-semibold ${isSelected ? 'text-white/60' : 'text-[#64748B]'}`}>
-                                                        +{dayTournaments.length - 3} more
+                                                        +{dayTournaments.length - 3} More
                                                     </div>
                                                 )}
                                             </div>
@@ -205,11 +205,11 @@ export default function TournamentMaintenance() {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${STATUS_COLORS[t.status] || STATUS_COLORS.scheduled}`}>{t.status}</span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${STATUS_COLORS[t.status] || STATUS_COLORS.scheduled}`}>{(t.status || '').replace(/_/g, ' ')}</span>
                                             <button
-                                                onClick={() => router.push(`/commander/tournaments?edit=${t.id}`)}
+                                                onClick={() => router.push(`/commander/tournaments/${t.id}/settings`)} /* 2026-08-04 audit fix: tournaments list ignores ?edit= - open the settings editor directly */
                                                 className="p-2 rounded-lg hover:bg-[#1877F2]/10 text-[#64748B] hover:text-[#1877F2] transition-colors"
-                                                title="Edit tournament"
+                                                title="Edit Tournament"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
@@ -218,7 +218,7 @@ export default function TournamentMaintenance() {
                                 </div>
                             ) : (
                                 <div className="cmd-panel p-4 text-center text-[#64748B] text-sm">
-                                    No tournaments scheduled for this date
+                                    No Tournaments Scheduled For This Date
                                 </div>
                             )}
                         </div>

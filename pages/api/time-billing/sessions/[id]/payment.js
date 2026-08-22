@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -39,6 +39,21 @@ export default async function handler(req, res) {
       const { id } = req.query;
       const { amount } = req.body;
       if (!amount || amount <= 0) return res.status(400).json({ success: false, error: 'Valid amount required' });
+
+      // 2026-08-20 audit fix: the session id was passed straight to the RPC
+      // with no venue ownership check, so staff at venue A could record
+      // payments against venue B's table sessions.
+      if (_g && _g !== true && _g.venue_id !== undefined && _g.venue_id !== null) {
+        const { data: owner } = await getSupabase()
+          .from('commander_table_sessions')
+          .select('id, venue_id')
+          .eq('id', id)
+          .maybeSingle();
+        if (!owner) return res.status(404).json({ success: false, error: 'Session not found' });
+        if (String(owner.venue_id) !== String(_g.venue_id)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+        }
+      }
 
       // 2026-07-28 audit fix: this selected amount_paid, added the payment in JS
       // and wrote the sum back. Two concurrent payments both read the old total

@@ -6,6 +6,7 @@
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
+import { verifyStaffSession } from '../../../src/lib/commander/auth';
 
 let _supabase = null;
 function getSupabase() {
@@ -29,12 +30,24 @@ export default async function handler(req, res) {
       const user = authData?.user;
       if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
 
-      const { data: staff } = await getSupabase()
-        .from('commander_staff')
-        .select('venue_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
+      // MULTI-CLUB FIX (2026-08-20): active venue from the HMAC-verified
+      // staff session first; the old unscoped .maybeSingle() errored for
+      // anyone with staff rows at 2+ venues (every multi-club owner).
+      let staff = null;
+      try {
+        const sessionResult = await verifyStaffSession(req);
+        if (sessionResult.staff?.venue_id) staff = { venue_id: sessionResult.staff.venue_id };
+      } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+      if (!staff) {
+        const { data: staffRow } = await getSupabase()
+          .from('commander_staff')
+          .select('venue_id')
+          .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        staff = staffRow || null;
+      }
       if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
 
       const { tableNumber } = req.query;

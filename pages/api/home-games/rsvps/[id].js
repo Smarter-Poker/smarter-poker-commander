@@ -1,9 +1,9 @@
 /**
  * ══════════════════════════════════════════════════════════════════════════
- *  COMMANDER — HOME GAME RSVP (per-RSVP actions)
- *  GET    /api/commander/home-games/rsvps/[id]   — read a single RSVP
- *  PATCH  /api/commander/home-games/rsvps/[id]   — host approves/declines/etc
- *  DELETE /api/commander/home-games/rsvps/[id]   — host removes an RSVP
+ *  COMMANDER - HOME GAME RSVP (per-RSVP actions)
+ *  GET    /api/commander/home-games/rsvps/[id]   - read a single RSVP
+ *  PATCH  /api/commander/home-games/rsvps/[id]   - host approves/declines/etc
+ *  DELETE /api/commander/home-games/rsvps/[id]   - host removes an RSVP
  * ══════════════════════════════════════════════════════════════════════════
  *
  *  Phase 11 rewrite. The previous implementation had three concrete bugs:
@@ -15,7 +15,7 @@
  *       erroring out of a 404 branch.
  *
  *    2. Zero authorization check beyond generic `guardUser`. Any
- *       authenticated user could PATCH or DELETE ANY RSVP by UUID —
+ *       authenticated user could PATCH or DELETE ANY RSVP by UUID -
  *       an IDOR.
  *
  *    3. Even if (1) had been fixed, nothing flipped `is_confirmed=true`.
@@ -195,7 +195,7 @@ export default async function handler(req, res) {
       return res.json({ success: true });
     }
 
-    // ── PATCH — apply the host action ─────────────────────────────────────
+    // ── PATCH - apply the host action ─────────────────────────────────────
     if (req.method === 'PATCH') {
       const action = resolveAction(req.body);
       if (!action) {
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'RSVP not found' });
       }
 
-      // Also promote the membership to 'approved' on approve — otherwise
+      // Also promote the membership to 'approved' on approve - otherwise
       // the group-level "approved members" list still shows the person as
       // pending even though their RSVP is confirmed. Don't clobber a
       // pre-existing owner/admin role: only update rows currently at
@@ -310,7 +310,7 @@ async function callerIsGroupStaff(supabase, user_id, group_id) {
       return true;
     }
   } catch (_) { console.warn('[App] Handled exception:', _?.message || _); }
-  // Fallback: check commander_home_groups.owner_id directly — covers the
+  // Fallback: check commander_home_groups.owner_id directly - covers the
   // brand-new-group case where the auto_add_group_owner trigger may have
   // raced or been skipped.
   try {
@@ -330,7 +330,7 @@ async function callerIsGroupStaff(supabase, user_id, group_id) {
  *  Mirrors the Phase 10 host-side dispatcher but inverted: the REQUESTER is
  *  the notification target, the HOST is the actor.
  *
- *  THREE surfaces (NO EMAIL — Phase 12 removed all email dispatch):
+ *  THREE surfaces (NO EMAIL - Phase 12 removed all email dispatch):
  *    1. Row in public.notifications (in-app bell)
  *    2. OneSignal push (mobile + desktop push banners)
  *    3. Internal messenger DM from host -> requester with the address.
@@ -444,18 +444,18 @@ async function dispatchRequesterNotification(supabase, ctx) {
   }
 
   // ── 3. Internal messenger DM from host -> requester ──────────────────────
-  // Includes the address if populated — this is the primary channel for
+  // Includes the address if populated - this is the primary channel for
   // delivering the address to a newly-confirmed guest. The host can keep
   // chatting with the requester afterward for logistics.
   const dateStr = event.scheduled_date || '';
   const timeStr = event.start_time ? ` at ${String(event.start_time).slice(0, 5)}` : '';
   const eventLabel = event.title ? `"${event.title}"` : `the game on ${dateStr}${timeStr}`;
   const addressBlock = event.address
-    ? `\n\n📍 ${event.address}`
+    ? `\n\nLocation: ${event.address}`
     : `\n\n(I'll share the address closer to game day.)`;
 
   const dmContent =
-    `Hi ${requesterName} — you're in! Just confirmed your seat at ${eventLabel}. ` +
+    `Hi ${requesterName} - you're in! Just confirmed your seat at ${eventLabel}. ` +
     `See you at the table.` +
     addressBlock +
     `\n\nGame page: ${slugUrl}`;

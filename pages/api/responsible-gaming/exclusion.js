@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: USER — requires authenticated user
+// Auth: USER - requires authenticated user
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -59,9 +59,9 @@ async function handleCreate(req, res) {
 
   try {
     // 2026-07-25 audit fix: the table has no start_date/end_date/requested_by
-    // columns (the old insert failed). Write the real schema — exclusion_type,
+    // columns (the old insert failed). Write the real schema - exclusion_type,
     // scope, venue_id, duration_days, expires_at (null for permanent), reason,
-    // exclusion_status — matching the enforcement queries in waitlist/index.js
+    // exclusion_status - matching the enforcement queries in waitlist/index.js
     // and tournaments/[id]/register.js, which treat scope 'network' as global
     // and filter .is('lifted_at', null).or('expires_at.is.null,expires_at.gt.now()').
     const days = parseInt(duration_days);
@@ -142,7 +142,7 @@ async function handleRemove(req, res) {
     }
 
     // Self-exclusions typically have cooling-off periods
-    // 2026-07-25 audit fix: start_date column does not exist — use created_at.
+    // 2026-07-25 audit fix: start_date column does not exist - use created_at.
     const minCoolingDays = 7;
     const daysSinceStart = Math.floor(
       (Date.now() - new Date(exclusion.created_at).getTime()) / (1000 * 60 * 60 * 24)

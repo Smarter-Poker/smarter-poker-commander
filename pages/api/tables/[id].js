@@ -190,7 +190,7 @@ async function handlePatch(req, res, tableId) {
             success: false,
             error: {
               code: 'MODE_CONFLICT',
-              message: `Cannot switch to tournament mode — table has ${activeGames.length} active cash game(s). Close all games first.`
+              message: `Cannot Switch To Tournament Mode, Table Has ${activeGames.length} Active Cash Game(s). Close All Games First.`
             }
           });
         }
@@ -201,7 +201,7 @@ async function handlePatch(req, res, tableId) {
             success: false,
             error: {
               code: 'MODE_CONFLICT',
-              message: `Cannot switch to cash mode — table has ${activeGames.length} active tournament game(s). Close all games first.`
+              message: `Cannot Switch To Cash Mode, Table Has ${activeGames.length} Active Tournament Game(s). Close All Games First.`
             }
           });
         }

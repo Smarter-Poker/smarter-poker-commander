@@ -115,7 +115,7 @@ const res = await commanderFetch('/api/commander/reputation', {
         if (expandedId) fetchReviews(expandedId);
         broadcastChange('reputation');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSubmitting(false); }
   };
 
@@ -143,7 +143,7 @@ const res = await commanderFetch('/api/commander/reputation', {
   return (
     <CommanderLayout title="Player Reputation" backHref="/commander/dashboard?card=reports">
       <SEOHead
-        title="Commander — Player Reputation"
+        title="Commander - Player Reputation"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -153,7 +153,7 @@ const res = await commanderFetch('/api/commander/reputation', {
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
           ) : scores.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
-              No player reputations yet. Use the Players page to add reviews.
+              No Player Reputations Yet. Use The Players Page To Add Reviews.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -170,7 +170,7 @@ const res = await commanderFetch('/api/commander/reputation', {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#1C2526' }}>{s.player_name}</div>
-                        <div style={{ fontSize: 12, color: '#65676B' }}>{s.total_reviews} reviews</div>
+                        <div style={{ fontSize: 12, color: '#65676B' }}>{s.total_reviews} Reviews</div>
                       </div>
                       {/* Mini stars */}
                       <div style={{ display: 'flex', gap: 1 }}>
@@ -214,11 +214,11 @@ const res = await commanderFetch('/api/commander/reputation', {
                         {/* Recent reviews */}
                         {reviews.length > 0 && (
                           <div style={{ marginBottom: 10 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#65676B', marginBottom: 4 }}>RECENT REVIEWS</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#65676B', marginBottom: 4 }}>Recent Reviews</div>
                             {reviews.slice(0, 3).map((r, i) => (
                               <div key={i} style={{ padding: '6px 0', borderBottom: i < 2 ? '2px solid #F0F2F5' : 'none' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#65676B' }}>
-                                  <span>{r.reviewer_type} • {r.context || 'general'}</span>
+                                  <span>{r.reviewer_type} • {r.context || 'General'}</span>
                                   <span>{new Date(r.created_at).toLocaleDateString()}</span>
                                 </div>
                                 {r.comment && <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>"{r.comment}"</div>}
@@ -245,7 +245,7 @@ const res = await commanderFetch('/api/commander/reputation', {
                               <option value="home_game">Home Game</option>
                             </select>
                             <textarea value={reviewForm.comment} onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
-                              rows={2} placeholder="Comments (optional)"
+                              rows={2} placeholder="Comments (Optional)"
                               style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '2px solid #CED0D4', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
                             <button onClick={submitReview} disabled={submitting}
                               style={{ width: '100%', background: '#1877F2', color: 'white', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>

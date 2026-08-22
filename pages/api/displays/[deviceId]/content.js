@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // 2026-07-25 audit fix: removed the per-request last_heartbeat write —
+      // 2026-07-25 audit fix: removed the per-request last_heartbeat write -
       // the heartbeat endpoint owns online-status tracking.
 
       // Determine which screen to show
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
   }
 }
 
-// 2026-07-25 audit fix: this is a public TV endpoint — redact player names to
+// 2026-07-25 audit fix: this is a public TV endpoint - redact player names to
 // "First L." so full names are never shown on shared displays.
 function redactName(name) {
   if (!name || typeof name !== 'string' || !name.trim()) return 'Player';
@@ -197,17 +197,18 @@ async function getPromotionsContent(venueId) {
 
   const { data: promotions } = await getSupabase()
     .from('commander_promotions')
-    .select('id, name, description, promotion_type, prize_type, prize_amount, starts_at, ends_at')
+    .select('id, name, description, promotion_type, prize_type, prize_amount:prize_value, starts_at:start_date, ends_at:end_date')
     .eq('venue_id', venueId)
     .eq('status', 'active')
-    .or(`starts_at.is.null,starts_at.lte.${now}`)
-    .or(`ends_at.is.null,ends_at.gte.${now}`)
+    .or(`start_date.is.null,start_date.lte.${now}`)
+    .or(`end_date.is.null,end_date.gte.${now}`)
     .limit(5);
 
-  // Get progressive jackpots
+  // Get progressive jackpots. Live schema (information_schema verified):
+  // commander_progressive_jackpots has no min_qualifying_hand column.
   const { data: jackpots } = await getSupabase()
     .from('commander_progressive_jackpots')
-    .select('id, name, current_amount, min_qualifying_hand')
+    .select('id, name, current_amount, seed_amount')
     .eq('venue_id', venueId)
     .eq('status', 'active');
 
@@ -220,10 +221,14 @@ async function getPromotionsContent(venueId) {
 async function getHighHandContent(venueId) {
   const today = new Date().toISOString().split('T')[0];
 
-  // Get today's high hands
+  // Get today's high hands. Live schema (information_schema verified):
+  // commander_high_hands has hand_rank, cards and board_cards - there is no
+  // hand_description or hand_cards column. The old field names are preserved
+  // for renderers via PostgREST aliases (hand_description:hand_rank,
+  // hand_cards:cards).
   const { data: highHands } = await getSupabase()
     .from('commander_high_hands')
-    .select('id, player_name, hand_description, hand_cards, prize_amount, verified_at, table_number')
+    .select('id, player_name, hand_rank, hand_description:hand_rank, hand_cards:cards, board_cards, table_number, prize_amount, verified_at, created_at')
     .eq('venue_id', venueId)
     .gte('created_at', today)
     .not('verified_at', 'is', null)

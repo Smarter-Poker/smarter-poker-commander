@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { BarChart3, Users, DollarSign, Clock, TrendingUp, TrendingDown, Trophy, Target, Loader2 } from 'lucide-react';
-// Peak Hours Grid — visual heatmap of hour-by-hour activity
+// Peak Hours Grid - visual heatmap of hour-by-hour activity
 function PeakHoursGrid({ analytics }) {
   // Build hourly counts from analytics data
   const hourCounts = new Array(24).fill(0);
@@ -37,7 +37,7 @@ function PeakHoursGrid({ analytics }) {
                     ? `rgba(24, 119, 242, ${0.15 + intensity * 0.85})`
                     : '#3A3B3C'
                 }}
-                title={`${h}: ${count} sessions`}
+                title={`${h}: ${count} Sessions`}
               />
               {hour % 3 === 0 && (
                 <span className="text-[10px] text-[#B0B3B8]">{h}</span>
@@ -57,7 +57,7 @@ function PeakHoursGrid({ analytics }) {
   );
 }
 
-// Activity Trend Line — SVG sparkline
+// Activity Trend Line - SVG sparkline
 function ActivityTrendLine({ dailyData }) {
   const data = dailyData || [];
   if (data.length < 2) return (
@@ -66,7 +66,7 @@ function ActivityTrendLine({ dailyData }) {
         <TrendingUp className="w-5 h-5 text-[#31A24C]" />
         Activity Trend
       </h3>
-      <p className="text-sm text-[#B0B3B8]">Not enough data for trend visualization</p>
+      <p className="text-sm text-[#B0B3B8]">Not Enough Data For Trend Visualization</p>
     </div>
   );
 
@@ -120,6 +120,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
+import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 function StatCard({ title, value, change, icon: Icon, color = '#1877F2' }) {
   const hasChange = change !== undefined && change !== null;
@@ -253,9 +254,12 @@ export default function AnalyticsPage() {
       // Convert period to days; fetch 2x to get previous period for comparison
       const periodDays = period === 'week' ? 7 : period === 'month' ? 30 : 365;
 const headers = { };
+      // 2026-08-20 audit fix: both analytics routes authenticate off the
+      // Authorization header, which a bare fetch with an empty header bag never
+      // sent. commanderFetch injects the Bearer token and the staff session.
       const [dailyRes, playersRes] = await Promise.all([
-        fetch(`/api/commander/analytics/daily?venue_id=${venueId}&days=${periodDays * 2}`, { headers }).catch(() => ({ ok: false })),
-        fetch(`/api/commander/analytics/players?venue_id=${venueId}&limit=10`, { headers }).catch(() => ({ ok: false }))
+        commanderFetch(`/api/commander/analytics/daily?venue_id=${venueId}&days=${periodDays * 2}`, { headers }).catch(() => ({ ok: false })),
+        commanderFetch(`/api/commander/analytics/players?venue_id=${venueId}&limit=10`, { headers }).catch(() => ({ ok: false }))
       ]);
 
       if (!dailyRes || !dailyRes.ok) throw new Error(`Daily analytics failed (${dailyRes?.status || 'network error'})`);
@@ -368,7 +372,7 @@ const headers = { };
     if (venueId) fetchAnalytics();
   }, [venueId, period, fetchAnalytics]);
 
-  // Commander Data Bus — refresh analytics on changes
+  // Commander Data Bus - refresh analytics on changes
   useCommanderSync(venueId, fetchAnalytics, { entities: ['tables', 'members', 'waitlist'] });
 
   if (!staff) {
@@ -383,7 +387,7 @@ const headers = { };
     <CommanderLayout title="Analytics | Commander" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Analytics & Reports"
+          title="Commander - Analytics & Reports"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />

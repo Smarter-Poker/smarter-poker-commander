@@ -12,15 +12,19 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { supabase } from '../../src/lib/supabase';
 // Dashboard uses real-time sync primarily to instantly reflect hard stop or setting changes
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../src/lib/commander/tierConfig';
-// NOTE: import the client-safe shared module directly — src/lib/commander/auth
-// is server-only since the 2026-07-25 session-signing change (uses node crypto).
-import { canRoleAccessRoute } from '@smarter-poker/commander-shared/lib/commander/auth';
+// 2026-08-14 vendor-drift fix: import via the local override, which re-exports
+// canRoleAccessRoute from the shared package. The old "client-safe shared
+// module" rationale is obsolete - since the 2026-08-07 session-signing
+// hardening the vendor module itself imports node crypto, so both import
+// paths pull equivalent module graphs, and the direct vendor import bypassed
+// the override (the exact class the CI vendor drift guard now blocks).
+import { canRoleAccessRoute } from '../../src/lib/commander/auth';
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 /* ─────────────────────────────────────────────────
-   CARD DEFINITIONS — each card has sub-features
+   CARD DEFINITIONS - each card has sub-features
    that link to pages within Club Commander
    ───────────────────────────────────────────────── */
 const CARDS = [
@@ -28,7 +32,7 @@ const CARDS = [
     id: 'waitlist',
     title: 'Waitlist',
     subtitle: 'Players, Memberships, Kiosk',
-    image: '/images/commander/card-waitlist.jpg',
+    image: '/images/commander/card-waitlist.webp',
     glow: '#22D3EE',
     features: [
       { label: 'Desk View', href: '/commander/waitlist/desk', icon: '/images/commander/icons/wl-desk-view.png' },
@@ -42,22 +46,30 @@ const CARDS = [
     id: 'tournaments',
     title: 'Tournaments & Events',
     subtitle: 'Tournaments, Leagues & Free Rolls, Clock',
-    image: '/images/commander/card-tournaments.jpg',
+    image: '/images/commander/card-tournaments.webp',
     glow: '#F59E0B',
     features: [
+      // 2026-08-20 consolidation. Two labels here were flatly wrong and sent
+      // staff to the opposite screen from the one they read:
+      //   "Tournament Clock" pointed at the retired multi-clock hub, not the
+      //   clock. It now points at Display Management, which launches every TV
+      //   board including the clock.
+      //   "Tournament Controls" pointed at the month calendar. It is now
+      //   labelled Tournament Calendar, which is what that page is.
       { label: 'Tournament Manager', href: '/commander/tournaments', icon: '/images/commander/icons/tn-registration.png' },
       { label: 'Tournament Templates', href: '/commander/tournament-settings', icon: '/images/commander/icons/tn-settings.png?v=3' },
-      { label: 'Tournament Clocks', href: '/commander/tournament-clocks', icon: '/images/commander/icons/tn-clock.png' },
-      { label: 'Tournament Maintenance', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-maintenance.png' },
+      { label: 'TV Displays', href: '/commander/displays', icon: '/images/commander/icons/tn-clock.png' },
+      { label: 'Leagues', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
       { label: 'Clock Setup', href: '/commander/clock-setup', icon: '/images/commander/icons/tn-clock-setup.png' },
-      { label: 'Leagues & Freerolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
-      { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-controls.png' },
+      { label: 'Free Rolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-freerolls.webp' },
+      { label: 'Tournament Calendar', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-controls-new.webp' },
+      { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-director.webp' },
     ] },
   {
     id: 'floor',
     title: 'Tables & Floor',
     subtitle: 'Tables, Dealers, Floor Ops',
-    image: '/images/commander/card-floor.jpg?v=4',
+    image: '/images/commander/card-floor.webp',
     glow: '#10B981',
     features: [
       { label: 'Tables & Floor', href: '/commander/tables', icon: '/images/commander/icons/mg-tables.png' },
@@ -73,7 +85,7 @@ const CARDS = [
     id: 'staff',
     title: 'Staff & Operations',
     subtitle: 'Employees, Schedule, Config',
-    image: '/images/commander/card-staff.jpg',
+    image: '/images/commander/card-staff.webp',
     glow: '#EF4444',
     features: [
       { label: 'Cashier', href: '/commander/cashier', icon: '/images/commander/icons/mg-cashier.png' },
@@ -90,7 +102,7 @@ const CARDS = [
     id: 'displays',
     title: 'Promotions & Displays',
     subtitle: 'TV Screens, Streaming, Alerts',
-    image: '/images/commander/card-displays.jpg',
+    image: '/images/commander/card-displays.webp',
     glow: '#22D3EE',
     features: [
       { label: 'TV Displays', href: '/commander/displays', icon: '/images/commander/icons/mg-tv-displays.png' },
@@ -110,7 +122,7 @@ const CARDS = [
     id: 'reports',
     title: 'Reports & System',
     subtitle: 'Analytics, Configuration, Data',
-    image: '/images/commander/card-reports.jpg',
+    image: '/images/commander/card-reports.webp',
     glow: '#94A3B8',
     features: [
       { label: 'Reports Hub', href: '/commander/reports', icon: '/images/commander/icons/rp-player.png' },
@@ -158,10 +170,9 @@ export default function CommanderDashboard() {
     }
   }, [router.isReady, router.query.card]);
 
-  // Auth guard — validate localStorage AND Supabase session
+  // Auth guard - validate localStorage AND Supabase session
   useEffect(() => {
     const controller = new AbortController();
-    const { signal } = controller;
     async function validateSession() {
       const stored = getStaffSession();
       if (!stored) {
@@ -170,7 +181,7 @@ export default function CommanderDashboard() {
       }
       try {
         const data = JSON.parse(stored);
-        // Require at minimum an id or user_id — venue_id can be null for new owners without a venue
+        // Require at minimum an id or user_id - venue_id can be null for new owners without a venue
         if (!data.id && !data.user_id) {
           if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
           return;
@@ -181,23 +192,23 @@ export default function CommanderDashboard() {
         return;
       }
 
-      // Validate Supabase session is alive — refresh if expired
+      // Validate Supabase session is alive - refresh if expired
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           // Try to refresh
           const { data: { session: refreshed } } = await supabase.auth.refreshSession();
           if (!refreshed) {
-            // Session truly expired — clear session-specific data and redirect to login
+            // Session truly expired - clear session-specific data and redirect to login
             localStorage.removeItem('commander_venue');
             localStorage.removeItem('commander_subscription');
             const remembered = localStorage.getItem('commander_remember');
             if (!remembered) {
-              // Not remembered — clear everything
+              // Not remembered - clear everything
               localStorage.removeItem('commander_staff');
               if (router.asPath !== '/commander/login') router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
             } else {
-              // Remembered — keep staff email for pre-fill, redirect with expired flag
+              // Remembered - keep staff email for pre-fill, redirect with expired flag
               if (router.asPath !== '/commander/login') router.push('/commander/login?expired=1').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
             }
           }
@@ -275,7 +286,7 @@ const venueId = staff?.venue_id;
       const upgradeConfig = upgradeTo ? getTierConfig(upgradeTo) : null;
       setShowUpgradeModal({
         label: feat.label,
-        upgradeTierName: upgradeConfig?.name || 'a higher tier',
+        upgradeTierName: upgradeConfig?.name || 'A Higher Tier',
         upgradePrice: upgradeConfig?.price || '' });
     }
   };
@@ -298,7 +309,7 @@ const venueId = staff?.venue_id;
     <CommanderLayout title="Club Commander | Dashboard" backHref="/commander/dashboard" hideBack={true}>
       <>
         <SEOHead
-          title="Commander Dashboard — Room Overview"
+          title="Commander Dashboard - Room Overview"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -358,33 +369,21 @@ const venueId = staff?.venue_id;
         }
 
         /* ── CARD ── */
-        .cmd-card {
-          position: relative;
-          border-radius: 16px;
-          overflow: hidden;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.3s;
-          border: 3px solid #3A3B3C;
-          background: #0a0a0a;
-          padding: 6px;
-        }
-        .cmd-card:hover {
+        .cmd-dashboard-card {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.3s;
+}
+        .cmd-dashboard-card:hover {
           transform: scale(1.02);
+          filter: brightness(1.15);
         }
-        .cmd-card img {
+        .cmd-dashboard-card img {
           width: 100%;
-          height: 100%;
-          object-fit: fill;
+          height: auto;
           display: block;
-          border-radius: 10px;
-          background: #0a0a0a;
         }
-        .cmd-card-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.6) 100%);
-          pointer-events: none;
-        }
+        
 
         /* ── OPENED CARD VIEW ── */
         .cmd-open {
@@ -562,7 +561,7 @@ const venueId = staff?.venue_id;
                 fontSize: 13,
                 fontFamily: 'Inter, sans-serif'
               }}>
-                Hard Stop in {hardStop.minutesLeft} min — All games close at {hardStop.timeFormatted}
+                Hard Stop In {hardStop.minutesLeft} Min. All Games Close At {hardStop.timeFormatted}
               </span>
             </div>
           )}
@@ -573,25 +572,11 @@ const venueId = staff?.venue_id;
               {filteredCards.map(card => (
                 <div
                   key={card.id}
-                  className="cmd-card"
-                  style={{ boxShadow: `0 0 20px ${card.glow}30, inset 0 0 1px ${card.glow}40` }}
+                  className="cmd-dashboard-card"
                   onClick={() => { setActiveCard(card.id); router.push(`/commander/dashboard?card=${card.id}`, undefined, { shallow: true }); }}
                 >
                   <img src={card.image} alt={card.title} loading="lazy" decoding="async" />
-                  <div className="cmd-card-overlay" />
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    padding: '20px 16px 14px',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
-                    zIndex: 2 }}>
-                    <div style={{
-                      color: card.glow, fontSize: 18, fontWeight: 800,
-                      textTransform: 'uppercase', letterSpacing: 1.5,
-                      textShadow: `0 0 20px ${card.glow}60, 0 2px 4px rgba(0,0,0,0.8)` }}>{card.title}</div>
-                    <div style={{
-                      color: '#94A3B8', fontSize: 11, marginTop: 2,
-                      fontWeight: 500, letterSpacing: 0.5 }}>{card.subtitle}</div>
-                  </div>
+                  
                 </div>
               ))}
             </div>
@@ -653,45 +638,61 @@ const venueId = staff?.venue_id;
             <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div onClick={() => setShowUpgradeModal(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
               <div style={{
-                position: 'relative', background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%)',
-                borderRadius: 16, width: '90%', maxWidth: 400, padding: 28,
-                boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.12)'
+                position: 'relative', 
+                width: '90%', 
+                maxWidth: 500, 
+                aspectRatio: '600 / 480',
+                backgroundImage: 'url(/images/upgrade_modal_bg.png)',
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                fontFamily: 'Inter, sans-serif'
               }}>
-                <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #F59E0B, #EF4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <Crown size={28} color="#fff" />
+                <div style={{
+                  position: 'absolute',
+                  top: '44.5%',
+                  left: '10%',
+                  right: '10%',
+                  textAlign: 'center',
+                  color: '#FFFFFF',
+                  fontSize: 'clamp(12px, 3vw, 15px)',
+                  lineHeight: 1.6,
+                  textTransform: 'capitalize',
+                  letterSpacing: '0.5px',
+                  fontWeight: 600
+                }}>
+                  {showUpgradeModal.label} Requires An Upgrade To<br/>
+                  The <span style={{ color: '#60A5FA', fontWeight: 700 }}>{showUpgradeModal.upgradeTierName}</span> Plan ${showUpgradeModal.upgradePrice} Per Month.
                 </div>
-                <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
-                  Upgrade Required
-                </h2>
-                <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                  <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> requires the{' '}
-                  <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> plan
-                  {showUpgradeModal.upgradePrice && <> (${showUpgradeModal.upgradePrice}/mo)</>}.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button
-                    onClick={() => { setShowUpgradeModal(null); router.push('/commander/settings?tab=subscription'); }}
-                    style={{
-                      padding: '12px 24px', borderRadius: 10, border: 'none',
-                      background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#fff',
-                      fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                      boxShadow: '0 4px 16px rgba(245,158,11,0.4)'
-                    }}
-                  >
-                    Upgrade Plan
-                  </button>
-                  <button
-                    onClick={() => setShowUpgradeModal(null)}
-                    style={{
-                      padding: '10px 20px', borderRadius: 10, border: '2px solid rgba(255,255,255,0.15)',
-                      background: 'transparent', color: '#888',
-                      fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                    }}
-                  >
-                    Maybe Later
-                  </button>
-                </div>
+                
+                {/* Invisible Upgrade Button */}
+                <div 
+                  onClick={() => { setShowUpgradeModal(null); router.push('/commander/settings?tab=subscription'); }}
+                  style={{
+                    position: 'absolute',
+                    top: '55%', /* Adjusted based on image */
+                    left: '20%',
+                    right: '20%',
+                    height: '14%',
+                    cursor: 'pointer'
+                  }}
+                />
+
+                {/* Invisible Maybe Later Button */}
+                <div 
+                  onClick={() => setShowUpgradeModal(null)}
+                  style={{
+                    position: 'absolute',
+                    top: '71%', /* Adjusted based on image */
+                    left: '20%',
+                    right: '20%',
+                    height: '14%',
+                    cursor: 'pointer'
+                  }}
+                />
               </div>
             </div>
           )}

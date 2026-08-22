@@ -42,7 +42,7 @@ export default async function handler(req, res) {
                   .limit(100);
 
           if (error) {
-              // Table might not exist yet — return empty
+              // Table might not exist yet - return empty
               return res.status(200).json({ success: true, data: [] });
           }
 

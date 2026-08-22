@@ -4,7 +4,7 @@
  * Reference: API_REFERENCE.md - Games section
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -18,13 +18,16 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: the file header claimed "[Public]" but this returns the
+// venue's full live game and table state. It used guardWriteStaff, which returns
+// `true` for GET without verifying anything, so any venue's floor was readable
+// by venue id.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     if (req.method !== 'GET') {
@@ -43,8 +46,16 @@ export default async function handler(req, res) {
       });
     }
 
+    if (_authResult.venue_id !== undefined && _authResult.venue_id !== null
+        && String(_authResult.venue_id) !== String(venueId)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
+      });
+    }
+
     try {
-      // Get games — try with joins first, fallback to simple query
+      // Get games - try with joins first, fallback to simple query
       let games = [];
       try {
         const result = await getSupabase()

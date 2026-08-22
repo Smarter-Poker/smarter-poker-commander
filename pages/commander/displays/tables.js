@@ -1,5 +1,5 @@
 /**
- * Table Status TV Display — with click-to-lock kiosk mode
+ * Table Status TV Display - with click-to-lock kiosk mode
  * /commander/displays/tables
  * 
  * Full-screen display for TV / tablet via wireless HDMI transmitter
@@ -98,7 +98,7 @@ export default function TablesDisplay() {
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
   }, [toast]);
-  const [movingPlayer, setMovingPlayer] = useState(null); // { seat, player_name } — active move mode
+  const [movingPlayer, setMovingPlayer] = useState(null); // { seat, player_name } - active move mode
 
   // Extract venueId/venueName from staff session (client-only)
   const [venueId, setVenueId] = useState(null);
@@ -214,7 +214,7 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [fetchData, fetchDealers]);
 
-  // Commander Data Bus — instant sync
+  // Commander Data Bus - instant sync
   useCommanderSync(venueId, () => { fetchData(); fetchDealers(); }, { entities: ['tables', 'games', 'dealers'] });
 
   // Wake lock
@@ -263,7 +263,7 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
         setPinError(json.error || 'Invalid PIN');
       }
     } catch {
-      setPinError('Network error — try again');
+      setPinError('Network error - try again');
     }
     setPinLoading(false);
   };
@@ -341,7 +341,7 @@ const headers = { 'Content-Type': 'application/json' };
         }
       } catch { setToast({ type: 'error', text: 'Network error' }); }
     } else if (type === 'seat') {
-      // Seat a player — single call to unauthenticated player-scan-in
+      // Seat a player - single call to unauthenticated player-scan-in
       try {
         const seatRes = await commanderFetch('/api/commander/dealer/player-scan-in', {
           method: 'POST', headers,
@@ -385,7 +385,7 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
 const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table_number: lockedTableNum, seat_number: seat.number }) });
+        body: JSON.stringify({ table_number: lockedTableNum, seat_number: seat.number, venue_id: venueId }) });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -435,7 +435,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
       const count = json.data.missed_blinds_count;
       if (count >= 3) {
         // Auto-remove player after 3rd missed blind
-        setToast({ type: 'error', text: `🚫 ${json.data.player_name} removed — 3 missed blinds` });
+        setToast({ type: 'error', text: `🚫 ${json.data.player_name} removed - 3 missed blinds` });
         await removePlayer(seat);
       } else {
         setToast({ type: 'success', text: `Missed blind #${count} for ${json.data.player_name}` });
@@ -468,7 +468,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
 
-  // All tables — show everything (active, available, reserved, maintenance)
+  // All tables - show everything (active, available, reserved, maintenance)
   const allTables = tables;
   const activeTables = tables.filter(t => t.status === 'in_use');
   const totalSeated = activeTables.reduce((sum, t) => {
@@ -486,7 +486,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
     return sum + Math.max(0, max - count);
   }, 0);
 
-  // Locked table data — find the specific table for kiosk view
+  // Locked table data - find the specific table for kiosk view
   const lockedTable = lockedTableNum ? tables.find(t => (t.table_number || t.number) === lockedTableNum) : null;
 
   /* ─── LOCKED KIOSK VIEW ──────────────────────────── */
@@ -529,7 +529,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
     return (
       <CommanderLayout title="Table Status Display" backHref="/commander/dashboard?card=displays">
         <SEOHead
-          title="Commander — Tables Display"
+          title="Commander - Tables Display"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -581,7 +581,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
               background: 'rgba(24,119,242,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-              🪑 Moving {movingPlayer.player_name} — tap an empty seat
+              🪑 Moving {movingPlayer.player_name} - tap an empty seat
               <button onClick={() => { setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
                 style={{
                   padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)',
@@ -595,7 +595,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
             {!table ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>🔒</div>
-                <p style={{ fontSize: 20, color: '#8A8D91', fontWeight: 600 }}>Table {lockedTableNum} — Loading...</p>
+                <p style={{ fontSize: 20, color: '#8A8D91', fontWeight: 600 }}>Table {lockedTableNum} - Loading...</p>
               </div>
             ) : (
               <div style={{ width: '100%', maxWidth: 1100, position: 'relative' }}>
@@ -683,7 +683,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                         <div key={seat.number}
                           onClick={() => {
                             if (movingPlayer && !isOccupied) { completeMove(seat.number); return; }
-                            if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied — pick an empty seat' }); return; }
+                            if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied - pick an empty seat' }); return; }
                             if (isOccupied) setShowPlayerMenu(seat);
                             else openScanner('seat', seat.number);
                           }}
@@ -707,7 +707,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                             ) : (
                               <span style={{ fontSize: 20, fontWeight: 600, color: '#6B7280' }}>{seat.number}</span>
                             )}
-                            {/* Missed Blinds Sticker — overlays top-right of avatar */}
+                            {/* Missed Blinds Sticker - overlays top-right of avatar */}
                             {isOccupied && (seat.player?.missed_blinds || 0) > 0 && (
                               <div style={{
                                 position: 'absolute', top: -4, right: -4,
@@ -758,7 +758,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
           {/* Footer */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', margin: 0 }}>🔒 Locked to Table {lockedTableNum} — Manager PIN required to unlock</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', margin: 0 }}>🔒 Locked to Table {lockedTableNum} - Manager PIN required to unlock</p>
             <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: 11, letterSpacing: 1, margin: 0 }}>Powered By Smarter.Poker</p>
           </div>
 

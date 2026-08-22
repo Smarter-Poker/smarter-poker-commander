@@ -182,11 +182,11 @@ async function createGroup(req, res) {
       typical_time,
       frequency,
       settings,
-      // ── PHASE 17 — HARD LOGO REQUIREMENT ────────────────────────────
+      // ── PHASE 17 - HARD LOGO REQUIREMENT ────────────────────────────
       // Client uploads the logo through /api/social/upload (the same
       // endpoint Club Commander and Social Pages use for avatar/logo
       // uploads) and sends us the returned public URL here. We don't
-      // re-validate the URL shape — /api/social/upload already
+      // re-validate the URL shape - /api/social/upload already
       // authenticates the user, validates file type/size, and writes
       // through the service role to the social-media bucket. Our job
       // is just to enforce that we received SOME url.
@@ -238,13 +238,13 @@ async function createGroup(req, res) {
     if (error) throw error;
 
     // Fetch the social_pages row the autocreate trigger just created.
-    // Relationship is reverse — social_pages.linked_entity_type='home_group'
+    // Relationship is reverse - social_pages.linked_entity_type='home_group'
     // + social_pages.linked_entity_id=group.id::text (linked_entity_id is TEXT).
     // We don't INSERT the page here; the database trigger
     // trg_autocreate_home_group_social_page owns that path as of the
     // home-games unification work. Historical code had a second manual
     // insert here with category='home-game' that silently failed due to
-    // the page_type NOT NULL constraint — that has been removed.
+    // the page_type NOT NULL constraint - that has been removed.
     try {
       const { data: socialPage } = await getSupabase()
         .from('social_pages')
@@ -258,7 +258,7 @@ async function createGroup(req, res) {
       }
     } catch (fetchSocialPageErr) {
       console.warn('Failed to fetch auto-created social page:', fetchSocialPageErr);
-      // Non-fatal — group creation succeeded; caller can discover the
+      // Non-fatal - group creation succeeded; caller can discover the
       // social page on next load via the same linked_entity lookup.
     }
 

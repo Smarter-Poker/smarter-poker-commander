@@ -46,6 +46,10 @@ export default function MembershipKiosk() {
   const [venueName, setVenueName] = useState('');
   const [venueId, setVenueId] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  // FIX D1: gate the kiosk when there is no usable staff session. Without one the
+  // check-in PATCHes silently 401 and no-op, so we must surface a clear state
+  // instead of pretending check-ins worked.
+  const [staffMissing, setStaffMissing] = useState(false);
 
   // Join waitlist fields
   const [joinName, setJoinName] = useState('');
@@ -90,15 +94,20 @@ export default function MembershipKiosk() {
         if (staffData.venue_name) setVenueName(staffData.venue_name);
         if (staffData.venue_id) setVenueId(staffData.venue_id);
         setStaffHeader(staffStr);
+        // FIX D1: a staff session with no venue cannot drive check-ins
+        if (!staffData.venue_id) setStaffMissing(true);
+      } else {
+        // FIX D1: no staff session at all - gate the kiosk
+        setStaffMissing(true);
       }
-    } catch (e) { console.warn("[kiosk.js]", e); }
+    } catch (e) { console.warn("[kiosk.js]", e); setStaffMissing(true); }
     return () => _ctrl.abort();
   }, []);
 
-  // Keep screen awake — this is a player-facing kiosk
+  // Keep screen awake - this is a player-facing kiosk
   useWakeLock();
 
-  // Commander Data Bus — sync waitlist + games across tabs
+  // Commander Data Bus - sync waitlist + games across tabs
   useCommanderSync(venueId, () => { fetchGames(); }, { entities: ['waitlist', 'games'] });
 
   const reset = () => {
@@ -155,16 +164,10 @@ export default function MembershipKiosk() {
         }
       }
     } catch (e) { console.warn("[kiosk.js]", e); }
-    // Fallback if no games were fetched — use ref-safe check
-    setAvailableGames(prev => {
-      if (prev.length > 0) return prev; // Already have games from a previous fetch
-      return [
-        { game_type: 'NLH', stakes: '$1/$2', label: '$1/$2 NLH' },
-        { game_type: 'NLH', stakes: '$2/$5', label: '$2/$5 NLH' },
-        { game_type: 'PLO', stakes: '$1/$2', label: '$1/$2 PLO' },
-        { game_type: 'NLH', stakes: '$5/$10', label: '$5/$10 NLH' }
-      ];
-    });
+    // FIX D4: no fabricated game menu. If the waitlist has no active games, the
+    // kiosk must show "no games currently spread" - never a hardcoded list, which
+    // let players join waitlists for games that are not actually being spread.
+    setAvailableGames([]);
   };
 
   // ── CHECK IN: Search waitlist for player ──
@@ -192,7 +195,7 @@ export default function MembershipKiosk() {
         });
         setWaitlistMatches(matches);
       }
-    } catch (err) { console.warn(err); setLoadError("Failed to load kiosk data."); }
+    } catch (err) { console.warn(err); setLoadError("Failed To Load Kiosk Data."); }
     finally { setSearching(false); }
   };
 
@@ -217,13 +220,13 @@ export default function MembershipKiosk() {
       if (successCount > 0) {
         const playerName = titleCase(waitlistMatches[0]?.player_name || 'Player');
         const gameList = waitlistMatches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
-        setSuccessMsg(`✓ ${playerName} — Checked In!\n${gameList}`);
+        setSuccessMsg(`✓ ${playerName} - Checked In!\n${gameList}`);
         setMode('success');
         broadcastChange('waitlist');
       } else {
         throw new Error('Check-in failed on server');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSubmitting(false); }
   };
 
@@ -246,7 +249,7 @@ export default function MembershipKiosk() {
       }
       const json = await res.json();
       if (!json.success || !json.data?.member) {
-        setScanError('Card not recognized. Please try again or search by name.');
+        setScanError('Card Not Recognized. Please Try Again Or Search By Name.');
         setSubmitting(false);
         return;
       }
@@ -295,11 +298,11 @@ export default function MembershipKiosk() {
 
       setCheckinIsWaitlisted(foundOnWaitlist);
       broadcastChange('members'); // Push member check-in to Activity Feed globally
-      setSuccessMsg(`✓ ${titleCase(member.first_name || member.name || 'Player')} — Checked In!`);
+      setSuccessMsg(`✓ ${titleCase(member.first_name || member.name || 'Player')} - Checked In!`);
       setMode('success');
     } catch (err) {
       console.warn(err);
-      setScanError('Scan failed. Please try again.');
+      setScanError('Scan Failed. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -338,26 +341,31 @@ export default function MembershipKiosk() {
             });
             if (patchRes.ok) successCount++;
           }
-          const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
-          setCheckinIsWaitlisted(true);
-          setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || q)} — Checked In!\n${gameList}`);
-          setMode('success');
-          if (successCount > 0) broadcastChange('waitlist');
+          // FIX D2: only show success if a check-in write actually succeeded
+          if (successCount > 0) {
+            const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
+            setCheckinIsWaitlisted(true);
+            setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || q)} - Checked In!\n${gameList}`);
+            setMode('success');
+            broadcastChange('waitlist');
+          } else {
+            setScanError('Check-In Failed. Please Try Again.');
+          }
         } else {
-          // Not on waitlist — still check in but show non-member popup
+          // Not on waitlist - still check in but show non-member popup
           setCheckinIsWaitlisted(false);
-          setSuccessMsg(`✓ ${titleCase(q)} — Checked In!`);
+          setSuccessMsg(`✓ ${titleCase(q)} - Checked In!`);
           setMode('success');
         }
       } else {
-        // API failed — still allow check-in
+        // API failed - still allow check-in
         setCheckinIsWaitlisted(false);
-        setSuccessMsg(`✓ ${titleCase(q)} — Checked In!`);
+        setSuccessMsg(`✓ ${titleCase(q)} - Checked In!`);
         setMode('success');
       }
     } catch (err) {
       console.warn(err);
-      setScanError('Search failed. Please try again.');
+      setScanError('Search Failed. Please Try Again.');
     }
     finally { setSubmitting(false); }
   };
@@ -388,25 +396,30 @@ export default function MembershipKiosk() {
             });
             if (patchRes.ok) successCount++;
           }
-          const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
-          setCheckinIsWaitlisted(true);
-          setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || 'Player')} — Checked In!\n${gameList}`);
-          setMode('success');
-          if (successCount > 0) broadcastChange('waitlist');
+          // FIX D2: only show success if a check-in write actually succeeded
+          if (successCount > 0) {
+            const gameList = matches.map(e => `${e.stakes} ${e.game_type}`).join(', ');
+            setCheckinIsWaitlisted(true);
+            setSuccessMsg(`✓ ${titleCase(matches[0]?.player_name || 'Player')} - Checked In!\n${gameList}`);
+            setMode('success');
+            broadcastChange('waitlist');
+          } else {
+            setScanError('Check-In Failed. Please Try Again.');
+          }
         } else {
-          // Not on waitlist — still check in but show non-member popup
+          // Not on waitlist - still check in but show non-member popup
           setCheckinIsWaitlisted(false);
-          setSuccessMsg(`✓ ${formatPhone(checkinPhone)} — Checked In!`);
+          setSuccessMsg(`✓ ${formatPhone(checkinPhone)} - Checked In!`);
           setMode('success');
         }
       } else {
         setCheckinIsWaitlisted(false);
-        setSuccessMsg(`✓ ${formatPhone(checkinPhone)} — Checked In!`);
+        setSuccessMsg(`✓ ${formatPhone(checkinPhone)} - Checked In!`);
         setMode('success');
       }
     } catch (err) {
       console.warn(err);
-      setScanError('Search failed. Please try again.');
+      setScanError('Search Failed. Please Try Again.');
     }
     finally { setSubmitting(false); }
   };
@@ -425,7 +438,7 @@ export default function MembershipKiosk() {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (!json.success || !json.data?.member) {
-        setScanError('Card not recognized. Please enter your name manually.');
+        setScanError('Card Not Recognized. Please Enter Your Name Manually.');
         setSubmitting(false);
         return;
       }
@@ -437,7 +450,7 @@ export default function MembershipKiosk() {
       setMode('join_game');
     } catch (err) {
       console.warn(err);
-      setScanError('Scan failed. Please enter your name manually.');
+      setScanError('Scan Failed. Please Enter Your Name Manually.');
     }
     finally { setSubmitting(false); }
   };
@@ -472,7 +485,7 @@ export default function MembershipKiosk() {
         setMode('success');
         broadcastChange('waitlist');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSubmitting(false); }
   };
 
@@ -481,6 +494,16 @@ export default function MembershipKiosk() {
     try { if (navigator.vibrate) navigator.vibrate(15); } catch (e) { console.warn("[kiosk.js]", e); }
   };
 
+  // FIX D1: no staff session - check-ins cannot be recorded, so block the kiosk
+  // and direct staff to sign in rather than accepting no-op check-ins.
+  if (staffMissing) return (
+    <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: '#fff', padding: 24, textAlign: 'center' }}>
+      <AlertTriangle style={{ width: 44, height: 44, color: '#F59E0B' }} />
+      <span style={{ fontSize: 20, fontWeight: 700 }}>Staff Sign-In Required</span>
+      <span style={{ fontSize: 15, color: '#B0B3B8', maxWidth: 360 }}>This Kiosk Must Be Started From A Signed-In Staff Session Before Players Can Check In.</span>
+      <button onClick={() => router.push('/commander/login')} style={{ padding: '10px 24px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Go To Staff Sign-In</button>
+    </div>
+  );
   if (loadError) return (
     <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#fff' }}>
       <span style={{ fontSize: 18 }}>{loadError}</span>
@@ -490,13 +513,13 @@ export default function MembershipKiosk() {
   return (
     <>
       <SEOHead
-        title="Commander — Player Kiosk"
+        title="Commander - Player Kiosk"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
       <div className="min-h-screen bg-[#000000] text-[#E4E6EB] font-['Inter'] flex flex-col items-center justify-center p-0" style={{ overflow: 'hidden' }}>
 
-        {/* ===== HOME — Image-Based Welcome ===== */}
+        {/* ===== HOME - Image-Based Welcome ===== */}
         {mode === 'home' && (
           <div style={{
             position: 'relative',
@@ -508,11 +531,11 @@ export default function MembershipKiosk() {
             background: '#000000'
           }}>
             {/*
-              Image + hitbox wrapper — hitboxes are positioned relative to THIS container
+              Image + hitbox wrapper - hitboxes are positioned relative to THIS container
               so they scale perfectly with the image at any viewport size
             */}
             <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%', display: 'flex' }}>
-              {/* Background Image — PNG with transparent background */}
+              {/* Background Image - PNG with transparent background */}
               <img
                 src="/images/commander/kiosk-welcome.png?v=32"
                 alt="Welcome Kiosk"
@@ -525,10 +548,10 @@ export default function MembershipKiosk() {
                 draggable={false}
                 loading="lazy" />
 
-              {/* Invisible Hitboxes — positioned relative to the image */}
+              {/* Invisible Hitboxes - positioned relative to the image */}
               {/* Percentages are relative to image dimensions (829x946 after trim) */}
 
-              {/* Check In — opens 3-option picker */}
+              {/* Check In - opens 3-option picker */}
               <button
                 onClick={() => { haptic(); setMode('checkin_pick'); }}
                 style={{
@@ -547,7 +570,7 @@ export default function MembershipKiosk() {
                 aria-label="Check In"
               />
 
-              {/* Join Waitlist — Green button */}
+              {/* Join Waitlist - Green button */}
               {/* Image: y~496-566/946 ≈ 52.4%-59.8% */}
               <button
                 onClick={() => { haptic(); fetchGames(); setMode('join_name'); }}
@@ -567,7 +590,7 @@ export default function MembershipKiosk() {
                 aria-label="Join Waitlist"
               />
 
-              {/* New Member — Grey button */}
+              {/* New Member - Grey button */}
               {/* Image: y~622-692/946 ≈ 65.7%-73.2% */}
               <button
                 onClick={() => { haptic(); setShowNewMemberPopup(true); }}
@@ -738,7 +761,7 @@ export default function MembershipKiosk() {
                     <UserCheck className="w-10 h-10 text-[#1877F2]" />
                   </div>
                   <h2 className="text-3xl font-bold text-white mb-2">Check In</h2>
-                  <p className="text-[#B0B3B8] text-base">Choose how you'd like to check in</p>
+                  <p className="text-[#B0B3B8] text-base">Choose How You'd Like To Check In</p>
                 </div>
 
                 {/* Option 1: Scan Card */}
@@ -779,7 +802,7 @@ export default function MembershipKiosk() {
                     <svg className="w-10 h-10 text-[#1877F2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Scan Your Player Card</h2>
-                  <p className="text-[#B0B3B8] text-sm">Hold your card&apos;s QR code up to the scanner</p>
+                  <p className="text-[#B0B3B8] text-sm">Hold Your Card&apos;s QR Code Up To The Scanner</p>
                 </div>
 
                 <input
@@ -787,7 +810,7 @@ export default function MembershipKiosk() {
                   value={scanQR}
                   onChange={e => setScanQR(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleScanCheckIn(); }}
-                  placeholder="Waiting for scan..."
+                  placeholder="Waiting For Scan..."
                   autoFocus
                   className="w-full bg-[#3A3B3C] border-2 border-[#1877F2]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2]"
                 />
@@ -819,7 +842,7 @@ export default function MembershipKiosk() {
                     <Search className="w-10 h-10 text-[#1877F2]" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Check In By Name</h2>
-                  <p className="text-[#B0B3B8] text-sm">Enter your first and last name</p>
+                  <p className="text-[#B0B3B8] text-sm">Enter Your First And Last Name</p>
                 </div>
 
                 <input
@@ -827,7 +850,7 @@ export default function MembershipKiosk() {
                   value={checkinName}
                   onChange={e => setCheckinName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleNameCheckIn(); }}
-                  placeholder="First and Last Name"
+                  placeholder="First And Last Name"
                   autoFocus
                   className="w-full bg-[#3A3B3C] border-2 border-[#1877F2]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2]"
                 />
@@ -859,7 +882,7 @@ export default function MembershipKiosk() {
                     <Phone className="w-10 h-10 text-[#1877F2]" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Check In By Phone</h2>
-                  <p className="text-[#B0B3B8] text-sm">Enter the phone number on your account</p>
+                  <p className="text-[#B0B3B8] text-sm">Enter The Phone Number On Your Account</p>
                 </div>
 
                 <input
@@ -899,8 +922,8 @@ export default function MembershipKiosk() {
                   <div className="w-20 h-20 rounded-full bg-[#31A24C]/20 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-10 h-10 text-[#31A24C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Scan Card to Join</h2>
-                  <p className="text-[#B0B3B8] text-sm">Hold your card&apos;s QR code up to the scanner</p>
+                  <h2 className="text-2xl font-bold text-white mb-2">Scan Card To Join</h2>
+                  <p className="text-[#B0B3B8] text-sm">Hold Your Card&apos;s QR Code Up To The Scanner</p>
                 </div>
 
                 <input
@@ -908,7 +931,7 @@ export default function MembershipKiosk() {
                   value={scanQR}
                   onChange={e => setScanQR(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleScanJoinWaitlist(); }}
-                  placeholder="Waiting for scan..."
+                  placeholder="Waiting For Scan..."
                   autoFocus
                   className="w-full bg-[#3A3B3C] border-2 border-[#31A24C]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#31A24C]"
                 />
@@ -939,7 +962,7 @@ export default function MembershipKiosk() {
               <div className="w-full max-w-md space-y-4">
                 <h2 className="text-2xl font-bold text-white text-center mb-2">Join Waitlist</h2>
 
-                {/* Scan Card — Primary Action */}
+                {/* Scan Card - Primary Action */}
                 <button onClick={() => { setScanQR(''); setScanError(''); setMode('scan_join'); }}
                   className="w-full py-5 rounded-2xl bg-[#242526] border-2 border-[#31A24C] text-[#E4E6EB] text-xl font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-3">
                   <svg className="w-6 h-6 text-[#31A24C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
@@ -956,7 +979,7 @@ export default function MembershipKiosk() {
                 <div>
                   <label className="text-sm text-[#B0B3B8] mb-1 block">Your Name *</label>
                   <input type="text" value={joinName} onChange={e => setJoinName(e.target.value)}
-                    placeholder="First and Last Name"
+                    placeholder="First And Last Name"
                     className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-5 py-4 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#31A24C]" />
                 </div>
 
@@ -970,7 +993,7 @@ export default function MembershipKiosk() {
                   disabled={!joinName.trim()}
                   className="w-full py-5 rounded-2xl bg-[#31A24C] text-white text-xl font-semibold active:bg-[#28883F] disabled:opacity-50 flex items-center justify-center gap-2">
                   <ChevronRight className="w-6 h-6" />
-                  Next — Select Game
+                  Next - Select Game
                 </button>
               </div>
             )}
@@ -980,31 +1003,39 @@ export default function MembershipKiosk() {
               <div className="w-full max-w-md space-y-4">
                 <h2 className="text-2xl font-bold text-white text-center mb-1">Select Game</h2>
                 <p className="text-center text-[#B0B3B8] text-sm mb-4">
-                  Joining as <span className="text-white font-bold">{titleCase(joinName)}</span>
+                  Joining As <span className="text-white font-bold">{titleCase(joinName)}</span>
                 </p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {availableGames.map(g => {
-                    const isSelected = selectedGames.some(s => s.label === g.label);
-                    return (
-                      <button key={g.label}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedGames(selectedGames.filter(s => s.label !== g.label));
-                          } else {
-                            setSelectedGames([...selectedGames, g]);
-                          }
-                        }}
-                        className={`py-5 rounded-2xl text-center border-2 ${isSelected
-                          ? 'bg-[#31A24C]/20 border-[#31A24C] text-[#31A24C]'
-                          : 'bg-[#242526] border-[#3A3B3C] text-[#E4E6EB] active:border-[#31A24C]'
-                          }`}>
-                        <p className="text-lg font-bold">{g.label}</p>
-                        {isSelected && <p className="text-sm mt-1">✓ Selected</p>}
-                      </button>
-                    );
-                  })}
-                </div>
+                {availableGames.length === 0 ? (
+                  /* FIX D4: no fabricated menu - reflect reality when nothing is running */
+                  <div className="text-center py-10">
+                    <p className="text-lg font-bold text-white">No Games Currently Spread</p>
+                    <p className="text-sm text-[#B0B3B8] mt-2">Please Check With The Floor For Today&apos;s Games.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {availableGames.map(g => {
+                      const isSelected = selectedGames.some(s => s.label === g.label);
+                      return (
+                        <button key={g.label}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedGames(selectedGames.filter(s => s.label !== g.label));
+                            } else {
+                              setSelectedGames([...selectedGames, g]);
+                            }
+                          }}
+                          className={`py-5 rounded-2xl text-center border-2 ${isSelected
+                            ? 'bg-[#31A24C]/20 border-[#31A24C] text-[#31A24C]'
+                            : 'bg-[#242526] border-[#3A3B3C] text-[#E4E6EB] active:border-[#31A24C]'
+                            }`}>
+                          <p className="text-lg font-bold">{g.label}</p>
+                          {isSelected && <p className="text-sm mt-1">✓ Selected</p>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {selectedGames.length > 0 && (
                   <button onClick={submitJoinWaitlist} disabled={submitting}
@@ -1016,7 +1047,7 @@ export default function MembershipKiosk() {
 
                 <button onClick={() => setMode('join_name')}
                   className="w-full py-3 rounded-xl bg-transparent text-[#B0B3B8] text-base active:text-white">
-                  ← Back to Name
+                  ← Back To Name
                 </button>
               </div>
             )}
@@ -1029,7 +1060,7 @@ export default function MembershipKiosk() {
                 </div>
                 <h2 className="text-2xl font-bold text-white whitespace-pre-line">{successMsg}</h2>
 
-                {/* Membership reminder — only shown when player was NOT found on waitlist */}
+                {/* Membership reminder - only shown when player was NOT found on waitlist */}
                 {!checkinIsWaitlisted && (
                   <div style={{
                     background: 'linear-gradient(145deg, #2a2d30, #1a1c1f)',

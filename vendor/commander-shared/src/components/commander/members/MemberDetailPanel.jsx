@@ -1,5 +1,5 @@
 /**
- * Member Detail Panel — Full member profile view with PIN-protected edit
+ * Member Detail Panel - Full member profile view with PIN-protected edit
  * NO EMOJIS (per /no-emoji-commander)
  * 
  * Features:
@@ -68,7 +68,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
         setEditing(true);
     };
 
-    // Trigger save flow — show PIN modal
+    // Trigger save flow - show PIN modal
     const requestSave = () => {
         setPinValue('');
         setPinError('');
@@ -104,11 +104,11 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                 return;
             }
 
-            // Check role — only floor, manager, dualrate, owner allowed
+            // Check role - only floor, manager, dualrate, owner allowed
             const staffRole = pinJson.data.staff?.role;
             const allowedRoles = ['floor', 'manager', 'dualrate', 'owner'];
             if (!allowedRoles.includes(staffRole)) {
-                setPinError('Insufficient permissions — floor manager or above required');
+                setPinError('Insufficient permissions - floor manager or above required');
                 setPinLoading(false);
                 return;
             }
@@ -150,7 +150,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
             setShowPinModal(false);
         } catch (err) {
             console.warn('Update error:', err);
-            setPinError('Network error — try again');
+            setPinError('Network error - try again');
         } finally {
             setPinLoading(false);
         }
@@ -204,7 +204,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                         <h3 className="text-xl font-bold text-[#E4E6EB]">{member.first_name} {member.last_name}</h3>
                         <p className="text-sm font-mono text-[#1877F2]">{member.member_number}</p>
                         <div className="flex items-center justify-center gap-2 mt-2">
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: (TIER_COLORS[member.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[member.membership_tier] || '#B0B3B8' }}>{(TIER_LABELS[member.membership_tier] || member.membership_tier || '—').toUpperCase()}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: (TIER_COLORS[member.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[member.membership_tier] || '#B0B3B8' }}>{(TIER_LABELS[member.membership_tier] || member.membership_tier || '-').toUpperCase()}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: (STATUS_COLORS[member.membership_status] || '#8A8D91') + '20', color: STATUS_COLORS[member.membership_status] }}>{member.membership_status?.toUpperCase()}</span>
                         </div>
                     </div>

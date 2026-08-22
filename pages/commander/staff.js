@@ -120,7 +120,7 @@ const res = await commanderFetch(`/api/commander/staff/venue/${venueId}`, { ...(
     if (venueId) { const ctrl = new AbortController(); fetchStaff(ctrl.signal); return () => ctrl.abort(); }
   }, [venueId, fetchStaff]);
 
-  // Commander Data Bus — sync staff changes across tabs
+  // Commander Data Bus - sync staff changes across tabs
   useCommanderSync(venueId, fetchStaff, { entities: ['staff'] });
 
   async function handleAddStaff(staffData) {
@@ -165,7 +165,7 @@ const res = await commanderFetch('/api/commander/staff', {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Staff QR Badge — ${name}</title>
+        <title>Staff QR Badge - ${name}</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -333,7 +333,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
   return (
     <CommanderLayout title="Staff Management" backHref="/commander/dashboard?card=staff">
       <SEOHead
-        title="Commander — Staff Management"
+        title="Commander - Staff Management"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />

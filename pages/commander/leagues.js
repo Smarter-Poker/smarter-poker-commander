@@ -141,7 +141,7 @@ export default function LeaguesAndFreerollsManagement() {
     }
   }, [staff, fetchLeagues, fetchFreerolls]);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(staff?.venue_id || '', fetchAll, { entities: ['settings'] });
 
   /* ── League standings ── */
@@ -162,7 +162,7 @@ export default function LeaguesAndFreerollsManagement() {
 
   /* ── Create league ── */
   const handleCreateLeague = async () => {
-    if (!leagueForm.name.trim()) { showToast('error', 'League name required'); return; }
+    if (!leagueForm.name.trim()) { showToast('error', 'League Name Required'); return; }
     setLeagueSubmitting(true);
     try {
       const body = {
@@ -183,16 +183,16 @@ export default function LeaguesAndFreerollsManagement() {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success || json.data) {
-        showToast('success', 'League created');
+        showToast('success', 'League Created');
         setShowCreateLeague(false);
         setLeagueForm({ name: '', description: '', scoring_system: 'points', season_start: '', season_end: '', prize_pool: '' });
         fetchLeagues();
         broadcastChange('settings'); // notify other tabs
         busEmit.celebration('confetti');
       } else {
-        showToast('error', json.error?.message || 'Failed to create');
+        showToast('error', json.error?.message || 'Failed To Create');
       }
-    } catch { showToast('error', 'Network error'); }
+    } catch { showToast('error', 'Network Error'); }
     finally { setLeagueSubmitting(false); }
   };
 
@@ -213,7 +213,7 @@ export default function LeaguesAndFreerollsManagement() {
 
   /* ── Create freeroll ── */
   const handleCreateFreeroll = async () => {
-    if (!freerollForm.name.trim()) { showToast('error', 'Freeroll name required'); return; }
+    if (!freerollForm.name.trim()) { showToast('error', 'Freeroll Name Required'); return; }
     setFreerollSubmitting(true);
     try {
       const body = {
@@ -238,7 +238,7 @@ export default function LeaguesAndFreerollsManagement() {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success || json.data) {
-        showToast('success', 'Freeroll created');
+        showToast('success', 'Freeroll Created');
         setShowCreateFreeroll(false);
         setFreerollForm({
           name: '', description: '', qualification_type: 'cash_hours',
@@ -250,15 +250,15 @@ export default function LeaguesAndFreerollsManagement() {
         broadcastChange('settings'); // notify other tabs
         busEmit.celebration('confetti');
       } else {
-        showToast('error', json.error?.message || 'Failed to create');
+        showToast('error', json.error?.message || 'Failed To Create');
       }
-    } catch { showToast('error', 'Network error'); }
+    } catch { showToast('error', 'Network Error'); }
     finally { setFreerollSubmitting(false); }
   };
 
   /* ── Add player qualification ── */
   const handleAddPlayer = async (freerollId) => {
-    if (!addPlayerForm.player_name.trim()) { showToast('error', 'Player name required'); return; }
+    if (!addPlayerForm.player_name.trim()) { showToast('error', 'Player Name Required'); return; }
     try {
       const body = {
         player_name: addPlayerForm.player_name.trim(),
@@ -275,7 +275,7 @@ export default function LeaguesAndFreerollsManagement() {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        showToast('success', 'Player added');
+        showToast('success', 'Player Added');
         setShowAddPlayer(null);
         setAddPlayerForm({ player_name: '', hours_logged: '', points_earned: '', custom_value: '', manually_added: true });
         fetchQualifications(freerollId);
@@ -283,7 +283,7 @@ export default function LeaguesAndFreerollsManagement() {
       } else {
         showToast('error', json.error?.message || 'Failed');
       }
-    } catch { showToast('error', 'Network error'); }
+    } catch { showToast('error', 'Network Error'); }
   };
 
   /* ── Sync qualifications from player sessions ── */
@@ -293,29 +293,29 @@ export default function LeaguesAndFreerollsManagement() {
       // Manual qualification-sync trigger removed 2026-04-27 (Phase 2B.3 cleanup).
       // Sync now runs automatically every 6 hours via Open Claw → workers VM
       // (10.0.0.3:8081/cron/freeroll-qualification-sync). Manual refresh just
-      // re-fetches the latest qualification snapshot — fresher data appears
+      // re-fetches the latest qualification snapshot - fresher data appears
       // after the next scheduled fire.
-      showToast('info', 'Qualification sync runs automatically every 6 hours. Re-fetching latest snapshot…');
+      showToast('info', 'Qualification Sync Runs Automatically Every 6 Hours. Re-Fetching Latest Snapshot…');
       fetchQualifications(freerollId);
       broadcastChange('settings'); // notify other tabs
-    } catch { showToast('error', 'Network error during refresh'); }
+    } catch { showToast('error', 'Network Error During Refresh'); }
     finally { setSyncingFreeroll(null); }
   };
 
   /* ── Remove player qualification ── */
   const handleRemovePlayer = async (freerollId, playerId, playerName) => {
-    if (!confirm(`Remove ${playerName || 'this player'} from qualifications?`)) return;
+    if (!confirm(`Remove ${playerName || 'This Player'} From Qualifications?`)) return;
     try {
       const json = await commanderFetchJSON(`/api/commander/freerolls/${freerollId}/qualifications?player_id=${playerId}`, {
         method: 'DELETE'});
       if (json.success) {
-        showToast('success', `${playerName || 'Player'} removed`);
+        showToast('success', `${playerName || 'Player'} Removed`);
         fetchQualifications(freerollId);
         broadcastChange('settings'); // notify other tabs
       } else {
-        showToast('error', json.error?.message || 'Failed to remove');
+        showToast('error', json.error?.message || 'Failed To Remove');
       }
-    } catch { showToast('error', 'Network error'); }
+    } catch { showToast('error', 'Network Error'); }
   };
 
   /* ── Loading state ── */
@@ -331,7 +331,7 @@ export default function LeaguesAndFreerollsManagement() {
 
   return (
     <CommanderLayout title="Leagues & Free Rolls | Commander" backHref="/commander/dashboard?card=tournaments">
-      <SEOHead title="Commander — Leagues & Free Rolls" description="Club Commander Poker Room Management Tool." noindex={true} />
+      <SEOHead title="Commander - Leagues & Free Rolls" description="Club Commander Poker Room Management Tool." noindex={true} />
       <div className="cmd-page">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
 
@@ -343,7 +343,7 @@ export default function LeaguesAndFreerollsManagement() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Leagues & Free Rolls</h1>
-                <p className="text-sm text-[#64748B]">Manage leagues, seasons, and freeroll qualification</p>
+                <p className="text-sm text-[#64748B]">Manage Leagues, Seasons, And Freeroll Qualification</p>
               </div>
             </div>
           </div>
@@ -401,7 +401,7 @@ export default function LeaguesAndFreerollsManagement() {
                     placeholder="League Name *"
                     className="w-full px-3 py-2.5 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                   <textarea value={leagueForm.description} onChange={e => setLeagueForm({ ...leagueForm, description: e.target.value })}
-                    placeholder="Description (optional)" rows={2}
+                    placeholder="Description (Optional)" rows={2}
                     className="w-full px-3 py-2.5 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none resize-vertical font-[inherit]" />
                   <div className="grid grid-cols-2 gap-3">
                     <select value={leagueForm.scoring_system} onChange={e => setLeagueForm({ ...leagueForm, scoring_system: e.target.value })}
@@ -448,7 +448,7 @@ export default function LeaguesAndFreerollsManagement() {
               ) : leagues.length === 0 ? (
                 <div className="cmd-panel p-8 text-center">
                   <Trophy className="w-12 h-12 text-[#4A5E78] mx-auto mb-3" />
-                  <p className="text-[#64748B] mb-4">No leagues created yet. Tap "New League" to get started.</p>
+                  <p className="text-[#64748B] mb-4">No Leagues Created Yet. Tap "New League" To Get Started.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -466,7 +466,7 @@ export default function LeaguesAndFreerollsManagement() {
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white truncate">{league.name}</p>
                             <div className="flex items-center gap-3 mt-0.5 text-xs text-[#64748B]">
-                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {league.player_count || 0} players</span>
+                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {league.player_count || 0} Players</span>
                               {league.prize_pool > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> ${league.prize_pool}</span>}
                             </div>
                           </div>
@@ -507,14 +507,14 @@ export default function LeaguesAndFreerollsManagement() {
                                         {i + 1}
                                       </span>
                                       <span className="flex-1 font-medium text-white">{s.player_name || s.display_name || 'Player'}</span>
-                                      <span className="font-bold text-[#1877F2]">{s.points || s.total_points || 0} pts</span>
+                                      <span className="font-bold text-[#1877F2]">{s.points || s.total_points || 0} Pts</span>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             ) : (
                               <div className="mt-3 p-4 text-center text-[#64748B] text-sm bg-[#0D192E] rounded-lg">
-                                No standings yet -- players join via the app
+                                No Standings Yet -- Players Join Via The App
                               </div>
                             )}
                           </div>
@@ -532,7 +532,7 @@ export default function LeaguesAndFreerollsManagement() {
           {/* ═══════════════════════════════════════ */}
           {activeTab === 'freerolls' && (
             <>
-              {/* Stats Row — clickable filters */}
+              {/* Stats Row - clickable filters */}
               <div className="grid grid-cols-3 gap-3">
                 <button onClick={() => setFreerollFilter(freerollFilter === 'active' ? null : 'active')}
                   className={`cmd-panel p-3 text-center transition-all cursor-pointer hover:bg-[#132240] ${freerollFilter === 'active' ? 'ring-2 ring-[#1877F2] bg-[#1877F2]/5' : ''}`}>
@@ -557,7 +557,7 @@ export default function LeaguesAndFreerollsManagement() {
               {/* Active filter indicator */}
               {freerollFilter && (
                 <div className="flex items-center justify-between px-3 py-2 bg-[#0D192E] rounded-lg border border-[#1E3A5F]">
-                  <span className="text-xs text-[#94A3B8]">Showing: <strong className="text-white capitalize">{freerollFilter}</strong> freerolls</span>
+                  <span className="text-xs text-[#94A3B8]">Showing: <strong className="text-white capitalize">{freerollFilter}</strong> Freerolls</span>
                   <button onClick={() => setFreerollFilter(null)} className="text-xs text-[#64748B] hover:text-white">Clear</button>
                 </div>
               )}
@@ -580,7 +580,7 @@ export default function LeaguesAndFreerollsManagement() {
                     className="w-full px-3 py-2.5 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
 
                   <textarea value={freerollForm.description} onChange={e => setFreerollForm({ ...freerollForm, description: e.target.value })}
-                    placeholder="Description (optional)" rows={2}
+                    placeholder="Description (Optional)" rows={2}
                     className="w-full px-3 py-2.5 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none resize-vertical font-[inherit]" />
 
                   {/* Qualification Rules */}
@@ -615,14 +615,14 @@ export default function LeaguesAndFreerollsManagement() {
                           </label>
                           <input type="number" value={freerollForm.qualification_threshold}
                             onChange={e => setFreerollForm({ ...freerollForm, qualification_threshold: e.target.value })}
-                            placeholder={freerollForm.qualification_type === 'cash_hours' ? 'e.g. 20' : 'e.g. 100'}
+                            placeholder={freerollForm.qualification_type === 'cash_hours' ? 'E.g. 20' : 'E.g. 100'}
                             className="w-full px-3 py-2.5 bg-[#0A1628] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                         </div>
                         <div>
                           <label className="text-xs text-[#64748B] font-semibold block mb-1">Min Stakes</label>
                           <input value={freerollForm.qualification_min_stakes}
                             onChange={e => setFreerollForm({ ...freerollForm, qualification_min_stakes: e.target.value })}
-                            placeholder="e.g. 1/3"
+                            placeholder="E.g. 1/3"
                             className="w-full px-3 py-2.5 bg-[#0A1628] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                         </div>
                       </div>
@@ -631,7 +631,7 @@ export default function LeaguesAndFreerollsManagement() {
                     {freerollForm.qualification_type === 'custom' && (
                       <textarea value={freerollForm.qualification_rules_text}
                         onChange={e => setFreerollForm({ ...freerollForm, qualification_rules_text: e.target.value })}
-                        placeholder="Describe custom qualification rules..."
+                        placeholder="Describe Custom Qualification Rules..."
                         rows={2}
                         className="w-full px-3 py-2.5 bg-[#0A1628] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none resize-vertical font-[inherit]" />
                     )}
@@ -657,11 +657,11 @@ export default function LeaguesAndFreerollsManagement() {
                   <div className="grid grid-cols-2 gap-3">
                     <input value={freerollForm.prize_description}
                       onChange={e => setFreerollForm({ ...freerollForm, prize_description: e.target.value })}
-                      placeholder="Prize description (optional)"
+                      placeholder="Prize Description (Optional)"
                       className="px-3 py-2.5 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                     <input type="number" value={freerollForm.max_qualifiers}
                       onChange={e => setFreerollForm({ ...freerollForm, max_qualifiers: e.target.value })}
-                      placeholder="Max qualifiers"
+                      placeholder="Max Qualifiers"
                       className="px-3 py-2.5 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                   </div>
 
@@ -687,8 +687,8 @@ export default function LeaguesAndFreerollsManagement() {
               ) : freerolls.length === 0 ? (
                 <div className="cmd-panel p-8 text-center">
                   <Gift className="w-12 h-12 text-[#4A5E78] mx-auto mb-3" />
-                  <p className="text-[#64748B] mb-2">No freerolls created yet.</p>
-                  <p className="text-xs text-[#4A5E78]">Create a freeroll to start tracking player qualification by cash game hours, tournament points, or custom rules.</p>
+                  <p className="text-[#64748B] mb-2">No Freerolls Created Yet.</p>
+                  <p className="text-xs text-[#4A5E78]">Create A Freeroll To Start Tracking Player Qualification By Cash Game Hours, Tournament Points, Or Custom Rules.</p>
                 </div>
               ) : (() => {
                 const filteredFreerolls = freerollFilter === 'active'
@@ -702,8 +702,8 @@ export default function LeaguesAndFreerollsManagement() {
                 return filteredFreerolls.length === 0 ? (
                   <div className="cmd-panel p-8 text-center">
                     <Gift className="w-12 h-12 text-[#4A5E78] mx-auto mb-3" />
-                    <p className="text-[#64748B] mb-2">No {freerollFilter} freerolls found.</p>
-                    <button onClick={() => setFreerollFilter(null)} className="text-xs text-[#1877F2] hover:underline">Show all</button>
+                    <p className="text-[#64748B] mb-2">No {freerollFilter} Freerolls Found.</p>
+                    <button onClick={() => setFreerollFilter(null)} className="text-xs text-[#1877F2] hover:underline">Show All</button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -724,7 +724,7 @@ export default function LeaguesAndFreerollsManagement() {
                               <p className="font-semibold text-white truncate">{fr.name}</p>
                               <div className="flex items-center gap-3 mt-0.5 text-xs text-[#64748B]">
                                 <span className="flex items-center gap-1"><Target className="w-3 h-3" /> {qualLabel}</span>
-                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {fr.qualified_count || 0} qualified</span>
+                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {fr.qualified_count || 0} Qualified</span>
                                 {fr.prize_pool > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> ${fr.prize_pool}</span>}
                               </div>
                             </div>
@@ -749,7 +749,7 @@ export default function LeaguesAndFreerollsManagement() {
                                   <p className="text-sm font-bold text-white">
                                     {fr.qualification_type === 'open' ? 'Open' :
                                       fr.qualification_type === 'cash_hours' ? `${fr.qualification_threshold || 0}h` :
-                                        fr.qualification_type === 'tournament_points' ? `${fr.qualification_threshold || 0} pts` :
+                                        fr.qualification_type === 'tournament_points' ? `${fr.qualification_threshold || 0} Pts` :
                                           fr.qualification_threshold || 'Custom'}
                                   </p>
                                 </div>
@@ -805,20 +805,20 @@ export default function LeaguesAndFreerollsManagement() {
                                       {(fr.qualification_type === 'cash_hours' || fr.qualification_type === 'custom') && (
                                         <input type="number" step="0.5" value={addPlayerForm.hours_logged}
                                           onChange={e => setAddPlayerForm({ ...addPlayerForm, hours_logged: e.target.value })}
-                                          placeholder="Hours logged"
+                                          placeholder="Hours Logged"
                                           className="px-3 py-2 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white text-sm placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                                       )}
                                       {(fr.qualification_type === 'tournament_points' || fr.qualification_type === 'custom') && (
                                         <input type="number" value={addPlayerForm.points_earned}
                                           onChange={e => setAddPlayerForm({ ...addPlayerForm, points_earned: e.target.value })}
-                                          placeholder="Points earned"
+                                          placeholder="Points Earned"
                                           className="px-3 py-2 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white text-sm placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                                       )}
                                     </div>
                                     {fr.qualification_type === 'custom' && (
                                       <input value={addPlayerForm.custom_value}
                                         onChange={e => setAddPlayerForm({ ...addPlayerForm, custom_value: e.target.value })}
-                                        placeholder="Custom qualification value"
+                                        placeholder="Custom Qualification Value"
                                         className="w-full px-3 py-2 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white text-sm placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                                     )}
                                     <div className="flex items-center gap-2">
@@ -826,7 +826,7 @@ export default function LeaguesAndFreerollsManagement() {
                                         <input type="checkbox" checked={addPlayerForm.manually_added}
                                           onChange={e => setAddPlayerForm({ ...addPlayerForm, manually_added: e.target.checked })}
                                           className="w-4 h-4 rounded border-[#1E3A5F] bg-[#0D192E] text-[#1877F2] focus:ring-[#1877F2]" />
-                                        Auto-qualify (skip threshold)
+                                        Auto-Qualify (Skip Threshold)
                                       </label>
                                     </div>
                                     <div className="flex gap-2">
@@ -863,7 +863,7 @@ export default function LeaguesAndFreerollsManagement() {
                                           <div className="flex-1 min-w-0">
                                             <p className="font-medium text-white text-sm truncate">
                                               {q.player_name || 'Unknown Player'}
-                                              {q.manually_added && <span className="ml-1 text-[10px] text-[#1877F2]">(manual)</span>}
+                                              {q.manually_added && <span className="ml-1 text-[10px] text-[#1877F2]">(Manual)</span>}
                                             </p>
                                             {fr.qualification_threshold > 0 && (
                                               <div className="mt-1 flex items-center gap-2">
@@ -878,7 +878,7 @@ export default function LeaguesAndFreerollsManagement() {
                                                   {fr.qualification_type === 'cash_hours'
                                                     ? `${q.hours_logged || 0}/${fr.qualification_threshold}h`
                                                     : fr.qualification_type === 'tournament_points'
-                                                      ? `${q.points_earned || 0}/${fr.qualification_threshold} pts`
+                                                      ? `${q.points_earned || 0}/${fr.qualification_threshold} Pts`
                                                       : fr.qualification_type === 'custom'
                                                         ? (q.custom_value || `${q.hours_logged || q.points_earned || 0}/${fr.qualification_threshold}`)
                                                         : `${q.hours_logged || 0}/${fr.qualification_threshold}`
@@ -898,7 +898,7 @@ export default function LeaguesAndFreerollsManagement() {
                                           {q.player_id && (
                                             <button onClick={() => handleRemovePlayer(fr.id, q.player_id, q.player_name)}
                                               className="p-1 rounded hover:bg-[#EF4444]/10 text-[#64748B] hover:text-[#EF4444] transition-colors ml-1"
-                                              title="Remove player">
+                                              title="Remove Player">
                                               <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                           )}
@@ -909,8 +909,8 @@ export default function LeaguesAndFreerollsManagement() {
                                 ) : (
                                   <div className="p-4 text-center text-[#64748B] text-sm bg-[#0D192E] rounded-lg">
                                     {(fr.qualification_type === 'cash_hours' || fr.qualification_type === 'tournament_points')
-                                      ? 'No players tracked yet — tap "Sync Qualifications" to auto-pull from player sessions'
-                                      : 'No players tracked yet — use "Add Player" to start tracking qualification'}
+                                      ? 'No Players Tracked Yet, Tap "Sync Qualifications" To Auto-Pull From Player Sessions'
+                                      : 'No Players Tracked Yet, Use "Add Player" To Start Tracking Qualification'}
                                   </div>
                                 )}
                               </div>

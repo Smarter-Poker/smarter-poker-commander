@@ -23,7 +23,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF — requires valid staff session
+// Auth: STAFF - requires valid staff session
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       if (tableRow?.mode === 'tournament') {
         return res.status(400).json({
           success: false,
-          error: 'Cannot add time to tournament sessions — tournaments pay a one-time seat fee'
+          error: 'Cannot add time to tournament sessions - tournaments pay a one-time seat fee'
         });
       }
 
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
         if (!deductError) {
           paymentMethod = 'from_balance';
         } else if (deductError.code !== 'P0001' && deductError.code !== 'P0002') {
-          // Not "insufficient balance" / "no such member" — a real failure.
+          // Not "insufficient balance" / "no such member" - a real failure.
           throw deductError;
         }
 
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
             purchased_by: 'dealer'
           });
         if (purchaseLogError) {
-          console.error('[dealer/add-time] FAILED to record time purchase — time was added but no ledger row was written:', {
+          console.error('[dealer/add-time] FAILED to record time purchase - time was added but no ledger row was written:', {
             session_id: id,
             member_id: session.member_id,
             minutes_purchased: requestedMinutes,

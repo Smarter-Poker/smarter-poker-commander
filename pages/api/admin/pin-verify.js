@@ -1,7 +1,7 @@
 /**
  * POST /api/admin/pin-verify
  *
- * Phase 3.6 — server-side PIN gate. Replaces the legacy client-side
+ * Phase 3.6 - server-side PIN gate. Replaces the legacy client-side
  * verification in src/lib/commander/clientAuth.js.
  *
  * Body: { pin: string }
@@ -15,11 +15,11 @@
  * verify_commander_admin_pin(p_pin_hash).
  */
 // 2026-07-25 audit fix: use the patched server client (GoTrue resilience)
-// instead of raw @supabase/supabase-js — code safety rule 3.
+// instead of raw @supabase/supabase-js - code safety rule 3.
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { createPinSession, buildSessionCookie } from '../../../src/lib/auth/pinSession.js';
 
-export const runtime = 'nodejs'; // need Bearer header parse — keep on Node for now
+export const runtime = 'nodejs'; // need Bearer header parse - keep on Node for now
 
 let _supabase = null;
 function getSupabase() {
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
   // Salt PIN with user.id so a leaked single hash is not portable
   const pinHash = await sha256Hex(`${user.id}:${pin}`);
 
-  // Call SECURITY DEFINER RPC — handles fail-counter + lockout server-side.
+  // Call SECURITY DEFINER RPC - handles fail-counter + lockout server-side.
   // 2026-07-25 audit fix: the RPC never existed in production (every verify
   // 500'd). It now exists (migration commander_admin_pins_and_rpcs), takes an
   // explicit p_user_id (service-role calls have no auth.uid()), and returns
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
   }
 
   if (!verified?.pin_set) {
-    // No PIN enrolled yet — tell the client so pin-entry can offer setup.
+    // No PIN enrolled yet - tell the client so pin-entry can offer setup.
     return res.status(409).json({ error: 'No admin PIN set for this account', code: 'PIN_NOT_SET' });
   }
   if (verified?.locked) {
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'PIN incorrect', code: 'PIN_INCORRECT' });
   }
 
-  // PIN ok — issue signed session cookie
+  // PIN ok - issue signed session cookie
   try {
     const cookieValue = await createPinSession(user.id);
     res.setHeader('Set-Cookie', buildSessionCookie(cookieValue));

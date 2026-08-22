@@ -11,6 +11,8 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff, verifyStaffSession, getUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { claimOpenSeat, promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
+import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -22,7 +24,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -32,7 +34,7 @@ export default async function handler(req, res) {
     const { id: tournamentId } = req.query;
 
     if (!tournamentId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' } });
     }
 
     if (req.method === 'GET') {
@@ -57,7 +59,7 @@ export default async function handler(req, res) {
       if (requestedPlayerId && String(requestedPlayerId) !== String(user.id)) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Only staff can register other players' }
+          error: { code: 'AUTH_REQUIRED', message: 'Only Staff Can Register Other Players' }
         });
       }
       return registerPlayer(req, res, tournamentId, { user });
@@ -70,12 +72,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -92,7 +94,12 @@ async function listEntries(req, res, tournamentId) {
       .eq('tournament_id', tournamentId)
       .order('registered_at', { ascending: true })
 
-    if (status) {
+    // 2026-08-20 fix: callers pass ?status=all to mean "no status filter"
+    // (pages/commander/reports/tournament-results.js does exactly this). That
+    // was being applied literally as status = 'all', which matches nothing, so
+    // the Tournament Results report expanded to an empty finishing order on
+    // every completed event.
+    if (status && status !== 'all') {
       query = query.eq('status', status)
     }
 
@@ -130,7 +137,7 @@ async function listEntries(req, res, tournamentId) {
     return res.status(200).json({ success: true, data: payload });
   } catch (error) {
     console.warn('List entries error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -158,39 +165,104 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
       .maybeSingle();
 
     if (tournamentError || !tournament) {
-      return res.status(404).json({ success: false, error: 'Tournament not found' });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
     }
 
     // Check if registration is allowed
     if (!['scheduled', 'registering', 'running'].includes(tournament.status)) {
-      return res.status(400).json({ success: false, error: 'Registration is closed for this tournament' });
+      return res.status(400).json({ success: false, error: { code: 'REGISTRATION_CLOSED', message: 'Registration Is Closed For This Tournament' } });
     }
 
     // Check late registration
     // 2026-07-25 audit fix: current_level is 0-indexed, compare level number (current_level + 1)
     if (tournament.status === 'running' && tournament.late_registration_levels != null) {
       if ((tournament.current_level + 1) > tournament.late_registration_levels) {
-        return res.status(400).json({ success: false, error: 'Late registration period has ended' });
+        return res.status(400).json({ success: false, error: { code: 'LATE_REG_CLOSED', message: 'Late Registration Period Has Ended' } });
       }
     }
 
-    // Check physical capacity (only count people taking up a chair)
+    // Check physical capacity (only count people taking up a chair).
+    // 2026-08-20: a full field no longer hard-rejects. The player joins the
+    // alternates list instead (matching the staff register route). Pass
+    // as_alternate: false to keep the old hard-reject behavior.
+    let registerAsAlternate = false;
     if (tournament.max_entries) {
       const { count } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId)
-        .in('status', ['registered', 'seated', 'active'])
+        // Field size against max_entries, same rule as register.js: a 'bagged'
+        // player still holds an entry in the event and must count.
+        .in('status', ['registered', 'seated', 'active', 'bagged'])
 
       if (count >= tournament.max_entries) {
-        return res.status(400).json({ success: false, error: 'Tournament is full' });
+        if (req.body?.as_alternate === false) {
+          return res.status(400).json({ success: false, error: { code: 'TOURNAMENT_FULL', message: 'Tournament Is Full' } });
+        }
+        registerAsAlternate = true;
       }
     }
 
     // 2026-07-25 audit fix: staff callers may register anyone; Bearer users only themselves
     const effectivePlayerId = player_id || userId;
     if (!isStaffCaller && effectivePlayerId !== userId) {
-      return res.status(403).json({ success: false, error: 'Only staff can register other players' });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only Staff Can Register Other Players' } });
+    }
+
+    // 2026-08-20 responsible-gaming parity: the staff register route checked
+    // self-exclusions and daily spending limits, but this self-registration
+    // path did not, so a self-excluded player could register from the hub.
+    if (effectivePlayerId) {
+      const [exclusionResult, limitsResult] = await Promise.all([
+        getSupabase()
+          .from('commander_self_exclusions')
+          .select('id, exclusion_type, expires_at')
+          .eq('player_id', effectivePlayerId)
+          .or(`venue_id.eq.${tournament.venue_id},scope.eq.network`)
+          .is('lifted_at', null)
+          .or('expires_at.is.null,expires_at.gt.now()')
+          .limit(1)
+          .maybeSingle(),
+        getSupabase()
+          .from('commander_spending_limits')
+          .select('daily_limit')
+          .eq('player_id', effectivePlayerId)
+          .maybeSingle()
+      ]);
+      if (exclusionResult.data) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'SELF_EXCLUDED',
+            message: 'You Have An Active Self-Exclusion And Cannot Register At This Time.',
+            exclusion_type: exclusionResult.data.exclusion_type,
+            expires_at: exclusionResult.data.expires_at
+          }
+        });
+      }
+      const dailyLimit = limitsResult.data?.daily_limit;
+      if (dailyLimit) {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayEntries } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('total_invested')
+          .eq('player_id', effectivePlayerId)
+          .gte('registered_at', today)
+          .neq('status', 'cancelled');
+        const todaySpend = (todayEntries || []).reduce((sum, e) => sum + (e.total_invested || 0), 0);
+        const newCharge = (tournament.buyin_amount || 0) + (tournament.buyin_fee || 0);
+        if (todaySpend + newCharge > dailyLimit) {
+          return res.status(403).json({
+            success: false,
+            error: {
+              code: 'LIMIT_EXCEEDED',
+              message: `Registration Would Exceed Your Daily Limit Of $${dailyLimit}`,
+              current_spend: todaySpend,
+              limit: dailyLimit
+            }
+          });
+        }
+      }
     }
 
     // Check for existing registration
@@ -204,9 +276,18 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
         .maybeSingle();
 
       if (existing) {
-        return res.status(400).json({ success: false, error: 'Player is already registered' });
+        return res.status(400).json({ success: false, error: { code: 'ALREADY_REGISTERED', message: 'Player Is Already Registered' } });
       }
     }
+
+    // 2026-08-20: seat parameters are honored only for staff callers. A
+    // self-registering player could previously assign themselves any seat.
+    const assignedTable = isStaffCaller ? table_number : null;
+    const assignedSeat = isStaffCaller ? seat_number : null;
+
+    const initialStatus = registerAsAlternate
+      ? 'alternate'
+      : (tournament.status === 'running' ? 'active' : 'registered');
 
     const { data: entry, error } = await getSupabase()
       .from('commander_tournament_entries')
@@ -216,10 +297,10 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
         player_name: player_name || null,
         player_phone: player_phone || null,
         registration_method,
-        table_number,
-        seat_number,
-        status: tournament.status === 'running' ? 'active' : 'registered',
-        current_chips: tournament.starting_chips
+        table_number: assignedTable,
+        seat_number: assignedSeat,
+        status: initialStatus,
+        current_chips: registerAsAlternate ? 0 : tournament.starting_chips
       })
       .select(`
         *,
@@ -227,17 +308,65 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
       `)
       .maybeSingle();
 
-    if (error) throw error;
-
-    // Award XP for registration
-    if (effectivePlayerId) {
-      // XP system removed
+    // A staff caller can name table_number / seat_number on this insert. With
+    // uq_commander_entries_live_seat in place that chair may already be held,
+    // and the insert is now rejected with 23505 instead of double-booking it.
+    if (error) {
+      if (seatConflictResponse(res, error, {
+        tableNumber: assignedTable,
+        seatNumber: assignedSeat,
+        playerName: player_name,
+        action: 'Registration'
+      })) return;
+      throw error;
     }
 
-    return res.status(201).json({ success: true, data: { entry } });
+    // 2026-08-20: random seat draw for late registrants. When the tournament
+    // is running and no seat was given, seat the player at a random open seat
+    // on the least-occupied table (matching the staff register route).
+    let seatAssignment = null;
+    if (!registerAsAlternate && tournament.status === 'running' && entry && !entry.table_number) {
+      try {
+        // Atomic claim so a self-registering late entry cannot be handed the
+        // same seat as a concurrent alternate promotion.
+        const seat = await claimOpenSeat(getSupabase(), tournamentId, entry.id, 'active');
+        if (seat) {
+          seatAssignment = seat;
+          const { data: seatedEntry } = await getSupabase()
+            .from('commander_tournament_entries')
+            .select()
+            .eq('id', entry.id)
+            .maybeSingle();
+          if (seatedEntry) {
+            entry.status = seatedEntry.status;
+            entry.table_number = seatedEntry.table_number;
+            entry.seat_number = seatedEntry.seat_number;
+          }
+        }
+      } catch (seatErr) {
+        console.warn('[entries.js] Auto-seat failed (entry stays active):', seatErr.message);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        entry,
+        is_alternate: registerAsAlternate || undefined,
+        seat_assignment: seatAssignment || undefined,
+        message: registerAsAlternate
+          ? 'Field Is Full. You Are On The Alternates List And Will Be Seated As Seats Open.'
+          : seatAssignment
+            ? `Registered And Seated At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+            : 'Registered.'
+      }
+    });
   } catch (error) {
     console.warn('Register player error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ success: false, error: conflictError(error, { action: 'Registration' }) });
+    }
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -245,7 +374,7 @@ async function unregisterPlayer(req, res, tournamentId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' } });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -253,13 +382,13 @@ async function unregisterPlayer(req, res, tournamentId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' } });
     }
 
     const { entry_id } = req.body;
 
     if (!entry_id) {
-      return res.status(400).json({ success: false, error: 'Entry ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Entry ID Required' } });
     }
 
     // Get entry
@@ -271,7 +400,7 @@ async function unregisterPlayer(req, res, tournamentId) {
       .maybeSingle();
 
     if (entryError || !entry) {
-      return res.status(404).json({ success: false, error: 'Entry not found' });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
     }
 
     const tournament = entry.commander_tournaments;
@@ -288,7 +417,7 @@ async function unregisterPlayer(req, res, tournamentId) {
         .maybeSingle();
 
       if (!staff) {
-        return res.status(400).json({ success: false, error: 'Cannot unregister after tournament has started' });
+        return res.status(400).json({ success: false, error: { code: 'TOURNAMENT_STARTED', message: 'Cannot Unregister After Tournament Has Started' } });
       }
     }
 
@@ -304,21 +433,74 @@ async function unregisterPlayer(req, res, tournamentId) {
         .maybeSingle();
 
       if (!staff) {
-        return res.status(403).json({ success: false, error: 'Access denied' });
+        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access Denied' } });
       }
     }
 
+    // 2026-08-20: soft cancel instead of hard delete. A deleted row orphaned
+    // the entry's cash-transaction history and audit trail; register.js
+    // DELETE already cancels, so both unregister paths now agree.
     const { error } = await getSupabase()
       .from('commander_tournament_entries')
-      .delete()
-      .eq('id', entry_id);
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), notes: 'Registration cancelled' })
+      .eq('id', entry_id)
+      .neq('status', 'cancelled');
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, message: 'Player unregistered' });
+    // A cancellation can free a spot in a previously full field. Promote the
+    // longest-waiting alternate: before the start there are no tables yet, so
+    // they simply become 'registered' and get a seat at the draw; during a
+    // running tournament they are seated at a random open seat immediately.
+    let promotedAlternate = null;
+    try {
+      if (['scheduled', 'registering', 'registration'].includes(tournament.status)) {
+        const { data: alternates } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('id, player_name, registered_at, created_at')
+          .eq('tournament_id', tournamentId)
+          .eq('status', 'alternate')
+          .order('registered_at', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: true })
+          .limit(1);
+        const next = alternates && alternates[0];
+        if (next) {
+          const { data: flipped } = await getSupabase()
+            .from('commander_tournament_entries')
+            .update({ status: 'registered' })
+            .eq('id', next.id)
+            .eq('status', 'alternate')
+            .select()
+            .maybeSingle();
+          if (flipped) promotedAlternate = flipped;
+        }
+      } else if (tournament.status === 'running') {
+        const { data: fullTournament } = await getSupabase()
+          .from('commander_tournaments')
+          .select('*')
+          .eq('id', tournamentId)
+          .maybeSingle();
+        if (fullTournament) {
+          promotedAlternate = await promoteNextAlternate(getSupabase(), fullTournament);
+        }
+      }
+    } catch (altErr) {
+      console.warn('[entries.js] Alternate promotion after cancel failed:', altErr.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Player Unregistered',
+      promoted_alternate: promotedAlternate ? {
+        entry_id: promotedAlternate.id,
+        player_name: promotedAlternate.player_name,
+        table_number: promotedAlternate.table_number,
+        seat_number: promotedAlternate.seat_number
+      } : undefined
+    });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Unregister player error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

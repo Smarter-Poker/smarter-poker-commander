@@ -4,8 +4,9 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs';
+import crypto from 'crypto';
 
-// Lazy getter — prevents SSR crashes if client components import constants from this file.
+// Lazy getter - prevents SSR crashes if client components import constants from this file.
 // Server-only env vars like SUPABASE_SERVICE_ROLE_KEY are undefined in the browser.
 let _supabase;
 function getSupabase() {
@@ -16,6 +17,47 @@ function getSupabase() {
     );
   }
   return _supabase;
+}
+
+// ── Staff-session signature verification ─────────────────────────────────────
+// This module used to trust the raw client-supplied `x-staff-session` JSON with
+// NO signature check, so any caller could forge a staff (or owner) identity just
+// by sending a staff row id. The Commander app shipped a hardened local copy,
+// but this shared copy stayed forgeable - a landmine for any consumer that
+// imports it. Sessions are HMAC-signed when issued, so verifying here rejects
+// forgeries without rejecting a single legitimate session.
+
+function sessionSecret() {
+  const secret = process.env.SUPABASE_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error('[commander-auth] no signing secret configured');
+  return secret;
+}
+
+function canonicalSessionString(s) {
+  return [s.id || '', s.user_id || '', s.venue_id ?? '', s.role || '', s.session_ts ?? ''].join('|');
+}
+
+export function signStaffSession(payload) {
+  const session_ts = payload.session_ts || Date.now();
+  const body = { ...payload, session_ts };
+  const sig = crypto.createHmac('sha256', sessionSecret())
+    .update(canonicalSessionString(body))
+    .digest('hex');
+  return { ...body, sig };
+}
+
+function verifySessionSignature(sessionData) {
+  if (!sessionData.sig || !sessionData.session_ts) return false;
+  try {
+    const expected = crypto.createHmac('sha256', sessionSecret())
+      .update(canonicalSessionString(sessionData))
+      .digest('hex');
+    const a = Buffer.from(String(sessionData.sig), 'utf8');
+    const b = Buffer.from(expected, 'utf8');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -171,6 +213,21 @@ export async function getStaffVenues(userId) {
  * @returns {object|null} - Staff object or null
  */
 export async function verifyPin(venueId, pinCode) {
+  // 2026-08-14: PINs are bcrypt-hashed (commander_staff.pin_hash; a BEFORE
+  // trigger hashes and NULLs any plaintext write). This function previously
+  // compared the plaintext pin_code column directly - dead wrong post-hashing
+  // (the column is always NULL) and the last plaintext PIN comparison left in
+  // code. fn_verify_staff_pin checks the hash server-side and returns the
+  // staff id, or NULL for a bad PIN.
+  if (venueId === undefined || venueId === null || !pinCode) return null;
+
+  const { data: staffId, error: rpcError } = await getSupabase()
+    .rpc('fn_verify_staff_pin', { p_venue_id: String(venueId), p_pin: String(pinCode) });
+
+  if (rpcError || !staffId) {
+    return null;
+  }
+
   const { data: staff, error } = await getSupabase()
     .from('commander_staff')
     .select(`
@@ -181,9 +238,7 @@ export async function verifyPin(venueId, pinCode) {
         avatar_url
       )
     `)
-    .eq('venue_id', venueId)
-    .eq('pin_code', pinCode)
-    .eq('is_active', true)
+    .eq('id', staffId)
     .maybeSingle();
 
   if (error || !staff) {
@@ -215,12 +270,18 @@ export async function verifyStaffSession(req) {
     return { error: { status: 401, code: 'INVALID_SESSION', message: 'Invalid Session Format' } };
   }
 
-  // Path 1: PIN-based staff terminal — session contains staff row `id`
+  // Signature gate - fail CLOSED. An unsigned or tampered session is a forgery
+  // attempt, not a legacy client: every issuer signs sessions at creation.
+  if (!verifySessionSignature(sessionData)) {
+    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired - Please Sign In Again' } };
+  }
+
+  // Path 1: PIN-based staff terminal - session contains staff row `id`
   if (sessionData.id) {
     // TTL check: reject PIN sessions older than 12 hours (if timestamp present)
     const PIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
     if (sessionData.session_ts && (Date.now() - sessionData.session_ts > PIN_SESSION_TTL_MS)) {
-      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'PIN session expired — please re-enter your PIN' } };
+      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'PIN session expired - please re-enter your PIN' } };
     }
 
     const { data: staff, error: staffError } = await getSupabase()
@@ -237,7 +298,7 @@ export async function verifyStaffSession(req) {
     return { staff };
   }
 
-  // Path 2: Owner login — session contains `user_id` + `role` + `venue_id`
+  // Path 2: Owner login - session contains `user_id` + `role` + `venue_id`
   if (sessionData.user_id && sessionData.venue_id) {
     // First try: look up commander_staff row by linked_user_id
     const { data: staff } = await getSupabase()
@@ -395,11 +456,11 @@ export const DEFAULT_PERMISSIONS = {
   }
 };
 
-// ── Sensitive Routes — ALWAYS require PIN challenge, even for owners/managers ──
+// ── Sensitive Routes - ALWAYS require PIN challenge, even for owners/managers ──
 // These are OWNER/MANAGER-ONLY pages that expose confidential data (employee PINs,
 // venue config, business intelligence). They require a per-session PIN verification
 // regardless of cached staff session. Pages that floor, cashier, or dualrate staff
-// need access to are NOT included here — those rely on the standard role gate.
+// need access to are NOT included here - those rely on the standard role gate.
 export const SENSITIVE_ROUTES = [
   '/commander/staff',              // Employee PINs and management
   '/commander/settings',           // Venue configuration
@@ -436,7 +497,7 @@ export const ROLE_ROUTE_ACCESS = {
     '/commander/tournament-controls',
     '/commander/tables', '/commander/table-assignments', '/commander/floor',
     '/commander/open-game', '/commander/must-move', '/commander/floor-calls',
-    '/commander/dealer-rotation', '/commander/table-tablets',
+    '/commander/dealer-rotation', '/commander/table-tablets', '/commander/print-station',
     '/commander/cashier', '/commander/time-clock', '/commander/time-billing',
     '/commander/shift-handoff', '/commander/poker-room', '/commander/room-presets',
     '/commander/comps', '/commander/notifications', '/commander/promotions',
@@ -453,7 +514,7 @@ export const ROLE_ROUTE_ACCESS = {
     '/commander/tournament-controls',
     '/commander/tables', '/commander/table-assignments', '/commander/floor',
     '/commander/open-game', '/commander/must-move', '/commander/floor-calls',
-    '/commander/dealer-rotation', '/commander/table-tablets',
+    '/commander/dealer-rotation', '/commander/table-tablets', '/commander/print-station',
     '/commander/time-clock', '/commander/shift-handoff', '/commander/incidents',
     '/commander/poker-room', '/commander/room-presets',
     '/commander/notifications', '/commander/promotions',
@@ -464,7 +525,7 @@ export const ROLE_ROUTE_ACCESS = {
     '/commander/dashboard',
     '/commander/waitlist', '/commander/kiosk',
     '/commander/displays',
-    '/commander/table-tablets',
+    '/commander/table-tablets', '/commander/print-station',
     '/commander/time-clock',
   ],
   cashier: [

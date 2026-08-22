@@ -19,6 +19,34 @@ import useWakeLock from '../../src/hooks/useWakeLock';
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
+import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+
+/**
+ * Live occupied-seat count for one commander_tables row.
+ *
+ * 2026-08-20 audit fix: this used to read `t.occupied_seats || t.player_count`.
+ * Both are DEAD COLUMNS - nothing in the codebase writes either one, and the
+ * production values have already drifted apart from each other (see the
+ * dead-column note at the top of pages/api/tables/index.js). The lobby TV was
+ * therefore drawing seat dots and "Open Seats" counts from stale numbers.
+ *
+ * Occupancy is derived from rows instead, in order of trustworthiness:
+ *   1. seated_count from the tables API, which counts ACTIVE
+ *      commander_table_sessions. That table is written on every seat-in and
+ *      cleared on every unseat, so it is the real headcount (92 live rows in
+ *      production against only 8 commander_table_seats rows).
+ *   2. the `seats` array (commander_table_seats, status 'occupied'), which is
+ *      authoritative for WHICH seats are taken when it has rows but is sparse.
+ *   3. the joined live commander_games row's current_players.
+ */
+function tableOccupancy(t) {
+  const seatedCount = Number(t?.seated_count);
+  if (Number.isFinite(seatedCount) && seatedCount > 0) return seatedCount;
+  if (Array.isArray(t?.seats) && t.seats.length > 0) return t.seats.length;
+  const games = Array.isArray(t?.commander_games) ? t.commander_games : [];
+  const live = games.find(g => g && g.status !== 'closed');
+  return Number(live?.current_players) || 0;
+}
 
 export default function LobbyDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-lobby'); }, []);
@@ -37,10 +65,14 @@ export default function LobbyDisplay() {
     try {
 const headers = { };
       const opts = signal ? { headers, signal } : { headers };
+      // 2026-08-20 audit fix: the tables and waitlist reads used bare fetch with
+      // no auth headers, which only worked because those routes were public
+      // (the waitlist one leaked player phone numbers). They now require a
+      // staff session, so route them through commanderFetch.
       const [tablesRes, waitlistRes, tournamentsRes] = await Promise.all([
-        fetch(`/api/commander/tables?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch(`/api/commander/waitlist?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch(`/api/commander/tournaments?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] }))
+        commanderFetch(`/api/commander/tables?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
+        commanderFetch(`/api/commander/waitlist?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] })),
+        commanderFetch(`/api/commander/tournaments?venue_id=${venueId}`, opts).then(r => r.json()).catch(() => ({ data: [] }))
       ]);
 
       // Tables: data may be {tables: []} or array directly
@@ -57,7 +89,9 @@ const headers = { };
       });
       setWaitlists(grouped);
 
-      const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [];
+      // Tournaments API nests under data.tournaments - handle both shapes
+      const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data
+        : Array.isArray(tournamentsRes.data?.tournaments) ? tournamentsRes.data.tournaments : [];
       setTournaments(tournamentsArr.filter(t =>
         ['scheduled', 'registering', 'registration', 'running', 'break', 'final_table'].includes(t.status)
       ).slice(0, 4));
@@ -68,7 +102,7 @@ const headers = { };
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
-    const poll = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => { controller.abort(); clearInterval(poll); clearInterval(clock); };
   }, [fetchData]);
@@ -78,17 +112,37 @@ const headers = { };
 
   const goFullscreen = () => document.documentElement.requestFullscreen?.();
 
-  // Group active tables by game type
-  const activeTables = tables.filter(t => t.status === 'active');
+  // Group running cash tables by game type.
+  //
+  // 2026-08-20 fix: this filtered `t.status === 'active'`, which is not a
+  // commander_tables status at all (the CHECK allows available / in_use /
+  // reserved / maintenance), so it matched nothing and the cash-game section of
+  // the lobby TV was permanently blank.
+  //
+  // The reason it was not flipped immediately was a fear that occupancy came
+  // from commander_table_seats, which holds only 8 rows in production, so every
+  // table would have advertised a nearly empty rack to walk-ins. That was the
+  // wrong source: commander_table_sessions carries 92 active rows and is
+  // written on every seat-in and unseat. The tables API now exposes that as
+  // seated_count and tableOccupancy prefers it, so the board shows real
+  // headcounts (verified in production: 2 to 6 players on 9-max tables).
+  //
+  // 'reserved' is included with 'in_use': a table held for an upcoming game is
+  // still part of the room a walk-in is looking at.
+  const activeTables = tables.filter(t =>
+    t.mode === 'cash' && ['in_use', 'reserved'].includes(t.status)
+  );
   const gameGroups = {};
   activeTables.forEach(t => {
     const key = `${t.game_type || 'Cash'} ${t.stakes || ''}`.trim();
     if (!gameGroups[key]) gameGroups[key] = { tables: [], totalSeats: 0, openSeats: 0 };
     gameGroups[key].tables.push(t);
-    const max = t.max_seats || t.seats || 9;
-    const occupied = t.occupied_seats || t.player_count || 0;
+    // `t.seats` is the occupied-seat ARRAY merged in by the tables API, so it
+    // must never be used as a seat COUNT fallback for max_seats.
+    const max = t.max_seats || 9;
+    const occupied = tableOccupancy(t);
     gameGroups[key].totalSeats += max;
-    gameGroups[key].openSeats += (max - occupied);
+    gameGroups[key].openSeats += Math.max(0, max - occupied);
   });
 
   const GAME_COLORS = {
@@ -106,7 +160,7 @@ const headers = { };
   return (
     <>
       <SEOHead
-        title="Commander — Player Lobby"
+        title="Commander - Player Lobby"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -124,7 +178,7 @@ const headers = { };
         <div className="bg-[#1877F2] px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Now Playing</h1>
-            <p className="text-sm opacity-80">{activeTables.length} tables running — {Object.keys(waitlists || {}).length > 0 ? `${Object.values(waitlists || {}).reduce((s, n) => s + n, 0)} on waitlist` : 'No waitlist'}</p>
+            <p className="text-sm opacity-80">{activeTables.length} Tables Running, {Object.keys(waitlists || {}).length > 0 ? `${Object.values(waitlists || {}).reduce((s, n) => s + n, 0)} On Waitlist` : 'No Waitlist'}</p>
           </div>
           <p className="text-4xl font-mono font-bold tabular-nums">
             {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -157,10 +211,10 @@ const headers = { };
                           <h2 className="text-xl font-bold text-white">{gameName}</h2>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm text-white/60">{group.tables.length} table{group.tables.length > 1 ? 's' : ''}</span>
+                          <span className="text-sm text-white/60">{group.tables.length} Table{group.tables.length > 1 ? 's' : ''}</span>
                           {group.openSeats > 0 ? (
                             <span className="px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: `${color}30`, color }}>
-                              {group.openSeats} open seat{group.openSeats > 1 ? 's' : ''}
+                              {group.openSeats} Open Seat{group.openSeats > 1 ? 's' : ''}
                             </span>
                           ) : (
                             <span className="px-3 py-1 rounded-full text-sm font-bold bg-white/5 text-white/40">
@@ -174,9 +228,10 @@ const headers = { };
                       <div className="divide-y divide-white/5">
                         {group.tables.map(t => {
                           const tNum = t.table_number || t.number;
-                          const max = t.max_seats || t.seats || 9;
-                          const occupied = t.occupied_seats || t.player_count || 0;
-                          const open = max - occupied;
+                          // `t.seats` is the occupied-seat array, not a count.
+                          const max = t.max_seats || 9;
+                          const occupied = tableOccupancy(t);
+                          const open = Math.max(0, max - occupied);
                           return (
                             <div key={t.id || tNum} className="px-6 py-3 flex items-center justify-between">
                               <div className="flex items-center gap-4">
@@ -266,7 +321,7 @@ const headers = { };
 
         {/* Footer ticker */}
         <div className="border-t border-white/10 px-6 py-2 flex items-center justify-between flex-shrink-0">
-          <p className="text-white/10 text-xs">Ask Staff For Details — Scan Your Member QR Code At The Kiosk To Check In</p>
+          <p className="text-white/10 text-xs">Ask Staff For Details, Scan Your Member QR Code At The Kiosk To Check In</p>
           <p className="text-white/10 text-xs tracking-wider">Powered By Smarter.Poker</p>
         </div>
       </div>

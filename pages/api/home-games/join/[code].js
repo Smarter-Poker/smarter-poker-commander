@@ -147,7 +147,7 @@ async function joinClubByCode(req, res, code) {
     // Use the RPC for Phase 40. CRITICAL: join_home_group internally does
     //   IF auth.uid() IS NULL OR (auth.uid() <> p_caller_user_id) THEN RAISE UNAUTHORIZED
     // so we MUST invoke it via a user-JWT-scoped client (anon key + caller's
-    // Bearer token) rather than the service-role client — otherwise auth.uid()
+    // Bearer token) rather than the service-role client - otherwise auth.uid()
     // is NULL and the RPC rejects every join. The parameter name is also
     // `p_caller_user_id`, not `p_user_id` (earlier code passed the wrong name
     // and PostgREST returned "function does not exist" 42883).

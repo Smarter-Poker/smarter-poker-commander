@@ -140,7 +140,7 @@ async function getGroup(req, res, id) {
     }
 
     // Filter members to only approved for non-admins. IMPORTANT: we ALSO
-    // require the viewing user's membership to be status='approved' — a
+    // require the viewing user's membership to be status='approved' - a
     // member whose role is 'admin' but whose status is 'pending', 'banned',
     // or 'declined' should NOT see the full (including pending/banned)
     // member list. Prior code checked role only and leaked.
@@ -231,14 +231,14 @@ async function updateGroup(req, res, id) {
     // Explicit ALLOW-LIST instead of the prior strip-list. Prior code took the
     // full req.body, stripped a handful of fields, and wrote the rest. Any
     // admin could smuggle privileged columns in the body:
-    //   • is_active                 — disable the group for everyone
-    //   • last_activity_at          — bypass the 45-day inactivity auto-hide
-    //   • visibility_override_until — grant self infinite discover visibility
-    //   • quality_score / vitality_score — manipulate discovery ranking
-    //   • promoted_to_club_id, promotion_{requested,approved}_at — fake promo
-    //   • view_count, share_click_count, member_count — counter tampering
-    //   • location_geog / search_vector — PostGIS / tsvector injection
-    //   • promoted_to_club_id        — self-link to any arbitrary club
+    //   • is_active                 - disable the group for everyone
+    //   • last_activity_at          - bypass the 45-day inactivity auto-hide
+    //   • visibility_override_until - grant self infinite discover visibility
+    //   • quality_score / vitality_score - manipulate discovery ranking
+    //   • promoted_to_club_id, promotion_{requested,approved}_at - fake promo
+    //   • view_count, share_click_count, member_count - counter tampering
+    //   • location_geog / search_vector - PostGIS / tsvector injection
+    //   • promoted_to_club_id        - self-link to any arbitrary club
     //
     // Only expose the fields that hosts/admins are supposed to be able to
     // edit from the Commander group-settings UI. Unknown keys are silently

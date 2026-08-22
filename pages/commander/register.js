@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Head from 'next/head';
 import Link from 'next/link';
+import PhotonAutocomplete from '../../src/components/ui/PhotonAutocomplete';
+import PasswordStrength from '../../src/components/ui/PasswordStrength';
+import { AsYouType, isValidPhoneNumber } from 'libphonenumber-js';
 import {
   COMMANDER_FREE_MODE,
   COMMANDER_FREE_TAGLINE,
@@ -85,15 +88,21 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [registrationResult, setRegistrationResult] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [preCheckDone, setPreCheckDone] = useState(false);
 
   // ─── Step 1: Account fields ─────────────────────────────────────
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [existingAccount, setExistingAccount] = useState(false);
+  const [phoneVerificationHash, setPhoneVerificationHash] = useState(null);
+  const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
+  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
 
   // Promo code
   const [promoCode, setPromoCode] = useState('');
@@ -108,8 +117,106 @@ export default function RegisterPage() {
   });
 
   // ─── Step 3: Plan ───────────────────────────────────────────────
-  const [selectedTier, setSelectedTier] = useState(lockedTier || 'charity');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [selectedTier, setSelectedTier] = useState(lockedTier || 'home_game');
+const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  // --- UI CALIBRATION SYSTEM ---
+  const [calib, setCalib] = useState({
+    'NLH': { l: 15.4, w: 7.1, t: 78.8, h: 3 },
+    'PLO': { l: 23.6, w: 7, t: 78.9, h: 3 },
+    'PLO8': { l: 31.7, w: 7.6, t: 78.9, h: 2.9 },
+    'LIMIT HE': { l: 40.2, w: 9.9, t: 78.8, h: 3 },
+    'STUD': { l: 51, w: 7.6, t: 78.8, h: 3 },
+    'MIXED': { l: 59.6, w: 8.4, t: 78.8, h: 3 },
+    'TOURNAMENTS': { l: 68.8, w: 14.6, t: 78.8, h: 2.9 },
+    'plan_home': { l: 14.8, t: 40.4, w: 70.4, h: 7.8 },
+    'plan_charity': { l: 14.8, t: 49, w: 70.3, h: 7.8 },
+    'plan_club': { l: 14.78, t: 57.88, w: 70.4, h: 7.7 },
+    'dot_home': { l: 3.8, t: 48.2, w: 2.6, h: 21.6 },
+    'dot_charity': { l: 4, t: 49, w: 2.4, h: 21.2 },
+    'dot_club': { l: 3.9, t: 47.4, w: 2.6, h: 21.3 },
+    'checkbox_agree': { l: 14.9, t: 75.2, w: 2.5, h: 2.5 },
+    'checkmark': { l: 14.66, t: 75.28, w: 3.1, h: 2.6 }
+  });
+  const [activeCalib, setActiveCalib] = useState('NLH');
+  const [showCalib, setShowCalib] = useState(false);
+  const liveCalib = useRef(calib);
+  useEffect(() => { liveCalib.current = calib; }, [calib]); // Sync initial mount
+
+  const getDraggableProps = (idKey) => {
+    if (!showCalib) return {};
+    
+    return {
+      style: { cursor: 'move', outline: (idKey.startsWith('dot_') || idKey.startsWith('check')) ? 'none' : (activeCalib === idKey ? '2px dashed #1877F2' : '2px dotted rgba(255,255,255,0.5)') },
+      onPointerDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveCalib(idKey);
+        
+        const el = document.getElementById('calib-' + idKey);
+        if (!el) return;
+        const parentRect = el.parentElement.getBoundingClientRect();
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLeft = parseFloat(el.style.left) || 0;
+        const startTop = parseFloat(el.style.top) || 0;
+
+        const onMove = (moveEvent) => {
+          const deltaX = moveEvent.clientX - startX;
+          const deltaY = moveEvent.clientY - startY;
+          const newLeft = startLeft + (deltaX / parentRect.width) * 100;
+          const newTop = startTop + (deltaY / parentRect.height) * 100;
+          
+          el.style.left = `${newLeft.toFixed(2)}%`;
+          el.style.top = `${newTop.toFixed(2)}%`;
+          if (idKey === 'checkmark') {
+            const vis = document.getElementById('calib-checkmark_visual');
+            if (vis) {
+              vis.style.left = `${newLeft.toFixed(2)}%`;
+              vis.style.top = `${newTop.toFixed(2)}%`;
+            }
+          }
+          
+          liveCalib.current = {
+            ...liveCalib.current,
+            [idKey]: {
+              ...liveCalib.current[idKey],
+              l: parseFloat(newLeft.toFixed(2)),
+              t: parseFloat(newTop.toFixed(2))
+            }
+          };
+          
+          const labelL = document.getElementById('label-l');
+          const labelT = document.getElementById('label-t');
+          if (labelL) labelL.innerText = newLeft.toFixed(2) + '%';
+          if (labelT) labelT.innerText = newTop.toFixed(2) + '%';
+        };
+
+        const onUp = () => {
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+        };
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      }
+    };
+  };
+
+  useEffect(() => {
+    if (router.isReady && router.query.calibrate === 'true') {
+      setShowCalib(true);
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'c' && e.shiftKey && e.altKey) {
+        setShowCalib(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router.isReady, router.query.calibrate]);
+  // ------------------------------
 
   // Address is required only for the club tier. Home games + charity: optional.
   const isAddressRequired = selectedTier === 'club';
@@ -137,7 +244,7 @@ export default function RegisterPage() {
     let authBlob = {};
     try {
       authBlob = JSON.parse(window.localStorage.getItem('smarter-poker-auth') || '{}');
-    } catch { /* corrupted blob — treat as signed-out */ }
+    } catch { /* corrupted blob - treat as signed-out */ }
 
     const user = authBlob?.user || null;
     const accessToken =
@@ -160,11 +267,11 @@ export default function RegisterPage() {
     setExistingAccount(true);
 
     // Probe commander access. If already activated and we have a return path,
-    // send them straight through — no need to re-register.
+    // send them straight through - no need to re-register.
     let cancelled = false;
     const finish = () => { if (!cancelled) setPreCheckDone(true); };
 
-    // Hard 8-second timeout — if the API is down or slow, we MUST unblock the UI.
+    // Hard 8-second timeout - if the API is down or slow, we MUST unblock the UI.
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('check-access timeout')), 8000)
     );
@@ -229,8 +336,57 @@ export default function RegisterPage() {
     }
   };
 
+  const handlePhoneChange = (setter) => (e) => {
+    setter(new AsYouType('US').input(e.target.value));
+    if (setter === setOwnerPhone) {
+      if (phoneVerificationHash) {
+        setPhoneVerificationHash(null);
+        setPhoneVerificationCode('');
+      }
+      setPhoneVerified(false);
+    }
+  };
+
+  
+  const handlePlaceSelected = (place) => {
+    if (!place || !place.address_components) return;
+    
+    let city = '';
+    let state = '';
+    let zip = '';
+    let streetNumber = '';
+    let route = '';
+
+    for (const component of place.address_components) {
+      const type = component.types[0];
+      if (type === 'locality' || type === 'sublocality' || type === 'neighborhood' || type === 'administrative_area_level_3') {
+        if (!city) city = component.long_name;
+      }
+      if (type === 'administrative_area_level_1') state = component.short_name;
+      if (type === 'postal_code') zip = component.long_name;
+      if (type === 'street_number') streetNumber = component.long_name;
+      if (type === 'route') route = component.long_name;
+    }
+    
+    // For clubs we need full address, for home games we need at least city/state
+    const address = streetNumber && route ? `${streetNumber} ${route}` : place.name || '';
+    
+    setClubInfo(prev => ({
+      ...prev,
+      address,
+      city,
+      state,
+      zip
+    }));
+  };
+
   const handleClubInfoChange = (e) => {
-    setClubInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      setClubInfo(prev => ({ ...prev, [name]: new AsYouType('US').input(value) }));
+    } else {
+      setClubInfo(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleGameToggle = (game) => {
@@ -254,6 +410,21 @@ export default function RegisterPage() {
         setError('Please Enter A Valid Email Address');
         return false;
       }
+      if (!ownerPhone.trim()) {
+        setError('Please Enter A Valid Phone Number To Proceed');
+        return false;
+      }
+      if (!isValidPhoneNumber(ownerPhone, 'US')) {
+        setError('Please Enter A Valid US Phone Number');
+        return false;
+      }
+      
+      // Honeypot check
+      if (honeypot) {
+        setError('Suspicious activity detected.');
+        return false;
+      }
+      
       if (!existingAccount) {
         if (!password) {
           setError('Please Create A Password For Your Account');
@@ -283,6 +454,12 @@ export default function RegisterPage() {
           return false;
         }
       }
+      // Validate venue phone if provided
+      if (clubInfo.phone && clubInfo.phone.trim() !== '' && !isValidPhoneNumber(clubInfo.phone, 'US')) {
+        setError('Please Enter A Valid US Venue Phone Number');
+        return false;
+      }
+
       // Club tier requires the full address.
       if (isAddressRequired) {
         if (!clubInfo.address || !clubInfo.city || !clubInfo.state || !clubInfo.zip) {
@@ -301,8 +478,36 @@ export default function RegisterPage() {
     return true;
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (!validateStep(step)) return;
+
+    // Trigger SMS Verification before leaving Step 1
+    if (step === 1 && !existingAccount && !phoneVerified) {
+      if (!phoneVerificationHash) {
+        setIsVerifyingPhone(true);
+        setError('');
+        try {
+          const res = await fetch('/api/commander/verify-sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'send', phone: ownerPhone })
+          });
+          const data = await res.json();
+          if (data.bypassed) {
+            setPhoneVerified(true);
+            setStep(2);
+          } else if (data.hash) {
+            setPhoneVerificationHash(data.hash);
+          } else {
+            setError(data.error || 'Failed to send SMS code.');
+          }
+        } catch (err) {
+          setError('Network error sending SMS.');
+        }
+        setIsVerifyingPhone(false);
+      }
+      return; // Never proceed to step 2 from here. handleVerifyCode will do it.
+    }
 
     // When tier is locked via ?tier= query param, there is no "Select Plan"
     // step. Step 2's "Continue" button submits directly.
@@ -318,7 +523,45 @@ export default function RegisterPage() {
     setStep(s => Math.min(s + 1, 4));
   };
 
-  const prevStep = () => setStep(s => Math.max(s - 1, 1));
+  const prevStep = () => {
+    if (step === 1 && phoneVerificationHash) {
+      setPhoneVerificationHash(null);
+      setPhoneVerificationCode('');
+    } else {
+      setStep(s => Math.max(s - 1, 1));
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!phoneVerificationCode || phoneVerificationCode.length < 6) {
+      setError('Please enter the 6-digit code.');
+      return;
+    }
+    setIsVerifyingPhone(true);
+    setError('');
+    try {
+      const res = await fetch('/api/commander/verify-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'verify', 
+          phone: ownerPhone, 
+          code: phoneVerificationCode, 
+          hash: phoneVerificationHash 
+        })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPhoneVerified(true);
+        setStep(2);
+      } else {
+        setError(data.error || 'Invalid code. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error verifying code.');
+    }
+    setIsVerifyingPhone(false);
+  };
 
   const handleSubmit = async () => {
     // When tier is locked, step 3 is skipped; validate step 2 instead.
@@ -341,7 +584,7 @@ export default function RegisterPage() {
 
       // 2026-07-25 audit fix: the existing-account path now REQUIRES the
       // caller's Supabase session (server verifies the signed-in user matches
-      // the email) — attach the token whenever we have one.
+      // the email) - attach the token whenever we have one.
       let sessionToken = null;
       try {
         const blob = JSON.parse(window.localStorage.getItem('smarter-poker-auth') || '{}');
@@ -400,6 +643,10 @@ export default function RegisterPage() {
         }
       }
 
+      // New venue exists now — drop the hamburger switcher's cached club
+      // list so the new club appears immediately, not after the 5-min TTL
+      try { sessionStorage.removeItem('commander_accounts_cache'); } catch { /* ignore */ }
+
       setRegistrationResult(data);
       setStep(4);
     } catch (err) {
@@ -456,16 +703,1117 @@ export default function RegisterPage() {
     );
   }
 
+
+const CalibrationPanel = () => {
+    if (!showCalib) return null;
+
+    // Use a ref to store live values without triggering re-renders
+
+
+    const handleSlide = (prop, e) => {
+      const val = parseFloat(e.target.value);
+      
+      // Update DOM immediately
+      const el = document.getElementById('calib-' + activeCalib);
+      if (el) {
+        if (prop === 'l') el.style.left = val + '%';
+        if (prop === 't') el.style.top = val + '%';
+        if (prop === 'w') el.style.width = val + '%';
+        if (prop === 'h') el.style.height = val + '%';
+      }
+      
+      // Update ref silently
+      liveCalib.current = {
+        ...liveCalib.current,
+        [activeCalib]: {
+          ...liveCalib.current[activeCalib],
+          [prop]: val
+        }
+      };
+      
+      // Update the little text label next to the slider manually
+      const labelEl = document.getElementById(`label-${prop}`);
+      if (labelEl) labelEl.innerText = val + '%';
+    };
+
+    return (
+      <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.9)', padding: 20, zIndex: 9999, color: 'white', border: '1px solid #1877F2', borderRadius: 8, width: 300}}>
+        <div style={{marginBottom: 10}}><b>UI Calibrator</b></div>
+        <select value={activeCalib} onChange={e => { setActiveCalib(e.target.value); setCalib(liveCalib.current); }} style={{color:'black', marginBottom:10, width: '100%', padding: 4}}>
+          {Object.keys(calib).map(k => <option key={k} value={k}>{k}</option>)}
+        </select>
+        
+        <div style={{marginBottom: 8}}>
+          Left: <span id="label-l">{liveCalib.current[activeCalib]?.l}%</span>
+          <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.l || 0} onChange={e => handleSlide('l', e)} style={{width:'100%'}} key={`l-${activeCalib}`} />
+        </div>
+        <div style={{marginBottom: 8}}>
+          Top: <span id="label-t">{liveCalib.current[activeCalib]?.t}%</span>
+          <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.t || 0} onChange={e => handleSlide('t', e)} style={{width:'100%'}} key={`t-${activeCalib}`} />
+        </div>
+        {liveCalib.current[activeCalib]?.w !== undefined && (
+          <div style={{marginBottom: 8}}>
+            Width: <span id="label-w">{liveCalib.current[activeCalib]?.w}%</span>
+            <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.w || 0} onChange={e => handleSlide('w', e)} style={{width:'100%'}} key={`w-${activeCalib}`} />
+          </div>
+        )}
+        {liveCalib.current[activeCalib]?.h !== undefined && (
+          <div style={{marginBottom: 8}}>
+            Height: <span id="label-h">{liveCalib.current[activeCalib]?.h}%</span>
+            <input type="range" min="0" max="100" step="0.1" defaultValue={liveCalib.current[activeCalib]?.h || 0} onChange={e => handleSlide('h', e)} style={{width:'100%'}} key={`h-${activeCalib}`} />
+          </div>
+        )}
+        
+        <button 
+          onClick={() => {
+            setCalib(liveCalib.current);
+            navigator.clipboard.writeText(JSON.stringify(liveCalib.current, null, 2));
+            alert("Settings copied to clipboard! Paste them to the AI.");
+          }}
+          style={{marginTop: 10, width: '100%', padding: '10px', background: '#1877F2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
+        >
+          Save & Copy Settings
+        </button>
+      </div>
+    );
+  };
+  // ------------------------------
+
+  if (step === 1) {
+    const autofillCss = `
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active {
+          transition: background-color 9999s ease-in-out 0s;
+          -webkit-text-fill-color: white !important;
+      }
+    `;
+
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{__html: autofillCss}} />
+        <CalibrationPanel />
+        <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+          <Head>
+            <title>Club Commander - Register</title>
+            <meta name="description" content="Club Commander Poker Room Management Tool." />
+            <meta name="robots" content="noindex" />
+          </Head>
+
+          <div className="relative w-full h-full z-10">
+            {/* Stretch the image to fill the screen */}
+            <img 
+              src="/images/commander/register-bg-v1.jpg" 
+              className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+              alt="Register Background" 
+            />
+
+            <form style={{ display: 'contents' }} onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+              {/* Name Input */}
+              <input
+                type="text"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '45.5%',
+                  left: '19%',
+                  width: '62%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Honeypot */}
+              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              {/* Email Input */}
+              <input
+                type="email"
+                value={ownerEmail}
+                onChange={(e) => setOwnerEmail(e.target.value)}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '53.2%',
+                  left: '19%',
+                  width: '62%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Phone Input */}
+              <input
+                type="tel"
+                value={ownerPhone}
+                onChange={handlePhoneChange(setOwnerPhone)}
+                style={{
+                  position: 'absolute',
+                  top: '60.9%',
+                  left: '19%',
+                  width: '62%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Existing Account Checkbox */}
+              <input
+                type="checkbox"
+                checked={existingAccount}
+                onChange={(e) => setExistingAccount(e.target.checked)}
+                style={{
+                  position: 'absolute',
+                  top: '66.9%',
+                  left: '19.1%',
+                  width: '2%',
+                  height: '1.8%',
+                  cursor: 'pointer',
+                  opacity: 0.01,
+                  zIndex: 10
+                }}
+                title="I Already Have A Smarter.Poker Account"
+              />
+              {existingAccount && (
+                <div style={{
+                  position: 'absolute',
+                  top: '66.9%',
+                  left: '19.1%',
+                  width: '1.2%',
+                  height: '1.8%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: showCalib ? 'auto' : 'none',
+                  zIndex: 9
+                }}>
+                  <span className="text-[#1877F2] font-bold">✓</span>
+                </div>
+              )}
+
+              {/* Password Input */}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required={!existingAccount}
+                style={{
+                  position: 'absolute',
+                  top: '73.5%',
+                  left: '19%',
+                  width: '31%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+              <div style={{ position: 'absolute', top: '78.5%', left: '19%', width: '31%', zIndex: 10 }}>
+                <PasswordStrength password={password} />
+              </div>
+
+              {/* Confirm Password Input */}
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required={!existingAccount}
+                style={{
+                  position: 'absolute',
+                  top: '73.5%',
+                  left: '52%',
+                  width: '31%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Promo Code Input */}
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                style={{
+                  position: 'absolute',
+                  top: '83.3%',
+                  left: '19%',
+                  width: '52%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Apply Promo Button */}
+              <button
+                type="button"
+                
+                style={{
+                  position: 'absolute',
+                  top: '83.3%',
+                  left: '73%',
+                  width: '9%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Apply Promo"
+              />
+
+              {/* Error Message */}
+              {error && (
+                <div style={{
+                  position: 'absolute',
+                  top: '88%',
+                  left: '18%',
+                  width: '64%',
+                  textAlign: 'center',
+                  color: '#F02849',
+                  backgroundColor: 'rgba(0,0,0,0.8)',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  zIndex: 10
+                }}>
+                  {error}
+                </div>
+              )}
+
+              {/* Continue to Venue Details Button */}
+              <button
+                type="submit"
+                style={{
+                  position: 'absolute',
+                  top: '90%',
+                  left: '51%',
+                  width: '31%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Continue to Venue Details"
+                disabled={isVerifyingPhone}
+              />
+            </form>
+
+            {/* PHONE VERIFICATION MODAL OVERLAY */}
+            {phoneVerificationHash && !phoneVerified && (
+              <div style={{
+                position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)',
+                zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(180deg, #111, #000)',
+                  border: '1px solid #00F0FF',
+                  padding: '40px',
+                  borderRadius: '12px',
+                  width: '400px',
+                  textAlign: 'center',
+                  boxShadow: '0 0 30px rgba(0, 240, 255, 0.2)'
+                }}>
+                  <h2 style={{ color: '#00F0FF', fontSize: '24px', marginBottom: '16px', fontWeight: 'bold' }}>Verify Phone</h2>
+                  <p style={{ color: '#AAA', marginBottom: '24px' }}>
+                    We sent a 6-digit code to <strong>{ownerPhone}</strong>.
+                  </p>
+                  <input
+                    type="text"
+                    value={phoneVerificationCode}
+                    onChange={e => setPhoneVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="------"
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.5)',
+                      border: '1px solid #333',
+                      color: 'white',
+                      fontSize: '32px',
+                      textAlign: 'center',
+                      letterSpacing: '8px',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginBottom: '24px'
+                    }}
+                  />
+                  {error && <p style={{ color: '#F02849', marginBottom: '16px' }}>{error}</p>}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <button
+                      onClick={async () => {
+                        setIsVerifyingPhone(true);
+                        setError('');
+                        try {
+                          const res = await fetch('/api/commander/verify-sms', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'send', phone: ownerPhone })
+                          });
+                          const data = await res.json();
+                          if (data.hash) {
+                            setPhoneVerificationHash(data.hash);
+                            setError('New code sent successfully.');
+                            setTimeout(() => setError(''), 3000);
+                          } else {
+                            setError(data.error || 'Failed to resend SMS.');
+                          }
+                        } catch (err) {
+                          setError('Network error resending SMS.');
+                        }
+                        setIsVerifyingPhone(false);
+                      }}
+                      disabled={isVerifyingPhone}
+                      style={{
+                        flex: 1, padding: '8px', background: 'transparent',
+                        border: '1px solid #333', color: '#00F0FF', borderRadius: '6px', cursor: 'pointer', fontSize: '14px'
+                      }}
+                    >
+                      Resend Code
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      onClick={prevStep}
+                      style={{
+                        flex: 1, padding: '12px', background: 'transparent',
+                        border: '1px solid #555', color: '#FFF', borderRadius: '6px', cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleVerifyCode}
+                      disabled={isVerifyingPhone}
+                      style={{
+                        flex: 1, padding: '12px', background: '#00F0FF',
+                        border: 'none', color: '#000', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'
+                      }}
+                    >
+                      {isVerifyingPhone ? 'Checking...' : 'Verify'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+
+  if (step === 2) {
+    const autofillCss = `
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active {
+          transition: background-color 9999s ease-in-out 0s;
+          -webkit-text-fill-color: white !important;
+      }
+    `;
+
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{__html: autofillCss}} />
+        <CalibrationPanel />
+        <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+          <Head>
+            <title>Club Commander - Register Step 2</title>
+            <meta name="robots" content="noindex" />
+          </Head>
+
+          <div className="relative w-full h-full z-10">
+            {/* Stretch the image to fill the screen */}
+            <img 
+              src="/images/commander/register-step2-bg.jpg" 
+              className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+              alt="Register Step 2 Background" 
+            />
+
+            <form style={{ display: 'contents' }} onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+              {/* Venue Name Input */}
+              <input
+                type="text"
+                value={clubInfo.name}
+                onChange={e => setClubInfo({ ...clubInfo, name: e.target.value })}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '42.2%',
+                  left: '18%',
+                  width: '63%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Address Input via Photon OpenStreetMap (Free/No API Key) */}
+              <PhotonAutocomplete
+                onPlaceSelected={handlePlaceSelected}
+                defaultValue={clubInfo.address}
+                onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '49.3%',
+                  left: '18%',
+                  width: '63%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* City Input */}
+              <input
+                type="text"
+                value={clubInfo.city}
+                onChange={e => setClubInfo({ ...clubInfo, city: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '56.4%',
+                  left: '18%',
+                  width: '21%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* State Select */}
+              <select
+                value={clubInfo.state}
+                onChange={e => setClubInfo({ ...clubInfo, state: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '56.4%',
+                  left: '45.2%',
+                  width: '15%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif',
+                  appearance: 'none',
+                  WebkitAppearance: 'none'
+                }}
+              >
+                <option value="" className="text-black">Select State</option>
+                {US_STATES.map(st => <option key={st} value={st} className="text-black">{st}</option>)}
+              </select>
+
+              {/* Zip Input */}
+              <input
+                type="text"
+                value={clubInfo.zip}
+                onChange={e => setClubInfo({ ...clubInfo, zip: e.target.value })}
+                required={isAddressRequired}
+                style={{
+                  position: 'absolute',
+                  top: '56.4%',
+                  left: '66.8%',
+                  width: '17%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Phone Input */}
+              <input
+                type="tel"
+                value={clubInfo.phone}
+                onChange={e => setClubInfo({ ...clubInfo, phone: new AsYouType('US').input(e.target.value) })}
+                style={{
+                  position: 'absolute',
+                  top: '63.5%',
+                  left: '18%',
+                  width: '29%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Web Input */}
+              <input
+                type="url"
+                value={clubInfo.website}
+                onChange={e => setClubInfo({ ...clubInfo, website: e.target.value })}
+                style={{
+                  position: 'absolute',
+                  top: '63.5%',
+                  left: '52.5%',
+                  width: '29%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Tables Input */}
+              <input
+                type="number"
+                min="1"
+                value={clubInfo.tables}
+                onChange={e => setClubInfo({ ...clubInfo, tables: e.target.value })}
+                required
+                style={{
+                  position: 'absolute',
+                  top: '70.7%',
+                  left: '18%',
+                  width: '63%',
+                  height: '4.2%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'white',
+                  fontSize: 'min(17px, 3vw)',
+                  zIndex: 10,
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              />
+
+              {/* Games Offered Toggles */}
+              {['NLH', 'PLO', 'PLO8', 'LIMIT HE', 'STUD', 'MIXED', 'TOURNAMENTS'].map(label => {
+                const c = calib[label] || { l: 0, w: 0, t: 0, h: 0 };
+                const l = c.l;
+                const w = c.w;
+                return (
+                <button
+                  id={`calib-${label}`}
+                  {...getDraggableProps(label)}
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    // Match the original logic which uses 'Limit HE', 'Stud', 'Mixed', 'Tournaments' etc.
+                    // But in our label map above, they are uppercase.
+                    // Let's map them to the original strings so the database stays consistent!
+                    const gameMap = {
+                      'NLH': 'NLH',
+                      'PLO': 'PLO',
+                      'PLO8': 'PLO8',
+                      'LIMIT HE': 'Limit HE',
+                      'STUD': 'Stud',
+                      'MIXED': 'Mixed',
+                      'TOURNAMENTS': 'Tournaments'
+                    };
+                    const gameName = gameMap[label];
+                    const active = clubInfo.gamesOffered.includes(gameName);
+                    setClubInfo({
+                      ...clubInfo,
+                      gamesOffered: active 
+                        ? clubInfo.gamesOffered.filter(g => g !== gameName)
+                        : [...clubInfo.gamesOffered, gameName]
+                    });
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: `${c.t}%`,
+                    left: `${l}%`,
+                    width: `${w}%`,
+                    height: `${c.h}%`,
+                    // Using a subtle 15% opacity white background for selected state per user feedback to have NO OVERLAYS.
+                    // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
+                    // I will use a very subtle white background
+                    background: 'transparent',
+                    border: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '2px solid #1877F2' : 'none',
+                    boxShadow: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '0 0 10px #1877F2, inset 0 0 10px rgba(24,119,242,0.5)' : 'none',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    zIndex: 10
+                  }}
+                  title={label}
+                />
+              );
+            })}
+
+              {/* Back Button */}
+              <button
+                type="button"
+                onClick={prevStep}
+                style={{
+                  position: 'absolute',
+                  top: '84.8%',
+                  left: '17%',
+                  width: '10%',
+                  height: '4%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Back"
+              />
+
+              {/* Continue Button */}
+              <button
+                type="submit"
+                disabled={loading || (lockedTier && !agreedToTerms)}
+                style={{
+                  position: 'absolute',
+                  top: '84.8%',
+                  left: '51%',
+                  width: '31%',
+                  height: '4%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+                title="Continue"
+              />
+              
+              {/* Sign In Link Bottom */}
+              <Link href="/commander/login" style={{
+                  position: 'absolute',
+                  top: '90.5%',
+                  left: '25%',
+                  width: '50%',
+                  height: '5%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  zIndex: 10
+              }} title="Sign In" />
+            </form>
+          </div>
+          <CalibrationPanel />
+        </div>
+      </>
+    );
+  }
+
+
+  if (step === 3 && !lockedTier) {
+    return (
+      <>
+      <CalibrationPanel />
+      <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+        <Head>
+          <title>Club Commander - Select Plan</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+
+        <div className="relative w-full h-full z-10">
+          {/* Stretch the image to fill the screen */}
+          {/* Note: Change to register-step3-bg-paid.jpg when out of beta */}
+          <img 
+            src="/images/commander/register-step3-bg-beta.jpg" 
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+            alt="Register Step 3 Background" 
+          />
+
+          {/* Plan 1: Home Games */}
+          <button
+            id="calib-plan_home"
+            {...getDraggableProps('plan_home')}
+            type="button"
+            onClick={() => setSelectedTier('home_game')}
+            style={{
+              position: 'absolute',
+              top: `${calib.plan_home.t}%`,
+              left: `${calib.plan_home.l}%`,
+              width: `${calib.plan_home.w}%`,
+              height: `${calib.plan_home.h}%`,
+              ...(showCalib ? getDraggableProps('plan_home').style : {}),
+              background: 'transparent',
+              border: selectedTier === 'home_game' ? '2px solid #1877F2' : 'none',
+              borderRadius: '8px',
+              boxShadow: selectedTier === 'home_game' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Home Games"
+          >
+             {/* Optional circle fill */}
+             {selectedTier === 'home_game' && (
+               <div id="calib-dot_home" {...getDraggableProps('dot_home')} style={{
+                 position: 'absolute',
+                 top: `${calib.dot_home.t}%`,
+                 left: `${calib.dot_home.l}%`,
+                 ...(showCalib ? getDraggableProps('dot_home').style : {}),
+                 transform: 'translateY(-50%)',
+                 width: `${calib.dot_home.w}%`,
+                 height: `${calib.dot_home.h}%`,
+                 backgroundColor: '#1877F2',
+                 borderRadius: '50%',
+                 pointerEvents: showCalib ? 'auto' : 'none'
+               }} />
+             )}
+          </button>
+
+          {/* Plan 2: Charity */}
+          <button
+            id="calib-plan_charity"
+            {...getDraggableProps('plan_charity')}
+            type="button"
+            onClick={() => setSelectedTier('charity')}
+            style={{
+              position: 'absolute',
+              top: `${calib.plan_charity.t}%`,
+              left: `${calib.plan_charity.l}%`,
+              width: `${calib.plan_charity.w}%`,
+              height: `${calib.plan_charity.h}%`,
+              ...(showCalib ? getDraggableProps('plan_charity').style : {}),
+              background: 'transparent',
+              border: selectedTier === 'charity' ? '2px solid #1877F2' : 'none',
+              borderRadius: '8px',
+              boxShadow: selectedTier === 'charity' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Charity"
+          >
+             {selectedTier === 'charity' && (
+               <div id="calib-dot_charity" {...getDraggableProps('dot_charity')} style={{
+                 position: 'absolute',
+                 top: `${calib.dot_charity.t}%`,
+                 left: `${calib.dot_charity.l}%`,
+                 ...(showCalib ? getDraggableProps('dot_charity').style : {}),
+                 transform: 'translateY(-50%)',
+                 width: `${calib.dot_charity.w}%`,
+                 height: `${calib.dot_charity.h}%`,
+                 backgroundColor: '#1877F2',
+                 borderRadius: '50%',
+                 pointerEvents: showCalib ? 'auto' : 'none'
+               }} />
+             )}
+          </button>
+
+          {/* Plan 3: Clubs */}
+          <button
+            id="calib-plan_club"
+            {...getDraggableProps('plan_club')}
+            type="button"
+            onClick={() => setSelectedTier('club')}
+            style={{
+              position: 'absolute',
+              top: `${calib.plan_club.t}%`,
+              left: `${calib.plan_club.l}%`,
+              width: `${calib.plan_club.w}%`,
+              height: `${calib.plan_club.h}%`,
+              ...(showCalib ? getDraggableProps('plan_club').style : {}),
+              background: 'transparent',
+              border: selectedTier === 'club' ? '2px solid #1877F2' : 'none',
+              borderRadius: '8px',
+              boxShadow: selectedTier === 'club' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Clubs"
+          >
+             {selectedTier === 'club' && (
+               <div id="calib-dot_club" {...getDraggableProps('dot_club')} style={{
+                 position: 'absolute',
+                 top: `${calib.dot_club.t}%`,
+                 left: `${calib.dot_club.l}%`,
+                 ...(showCalib ? getDraggableProps('dot_club').style : {}),
+                 transform: 'translateY(-50%)',
+                 width: `${calib.dot_club.w}%`,
+                 height: `${calib.dot_club.h}%`,
+                 backgroundColor: '#1877F2',
+                 borderRadius: '50%',
+                 pointerEvents: showCalib ? 'auto' : 'none'
+               }} />
+             )}
+          </button>
+
+          {/* Terms Checkbox */}
+          <input
+            id="calib-checkmark"
+            {...getDraggableProps('checkmark')}
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            style={{
+              position: 'absolute',
+              top: `${calib.checkmark.t}%`,
+              left: `${calib.checkmark.l}%`,
+              width: `${calib.checkbox_agree.w}%`,
+              height: `${calib.checkbox_agree.h}%`,
+              ...(showCalib ? getDraggableProps('checkmark').style : {}),
+              cursor: 'pointer',
+              opacity: showCalib ? 0.3 : 0.01,
+              zIndex: 10
+            }}
+            title="I Agree To The Terms And Privacy Policy"
+          />
+          {agreedToTerms && (
+            <div id="calib-checkmark_visual" style={{
+              position: 'absolute',
+              top: `${calib.checkmark.t}%`,
+              left: `${calib.checkmark.l}%`,
+              width: `${calib.checkmark.w}%`,
+              height: `${calib.checkmark.h}%`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: showCalib ? 'auto' : 'none',
+              zIndex: 9
+            }}>
+              <span className="text-[#1877F2] font-bold" style={{ fontSize: `${calib.checkmark.w}vw` }}>✓</span>
+            </div>
+          )}
+
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={prevStep}
+            style={{
+              position: 'absolute',
+              top: '80.5%',
+              left: '14.8%',
+              width: '15.2%',
+              height: '4.8%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Back"
+          />
+
+          {/* Sign In Link Bottom */}
+          <Link href="/commander/login" style={{
+              position: 'absolute',
+              top: '90.5%',
+              left: '25%',
+              width: '50%',
+              height: '5%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+          }} title="Sign In" />
+
+          {/* Create Free Account Button */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || !agreedToTerms}
+            style={{
+              position: 'absolute',
+              top: '80.5%',
+              left: '55.7%',
+              width: '29.3%',
+              height: '4.8%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+            }}
+            title="Create Free Account"
+          />
+
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              position: 'absolute',
+              top: '87%',
+              left: '18%',
+              width: '64%',
+              textAlign: 'center',
+              color: '#F02849',
+              backgroundColor: 'rgba(0,0,0,0.8)',
+              padding: '4px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              zIndex: 10
+            }}>
+              {error}
+            </div>
+          )}
+
+        </div>
+      </div>
+      </>
+    );
+  }
+
+
+  if (step === 4) {
+    const displayPlan = selectedTier === 'home_game' ? 'Home Games' : 
+                        selectedTier === 'charity' ? 'Charity' : 'Clubs';
+
+    return (
+      <div className="w-screen h-screen relative overflow-hidden font-rajdhani bg-black">
+        <Head>
+          <title>Club Commander - Registration Complete</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+
+        <div className="relative w-full h-full z-10">
+          {/* Stretch the image to fill the screen */}
+          <img 
+            src="/images/commander/register-step4-bg.jpg" 
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
+            alt="Registration Complete Background" 
+          />
+
+          {/* Login Email Data */}
+          <div style={{
+            position: 'absolute',
+            top: '57.8%',
+            left: '28%',
+            color: '#E4E6EB',
+            fontSize: 'min(17px, 3vw)',
+            fontFamily: 'Inter, sans-serif',
+            zIndex: 10
+          }}>
+            {ownerEmail}
+          </div>
+
+          {/* Venue ID Data */}
+          <div style={{
+            position: 'absolute',
+            top: '69.5%',
+            left: '28%',
+            color: '#E4E6EB',
+            fontSize: 'min(17px, 3vw)',
+            fontFamily: 'Inter, sans-serif',
+            zIndex: 10
+          }}>
+            {registrationResult?.venueId || 'N/A'}
+          </div>
+
+          {/* Plan Data */}
+          <div style={{
+            position: 'absolute',
+            top: '73%',
+            left: '28%',
+            color: '#E4E6EB',
+            fontSize: 'min(17px, 3vw)',
+            fontFamily: 'Inter, sans-serif',
+            zIndex: 10
+          }}>
+            {displayPlan} {COMMANDER_FREE_MODE ? `(${COMMANDER_FREE_TAGLINE})` : '(14-day trial)'}
+          </div>
+
+          {/* Sign In Button */}
+          <Link href="/commander/login" style={{
+              position: 'absolute',
+              top: '78.5%',
+              left: '14%',
+              width: '72%',
+              height: '6.5%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+          }} title="Sign In To Dashboard" />
+
+          {/* Sign In Link Bottom */}
+          <Link href="/commander/login" style={{
+              position: 'absolute',
+              top: '90.5%',
+              left: '25%',
+              width: '50%',
+              height: '5%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              zIndex: 10
+          }} title="Sign In" />
+        </div>
+      </div>
+    );
+  }
+
+  // Original return for steps 3-4
+
+
   return (
     <div className="min-h-screen bg-[#18191A]">
       <Head><title>{headerTitle}</title></Head>
+      <style>{`
+        @keyframes slideUpFade {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-step {
+          animation: slideUpFade 0.3s ease-out forwards;
+        }
+      `}</style>
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Logo */}
         <div className="text-center mb-6">
           <Image src="/images/club-commander-logo.jpg" alt="Club Commander" width={1584} height={656} className="w-full max-w-md mx-auto rounded-lg" />
           <p className="text-[#B0B3B8] mt-4">{headerSubtitle}</p>
-          {/* Entry-port indicator — same signup screen is reached from
+          {/* Entry-port indicator - same signup screen is reached from
               Social Pages, Poker Near Me, and Club Commander. Surface the
               `from` query so users see continuity across surfaces. */}
           {isHomeGameFlow && router?.query?.from && (() => {
@@ -505,7 +1853,7 @@ export default function RegisterPage() {
           {/* Step 1: Create Account                                     */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-step">
               <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">Create Your Account</h2>
               <p className="text-sm text-[#8A8D91] mb-4">
                 {isHomeGameFlow
@@ -513,9 +1861,34 @@ export default function RegisterPage() {
                   : 'First, Set Up Your Login Credentials. You Can Add Venue Details Next.'}
               </p>
 
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label><input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} /></div>
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label><input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" /></div>
-              <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number</label><input type="tel" value={ownerPhone} onChange={e => setOwnerPhone(e.target.value)} className={inputClass} placeholder="Optional" /></div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label>
+                <div className="relative">
+                  <input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} style={{ paddingRight: '40px' }} />
+                  {ownerName.trim().length >= 2 && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
+              <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label>
+                <div className="relative">
+                  <input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" style={{ paddingRight: '40px' }} />
+                  {ownerEmail.includes('@') && ownerEmail.includes('.') && ownerEmail.length > 5 && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number *</label>
+                <div className="relative">
+                  <input type="tel" value={ownerPhone} onChange={handlePhoneChange(setOwnerPhone)} className={inputClass} placeholder="(555) 555-5555" style={{ paddingRight: '40px' }} />
+                  {ownerPhone && isValidPhoneNumber(ownerPhone, 'US') && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
+              </div>
 
               {/* Existing account toggle */}
               <div className="flex items-center gap-3 p-4 bg-[#3A3B3C]/40 rounded-lg">
@@ -525,8 +1898,26 @@ export default function RegisterPage() {
 
               {!existingAccount && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Create Password *</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputClass} placeholder="Min 8 Characters" /></div>
-                  <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Confirm Password *</label><input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} /></div>
+                  <div>
+                    <label className="block text-sm text-[#B0B3B8] mb-1.5">Create Password *</label>
+                    <div className="relative">
+                      <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className={inputClass} style={{ paddingRight: '40px' }} placeholder="Min 8 Characters" />
+                      <button type="button" tabIndex="-1" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8D91] hover:text-[#E4E6EB]">
+                        {showPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        )}
+                      </button>
+                    </div>
+                    <PasswordStrength password={password} />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[#B0B3B8] mb-1.5">Confirm Password *</label>
+                    <div className="relative">
+                      <input type={showPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} style={{ paddingRight: '40px' }} />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -568,7 +1959,7 @@ export default function RegisterPage() {
           {/* Step 2: Venue / Home Game Details                          */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-step">
               <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">
                 {isHomeGameFlow ? 'Home Game Details' : 'Venue Details'}
               </h2>
@@ -582,32 +1973,32 @@ export default function RegisterPage() {
                 <label className="block text-sm text-[#B0B3B8] mb-1.5">
                   {isHomeGameFlow ? 'Home Game Name *' : 'Club/Venue Name *'}
                 </label>
-                <input type="text" name="name" value={clubInfo.name} onChange={handleClubInfoChange} className={inputClass} placeholder={isHomeGameFlow ? 'e.g. Saturday Night Hold’em' : 'Enter Your Venue Name'} />
+                <div className="relative">
+                  <input type="text" name="name" value={clubInfo.name} onChange={handleClubInfoChange} className={inputClass} placeholder={isHomeGameFlow ? 'e.g. Saturday Night Hold’em' : 'Enter Your Venue Name'} style={{ paddingRight: '40px' }} />
+                  {clubInfo.name.trim().length >= 2 && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-1/2 -translate-y-1/2"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </div>
               </div>
 
-              {!isHomeGameFlow && (
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">Street Address{isAddressRequired ? ' *' : ' (Optional)'}</label>
-                  <input type="text" name="address" value={clubInfo.address} onChange={handleClubInfoChange} className={inputClass} placeholder={isAddressRequired ? 'Required For Club Tier' : 'Optional For Home Games & Charity'} />
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">City{(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
-                  <input type="text" name="city" value={clubInfo.city} onChange={handleClubInfoChange} className={inputClass} />
-                </div>
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">State{(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
-                  <select name="state" value={clubInfo.state} onChange={handleClubInfoChange} className={inputClass}>
-                    <option value="">Select</option>
-                    {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-[#B0B3B8] mb-1.5">ZIP{isAddressRequired ? ' *' : ''}</label>
-                  <input type="text" name="zip" value={clubInfo.zip} onChange={handleClubInfoChange} className={inputClass} />
-                </div>
+              <div>
+                <label className="block text-sm text-[#B0B3B8] mb-1.5">Search Location {(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
+                <PhotonAutocomplete
+                  onPlaceSelected={handlePlaceSelected}
+                  defaultValue={clubInfo.address || clubInfo.city}
+                  onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
+                  placeholder="Start typing your address or city..."
+                  className={inputClass}
+                  style={{ position: 'relative', width: '100%', zIndex: 20 }}
+                />
+                
+                {(clubInfo.city || clubInfo.address) && (
+                  <div className="mt-3 p-3 bg-[#3A3B3C]/40 rounded-lg text-sm text-[#E4E6EB]">
+                    <span className="block text-[#B0B3B8] text-xs uppercase tracking-wider mb-1">Extracted Details:</span>
+                    {clubInfo.address && <div>{clubInfo.address}</div>}
+                    {clubInfo.city && <div>{clubInfo.city}, {clubInfo.state} {clubInfo.zip}</div>}
+                  </div>
+                )}
               </div>
 
               {!isHomeGameFlow && (
@@ -667,7 +2058,7 @@ export default function RegisterPage() {
           {/* Step 3: Select Plan  (skipped when ?tier= locks the plan)  */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 3 && !lockedTier && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-step">
               <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">Select Your Plan</h2>
               <div className="grid gap-4">
                 {Object.entries(TIERS || {}).map(([key, tier]) => (
@@ -697,7 +2088,7 @@ export default function RegisterPage() {
           {/* Step 4: Complete                                            */}
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 4 && (
-            <div className="text-center space-y-6">
+            <div className="text-center space-y-6 animate-step">
               <div className="w-20 h-20 bg-[#31A24C] rounded-full flex items-center justify-center mx-auto text-4xl text-white">✓</div>
               <h2 className="text-2xl font-bold text-[#E4E6EB]">
                 {isHomeGameFlow ? 'You’re All Set!' : 'Welcome To Club Commander!'}

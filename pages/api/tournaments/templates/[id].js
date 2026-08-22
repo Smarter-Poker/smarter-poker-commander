@@ -5,7 +5,7 @@
  * DELETE /api/commander/tournaments/templates/[id] - Delete template
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -19,47 +19,93 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+/**
+ * 2026-08-20 audit fix: every handler in this file addressed the template by id
+ * alone with no venue check, so any authenticated staff member could read,
+ * overwrite, or DELETE another venue's tournament templates by guessing/holding
+ * a template id. Load the row first and reject a venue mismatch.
+ *
+ * Returns the template row, or null after having already sent the response.
+ */
+async function loadOwnedTemplate(res, id, staff) {
+    if (!id) {
+        res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Template ID Required' } });
+        return null;
+    }
+
+    const { data, error } = await getSupabase()
+        .from('commander_tournament_templates')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (error) {
+        console.error('[tournaments/templates] template read failed', {
+            id, code: error.code, message: error.message, details: error.details,
+        });
+        res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Read Template' } });
+        return null;
+    }
+
+    if (!data) {
+        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Template Not Found' } });
+        return null;
+    }
+
+    const staffVenue = (staff && staff !== true) ? staff.venue_id : undefined;
+    if (staffVenue !== undefined && staffVenue !== null && String(staffVenue) !== String(data.venue_id)) {
+        res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Template Belongs To A Different Venue' } });
+        return null;
+    }
+
+    return data;
+}
+
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this used guardWriteStaff, which returns `true` for GET
+// and let an unauthenticated caller read any venue's template by id.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
+    } else if (!applyRateLimit(req, res, LIMITS.read)) {
+      return;
     }
 
-      const _g = await guardWriteStaff(req, res); if (!_g) return;
+      const _g = await guardStaff(req, res); if (!_g) return;
       const { id } = req.query;
 
-      if (req.method === 'GET') return getTemplate(req, res, id);
-      if (req.method === 'PUT') return updateTemplate(req, res, id);
-      if (req.method === 'DELETE') return deleteTemplate(req, res, id);
+      if (req.method === 'GET') return getTemplate(req, res, id, _g);
+      if (req.method === 'PUT' || req.method === 'PATCH') return updateTemplate(req, res, id, _g);
+      if (req.method === 'DELETE') return deleteTemplate(req, res, id, _g);
 
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
+      res.setHeader('Allow', ['GET', 'PUT', 'PATCH', 'DELETE']);
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
-async function getTemplate(req, res, id) {
+async function getTemplate(req, res, id, staff) {
     try {
-        const { data, error } = await getSupabase()
-            .from('commander_tournament_templates')
-            .select('*')
-            .eq('id', id)
-            .maybeSingle();
+        const template = await loadOwnedTemplate(res, id, staff);
+        if (!template) return;
 
-        if (error) throw error;
-        return res.status(200).json({ success: true, data: { template: data } });
+        return res.status(200).json({ success: true, data: { template } });
     } catch (error) {
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        console.warn('Get template error:', error);
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }
 
-async function updateTemplate(req, res, id) {
+async function updateTemplate(req, res, id, staff) {
     try {
+        const template = await loadOwnedTemplate(res, id, staff);
+        if (!template) return;
+
         const allowed = [
             'name', 'tournament_type', 'buyin_amount', 'buyin_fee', 'starting_chips',
             'blind_structure', 'break_schedule', 'payout_structure', 'late_registration_levels',
@@ -69,31 +115,51 @@ async function updateTemplate(req, res, id) {
         const updates = {};
         allowed.forEach(key => { if (req.body[key] !== undefined) updates[key] = req.body[key]; });
 
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'No Editable Fields Were Provided' } });
+        }
+
+        // A template must never carry live clock state.
+        if (updates.settings && typeof updates.settings === 'object') {
+            const { clock_state: _droppedClock, ...cleanSettings } = updates.settings;
+            updates.settings = cleanSettings;
+        }
+
+        updates.updated_at = new Date().toISOString();
+
         const { data, error } = await getSupabase()
             .from('commander_tournament_templates')
             .update(updates)
             .eq('id', id)
+            // Scope the write to the owning venue as well as the id.
+            .eq('venue_id', template.venue_id)
             .select()
             .maybeSingle();
 
         if (error) throw error;
         return res.status(200).json({ success: true, data: { template: data } });
     } catch (error) {
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        console.warn('Update template error:', error);
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }
 
-async function deleteTemplate(req, res, id) {
+async function deleteTemplate(req, res, id, staff) {
     try {
+        const template = await loadOwnedTemplate(res, id, staff);
+        if (!template) return;
+
         const { error } = await getSupabase()
             .from('commander_tournament_templates')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('venue_id', template.venue_id);
 
         if (error) throw error;
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, data: { deleted_id: id, message: 'Template Deleted' } });
     } catch (error) {
         try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        console.warn('Delete template error:', error);
+        return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 }

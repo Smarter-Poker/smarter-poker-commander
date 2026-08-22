@@ -1,11 +1,11 @@
 /**
- * Add Member Modal — Multi-step registration flow
+ * Add Member Modal - Multi-step registration flow
  * Step 1: ID Scan / Manual Entry (name, DOB, ID info)
  * Step 2: Contact & Address
  * Step 3: Membership tier selection
  * Step 4: Review & Confirm
  * 
- * NO EMOJIS — Lucide icons only (per /no-emoji-commander)
+ * NO EMOJIS - Lucide icons only (per /no-emoji-commander)
  */
 import { useState, useRef, useCallback } from 'react';
 import {

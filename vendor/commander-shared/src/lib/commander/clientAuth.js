@@ -13,9 +13,9 @@
 /**
  * Get the current access token from localStorage.
  * Checks multiple storage locations:
- *   1. commander_token (legacy PIN-based login key — may not be set)
+ *   1. commander_token (legacy PIN-based login key - may not be set)
  *   2. smarter-poker-auth (unified auth key)
- *   3. sb-<project>-auth-token (Supabase default storage — JSON blob with access_token)
+ *   3. sb-<project>-auth-token (Supabase default storage - JSON blob with access_token)
  * Returns the raw JWT access token string, or '' if none found.
  */
 export function getToken() {

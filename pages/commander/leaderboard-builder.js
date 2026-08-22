@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * Leaderboard Builder — Staff Management Page
+ * Leaderboard Builder - Staff Management Page
  * /commander/leaderboard-builder
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
@@ -12,10 +12,10 @@
  * - View current boards on the TV display
  *
  * Uses existing API:
- *   POST /api/commander/leaderboards — create board
- *   PUT  /api/commander/leaderboards/[id] — update board
- *   POST /api/commander/leaderboards/[id]/entries — add/update entry
- *   GET  /api/commander/leaderboards — list all boards
+ *   POST /api/commander/leaderboards - create board
+ *   PUT  /api/commander/leaderboards/[id] - update board
+ *   POST /api/commander/leaderboards/[id]/entries - add/update entry
+ *   GET  /api/commander/leaderboards - list all boards
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -27,12 +27,12 @@ import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 
 const BOARD_TYPES = [
-    { value: 'custom', label: 'Custom Points', icon: '', desc: 'Manually assign points to players' },
-    { value: 'hours_played', label: 'Hours Played', icon: '', desc: 'Auto-calculated from player sessions' },
-    { value: 'sessions', label: 'Session Count', icon: '', desc: 'Number of play sessions' },
-    { value: 'high_hand', label: 'High Hand', icon: '', desc: 'High hand promotion tracker' },
-    { value: 'tournament_points', label: 'Tournament Points', icon: '', desc: 'Points from tournament finishes' },
-    { value: 'referrals', label: 'Referral Count', icon: '', desc: 'Player referral leaderboard' },
+    { value: 'custom', label: 'Custom Points', icon: '', desc: 'Manually Assign Points To Players' },
+    { value: 'hours_played', label: 'Hours Played', icon: '', desc: 'Auto-Calculated From Player Sessions' },
+    { value: 'sessions', label: 'Session Count', icon: '', desc: 'Number Of Play Sessions' },
+    { value: 'high_hand', label: 'High Hand', icon: '', desc: 'High Hand Promotion Tracker' },
+    { value: 'tournament_points', label: 'Tournament Points', icon: '', desc: 'Points From Tournament Finishes' },
+    { value: 'referrals', label: 'Referral Count', icon: '', desc: 'Player Referral Leaderboard' },
 ];
 
 const PERIOD_TYPES = [
@@ -79,13 +79,15 @@ export default function LeaderboardBuilder() {
     // ── Fetch boards ──
     const fetchBoards = useCallback(async (signal) => {
         try {
-            const res = await commanderFetch('/api/commander/leaderboards?status=all', { ...(signal ? { signal } : {}) });
+            // 2026-08-04 audit fix: without venue_id the list API returns every
+            // venue's leaderboards - scope the builder to this venue's boards.
+            const res = await commanderFetch(`/api/commander/leaderboards?status=all${venueId ? `&venue_id=${encodeURIComponent(venueId)}` : ''}`, { ...(signal ? { signal } : {}) });
             if (!res.ok) throw new Error(`Request failed (${res.status})`);
             const json = await res.json();
             setBoards(json?.leaderboards || json?.data || []);
         } catch (err) { console.warn(err); }
         setLoading(false);
-    }, []);
+    }, [venueId]);
 
     // ── Fetch members for dropdown ──
     const fetchMembers = useCallback(async (signal) => {
@@ -110,7 +112,7 @@ export default function LeaderboardBuilder() {
 
     // ── Create board ──
     const handleCreate = async () => {
-        if (!newBoard.name.trim()) { flash('error', 'Board name required'); return; }
+        if (!newBoard.name.trim()) { flash('error', 'Board Name Required'); return; }
         try {
 const today = new Date();
             const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -132,20 +134,20 @@ const today = new Date();
             if (!res.ok) throw new Error(`Request failed (${res.status})`);
             const json = await res.json();
             if (res.ok) {
-                flash('success', `Board "${newBoard.name}" created!`);
+                flash('success', `Board "${newBoard.name}" Created!`);
                 setShowCreate(false);
                 setNewBoard({ name: '', description: '', leaderboard_type: 'custom', period_type: 'monthly', start_date: '', end_date: '', prizes: '', rules_description: '', status: 'active' });
                 fetchBoards();
                 broadcastChange('leaderboards');
             } else {
-                flash('error', json.error || 'Failed to create board');
+                flash('error', json.error || 'Failed To Create Board');
             }
         } catch (err) { flash('error', 'Network error'); }
     };
 
     // ── Add entry to board ──
     const handleAddEntry = async (boardId) => {
-        if (!addEntry.player_id) { flash('error', 'Select a player'); return; }
+        if (!addEntry.player_id) { flash('error', 'Select A Player'); return; }
         try {
 const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries`, {
                 method: 'POST',
@@ -157,15 +159,15 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                     sessions_count: Number(addEntry.sessions_count) || 0,
                     points_earned: Number(addEntry.score) || 0 }) });
             if (res.ok) {
-                flash('success', 'Entry added!');
+                flash('success', 'Entry Added!');
                 setAddEntry({ player_id: '', score: '', hours_played: '', sessions_count: '' });
                 fetchEntries(boardId);
                 broadcastChange('leaderboards');
             } else {
                 const json = await res.json();
-                flash('error', json.error || 'Failed to add entry');
+                flash('error', json.error || 'Failed To Add Entry');
             }
-        } catch { flash('error', 'Network error'); }
+        } catch { flash('error', 'Network Error'); }
     };
 
     // ── Toggle status ──
@@ -177,14 +179,14 @@ const res = await commanderFetch(`/api/commander/leaderboards/${board.id}`, {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus }) });
             if (res.ok) {
-                flash('success', `Board ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+                flash('success', `Board ${newStatus === 'active' ? 'Activated' : 'Deactivated'}`);
                 fetchBoards();
                 broadcastChange('leaderboards');
             } else {
                 const json = await res.json().catch(() => ({}));
-                flash('error', json.error || `Failed to update (${res.status})`);
+                flash('error', json.error || `Failed To Update (${res.status})`);
             }
-        } catch { flash('error', 'Failed to update'); }
+        } catch { flash('error', 'Failed To Update'); }
     };
 
     // ── Auto-calculate ──
@@ -197,13 +199,13 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
             if (!res.ok) throw new Error(`Request failed (${res.status})`);
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
-                flash('success', `Calculated ${json.entries_updated || 0} entries`);
+                flash('success', `Calculated ${json.entries_updated || 0} Entries`);
                 broadcastChange('leaderboards');
             } else {
-                flash('error', json.error || `Calculation failed (${res.status})`);
+                flash('error', json.error || `Calculation Failed (${res.status})`);
             }
             fetchEntries(boardId);
-        } catch { flash('error', 'Calculation failed'); }
+        } catch { flash('error', 'Calculation Failed'); }
     };
 
     const expandBoard = (id) => {
@@ -225,7 +227,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
     return (
         <CommanderLayout title="Leaderboard Builder" backHref="/commander/dashboard?card=displays">
             <SEOHead
-                title="Commander — Leaderboard Builder"
+                title="Commander - Leaderboard Builder"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />
@@ -241,7 +243,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                     <div>
                         <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>Leaderboard Builder</h1>
-                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>Create and manage custom leaderboards for the TV display</p>
+                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>Create And Manage Custom Leaderboards For The TV Display</p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button onClick={() => setShowCreate(!showCreate)} style={{ ...s.btn, background: '#1877F2', color: 'white' }}>
@@ -260,7 +262,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div>
                                 <label style={s.label}>Board Name *</label>
-                                <input style={s.input} placeholder="e.g. February Points Race" value={newBoard.name} onChange={e => setNewBoard({ ...newBoard, name: e.target.value })} />
+                                <input style={s.input} placeholder="E.g. February Points Race" value={newBoard.name} onChange={e => setNewBoard({ ...newBoard, name: e.target.value })} />
                             </div>
                             <div>
                                 <label style={s.label}>Board Type</label>
@@ -270,7 +272,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={s.label}>Description</label>
-                                <input style={s.input} placeholder="What does this leaderboard track?" value={newBoard.description} onChange={e => setNewBoard({ ...newBoard, description: e.target.value })} />
+                                <input style={s.input} placeholder="What Does This Leaderboard Track?" value={newBoard.description} onChange={e => setNewBoard({ ...newBoard, description: e.target.value })} />
                             </div>
                             <div>
                                 <label style={s.label}>Period</label>
@@ -281,9 +283,9 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                             <div>
                                 <label style={s.label}>Status</label>
                                 <select style={s.select} value={newBoard.status} onChange={e => setNewBoard({ ...newBoard, status: e.target.value })}>
-                                    <option value="active">Active (shows on display)</option>
-                                    <option value="upcoming">Upcoming (hidden)</option>
-                                    <option value="completed">Completed (archived)</option>
+                                    <option value="active">Active (Shows On Display)</option>
+                                    <option value="upcoming">Upcoming (Hidden)</option>
+                                    <option value="completed">Completed (Archived)</option>
                                 </select>
                             </div>
                             <div>
@@ -295,12 +297,12 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                 <input type="date" style={s.input} value={newBoard.end_date} onChange={e => setNewBoard({ ...newBoard, end_date: e.target.value })} />
                             </div>
                             <div>
-                                <label style={s.label}>Prizes (optional)</label>
-                                <input style={s.input} placeholder="e.g. 1st: $500, 2nd: $250" value={newBoard.prizes} onChange={e => setNewBoard({ ...newBoard, prizes: e.target.value })} />
+                                <label style={s.label}>Prizes (Optional)</label>
+                                <input style={s.input} placeholder="E.g. 1st: $500, 2nd: $250" value={newBoard.prizes} onChange={e => setNewBoard({ ...newBoard, prizes: e.target.value })} />
                             </div>
                             <div>
-                                <label style={s.label}>Rules (optional)</label>
-                                <input style={s.input} placeholder="e.g. Min 4 hours played to qualify" value={newBoard.rules_description} onChange={e => setNewBoard({ ...newBoard, rules_description: e.target.value })} />
+                                <label style={s.label}>Rules (Optional)</label>
+                                <input style={s.input} placeholder="E.g. Min 4 Hours Played To Qualify" value={newBoard.rules_description} onChange={e => setNewBoard({ ...newBoard, rules_description: e.target.value })} />
                             </div>
                         </div>
 
@@ -313,12 +315,12 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
 
                 {/* BOARD LIST */}
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.3)' }}>Loading boards...</div>
+                    <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.3)' }}>Loading Boards...</div>
                 ) : boards.length === 0 ? (
                     <div style={{ ...s.card, textAlign: 'center', padding: '60px' }}>
                         <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
                         <p style={{ fontSize: '18px', fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>No Custom Boards Yet</p>
-                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.25)', maxWidth: '400px', margin: '8px auto 0' }}>Click "Create Board" to build your first custom leaderboard. It will automatically appear on the TV display.</p>
+                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.25)', maxWidth: '400px', margin: '8px auto 0' }}>Click "Create Board" To Build Your First Custom Leaderboard. It Will Automatically Appear On The TV Display.</p>
                     </div>
                 ) : (
                     boards.map(board => {
@@ -360,10 +362,10 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                         {['hours_played', 'sessions'].includes(board.leaderboard_type) && (
                                             <div style={{ marginBottom: '16px' }}>
                                                 <button onClick={() => autoCalculate(board.id)} style={{ ...s.btn, background: 'rgba(99,102,241,0.15)', color: '#6366F1', fontSize: '12px' }}>
-                                                    Auto-Calculate from Player Sessions
+                                                    Auto-Calculate From Player Sessions
                                                 </button>
                                                 <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginLeft: '10px' }}>
-                                                    Pulls data from player session history
+                                                    Pulls Data From Player Session History
                                                 </span>
                                             </div>
                                         )}
@@ -387,15 +389,15 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                                                 <td style={{ padding: '8px', color: i < 3 ? '#FFD700' : 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{i + 1}</td>
                                                                 <td style={{ padding: '8px', fontWeight: 600 }}>{e.player_name || e.profiles?.display_name || 'Player'}</td>
                                                                 <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#3B82F6' }}>{e.score || 0}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{e.hours_played ? `${Number(e.hours_played).toFixed(1)}h` : '—'}</td>
-                                                                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{e.sessions_count || '—'}</td>
+                                                                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{e.hours_played ? `${Number(e.hours_played).toFixed(1)}h` : '-'}</td>
+                                                                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{e.sessions_count || '-'}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                 </table>
                                             </div>
                                         ) : (
-                                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.25)', marginBottom: '16px' }}>No entries yet. Add players below or auto-calculate.</p>
+                                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.25)', marginBottom: '16px' }}>No Entries Yet. Add Players Below Or Auto-Calculate.</p>
                                         )}
 
                                         {/* Add entry form */}
@@ -405,7 +407,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                                 <div>
                                                     <label style={{ ...s.label, fontSize: '10px' }}>Player</label>
                                                     <select style={s.select} value={addEntry.player_id} onChange={e => setAddEntry({ ...addEntry, player_id: e.target.value })}>
-                                                        <option value="">Select player...</option>
+                                                        <option value="">Select Player...</option>
                                                         {members.filter(m => m.membership_status === 'active').map(m => (
                                                             <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                                                         ))}
@@ -439,19 +441,19 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
                         <div>
                             <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>Custom Boards</p>
-                            <p>Boards you create here appear on the TV display automatically when set to "Active". Add players and scores manually.</p>
+                            <p>Boards You Create Here Appear On The TV Display Automatically When Set To "Active". Add Players And Scores Manually.</p>
                         </div>
                         <div>
                             <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>Auto-Calculate</p>
-                            <p>For Hours/Sessions types, click "Auto-Calculate" to pull data from player session history.</p>
+                            <p>For Hours/Sessions Types, Click "Auto-Calculate" To Pull Data From Player Session History.</p>
                         </div>
                         <div>
                             <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>League Boards</p>
-                            <p>League standings from Commander → Leagues also appear on the display automatically.</p>
+                            <p>League Standings From Commander → Leagues Also Appear On The Display Automatically.</p>
                         </div>
                         <div>
                             <p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>Display Priority</p>
-                            <p>Custom boards show first, then league standings, then auto-generated boards (visits, hours, VIP).</p>
+                            <p>Custom Boards Show First, Then League Standings, Then Auto-Generated Boards (Visits, Hours, VIP).</p>
                         </div>
                     </div>
                 </div>

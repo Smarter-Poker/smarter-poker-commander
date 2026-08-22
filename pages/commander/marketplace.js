@@ -122,7 +122,7 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
               <div className="p-3 bg-[#18191A] rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#B0B3B8]">Duration</span>
-                  <span className="font-medium text-white">{days} day{days > 1 ? 's' : ''}</span>
+                  <span className="font-medium text-white">{days} Day{days > 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-1">
                   <span className="text-[#B0B3B8]">Estimated Cost</span>
@@ -226,7 +226,7 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
           <div className="p-8 text-center">
             <CheckCircle className="w-12 h-12 text-[#31A24C] mx-auto mb-3" />
             <p className="font-semibold text-white">Booking Request Sent</p>
-            <p className="text-sm text-[#B0B3B8]">{dealer.name} will be notified</p>
+            <p className="text-sm text-[#B0B3B8]">{dealer.name} Will Be Notified</p>
           </div>
         ) : (
           <>
@@ -346,7 +346,7 @@ function DealerCard({ dealer, onBook }) {
         <div className="text-right">
           <p className="font-semibold text-white">${dealer.hourly_rate}/hr</p>
           {dealer.experience_years && (
-            <p className="text-xs text-[#B0B3B8]">{dealer.experience_years}+ years</p>
+            <p className="text-xs text-[#B0B3B8]">{dealer.experience_years}+ Years</p>
           )}
         </div>
       </div>
@@ -376,7 +376,7 @@ function DealerCard({ dealer, onBook }) {
         {dealer.available_days && (
           <span className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
-            {Array.isArray(dealer.available_days) ? dealer.available_days.length : 7} days
+            {Array.isArray(dealer.available_days) ? dealer.available_days.length : 7} Days
           </span>
         )}
       </div>
@@ -414,7 +414,7 @@ function EquipmentCard({ equipment, onRent }) {
       <div className="flex items-center gap-4 text-sm text-[#B0B3B8] mb-4">
         <span className="flex items-center gap-1">
           <MapPin className="w-4 h-4" />
-          {equipment.location || 'Local pickup'}
+          {equipment.location || 'Local Pickup'}
         </span>
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${equipment.available ? 'bg-[#31A24C]/10 text-[#31A24C]' : 'bg-[#EF4444]/10 text-[#EF4444]'
           }`}>
@@ -495,7 +495,7 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
     if (venueId) fetchAll();
   }, [venueId, fetchAll]);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(venueId || '', fetchAll, { entities: ['settings', 'marketplace'] });
 
   function handleBookDealer(dealer) {
@@ -532,7 +532,7 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
     <CommanderLayout title="Marketplace | Commander" backHref="/commander/dashboard?card=reports">
       <>
         <SEOHead
-          title="Commander — Marketplace"
+          title="Commander - Marketplace"
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
@@ -571,7 +571,7 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={activeTab === 'dealers' ? 'Search dealers, games...' : 'Search equipment...'}
+                placeholder={activeTab === 'dealers' ? 'Search Dealers, Games...' : 'Search Equipment...'}
                 className="cmd-input w-full pl-10"
               />
             </div>

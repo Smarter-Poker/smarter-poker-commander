@@ -1,8 +1,8 @@
 /**
- * Waitlist Player View — Read-Only Desk Clone
+ * Waitlist Player View - Read-Only Desk Clone
  * /commander/displays/waitlist
  * Exact visual duplicate of /commander/waitlist/desk
- * but fully read-only — no action buttons, no modals, no editing.
+ * but fully read-only - no action buttons, no modals, no editing.
  * Auto-refreshes every 5 seconds. Designed for TV / player-facing display.
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -24,7 +24,7 @@ import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 const GAMES_PER_PAGE = 4;
 const ROTATE_INTERVAL = 10000;
 
-// Default customization — matches desk.js exactly
+// Default customization - matches desk.js exactly
 const DEFAULT_CUSTOM = {
   headerColor: '#B8860B',
   accentColor: '#D4AF37',
@@ -56,7 +56,7 @@ export default function WaitlistDisplay() {
     } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
   }, []);
 
-  // Fetch customization settings — periodic re-fetch so desk changes sync
+  // Fetch customization settings - periodic re-fetch so desk changes sync
   const fetchSettings = useCallback(async (signal) => {
     try {
 const opts = signal ? { signal }
@@ -74,7 +74,7 @@ const opts = signal ? { signal }
     return () => clearInterval(settingsInterval);
   }, [fetchSettings]);
 
-  // fetchData — EXACT copy of desk.js logic (desk is source of truth)
+  // fetchData - EXACT copy of desk.js logic (desk is source of truth)
   const fetchData = useCallback(async (signal) => {
     try {
 const staffData = getStaffData();
@@ -101,11 +101,11 @@ const staffData = getStaffData();
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
-    const interval = setInterval(fetchData, 30000); // fallback — real-time sync handles instant updates
+    const interval = setInterval(fetchData, 30000); // fallback - real-time sync handles instant updates
     return () => { controller.abort(); clearInterval(interval); };
   }, [fetchData]);
 
-  // Real-time Supabase subscription — same as desk.js
+  // Real-time Supabase subscription - same as desk.js
   const [venueId] = useState(() => {
     return getVenueId();
   });
@@ -218,7 +218,7 @@ const staffData = getStaffData();
 
   return (
     <>
-      <SEOHead title="Player View — Poker Waiting List" noindex={true} />
+      <SEOHead title="Player View - Poker Waiting List" noindex={true} />
       <div style={{ minHeight: '100vh', background: c.bgColor, color: c.textColor, fontFamily: "var(--font-inter), 'Segoe UI', sans-serif", display: 'flex', flexDirection: 'column' }}>
 
         {/* ═══ TOP BAR ═══ */}
@@ -244,14 +244,14 @@ const staffData = getStaffData();
           </div>
         </div>
 
-        {/* ═══ STATUS BAR (read-only — no buttons) ═══ */}
+        {/* ═══ STATUS BAR (read-only - no buttons) ═══ */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px', borderBottom: `1px solid ${c.borderColor}33`, background: c.cardBgColor }}>
           <span style={{ fontSize: '18px', color: `${c.textColor}88`, fontWeight: 600 }}>
             {totalWaiting} waiting &bull; {gameEntries.length} game{gameEntries.length !== 1 ? 's' : ''}
             {totalPages > 1 && <span style={{ marginLeft: '8px', color: c.accentColor }}>Page {currentPage + 1}/{totalPages}</span>}
           </span>
           <span style={{ fontSize: '13px', color: `${c.textColor}44`, fontWeight: 500 }}>
-            PLAYER VIEW — READ ONLY
+            PLAYER VIEW - READ ONLY
           </span>
         </div>
 
@@ -282,9 +282,9 @@ const staffData = getStaffData();
                           T{tn}{tableNums.length > 1 ? (i === 0 ? ' ★' : ' ⇢') : ''}
                         </span>
                       </span>
-                    )) : '—'}
+                    )) : '-'}
                   </div>
-                  {/* Player Names (read-only — no click actions) */}
+                  {/* Player Names (read-only - no click actions) */}
                   <div style={{ flex: 1, background: c.bgColor }}>
                     {entries.map((entry) => {
                       const isCalled = entry.status === 'called';

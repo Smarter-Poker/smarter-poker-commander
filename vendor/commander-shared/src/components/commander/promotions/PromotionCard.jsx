@@ -1,5 +1,5 @@
 /**
- * PromotionCard Component — Premium SmarterPoker Dark Redesign
+ * PromotionCard Component - Premium SmarterPoker Dark Redesign
  * Features: Status badges, countdown timer, duplicate button, image banner
  */
 import React, { useState, useEffect } from 'react';
@@ -113,7 +113,7 @@ export default function PromotionCard({
   const statusStyle = STATUS_STYLES[effectiveStatus] || STATUS_STYLES.draft;
   const TypeIcon = PROMOTION_TYPE_ICONS[promotion.promotion_type] || Gift;
 
-  // Countdown timer — updates every 60s
+  // Countdown timer - updates every 60s
   const [countdown, setCountdown] = useState(() => getTimeRemaining(promotion));
 
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function PromotionCard({
           </span>
         </div>
         <div style={{ marginTop: 4, fontSize: 12, color: '#8A8D91' }}>
-          {PROMOTION_TYPE_LABELS[promotion.promotion_type]} — {formatPrize()}
+          {PROMOTION_TYPE_LABELS[promotion.promotion_type]} - {formatPrize()}
         </div>
       </div>
     );

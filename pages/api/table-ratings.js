@@ -1,10 +1,10 @@
 /**
  * Table Atmosphere Ratings API
- * POST /api/commander/table-ratings — Submit a rating after session
- * GET /api/commander/table-ratings — Get aggregated vibes for venue tables
+ * POST /api/commander/table-ratings - Submit a rating after session
+ * GET /api/commander/table-ratings - Get aggregated vibes for venue tables
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardUser } from '../../src/lib/commander/auth';
+import { guardUser, verifyStaffSession } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: PLAYER — verified user submits their own rating; GET is public aggregates
+// Auth: PLAYER - verified user submits their own rating; GET is public aggregates
 export default async function handler(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     // 2026-07-25 audit fix: POST was gated by guardWriteStaff, but this is the
-    // player rating submission endpoint — require a verified player user and
+    // player rating submission endpoint - require a verified player user and
     // derive the rater from the session, not the body.
     if (req.method === 'POST') {
       const user = await guardUser(req, res);
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 }
 
 async function submitRating(req, res, user) {
-  // 2026-07-25 audit fix: body player_id is ignored — the rater is the
+  // 2026-07-25 audit fix: body player_id is ignored - the rater is the
   // verified session user.
   const { venue_id, table_number, action_level, friendliness, pace, game_type, stakes, comment, session_id } = req.body;
 
@@ -96,8 +96,26 @@ async function getVibes(req, res) {
     return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'venue_id required' } });
   }
 
-  // Table ratings are aggregates — safe to cache 30s at the CDN edge
-  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+  // 2026-08-20 audit fix: the numeric vibe aggregates stay public by design
+  // (this is a player-facing "what is the table like" signal), but the payload
+  // also echoed recent_comments - raw free text players wrote about a table and
+  // the people at it. Comments are now returned only to verified venue staff.
+  const sessionResult = await verifyStaffSession(req);
+  const includeComments = !!(sessionResult.staff
+    && (sessionResult.staff.venue_id === undefined || sessionResult.staff.venue_id === null
+      || String(sessionResult.staff.venue_id) === String(venue_id)));
+
+  // Aggregates are safe to cache 30s at the CDN edge only when no
+  // session-dependent field is present in the response.
+  // Vary is mandatory here: without it an anonymous request warms a shared
+  // edge entry for this URL and the staff page (/commander/table-vibes) is
+  // then served that comment-less body for the next 30 seconds, so the
+  // comments the fix was written to protect silently stop appearing for the
+  // people who are supposed to see them.
+  res.setHeader('Vary', 'x-staff-session, Authorization');
+  res.setHeader('Cache-Control', includeComments
+    ? 'private, max-age=30'
+    : 'public, s-maxage=30, stale-while-revalidate=120');
 
   try {
     const since = new Date(Date.now() - parseInt(days) * 86400000).toISOString();
@@ -122,7 +140,7 @@ async function getVibes(req, res) {
       tableMap[key].totalFriendly += r.friendliness;
       tableMap[key].totalPace += r.pace;
       tableMap[key].count += 1;
-      if (r.comment && tableMap[key].recentComments.length < 3) {
+      if (includeComments && r.comment && tableMap[key].recentComments.length < 3) {
         tableMap[key].recentComments.push(r.comment);
       }
     });

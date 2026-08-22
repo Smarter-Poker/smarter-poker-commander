@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -46,6 +46,15 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+
+      // 2026-08-20 audit fix: the session id was acted on with no venue
+      // ownership check, so staff at venue A could close out (and set the
+      // total_charge on) venue B's table sessions.
+      if (_g && _g !== true && _g.venue_id !== undefined && _g.venue_id !== null
+          && String(_g.venue_id) !== String(session.venue_id)) {
+        return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
+      }
+
       if (session.status !== 'active') return res.status(400).json({ success: false, error: 'Session not active' });
 
       const endedAt = new Date();

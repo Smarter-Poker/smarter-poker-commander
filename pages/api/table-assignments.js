@@ -4,7 +4,7 @@
  * PUT  /api/commander/table-assignments - Assign a table to a mode (inactive/cash/tournament)
  * POST /api/commander/table-assignments - Close a table (end all sessions, set inactive)
  *
- * Auth: guardManager — uses x-staff-session header for Commander staff PIN sessions.
+ * Auth: guardManager - uses x-staff-session header for Commander staff PIN sessions.
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardManager } from '../../src/lib/commander/auth';
@@ -30,24 +30,11 @@ export default async function handler(req, res) {
     const _g = await guardManager(req, res); if (!_g) return;
 
     try {
-      // Get venue_id from staff session header
-      let venueId;
-      try {
-        const staffSession = JSON.parse(req.headers['x-staff-session'] || '{}');
-        if (staffSession.venue_id) {
-          venueId = staffSession.venue_id;
-        } else if (staffSession.id) {
-          const { data: staffData } = await getSupabase()
-            .from('commander_staff')
-            .select('venue_id')
-            .eq('id', staffSession.id)
-            .eq('is_active', true)
-            .maybeSingle();
-          venueId = staffData?.venue_id;
-        } else if (staffSession.user_id) {
-          venueId = staffSession.venue_id;
-        }
-      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // 2026-08-20 audit fix: the venue used to be re-read from the RAW
+      // x-staff-session header. guardManager above already verified and
+      // resolved the session, so take the venue from its result and never
+      // parse the client-supplied header again.
+      let venueId = _g.venue_id;
 
       // Fallback: Bearer token
       if (!venueId) {
@@ -58,11 +45,14 @@ export default async function handler(req, res) {
             const { data: authData } = await getSupabase().auth.getUser(token);
             const user = authData?.user;
             if (user) {
+              // MULTI-CLUB FIX: limit(1) — unscoped maybeSingle errors for
+              // users with staff rows at 2+ venues
               const { data: staff } = await getSupabase()
                 .from('commander_staff')
                 .select('venue_id')
-                .eq('user_id', user.id)
+                .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
                 .eq('is_active', true)
+                .limit(1)
                 .maybeSingle();
               venueId = staff?.venue_id;
             }
@@ -72,12 +62,8 @@ export default async function handler(req, res) {
 
       if (!venueId) return res.status(403).json({ success: false, error: 'Could not determine venue' });
 
-      // Extract staff info
-      let staffUserId = null;
-      try {
-        const sess = JSON.parse(req.headers['x-staff-session'] || '{}');
-        staffUserId = sess.user_id || sess.id || null;
-      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // Staff identity comes from the verified session, not the raw header.
+      const staffUserId = _g.user_id || _g.linked_user_id || _g.id || null;
 
       if (req.method === 'GET') return handleGet(req, res, venueId);
       if (req.method === 'PUT') return handlePut(req, res, venueId, staffUserId);
@@ -119,7 +105,12 @@ async function handleGet(req, res, venueId) {
     .from('commander_tournaments')
     .select('id, name, status, game_type, buyin_amount, max_entries')
     .eq('venue_id', venueId)
-    .in('status', ['scheduled', 'registering', 'running', 'paused', 'late_registration'])
+    // 2026-08-20: 'registering' is not a value the status CHECK allows (the
+    // real value is 'registration'), so a tournament that had opened
+    // registration never appeared in the table-assignments dropdown and could
+    // not be given tables. 'registering'/'late_registration' kept as harmless
+    // legacy aliases.
+    .in('status', ['scheduled', 'registration', 'registering', 'running', 'paused', 'final_table', 'hand_for_hand', 'late_registration'])
     .order('created_at', { ascending: false });
 
   // Get session counts per table (fallback player count)
@@ -205,7 +196,7 @@ async function handlePut(req, res, venueId, staffUserId) {
     return res.status(400).json({ success: false, error: 'mode must be inactive, cash, or tournament' });
   }
   if (mode === 'cash' && game_type && !stakes) {
-    // stakes is optional — only validate if game_type is provided
+    // stakes is optional - only validate if game_type is provided
   }
 
   // Verify table belongs to venue
@@ -218,7 +209,49 @@ async function handlePut(req, res, venueId, staffUserId) {
 
   if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
 
-  // Build update — persist BOTH mode and table_purpose as source of truth
+  // 2026-08-20: refuse to reassign a table out from under live tournament
+  // players. Switching a tournament table to cash/inactive nulls tournament_id
+  // while commander_tournament_entries still point at that table number, so the
+  // players vanish from the floor map, the TD console and auto-break while
+  // still sitting at the table. The new tournament tables endpoint already
+  // guards this; this is the legacy path that did not.
+  const leavingTournament = table.tournament_id &&
+    (mode !== 'tournament' || String(tournament_id || '') !== String(table.tournament_id));
+  if (leavingTournament) {
+    const { data: seatedPlayers, error: seatedErr } = await getSupabase()
+      .from('commander_tournament_entries')
+      .select('player_name, seat_number')
+      .eq('tournament_id', table.tournament_id)
+      .eq('table_number', table.table_number)
+      // SEAT OCCUPANCY: this guard exists to stop a table being taken out
+      // from under people who are sitting at it. 'bagged' excluded on purpose
+      // - they hold no chair, and bag-and-tag deliberately frees these tables
+      // for the room overnight.
+      .in('status', ['seated', 'active'])
+      .limit(20);
+
+    if (seatedErr) {
+      console.error('[table-assignments] seated-player check failed', {
+        table_id, code: seatedErr.code, message: seatedErr.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DB_ERROR', message: 'Could Not Verify Whether Players Are Seated At This Table' }
+      });
+    }
+    if (seatedPlayers && seatedPlayers.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'TABLE_OCCUPIED',
+          message: `Table ${table.table_number} Still Has ${seatedPlayers.length} Tournament Player(s). Break This Table From The Tournament Director Console First.`
+        },
+        data: { players: seatedPlayers.map(p => ({ player_name: p.player_name, seat_number: p.seat_number })) }
+      });
+    }
+  }
+
+  // Build update - persist BOTH mode and table_purpose as source of truth
   // mode values: 'cash', 'tournament', 'inactive'
   // table_purpose values: 'cash_game', 'tournament', null
   const tablePurpose = mode === 'cash' ? 'cash_game' : mode === 'tournament' ? 'tournament' : null;
@@ -292,6 +325,43 @@ async function handleClose(req, res, venueId, staffUserId) {
 
   if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
 
+  // 2026-08-20: same guard as the reassignment path. Closing a tournament
+  // table nulls tournament_id and deletes its seat rows while live
+  // commander_tournament_entries still reference that table number, orphaning
+  // the players. Breaking the table from the TD console is the correct route
+  // because it MOVES the players first and prints their seat change cards.
+  if (table.tournament_id) {
+    const { data: seatedPlayers, error: seatedErr } = await getSupabase()
+      .from('commander_tournament_entries')
+      .select('player_name, seat_number')
+      .eq('tournament_id', table.tournament_id)
+      .eq('table_number', table.table_number)
+      // SEAT OCCUPANCY, same rule as the assignment guard above: only a
+      // player physically at this table blocks the close.
+      .in('status', ['seated', 'active'])
+      .limit(20);
+
+    if (seatedErr) {
+      console.error('[table-assignments] close seated-player check failed', {
+        table_id, code: seatedErr.code, message: seatedErr.message
+      });
+      return res.status(500).json({
+        success: false,
+        error: { code: 'DB_ERROR', message: 'Could Not Verify Whether Players Are Seated At This Table' }
+      });
+    }
+    if (seatedPlayers && seatedPlayers.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'TABLE_OCCUPIED',
+          message: `Table ${table.table_number} Still Has ${seatedPlayers.length} Tournament Player(s). Break This Table From The Tournament Director Console So Their Seat Change Cards Print.`
+        },
+        data: { players: seatedPlayers.map(p => ({ player_name: p.player_name, seat_number: p.seat_number })) }
+      });
+    }
+  }
+
   // Close all active games on this table
   await getSupabase()
     .from('commander_games')
@@ -315,7 +385,7 @@ async function handleClose(req, res, venueId, staffUserId) {
     .eq('venue_id', venueId)
     .eq('table_number', table.table_number);
 
-  // Set table to inactive — sync BOTH mode and table_purpose
+  // Set table to inactive - sync BOTH mode and table_purpose
   const { data: updated } = await getSupabase()
     .from('commander_tables')
     .update({

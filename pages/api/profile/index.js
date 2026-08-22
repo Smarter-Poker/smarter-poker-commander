@@ -17,7 +17,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: PLAYER — verified Bearer user (own profile only)
+// Auth: PLAYER - verified Bearer user (own profile only)
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2026-07-25 audit fix: removed guardOwnerStaff gate on writes — this is the
+    // 2026-07-25 audit fix: removed guardOwnerStaff gate on writes - this is the
     // player's own profile endpoint; the verified Bearer user above is sufficient
     // and the handler only writes that user's rows.
 

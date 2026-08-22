@@ -7,7 +7,7 @@
  * - Member since date
  *
  * Uses @media print CSS for clean output
- * NO EMOJIS — Lucide icons only (per /no-emoji-commander)
+ * NO EMOJIS - Lucide icons only (per /no-emoji-commander)
  */
 import { useRef } from 'react';
 import { Printer } from 'lucide-react';
@@ -35,7 +35,7 @@ export default function MemberCard({ member, venueName, qrCodeUrl, onPrint }) {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Member Card — ${member.first_name} ${member.last_name}</title>
+          <title>Member Card - ${member.first_name} ${member.last_name}</title>
           <style>
             @page { size: 3.375in 2.125in; margin: 0; }
             body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }

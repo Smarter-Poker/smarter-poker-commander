@@ -4,7 +4,7 @@
  * POST /api/commander/freerolls - Create a new freeroll
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -18,21 +18,24 @@ function getSupabase() {
     return _supabase;
 }
 
-function getVenueIdFromSession(req) {
-    try {
-        const session = JSON.parse(req.headers['x-staff-session'] || '{}');
-        return session.venue_id ? parseInt(session.venue_id) : null;
-    } catch { return null; }
+// 2026-08-20 audit fix: this parsed the UNSIGNED x-staff-session header. The
+// venue now comes from the verified session object returned by guardStaff.
+function getVenueIdFromStaff(staff) {
+    if (!staff || staff === true) return null;
+    return (staff.venue_id === undefined || staff.venue_id === null) ? null : parseInt(staff.venue_id);
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-      const guard = await guardWriteStaff(req, res);
+      // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+      // without verifying anything - and with no (or a forged) x-staff-session
+      // the list query ran unfiltered, returning every venue's freerolls.
+      const guard = await guardStaff(req, res);
       if (!guard) return;
 
       if (req.method === 'POST') return createFreeroll(req, res, guard);
@@ -43,7 +46,7 @@ export default async function handler(req, res) {
           });
       }
 
-      return listFreerolls(req, res);
+      return listFreerolls(req, res, guard);
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
@@ -52,9 +55,9 @@ export default async function handler(req, res) {
   }
 }
 
-async function listFreerolls(req, res) {
+async function listFreerolls(req, res, staff) {
     try {
-        const venueId = getVenueIdFromSession(req);
+        const venueId = getVenueIdFromStaff(staff);
         const { status, limit = 50 } = req.query;
 
         let query = getSupabase()
@@ -74,7 +77,7 @@ async function listFreerolls(req, res) {
         const { data: freerolls, error } = await query;
 
         if (error) {
-            // Handle missing-table cleanly — feature not provisioned in this Supabase project.
+            // Handle missing-table cleanly - feature not provisioned in this Supabase project.
             // Migration archived at supabase/migrations/archive/20260225_freerolls.sql,
             // never applied to production. Return empty list + clear flag instead of 500.
             if (error.code === '42P01' || /relation .* does not exist/i.test(error.message || '')) {
@@ -132,7 +135,7 @@ async function listFreerolls(req, res) {
 }
 
 async function createFreeroll(req, res, guard) {
-    const venueId = guard.venue_id || getVenueIdFromSession(req);
+    const venueId = guard.venue_id || getVenueIdFromStaff(guard);
     const {
         name, description, qualification_type, qualification_threshold,
         qualification_period, qualification_game_types, qualification_min_stakes,

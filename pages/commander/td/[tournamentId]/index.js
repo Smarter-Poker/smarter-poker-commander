@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Control Center
+ * Tournament Director - Control Center
  * /commander/td/[tournamentId]
  * Main command screen for the TD holding a tablet on the floor
  * Shows: tournament header, stats, alerts, activity feed
@@ -11,13 +11,15 @@ import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
+import ConnectionPill from '../../../../src/components/commander/shared/ConnectionPill';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../../src/engine/EventBus';
 import {
   Trophy, Users, DollarSign,
   AlertTriangle, ChevronRight, RefreshCw, Loader2,
   LayoutGrid, UserPlus, Monitor,
-  Star, Volume2, X, FileText
+  Star, Volume2, X, FileText, Coins, Layers,
+  Package, Play, Calendar, ArrowRightLeft, DoorOpen, Ban, Settings
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 
@@ -67,6 +69,30 @@ export default function TDControlCenter() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
 
+  // ── Table assignment state ──
+  // floor-view derives its tables[] from SEATED ENTRIES, so a table that is
+  // assigned but still empty is invisible to it. Auto-break and the seat draw
+  // both read commander_tables, so the setup check has to read that directly.
+  const [tableSetup, setTableSetup] = useState(null);
+  const [assignModal, setAssignModal] = useState(false);
+  const [assignCount, setAssignCount] = useState('4');
+  const [assigning, setAssigning] = useState(false);
+
+  // ── Lifecycle controls ──
+  // Ported 2026-08-20 from the retired /commander/tournaments/[id] screen, which
+  // was the ONLY place a tournament could be moved from scheduled to open
+  // registration, or cancelled at all. The modern console could start a clock
+  // but not open the doors and not close the event, so a room still had to keep
+  // the old screen bookmarked.
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  // ── Multi-day state ──
+  // 'bag'    -> close the current day, bag every surviving stack
+  // 'resume' -> bring the bagged field back and redraw seats
+  const [multiDayAction, setMultiDayAction] = useState(null);
+  const [multiDayBusy, setMultiDayBusy] = useState(false);
+
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
 
@@ -76,7 +102,6 @@ export default function TDControlCenter() {
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
   }, [toast]);
-  const pollRef = useRef(null);
 
   const fetchFloor = useCallback(async (signal) => {
     if (!tournamentId) return;
@@ -91,23 +116,110 @@ export default function TDControlCenter() {
         setError(json.error);
       }
     } catch (err) {
-      if (err.name !== 'AbortError') setError('Failed to load tournament data');
+      if (err.name !== 'AbortError') setError('Failed To Load Tournament Data');
     } finally {
       setLoading(false);
     }
   }, [tournamentId]);
 
-  // Initial load + Realtime subscription + 5-min fallback poll
-  useTournamentRealtime(tournamentId, fetchFloor);
+  const fetchTables = useCallback(async (signal) => {
+    if (!tournamentId) return;
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/tables`, { ...(signal ? { signal } : {}) });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.success) setTableSetup(json.data);
+    } catch (err) {
+      if (err.name !== 'AbortError') console.warn('Table setup check failed:', err);
+    }
+  }, [tournamentId]);
+
+  // Initial load + Realtime subscription + adaptive fallback poll.
+  // The Control Center is the one screen that genuinely reads every section
+  // (the activity log walks the whole entry list), so it deliberately does
+  // NOT pass ?include and keeps the full payload.
+  const conn = useTournamentRealtime(tournamentId, fetchFloor, {
+    poll: true,
+    fastMs: 300000,
+    slowMs: 300000
+  });
   useEffect(() => {
     const _c = new AbortController();
     fetchFloor(_c.signal);
-    pollRef.current = setInterval(() => fetchFloor(_c.signal), 300000); // 5-min fallback (realtime handles instant updates)
-    return () => {
-      _c.abort();
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [fetchFloor]);
+    fetchTables(_c.signal);
+    return () => { _c.abort(); };
+  }, [fetchFloor, fetchTables]);
+
+  const handleAssignTables = async () => {
+    const count = parseInt(assignCount, 10);
+    if (!Number.isInteger(count) || count < 1) {
+      setToast({ type: 'error', text: 'Enter How Many Tables To Assign.' });
+      return;
+    }
+    setAssigning(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/tables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count })
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Tables Could Not Be Assigned.' });
+        return;
+      }
+      setToast({ type: 'success', text: json.data?.message || 'Tables Assigned.' });
+      setAssignModal(false);
+      await fetchTables();
+      await fetchFloor();
+      broadcastChange('tables');
+    } catch (err) {
+      console.warn('Assign tables failed:', err);
+      setToast({ type: 'error', text: 'Tables Could Not Be Assigned.' });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  // ── Multi-day: close the day / start the next one ──
+  // Both endpoints answer with the standard { success, data | error } envelope
+  // and both can answer success:false with a partial result, so the toast is
+  // driven by json.success and never by res.ok alone.
+  const runMultiDayAction = async () => {
+    if (!multiDayAction) return;
+    const isBag = multiDayAction === 'bag';
+    const path = isBag ? 'bag-and-tag' : 'resume-day';
+    setMultiDayBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({
+          type: 'success',
+          text: json.data?.message || (isBag ? 'Day Closed.' : 'Day Resumed.')
+        });
+        setMultiDayAction(null);
+      } else {
+        setToast({
+          type: 'error',
+          text: json?.error?.message || json?.data?.message ||
+            (isBag ? 'The Day Could Not Be Closed.' : 'The Day Could Not Be Resumed.')
+        });
+      }
+      await fetchFloor();
+      await fetchTables();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Multi-day action failed:', err);
+      setToast({ type: 'error', text: 'The Action Failed. Check The Connection And Retry.' });
+    } finally {
+      setMultiDayBusy(false);
+    }
+  };
 
   // Memoize sorted activity entries (prevents re-sorting 5000 entries on every render)
   const sortedActivityEntries = useMemo(() => {
@@ -135,7 +247,7 @@ export default function TDControlCenter() {
       setMessageModal(false);
     } catch (err) {
       console.warn('Send message failed:', err);
-      setError('Failed to send tournament message. Please try again.');
+      setError('Failed To Send Tournament Message. Please Try Again.');
     } finally {
       setSendingMessage(false);
     }
@@ -151,12 +263,100 @@ export default function TDControlCenter() {
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (!json.success) setToast({ type: 'error', text: json.error || 'Failed to toggle Hand-for-Hand.' });
+      if (!json.success) setToast({ type: 'error', text: json.error || 'Failed To Toggle Hand-For-Hand.' });
       await fetchFloor();
       broadcastChange('tournaments');
     } catch (err) {
       console.warn('H4H toggle failed:', err);
-      setError('Hand-for-Hand toggle failed.');
+      setError('Hand-For-Hand Toggle Failed.');
+    }
+  };
+
+  /**
+   * Open registration on a scheduled tournament.
+   *
+   * 'registration' is the value commander_tournaments_status_check actually
+   * allows. The legacy screen sent 'registering', which is not in the CHECK and
+   * never matched, so a room that used it silently stayed 'scheduled'.
+   */
+  const openRegistration = async () => {
+    setLifecycleBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'registration' })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Open Registration.' });
+        return;
+      }
+      setToast({ type: 'success', text: 'Registration Is Open.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Open registration failed:', err);
+      setToast({ type: 'error', text: 'Failed To Open Registration.' });
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
+  /**
+   * Start the event.
+   *
+   * Goes through the clock route rather than a bare status PATCH (which is what
+   * the legacy screen did): the clock action also stamps actual_start, resets
+   * the level, clears any stale break flag and fires the "we are underway" push.
+   * A status-only write left every display showing a paused clock on level 0.
+   */
+  const startTournament = async () => {
+    setLifecycleBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/clock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Start The Tournament.' });
+        return;
+      }
+      setToast({ type: 'success', text: 'Tournament Started. Cards Are In The Air.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Start tournament failed:', err);
+      setToast({ type: 'error', text: 'Failed To Start The Tournament.' });
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
+  /**
+   * Cancel the event. Soft: status 'cancelled' plus ended_at, nothing deleted.
+   * Owner / manager / dual rate only, enforced server side.
+   */
+  const cancelTournament = async () => {
+    setLifecycleBusy(true);
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Cancel The Tournament.' });
+        return;
+      }
+      setToast({ type: 'success', text: 'Tournament Cancelled.' });
+      await fetchFloor();
+      broadcastChange('tournaments');
+    } catch (err) {
+      console.warn('Cancel tournament failed:', err);
+      setToast({ type: 'error', text: 'Failed To Cancel The Tournament.' });
+    } finally {
+      setLifecycleBusy(false);
+      setConfirmCancel(false);
     }
   };
 
@@ -178,23 +378,24 @@ export default function TDControlCenter() {
       <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
         <div className="bg-[#242526] rounded-xl p-6 text-center max-w-md">
           <AlertTriangle className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" />
-          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament not found'}</p>
+          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament Not Found'}</p>
           <button onClick={() => router.push('/commander/tournaments')}
             className="px-6 py-3 bg-[#1877F2] text-white rounded-lg text-base font-medium">
-            Back to Tournaments
+            Back To Tournaments
           </button>
         </div>
       </div>
     );
   }
 
-  const { tournament, clock, stats, alerts, tables } = floor;
+  const { tournament, clock, stats, alerts, tables, alternates } = floor;
+  const chipLeader = (stats.player_stacks || []).reduce((top, p) => (!top || p.chips > top.chips) ? p : top, null);
   const statusConf = STATUS_CONFIG[tournament.status] || STATUS_CONFIG.scheduled;
 
   return (
-    <CommanderLayout title="Commander — Control Center" backHref="/commander/tournament-controls">
+    <CommanderLayout title="Commander - Control Center" backHref="/commander/tournament-controls">
       <SEOHead
-        title="Commander — Control Center"
+        title="Commander - Control Center"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -210,6 +411,14 @@ export default function TDControlCenter() {
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusConf.bg} ${statusConf.text}`}>
                   {statusConf.label}
                 </span>
+                {/* Multi-day: which day of the event is on the floor right now. */}
+                {tournament.is_multi_day && (
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#1877F2]/10 text-[#1877F2] whitespace-nowrap">
+                    Day {tournament.current_day || 1}
+                    {tournament.total_days > 1 ? ` Of ${tournament.total_days}` : ''}
+                    {tournament.flight_label ? `, ${tournament.flight_label}` : ''}
+                  </span>
+                )}
                 {alerts.hand_for_hand && (
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#EF4444]/10 text-[#EF4444]">
                     H4H
@@ -220,17 +429,165 @@ export default function TDControlCenter() {
                     Break
                   </span>
                 )}
+                {/* Realtime health. Live means the channel is delivering and
+                    the safety poll has backed off. Reconnecting means the
+                    screen is running on the fast fallback poll instead, which
+                    is what it always used to do. */}
+                <ConnectionPill conn={conn} />
               </div>
             </div>
-            <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
-              <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* 2026-08-04 audit fix: the announcement modal and H4H handler existed
+                  but nothing opened/invoked them - surface both controls here */}
+              <button onClick={handleHandForHand} title="Toggle Hand-For-Hand"
+                className={`p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C] ${alerts.hand_for_hand ? 'bg-[#EF4444]/10' : ''}`}>
+                <AlertTriangle className={`w-5 h-5 ${alerts.hand_for_hand ? 'text-[#EF4444]' : 'text-[#B0B3B8]'}`} />
+              </button>
+              <button onClick={() => setMessageModal(true)} title="Broadcast Announcement"
+                className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+                <Volume2 className="w-5 h-5 text-[#B0B3B8]" />
+              </button>
+              {/* Pop the TV clock into its own window. Ported from the retired
+                  /commander/tournaments/[id] screen: the modern Clock screen
+                  only mirrors it in an iframe, so there was no way to throw the
+                  board onto a second monitor from the console. */}
+              <button onClick={() => window.open(`/commander/tournaments/${tournamentId}/clock-display`, '_blank')}
+                title="Open The Clock Display In A New Window"
+                className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+                <Monitor className="w-5 h-5 text-[#B0B3B8]" />
+              </button>
+              <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+                <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* ===== TABLE SETUP BANNER =====
+            Fewer than two commander_tables rows carrying this tournament_id
+            means tournamentAutoBreak.js returns null on every call and the
+            seat draw has to invent table numbers. Neither failure surfaces
+            anywhere, so the room can run all night without a table ever
+            breaking. Say so, and fix it in one tap. */}
+        {tableSetup && tableSetup.assigned_count < 2 && (
+          <div className="px-4 pt-3">
+            <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <LayoutGrid className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[#F59E0B] text-sm font-bold">
+                    {tableSetup.assigned_count === 0 ? 'No Tables Assigned' : 'Only One Table Assigned'}
+                  </p>
+                  <p className="text-[#B0B3B8] text-xs mt-1">
+                    Assign Tables To Enable The Seat Draw And Automatic Table Breaking.
+                    {tableSetup.available_count > 0
+                      ? ` ${tableSetup.available_count} Table${tableSetup.available_count === 1 ? '' : 's'} Free Right Now.`
+                      : ' No Free Tables In The Room Right Now.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    const suggested = tournament.max_entries
+                      ? Math.max(2, Math.ceil(Number(tournament.max_entries) / 9))
+                      : 4;
+                    setAssignCount(String(Math.max(2, suggested - (tableSetup.assigned_count || 0))));
+                    setAssignModal(true);
+                  }}
+                  className="flex-1 h-11 rounded-xl bg-[#F59E0B] text-black text-sm font-bold active:opacity-90"
+                >
+                  Assign Tables
+                </button>
+                <button
+                  onClick={() => router.push('/commander/table-assignments')}
+                  className="flex-1 h-11 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C]"
+                >
+                  Table Assignments
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== TOURNAMENT LIFECYCLE =====
+            Open the doors, start the event, cancel it. Ported from the retired
+            /commander/tournaments/[id] screen. Only rendered while there is an
+            action to take, so a running event does not carry a dead panel. */}
+        {!['completed', 'cancelled'].includes(tournament.status) && (
+          <div className="px-4 pt-3">
+            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 space-y-3">
+              <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Tournament Status</h3>
+
+              {tournament.status === 'scheduled' && (
+                <button onClick={openRegistration} disabled={lifecycleBusy}
+                  className="w-full h-12 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                  {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
+                  Open Registration
+                </button>
+              )}
+
+              {['registration', 'registering'].includes(tournament.status) && (
+                <button onClick={startTournament} disabled={lifecycleBusy}
+                  className="w-full h-12 rounded-xl bg-[#31A24C] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                  {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
+                  Start Tournament
+                </button>
+              )}
+
+              {!['completed', 'cancelled'].includes(tournament.status) && (
+                !confirmCancel ? (
+                  <button onClick={() => setConfirmCancel(true)} disabled={lifecycleBusy}
+                    className="w-full h-11 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+                    <Ban className="w-4 h-4" /> Cancel Tournament
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-[#E4E6EB]">
+                      Cancel {tournament.name}? The Event Is Marked Cancelled And Ended. Entries And Cash Records Are Kept.
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setConfirmCancel(false)} disabled={lifecycleBusy}
+                        className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50">
+                        Keep It
+                      </button>
+                      <button onClick={cancelTournament} disabled={lifecycleBusy}
+                        className="flex-1 h-12 rounded-xl bg-[#EF4444] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                        {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Ban className="w-5 h-5" />}
+                        Yes, Cancel
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ===== ALERT BANNER ===== */}
-        {(alerts.imbalanced || alerts.can_break_table || stats.late_reg_open) && (
+        {(alerts.seat_conflicts?.length > 0 || alerts.imbalanced || alerts.can_break_table || stats.late_reg_open) && (
           <div className="px-4 py-2 space-y-2">
+            {/* Seat conflicts outrank every other alert: two players are sitting
+                in one chair right now and the floor has to move one of them. */}
+            {alerts.seat_conflicts?.length > 0 && (
+              <button onClick={() => navigateTo('tables')}
+                className="w-full flex items-start gap-3 px-4 py-3 bg-[#EF4444]/15 border-2 border-[#EF4444]/50 rounded-xl active:bg-[#EF4444]/25">
+                <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0 text-left">
+                  {alerts.seat_conflicts.slice(0, 3).map((c, i) => (
+                    <span key={`${c.table_number}-${c.seat_number}-${i}`} className="block text-[#EF4444] text-sm font-bold">
+                      Seat Conflict: Table {c.table_number} Seat {c.seat_number} Has {c.players?.length || 2} Players
+                    </span>
+                  ))}
+                  {alerts.seat_conflicts.length > 3 && (
+                    <span className="block text-[#EF4444] text-xs font-medium mt-0.5">
+                      And {alerts.seat_conflicts.length - 3} More
+                    </span>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5" />
+              </button>
+            )}
             {alerts.imbalanced && (
               <button onClick={() => navigateTo('tables')}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl">
@@ -251,10 +608,31 @@ export default function TDControlCenter() {
               <div className="flex items-center gap-3 px-4 py-3 bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl">
                 <UserPlus className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
                 <span className="text-[#1877F2] text-sm font-medium">
-                  Late registration open — {stats.levels_until_late_reg_closes} level{stats.levels_until_late_reg_closes !== 1 ? 's' : ''} remaining
+                  Late Registration Open, {stats.levels_until_late_reg_closes} Level{stats.levels_until_late_reg_closes !== 1 ? 's' : ''} Remaining
                 </span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ===== ALTERNATES WAITING ===== */}
+        {stats.players_alternate > 0 && (
+          <div className="px-4 py-2">
+            <button onClick={() => router.push(`/commander/td/${tournamentId}/players?tab=alternate`)}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl active:bg-[#F59E0B]/20">
+              <UserPlus className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+              <div className="flex-1 min-w-0 text-left">
+                <span className="block text-[#F59E0B] text-sm font-medium">
+                  {stats.players_alternate} Alternate{stats.players_alternate !== 1 ? 's' : ''} Waiting
+                </span>
+                {alternates?.[0] && (
+                  <span className="block text-[#B0B3B8] text-xs truncate">
+                    Next Up: {alternates[0].player_name}
+                  </span>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+            </button>
           </div>
         )}
 
@@ -264,9 +642,151 @@ export default function TDControlCenter() {
             className="w-full bg-[#1877F2] rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform shadow-lg">
             <div className="flex flex-col items-start gap-1">
               <span className="text-white font-bold text-lg">Tournament Clock</span>
-              <span className="text-white/80 text-xs">Tap to open Fullscreen Mirror display</span>
+              <span className="text-white/80 text-xs">Tap To Open Fullscreen Mirror Display</span>
             </div>
             <Monitor className="w-8 h-8 text-white opacity-90" />
+          </button>
+        </div>
+
+        {/* ===== ADD PLAYER / REGISTER ===== */}
+        <div className="px-4 pb-1">
+          <button onClick={() => navigateTo('register')}
+            className="w-full bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center justify-between active:bg-[#3A3B3C] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-[#1877F2]" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-white font-semibold text-base">Add Player</span>
+                <span className="text-[#B0B3B8] text-xs">Register An Entrant Or Re-Entry</span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
+          </button>
+        </div>
+
+        {/* ===== FINAL RESULTS =====
+            Only surfaces once the event is actually near its end. Deliberately
+            a button and not a bottom-nav item: a seventh nav entry shrinks
+            every target below the 44px minimum at 375px. */}
+        {['final_table', 'completed', 'hand_for_hand'].includes(tournament.status) && (
+          <div className="px-4 pt-2">
+            <button onClick={() => navigateTo('results')}
+              className="w-full bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#F59E0B]/20 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-white font-semibold text-base">Final Results</span>
+                  <span className="text-[#B0B3B8] text-xs text-left">
+                    {tournament.status === 'completed'
+                      ? 'View, Print And Export The Results'
+                      : 'Finishing Order, Payouts And Finalize'}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-[#F59E0B]" />
+            </button>
+          </div>
+        )}
+
+        {/* ===== MULTI-DAY: END DAY / RESUME DAY =====
+            Only rendered for a multi-day event. Two mutually exclusive states:
+              - field is bagged  -> the next thing to do is resume
+              - field is seated  -> the next thing to do is close the day
+            Resume wins when anything is bagged, because a half-bagged field
+            still has to be brought back before it can be closed again. */}
+        {tournament.is_multi_day && !['completed', 'cancelled'].includes(tournament.status) && (
+          <div className="px-4 pt-2">
+            {stats.players_bagged > 0 ? (
+              <button onClick={() => setMultiDayAction('resume')}
+                className="w-full bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#31A24C]/20 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
+                    <Play className="w-5 h-5 text-[#31A24C]" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-white font-semibold text-base">
+                      Start Day {(tournament.current_day || 1) + 1}
+                    </span>
+                    <span className="text-[#B0B3B8] text-xs text-left">
+                      {stats.players_bagged.toLocaleString()} Bagged Player{stats.players_bagged === 1 ? '' : 's'} Waiting, Fresh Random Seat Draw
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-[#31A24C]" />
+              </button>
+            ) : (
+              <button onClick={() => setMultiDayAction('bag')}
+                disabled={!stats.players_seated}
+                className="w-full bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#F59E0B]/20 transition-colors disabled:opacity-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-[#F59E0B]" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-white font-semibold text-base">End Day, Bag And Tag</span>
+                    <span className="text-[#B0B3B8] text-xs text-left">
+                      {stats.players_seated
+                        ? `Bag ${stats.players_seated.toLocaleString()} Stack${stats.players_seated === 1 ? '' : 's'}, Print Tags, Release The Tables`
+                        : 'Nobody Is Seated Right Now'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-[#F59E0B]" />
+              </button>
+            )}
+            {tournament.resume_time && stats.players_bagged > 0 && (
+              <p className="text-[#B0B3B8] text-xs mt-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#B0B3B8]" />
+                Scheduled Restart: {new Date(tournament.resume_time).toLocaleString()}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ===== BREAK TOOLS: CHIP COUNTS + COLOR UP =====
+            Deliberately buttons and not bottom-nav items. The nav already
+            carries six entries and a seventh shrinks every target below the
+            44px minimum at 375px. */}
+        <div className="px-4 pt-2 grid grid-cols-2 gap-2">
+          <button onClick={() => navigateTo('chips')}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
+              <Coins className="w-5 h-5 text-[#F59E0B]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Chip Counts</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Enter Stacks At The Break</span>
+          </button>
+          <button onClick={() => navigateTo('color-up')}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
+              <Layers className="w-5 h-5 text-[#1877F2]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Color Up</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Race Off A Denomination</span>
+          </button>
+          <button onClick={() => navigateTo('dealers')}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
+              <ArrowRightLeft className="w-5 h-5 text-[#31A24C]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Dealer Rotation</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Who Is Down, For How Long, Who Is Next</span>
+          </button>
+          {/* The structure / configuration / payout editor. It is deliberately
+              NOT part of the td console (it is a long-form desk screen, not a
+              floor tablet screen), but it was only reachable from the retired
+              /commander/tournaments/[id] page and from the selector, so the TD
+              had no way to reach it from the console. */}
+          <button onClick={() => router.push(`/commander/tournaments/${tournamentId}/settings`)}
+            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#B0B3B8]/20 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-[#B0B3B8]" />
+            </div>
+            <span className="text-white font-semibold text-sm">Event Settings</span>
+            <span className="text-[#B0B3B8] text-xs text-left">Blind Structure, Prices, Payout Table</span>
           </button>
         </div>
 
@@ -279,8 +799,38 @@ export default function TDControlCenter() {
             <StatCard icon={RefreshCw} label="Rebuys" value={stats.total_rebuys} color="#B0B3B8" />
             <StatCard icon={Star} label="Add-Ons" value={stats.total_addons} color="#B0B3B8" />
             <StatCard icon={DollarSign} label="Avg Stack" value={formatChips(stats.average_stack)} color="#B0B3B8" />
+            {/* Bagged players are inside Remaining above. This breaks out how
+                many of them are in a bag rather than in a chair. */}
+            {stats.players_bagged > 0 && (
+              <StatCard icon={Package} label="Bagged" value={stats.players_bagged} color="#F59E0B" />
+            )}
           </div>
         </div>
+
+        {/* ===== CHIP LEADER & PAYOUTS ===== */}
+        {(chipLeader || tournament.paying_places || tournament.actual_prizepool) && (
+          <div className="px-4 py-2 grid grid-cols-2 gap-2">
+            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+              <div className="flex items-center gap-1 mb-1">
+                <Trophy className="w-3.5 h-3.5" style={{ color: '#F59E0B' }} />
+                <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Chip Leader</span>
+              </div>
+              <p className="text-sm font-bold text-white truncate">{chipLeader ? chipLeader.name : '--'}</p>
+              <p className="text-xs text-[#31A24C] font-medium">{chipLeader ? `${formatChips(chipLeader.chips)} chips` : ''}</p>
+            </div>
+            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+              <div className="flex items-center gap-1 mb-1">
+                <DollarSign className="w-3.5 h-3.5" style={{ color: '#31A24C' }} />
+                <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Prize Pool / Paying</span>
+              </div>
+              <p className="text-sm font-bold text-white truncate">{formatMoney(tournament.actual_prizepool || stats.prize_pool)}</p>
+              <p className="text-xs text-[#B0B3B8] font-medium">{tournament.paying_places ? `${tournament.paying_places} Places Paid` : 'Places TBD'}</p>
+              {stats.overlay_amount > 0 && (
+                <p className="text-xs text-[#EF4444] font-medium">Overlay {formatMoney(stats.overlay_amount)}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ===== TABLES OVERVIEW (compact) ===== */}
         <div className="px-4 py-2">
@@ -368,25 +918,30 @@ export default function TDControlCenter() {
                     {sortedActivityEntries.map((e, i) => {
                       const isEliminated = e.status === 'eliminated';
                       const isAlternate = e.status === 'alternate';
+                      // Seat-holding statuses only. A bagged player is still in
+                      // the tournament but is not in a chair, so they get their
+                      // own line rather than being shown "Seated T?-S?".
                       const isActive = ['active', 'seated'].includes(e.status);
+                      const isBagged = e.status === 'bagged';
                       const time = e.eliminated_at || e.registered_at;
                       const timeStr = time ? new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
                       return (
                         <div key={e.entry_id + '-' + i} className="px-4 py-3 flex items-center gap-3">
                           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isEliminated ? 'bg-[#EF4444]' :
-                            isAlternate ? 'bg-[#F59E0B]' :
+                            isAlternate || isBagged ? 'bg-[#F59E0B]' :
                               isActive ? 'bg-[#31A24C]' : 'bg-[#1877F2]'
                             }`} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-[#E4E6EB] truncate">{e.player_name}</p>
                             <p className="text-xs text-[#B0B3B8] mt-0.5">
                               {isEliminated ? `Eliminated #${e.finish_position || '?'}` :
-                                isAlternate ? 'Added to alternates' :
-                                  isActive ? `Seated T${e.table_number || '?'}-S${e.seat_number || '?'}` :
-                                    'Registered'}
-                              {e.rebuy_count > 0 ? ` \u2022 ${e.rebuy_count}R` : ''}
-                              {e.addon_taken ? ' \u2022 Add-on' : ''}
+                                isAlternate ? 'Added To Alternates' :
+                                  isBagged ? `Bagged ${formatChips(e.current_chips)}` :
+                                    isActive ? `Seated T${e.table_number || '?'}-S${e.seat_number || '?'}` :
+                                      'Registered'}
+                              {e.rebuy_count > 0 ? ` • ${e.rebuy_count}R` : ''}
+                              {e.addon_taken ? ' • Add-on' : ''}
                             </p>
                           </div>
                           <span className="text-xs text-[#B0B3B8] flex-shrink-0">{timeStr}</span>
@@ -395,8 +950,123 @@ export default function TDControlCenter() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-[#B0B3B8]">No activity yet</div>
+                  <div className="p-8 text-center text-[#B0B3B8]">No Activity Yet</div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== MULTI-DAY CONFIRMATION MODAL =====
+            Both actions move the whole field at once, so both are confirmed.
+            The copy spells out the side effects the TD cannot see from the
+            button: bag-and-tag RELEASES the tables, and resume needs them
+            back before it will run. */}
+        {multiDayAction && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
+            onClick={() => !multiDayBusy && setMultiDayAction(null)}>
+            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: multiDayAction === 'bag' ? 'rgba(245,158,11,0.2)' : 'rgba(49,162,76,0.2)' }}>
+                  {multiDayAction === 'bag'
+                    ? <Package className="w-5 h-5 text-[#F59E0B]" />
+                    : <Play className="w-5 h-5 text-[#31A24C]" />}
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  {multiDayAction === 'bag'
+                    ? `End Day ${tournament.current_day || 1}?`
+                    : `Start Day ${(tournament.current_day || 1) + 1}?`}
+                </h3>
+              </div>
+              {multiDayAction === 'bag' ? (
+                <div className="text-[#B0B3B8] text-sm space-y-2">
+                  <p>
+                    Every Seated Player Is Bagged With Their Current Chip Count
+                    ({stats.players_seated ? stats.players_seated.toLocaleString() : 0} Player
+                    {stats.players_seated === 1 ? '' : 's'}, {formatChips(stats.total_chips)} In Play).
+                  </p>
+                  <p>Bag Tags Are Sent To The Print Station, One Per Player.</p>
+                  <p>The Tournament Is Paused And Its Tables Are Released Back To The Room.</p>
+                  <p className="text-[#F59E0B]">
+                    You Will Need To Assign Tables Again Before The Next Day Can Start.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-[#B0B3B8] text-sm space-y-2">
+                  <p>
+                    {stats.players_bagged.toLocaleString()} Bagged Player
+                    {stats.players_bagged === 1 ? '' : 's'} Return With The Chip Count They Bagged.
+                  </p>
+                  <p>A Fresh Random Seat Draw Is Run Across The Assigned Tables.</p>
+                  <p>Seat Cards Are Sent To The Print Station And The Tournament Goes Back To Running.</p>
+                  <p>Start The Clock From The Clock Screen When The Field Is Seated.</p>
+                  {tableSetup && tableSetup.assigned_count < 1 && (
+                    <p className="text-[#EF4444]">
+                      No Tables Are Assigned Yet. Assign Tables First Or This Will Be Refused.
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => setMultiDayAction(null)} disabled={multiDayBusy}
+                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={runMultiDayAction} disabled={multiDayBusy}
+                  className="flex-1 py-3 rounded-xl text-base font-bold active:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: multiDayAction === 'bag' ? '#F59E0B' : '#31A24C',
+                    color: multiDayAction === 'bag' ? '#000' : '#fff'
+                  }}>
+                  {multiDayBusy
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : (multiDayAction === 'bag' ? <Package className="w-4 h-4" /> : <Play className="w-4 h-4" />)}
+                  {multiDayAction === 'bag' ? 'Bag And Tag' : 'Start The Day'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== ASSIGN TABLES MODAL ===== */}
+        {assignModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
+            onClick={() => !assigning && setAssignModal(false)}>
+            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4"
+              onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white">Assign Tables</h3>
+              <p className="text-[#B0B3B8] text-sm">
+                Reserves Free Tables In Table Number Order For This Tournament.
+                A Table Running A Cash Game Or Another Tournament Is Never Taken.
+              </p>
+              <div>
+                <label className="block text-xs font-bold text-[#B0B3B8] uppercase tracking-wider mb-2">
+                  How Many Tables
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={assignCount}
+                  onChange={e => setAssignCount(e.target.value)}
+                  className="w-full h-12 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 text-[#E4E6EB] text-base focus:outline-none focus:border-[#1877F2]"
+                />
+                <p className="text-[#B0B3B8] text-xs mt-2">
+                  Currently Assigned: {tableSetup?.assigned_count || 0}. Free In The Room: {tableSetup?.available_count || 0}.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setAssignModal(false)} disabled={assigning}
+                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={handleAssignTables} disabled={assigning}
+                  className="flex-1 py-3 rounded-xl bg-[#F59E0B] text-black text-base font-bold active:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {assigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <LayoutGrid className="w-4 h-4" />}
+                  Assign
+                </button>
               </div>
             </div>
           </div>

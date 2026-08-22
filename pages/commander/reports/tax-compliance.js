@@ -55,7 +55,8 @@ export default function TaxCompliance() {
 let url = `/api/commander/tax/w2g?venue_id=${staff.venue_id}&year=${year}`;
       if (filter === 'pending') url += '&w2g_generated=false';
       if (filter === 'generated') url += '&w2g_generated=true';
-      const res = await fetch(url, {});
+      // commanderFetch attaches the x-staff-session header guardStaff requires
+      const res = await commanderFetch(url, {});
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
@@ -77,16 +78,16 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setToast({ type: 'success', msg: 'W-2G generated successfully' });
+        setToast({ type: 'success', msg: 'W-2G Generated Successfully' });
         // Print the W-2G
         printW2G(json.data.w2g);
         fetchEvents();
       } else {
-        setToast({ type: 'error', msg: json.error?.message || 'Failed to generate' });
+        setToast({ type: 'error', msg: json.error?.message || 'Failed To Generate' });
       }
     } catch (err) {
       setLoading(false);
-      setToast({ type: 'error', msg: 'Network error' });
+      setToast({ type: 'error', msg: 'Network Error' });
     }
     finally { setGenerating(null); setTimeout(() => setToast(null), 3000); }
   };
@@ -117,7 +118,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
         <div class="header">
           <h1>FORM W-2G</h1>
           <h2>Certain Gambling Winnings</h2>
-          <div style="font-size:10px; margin-top:4px;">Tax Year ${w2g.tax_year} &nbsp; | &nbsp; Department of the Treasury — Internal Revenue Service</div>
+          <div style="font-size:10px; margin-top:4px;">Tax Year ${w2g.tax_year} &nbsp; | &nbsp; Department Of The Treasury, Internal Revenue Service</div>
         </div>
 
         <div class="section-title">Payer Information</div>
@@ -145,7 +146,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
             <div class="box-value">${w2g.winner_name}</div>
           </div>
           <div class="box">
-            <div class="box-label">SSN (last 4)</div>
+            <div class="box-label">SSN (Last 4)</div>
             <div class="box-value">XXX-XX-${w2g.winner_ssn_last4 || '____'}</div>
           </div>
         </div>
@@ -153,43 +154,43 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
         <div class="section-title">Winnings Detail</div>
         <div class="row">
           <div class="box">
-            <div class="box-label">Box 1 — Reportable Winnings</div>
+            <div class="box-label">Box 1, Reportable Winnings</div>
             <div class="big-amount">$${parseFloat(w2g.box1_gross_winnings).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
           </div>
           <div class="box">
-            <div class="box-label">Box 2 — Date Won</div>
+            <div class="box-label">Box 2, Date Won</div>
             <div class="box-value">${w2g.box2_date_won}</div>
           </div>
         </div>
         <div class="row">
           <div class="box">
-            <div class="box-label">Box 3 — Type Of Wager</div>
+            <div class="box-label">Box 3, Type Of Wager</div>
             <div class="box-value">${w2g.box3_wager_type}</div>
           </div>
           <div class="box">
-            <div class="box-label">Box 4 — Federal Tax Withheld</div>
+            <div class="box-label">Box 4, Federal Tax Withheld</div>
             <div class="box-value" style="color:#c00">$${parseFloat(w2g.box4_federal_withheld).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
           </div>
         </div>
         <div class="row">
           <div class="box">
-            <div class="box-label">Box 5 — Transaction</div>
+            <div class="box-label">Box 5, Transaction</div>
             <div class="box-value" style="font-size:11px">${w2g.box5_transaction}</div>
           </div>
           <div class="box">
-            <div class="box-label">Box 7 — Winnings From Identical Wagers</div>
+            <div class="box-label">Box 7, Winnings From Identical Wagers</div>
             <div class="box-value">$${parseFloat(w2g.box7_identical_winnings).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
           </div>
         </div>
 
         <div class="irs-notice">
-          <strong>Important:</strong> This is an informational copy. The payer must file Copy A with the IRS.
-          Federal withholding rate: 24%. Poker tournament winnings of $5,000 or more (reduced by wager/buy-in)
-          are subject to reporting on Form W-2G per IRS regulations.
+          <strong>Important:</strong> This Is An Informational Copy. The Payer Must File Copy A With The IRS.
+          Federal Withholding Rate: 24%. Poker Tournament Winnings Of $5,000 Or More (Reduced By Wager/Buy-In)
+          Are Subject To Reporting On Form W-2G Per IRS Regulations.
         </div>
 
         <div class="footer">
-          Generated: ${new Date().toLocaleString()} &nbsp; | &nbsp; SMARTER.POKER — Club Commander
+          Generated: ${new Date().toLocaleString()} &nbsp; | &nbsp; SMARTER.POKER, Club Commander
         </div>
       </div></body></html>`);
     win.document.close();
@@ -198,13 +199,23 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
 
   const reprintW2G = async (evt) => {
     // Rebuild W-2G data from event for reprint
+    // 2026-08-20: Box 1 of a poker tournament W-2G is the NET (proceeds minus
+    // the wager), which is what the generate route now writes. The reprint used
+    // to put the gross in Box 1, so a reprint disagreed with the original form.
+    const gross = parseFloat(evt.gross_amount || 0) || 0;
+    const wager = parseFloat(evt.buy_in || 0) || 0;
+    const net = evt.net_amount === null || evt.net_amount === undefined
+      ? gross - wager
+      : (parseFloat(evt.net_amount) || 0);
     const w2g = {
-      box1_gross_winnings: evt.gross_amount,
+      box1_gross_winnings: net,
+      box1_reportable_winnings: net,
       box2_date_won: evt.event_date,
       box3_wager_type: 'Poker Tournament',
-      box4_federal_withheld: evt.withholding_amount || 0,
-      box5_transaction: `Tournament - Buy-in: $${parseFloat(evt.buy_in || 0).toFixed(2)}`,
-      box7_identical_winnings: parseFloat(evt.net_amount || 0),
+      box4_federal_withheld: evt.withholding_required ? (evt.withholding_amount || 0) : 0,
+      box5_transaction: `Poker Tournament - Proceeds: $${gross.toFixed(2)}, Wager: $${wager.toFixed(2)}`,
+      // Not applicable to a poker tournament.
+      box7_identical_winnings: 0,
       payer_name: staff?.venue_name || 'Venue',
       payer_ein: '',
       payer_address: '',
@@ -220,7 +231,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
   return (
     <>
       <SEOHead
-        title="Commander — Tax Compliance"
+        title="Commander - Tax Compliance"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -281,8 +292,8 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
 
           {/* IRS Notice */}
           <div style={{ background: '#FEF3C7', border: '2px solid #F59E0B', borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>
-            <strong>IRS Requirement:</strong> Form W-2G must be issued for poker tournament winnings of $5,000 or more (net of buy-in).
-            Federal withholding rate is 24%. The venue must file Copy A with the IRS and provide Copy B to the winner.
+            <strong>IRS Requirement:</strong> Form W-2G Must Be Issued For Poker Tournament Winnings Of $5,000 Or More (Net Of Buy-In).
+            Federal Withholding Rate Is 24%. The Venue Must File Copy A With The IRS And Provide Copy B To The Winner.
           </div>
 
           {/* Events List */}
@@ -290,7 +301,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
           ) : events.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
-              No taxable events for {year}
+              No Taxable Events For {year}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -307,7 +318,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: 14, color: '#1C2526' }}>{evt.player_name}</div>
-                          <div style={{ fontSize: 12, color: '#65676B' }}>{evt.event_date} — {evt.event_type}</div>
+                          <div style={{ fontSize: 12, color: '#65676B' }}>{evt.event_date}, {evt.event_type}</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div style={{ fontWeight: 800, fontSize: 16, color: '#31A24C' }}>{formatMoney(evt.gross_amount)}</div>

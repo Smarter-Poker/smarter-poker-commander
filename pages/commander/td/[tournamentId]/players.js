@@ -1,5 +1,5 @@
 /**
- * Tournament Director — Players Management
+ * Tournament Director - Players Management
  * /commander/td/[tournamentId]/players
  * Searchable player list with filter tabs (All/Active/Eliminated/Registered)
  * Tap player -> action sheet: Move, Eliminate, Rebuy, Add-on, Update Chips, Seat Change
@@ -10,9 +10,10 @@ import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
-import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText } from 'lucide-react';
+import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, ArrowRightLeft, UserX, RotateCcw, Star, Coins, DollarSign, FileText, UserPlus, Undo2, Package, Bell } from 'lucide-react';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
+import { buildActionReceiptsHtml, printHtml, printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -24,8 +25,12 @@ const NAV_ICONS = { control: Trophy, tables: LayoutGrid, players: Users, payouts
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
+  // Multi-day: players who bagged their chips at the end of a day. They are
+  // still in the tournament, they just hold no seat until the day resumes.
+  { key: 'bagged', label: 'Bagged' },
   { key: 'eliminated', label: 'Out' },
   { key: 'registered', label: 'Registered' },
+  { key: 'alternate', label: 'Alternates' },
 ];
 
 function formatChips(n) {
@@ -35,11 +40,16 @@ function formatChips(n) {
   return n.toLocaleString();
 }
 
+// Entries per request. Anything up to a 1000 player field is one request, the
+// same single round trip this screen has always made. Beyond that the list
+// arrives in pages so the first one can render while the rest is still coming.
+const ENTRY_PAGE_SIZE = 1000;
+
 export default function TDPlayers() {
 
   useEffect(() => { busEmit.sessionStart('commander-td-tournamentId-players'); }, []);
   const router = useRouter();
-  const { tournamentId, move: moveEntryId } = router.query;
+  const { tournamentId, move: moveEntryId, tab: tabParam } = router.query;
   const [floor, setFloor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -51,7 +61,11 @@ export default function TDPlayers() {
   const [moveModal, setMoveModal] = useState(null);
   const [moveTable, setMoveTable] = useState('');
   const [moveSeat, setMoveSeat] = useState('');
+  // 'move'   -> POST /move-player, keeps the player's current status
+  // 'assign' -> PUT  /entries/[entryId]/seat, promotes 'registered' to 'seated'
+  const [moveMode, setMoveMode] = useState('move');
   const [confirmAction, setConfirmAction] = useState(null); // { type, player, message }
+  const [eliminatorId, setEliminatorId] = useState('');
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -69,16 +83,81 @@ export default function TDPlayers() {
 
     if (!tournamentId) return;
     try {
-      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
+      // Payload split + pagination.
+      // This screen IS the entry list, so it asks for entries, but it does not
+      // need the clock, the alerts, the alternates queue or the chip-count
+      // board. The list itself arrives in pages: a normal field (under 1000)
+      // is a single request exactly as before, and a monster field renders the
+      // first page immediately instead of waiting on 5000 rows, then appends
+      // the rest. The screen ends up holding the same complete list either way,
+      // so search, filters and counts are unchanged.
+      const base = `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,tables,entries,eliminated`;
+      const opts = { ...(signal ? { signal } : {}) };
+      const res = await commanderFetch(`${base}&entries_limit=${ENTRY_PAGE_SIZE}`, opts);
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json = await res.json();
-      if (json.success) setFloor(json.data);
-    } catch (err) { console.warn(err); }
+      if (!json.success) return;
+      setFloor(json.data);
+
+      // Drain the remaining pages. Bounded so a bad has_more can never spin.
+      let page = json.data?.entries_page;
+      let guard = 0;
+      while (page?.has_more && page.next_offset != null && guard < 20) {
+        guard += 1;
+        const nextRes = await commanderFetch(
+          `${base}&entries_limit=${ENTRY_PAGE_SIZE}&entries_offset=${page.next_offset}`,
+          opts
+        );
+        if (!nextRes.ok) break;
+        const nextJson = await nextRes.json();
+        if (!nextJson.success) break;
+        const rows = nextJson.data?.entries || [];
+        if (rows.length === 0) break;
+        // Functional update, deduped by entry_id: a realtime refetch may have
+        // replaced `floor` underneath this loop, and the seat ordering the
+        // pages are cut on can shift between requests, so a naive append could
+        // list the same player twice.
+        setFloor(prev => {
+          if (!prev) return nextJson.data;
+          const seen = new Set((prev.entries || []).map(e => e.entry_id));
+          const fresh = rows.filter(r => !seen.has(r.entry_id));
+          if (fresh.length === 0) return prev;
+          return { ...prev, entries: [...(prev.entries || []), ...fresh] };
+        });
+        page = nextJson.data?.entries_page;
+      }
+    } catch (err) { if (err?.name !== 'AbortError') console.warn(err); }
     finally { setLoading(false); }
   }, [tournamentId]);
 
-  useTournamentRealtime(tournamentId, fetchFloor);
-  useEffect(() => { const _c = new AbortController(); fetchFloor(_c.signal); const i = setInterval(() => fetchFloor(_c.signal), 30000); return () => { _c.abort(); clearInterval(i); }; }, [fetchFloor]); // 30s fallback
+  // Realtime first: the 30s fallback poll is unchanged while the channel is
+  // unproven, and stretches to 5 minutes once it has proved itself.
+  useTournamentRealtime(tournamentId, fetchFloor, { poll: true });
+  useEffect(() => { const _c = new AbortController(); fetchFloor(_c.signal); return () => { _c.abort(); }; }, [fetchFloor]);
+
+  // 2026-08-04 audit fix: the tables page deep-links here with ?move=<entry_id>
+  // but the param was read and never used - open the move modal for that entry
+  // once floor data arrives.
+  useEffect(() => {
+    if (!moveEntryId || !floor?.entries?.length || moveModal) return;
+    const entry = floor.entries.find(e => e.entry_id === moveEntryId);
+    // Only a player who currently holds a seat can be "moved" to another one.
+    // 'bagged' excluded on purpose: they have no seat to move from, and the
+    // action sheet offers Assign Exact Seat for them instead.
+    if (entry && ['active', 'seated'].includes(entry.status)) {
+      setMoveMode('move');
+      setMoveModal({ ...entry, status: entry.status === 'seated' ? 'active' : entry.status });
+    }
+    // Clear the param so closing the modal doesn't reopen it
+    router.replace(`/commander/td/${tournamentId}/players`, undefined, { shallow: true });
+  }, [moveEntryId, floor, moveModal, router, tournamentId]);
+
+  // Deep link support: the Control Center links here with ?tab=alternate so the
+  // TD lands directly on the waiting list instead of hunting for the tab.
+  useEffect(() => {
+    if (!tabParam) return;
+    if (FILTERS.some(f => f.key === tabParam)) setFilter(tabParam);
+  }, [tabParam]);
 
   // Build flat player list from full entries array (all statuses)
   const allPlayers = [];
@@ -103,11 +182,23 @@ export default function TDPlayers() {
     }
   }
 
+  const alternateCount = allPlayers.filter(p => p.status === 'alternate').length;
+  const baggedCount = allPlayers.filter(p => p.status === 'bagged').length;
+
   const filtered = allPlayers.filter(p => {
     if (filter !== 'all' && p.status !== filter) return false;
     if (search && !p.player_name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }).sort((a, b) => {
+    // Alternates are a queue, not a name list: first registered is next up.
+    if (a.status === 'alternate' && b.status === 'alternate') {
+      return (a.queue_position || 9999) - (b.queue_position || 9999);
+    }
+    // Bagged players are read as a chip-count sheet, biggest stack first,
+    // which is the order the overnight leader board is announced in.
+    if (a.status === 'bagged' && b.status === 'bagged') {
+      return (Number(b.current_chips) || 0) - (Number(a.current_chips) || 0);
+    }
     if (a.status === 'active' && b.status !== 'active') return -1;
     if (a.status !== 'active' && b.status === 'active') return 1;
     return (a.player_name || '').localeCompare(b.player_name || '');
@@ -121,15 +212,26 @@ export default function TDPlayers() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (!res.ok) return { success: false, error: 'API Error' };
-    return res.json();
+    // 2026-08-20 audit fix: a non-2xx response threw the server's
+    // { code, message } envelope away and substituted the bare string
+    // 'API Error', so every rejected action (add-on already taken, player not
+    // active, seat conflict) reached the TD with no reason attached. Parse the
+    // body either way and let the caller read error.message.
+    let json = null;
+    try { json = await res.json(); } catch { json = null; }
+    if (json && typeof json === 'object') return json;
+    return {
+      success: false,
+      error: { code: 'API_ERROR', message: `Request Failed (${res.status}).` }
+    };
   };
 
   const confirmEliminate = (player) => {
+    setEliminatorId('');
     setConfirmAction({
       type: 'eliminate', player,
       message: `Eliminate ${player.player_name}?`,
-      detail: `Position #${floor?.stats?.players_remaining || '?'} — This cannot be undone.`,
+      detail: `Position #${floor?.stats?.players_remaining || '?'}. This Cannot Be Undone.`,
       color: '#EF4444' });
   };
 
@@ -137,87 +239,113 @@ export default function TDPlayers() {
     setConfirmAction({
       type: 'rebuy', player,
       message: `Rebuy for ${player.player_name}?`,
-      detail: floor?.tournament?.rebuy_cost ? `Cost: $${floor.tournament.rebuy_cost} — Chips: ${formatChips(floor.tournament.rebuy_chips || floor.tournament.starting_chips)}` : 'Process rebuy for this player.',
+      detail: floor?.tournament?.rebuy_cost ? `Cost: $${floor.tournament.rebuy_cost}, Chips: ${formatChips(floor.tournament.rebuy_chips || floor.tournament.starting_chips)}` : 'Process Rebuy For This Player.',
       color: '#31A24C' });
   };
 
+  // Rebuy / add-on card, rendered by the shared template module.
+  // Returns false when the popup was blocked so the floor gets told.
   const printBluetoothReceipt = (player, actionType, cost, chips) => {
-    const pw = window.open('', '_blank', 'width=400,height=600');
-    if (!pw) return;
-
-    const tournamentName = floor?.tournament?.name || 'Tournament';
-    const timestamp = new Date().toLocaleTimeString();
-
-    pw.document.write(`<!DOCTYPE html><html><head><title>${actionType} Receipt</title>
-      <style>@page{margin:0;size:80mm auto}body{font-family:'Courier New',monospace;margin:0;color:#000;-webkit-print-color-adjust:exact;}
-      .r{width:72mm;padding:4mm;margin:0 auto;page-break-after:always;border-bottom:1px dashed #000}
-      .r:last-child{page-break-after:avoid}.c{text-align:center}.b{font-weight:bold}
-      .lg{font-size:20px}.md{font-size:14px}.sm{font-size:11px}
-      .d{border-top:1px dashed #000;margin:3mm 0}.rw{display:flex;justify-content:space-between}
-      </style></head><body>
-      <div class="r">
-        <div class="c b md">${tournamentName}</div>
-        <div class="c sm">${actionType.toUpperCase()} RECEIPT</div><div class="d"></div>
-        <div class="c b lg" style="margin:2mm 0">${player.player_name || 'Player'}</div><div class="d"></div>
-        ${cost ? `<div class="rw md"><span>Cost:</span><span class="b">$${cost}</span></div>` : ''}
-        ${chips ? `<div class="rw md"><span>Chips Added:</span><span class="b">${Number(chips).toLocaleString()}</span></div>` : ''}
-        <div class="d"></div>
-        <div class="c sm" style="margin-top:2mm;opacity:.6">${timestamp}</div>
-        <div class="c sm" style="opacity:.4;margin-top:1mm">Smarter.Poker</div>
-      </div></body></html>`);
-    pw.document.close();
-    setTimeout(() => { pw.print(); pw.close(); }, 500);
+    const html = buildActionReceiptsHtml([{
+      tournamentName: floor?.tournament?.name || 'Tournament',
+      actionType,
+      playerName: player?.player_name || 'Player',
+      cost,
+      chips
+    }], { title: `${actionType} Receipt` });
+    const printed = printHtml(html, { title: `${actionType} Receipt` });
+    if (!printed) {
+      setToast({ type: 'error', text: `Popup Blocked. The ${actionType} Receipt Did Not Print.` });
+    }
+    return printed;
   };
 
-  const printAutoBreakReceipts = (autoBreak) => {
-    if (!autoBreak?.receipts?.length) return;
-    const pw = window.open('', '_blank', 'width=420,height=700');
-    if (!pw) return;
-    const receipts = autoBreak.receipts;
-    pw.document.write(`<!DOCTYPE html><html><head><title>Seat Change Cards</title>
-<style>
-@page { margin: 0; size: 80mm auto; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #000; font-size: 15px; }
-.card { width: 72mm; margin: 0 auto; padding: 7mm 5mm 9mm; border-bottom: 2px dashed #000; page-break-after: always; }
-.card:last-child { page-break-after: avoid; border-bottom: none; }
-.logo-wrap { text-align: center; margin-bottom: 3mm; }
-.logo-wrap img { max-width: 36mm; max-height: 20mm; object-fit: contain; }
-.venue-name { text-align: center; font-size: 24px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; margin-bottom: 1mm; }
-.venue-location { text-align: center; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #444; margin-bottom: 2mm; }
-.receipt-type { text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1.5mm; }
-.tourn-name { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 4mm; }
-.divider { border-top: 1px solid #000; margin: 4mm 0; }
-.field-row { display: flex; align-items: baseline; margin: 4mm 0; font-size: 15px; }
-.field-label { font-weight: bold; min-width: 20mm; }
-.field-val { font-size: 17px; font-weight: bold; text-transform: uppercase; }
-.boxes { display: flex; gap: 8mm; justify-content: center; margin: 7mm 0; }
-.box-wrap { text-align: center; width: 90px; }
-.box-title { font-size: 14px; font-weight: bold; margin-bottom: 1.5mm; }
-.box-num { border: 2.5px solid #000; font-size: 30px; font-weight: 900; padding: 3mm 0; width: 90px; display: block; text-align: center; line-height: 1.1; }
-.footer-line { font-size: 13px; margin: 1.5mm 0; }
-.customer-copy { text-align: center; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin-top: 4mm; }
-</style></head><body>
-${receipts.map(r => `<div class="card">
-  ${r.venue_logo_url ? `<div class="logo-wrap"><img src="${r.venue_logo_url}" alt="${r.venue_name}"  loading="lazy" /></div>` : ''}
-  <div class="venue-name">${r.venue_name || 'Club'}</div>
-  ${(r.venue_city || r.venue_state) ? `<div class="venue-location">${[r.venue_city, r.venue_state].filter(Boolean).join(', ')}</div>` : ''}
-  <div class="receipt-type">Tournament Seat Change Card</div>
-  <div class="tourn-name">${r.tournament_name}${r.buyin_amount ? ` — $${Number(r.buyin_amount).toLocaleString()}` : ''}</div>
-  <div class="divider"></div>
-  <div class="field-row"><span class="field-label">Name:</span><span class="field-val">&nbsp;${r.player_name}</span></div>
-  <div class="divider"></div>
-  <div class="boxes">
-    <div class="box-wrap"><div class="box-title">Table</div><span class="box-num">${r.to_table}</span></div>
-    <div class="box-wrap"><div class="box-title">Seat</div><span class="box-num">${r.to_seat}</span></div>
-  </div>
-  <div class="divider"></div>
-  <div class="footer-line">${new Date(r.timestamp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}&nbsp;&nbsp;${new Date(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-  <div class="customer-copy">&mdash; Dealer's Copy &mdash;</div>
-</div>`).join('')}
-</body></html>`);
-    pw.document.close();
-    setTimeout(() => { pw.print(); pw.close(); }, 500);
+  // Seat change cards from the shared template module (dealer copy + player copy).
+  // The server already queued these for the floor print station, so a blocked
+  // popup is a warning here, not a lost card.
+  const printAutoBreakReceipts = (autoBreakResult) => {
+    const receipts = autoBreakResult?.receipts || [];
+    if (receipts.length === 0) return false;
+    const printed = printSeatChangeCards(receipts);
+    if (!printed) {
+      setToast({ type: 'error', text: 'Popup Blocked. Seat Change Cards Are Waiting At The Print Station.' });
+    }
+    return printed;
+  };
+
+  // Seat a waiting alternate into a random open seat via the promote endpoint
+  const performPromote = async (player) => {
+    setActionLoading('promote');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/promote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({ type: 'success', text: json.data?.message || 'Alternate Seated.' });
+        setSelectedPlayer(null);
+        await fetchFloor();
+        broadcastChange('tournaments');
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Seat Alternate.' });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Seat Alternate. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
+  // Push every waiting alternate their current queue position plus an
+  // estimated wait. The positions have always existed in this payload; this is
+  // what actually reaches the player standing in the bar.
+  const performNotifyAlternates = async () => {
+    setActionLoading('notify-alternates');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/notify-alternates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({ type: 'success', text: json.data?.message || 'Alternates Notified.' });
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Notify Alternates.' });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Notify Alternates. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
+  // Undo an elimination. On 409 PAYOUT_RECORDED, ask for confirmation before
+  // retrying with force:true (the recorded payout will be cleared).
+  const performRestore = async (player, force = false) => {
+    setActionLoading('restore');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(force ? { force: true } : {})
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.success) {
+        setToast({
+          type: 'success',
+          text: `${json.data?.message || 'Elimination Undone.'}${json.data?.bounty_reversed ? ' Bounty Reversed.' : ''}`
+        });
+        setSelectedPlayer(null);
+        await fetchFloor();
+        broadcastChange('tournaments');
+      } else if (res.status === 409 && json?.error?.code === 'PAYOUT_RECORDED' && !force) {
+        setConfirmAction({
+          type: 'restore_force', player,
+          message: `Undo Elimination For ${player.player_name}?`,
+          detail: 'A Payout Is Already Recorded For This Player. Forcing The Undo Will Clear That Payout. Continue?',
+          color: '#F59E0B' });
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || 'Failed To Undo Elimination.' });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Undo Elimination. Check Console.' }); }
+    finally { setActionLoading(null); }
   };
 
   const executeConfirmedAction = async () => {
@@ -229,7 +357,8 @@ ${receipts.map(r => `<div class="card">
     try {
       if (type === 'eliminate') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/eliminate`, {
-          entry_id: player.entry_id, finish_position: floor?.stats?.players_remaining || 0
+          entry_id: player.entry_id, finish_position: floor?.stats?.players_remaining || 0,
+          eliminated_by_id: eliminatorId || null
         });
         if (res.success) {
           success = true;
@@ -237,8 +366,28 @@ ${receipts.map(r => `<div class="card">
           if (res.data?.auto_break?.executed) {
             printAutoBreakReceipts(res.data.auto_break);
           }
+          // An alternate may have been auto-seated into the freed seat
+          if (res.data?.promoted_alternate) {
+            const pa = res.data.promoted_alternate;
+            setToast({ type: 'success', text: `Alternate ${pa.player_name || 'Player'} Seated At Table ${pa.table_number}, Seat ${pa.seat_number}` });
+          } else if (res.data?.bounty?.awarded) {
+            // Tell the TD exactly what the cage owes on this knockout, and in
+            // a PKO what the eliminator's own head is now worth.
+            const b = res.data.bounty;
+            setToast({
+              type: 'success',
+              text: b.mode === 'pko'
+                ? `Knockout Paid $${Number(b.cash).toLocaleString()} In Cash. $${Number(b.to_head).toLocaleString()} Added To The Eliminator, Their Bounty Is Now $${Number(b.eliminator_bounty_value).toLocaleString()}.`
+                : `Bounty Paid $${Number(b.cash).toLocaleString()}.`
+            });
+          } else if (res.data?.wonSeat) {
+            setToast({
+              type: 'success',
+              text: `${player.player_name || 'Player'} Won A Seat Worth $${Number(res.data.payoutAmount || 0).toLocaleString()}.`
+            });
+          }
         } else {
-          setToast({ type: 'error', text: res.error || 'Elimination failed.' });
+          setToast({ type: 'error', text: res.error?.message || res.error || 'Elimination Failed.' });
         }
       } else if (type === 'rebuy') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/rebuy`, {});
@@ -246,16 +395,32 @@ ${receipts.map(r => `<div class="card">
           success = true;
           printBluetoothReceipt(player, 'Rebuy', floor?.tournament?.rebuy_cost, floor?.tournament?.rebuy_chips || floor?.tournament?.starting_chips);
         } else {
-          setToast({ type: 'error', text: res.error || 'Rebuy failed.' });
+          // 2026-08-20 audit fix: `res.error` is the { code, message } envelope,
+          // not a string. Passing the object straight to the toast rendered it
+          // as a React child and threw, so a failed rebuy showed no reason at
+          // all. Read .message, same as the eliminate branch above.
+          setToast({ type: 'error', text: res.error?.message || 'Rebuy Failed.' });
         }
       } else if (type === 'addon') {
         const res = await apiCall(`/api/commander/tournaments/${tournamentId}/entries/${player.entry_id}/addon`, {});
         if (res.success) {
           success = true;
           printBluetoothReceipt(player, 'Add-on', floor?.tournament?.addon_cost, floor?.tournament?.addon_chips || floor?.tournament?.starting_chips);
+          // The add-on window is advisory: the API sells the add-on regardless
+          // and flags it when the clock is not on the scheduled break, so the
+          // TD finds out at the moment of sale instead of at the audit.
+          if (res.data?.outside_addon_window) {
+            setToast({
+              type: 'warning',
+              text: res.data.addon_window_note || 'Add-On Sold Outside The Scheduled Add-On Break.'
+            });
+          }
         } else {
-          setToast({ type: 'error', text: res.error || 'Add-on failed.' });
+          setToast({ type: 'error', text: res.error?.message || 'Add-On Failed.' });
         }
+      } else if (type === 'restore_force') {
+        // performRestore handles toast, refetch, and closing the sheet itself
+        await performRestore(player, true);
       }
       
       if (success) {
@@ -263,7 +428,7 @@ ${receipts.map(r => `<div class="card">
         await fetchFloor();
         broadcastChange('tournaments');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -274,7 +439,7 @@ ${receipts.map(r => `<div class="card">
     setConfirmAction({
       type: 'addon', player,
       message: `Add-on for ${player.player_name}?`,
-      detail: floor?.tournament?.addon_cost ? `Cost: $${floor.tournament.addon_cost} — Chips: ${formatChips(floor.tournament.addon_chips || floor.tournament.starting_chips)}` : 'Process add-on for this player.',
+      detail: floor?.tournament?.addon_cost ? `Cost: $${floor.tournament.addon_cost}, Chips: ${formatChips(floor.tournament.addon_chips || floor.tournament.starting_chips)}` : 'Process Add-On For This Player.',
       color: '#8B5CF6' });
   };
 
@@ -296,33 +461,94 @@ ${receipts.map(r => `<div class="card">
           await fetchFloor();
           broadcastChange('tournaments');
         } else {
-          setToast({ type: 'error', text: json.error || 'Failed to update chips.' });
+          setToast({ type: 'error', text: json.error || 'Failed To Update Chips.' });
         }
       } else {
-        setToast({ type: 'error', text: 'Failed to update chips.' });
+        setToast({ type: 'error', text: 'Failed To Update Chips.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed to update chips. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Update Chips. Check Console.' }); }
+    finally { setActionLoading(null); }
+  };
+
+  const closeMoveModal = () => {
+    setMoveModal(null);
+    setMoveTable('');
+    setMoveSeat('');
+    setMoveMode('move');
+  };
+
+  // Same picker, two endpoints. Opening it always clears the previous choice
+  // so a stale table or seat cannot be submitted for the next player.
+  const openMovePlayer = (player) => {
+    setMoveMode('move');
+    setMoveTable('');
+    setMoveSeat('');
+    setMoveModal(player);
+  };
+
+  const openAssignSeat = (player) => {
+    setMoveMode('assign');
+    setMoveTable('');
+    setMoveSeat('');
+    setMoveModal(player);
+  };
+
+  // ── Assign Seat ─────────────────────────────────────────────────────────
+  // PUT /api/commander/tournaments/[id]/entries/[entryId]/seat
+  //     body { table_number, seat_number }
+  //     -> { success, data: { entry_id, player_name, from_table, from_seat,
+  //          to_table, to_seat } }
+  // Error codes: VALIDATION_ERROR (400, seat must be a whole number 1 to 12),
+  //              PLAYER_NOT_ACTIVE (400), SEAT_OCCUPIED (409, names the
+  //              occupant), NOT_FOUND (404), DB_ERROR / SERVER_ERROR (500).
+  // This is the only path that seats a specific registered player in a
+  // specific chair: it advances 'registered' to 'seated', which the bulk seat
+  // draw and the late-registration auto-claim otherwise own. move-player
+  // leaves the status untouched, so it cannot be used to seat a registrant.
+  const performAssignSeat = async () => {
+    if (!moveModal || !moveTable || !moveSeat) return;
+    setActionLoading('move');
+    try {
+      const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${moveModal.entry_id}/seat`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table_number: parseInt(moveTable), seat_number: parseInt(moveSeat) })
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        const d = json.data || {};
+        setToast({
+          type: 'success',
+          text: `${d.player_name || moveModal.player_name} Seated At Table ${d.to_table} Seat ${d.to_seat}.`
+        });
+        closeMoveModal();
+        setSelectedPlayer(null);
+        await fetchFloor();
+        broadcastChange('tournaments');
+      } else {
+        setToast({ type: 'error', text: json?.error?.message || `Could Not Assign That Seat (${res.status}).` });
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Could Not Assign That Seat. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
   const handleMove = async () => {
     if (!moveModal || !moveTable || !moveSeat) return;
+    if (moveMode === 'assign') return performAssignSeat();
     setActionLoading('move');
     try {
       const res = await apiCall(`/api/commander/tournaments/${tournamentId}/move-player`, {
         entry_id: moveModal.entry_id, to_table: parseInt(moveTable), to_seat: parseInt(moveSeat)
       });
       if (res.success) {
-        setMoveModal(null);
-        setMoveTable('');
-        setMoveSeat('');
+        closeMoveModal();
         setSelectedPlayer(null);
         await fetchFloor();
         broadcastChange('tournaments');
       } else {
-        setToast({ type: 'error', text: res.error || 'Move failed — seat may be occupied.' });
+        setToast({ type: 'error', text: res.error || 'Move Failed. Seat May Be Occupied.' });
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Move failed. Check console.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Move Failed. Check Console.' }); }
     finally { setActionLoading(null); }
   };
 
@@ -331,9 +557,9 @@ ${receipts.map(r => `<div class="card">
   if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
 
   return (
-    <CommanderLayout title="Commander — Players" backHref={`/commander/td/${tournamentId}`}>
+    <CommanderLayout title="Commander - Players" backHref={`/commander/td/${tournamentId}`}>
       <SEOHead
-        title="Commander — Players"
+        title="Commander - Players"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -342,7 +568,11 @@ ${receipts.map(r => `<div class="card">
         {/* Header */}
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3">
           <h1 className="text-lg font-bold text-white">Players</h1>
-          <p className="text-xs text-[#B0B3B8]">{allPlayers.filter(p => p.status === 'active').length} active — {allPlayers.length} total</p>
+          <p className="text-xs text-[#B0B3B8]">
+            {allPlayers.filter(p => p.status === 'active').length} Active
+            {baggedCount > 0 ? `, ${baggedCount} Bagged` : ''}
+            , {allPlayers.length} Total
+          </p>
         </div>
 
         {/* Search */}
@@ -365,17 +595,46 @@ ${receipts.map(r => `<div class="card">
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-4 flex gap-2 pb-3">
+        <div className="px-4 flex gap-2 pb-3 overflow-x-auto">
           {FILTERS.map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium ${filter === f.key
+              className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${filter === f.key
                 ? 'bg-[#1877F2] text-white'
                 : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
                 }`}>
               {f.label}
+              {f.key === 'alternate' && alternateCount > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
+                  {alternateCount}
+                </span>
+              )}
+              {f.key === 'bagged' && baggedCount > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
+                  {baggedCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
+
+        {/* Alternates: tell the queue where it stands.
+            Only shown on the Alternates tab, where the positions are visible,
+            so the TD can see exactly who is about to be messaged. */}
+        {filter === 'alternate' && alternateCount > 0 && (
+          <div className="px-4 pb-3">
+            <button
+              onClick={performNotifyAlternates}
+              disabled={actionLoading === 'notify-alternates'}
+              className="w-full min-h-[44px] rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1877F2]/20 disabled:opacity-50">
+              {actionLoading === 'notify-alternates'
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Bell className="w-4 h-4" />}
+              {actionLoading === 'notify-alternates'
+                ? 'Sending...'
+                : `Notify All ${alternateCount.toLocaleString()} Alternate${alternateCount === 1 ? '' : 's'} Of Their Position`}
+            </button>
+          </div>
+        )}
 
         {/* Player List */}
         <div className="px-4 space-y-1">
@@ -390,7 +649,8 @@ ${receipts.map(r => `<div class="card">
               ) : (
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${player.status === 'active' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
                   player.status === 'eliminated' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
-                    'bg-[#B0B3B8]/20 text-[#B0B3B8]'
+                    player.status === 'alternate' || player.status === 'bagged' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
+                      'bg-[#B0B3B8]/20 text-[#B0B3B8]'
                   }`}>
                   {player.player_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??'}
                 </div>
@@ -399,20 +659,34 @@ ${receipts.map(r => `<div class="card">
                 <p className="text-sm font-medium text-[#E4E6EB] truncate">{player.player_name}</p>
                 <p className="text-xs text-[#B0B3B8]">
                   {player.status === 'active'
-                    ? `${formatChips(player.current_chips)} chips${player.rebuy_count > 0 ? ` — ${player.rebuy_count}R` : ''}${player.addon_taken ? ' — A' : ''}`
+                    ? `${formatChips(player.current_chips)} Chips${player.rebuy_count > 0 ? ` - ${player.rebuy_count}R` : ''}${player.addon_taken ? ' - A' : ''}`
                     : player.status === 'eliminated'
                       ? `Eliminated${player.finish_position ? ` #${player.finish_position}` : ''}`
-                      : 'Registered'
+                      : player.status === 'alternate'
+                        ? 'Alternate, Waiting For Seat'
+                        : player.status === 'bagged'
+                          // The bagged stack is the whole point of this row, so
+                          // it is spelled out in full rather than abbreviated.
+                          ? `Bagged ${(Number(player.current_chips) || 0).toLocaleString()} Chips`
+                          : 'Registered'
                   }
                 </p>
               </div>
+              {player.status === 'alternate' && player.queue_position && (
+                <span className={`flex-shrink-0 px-2 py-1 rounded-full text-[11px] font-bold whitespace-nowrap border ${player.queue_position === 1
+                  ? 'bg-[#F59E0B]/20 border-[#F59E0B]/50 text-[#F59E0B]'
+                  : 'bg-[#F59E0B]/10 border-[#F59E0B]/30 text-[#F59E0B]'
+                  }`}>
+                  {player.queue_position === 1 ? '#1 Next Up' : `#${player.queue_position}`}
+                </span>
+              )}
               <ChevronDown className="w-4 h-4 text-[#B0B3B8] rotate-[-90deg]" />
             </button>
           ))}
           {filtered.length === 0 && (
             <div className="text-center py-12">
               <Users className="w-10 h-10 text-[#3A3B3C] mx-auto mb-2" />
-              <p className="text-[#B0B3B8]">{search ? 'No players found' : 'No players in this category'}</p>
+              <p className="text-[#B0B3B8]">{search ? 'No Players Found' : 'No Players In This Category'}</p>
             </div>
           )}
         </div>
@@ -422,14 +696,31 @@ ${receipts.map(r => `<div class="card">
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setSelectedPlayer(null)}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-[#1877F2]" />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${['alternate', 'bagged'].includes(selectedPlayer.status) ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
+                  {selectedPlayer.status === 'bagged'
+                    ? <Package className="w-5 h-5 text-[#F59E0B]" />
+                    : <Users className={`w-5 h-5 ${selectedPlayer.status === 'alternate' ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />}
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedPlayer.player_name}</h3>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white truncate">{selectedPlayer.player_name}</h3>
+                    {selectedPlayer.status === 'alternate' && selectedPlayer.queue_position && (
+                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#F59E0B]/20 border border-[#F59E0B]/50 text-[#F59E0B] text-[11px] font-bold whitespace-nowrap">
+                        {selectedPlayer.queue_position === 1 ? '#1 Next Up' : `#${selectedPlayer.queue_position}`}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-[#B0B3B8]">
-                    Table {selectedPlayer.table_number} Seat {selectedPlayer.seat_number}
-                    {selectedPlayer.current_chips > 0 && ` — ${formatChips(selectedPlayer.current_chips)}`}
+                    {selectedPlayer.status === 'alternate'
+                      ? selectedPlayer.queue_position
+                        ? `Alternate, Position ${selectedPlayer.queue_position} In Line`
+                        : 'Alternate, Waiting For Seat'
+                      : selectedPlayer.status === 'bagged'
+                        ? 'Bagged, No Seat Until The Day Resumes'
+                        : selectedPlayer.table_number
+                          ? `Table ${selectedPlayer.table_number} Seat ${selectedPlayer.seat_number}`
+                          : 'No Seat Assigned'}
+                    {selectedPlayer.current_chips > 0 && ` - ${formatChips(selectedPlayer.current_chips)}`}
                   </p>
                 </div>
               </div>
@@ -438,7 +729,9 @@ ${receipts.map(r => `<div class="card">
                 {selectedPlayer.status === 'active' && (
                   <>
                     <ActionBtn icon={ArrowRightLeft} label="Move Player" color="#1877F2"
-                      onClick={() => { setMoveModal(selectedPlayer); }} />
+                      onClick={() => openMovePlayer(selectedPlayer)} />
+                    <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#1877F2"
+                      onClick={() => openAssignSeat(selectedPlayer)} />
                     <ActionBtn icon={Coins} label="Update Chips" color="#F59E0B"
                       onClick={() => { setChipModal(selectedPlayer); setChipValue(String(selectedPlayer.current_chips || '')); }} />
                     <ActionBtn icon={RotateCcw} label="Rebuy" color="#31A24C"
@@ -453,8 +746,44 @@ ${receipts.map(r => `<div class="card">
                   </>
                 )}
                 {selectedPlayer.status === 'eliminated' && (
-                  <ActionBtn icon={RotateCcw} label="Re-Entry" color="#31A24C"
-                    onClick={() => navigateTo(`/register?reentry=${selectedPlayer.entry_id}`)} />
+                  <>
+                    <ActionBtn icon={Undo2} label="Undo Elimination" color="#F59E0B"
+                      loading={actionLoading === 'restore'}
+                      onClick={() => performRestore(selectedPlayer)} />
+                    <ActionBtn icon={RotateCcw} label="Re-Entry" color="#31A24C"
+                      onClick={() => navigateTo(`/register?reentry=${selectedPlayer.entry_id}`)} />
+                  </>
+                )}
+                {/* Registered but unseated. The bulk seat draw and the late-reg
+                    auto-claim both pick the chair at random, so this is the only
+                    way the floor can put a named player in a named seat
+                    (accessibility, a feature table, or fixing a manual mistake). */}
+                {selectedPlayer.status === 'registered' && (
+                  <ActionBtn icon={UserPlus} label="Assign Seat" color="#31A24C"
+                    loading={actionLoading === 'move'}
+                    onClick={() => openAssignSeat(selectedPlayer)} />
+                )}
+                {selectedPlayer.status === 'alternate' && (
+                  <ActionBtn icon={UserPlus} label="Seat Alternate" color="#31A24C"
+                    loading={actionLoading === 'promote'}
+                    onClick={() => performPromote(selectedPlayer)} />
+                )}
+                {/* Bagged (multi-day). The whole field is normally brought back
+                    by Start Day on the Control Center, which redraws seats and
+                    restores every bagged stack in one action. These two cover
+                    the exceptions: a late arrival who needs a specific chair,
+                    and a player who forfeits without returning. */}
+                {selectedPlayer.status === 'bagged' && (
+                  <>
+                    <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#31A24C"
+                      loading={actionLoading === 'move'}
+                      onClick={() => openAssignSeat(selectedPlayer)} />
+                    <ActionBtn icon={Coins} label="Correct Bagged Chips" color="#F59E0B"
+                      onClick={() => { setChipModal(selectedPlayer); setChipValue(String(selectedPlayer.current_chips || '')); }} />
+                    <ActionBtn icon={UserX} label="Eliminate" color="#EF4444" danger
+                      loading={actionLoading === 'eliminate'}
+                      onClick={() => handleEliminate(selectedPlayer)} />
+                  </>
                 )}
               </div>
 
@@ -503,11 +832,16 @@ ${receipts.map(r => `<div class="card">
 
         {/* ===== MOVE PLAYER MODAL ===== */}
         {moveModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setMoveModal(null)}>
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={closeMoveModal}>
             <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-white mb-1">Move Player</h3>
+              <h3 className="text-lg font-bold text-white mb-1">
+                {moveMode === 'assign' ? 'Assign Seat' : 'Move Player'}
+              </h3>
               <p className="text-sm text-[#B0B3B8] mb-4">
-                {moveModal.player_name} — currently Table {moveModal.table_number} Seat {moveModal.seat_number}
+                {moveModal.player_name}
+                {moveModal.table_number
+                  ? `, Currently Table ${moveModal.table_number} Seat ${moveModal.seat_number}`
+                  : ', No Seat Assigned Yet'}
               </p>
               {/* Quick table buttons */}
               {floor?.tables && (
@@ -519,7 +853,7 @@ ${receipts.map(r => `<div class="card">
                     }}
                       className={`px-3 py-2 rounded-lg text-sm ${moveTable === String(t.table_number) ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
                         }`}>
-                      T{t.table_number} ({t.available_seats} open)
+                      T{t.table_number} ({t.available_seats} Open)
                     </button>
                   ))}
                 </div>
@@ -546,7 +880,7 @@ ${receipts.map(r => `<div class="card">
                 const occupied = t.players.map(p => p.seat_number);
                 return (
                   <div className="mb-4">
-                    <p className="text-xs text-[#B0B3B8] mb-2">Tap an open seat on Table {t.table_number}</p>
+                    <p className="text-xs text-[#B0B3B8] mb-2">Tap An Open Seat On Table {t.table_number}</p>
                     <div className="grid grid-cols-5 gap-2">
                       {Array.from({ length: t.max_seats }, (_, i) => i + 1).map(s => {
                         const isOccupied = occupied.includes(s);
@@ -588,12 +922,14 @@ ${receipts.map(r => `<div class="card">
                 </div>
               )}
               <div className="flex gap-3">
-                <button onClick={() => setMoveModal(null)}
+                <button onClick={closeMoveModal}
                   className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
                 <button onClick={handleMove}
                   disabled={!moveTable || !moveSeat || actionLoading === 'move'}
                   className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50">
-                  {actionLoading === 'move' ? 'Moving...' : 'Move'}
+                  {actionLoading === 'move'
+                    ? (moveMode === 'assign' ? 'Seating...' : 'Moving...')
+                    : (moveMode === 'assign' ? 'Assign Seat' : 'Move')}
                 </button>
               </div>
             </div>
@@ -616,6 +952,28 @@ ${receipts.map(r => `<div class="card">
                 <h3 className="text-lg font-bold text-white">{confirmAction.message}</h3>
                 <p className="text-sm text-[#B0B3B8] mt-1">{confirmAction.detail}</p>
               </div>
+              {confirmAction.type === 'eliminate' && floor?.stats?.bounty_per_entry > 0 && (
+                <div className="mb-4 text-left">
+                  {/* PKO: the head is worth whatever the busted player has
+                      accumulated, and half of it goes onto the eliminator. */}
+                  <label className="text-xs text-[#B0B3B8] mb-1 block">
+                    {String(floor?.tournament?.tournament_type || '').toLowerCase() === 'pko'
+                      ? `Eliminated By, Takes Half Of A $${(
+                          Number(confirmAction.player?.bounty_value) > 0
+                            ? Number(confirmAction.player.bounty_value)
+                            : Number(floor.stats.bounty_per_entry)
+                        ).toLocaleString()} Bounty In Cash And Adds The Other Half To Their Own`
+                      : `Eliminated By, Awards $${Number(floor.stats.bounty_per_entry).toLocaleString()} Bounty`}
+                  </label>
+                  <select value={eliminatorId} onChange={e => setEliminatorId(e.target.value)}
+                    className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1877F2]">
+                    <option value="">Unknown, No Bounty Awarded</option>
+                    {allPlayers.filter(p => p.status === 'active' && p.entry_id !== confirmAction.player.entry_id).map(p => (
+                      <option key={p.entry_id} value={p.entry_id}>{p.player_name}{p.table_number ? ` (T${p.table_number})` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3">
                 <button onClick={() => setConfirmAction(null)}
                   className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
@@ -653,7 +1011,12 @@ ${receipts.map(r => `<div class="card">
         <div style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
           padding: '12px 20px', borderRadius: 12,
-          background: toast.type === 'success' ? '#22C55E' : '#EF4444',
+          // 'warning' (amber) is used for advisories such as an add-on sold
+          // outside the scheduled add-on break: the action DID succeed, so
+          // painting it error-red would read as a failed sale.
+          background: toast.type === 'success' ? '#22C55E'
+            : toast.type === 'warning' ? '#F59E0B'
+              : '#EF4444',
           color: '#fff', fontSize: 13, fontWeight: 600,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           display: 'flex', alignItems: 'center', gap: 8,

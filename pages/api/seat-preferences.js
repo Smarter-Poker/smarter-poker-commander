@@ -1,10 +1,10 @@
 /**
  * Seat Preferences API
- * GET /api/commander/seat-preferences?player_id=X — Get preferences
- * POST /api/commander/seat-preferences — Save/update preferences
+ * GET /api/commander/seat-preferences?player_id=X - Get preferences
+ * POST /api/commander/seat-preferences - Save/update preferences
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
@@ -18,21 +18,39 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// commander_seat_preferences.venue_id is a uuid column (verified against
+// information_schema) while app venue ids are integers, so passing a
+// non-uuid value straight through fails with 22P02 invalid uuid syntax.
+// Non-uuid values are treated as the venue-agnostic (null) preference row,
+// which matches all live rows in the table.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardWriteStaff(req, res);
-      if (!_staff) return;
+    // 2026-08-20 audit fix: the guard only ran for writes, so the GET returned
+    // any player's seat preferences and staff notes for a bare player_id.
+    const _staff = await guardStaff(req, res);
+    if (!_staff) return;
+
+    // 2026-08-20 audit fix (second pass): guardStaff alone still let staff at
+    // ANY venue read and overwrite ANY player's preferences and staff notes,
+    // because the row cannot be venue-scoped - commander_seat_preferences.
+    // venue_id is a uuid column while app venue ids are integers, so every
+    // live row has venue_id null. Scope on the PLAYER instead: they must have
+    // a footprint at the caller's venue.
+    const _playerId = req.method === 'GET' ? req.query.player_id : req.body?.player_id;
+    if (!(await playerIsAtVenue(_playerId, _staff))) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'That Player Has No Record At This Venue' }
+      });
     }
 
-
-    // Auth guard: require user auth for writes
     if (req.method === 'GET') return getPreferences(req, res);
     if (req.method === 'POST') return savePreferences(req, res);
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED' } });
@@ -42,6 +60,35 @@ export default async function handler(req, res) {
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
+}
+
+// True when the player has been seen at the caller's venue, so their seating
+// notes are that venue's business. Checked against the two tables a player
+// necessarily passes through: the desk waitlist and the cash session log.
+// A session with no venue (which verifyStaffSession now rejects for PIN
+// terminals) or a request with no player_id is left to the route's own
+// validation rather than being silently allowed through.
+async function playerIsAtVenue(playerId, staff) {
+  if (!playerId) return true; // handlers below return their own 400
+  const venueId = (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null)
+    ? staff.venue_id
+    : null;
+  if (venueId === null) return true;
+
+  const [sessionsRes, waitlistRes] = await Promise.all([
+    getSupabase()
+      .from('commander_player_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('venue_id', venueId)
+      .eq('player_id', playerId),
+    getSupabase()
+      .from('commander_waitlist')
+      .select('id', { count: 'exact', head: true })
+      .eq('venue_id', venueId)
+      .eq('player_id', playerId)
+  ]);
+
+  return (sessionsRes.count || 0) > 0 || (waitlistRes.count || 0) > 0;
 }
 
 async function getPreferences(req, res) {
@@ -58,7 +105,11 @@ async function getPreferences(req, res) {
       .eq('player_id', player_id)
           .limit(100);
 
-    if (venue_id) query = query.eq('venue_id', venue_id);
+    if (venue_id) {
+      query = UUID_RE.test(String(venue_id))
+        ? query.eq('venue_id', venue_id)
+        : query.is('venue_id', null);
+    }
 
     const { data: prefs, error } = await query.maybeSingle();
     if (error) throw error;
@@ -83,7 +134,7 @@ async function savePreferences(req, res) {
   try {
     const data = {
       player_id,
-      venue_id: venue_id || null,
+      venue_id: venue_id && UUID_RE.test(String(venue_id)) ? venue_id : null,
       preferred_seats: preferred_seats || [],
       left_handed: left_handed || false,
       near_tv: near_tv ?? null,

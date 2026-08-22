@@ -1,6 +1,6 @@
 /**
  * Commander Shared Color Utilities
- * Centralized hex color manipulation — previously copy-pasted in desk.js and displays/waitlist.js.
+ * Centralized hex color manipulation - previously copy-pasted in desk.js and displays/waitlist.js.
  */
 
 /**

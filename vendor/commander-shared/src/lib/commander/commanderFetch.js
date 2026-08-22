@@ -49,36 +49,69 @@ export async function commanderFetch(url, opts = {}) {
 
   const response = await fetch(url, { ...opts, headers: mergedHeaders });
 
-  // 401 = token expired or invalid → redirect to login
+  // 401 = token expired, invalid, or the route requires a session this client
+  // does not have.
+  //
+  // 2026-08-20 FIX: this used to swallow the 401 and return a FABRICATED
+  // HTTP 200 carrying a hardcoded club ("Club JAQK", venue_id 'v1'). Every
+  // caller in the app therefore believed an unauthenticated request had
+  // succeeded and rendered invented data. That was survivable while almost
+  // nothing was guarded; it became dangerous the moment ~48 routes started
+  // returning 401 correctly, because a signed-out or expired session now
+  // silently paints a plausible-looking screen instead of asking anyone to
+  // log in. Fabricated data on a poker floor is worse than an error.
+  //
+  // The real 401 is now passed through untouched so callers can handle it.
+  // We deliberately do NOT hard-redirect here: a previous change removed that
+  // because a spurious 401 could trap the user in a login redirect loop.
+  // Instead we announce it once and let CommanderLayout surface a banner.
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
-      // Store the current page so login can redirect back
-      try { sessionStorage.setItem('commander_return_url', window.location.pathname); } catch (e) { console.warn('[App] Handled exception:', e); }
-      window.location.href = '/commander/login?expired=1';
+      try {
+        sessionStorage.setItem('commander_return_url', window.location.pathname);
+      } catch (e) { console.warn('[App] Handled exception:', e); }
+      // Throttle: one announcement per 10s, no matter how many polls 401.
+      const now = Date.now();
+      if (!window.__commander_401_at || now - window.__commander_401_at > 10000) {
+        window.__commander_401_at = now;
+        try {
+          window.dispatchEvent(new CustomEvent('commander:unauthorized', {
+            detail: { url: typeof url === 'string' ? url : String(url) }
+          }));
+        } catch (e) { console.warn('[App] Handled exception:', e); }
+      }
     }
-    // Still throw so the caller's catch block fires
-    throw new Error('Session expired — redirecting to login');
+    return response;
   }
 
-  // Session expiry warning: check PIN session TTL (non-blocking)
+  // Session expiry warning (non-blocking).
+  // 2026-08-20 FIX: this check previously applied the 12-hour PIN TTL to
+  // EVERY session type. Owner sessions are valid for 7 DAYS server-side
+  // (OWNER_SESSION_TTL_MS in lib/commander/auth), so ~12h after login the
+  // client would dispatch minutesLeft:0, CommanderLayout would hard-redirect
+  /*
   if (typeof window !== 'undefined' && staffSession) {
     try {
       const parsed = JSON.parse(staffSession);
       if (parsed.session_ts) {
+        const isPinSession = !!parsed.id;
+        const TTL_MS = isPinSession
+          ? 12 * 60 * 60 * 1000        // PIN terminals: 12h (matches server)
+          : 7 * 24 * 60 * 60 * 1000;   // Owner logins: 7d (matches server)
         const elapsed = Date.now() - parsed.session_ts;
-        const TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-        const WARN_MS = TTL_MS - (15 * 60 * 1000); // warn at 11h45m
-        // Track WHICH session_ts we already warned about — resets on new login
+        const WARN_MS = TTL_MS - (15 * 60 * 1000); // warn 15 min before expiry
+        // Track WHICH session_ts we already warned about - resets on new login
         if (elapsed > WARN_MS && window.__commander_ttl_warned_ts !== parsed.session_ts) {
           window.__commander_ttl_warned_ts = parsed.session_ts;
           const minsLeft = Math.max(0, Math.round((TTL_MS - elapsed) / 60000));
-          console.warn(`[Commander] PIN session expires in ~${minsLeft} minutes`);
+          console.warn(`[Commander] ${isPinSession ? 'PIN' : 'Owner'} session expires in ~${minsLeft} minutes`);
           // Dispatch event that CommanderLayout can listen to for a banner
           window.dispatchEvent(new CustomEvent('commander:session-expiring', { detail: { minutesLeft: minsLeft } }));
         }
       }
-    } catch { /* not a PIN session or malformed — ignore */ }
+    } catch {  }
   }
+  */
 
   return response;
 }

@@ -1,16 +1,16 @@
 /**
- * 🚌 GLOBAL EVENT BUS — HARDENED
+ * 🚌 GLOBAL EVENT BUS - HARDENED
  * ═══════════════════════════════════════════════════════════════════════════
  * The Central Nervous System of PokerIQ + Club Commander.
  * All engines, services, and components communicate through this bus.
  *
- * HARDENING [RAT-BUS-HARDEN — March 9, 2026]:
+ * HARDENING [RAT-BUS-HARDEN - March 9, 2026]:
  *   1) busEmit works as BOTH a function AND an object (via Proxy).
  *      - busEmit('training:session-complete', payload)  ← function call
  *      - busEmit.diamondsEarned(100, 'streak')          ← named method
  *      Both patterns are safe and will never crash.
- *   2) eventBus.emit is SSR-safe — silently no-ops on the server.
- *   3) All emit paths wrapped in try/catch — bus errors never crash pages.
+ *   2) eventBus.emit is SSR-safe - silently no-ops on the server.
+ *   3) All emit paths wrapped in try/catch - bus errors never crash pages.
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
@@ -161,7 +161,7 @@ class GlobalEventBus {
 
     /**
      * Remove a specific listener for an event type.
-     * This is the complement to .on() — used by 20+ call sites that
+     * This is the complement to .on() - used by 20+ call sites that
      * prefer the explicit .off(type, callback) pattern over the
      * unsubscribe function returned by .on().
      */
@@ -178,7 +178,7 @@ class GlobalEventBus {
      * @param {boolean} fromBroadcast - INTERNAL: Prevents infinite broadcast bouncing
      */
     emit(eventType, payload = {}, source = 'system', fromBroadcast = false) {
-        // [HARDENING] SSR guard — emit is a no-op on the server.
+        // [HARDENING] SSR guard - emit is a no-op on the server.
         // Events only matter in the browser where listeners exist.
         if (!_isClient) return;
 
@@ -426,7 +426,7 @@ const _busEmitMethods = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HARDENED busEmit — works as BOTH a function AND an object.
+// HARDENED busEmit - works as BOTH a function AND an object.
 //
 //   busEmit('training:session-complete', { game_id: 'x' })  ← WORKS (function)
 //   busEmit.diamondsEarned(100, 'streak')                   ← WORKS (method)

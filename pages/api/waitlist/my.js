@@ -84,6 +84,26 @@ export default async function handler(req, res) {
         });
       }
 
+      // Compute the LIVE 1-based position for each entry - matching the public
+      // venue waitlist ordering (created_at ascending within game_type/stakes).
+      // The stored `position` column drifts as players ahead are seated, so we
+      // count how many waiting/called entries in the same group were created at
+      // or before this one. Falls back to the stored position on error.
+      const livePositions = {};
+      await Promise.all((entries || []).map(async (entry) => {
+        try {
+          const { count } = await getSupabase()
+            .from('commander_waitlist')
+            .select('id', { count: 'exact', head: true })
+            .eq('venue_id', entry.venue_id)
+            .eq('game_type', entry.game_type)
+            .eq('stakes', entry.stakes)
+            .in('status', ['waiting', 'called'])
+            .lte('created_at', entry.created_at);
+          if (typeof count === 'number' && count > 0) livePositions[entry.id] = count;
+        } catch (posErr) { console.warn('[App] Handled exception:', posErr?.message || posErr); }
+      }));
+
       // Format response
       const formattedEntries = (entries || []).map(entry => ({
         waitlist_entry: {
@@ -99,7 +119,7 @@ export default async function handler(req, res) {
         },
         venue: entry.poker_venues,
         game: entry.commander_games,
-        position: entry.position,
+        position: livePositions[entry.id] || entry.position,
         estimated_wait: entry.estimated_wait_minutes
       }));
 

@@ -79,7 +79,7 @@ export default async function handler(req, res) {
         // Running games
         getSupabase()
           .from('commander_games')
-          .select('id, game_type, stakes, status, player_count, max_players')
+          .select('id, game_type, stakes, status, player_count:current_players, max_players')
           .eq('venue_id', venueId)
           .in('status', ['waiting', 'running']),
 
@@ -116,6 +116,7 @@ export default async function handler(req, res) {
 
       const tables = tablesResult.data || [];
       const games = gamesResult.data || [];
+      if (gamesResult.error) console.error('[venues/analytics] commander_games read failed', { venueId, code: gamesResult.error.code, message: gamesResult.error.message });
       const waitlist = waitlistResult.data || [];
       const sessions = sessionsResult.data || [];
       const tournaments = tournamentsResult.data || [];

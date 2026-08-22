@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       // Fetch the reference game to get venue, type, stakes
       const { data: refGame, error: gameError } = await getSupabase()
         .from('commander_games')
-        .select('id, venue_id, game_type, stakes, player_count, max_players, table_id')
+        .select('id, venue_id, game_type, stakes, player_count:current_players, max_players, table_id')
         .eq('id', gameId)
         .maybeSingle();
 
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       // Fetch all running games of the same type and stakes at this venue
       const { data: games, error: gamesError } = await getSupabase()
         .from('commander_games')
-        .select('id, table_id, player_count, max_players, status')
+        .select('id, table_id, player_count:current_players, max_players, status')
         .eq('venue_id', refGame.venue_id)
         .eq('game_type', refGame.game_type)
         .eq('stakes', refGame.stakes)

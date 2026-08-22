@@ -1,11 +1,11 @@
 /**
- * Time Clock API — Staff Clock In/Out
+ * Time Clock API - Staff Clock In/Out
  * POST: Clock in or out via QR code scan
  * GET: List today's time clock entries for a venue
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
-import { guardWriteStaff } from '../../src/lib/commander/auth';
+import { guardStaff } from '../../src/lib/commander/auth';
 import { reportApiError } from '../../src/lib/sentryWrap';
 
 let _supabase = null;
@@ -18,7 +18,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -26,10 +26,17 @@ export default async function handler(req, res) {
     }
 
 
-    // Auth guard
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
-      const _staff = await guardWriteStaff(req, res);
-      if (!_staff) return;
+    // 2026-08-20 audit fix: the guard only ran for writes, leaving the GET
+    // public - it returns every staff clock-in/out entry plus staff names and
+    // roles for any venue_id (an employee timesheet). Staff auth now applies to
+    // both methods and the venue comes from the verified session.
+    const _staff = await guardStaff(req, res);
+    if (!_staff) return;
+
+    const _scopeVenueId = req.method === 'GET' ? req.query.venue_id : req.body?.venue_id;
+    if (_scopeVenueId && _staff.venue_id !== undefined && _staff.venue_id !== null
+        && String(_staff.venue_id) !== String(_scopeVenueId)) {
+      return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
       if (req.method === 'GET') return handleGet(req, res);
@@ -167,7 +174,7 @@ async function handlePost(req, res) {
             .limit(1);
 
         if (openShift?.[0]) {
-            // Clock OUT — close the open shift
+            // Clock OUT - close the open shift
             const clockIn = new Date(openShift[0].clock_in);
             const clockOut = new Date();
             const hoursWorked = Math.round(((clockOut - clockIn) / 3600000) * 100) / 100;
@@ -194,7 +201,7 @@ async function handlePost(req, res) {
                 }
             });
         } else {
-            // Clock IN — create new entry
+            // Clock IN - create new entry
             const { data: entry, error } = await getSupabase()
                 .from('commander_time_clock')
                 .insert({

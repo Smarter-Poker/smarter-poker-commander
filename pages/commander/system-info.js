@@ -1,7 +1,7 @@
 /**
  * System Information Page
  * /commander/system-info
- * TC equivalent: "System Information" tile — version, diagnostics, support
+ * TC equivalent: "System Information" tile - version, diagnostics, support
  */
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -53,10 +53,10 @@ const json = await commanderFetchJSON('/api/commander/system-info');
   }
 
   return (
-    <CommanderLayout title="System Info | {venueName || 'Commander'}" backHref="/commander/dashboard?card=reports">
+    <CommanderLayout title={`System Info | ${venueName || 'Commander'}`} backHref="/commander/dashboard?card=reports">
     <>
       <SEOHead
-                title="Commander — System Info"
+                title="Commander - System Info"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />

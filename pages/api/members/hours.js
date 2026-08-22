@@ -8,7 +8,7 @@
  * Returns ranked list of members by total play time.
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../src/lib/commander/auth';
+import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -22,12 +22,16 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this route is GET-only and used guardWriteStaff, which
+// returns `true` for GET without verifying anything - the member hours ranking
+// (legal names, member numbers, photos, visit history) was public for any
+// venue_id. venue_id is now also checked against the caller's staff session.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-      const _g = await guardWriteStaff(req, res); if (!_g) return;
+      const _g = await guardStaff(req, res); if (!_g) return;
 
       if (req.method !== 'GET') {
           return res.status(405).json({ success: false, error: 'GET only' });
@@ -36,6 +40,11 @@ export default async function handler(req, res) {
       const { venue_id, period = 'all', limit = 50 } = req.query;
       if (!venue_id) {
           return res.status(400).json({ success: false, error: 'venue_id required' });
+      }
+
+      if (_g.venue_id !== undefined && _g.venue_id !== null
+          && String(_g.venue_id) !== String(venue_id)) {
+          return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
       }
 
       try {
@@ -146,7 +155,7 @@ export default async function handler(req, res) {
           console.warn('[Hours API] Error:', err);
           // If commander_player_sessions is unavailable, fall back to the member's
           // own recorded totals. 2026-07-28 audit fix: same visit_count/last_checkin
-          // drift as above — real columns are total_visits / last_visit /
+          // drift as above - real columns are total_visits / last_visit /
           // total_hours_played.
           try {
               const { data: members } = await getSupabase()

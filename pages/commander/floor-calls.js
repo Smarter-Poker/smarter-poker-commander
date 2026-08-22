@@ -1,5 +1,5 @@
 /**
- * Floor Calls — Complete Rebuild
+ * Floor Calls - Complete Rebuild
  * /commander/floor-calls
  *
  * Floor managers see:
@@ -56,17 +56,28 @@ const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2, low: 3 };
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 0) return 'now';
+  if (diff < 0) return 'Now';
   if (diff < 60) return `${diff}s`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m`;
   return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
 }
 
 function formatDuration(seconds) {
-  if (!seconds && seconds !== 0) return '—';
+  if (!seconds && seconds !== 0) return '-';
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
+
+// 2026-08-04 audit fix: commander_floor_calls has no response_time_seconds
+// column - derive it from responded_at/created_at.
+function responseSeconds(call) {
+  if (call?.response_time_seconds != null) return call.response_time_seconds;
+  if (call?.responded_at && call?.created_at) {
+    const s = Math.round((new Date(call.responded_at).getTime() - new Date(call.created_at).getTime()) / 1000);
+    return s > 0 ? s : 0;
+  }
+  return 0;
 }
 
 /* ─── Page ───────────────────────────────────────────────────── */
@@ -148,13 +159,13 @@ export default function FloorCalls() {
     finally { setLoading(false); }
   }, []);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(venueId, fetchCalls, { entities: ['floor_calls', 'tables'] });
 
   // Polling + clock
   useEffect(() => {
     const _c = new AbortController(); fetchCalls(_c.signal);
-    const poll = setInterval(() => fetchCalls(_c.signal), 30000); // fallback — real-time sync handles instant updates
+    const poll = setInterval(() => fetchCalls(_c.signal), 30000); // fallback - real-time sync handles instant updates
     const clock = setInterval(() => setNow(Date.now()), 1000);
     return () => { clearInterval(poll); clearInterval(clock); };
   }, [fetchCalls]);
@@ -184,7 +195,8 @@ export default function FloorCalls() {
     try {
       const { token, staffSession } = getAuth();
       let respondedBy = '';
-      try { const s = JSON.parse(staffSession); respondedBy = s.name || s.id || ''; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
+      // 2026-08-04 audit fix: responded_by is a uuid column - a display name fails the cast
+      try { const s = JSON.parse(staffSession); respondedBy = s.id || s.user_id || ''; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
       // 2026-07-25 audit fix: handler is flat PUT /api/commander/floor-calls with {id, status, ...} in body (no /[id] PATCH route exists)
       const res = await commanderFetch(`/api/commander/floor-calls`, {
@@ -197,12 +209,12 @@ export default function FloorCalls() {
         broadcastChange('floor_calls');
       } else {
         // 2026-07-25 audit fix: surface non-OK responses instead of failing silently
-        let msg = 'Update failed';
+        let msg = 'Update Failed';
         try { const j = await res.json(); msg = j?.error?.message || j?.error || msg; } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
-        setToast({ type: 'error', text: `Update failed (${res.status}): ${msg}` });
+        setToast({ type: 'error', text: `Update Failed (${res.status}): ${msg}` });
       }
       if (status === 'resolved') busEmit.celebration('confetti');
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   const createCall = async () => {
@@ -228,7 +240,7 @@ export default function FloorCalls() {
         fetchCalls();
         broadcastChange('floor_calls');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSubmitting(false); }
   };
 
@@ -254,14 +266,14 @@ export default function FloorCalls() {
 
   // Stats for history
   const avgResponse = resolved.length > 0
-    ? Math.round(resolved.reduce((s, c) => s + (c.response_time_seconds || 0), 0) / resolved.length)
+    ? Math.round(resolved.reduce((s, c) => s + responseSeconds(c), 0) / resolved.length)
     : 0;
 
   /* ─── Render ───────────────────────────────────────────────── */
 
   return (
     <CommanderLayout title={`Floor Calls${pendingCount > 0 ? ` (${pendingCount})` : ''}`} backHref="/commander/dashboard?card=floor">
-      <SEOHead title="Commander — Floor Calls" description="Club Commander Floor Call Management." noindex={true} />
+      <SEOHead title="Commander - Floor Calls" description="Club Commander Floor Call Management." noindex={true} />
       <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
 
         {/* ── Header ───────────────────────────────── */}
@@ -276,12 +288,12 @@ export default function FloorCalls() {
             </h1>
             {urgentCount > 0 && (
               <p style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, margin: '2px 0 0', animation: 'pulse-text 1.5s ease-in-out infinite' }}>
-                ⚠ {urgentCount} URGENT {urgentCount === 1 ? 'call' : 'calls'} waiting
+                {urgentCount} URGENT {urgentCount === 1 ? 'Call' : 'Calls'} Waiting
               </p>
             )}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={() => setSoundOn(!soundOn)} style={iconBtnStyle} title={soundOn ? 'Mute alerts' : 'Unmute alerts'}>
+            <button onClick={() => setSoundOn(!soundOn)} style={iconBtnStyle} title={soundOn ? 'Mute Alerts' : 'Unmute Alerts'}>
               {soundOn ? <Volume2 size={16} color="#31A24C" /> : <VolumeX size={16} color="#6B7280" />}
             </button>
             <button onClick={fetchCalls} style={iconBtnStyle}>
@@ -340,7 +352,7 @@ export default function FloorCalls() {
                     <Check size={28} color="#31A24C" />
                   </div>
                   <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>All Clear</p>
-                  <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>No pending floor calls</p>
+                  <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>No Pending Floor Calls</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -394,7 +406,7 @@ export default function FloorCalls() {
                               <span style={{ fontSize: 11, color: sCfg.color, fontWeight: 600 }}>{sCfg.label}</span>
                             </div>
                             {call.called_by && (
-                              <span style={{ fontSize: 10, color: '#6B7280' }}>by {call.called_by}</span>
+                              <span style={{ fontSize: 10, color: '#6B7280' }}>By {call.called_by}</span>
                             )}
                             {call.responded_by && (
                               <span style={{ fontSize: 10, color: '#1877F2' }}>→ {call.responded_by}</span>
@@ -454,7 +466,7 @@ export default function FloorCalls() {
                 )}
 
                 {resolved.length === 0 ? (
-                  <p style={{ padding: '40px 0', textAlign: 'center', color: '#6B7280', fontSize: 14 }}>No resolved calls today</p>
+                  <p style={{ padding: '40px 0', textAlign: 'center', color: '#6B7280', fontSize: 14 }}>No Resolved Calls Today</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {resolved.map(call => {
@@ -481,12 +493,12 @@ export default function FloorCalls() {
                             )}
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            {call.response_time_seconds > 0 && (
+                            {responseSeconds(call) > 0 && (
                               <span style={{ fontSize: 11, fontWeight: 600, color: '#1877F2', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <Timer size={10} /> {formatDuration(call.response_time_seconds)}
+                                <Timer size={10} /> {formatDuration(responseSeconds(call))}
                               </span>
                             )}
-                            <span style={{ fontSize: 10, color: '#6B7280' }}>{timeAgo(call.resolved_at || call.created_at)}</span>
+                            <span style={{ fontSize: 10, color: '#6B7280' }}>{timeAgo(call.responded_at || call.created_at)}</span>
                           </div>
                         </div>
                       );
@@ -522,7 +534,7 @@ export default function FloorCalls() {
               {/* Table number */}
               <label style={labelStyle}>Table Number</label>
               <input type="number" value={newTable} onChange={e => setNewTable(e.target.value)}
-                placeholder="e.g. 5" style={inputStyle} autoFocus />
+                placeholder="E.g. 5" style={inputStyle} autoFocus />
 
               {/* Reason */}
               <label style={{ ...labelStyle, marginTop: 14 }}>Reason</label>
@@ -559,9 +571,9 @@ export default function FloorCalls() {
               </div>
 
               {/* Description */}
-              <label style={{ ...labelStyle, marginTop: 8 }}>Notes (optional)</label>
+              <label style={{ ...labelStyle, marginTop: 8 }}>Notes (Optional)</label>
               <textarea value={newDesc} onChange={e => setNewDesc(e.target.value)}
-                placeholder="Additional details..." rows={2}
+                placeholder="Additional Details..." rows={2}
                 style={{ ...inputStyle, resize: 'none', fontFamily: 'Inter, sans-serif' }} />
 
               {/* Submit */}
@@ -585,17 +597,17 @@ export default function FloorCalls() {
             <div style={modalStyle} onClick={e => e.stopPropagation()}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 4px' }}>Resolve Call</h3>
               <p style={{ fontSize: 13, color: '#8A8D91', margin: '0 0 16px' }}>
-                Table {resolveModal.table_number} — {(REASON_CONFIG[resolveModal.reason] || REASON_CONFIG.other).label}
+                Table {resolveModal.table_number}, {(REASON_CONFIG[resolveModal.reason] || REASON_CONFIG.other).label}
               </p>
 
               <label style={labelStyle}>Resolution Notes</label>
               <textarea value={resolveNote} onChange={e => setResolveNote(e.target.value)}
-                placeholder="How was it resolved?" rows={3} autoFocus
+                placeholder="How Was It Resolved?" rows={3} autoFocus
                 style={{ ...inputStyle, resize: 'none', fontFamily: 'Inter, sans-serif' }} />
 
               {/* Quick resolution buttons */}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0 16px' }}>
-                {['Ruling made', 'Chips delivered', 'Player warned', 'Issue resolved', 'Dealer relieved'].map(q => (
+                {['Ruling Made', 'Chips Delivered', 'Player Warned', 'Issue Resolved', 'Dealer Relieved'].map(q => (
                   <button key={q} onClick={() => setResolveNote(q)}
                     style={{
                       padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,

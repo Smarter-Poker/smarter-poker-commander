@@ -1,5 +1,5 @@
 /**
- * CreateTournamentModal — Enhanced with template picker + full configuration
+ * CreateTournamentModal - Enhanced with template picker + full configuration
  * Step 1: Choose Template or Start from Scratch
  * Step 2: Customize tournament details
  * UI: Dark industrial sci-fi gaming theme, no emojis, Inter font
@@ -8,7 +8,7 @@ import { memo, useState, useEffect } from 'react';
 import {
   X, Trophy, Loader2,
   ChevronLeft, Zap, Crown, Target, RefreshCw, Rocket, Crosshair,
-  Check, Settings, Layers, CalendarDays
+  Check, Settings, Layers, CalendarDays, LayoutGrid
 } from 'lucide-react';
 import BlindStructureEditor from '../tournaments/BlindStructureEditor';
 import {
@@ -53,6 +53,9 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
   const [scheduledStart, setScheduledStart] = useState('');
   const [maxEntries, setMaxEntries] = useState('');
   const [guaranteedPool, setGuaranteedPool] = useState('');
+  // '' means "follow the suggestion" so the default keeps tracking max_entries
+  // until the TD types a number of their own.
+  const [tableCount, setTableCount] = useState('');
   const [lateRegLevels, setLateRegLevels] = useState(6);
   const [blindStructure, setBlindStructure] = useState(SCRATCH_BLINDS);
   const [showBlinds, setShowBlinds] = useState(false);
@@ -84,6 +87,21 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Blind structure validation, reported up by BlindStructureEditor. Errors
+  // block creation; warnings are displayed by the editor and do not block.
+  const [structureValidation, setStructureValidation] = useState(null);
+  const structureErrors = (structureValidation?.errors || []).filter(e => e.severity === 'error');
+
+  // Suggested table count: one nine-handed table per nine entrants, minimum 2.
+  // Two is the floor because automatic table breaking never fires with fewer
+  // than two tables assigned to the tournament.
+  const suggestedTables = maxEntries
+    ? Math.max(2, Math.ceil((parseInt(maxEntries, 10) || 0) / 9))
+    : 2;
+  const effectiveTableCount = tableCount === ''
+    ? suggestedTables
+    : Math.max(0, parseInt(tableCount, 10) || 0);
 
   // Set default scheduled start
   useEffect(() => {
@@ -131,6 +149,20 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!name.trim() || !scheduledStart) return;
+
+    // The create API runs the same rules and answers 400. Stopping here means
+    // the message names the level and the reason, and the blind structure
+    // section is opened on the exact rows that are wrong.
+    if (structureErrors.length > 0) {
+      setShowBlinds(true);
+      setError(
+        `Blind Structure Cannot Be Saved: ${structureErrors[0].message}` +
+        (structureErrors.length > 1
+          ? ` And ${(structureErrors.length - 1).toLocaleString()} More Problem${structureErrors.length - 1 === 1 ? '' : 's'}.`
+          : '')
+      );
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -187,6 +219,33 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
       const data = await res.json();
 
       if (data.success) {
+        const created = data.data?.tournament || data.data;
+        const newId = created?.id;
+
+        // Assign physical tables. Without commander_tables rows carrying this
+        // tournament_id, automatic table breaking never fires and the seat
+        // draw has no real table numbers to draw against. Non-fatal: the
+        // tournament exists either way, the TD is just told what failed.
+        let tableWarning = null;
+        if (newId && effectiveTableCount > 0) {
+          try {
+            const tr = await fetch(`/api/commander/tournaments/${newId}/tables`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-staff-session': staffSession || '',
+              },
+              body: JSON.stringify({ count: effectiveTableCount }),
+            });
+            const tj = await tr.json().catch(() => null);
+            if (!tr.ok || !tj?.success) {
+              tableWarning = tj?.error?.message || 'Tables Could Not Be Assigned Automatically.';
+            }
+          } catch (tableErr) {
+            console.warn('Table assignment skipped:', tableErr);
+            tableWarning = 'Tables Could Not Be Assigned Automatically.';
+          }
+        }
         // Sync to Club Page
         if (postToClubPage) {
           try {
@@ -219,14 +278,16 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
         }
 
         broadcastChange('tournaments');
-        onSubmit(data.data?.tournament || data.data);
+        // Second argument carries the non-fatal table-assignment warning so the
+        // caller can toast it instead of losing it behind the closing modal.
+        onSubmit(created, { tableWarning, tables_requested: effectiveTableCount });
         resetForm();
         onClose();
       } else {
-        setError(data.error?.message || data.error || 'Failed to create tournament');
+        setError(data.error?.message || data.error || 'Failed To Create Tournament');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -242,6 +303,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
     setStartingChips(10000);
     setMaxEntries('');
     setGuaranteedPool('');
+    setTableCount('');
     setBlindStructure([...SCRATCH_BLINDS]);
     setAllowsRebuys(false);
     setAllowsAddon(false);
@@ -311,7 +373,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             </button>
 
             <div className="py-1">
-              <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider">Pre-built Templates</p>
+              <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider">Pre-Built Templates</p>
             </div>
 
             {/* Template Cards */}
@@ -332,7 +394,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">{template.name}</p>
                     <p className="text-xs text-[#64748B]">
-                      {formatBuyin(template.buyin_amount, template.buyin_fee, template.bounty_amount)} | {formatChips(template.starting_chips)} chips | {template.estimated_duration}
+                      {formatBuyin(template.buyin_amount, template.buyin_fee, template.bounty_amount)} | {formatChips(template.starting_chips)} Chips | {template.estimated_duration}
                     </p>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-[#64748B] rotate-180" />
@@ -421,7 +483,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
 
             {/* Buy-in */}
             <div>
-              <label className="block text-sm font-medium text-white mb-1">Buy-in Amount</label>
+              <label className="block text-sm font-medium text-white mb-1">Buy-In Amount</label>
               <div className="grid grid-cols-5 gap-2 mb-2">
                 {[50, 100, 150, 200, 300].map((amount) => (
                   <button
@@ -448,7 +510,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                     onChange={(e) => setBuyinAmount(parseInt(e.target.value) || 0)}
                     className="cmd-input w-full h-10 text-center"
                   />
-                  <p className="text-xs text-[#64748B] text-center mt-1">Buy-in</p>
+                  <p className="text-xs text-[#64748B] text-center mt-1">Buy-In</p>
                 </div>
                 <div>
                   <input
@@ -486,7 +548,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             {(tournamentType === 'bounty' || tournamentType === 'pko') && (
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
-                  {tournamentType === 'pko' ? 'Starting Bounty (half of buy-in)' : 'Bounty Amount'}
+                  {tournamentType === 'pko' ? 'Starting Bounty (Half Of Buy-In)' : 'Bounty Amount'}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {[25, 50, 100, 200].map((b) => (
@@ -505,7 +567,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                 </div>
                 {tournamentType === 'pko' && (
                   <p className="text-xs text-[#F97316] mt-2">
-                    Progressive KO: When you eliminate a player, you collect half their bounty. The other half is added to your own bounty, making you a bigger target.
+                    Progressive KO: When You Eliminate A Player, You Collect Half Their Bounty. The Other Half Is Added To Your Own Bounty, Making You A Bigger Target.
                   </p>
                 )}
               </div>
@@ -546,7 +608,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-[#1E3A5F]">
-                  <label className="text-sm font-medium text-white">Add-on</label>
+                  <label className="text-sm font-medium text-white">Add-On</label>
                   <button
                     type="button"
                     onClick={() => setAllowsAddon(!allowsAddon)}
@@ -558,11 +620,11 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                 {allowsAddon && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-[#64748B]">Add-on Cost</label>
+                      <label className="text-xs text-[#64748B]">Add-On Cost</label>
                       <input type="number" value={addonAmount} onChange={(e) => setAddonAmount(parseInt(e.target.value) || 0)} className="cmd-input w-full h-8 text-sm text-center" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#64748B]">Add-on Chips</label>
+                      <label className="text-xs text-[#64748B]">Add-On Chips</label>
                       <input type="number" value={addonChips} onChange={(e) => setAddonChips(parseInt(e.target.value) || 0)} className="cmd-input w-full h-8 text-sm text-center" />
                     </div>
                   </div>
@@ -594,9 +656,30 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
               </div>
             </div>
 
+            {/* Tables */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-1 flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4 text-[#22D3EE]" />
+                How Many Tables
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={tableCount === '' ? String(suggestedTables) : tableCount}
+                onChange={(e) => setTableCount(e.target.value)}
+                className="cmd-input w-full h-10"
+              />
+              <p className="text-xs text-[#64748B] mt-1">
+                Tables Are Reserved For This Event The Moment It Is Created. Assigning At Least
+                Two Enables Automatic Table Breaking And Gives The Seat Draw Real Table Numbers.
+                Set To 0 To Assign Them Later.
+              </p>
+            </div>
+
             {/* Late Registration */}
             <div>
-              <label className="block text-sm font-medium text-white mb-1">Late Registration (levels)</label>
+              <label className="block text-sm font-medium text-white mb-1">Late Registration (Levels)</label>
               <div className="grid grid-cols-5 gap-2">
                 {[4, 6, 8, 10, 12].map((lvl) => (
                   <button
@@ -623,9 +706,15 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
               >
                 <span className="text-sm font-medium text-white flex items-center gap-2">
                   <Layers className="w-4 h-4 text-[#22D3EE]" />
-                  Blind Structure ({blindStructure.filter(l => !l.is_break).length} levels)
+                  Blind Structure ({blindStructure.filter(l => !l.is_break).length} Levels)
                 </span>
-                <span className="text-xs text-[#22D3EE]">{estimateDuration(blindStructure)}</span>
+                {structureErrors.length > 0 ? (
+                  <span className="text-xs font-semibold text-[#EF4444]">
+                    {structureErrors.length.toLocaleString()} Error{structureErrors.length === 1 ? '' : 's'}
+                  </span>
+                ) : (
+                  <span className="text-xs text-[#22D3EE]">{estimateDuration(blindStructure)}</span>
+                )}
               </button>
               {showBlinds && (
                 <div className="mt-2 p-3 bg-[#0A1628] rounded-lg border border-[#1E3A5F]">
@@ -633,6 +722,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                     structure={blindStructure}
                     onChange={setBlindStructure}
                     readOnly={false}
+                    onValidationChange={setStructureValidation}
                   />
                 </div>
               )}
@@ -642,9 +732,9 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             <div className="p-3 bg-[#0D192E] rounded-lg space-y-2">
               <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">Registration Receipts</p>
               {[
-                { label: 'Player Receipt', desc: 'Print copy for the player', value: printPlayerReceipt, setter: setPrintPlayerReceipt },
-                { label: 'Dealer Receipt', desc: 'Print copy for the table dealer', value: printDealerReceipt, setter: setPrintDealerReceipt },
-                { label: 'Cashier Receipt', desc: 'Print copy for the cage', value: printCageReceipt, setter: setPrintCageReceipt },
+                { label: 'Player Receipt', desc: 'Print Copy For The Player', value: printPlayerReceipt, setter: setPrintPlayerReceipt },
+                { label: 'Dealer Receipt', desc: 'Print Copy For The Table Dealer', value: printDealerReceipt, setter: setPrintDealerReceipt },
+                { label: 'Cashier Receipt', desc: 'Print Copy For The Cage', value: printCageReceipt, setter: setPrintCageReceipt },
               ].map((opt) => (
                 <div key={opt.label} className="flex items-center justify-between py-1">
                   <div>
@@ -722,7 +812,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
                     />
                   </div>
                   <p className="text-xs text-[#F59E0B]/80">
-                    Players will be notified when the next flight resumes. Bag-and-tag chip counts can be recorded from the Tournament Manager.
+                    Players Will Be Notified When The Next Flight Resumes. Bag-And-Tag Chip Counts Can Be Recorded From The Tournament Manager.
                   </p>
                 </div>
               )}
@@ -732,7 +822,7 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
             <div className="flex items-center justify-between p-3 bg-[#0D192E] rounded-lg">
               <div>
                 <p className="text-sm font-medium text-white">Post To Club Page</p>
-                <p className="text-xs text-[#64748B]">Auto-add To Your Club Page Schedule</p>
+                <p className="text-xs text-[#64748B]">Auto-Add To Your Club Page Schedule</p>
               </div>
               <button
                 type="button"

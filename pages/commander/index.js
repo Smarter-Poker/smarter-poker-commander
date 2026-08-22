@@ -14,42 +14,42 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Digital Waitlist',
-    description: 'Players Join From Their Phone. Staff Manage Everything From One Screen. no More Paper Lists.'
+    description: 'Players Join From Their Phone. Staff Manage Everything From One Screen. No More Paper Lists.'
   },
   {
     icon: Clock,
     title: 'Smart Wait Times',
-    description: 'AI-powered Predictions Tell Players Exactly When Their Seat Will Be Ready.'
+    description: 'AI-Powered Predictions Tell Players Exactly When Their Seat Will Be Ready.'
   },
   {
     icon: Bell,
     title: 'SMS & Push Notifications',
-    description: 'Automatic Alerts When Seats Are Ready. Players Can Shop, Eat, or Wait at the Bar.'
+    description: 'Automatic Alerts When Seats Are Ready. Players Can Shop, Eat, Or Wait At The Bar.'
   },
   {
     icon: Trophy,
     title: 'Tournament Management',
-    description: 'Full Tournament System with Clock, Blind Structures, Registration, and Hendon Mob Export.'
+    description: 'Full Tournament System With Clock, Blind Structures, Registration, And Hendon Mob Export.'
   },
   {
     icon: Gift,
     title: 'Promotions & Comps',
-    description: 'High Hand Jackpots, Happy Hours, and Automated Comp Tracking Based on Play Time.'
+    description: 'High Hand Jackpots, Happy Hours, And Automated Comp Tracking Based On Play Time.'
   },
   {
     icon: BarChart3,
     title: 'Analytics Dashboard',
-    description: 'Track Player Visits, Table Hours, Revenue Trends, and More in Real-time.'
+    description: 'Track Player Visits, Table Hours, Revenue Trends, And More In Real-Time.'
   },
   {
     icon: Home,
     title: 'Home Games',
-    description: 'Let Players Organize and Discover Home Games. QR Codes and Invite Codes Make Joining Easy.'
+    description: 'Let Players Organize And Discover Home Games. QR Codes And Invite Codes Make Joining Easy.'
   },
   {
     icon: Shield,
     title: 'Enterprise Security',
-    description: 'Row-level Security, Audit Logs, Rate Limiting, and API Key Management for Integrations.'
+    description: 'Row-Level Security, Audit Logs, Rate Limiting, And API Key Management For Integrations.'
   }
 ];
 
@@ -58,15 +58,15 @@ const PRICING = [
     name: 'Home Game',
     price: COMMANDER_FREE_MODE ? 'Free' : '$99',
     period: COMMANDER_FREE_MODE ? '' : '/month',
-    description: 'Perfect for Home Games & Small Private Events',
+    description: 'Perfect For Home Games & Small Private Events',
     features: [
-      'Up to 5 tables',
-      'Digital waitlist',
-      'Tournament management',
-      'Free member cards',
-      'Basic analytics',
-      'Social Hub page',
-      'SMS notifications (100/mo)'
+      'Up To 5 Tables',
+      'Digital Waitlist',
+      'Tournament Management',
+      'Free Member Cards',
+      'Basic Analytics',
+      'Social Hub Page',
+      'SMS Notifications (100/Mo)'
     ],
     cta: 'Get Started',
     highlighted: false
@@ -75,17 +75,17 @@ const PRICING = [
     name: 'Charity',
     price: COMMANDER_FREE_MODE ? 'Free' : '$199',
     period: COMMANDER_FREE_MODE ? '' : '/month',
-    description: 'Full Operations Suite for Charity Poker Rooms',
+    description: 'Full Operations Suite For Charity Poker Rooms',
     features: [
-      'Everything in Home Game',
-      'Up to 15 tables',
-      'Floor view & map',
-      'Dealer rotation',
-      'Player kiosk & displays',
-      'Staff accounts & scheduling',
-      'Promotions engine',
-      'Advanced analytics & reports',
-      'SMS notifications (500/mo)'
+      'Everything In Home Game',
+      'Up To 15 Tables',
+      'Floor View & Map',
+      'Dealer Rotation',
+      'Player Kiosk & Displays',
+      'Staff Accounts & Scheduling',
+      'Promotions Engine',
+      'Advanced Analytics & Reports',
+      'SMS Notifications (500/Mo)'
     ],
     cta: COMMANDER_FREE_MODE ? 'Get Started Free' : 'Start Free Trial',
     highlighted: true
@@ -94,14 +94,14 @@ const PRICING = [
     name: 'Club',
     price: COMMANDER_FREE_MODE ? 'Free' : '$399',
     period: COMMANDER_FREE_MODE ? '' : '/month',
-    description: 'Full Texas-style Card Room with Revenue Tools',
+    description: 'Full Texas-Style Card Room With Revenue Tools',
     features: [
-      'Everything in Charity',
-      'Unlimited tables & staff',
-      'Paid memberships (fees)',
-      'Time-based seat billing',
+      'Everything In Charity',
+      'Unlimited Tables & Staff',
+      'Paid Memberships (Fees)',
+      'Time-Based Seat Billing',
       'Unlimited SMS',
-      'Priority support'
+      'Priority Support'
     ],
     cta: COMMANDER_FREE_MODE ? 'Get Started Free' : 'Start Free Trial',
     highlighted: false
@@ -109,22 +109,22 @@ const PRICING = [
 ];
 
 // 2026-07-25 audit fix: removed real-venue attributions (Texas Card House,
-// Bay 101) — testimonials are role-only.
+// Bay 101) - testimonials are role-only.
 const TESTIMONIALS = [
   {
-    quote: "We cut our waitlist chaos in half. Players love getting texts when their seat is ready.",
+    quote: "We Cut Our Waitlist Chaos In Half. Players Love Getting Texts When Their Seat Is Ready.",
     author: "Mike R.",
     role: "Floor Manager",
     rating: 5
   },
   {
-    quote: "The tournament clock alone is worth it. Export to Hendon Mob with one click saved us hours.",
+    quote: "The Tournament Clock Alone Is Worth It. Export To Hendon Mob With One Click Saved Us Hours.",
     author: "Sarah L.",
     role: "Tournament Director",
     rating: 5
   },
   {
-    quote: "Finally a modern system that doesn't cost $10k. Our players think we're a big casino now.",
+    quote: "Finally A Modern System That Doesn't Cost $10k. Our Players Think We're A Big Casino Now.",
     author: "James T.",
     role: "Owner, Private Club",
     rating: 5
@@ -244,7 +244,7 @@ export default function CommanderLanding() {
   return (
     <>
       <SEOHead
-                title="Club Commander — Poker Room Management Suite"
+                title="Club Commander - Poker Room Management Suite"
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />
@@ -290,8 +290,8 @@ export default function CommanderLanding() {
               <span style={{ color: '#1877F2' }}>Made Simple</span>
             </h1>
             <p className="text-xl text-[#B0B3B8] max-w-2xl mx-auto mb-8">
-              Digital waitlists, tournament clocks, player comps, and analytics.
-              Everything you need to run a modern poker room.
+              Digital Waitlists, Tournament Clocks, Player Comps, And Analytics.
+              Everything You Need To Run A Modern Poker Room.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
               <button
@@ -370,7 +370,7 @@ export default function CommanderLanding() {
                 Everything Your Poker Room Needs
               </h2>
               <p className="text-xl text-[#B0B3B8] max-w-2xl mx-auto">
-                From waitlist management to tournament operations, we've got you covered.
+                From Waitlist Management To Tournament Operations, We've Got You Covered.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -389,7 +389,7 @@ export default function CommanderLanding() {
                 Simple, Transparent Pricing
               </h2>
               <p className="text-xl text-[#B0B3B8] max-w-2xl mx-auto">
-                Start free, upgrade as you grow. No hidden fees.
+                Start Free, Upgrade As You Grow. No Hidden Fees.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -405,7 +405,7 @@ export default function CommanderLanding() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Loved by Poker Rooms
+                Loved By Poker Rooms
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -431,11 +431,11 @@ export default function CommanderLanding() {
         <section className="cmd-header-full py-20 px-4">
           <div className="max-w-3xl mx-auto text-center text-white">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to Modernize Your Poker Room?
+              Ready To Modernize Your Poker Room?
             </h2>
             <p className="text-xl opacity-90 mb-8">
-              Join hundreds of poker rooms already using Club Commander.
-              Start your free trial today.
+              Join Hundreds Of Poker Rooms Already Using Club Commander.
+              Start Your Free Trial Today.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <input

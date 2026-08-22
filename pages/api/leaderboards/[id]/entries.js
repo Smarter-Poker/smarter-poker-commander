@@ -5,7 +5,7 @@
  * POST /api/commander/leaderboards/[id]/entries/calculate - Recalculate all entries
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff, verifyStaffSession } from '../../../../src/lib/commander/auth';
+import { guardStaff, verifyStaffSession } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -19,19 +19,23 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
-    // CDN cache: fresh for 30s, serve stale up to 120s
+    // 2026-08-20 audit fix: staff-only response carrying member names - not
+    // shareable at the CDN edge.
     if (req.method === 'GET') {
-      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+      res.setHeader('Cache-Control', 'private, max-age=30');
     }
 
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - leaderboard entries enrich each row with the
+    // member's first and last name, photo and tier, so they were public.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id: leaderboardId } = req.query;
 
@@ -40,7 +44,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return listEntries(req, res, leaderboardId);
+      return listEntries(req, res, leaderboardId, _g);
     }
 
     if (req.method === 'POST') {
@@ -57,8 +61,22 @@ export default async function handler(req, res) {
   }
 }
 
-async function listEntries(req, res, leaderboardId) {
+async function listEntries(req, res, leaderboardId, staff) {
   try {
+    // 2026-08-20 audit fix: venue ownership - a leaderboard id from another
+    // venue must not resolve.
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null) {
+      const { data: board } = await getSupabase()
+        .from('commander_leaderboards')
+        .select('id, venue_id')
+        .eq('id', leaderboardId)
+        .maybeSingle();
+      if (!board) return res.status(404).json({ error: 'Leaderboard Not Found' });
+      if (String(board.venue_id) !== String(staff.venue_id)) {
+        return res.status(403).json({ error: 'You Are Not Staff At This Venue' });
+      }
+    }
+
     const { data: entries, error } = await getSupabase()
       .from('commander_leaderboard_entries')
       .select(`
@@ -106,7 +124,7 @@ async function listEntries(req, res, leaderboardId) {
 
 async function addOrUpdateEntry(req, res, leaderboardId) {
   try {
-    // Staff already validated by guardWriteStaff — get venue from staff session
+    // Staff already validated by guardWriteStaff - get venue from staff session
     const staffResult = await verifyStaffSession(req);
     if (staffResult.error) {
       return res.status(staffResult.error.status || 401).json({ error: staffResult.error.message });
@@ -278,7 +296,7 @@ async function updateRankings(leaderboardId) {
   if (!rpcErr) return; // RPC succeeded
 
   // Fallback: manual ranking via JS (RPC may have failed)
-  // 2026-07-25 audit fix: removed the 100-row cap — it silently left entries
+  // 2026-07-25 audit fix: removed the 100-row cap - it silently left entries
   // beyond the first 100 unranked.
   const { data: entries } = await getSupabase()
     .from('commander_leaderboard_entries')

@@ -5,7 +5,7 @@
  * PUT /api/commander/leaderboards/[id] - Update leaderboard
  */
 import { createClient } from '../../../src/lib/supabaseServerClient';
-import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
+import { guardStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 
@@ -19,19 +19,21 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
-    // CDN cache: fresh for 30s, serve stale up to 120s
+    // 2026-08-20 audit fix: staff-only response - not shareable at the edge.
     if (req.method === 'GET') {
-      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+      res.setHeader('Cache-Control', 'private, max-age=30');
     }
 
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // 2026-08-20 audit fix: was guardWriteStaff, which returns `true` for GET
+    // without verifying anything - any leaderboard id was readable.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     const { id } = req.query;
 
@@ -40,7 +42,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return getLeaderboard(req, res, id);
+      return getLeaderboard(req, res, id, _g);
     }
 
     if (req.method === 'PUT') {
@@ -57,8 +59,22 @@ export default async function handler(req, res) {
   }
 }
 
-async function getLeaderboard(req, res, id) {
+async function getLeaderboard(req, res, id, staff) {
   try {
+    // 2026-08-20 audit fix: venue ownership on the read path (the PUT path
+    // below already had one).
+    if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null) {
+      const { data: board } = await getSupabase()
+        .from('commander_leaderboards')
+        .select('id, venue_id')
+        .eq('id', id)
+        .maybeSingle();
+      if (!board) return res.status(404).json({ error: 'Leaderboard Not Found' });
+      if (String(board.venue_id) !== String(staff.venue_id)) {
+        return res.status(403).json({ error: 'You Are Not Staff At This Venue' });
+      }
+    }
+
     const { data: leaderboard, error } = await getSupabase()
       .from('commander_leaderboards')
       .select(`
@@ -97,7 +113,7 @@ async function getLeaderboard(req, res, id) {
 
 async function updateLeaderboard(req, res, id) {
   try {
-    // Staff already validated by guardWriteStaff — get venue from staff session
+    // Staff already validated by guardWriteStaff - get venue from staff session
     const staffResult = await verifyStaffSession(req);
     if (staffResult.error) {
       return res.status(staffResult.error.status || 401).json({ error: staffResult.error.message });

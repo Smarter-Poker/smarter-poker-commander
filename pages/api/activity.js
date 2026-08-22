@@ -4,7 +4,7 @@
  * POST /api/commander/activity - Log a new activity event
  */
 import { createClient } from '../../src/lib/supabaseServerClient';
-// 2026-07-25 audit fix: guardStaff added — GET must not be public (venue activity leak)
+// 2026-07-25 audit fix: guardStaff added - GET must not be public (venue activity leak)
 import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/sentryWrap';
@@ -19,7 +19,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     try {
       if (req.method === 'GET') {
         // 2026-07-25 audit fix: response now varies by staff session (venue-scoped),
-        // so shared CDN caching would leak one venue's feed to another — cache privately.
+        // so shared CDN caching would leak one venue's feed to another - cache privately.
         res.setHeader('Cache-Control', 'private, max-age=15');
         const { venue_id, event_type, limit: lim } = req.query;
         // 2026-07-25 audit fix: force venue scope to the session staff's venue;
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         if (!event_type || !message) {
           return res.status(400).json({ success: false, error: 'event_type and message required' });
         }
-        // 2026-07-25 audit fix: venue_id is an integer column — the old UUID-string
+        // 2026-07-25 audit fix: venue_id is an integer column - the old UUID-string
         // default could never match a venue. Reject when absent instead.
         if (!venue_id) {
           return res.status(400).json({ success: false, error: 'venue_id required' });

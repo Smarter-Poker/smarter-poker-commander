@@ -1,5 +1,5 @@
 /**
- * Cashier — Texas Club Style
+ * Cashier - Texas Club Style
  * /commander/cashier
  * Simple operations with inline action modals:
  * 1. Scan Player Card (QR code)
@@ -23,7 +23,7 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 500, 1000];
-// Fallback time options — overridden by owner settings from Time Billing page
+// Fallback time options - overridden by owner settings from Time Billing page
 const DEFAULT_TIME_OPTIONS = [
   { label: '1 Hour', minutes: 60 },
   { label: '2 Hours', minutes: 120 },
@@ -32,7 +32,7 @@ const DEFAULT_TIME_OPTIONS = [
   { label: '5 Hr Pack', minutes: 300 },
   { label: '20 Hr Pack', minutes: 1200 },
 ];
-// Fallback tiers — overridden by owner settings from membership-plans
+// Fallback tiers - overridden by owner settings from membership-plans
 const DEFAULT_MEMBERSHIP_TIERS = [
   { tier: 'daily', label: 'Daily', color: '#22D3EE', duration: 1 },
   { tier: 'weekly', label: 'Weekly', color: '#31A24C', duration: 7 },
@@ -106,6 +106,11 @@ export default function Cashier() {
   const [timeBillingRate, setTimeBillingRate] = useState(0); // $/hour
   const [bulkTimePackages, setBulkTimePackages] = useState([]); // [{name, hours, price}]
   const [membershipPlans, setMembershipPlans] = useState([]); // from membership-plans API
+  // FIX A: when the membership-plans fetch fails (e.g. floor-role terminal whose
+  // GET is rejected), do NOT fall back to $0/"Free" tiers - that would let staff
+  // sell memberships at $0. Instead we flag pricing as unavailable and block the
+  // membership sell until pricing loads / a manager signs in.
+  const [pricingUnavailable, setPricingUnavailable] = useState(false);
 
   // PIN verification
   const [pinStep, setPinStep] = useState(false);
@@ -167,10 +172,10 @@ const headers = { };
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Commander Data Bus — sync cashier transactions + members across tabs
+  // Commander Data Bus - sync cashier transactions + members across tabs
   useCommanderSync(venueId, fetchData, { entities: ['members', 'tables', 'games'] });
 
-  // ═══ URL PARAM HANDLER — auto-open modal from members page shortcuts ═══
+  // ═══ URL PARAM HANDLER - auto-open modal from members page shortcuts ═══
   // Supports: ?action=addtime&member=NAME&member_id=UUID
   //           ?action=membership&member=NAME&member_id=UUID
   useEffect(() => {
@@ -233,14 +238,17 @@ const headers = { };
           setBulkTimePackages(settingsJson.data.bulk_time_packages || []);
         }
 
-        // Membership plans
+        // Membership plans - FIX A: track load failure so we never sell at $0
         const plansRes = await commanderFetch(`/api/commander/membership-plans?venue_id=${venueId}`, { headers });
-        if (!plansRes.ok) throw new Error(`Plans fetch failed (${plansRes.status})`);
+        if (!plansRes.ok) { setPricingUnavailable(true); throw new Error(`Plans fetch failed (${plansRes.status})`); }
         const plansJson = await plansRes.json();
         if (plansJson.success && plansJson.data?.plans) {
           setMembershipPlans(plansJson.data.plans.filter(p => p.is_active !== false));
+          setPricingUnavailable(false);
+        } else {
+          setPricingUnavailable(true);
         }
-      } catch (err) { console.warn('Pricing load error:', err); }
+      } catch (err) { console.warn('Pricing load error:', err); setPricingUnavailable(true); }
     };
     loadPricing();
   }, [venueId]);
@@ -322,9 +330,26 @@ const headers = { };
 
   const handleScanResult = async (qrData) => {
     stopScan();
+    const code = (qrData || '').trim();
+    if (!code) return;
     try {
-const headers = { };
-      const res = await commanderFetch(`/api/commander/members?search=${encodeURIComponent(qrData)}&venue_id=${venueId}`, { headers });
+      // FIX B: printed club cards encode a qr_code/UUID payload that the free-text
+      // ?search= lookup cannot match. Try the dedicated scan endpoint first (matches
+      // on qr_code), then fall back to the legacy text search only if it finds nothing.
+      const scanRes = await commanderFetch('/api/commander/members/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_code: code, venue_id: venueId })
+      });
+      if (scanRes.ok) {
+        const scanJson = await scanRes.json();
+        if (scanJson.success && scanJson.data?.member) {
+          selectMember(scanJson.data.member);
+          return;
+        }
+      }
+      // Fallback: legacy name/phone/number search
+      const res = await commanderFetch(`/api/commander/members?search=${encodeURIComponent(code)}&venue_id=${venueId}`, { headers: {} });
       if (!res.ok) throw new Error(`Search failed (${res.status})`);
       const json = await res.json();
       const members = json.data?.members || json.data || [];
@@ -332,7 +357,7 @@ const headers = { };
         const member = members[0];
         selectMember(member);
       } else {
-        setMessage({ type: 'error', text: 'Player Not Found — Try Manual Search' });
+        setMessage({ type: 'error', text: 'Player Not Found, Try Manual Search' });
         setShowPlayerSearch(true);
       }
     } catch {
@@ -367,7 +392,7 @@ const headers = { };
     pendingModalRef.current = null;
   };
 
-  // Manual player search — supports empty query (returns staff + recent members)
+  // Manual player search - supports empty query (returns staff + recent members)
   const executeSearch = useCallback(async (query) => {
     setSearchLoading(true);
     try {
@@ -395,6 +420,22 @@ const headers = { };
       executeSearch('');
     }
   }, [showPlayerSearch, venueId, searchResults.length, searchQuery, executeSearch]);
+
+  // Print Card player search - wired to the debounced query (was previously dead)
+  useEffect(() => {
+    if (!showPrintCard || !venueId) return;
+    if (debouncedPrintCardSearchQuery.trim().length < 2) { setPrintCardSearchResults([]); return; }
+    let cancelled = false;
+    (async () => {
+      setPrintCardSearchLoading(true);
+      try {
+        const json = await commanderFetchJSON(`/api/commander/members/search?q=${encodeURIComponent(debouncedPrintCardSearchQuery.trim())}&venue_id=${venueId}&limit=15`, {});
+        if (!cancelled) setPrintCardSearchResults(json.data || []);
+      } catch { if (!cancelled) setPrintCardSearchResults([]); }
+      finally { if (!cancelled) setPrintCardSearchLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [debouncedPrintCardSearchQuery, showPrintCard, venueId]);
 
   // === PIN Logic ===
   const requestPinFor = async (action) => {
@@ -436,21 +477,21 @@ const headers = { };
       setVerifiedStaff(staff);
       setPinCacheExpiry(Date.now() + 5 * 60 * 1000);
       setPinStep(false);
-      // Execute action — catch errors here so user always sees feedback
+      // Execute action - catch errors here so user always sees feedback
       try {
         await executeAction(pendingAction, staff);
       } catch (actionErr) {
         console.warn('Action execution error:', actionErr);
-        setMessage({ type: 'error', text: 'Transaction Failed — Please Try Again' });
+        setMessage({ type: 'error', text: 'Transaction Failed, Please Try Again' });
       }
       setPendingAction(null);
     } catch (err) {
       console.warn('PIN verification error:', err);
       // If PIN keypad is still showing, show error there; otherwise show via message
       if (pinStep) {
-        setPinError('Network Error — Check Connection');
+        setPinError('Network Error, Check Connection');
       } else {
-        setMessage({ type: 'error', text: 'Network Error — Check Connection' });
+        setMessage({ type: 'error', text: 'Network Error, Check Connection' });
       }
       setPinDigits('');
     }
@@ -489,7 +530,7 @@ const res = await commanderFetch('/api/commander/cashier', {
       if (res.ok) {
         const json = await res.json(); // Parse JSON only if response is OK
         if (json.success) {
-          setMessage({ type: 'success', text: `Buy-In Receipt — $${parseFloat(buyInAmount).toLocaleString()} — ${selectedPlayer?.player_name || 'Walk-Up'}` });
+          setMessage({ type: 'success', text: `Buy-In Receipt, $${parseFloat(buyInAmount).toLocaleString()}, ${selectedPlayer?.player_name || 'Walk-Up'}` });
           setShowBuyIn(false);
           printReceipt({
             player_name: selectedPlayer?.player_name || 'Walk-Up',
@@ -511,7 +552,7 @@ const res = await commanderFetch('/api/commander/cashier', {
         const json = await res.json(); // Attempt to parse error message from response body
         setMessage({ type: 'error', text: json.error || 'Transaction Failed' });
       }
-    } catch (err) { console.warn('Buy-in error:', err); setMessage({ type: 'error', text: 'Buy-In Failed — Please Try Again' }); }
+    } catch (err) { console.warn('Buy-in error:', err); setMessage({ type: 'error', text: 'Buy-In Failed, Please Try Again' }); }
     finally { setActionLoading(false); }
   };
 
@@ -530,7 +571,7 @@ const res = await commanderFetch('/api/commander/cashier', {
     const mins = selectedTime || 0;
     if (mins <= 0) { setMessage({ type: 'error', text: 'Select A Time Amount' }); return; }
     if (!selectedPlayer?.id) { setMessage({ type: 'error', text: 'Select A Player First' }); return; }
-    if (String(selectedPlayer.id).startsWith('wl-')) { setMessage({ type: 'error', text: 'This player is on the waitlist only — register them as a member first' }); return; }
+    if (String(selectedPlayer.id).startsWith('wl-')) { setMessage({ type: 'error', text: 'This Player Is On The Waitlist Only, Register Them As A Member First' }); return; }
     const price = getTimePrice();
     const timeOpt = TIME_OPTIONS.find(o => o.minutes === mins);
     const timeLabel2 = timeOpt?.label || `${mins} min`;
@@ -568,7 +609,7 @@ const headers = { 'Content-Type': 'application/json' };
       if (res.ok) {
         const remainMins = mins % 60;
         const timeLabel = hours > 0 ? `${hours}h ${remainMins > 0 ? remainMins + 'm' : ''}` : `${mins}m`;
-        setMessage({ type: txJson.success ? 'success' : 'warning', text: `Added ${timeLabel} — $${price} — ${selectedPlayer.player_name}${!txJson.success ? ' (⚠ receipt not saved)' : ''}` });
+        setMessage({ type: txJson.success ? 'success' : 'warning', text: `Added ${timeLabel}, $${price}, ${selectedPlayer.player_name}${!txJson.success ? ' (Receipt Not Saved)' : ''}` });
         setSelectedPlayer(prev => ({ ...prev, time_balance_minutes: newBalance }));
         setShowAddTime(false);
         playSuccessSound();
@@ -589,18 +630,21 @@ const headers = { 'Content-Type': 'application/json' };
           staff_name: staff?.display_name || 'Staff',
           transaction_id: txJson?.data?.id || null });
       } else {
-        setMessage({ type: 'error', text: 'Failed to update time balance' });
+        setMessage({ type: 'error', text: 'Failed To Update Time Balance' });
       }
-    } catch (err) { console.warn('Add time error:', err); setMessage({ type: 'error', text: 'Add Time Failed — Please Try Again' }); }
+    } catch (err) { console.warn('Add time error:', err); setMessage({ type: 'error', text: 'Add Time Failed, Please Try Again' }); }
     finally { setActionLoading(false); }
   };
 
   // Update Membership
   const doUpdateMembership = async (staff) => {
     if (actionLoading) return; // Double-click protection
+    // FIX A: refuse to sell membership when pricing failed to load - otherwise the
+    // $0 fallback tiers would let a membership be sold for free.
+    if (pricingUnavailable) { setMessage({ type: 'error', text: 'Pricing Unavailable, Manager Sign-In Required' }); return; }
     if (!selectedTier) { setMessage({ type: 'error', text: 'Select A Membership Tier' }); return; }
     if (!selectedPlayer?.id) { setMessage({ type: 'error', text: 'Select A Player First' }); return; }
-    if (String(selectedPlayer.id).startsWith('wl-')) { setMessage({ type: 'error', text: 'This player is on the waitlist only — register them as a member first' }); return; }
+    if (String(selectedPlayer.id).startsWith('wl-')) { setMessage({ type: 'error', text: 'This Player Is On The Waitlist Only, Register Them As A Member First' }); return; }
     const tierInfo = MEMBERSHIP_TIERS.find(t => t.tier === selectedTier);
     const price = tierInfo?.price || 0;
     setActionLoading(true);
@@ -636,7 +680,7 @@ const headers = { 'Content-Type': 'application/json' };
       if (!txJson.success) console.warn('Membership transaction record failed:', txJson.error);
 
       if (res.ok) {
-        setMessage({ type: txJson.success ? 'success' : 'warning', text: `${tierInfo?.label} Membership — $${price} — ${selectedPlayer.player_name}${!txJson.success ? ' (⚠ receipt not saved)' : ''}` });
+        setMessage({ type: txJson.success ? 'success' : 'warning', text: `${tierInfo?.label} Membership, $${price}, ${selectedPlayer.player_name}${!txJson.success ? ' (Receipt Not Saved)' : ''}` });
         setSelectedPlayer(prev => ({ ...prev, membership_tier: selectedTier, membership_status: 'active', membership_expires: expires.toISOString() }));
         setShowMembership(false);
         playSuccessSound();
@@ -655,9 +699,9 @@ const headers = { 'Content-Type': 'application/json' };
           staff_name: staff?.display_name || 'Staff',
           transaction_id: txJson?.data?.id || null });
       } else {
-        setMessage({ type: 'error', text: 'Failed to update membership' });
+        setMessage({ type: 'error', text: 'Failed To Update Membership' });
       }
-    } catch (err) { console.warn('Membership update error:', err); setMessage({ type: 'error', text: 'Membership Update Failed — Please Try Again' }); }
+    } catch (err) { console.warn('Membership update error:', err); setMessage({ type: 'error', text: 'Membership Update Failed, Please Try Again' }); }
     finally { setActionLoading(false); }
   };
 
@@ -681,13 +725,13 @@ const headers = { 'Content-Type': 'application/json' };
 
   const executeVoid = async (txId, type, details, actionLabel, staff) => {
     if (actionLoading) return; // Double-click protection
-    if (!confirm(`${actionLabel} this ${type} transaction for $${details.amount}?`)) return;
+    if (!confirm(`${actionLabel} This ${type} Transaction For $${details.amount}?`)) return;
     setActionLoading(true);
     try {
 const headers = { 'Content-Type': 'application/json' };
       const voidAmount = details.amount || 0;
 
-      // 1. ALWAYS record the void/refund transaction (even for $0 — creates audit trail)
+      // 1. ALWAYS record the void/refund transaction (even for $0 - creates audit trail)
       const voidRes = await commanderFetch('/api/commander/cashier', {
         method: 'POST', headers,
         body: JSON.stringify({
@@ -696,7 +740,7 @@ const headers = { 'Content-Type': 'application/json' };
           type: 'void',
           amount: voidAmount,
           payment_method: details.payment_method || 'cash',
-          notes: `${actionLabel.toUpperCase()} — TX #${txId}: ${details.notes || type} [by ${staff?.display_name || 'Staff'}]`,
+          notes: `${actionLabel.toUpperCase()} - TX #${txId}: ${details.notes || type} [By ${staff?.display_name || 'Staff'}]`,
           pin_verified_by: staff?.id || null
         })
       });
@@ -710,22 +754,22 @@ const headers = { 'Content-Type': 'application/json' };
         body: JSON.stringify({
           transaction_id: txId,
           voided_by: staff?.id || null,
-          void_reason: `${actionLabel} by ${staff?.display_name || 'Staff'} — ${type}`
+          void_reason: `${actionLabel} By ${staff?.display_name || 'Staff'} - ${type}`
         })
       });
-      if (!patchRes.ok) throw new Error('Request failed');
-      const patchJson = await patchRes.json();
+      const patchJson = await patchRes.json().catch(() => ({}));
+      if (!patchRes.ok && patchJson.error !== 'Transaction already voided') throw new Error('Request failed');
       if (!patchJson.success) {
         // Handle already-voided gracefully
         if (patchJson.error === 'Transaction already voided') {
-          setMessage({ type: 'error', text: 'Transaction Already Voided — Cannot Void Again' });
+          setMessage({ type: 'error', text: 'Transaction Already Voided, Cannot Void Again' });
           setActionLoading(false);
           fetchData();
           return;
         }
       }
 
-      // 3. Resolve the member to update — use selectedPlayer if name matches, otherwise lookup by name
+      // 3. Resolve the member to update - use selectedPlayer if name matches, otherwise lookup by name
       let memberId = null;
       let memberBalance = null;
       if (selectedPlayer?.id && selectedPlayer.player_name === details.player_name) {
@@ -745,7 +789,7 @@ const headers = { 'Content-Type': 'application/json' };
             memberId = match.id;
             memberBalance = match.time_balance_minutes || 0;
           }
-        } catch { /* search failed — still record the void but can't update balance */ }
+        } catch { /* search failed - still record the void but can't update balance */ }
       }
 
       if (type === 'time' && memberId && details.minutes) {
@@ -771,19 +815,19 @@ const headers = { 'Content-Type': 'application/json' };
       }
 
       if (patchRes.ok) {
-        setMessage({ type: 'success', text: `${actionLabel} Processed — $${details.amount}` });
+        setMessage({ type: 'success', text: `${actionLabel} Processed, $${details.amount}` });
         playSuccessSound();
         showSuccessPopup({ title: `${actionLabel} Processed`, amount: `$${details.amount}`, detail: details.player_name || 'Unknown' });
         fetchData();
         broadcastChange('members');
       } else {
-        setMessage({ type: 'error', text: `${actionLabel} Failed — Server Error` });
+        setMessage({ type: 'error', text: `${actionLabel} Failed, Server Error` });
       }
-    } catch (err) { console.warn('Void error:', err); setMessage({ type: 'error', text: `${actionLabel} Failed — Please Try Again` }); }
+    } catch (err) { console.warn('Void error:', err); setMessage({ type: 'error', text: `${actionLabel} Failed, Please Try Again` }); }
     finally { setActionLoading(false); }
   };
 
-  // Ka-ching cash register sound — loud and unmistakable
+  // Ka-ching cash register sound - loud and unmistakable
   const playSuccessSound = () => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -999,10 +1043,10 @@ const headers = { };
 
   return (
     <CommanderLayout title="Cashier" backHref="/commander/dashboard">
-      <SEOHead title="Commander — Cashier" description="Club Commander Poker Room Management Tool." noindex={true} />
+      <SEOHead title="Commander - Cashier" description="Club Commander Poker Room Management Tool." noindex={true} />
       <div className="min-h-screen bg-black text-[#E4E6EB] font-['Inter']">
 
-        {/* === SUCCESS OVERLAY — fullscreen popup === */}
+        {/* === SUCCESS OVERLAY - fullscreen popup === */}
         {successOverlay && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90" style={{ animation: 'fadeIn 0.2s ease-out' }}>
             <div className="bg-[#242526] rounded-2xl px-10 py-8 text-center border border-[#3A3B3C] shadow-2xl" style={{ animation: 'scaleIn 0.3s ease-out', minWidth: '320px' }}>
@@ -1031,14 +1075,14 @@ const headers = { };
           </div>
         )}
 
-        {/* Player info is shown inside each modal — no top-of-page banner */}
+        {/* Player info is shown inside each modal - no top-of-page banner */}
 
         {loading ? (
           <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>
         ) : (
           <div className="px-2 py-2">
 
-            {/* Camera view — shown above panel when scanning */}
+            {/* Camera view - shown above panel when scanning */}
             {scanning && (
               <div className="mx-2 mb-2 rounded-2xl overflow-hidden border-2 border-[#3A3B3C] bg-black relative">
                 <video ref={videoRef} className="w-full aspect-[4/3] object-cover" playsInline muted />
@@ -1082,7 +1126,7 @@ const headers = { };
                       type="text"
                       value={searchQuery}
                       onChange={e => searchPlayers(e.target.value)}
-                      placeholder="Search by Name or Phone..."
+                      placeholder="Search By Name Or Phone..."
                       autoFocus
                       className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl pl-10 pr-4 py-3 text-white text-base font-medium outline-none focus:border-[#1877F2] placeholder:text-[#666]"
                     />
@@ -1117,7 +1161,7 @@ const headers = { };
 
                   {searchQuery.length >= 2 && searchResults.length === 0 && !searchLoading && (
                     <div className="text-center py-6">
-                      <p className="text-sm text-[#B0B3B8]">No players found for &quot;{searchQuery}&quot;</p>
+                      <p className="text-sm text-[#B0B3B8]">No Players Found For &quot;{searchQuery}&quot;</p>
                     </div>
                   )}
 
@@ -1172,9 +1216,13 @@ const headers = { };
                 aria-label="Update Membership"
               />
 
-              {/* Hotspot 4: Tournament Registration */}
+              {/* Hotspot 4: Tournament Registration.
+                  2026-08-20: /commander/tournament-registration was retired.
+                  The cashier picks the event on the Tournament Director list,
+                  then registers on the modern screen. Same endpoints, same
+                  receipt, one registration UI instead of two. */}
               <button
-                onClick={() => router.push('/commander/tournament-registration')}
+                onClick={() => router.push('/commander/tournament-controls')}
                 style={{
                   position: 'absolute', top: '54%', left: '8%', width: '84%', height: '12.5%',
                   background: 'transparent', border: 'none', cursor: 'pointer',
@@ -1203,7 +1251,7 @@ const headers = { };
               />
             </div>
 
-            {/* Transaction Log — rendered below metal panel */}
+            {/* Transaction Log - rendered below metal panel */}
             {showLog && (
               <div className="mx-2 mt-2">
                 {transactions.length > 0 && (
@@ -1312,7 +1360,7 @@ const headers = { };
                   <CreditCard className="w-4 h-4" /> Card
                 </button>
               </div>
-              <PinSubmitButton action="buyin" label={`Print Buy-In Receipt${buyInAmount ? ` — $${parseFloat(buyInAmount).toLocaleString()}` : ''}`} disabled={!buyInAmount} />
+              <PinSubmitButton action="buyin" label={`Print Buy-In Receipt${buyInAmount ? ` - $${parseFloat(buyInAmount).toLocaleString()}` : ''}`} disabled={!buyInAmount} />
             </div>
           </div>
         )
@@ -1339,10 +1387,10 @@ const headers = { };
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <p className="text-xs text-[#EF4444] font-semibold mb-2">⚠ Select a player first</p>
+                    <p className="text-xs text-[#EF4444] font-semibold mb-2">Select A Player First</p>
                     <button onClick={() => { setShowAddTime(false); pendingModalRef.current = 'addtime'; setShowPlayerSearch(true); }}
                       className="w-full bg-[#1877F2] text-white py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
-                      <Search className="w-4 h-4" /> Scan or Search for Player
+                      <Search className="w-4 h-4" /> Scan Or Search For Player
                     </button>
                   </div>
                 )}
@@ -1381,15 +1429,15 @@ const headers = { };
                 </div>
 
                 <PinSubmitButton action="addtime" color="#1877F2"
-                  label={`Collect $${getTimePrice()} — ${selectedTime ? TIME_OPTIONS.find(o => o.minutes === selectedTime)?.label : 'Time'}`}
+                  label={`Collect $${getTimePrice()} - ${selectedTime ? TIME_OPTIONS.find(o => o.minutes === selectedTime)?.label : 'Time'}`}
                   disabled={!selectedTime || !selectedPlayer?.id} />
                 {(!selectedPlayer?.id || !selectedTime) && (
                   <p className="text-xs text-center text-[#B0B3B8] mt-2">
-                    {!selectedPlayer?.id ? '↑ Select a player above to continue' : '↑ Choose a time package above'}
+                    {!selectedPlayer?.id ? '↑ Select A Player Above To Continue' : '↑ Choose A Time Package Above'}
                   </p>
                 )}
 
-                {/* Recent Time Transactions — Collapsed */}
+                {/* Recent Time Transactions - Collapsed */}
                 {transactions.filter(tx => (tx.type === 'time_purchase' || tx.notes?.includes('Time Purchase')) && !tx.voided_at && tx.type !== 'void').length > 0 && (
                   <div className="mt-4">
                     <button onClick={() => setShowRecentTime(!showRecentTime)}
@@ -1438,6 +1486,8 @@ const headers = { };
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-[#B0B3B8]" />
                       <span className="text-sm text-white font-medium">{selectedPlayer.player_name}</span>
+                      {/* FIX C: entry point for the (previously unreachable) Transaction History modal */}
+                      <button onClick={loadPlayerHistory} className="text-xs text-[#1877F2] font-semibold underline">History</button>
                     </div>
                     <span className="text-xs text-[#B0B3B8]">
                       Current: {selectedPlayer.membership_tier ? selectedPlayer.membership_tier.charAt(0).toUpperCase() + selectedPlayer.membership_tier.slice(1) : 'None'}
@@ -1445,10 +1495,10 @@ const headers = { };
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <p className="text-xs text-[#1877F2] font-semibold mb-2">Select a player first:</p>
+                    <p className="text-xs text-[#1877F2] font-semibold mb-2">Select A Player First:</p>
                     <button onClick={() => { setShowMembership(false); pendingModalRef.current = 'membership'; setShowPlayerSearch(true); }}
                       className="w-full bg-[#1877F2]/15 border border-[#1877F2]/30 text-[#1877F2] py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
-                      <Search className="w-4 h-4" /> Scan or Search for Player
+                      <Search className="w-4 h-4" /> Scan Or Search For Player
                     </button>
                   </div>
                 )}
@@ -1499,11 +1549,17 @@ const headers = { };
                   </button>
                 </div>
 
+                {pricingUnavailable && (
+                  <div className="mb-3 px-4 py-3 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0" />
+                    <span className="text-xs text-[#EF4444] font-semibold">Pricing Unavailable, Manager Sign-In Required</span>
+                  </div>
+                )}
                 <PinSubmitButton action="membership" color="#1877F2"
-                  label={`Collect $${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.price || 0 : 0} — ${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.label : '...'}`}
-                  disabled={!selectedTier || !selectedPlayer?.id} />
+                  label={pricingUnavailable ? 'Pricing Unavailable' : `Collect $${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.price || 0 : 0} - ${selectedTier ? MEMBERSHIP_TIERS.find(t => t.tier === selectedTier)?.label : '...'}`}
+                  disabled={pricingUnavailable || !selectedTier || !selectedPlayer?.id} />
 
-                {/* Recent Membership Transactions — Collapsed */}
+                {/* Recent Membership Transactions - Collapsed */}
                 {transactions.filter(tx => (tx.type === 'membership' || tx.notes?.includes('Membership')) && !tx.voided_at && tx.type !== 'void').length > 0 && (
                   <div className="mt-4">
                     <button onClick={() => setShowRecentMembership(!showRecentMembership)}
@@ -1648,7 +1704,7 @@ const headers = { };
                       onChange={e => {
                         setPrintCardSearchQuery(e.target.value);
                       }}
-                      placeholder="Search by Name or Phone..."
+                      placeholder="Search By Name Or Phone..."
                       autoFocus
                       className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl pl-10 pr-4 py-3 text-white text-base font-medium outline-none focus:border-[#1877F2] placeholder:text-[#666]"
                     />
@@ -1681,14 +1737,14 @@ const headers = { };
 
                   {printCardSearchQuery.length >= 2 && printCardSearchResults.length === 0 && !printCardSearchLoading && (
                     <div className="text-center py-6">
-                      <p className="text-sm text-[#B0B3B8]">No players found for &quot;{printCardSearchQuery}&quot;</p>
+                      <p className="text-sm text-[#B0B3B8]">No Players Found For &quot;{printCardSearchQuery}&quot;</p>
                     </div>
                   )}
 
                   {printCardSearchQuery.length < 2 && (
                     <div className="text-center py-6">
                       <Printer className="w-8 h-8 text-[#3A3B3C] mx-auto mb-2" />
-                      <p className="text-sm text-[#B0B3B8]">Type a name or phone number to find player</p>
+                      <p className="text-sm text-[#B0B3B8]">Type A Name Or Phone Number To Find Player</p>
                     </div>
                   )}
                 </>
@@ -1728,7 +1784,7 @@ const headers = { };
                       const qrData = encodeURIComponent(m.id);
 
                       const w = window.open('', '_blank', 'width=500,height=400');
-                      if (!w) { setMessage({ type: 'error', text: 'Pop-up blocked — allow pop-ups to print' }); return; }
+                      if (!w) { setMessage({ type: 'error', text: 'Pop-Up Blocked, Allow Pop-Ups To Print' }); return; }
                       w.document.write(`<!DOCTYPE html><html><head><title>Member Card</title>
 <style>
   @page { margin: 0; size: 86mm 54mm; }

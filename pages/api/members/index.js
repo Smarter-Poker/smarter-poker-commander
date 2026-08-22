@@ -1,11 +1,11 @@
 /**
- * Commander Members API — List & Create
+ * Commander Members API - List & Create
  * GET: List members for a venue (with search, filter, pagination)
  * POST: Create a new member (auto-generates member_number + qr_code)
  */
 import crypto from 'crypto';
 import { createClient } from '../../../src/lib/supabaseServerClient';
-// 2026-07-25 audit fix: guardStaff — member list is PII and must not be public on GET
+// 2026-07-25 audit fix: guardStaff - member list is PII and must not be public on GET
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
@@ -20,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       if (req.method === 'GET') {
           return handleList(req, res, _authResult);
       } else if (req.method === 'POST') {
-          return handleCreate(req, res);
+          return handleCreate(req, res, _authResult);
       }
       return res.status(405).json({ success: false, error: 'Method not allowed' });
 
@@ -94,7 +94,7 @@ async function handleList(req, res, staff) {
     }
 
     // 2026-07-25 audit fix: omit sensitive PII from the LIST payload (detail
-    // route keeps them) and cache privately — this is an authenticated response.
+    // route keeps them) and cache privately - this is an authenticated response.
     const sanitized = (members || []).map(({ id_number, date_of_birth, ...rest }) => rest);
 
     res.setHeader('Cache-Control', 'private, max-age=30');
@@ -109,7 +109,7 @@ async function handleList(req, res, staff) {
     });
 }
 
-async function handleCreate(req, res) {
+async function handleCreate(req, res, staff) {
     const {
         venue_id,
         first_name,
@@ -133,6 +133,13 @@ async function handleCreate(req, res) {
             success: false,
             error: 'venue_id, first_name, and last_name are required',
         });
+    }
+
+    // 2026-08-20 audit fix: venue_id came straight off the body, so staff at
+    // venue A could enroll members into venue B's roster.
+    if (staff && staff.venue_id !== undefined && staff.venue_id !== null
+        && String(staff.venue_id) !== String(venue_id)) {
+        return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
     try {

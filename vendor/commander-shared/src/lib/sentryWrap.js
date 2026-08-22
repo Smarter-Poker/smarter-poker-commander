@@ -1,5 +1,5 @@
 /**
- * Sentry API-route helper — Phase 5.1.1
+ * Sentry API-route helper - Phase 5.1.1
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * Why this file exists (and `src/lib/sentry.js` doesn't do the same job):
@@ -10,7 +10,7 @@
  *     it directly and keep the import synchronous on server-side.
  *   - Most of our API handlers already have a top-level
  *       } catch (err) { console.warn('[API Error]', err); res.status(500)... }
- *     block. The simplest drop-in is `reportApiError(err, req)` — one synchronous
+ *     block. The simplest drop-in is `reportApiError(err, req)` - one synchronous
  *     function call that Sentry fires-and-forgets.
  *   - New routes should prefer `withSentryRoute(handler)` which wraps the whole
  *     function and gives you free capture + tagged scope without boilerplate.
@@ -25,7 +25,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-// Static import — @sentry/nextjs is a hard dep. Any environment without a
+// Static import - @sentry/nextjs is a hard dep. Any environment without a
 // Sentry DSN just short-circuits inside Sentry.init (see sentry.server.config).
 // eslint-disable-next-line import/no-unresolved
 import * as Sentry from '@sentry/nextjs';
@@ -52,7 +52,7 @@ function routeOf(req) {
  * @param {Error|unknown} error   The thrown value. If not an Error, we still
  *                                fire a captureMessage so we don't lose the signal.
  * @param {object}        req     Next.js request object (for route + method tags).
- * @param {object}       [extra]  { userId?, tags?, context? } — optional scope adds.
+ * @param {object}       [extra]  { userId?, tags?, context? } - optional scope adds.
  */
 export function reportApiError(error, req, extra = {}) {
     try {

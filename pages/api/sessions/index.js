@@ -21,14 +21,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // 2026-07-25 audit fix: resolve identity — verified staff session first,
+    // 2026-07-25 audit fix: resolve identity - verified staff session first,
     // then authenticated player (Bearer/cookie). Anonymous callers get 401.
     const staffResult = await verifyStaffSession(req);
     const staff = staffResult.error ? null : staffResult.staff;

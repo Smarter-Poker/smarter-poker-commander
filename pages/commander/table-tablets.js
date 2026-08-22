@@ -1,5 +1,5 @@
 /**
- * Table Tablets — Dealer View Dashboard
+ * Table Tablets - Dealer View Dashboard
  * /commander/table-tablets
  *
  * Shows all tables with inline dealer view matching the Table Management visuals:
@@ -8,7 +8,7 @@
  * - Fullscreen popup when a table is clicked
  * Tapping a table opens a fullscreen overlay with real-time seat data.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { Monitor, Users, Loader2, Trophy, Clock, Timer, Armchair, ScanLine, Camera, X, CheckCircle, Maximize2, Copy, ExternalLink, ChevronDown, ChevronUp, Link2, Lock, Unlock, ShieldCheck, AlertTriangle, ArrowRightLeft, Coins, Skull, XCircle } from 'lucide-react';
@@ -25,7 +25,7 @@ const STATUS_BADGE = {
     reserved: { bg: '#F59E0B', label: 'Reserved' },
     maintenance: { bg: '#6B7280', label: 'Maint.' } };
 
-// Full game type name mapping — never show abbreviations to dealers
+// Full game type name mapping - never show abbreviations to dealers
 const GAME_TYPE_MAP = {
     nlh: 'No Limit Hold\'em', nolimit: 'No Limit Hold\'em',
     plo: 'Pot Limit Omaha', potlimitomaha: 'Pot Limit Omaha',
@@ -40,6 +40,27 @@ function getFullGameName(type) {
     if (!type) return 'Cash Game';
     return GAME_TYPE_MAP[type.toLowerCase()] || type.toUpperCase();
 }
+// 2026-08-19: surface the server's real message instead of "Network error".
+// Every handler below used to `throw` on !res.ok BEFORE reading the response
+// body, so a 400 ("Insufficient time balance"), a 401 (staff session expired)
+// or a 409 (ambiguous venue) all reached the dealer as a generic "Network
+// error" - the actionable detail the API had already sent was discarded one
+// line too early. This reads the body regardless of status and normalises the
+// two error shapes the Commander APIs use (`error: 'text'` and
+// `error: { code, message }`).
+async function parseApiResponse(res) {
+    let json = null;
+    try { json = await res.json(); } catch (e) { /* empty or non-JSON body */ }
+    if (!res.ok) {
+        const msg = (json && (json.error?.message || (typeof json.error === 'string' ? json.error : null) || json.message))
+            || (res.status === 401 ? 'Session expired - sign in again'
+            :  res.status === 403 ? 'Not permitted for this venue'
+            :  `Request failed (${res.status})`);
+        return { ...(json || {}), success: false, error: msg, httpStatus: res.status };
+    }
+    return { ...(json || {}), httpStatus: res.status };
+}
+
 function isTournamentTable(table) {
     const mode = table.mode || table.table_purpose || 'cash';
     return mode === 'tournament';
@@ -64,14 +85,14 @@ function formatTime(seconds) {
 
 function getTimerColor(seconds) {
     if (seconds <= 0) return '#EF4444';
-    if (seconds <= 300) return '#EF4444';   // < 5 min — red
-    if (seconds <= 900) return '#F59E0B';   // < 15 min — yellow
+    if (seconds <= 300) return '#EF4444';   // < 5 min - red
+    if (seconds <= 900) return '#F59E0B';   // < 15 min - yellow
     return '#31A24C';                       // green
 }
 
 // ── Haptic feedback for tablet buttons ──
 // Uses navigator.vibrate() where supported (Android tablets).
-// On iOS, vibration API isn't available — we use AudioContext as a fallback buzz.
+// On iOS, vibration API isn't available - we use AudioContext as a fallback buzz.
 function haptic(intensity = 'medium') {
     try {
         const ms = intensity === 'light' ? 10 : intensity === 'heavy' ? 50 : 25;
@@ -81,8 +102,10 @@ function haptic(intensity = 'medium') {
     } catch (e) { console.warn("[table-tablets.js]", e); }
 }
 
-// Arc-length parameterized ellipse for equal visual spacing — matches tables.js
+// Arc-length parameterized ellipse for equal visual spacing - matches tables.js
+const _seatPositionsCache = {};
 function computeSeatPositions(maxSeats) {
+    if (_seatPositionsCache[maxSeats]) return _seatPositionsCache[maxSeats];
     const rx = 47, ry = 22, cxE = 50, cyE = 50;
     const STEPS = 360;
     const startAngle = Math.PI / 2;
@@ -110,7 +133,7 @@ function computeSeatPositions(maxSeats) {
     const seatPositions = allPos.slice(1);
     seatPositions.forEach(p => { const t = parseFloat(p.top); if (t < 30) p.top = '30%'; });
     // Per-seat vertical nudges (seats are 1-indexed, array is 0-indexed)
-    // Seats 3 & 7 down toward middle, Seats 2 & 8 up toward middle — fills the side gap
+    // Seats 3 & 7 down toward middle, Seats 2 & 8 up toward middle - fills the side gap
     const nudge = { 2: -3, 3: 3, 7: 3, 8: -3 };
     Object.entries(nudge || {}).forEach(([seat, offset]) => {
         const idx = parseInt(seat) - 1;
@@ -118,7 +141,9 @@ function computeSeatPositions(maxSeats) {
             seatPositions[idx].top = `${parseFloat(seatPositions[idx].top) + offset}%`;
         }
     });
-    return { dealerPos, seatPositions };
+    const _seatResult = { dealerPos, seatPositions };
+    _seatPositionsCache[maxSeats] = _seatResult;
+    return _seatResult;
 }
 
 export default function TableTabletsPage() {
@@ -138,11 +163,23 @@ export default function TableTabletsPage() {
     const [scanCameraActive, setScanCameraActive] = useState(false);
     const [scanResult, setScanResult] = useState(null);
     const [scanError, setScanError] = useState('');
-    // manualDealerQR removed — scan only (issue #6)
+    // manualDealerQR removed - scan only (issue #6)
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const scanIntervalRef = useRef(null);
-    // Live countdown tick — tracks when API data was last fetched
+    // 2026-08-19: synchronous single-submit guards.
+    // detector.detect() is async and the scan interval fires every 300ms
+    // regardless, so clearInterval() stops future ticks but CANNOT cancel a
+    // detect() already in flight. A second detection resolving after the
+    // scanner closed would call the handler again with the same card -
+    // double-seating the player and deducting their time balance twice.
+    // These are refs, not state: a ref flips synchronously, so a rapid
+    // double-tap or a duplicate frame cannot slip through the window before
+    // React re-renders and disables the button.
+    const seatSubmitRef = useRef(false);
+    const dealerScanSubmitRef = useRef(false);
+    const unseatSubmitRef = useRef(false);
+    // Live countdown tick - tracks when API data was last fetched
     const lastFetchAt = useRef(Date.now());
     const [tickCounter, setTickCounter] = useState(0);
     // Tablet assignment panel
@@ -182,13 +219,17 @@ export default function TableTabletsPage() {
     const [callFloorSending, setCallFloorSending] = useState(false);
     const [callFloorSent, setCallFloorSent] = useState(false);
     const [callFloorId, setCallFloorId] = useState(null);
-    // Tournament Clock overlay — SAFEGUARD: lockedTournamentId is the ONLY source
+    // Tournament Clock overlay - SAFEGUARD: lockedTournamentId is the ONLY source
     // for the iframe URL. It is captured at button-click time and validated as a UUID.
     // This ensures the clock display can NEVER show a different tournament.
     const [showTournamentClock, setShowTournamentClock] = useState(false);
     const [lockedTournamentId, setLockedTournamentId] = useState(null);
     // Chip count input
     const [chipCountInput, setChipCountInput] = useState(null);
+    // Tournament Director consequences the floor must see (auto-break, alternate seated)
+    const [tournamentNotice, setTournamentNotice] = useState(null); // { title, lines: [] }
+    const [lastBustedEntry, setLastBustedEntry] = useState(null); // { tournament_id, entry_id, player_name }
+    const [restoreConfirm, setRestoreConfirm] = useState(null); // 409 PAYOUT_RECORDED confirm-then-force
 
     useEffect(() => {
         try {
@@ -298,7 +339,7 @@ export default function TableTabletsPage() {
         };
     }, [fullscreenTable, lockedTable]);
 
-    // ── Cleanup camera streams on unmount — prevents tablet camera resource leaks ──
+    // ── Cleanup camera streams on unmount - prevents tablet camera resource leaks ──
     useEffect(() => {
         return () => {
             if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
@@ -338,8 +379,7 @@ export default function TableTabletsPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' || '' },
                 body: JSON.stringify({ pin_code: pinValue, venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success && json.data?.staff) {
                 const role = json.data.staff.role;
                 if (role === 'owner' || role === 'manager') {
@@ -356,7 +396,7 @@ export default function TableTabletsPage() {
                 setPinError(json.error || 'Invalid PIN');
             }
         } catch {
-            setPinError('Network error — try again');
+            setPinError('Network error - try again');
         }
         setPinLoading(false);
     };
@@ -365,7 +405,7 @@ export default function TableTabletsPage() {
         if (!venueId) return;
 const headers = { };
 
-        // Fetch tables — API already joins commander_games + commander_table_seats
+        // Fetch tables - API already joins commander_games + commander_table_seats
         try {
             const json = await commanderFetchJSON(`/api/commander/tables?venue_id=${venueId}`, { headers, signal });
             if (json.success) {
@@ -397,11 +437,18 @@ const headers = { };
                         } catch (e) { console.warn("[table-tablets.js]", e); }
                     }
 
-                    // Fetch tournament entries — one floor-view call per unique tournament_id
+                    // Fetch tournament entries - one floor-view call per unique tournament_id
                     const uniqueTournaments = [...new Set(tournTbls.map(t => t.tournament_id).filter(Boolean))];
                     await Promise.all(uniqueTournaments.map(async (tid) => {
                         try {
-                            const fRes = await commanderFetch(`/api/commander/tournaments/${tid}/floor-view`, { headers });
+                            // Payload split: this screen reads the tournament
+                            // header, the room stats and the per-table seat
+                            // lists. It never touches the entry list, the
+                            // clock, the alternates or the eliminated feed.
+                            const fRes = await commanderFetch(
+                                `/api/commander/tournaments/${tid}/floor-view?include=tournament,tables,stats`,
+                                { headers }
+                            );
                             if (!fRes.ok) throw new Error(`Request failed (${fRes.status})`);
                             const fJson = await fRes.json();
                             if (fJson.success && fJson.data?.tables) {
@@ -420,7 +467,7 @@ const headers = { };
                     tablesArr = tablesArr.map(t => {
                         const tNum = t.table_number || t.number;
 
-                        // Tournament table — merge entry data
+                        // Tournament table - merge entry data
                         if (isTournamentTable(t) && tournamentEntriesByTable[tNum]) {
                             const tData = tournamentEntriesByTable[tNum];
                             return {
@@ -439,7 +486,7 @@ const headers = { };
                             };
                         }
 
-                        // Cash table — merge session data
+                        // Cash table - merge session data
                         const tableSessions = sessionsByTable[tNum];
                         if (!tableSessions || tableSessions.length === 0) return t;
                         return {
@@ -471,7 +518,7 @@ const headers = { };
         lastFetchAt.current = Date.now();
         setLoading(false);
 
-        // Fetch active dealer rotations — maps table_number to dealer_name
+        // Fetch active dealer rotations - maps table_number to dealer_name
         try {
             const rotRes = await commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers });
             if (!rotRes.ok) throw new Error(`Request failed (${rotRes.status})`);
@@ -521,21 +568,93 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
         }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
     };
 
-    // Auto-refresh every 10s
-    useEffect(() => {
-        if (!venueId) return;
-        const interval = setInterval(fetchAll, 30000); // fallback — real-time sync handles instant updates
-        return () => clearInterval(interval);
-    }, [venueId, fetchAll]);
+    // Commander Data Bus - instant cross-tab sync for tables, games, dealers,
+    // plus the fallback poll that used to be a fixed 30s setInterval here.
+    // 'tournaments' joins the entity list so a level advance or a status
+    // change still reaches this screen over the channel once the poll has
+    // backed off. fastMs is the old 30s, so an unproven channel behaves
+    // exactly as it did before.
+    useCommanderSync(venueId, fetchAll, {
+        entities: ['tables', 'games', 'dealers', 'tournaments'],
+        poll: { fastMs: 30000, slowMs: 180000 }
+    });
 
-    // Commander Data Bus — instant cross-tab sync for tables, games, dealers
-    useCommanderSync(venueId, fetchAll, { entities: ['tables', 'games', 'dealers'] });
-
-    // 1-second tick for live countdown display
+    // 1-second tick for live countdown display.
+    // 2026-08-19: the tick now pauses while the page is hidden (tablet screen off
+    // or app backgrounded). This component is ~2,000 lines with no memoisation, so
+    // every tick re-renders the entire table grid; on a tablet left running for a
+    // whole shift that burned CPU and battery animating a display nobody could see.
+    // Nothing is lost on resume - adjustTime() recomputes every countdown from
+    // lastFetchAt, and we force one immediate tick when the screen comes back.
     useEffect(() => {
-        const tick = setInterval(() => setTickCounter(c => c + 1), 1000);
-        return () => clearInterval(tick);
+        let tick = null;
+        const start = () => { if (tick == null) tick = setInterval(() => setTickCounter(c => c + 1), 1000); };
+        const stop = () => { if (tick != null) { clearInterval(tick); tick = null; } };
+        const onVisibility = () => {
+            if (typeof document !== 'undefined' && document.hidden) { stop(); }
+            else { setTickCounter(c => c + 1); start(); }
+        };
+        if (typeof document === 'undefined' || !document.hidden) start();
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            stop();
+            if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, []);
+
+    // 2026-08-19: hold a screen Wake Lock for the length of the shift.
+    // A dealer tablet must stay readable at the table - seat timers, the floor-call
+    // button and the scan flow are useless behind a sleeping screen, and a dealer
+    // having to wake and unlock the device mid-hand is a real operational cost.
+    // The lock is released by the browser whenever the page is hidden, so it is
+    // re-acquired on visibilitychange. Wrapped in try/catch and feature-detected:
+    // on a browser without the API (or if the request is refused) this is a no-op
+    // and the tablet behaves exactly as it does today.
+    useEffect(() => {
+        if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+        let sentinel = null;
+        let cancelled = false;
+        const acquire = async () => {
+            try {
+                if (typeof document !== 'undefined' && document.hidden) return;
+                if (sentinel) return;
+                sentinel = await navigator.wakeLock.request('screen');
+                if (cancelled) { try { await sentinel.release(); } catch (e) { /* ignore */ } sentinel = null; return; }
+                sentinel.addEventListener('release', () => { sentinel = null; });
+            } catch (e) {
+                // Refused (battery saver, permissions policy, unsupported) - non-fatal.
+                console.warn('[table-tablets] wake lock unavailable:', e?.message || e);
+            }
+        };
+        const onVisibility = () => { if (typeof document !== 'undefined' && !document.hidden) acquire(); };
+        acquire();
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            cancelled = true;
+            if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+            if (sentinel) { try { sentinel.release(); } catch (e) { /* ignore */ } sentinel = null; }
+        };
+    }, []);
+
+    // 2026-08-19: refetch the grid the moment connectivity returns.
+    // CommanderLayout already owns the *visual* offline state - it listens for
+    // online/offline and renders the *You are offline* banner - so this
+    // deliberately does NOT toast, which would give the dealer two
+    // notifications for one event. What the layout does not do is recover the
+    // data: previously a Wi-Fi drop left the grid showing seats and countdowns
+    // from before the outage, with no refresh until the next 30s poll happened
+    // to land. A dealer could unseat a player, or read a seat as open, from a
+    // stale grid. This closes that window by refreshing immediately on
+    // reconnect.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const onOnline = () => {
+            if (!venueId) return;
+            try { fetchAll(); } catch (e) { console.warn('[table-tablets] reconnect refresh failed:', e?.message || e); }
+        };
+        window.addEventListener('online', onOnline);
+        return () => window.removeEventListener('online', onOnline);
+    }, [venueId, fetchAll]);
 
     // Compute adjusted time_remaining accounting for seconds elapsed since last API fetch
     const adjustTime = useCallback((apiTimeRemaining) => {
@@ -544,23 +663,40 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
         return Math.max(0, apiTimeRemaining - elapsed);
     }, [tickCounter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Helper: get game + player info from table data
-    const getTableGame = (table) => {
+    // Helper: get game + player info from table data.
+    // 2026-08-19: wrapped in useCallback so their identity is stable across
+    // renders - otherwise anything downstream that depends on them is
+    // invalidated on every tick.
+    const getTableGame = useCallback((table) => {
         const games = Array.isArray(table.commander_games) ? table.commander_games : [];
         return games.find(g => g.status !== 'closed') || games[0] || null;
-    };
+    }, []);
 
-    const getSeatedCount = (table) => {
+    const getSeatedCount = useCallback((table) => {
         const game = getTableGame(table);
         if (game && game.current_players) return game.current_players;
         if (table.seats && table.seats.length > 0) return table.seats.length;
         return 0;
-    };
+    }, [getTableGame]);
 
-    const activeCashTables = tables.filter(t => t.status === 'in_use' && !isTournamentTable(t));
-    const activeTournamentTables = tables.filter(t => t.status === 'in_use' && isTournamentTable(t));
-    const activeTables = [...activeCashTables, ...activeTournamentTables];
-    const idleTables = tables.filter(t => t.status !== 'in_use');
+    // 2026-08-19: these four derived lists previously ran three .filter() passes
+    // and a spread on EVERY render - including each 1-second countdown tick, and
+    // every keystroke in an unrelated input. Beyond the wasted work, they handed
+    // back a brand-new array identity each time, which defeats memoisation for
+    // anything consuming them. They only change when `tables` changes, so they
+    // are memoised on that.
+    const activeCashTables = useMemo(
+        () => tables.filter(t => t.status === 'in_use' && !isTournamentTable(t)),
+        [tables]);
+    const activeTournamentTables = useMemo(
+        () => tables.filter(t => t.status === 'in_use' && isTournamentTable(t)),
+        [tables]);
+    const activeTables = useMemo(
+        () => [...activeCashTables, ...activeTournamentTables],
+        [activeCashTables, activeTournamentTables]);
+    const idleTables = useMemo(
+        () => tables.filter(t => t.status !== 'in_use'),
+        [tables]);
 
     // Dealer scan functions
     const openDealerScan = (tableNumber) => {
@@ -577,6 +713,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     };
 
     const startDealerCamera = async () => {
+        dealerScanSubmitRef.current = false; // fresh scan session
         setScanError('');
         // Mount the video element FIRST by setting camera active before acquiring stream
         setScanCameraActive(true);
@@ -605,6 +742,8 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
                         try {
                             const barcodes = await detector.detect(videoRef.current);
                             if (barcodes.length > 0) {
+                                if (dealerScanSubmitRef.current) return;
+                                dealerScanSubmitRef.current = true;
                                 stopDealerCamera();
                                 handleDealerScan(barcodes[0].rawValue);
                             }
@@ -627,6 +766,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
     };
 
     const handleDealerScan = async (qrCode) => {
+        dealerScanSubmitRef.current = false; // allow a retry after this attempt resolves
         setScanError('');
         setScanResult(null);
         try {
@@ -634,8 +774,7 @@ const res = await commanderFetch('/api/commander/dealer/scan-in', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ venue_id: venueId, qr_code: qrCode, table_number: scanningTable }) });
-            if (!res.ok) throw new Error('Request failed');
-            const data = await res.json();
+            const data = await parseApiResponse(res);
             if (data.success) {
                 setScanResult({
                     dealer_name: data.data?.dealer?.name || data.data?.dealer_name || 'Dealer',
@@ -667,8 +806,7 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId, action, ...extra }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) broadcastChange('tables'); // <== NEW FIX: Sync player actions across floor
             setPlayerActionLoading(false);
             return json;
@@ -679,14 +817,18 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
     };
 
     const removePlayer = async (tableNumber, seatNumber) => {
+        // Unseating credits unused minutes back to the member and writes a comp
+        // row, so a double-tap is a real money event. setPlayerActionLoading is
+        // React state and does not flip until the next render; this ref does.
+        if (unseatSubmitRef.current) return;
+        unseatSubmitRef.current = true;
         setPlayerActionLoading(true);
         try {
 const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+                body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
+            const json = await parseApiResponse(res);
             if (json.success) {
                 setToast({ type: 'success', text: `${json.data.player_name} removed · ${json.data.unused_minutes_returned}m returned` });
                 setShowPlayerMenu(null);
@@ -696,6 +838,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 setToast({ type: 'error', text: json.error || 'Failed to remove player' });
             }
         } catch { setToast({ type: 'error', text: 'Network error' }); }
+        unseatSubmitRef.current = false;
         setPlayerActionLoading(false);
     };
 
@@ -707,12 +850,31 @@ const headers = { 'Content-Type': 'application/json' };
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/eliminate`, {
                 method: 'POST', headers,
                 body: JSON.stringify({ entry_id: entryId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
-            if (json.entry || json.success) {
-                const pos = json.finishPosition ? ` — finished ${json.finishPosition}${['st', 'nd', 'rd'][json.finishPosition - 1] || 'th'}` : '';
-                const payout = json.payoutAmount ? ` · $${json.payoutAmount.toLocaleString()}` : '';
+            const json = await parseApiResponse(res);
+            if (json.success) {
+                // 2026-08-20 fix: eliminate answers { success, data: {...} }. These
+                // four fields were read off the top level, so finish position and
+                // payout never rendered, and auto_break / promoted_alternate - the
+                // two things the floor MUST see - were discarded entirely.
+                const d = json.data || {};
+                const pos = d.finishPosition ? ` - finished ${d.finishPosition}${['st', 'nd', 'rd'][d.finishPosition - 1] || 'th'}` : '';
+                const payout = d.payoutAmount ? ` · $${d.payoutAmount.toLocaleString()}` : '';
                 setToast({ type: 'success', text: `${playerName} eliminated${pos}${payout}` });
+                setLastBustedEntry({ tournament_id: tournamentId, entry_id: entryId, player_name: playerName });
+                const noticeLines = [];
+                if (d.promoted_alternate) {
+                    noticeLines.push(`Alternate ${d.promoted_alternate.player_name} Was Seated At Table ${d.promoted_alternate.table_number}, Seat ${d.promoted_alternate.seat_number}.`);
+                }
+                if (d.auto_break && d.auto_break.executed) {
+                    const ab = d.auto_break;
+                    const moved = Number(ab.players_moved || 0);
+                    noticeLines.push(ab.print_job_id
+                        ? `Table ${ab.break_table} Was Broken, ${moved.toLocaleString()} Card${moved === 1 ? '' : 's'} Queued At The Print Station.`
+                        : `Table ${ab.break_table} Was Broken, ${moved.toLocaleString()} Player${moved === 1 ? '' : 's'} Moved.`);
+                }
+                if (noticeLines.length > 0) {
+                    setTournamentNotice({ title: `${playerName} Busted Out`, lines: noticeLines });
+                }
                 setShowPlayerMenu(null);
                 broadcastChange('tables');
                 // If during rebuy/late-reg, notify cashier
@@ -721,7 +883,7 @@ const headers = { 'Content-Type': 'application/json' };
                 const tStats = menuTable?._tournamentStats;
                 if (tData && tStats?.late_reg_open) {
                     broadcastChange('cashier');
-                    setToast({ type: 'success', text: `${playerName} eliminated — seat available for resale (late reg open)` });
+                    setToast({ type: 'success', text: `${playerName} eliminated - seat available for resale (late reg open)` });
                 } else if (tData?.allows_rebuys) {
                     const currentLevel = tData.settings?.clock_state?.currentLevel || 0;
                     const rebuyEndLevel = tData.rebuy_end_level || 99;
@@ -737,6 +899,87 @@ const headers = { 'Content-Type': 'application/json' };
         setPlayerActionLoading(false);
     };
 
+    const rebuyTournamentPlayer = async (tournamentId, entryId, playerName) => {
+        setPlayerActionLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${entryId}/rebuy`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}) });
+            const json = await parseApiResponse(res);
+            if (json.success) {
+                const d = json.data || {};
+                setToast({ type: 'success', text: `Rebuy ${Number(d.rebuy_number || 1).toLocaleString()} for ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} chips` });
+                setShowPlayerMenu(null);
+                broadcastChange('tables');
+                broadcastChange('cashier');
+                fetchAll();
+            } else {
+                setToast({ type: 'error', text: json.error || 'Rebuy failed' });
+            }
+        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        setPlayerActionLoading(false);
+    };
+
+    const addonTournamentPlayer = async (tournamentId, entryId, playerName) => {
+        setPlayerActionLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${entryId}/addon`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}) });
+            const json = await parseApiResponse(res);
+            if (json.success) {
+                const d = json.data || {};
+                setToast({ type: 'success', text: `Add-on for ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} chips` });
+                setShowPlayerMenu(null);
+                broadcastChange('tables');
+                broadcastChange('cashier');
+                fetchAll();
+            } else {
+                setToast({ type: 'error', text: json.error || 'Add-on failed' });
+            }
+        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        setPlayerActionLoading(false);
+    };
+
+    // Undo an accidental bust. A 409 PAYOUT_RECORDED means money is already
+    // recorded against the entry - confirm with the floor, then retry forced.
+    // This reads the raw body instead of parseApiResponse because the decision
+    // hinges on error.code, which parseApiResponse flattens to a message.
+    const restoreTournamentEntry = async (tournamentId, entryId, playerName, force = false) => {
+        setPlayerActionLoading(true);
+        try {
+            const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/entries/${entryId}/restore`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(force ? { force: true } : {}) });
+            let raw = null;
+            try { raw = await res.json(); } catch (e) { /* empty or non-JSON body */ }
+            const errMsg = (raw && (raw.error?.message || (typeof raw.error === 'string' ? raw.error : null))) || null;
+            if (res.status === 409 && raw?.error?.code === 'PAYOUT_RECORDED' && !force) {
+                setRestoreConfirm({
+                    tournament_id: tournamentId,
+                    entry_id: entryId,
+                    player_name: playerName,
+                    message: errMsg || 'A Payout Is Recorded For This Entry.' });
+                setPlayerActionLoading(false);
+                return;
+            }
+            if (!res.ok || raw?.success === false) {
+                setToast({ type: 'error', text: errMsg || 'Undo bust failed' });
+                setPlayerActionLoading(false);
+                return;
+            }
+            setRestoreConfirm(null);
+            setLastBustedEntry(null);
+            setShowPlayerMenu(null);
+            setTournamentNotice({
+                title: `${playerName} Is Back In`,
+                lines: [raw?.data?.message || 'Elimination Undone.'] });
+            broadcastChange('tables');
+            fetchAll();
+        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        setPlayerActionLoading(false);
+    };
+
     const moveTournamentPlayer = async (tournamentId, entryId, toTable, toSeat, playerName) => {
         setPlayerActionLoading(true);
 const headers = { 'Content-Type': 'application/json' };
@@ -744,8 +987,7 @@ const headers = { 'Content-Type': 'application/json' };
             const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/move-player`, {
                 method: 'POST', headers,
                 body: JSON.stringify({ entry_id: entryId, to_table: toTable, to_seat: toSeat }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
                 const move = json.data?.move;
                 setToast({ type: 'success', text: `${playerName} moved T${move?.from_table}S${move?.from_seat} → T${move?.to_table}S${move?.to_seat}` });
@@ -771,10 +1013,9 @@ const headers = { 'Content-Type': 'application/json' };
                     entry_id: entryId,
                     chip_count: chipCount,
                     venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `Chip count updated: ${chipCount.toLocaleString()} — ${playerName}` });
+                setToast({ type: 'success', text: `Chip count updated: ${chipCount.toLocaleString()} - ${playerName}` });
                 broadcastChange('tables');
                 fetchAll();
             } else {
@@ -785,14 +1026,17 @@ const headers = { 'Content-Type': 'application/json' };
     };
 
     const handleSeatScan = async (qrData, tableNumber, seatNumber) => {
+        // Previously this cleared playerActionLoading at the end without ever
+        // setting it, so seat-in showed no busy state and could re-enable
+        // buttons belonging to a different in-flight action.
+        setPlayerActionLoading(true);
         closeSeatScanner();
         try {
 const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ qr_code: qrData, table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
-            const json = await res.json();
+            const json = await parseApiResponse(res);
             if (json.success) {
                 setToast({ type: 'success', text: `${json.data.player_name} seated at S${seatNumber}` });
                 broadcastChange('tables'); // <== NEW FIX: Realtime sync across the floor
@@ -801,12 +1045,15 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 setToast({ type: 'error', text: json.error || 'Could not seat player' });
             }
         } catch { setToast({ type: 'error', text: 'Network error' }); }
+        // Release the scan guard so a declined/failed scan can be retried.
+        seatSubmitRef.current = false;
     setPlayerActionLoading(false);
     };
 
     const seatScanIntervalRef = useRef(null);
 
     const openSeatScanner = (tableNumber, seatNumber) => {
+        seatSubmitRef.current = false; // fresh scan session
         setSeatScanner({ tableNumber, seatNumber });
         setShowPlayerMenu(null);
         // Wait for the modal + video element to mount before acquiring camera
@@ -836,6 +1083,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             try {
                                 const barcodes = await detector.detect(seatScannerVideoRef.current);
                                 if (barcodes.length > 0) {
+                                    if (seatSubmitRef.current) return;
+                                    seatSubmitRef.current = true;
                                     handleSeatScan(barcodes[0].rawValue, tableNumber, seatNumber);
                                 }
                             } catch (e) { console.warn("[table-tablets.js]", e); }
@@ -844,7 +1093,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 };
                 waitForVideo();
             } catch {
-                setToast({ type: 'error', text: 'Camera access denied — check permissions' });
+                setToast({ type: 'error', text: 'Camera access denied - check permissions' });
             }
         }, 300);
     };
@@ -871,13 +1120,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
         const hasTimed = seatData.some(s => s.time_remaining !== undefined && s.time_remaining !== null);
         const { dealerPos, seatPositions } = computeSeatPositions(maxSeats);
 
-        // Build seat array — merge session data, table_seats data, then fill with anonymous badges
+        // Build seat array - merge session data, table_seats data, then fill with anonymous badges
         const seatArr = Array.from({ length: maxSeats }, (_, i) => {
             const seatNum = i + 1;
-            // Priority 1: session data (from dealer sessions API — has time_remaining)
+            // Priority 1: session data (from dealer sessions API - has time_remaining)
             const session = seatData.find(s => s.seat_number === seatNum);
             if (session) return { number: seatNum, taken: session };
-            // Priority 2: table_seats data (from tables API — has player_name)
+            // Priority 2: table_seats data (from tables API - has player_name)
             const tableSeat = (table.seats || []).find(s => s.seat_number === seatNum && s.status === 'occupied');
             if (tableSeat) return { number: seatNum, taken: { ...tableSeat } };
             return { number: seatNum, taken: null };
@@ -939,7 +1188,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         )}
                     </div>
 
-                    {/* Dealer badge — card style matching player cards */}
+                    {/* Dealer badge - card style matching player cards */}
                     {(() => {
                         const dealerName = dealerMap[tNum] || game?.dealer_name || 'No Dealer';
                         return (
@@ -988,7 +1237,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         );
                     })()}
 
-                    {/* Seat badges — matching tables.js avatar style */}
+                    {/* Seat badges - matching tables.js avatar style */}
                     {seatArr.slice(0, seatPositions.length).map((seat, idx) => {
                         const pos = seatPositions[idx];
                         const isOccupied = !!seat.taken;
@@ -1006,7 +1255,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 : 'translate(-50%, -50%)';
                         const badgeDirection = isRightSide ? 'row-reverse' : 'row';
 
-                        // Timer computation — live 1-second countdown (FREEZE when paused/meal_break)
+                        // Timer computation - live 1-second countdown (FREEZE when paused/meal_break)
                         let timerText = null, timerColor = null;
                         const isPausedOrBreak = seat.taken?.session_status === 'paused' || seat.taken?.session_status === 'meal_break';
                         if (isOccupied && seat.taken) {
@@ -1044,13 +1293,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                     setToast({ type: 'error', text: json.error || 'Move failed' });
                                                 }
                                             } else {
-                                                setToast({ type: 'error', text: 'Missing entry data — try refreshing' });
+                                                setToast({ type: 'error', text: 'Missing entry data - try refreshing' });
                                             }
                                             setMovingPlayer(null);
                                         })();
                                         return;
                                     }
-                                    if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied — pick an empty seat' }); return; }
+                                    if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied - pick an empty seat' }); return; }
                                     if (isOccupied) setShowPlayerMenu({ ...seat, tableNumber: tNum });
                                     else openSeatScanner(tNum, seat.number);
                                 } : undefined}
@@ -1083,7 +1332,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     ) : (
                                         <span style={{ fontSize: isFullscreen ? 18 : 16, fontWeight: 600, color: movingPlayer && isFullscreen ? '#22c55e' : '#B0B3B8' }}>{seat.number}</span>
                                     )}
-                                    {/* Missed Blinds Sticker — overlays top-right of avatar */}
+                                    {/* Missed Blinds Sticker - overlays top-right of avatar */}
                                     {isOccupied && (seat.taken?.missed_blinds || 0) > 0 && (
                                         <div style={{
                                             position: 'absolute', top: -4, right: -4,
@@ -1141,7 +1390,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
 
     return (
         <CommanderLayout title="Table Tablets | Commander" backHref="/commander/dashboard?card=floor">
-            <SEOHead title="Commander — Table Tablets" description="Dealer tablet view for all tables." noindex={true} />
+            <SEOHead title="Commander - Table Tablets" description="Dealer tablet view for all tables." noindex={true} />
             <div style={{ minHeight: '100vh', background: '#1a1f22', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px' }}>
 
@@ -1153,7 +1402,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         <div>
                             <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Table Tablets</h1>
                             <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>
-                                {tables.length} tables — {activeTables.length} active • Tap to expand
+                                {tables.length} tables - {activeTables.length} active • Tap to expand
                             </p>
                         </div>
                     </div>
@@ -1252,7 +1501,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         </div>
                     ) : (
                         <>
-                            {/* ACTIVE TOURNAMENT TABLES — amber section */}
+                            {/* ACTIVE TOURNAMENT TABLES - amber section */}
                             {activeTournamentTables.length > 0 && (
                                 <>
                                     <h2 style={{ fontSize: 15, fontWeight: 700, color: '#FFD700', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1272,7 +1521,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                         background: '#1a1a2e', border: '2px solid rgba(255,215,0,0.5)', borderRadius: 16,
                                                         cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' }}>
 
-                                                    {/* Table header — tournament amber gradient */}
+                                                    {/* Table header - tournament amber gradient */}
                                                     <div style={{
                                                         padding: '6px 12px',
                                                         background: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
@@ -1309,7 +1558,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 </>
                             )}
 
-                            {/* ACTIVE CASH TABLES — expanded cards with full table visual */}
+                            {/* ACTIVE CASH TABLES - expanded cards with full table visual */}
                             {activeCashTables.length > 0 && (
                                 <>
                                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1329,7 +1578,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                         background: '#1a1a2e', border: '2px solid rgba(24,119,242,0.3)', borderRadius: 16,
                                                         cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' }}>
 
-                                                    {/* Table header — game info bar */}
+                                                    {/* Table header - game info bar */}
                                                     <div style={{
                                                         padding: '12px 16px',
                                                         background: 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)',
@@ -1374,7 +1623,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 </>
                             )}
 
-                            {/* IDLE TABLES — compact grid */}
+                            {/* IDLE TABLES - compact grid */}
                             {idleTables.length > 0 && (
                                 <>
                                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1402,7 +1651,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#64748B' }}>
                                                         <Armchair size={12} /> {maxSeats} seats
                                                         {table.table_name && table.table_name !== `Table ${tNum}` && (
-                                                            <span>— {table.table_name}</span>
+                                                            <span>- {table.table_name}</span>
                                                         )}
                                                     </div>
                                                 </button>
@@ -1426,10 +1675,10 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
             {/* ── FULLSCREEN TABLE POPUP ── */}
             {fullscreenTable && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#1a1f22', display: 'flex', flexDirection: 'column', animation: 'fullscreenIn 0.2s ease-out', overscrollBehavior: 'none', touchAction: 'manipulation', overflow: 'hidden', height: '100vh', width: '100vw' }}>
-                    {/* NO HEADER in fullscreen — table takes up full screen */}
+                    {/* NO HEADER in fullscreen - table takes up full screen */}
                     {!lockedTable && (
                         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 70, display: 'flex', alignItems: 'center', gap: 10 }}>
-                            {/* Lock button — only on tournament tables, shows Unlock icon since page is unlocked */}
+                            {/* Lock button - only on tournament tables, shows Unlock icon since page is unlocked */}
                             {isTournamentTable(fullscreenTable) && (
                                 <button
                                     onClick={() => { haptic(); lockToTable(fullscreenTable.table_number || fullscreenTable.number); }}
@@ -1464,14 +1713,14 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     borderRadius: 10, padding: '6px 14px', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: 6,
                                     fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}
-                                title="Unlock — requires manager PIN"
+                                title="Unlock - requires manager PIN"
                             >
                                 <Lock size={12} /> Unlock
                             </button>
                         </div>
                     )}
 
-                    {/* Fullscreen table visual — leaves room for bottom icons */}
+                    {/* Fullscreen table visual - leaves room for bottom icons */}
                     <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8px 0 0 0', overflow: 'hidden', position: 'relative', background: '#1a1f22' }}>
                         <div style={{ width: '100%', maxWidth: 1100 }}>
                             {renderTableVisual(fullscreenTable, true)}
@@ -1482,7 +1731,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         {/* BOTTOM-LEFT: Call Floor */}
                         {(() => {
                             const isA = callFloorSent; const _ss = getStaffSession() || ''; const _tk = getToken(); return (
-                                <button disabled={callFloorSending} onClick={!isA ? async () => { haptic('heavy'); setCallFloorSending(true); try { const n = fullscreenTable.table_number || fullscreenTable.number; const r = await commanderFetch('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venue_id: venueId, table_number: n, table_name: fullscreenTable.table_name || `Table ${n}` }) }).then(r => { if (!r.ok) throw new Error('fail'); return r; }); const j = await r.json(); if (j.success) { setCallFloorSent(true); setCallFloorId(j.data?.id || null); setToast({ type: 'success', text: `Floor called — Table ${n}` }); broadcastChange('floor_calls'); } else { setToast({ type: 'error', text: j.error || 'Floor call failed' }); } } catch { setToast({ type: 'error', text: 'Network error' }); } setCallFloorSending(false); } : async () => { haptic(); if (callFloorId) { try { const j = await commanderFetchJSON('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', call_id: callFloorId }) }); if (j.success) { setToast({ type: 'success', text: 'Floor call cancelled' }); broadcastChange('floor_calls'); setCallFloorSent(false); setCallFloorId(null); } else { setToast({ type: 'error', text: j.error || 'Cancel failed' }); } } catch (e) { console.warn("[table-tablets.js]", e); setToast({ type: 'error', text: 'Network error' }); } } }}
+                                <button disabled={callFloorSending} onClick={!isA ? async () => { haptic('heavy'); setCallFloorSending(true); try { const n = fullscreenTable.table_number || fullscreenTable.number; const r = await commanderFetch('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venue_id: venueId, table_number: n, table_name: fullscreenTable.table_name || `Table ${n}` }) }).then(r => { if (!r.ok) throw new Error('fail'); return r; }); const j = await r.json(); if (j.success) { setCallFloorSent(true); setCallFloorId(j.data?.id || null); setToast({ type: 'success', text: `Floor called - Table ${n}` }); broadcastChange('floor_calls'); } else { setToast({ type: 'error', text: j.error || 'Floor call failed' }); } } catch { setToast({ type: 'error', text: 'Network error' }); } setCallFloorSending(false); } : async () => { haptic(); if (callFloorId) { try { const j = await commanderFetchJSON('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', call_id: callFloorId }) }); if (j.success) { setToast({ type: 'success', text: 'Floor call cancelled' }); broadcastChange('floor_calls'); setCallFloorSent(false); setCallFloorId(null); } else { setToast({ type: 'error', text: j.error || 'Cancel failed' }); } } catch (e) { console.warn("[table-tablets.js]", e); setToast({ type: 'error', text: 'Network error' }); } } }}
                                     style={{ position: 'fixed', bottom: 4, left: 4, zIndex: 60, height: '20.25vh', width: '27vh', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, opacity: callFloorSending ? 0.5 : 1, transition: 'opacity 0.2s, transform 0.1s', filter: isA ? 'hue-rotate(320deg) saturate(1.5)' : 'none' }}>
 
                                     <img src='/assets/tablet-buttons/call-floor.png' alt="" style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} loading="lazy" />
@@ -1500,7 +1749,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 </button>);
                         })()}
 
-                        {/* BOTTOM-CENTER: Tournament Clock — only on tournament tables, only when clock overlay is NOT open */}
+                        {/* BOTTOM-CENTER: Tournament Clock - only on tournament tables, only when clock overlay is NOT open */}
                         {fullscreenTable && isTournamentTable(fullscreenTable) && fullscreenTable.tournament_id && !showTournamentClock && (
                             <button onClick={() => { haptic(); const t = fullscreenTable.tournament_id; const U = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; if (!t || !U.test(t)) { console.warn('[SAFEGUARD] Invalid tournament_id:', t); return; } if (!isTournamentTable(fullscreenTable)) { console.warn('[SAFEGUARD] Not tournament table'); return; } setLockedTournamentId(t); setShowTournamentClock(true); }}
                                 style={{ position: 'fixed', top: 4, left: 4, zIndex: 60, height: '20.25vh', width: '27vh', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, transition: 'opacity 0.2s, transform 0.1s' }}>
@@ -1509,7 +1758,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             </button>
                         )}
 
-                        {/* TOP-CENTER: Shot Clock button — only on tournament tables with shot_clock_enabled */}
+                        {/* TOP-CENTER: Shot Clock button - only on tournament tables with shot_clock_enabled */}
                         {fullscreenTable && isTournamentTable(fullscreenTable) && fullscreenTable._tournamentData?.settings?.shot_clock_enabled && (() => {
                             const scDuration = fullscreenTable._tournamentData.settings.shot_clock_seconds || 30;
                             const scActive = shotClockSeconds !== null;
@@ -1525,7 +1774,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         setShotClockSeconds(p => {
                                             if (p <= 0) return p; // Already expired, waiting for reset timeout
                                             if (p <= 1) {
-                                                // Hit zero — schedule auto-reset after brief flash
+                                                // Hit zero - schedule auto-reset after brief flash
                                                 const dur = scDuration;
                                                 setTimeout(() => {
                                                     shotClockVoiceFired.current = false;
@@ -1564,7 +1813,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
 
                     </div>
 
-                    {/* ── TOURNAMENT CLOCK OVERLAY — 1:1 mirror via iframe ──
+                    {/* ── TOURNAMENT CLOCK OVERLAY - 1:1 mirror via iframe ──
                         SAFEGUARD CHAIN:
                         1. lockedTournamentId must exist (set at click-time, UUID-validated)
                         2. fullscreenTable must still be a tournament table
@@ -1579,7 +1828,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             <div style={{
                                 position: 'absolute', inset: 0, zIndex: 10001,
                                 background: '#0D192E', display: 'flex', flexDirection: 'column' }}>
-                                {/* Tournament Table back button — icon only, top-left of overlay */}
+                                {/* Tournament Table back button - icon only, top-left of overlay */}
                                 <button onClick={() => { haptic(); setShowTournamentClock(false); setLockedTournamentId(null); }}
                                     style={{
                                         position: 'absolute', top: 8, left: 8, zIndex: 10002,
@@ -1644,7 +1893,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         );
                     })()}
 
-                    {/* ── SHOT CLOCK OVERLAY — collapsible fullscreen decision timer ── */}
+                    {/* ── SHOT CLOCK OVERLAY - collapsible fullscreen decision timer ── */}
                     {shotClockSeconds !== null && (() => {
                         const secs = shotClockSeconds;
                         const scDuration = fullscreenTable?._tournamentData?.settings?.shot_clock_seconds || 30;
@@ -1761,7 +2010,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
                             background: 'rgba(24,119,242,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
                             boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                            Moving {movingPlayer.player_name} — tap an empty seat
+                            Moving {movingPlayer.player_name} - tap an empty seat
                             <button onClick={() => { haptic(); setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
                                 style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >Cancel</button>
@@ -1794,6 +2043,11 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1877F2', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
                                     { label: 'Bust Player', icon: React.createElement(Skull, { size: iconSize }), color: '#EF4444', action: async () => { if (!confirm('Bust ' + pName + '?')) return; if (entryId && tournId) { await bustTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
                                     { label: 'Update Chip Count', icon: React.createElement(Coins, { size: iconSize }), color: '#FFD700', action: () => { setChipCountInput(''); } },
+                                    { label: 'Rebuy', icon: React.createElement(Coins, { size: iconSize }), color: '#31A24C', action: async () => { if (entryId && tournId) { await rebuyTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
+                                    { label: 'Add-On', icon: React.createElement(Coins, { size: iconSize }), color: '#22c55e', action: async () => { if (entryId && tournId) { await addonTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
+                                    ...(lastBustedEntry && lastBustedEntry.tournament_id === tournId
+                                        ? [{ label: `Undo Bust, ${lastBustedEntry.player_name}`, icon: React.createElement(Clock, { size: iconSize }), color: '#8A8D91', action: async () => { await restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); } }]
+                                        : []),
                                 ] : [
                                     { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1877F2', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
                                     { label: 'Remove Player', icon: React.createElement(XCircle, { size: iconSize }), color: '#EF4444', action: () => removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number) },
@@ -1803,6 +2057,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     ),
                                     { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = json.data.missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: json.data.player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed blind #' + count + ' for ' + json.data.player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
                                     { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#8B5CF6', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + json.data.player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
+                                    { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes to add for ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (json.data.player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed to add time' }); } setShowPlayerMenu(null); fetchAll(); } },
                                 ];
                                 return actions.map((btn, i) => (
                                     React.createElement('button', {
@@ -1850,12 +2105,65 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         setChipCountInput(null);
                                         setShowPlayerMenu(null);
                                     }} style={{ width: '100%', marginTop: 10, padding: '14px', borderRadius: 12, background: (!rawVal || isNaN(rawVal)) ? '#3A3B3C' : '#FFD700', border: 'none', color: (!rawVal || isNaN(rawVal)) ? '#666' : '#000', fontSize: 16, fontWeight: 800, cursor: (!rawVal || isNaN(rawVal)) ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
-                                        {playerActionLoading ? 'Saving...' : `Save — ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} chips`}
+                                        {playerActionLoading ? 'Saving...' : `Save - ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} chips`}
                                     </button>
                                 </div>
                             );
                         })()}
                         <button onClick={() => { haptic('light'); setShowPlayerMenu(null); setChipCountInput(null); }} style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 12, background: '#3A3B3C', border: 'none', color: '#8A8D91', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── TOURNAMENT NOTICE (auto-break, promoted alternate, restore) ── */}
+            {tournamentNotice && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10004, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => { haptic('light'); setTournamentNotice(null); }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                        <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 800, color: '#fff' }}>{tournamentNotice.title}</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+                            {(tournamentNotice.lines || []).map((line, i) => (
+                                <p key={i} style={{ margin: 0, fontSize: 14, color: '#B0B3B8', lineHeight: 1.45 }}>{line}</p>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            {lastBustedEntry && (
+                                <button onClick={() => { haptic(); restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); }}
+                                    disabled={playerActionLoading}
+                                    style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#3A3B3C', border: '1px solid #4E4F50', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                    Undo Bust
+                                </button>
+                            )}
+                            <button onClick={() => { haptic('light'); setTournamentNotice(null); }}
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#1877F2', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                Got It
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── UNDO BUST CONFIRMATION (409 PAYOUT_RECORDED) ── */}
+            {restoreConfirm && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => { haptic('light'); setRestoreConfirm(null); }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', textAlign: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', margin: '0 auto 12px', background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <AlertTriangle size={28} color="#F59E0B" />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#fff' }}>Payout Already Recorded</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: 14, color: '#B0B3B8', lineHeight: 1.45 }}>{restoreConfirm.message}</p>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => { haptic('light'); setRestoreConfirm(null); }}
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#3A3B3C', border: 'none', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                Cancel
+                            </button>
+                            <button onClick={() => { haptic('heavy'); restoreTournamentEntry(restoreConfirm.tournament_id, restoreConfirm.entry_id, restoreConfirm.player_name, true); }}
+                                disabled={playerActionLoading}
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#EF4444', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                Undo Anyway
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1871,7 +2179,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                     <div style={{ width: '90%', maxWidth: 400, aspectRatio: '4/3', borderRadius: 16, overflow: 'hidden', border: '3px solid #1877F2', position: 'relative' }}>
                         <video ref={seatScannerVideoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
                     </div>
-                    {/* Manual entry removed — scan only */}
+                    {/* Manual entry removed - scan only */}
                     <button onClick={() => { haptic(); closeSeatScanner(); }} style={{ marginTop: 12, padding: '14px 48px', borderRadius: 12, background: '#EF4444', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
                 </div>
             )}
@@ -1935,7 +2243,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     </div>
                                 )}
 
-                                {/* Manual entry removed — scan only */}
+                                {/* Manual entry removed - scan only */}
                             </>
                         )}
                     </div>

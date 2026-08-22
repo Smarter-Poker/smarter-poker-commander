@@ -36,33 +36,44 @@ export default async function handler(req, res) {
       const user = authData?.user;
       if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
 
-      let staff = null;
-      const { data: staffRow } = await getSupabase()
-        .from('commander_staff')
-        .select('venue_id, role, name')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (staffRow) {
-        staff = staffRow;
-      } else {
-        // Fallback: check if user is a venue owner via subscription
-        const { data: sub } = await getSupabase()
-          .from('commander_subscriptions')
-          .select('id, venue_id, owner_id')
-          .eq('owner_id', user.id)
-          .in('status', ['active', 'trialing'])
+      // MULTI-CLUB FIX (2026-08-20): the ACTIVE venue comes from the
+      // HMAC-verified staff session guardManager already validated (_g) —
+      // never from "the user's first staff row". The old unscoped
+      // .eq('user_id').maybeSingle() lookup ERRORED for anyone with staff
+      // rows at 2+ venues (every multi-club owner) and could resolve the
+      // wrong venue for staff working at several rooms.
+      let staff = { venue_id: _g.venue_id, role: _g.role, name: _g.display_name || 'Staff' };
+
+      if (!staff.venue_id) {
+        // Legacy fallback (sessions without venue_id): scoped, deterministic
+        const { data: staffRow } = await getSupabase()
+          .from('commander_staff')
+          .select('venue_id, role, name:display_name')
+          .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
+          .eq('is_active', true)
           .limit(1)
           .maybeSingle();
-        if (sub) staff = { venue_id: sub.venue_id, role: 'owner', name: 'Owner' };
+        if (staffRow) {
+          staff = staffRow;
+        } else {
+          const { data: sub } = await getSupabase()
+            .from('commander_subscriptions')
+            .select('id, venue_id, owner_id')
+            .eq('owner_id', user.id)
+            .in('status', ['active', 'trialing'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (sub) staff = { venue_id: sub.venue_id, role: 'owner', name: 'Owner' };
+        }
       }
-      if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
+      if (!staff?.venue_id) return res.status(403).json({ success: false, error: 'Staff access required' });
 
       const venueId = staff.venue_id;
 
       // GET - List all game types
       if (req.method === 'GET') {
-        // Game type catalog changes rarely — safe to cache 5 minutes at edge
+        // Game type catalog changes rarely - safe to cache 5 minutes at edge
         res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
         const showInactive = req.query.include_inactive === 'true';
         let query = getSupabase()

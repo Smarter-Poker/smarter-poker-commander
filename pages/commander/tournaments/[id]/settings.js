@@ -11,7 +11,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
-import { Save, Plus, Trash2, Clock, DollarSign, Coffee, ChevronUp, ChevronDown, Loader2, Settings, Check, ArrowLeft } from 'lucide-react';
+import { Save, Plus, Trash2, Clock, DollarSign, Coffee, ChevronUp, ChevronDown, Loader2, Settings, Check, ArrowLeft, AlertTriangle, AlertCircle, ShieldCheck } from 'lucide-react';
+import { validateBlindStructure, normalizeStructure } from '../../../../src/lib/commander/structureValidation';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
@@ -259,12 +260,41 @@ export default function TournamentSettings() {
   const [addonChips, setAddonChips] = useState(15000);
   const [lateRegLevels, setLateRegLevels] = useState(6);
   const [clockColor, setClockColor] = useState('navy');
+  // The whole stored settings jsonb. Saving used to send { clock_color } only,
+  // which silently wiped every other key in the blob (payout denomination,
+  // satellite seat schedule, PKO config) on any save from this screen.
+  const [settingsBlob, setSettingsBlob] = useState({});
+  // Cash denomination payouts are rounded to. 1 means exact dollars.
+  const [payoutDenomination, setPayoutDenomination] = useState(5);
+  // Bounty portion of the buy-in. Carved OUT of buyin_amount, never added on
+  // top (house rule: charge = buyin + fee, prize = buyin - bounty).
+  const [bountyAmount, setBountyAmount] = useState('');
+  // Satellite: what one seat is worth, and how many are being played for.
+  // Blank seats means "as many as the prize pool funds".
+  const [seatValue, setSeatValue] = useState('');
+  const [seatsAwarded, setSeatsAwarded] = useState('');
+  // Season points board this event scores into. Empty string means "use the
+  // venue's active season", which is what awardTournamentPoints falls back to.
+  const [leaderboardId, setLeaderboardId] = useState('');
+  const [leaderboards, setLeaderboards] = useState([]);
 
   // Structure
   const [levels, setLevels] = useState([]);
   const [payoutStructure, setPayoutStructure] = useState('standard');
   const [estimatedEntries, setEstimatedEntries] = useState(30);
   const [customPayouts, setCustomPayouts] = useState([]);
+
+  // Saved (venue-scoped) templates
+  const [templates, setTemplates] = useState([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateBusy, setTemplateBusy] = useState(false);
+
+  // ── Blind structure validation ──
+  // Warnings do not block the save, but they have to be SEEN. This holds the
+  // signature of the warning set the TD has already acknowledged, so changing
+  // the structure re-arms the acknowledgement instead of carrying a stale one.
+  const [ackedWarnings, setAckedWarnings] = useState('');
 
   // ── Toast notification state ──
   const [toast, setToast] = useState(null);
@@ -308,11 +338,51 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
           setAddonCost(t.addon_amount || 100);
           setAddonChips(t.addon_chips || 15000);
           setLateRegLevels(t.late_registration_levels || 6);
-          setClockColor(t.settings?.clock_color || t.clock_color || 'navy');
-          setLevels(parseBlinds(t.blind_structure).length > 0 ? parseBlinds(t.blind_structure) : STRUCTURE_TEMPLATES.standard.levels);
-          if (t.payout_structure) setPayoutStructure(t.payout_structure);
-          if (t.custom_payouts) setCustomPayouts(t.custom_payouts);
+          const blob = (t.settings && typeof t.settings === 'object') ? t.settings : {};
+          setSettingsBlob(blob);
+          setClockColor(blob.clock_color || t.clock_color || 'navy');
+          setPayoutDenomination(
+            blob.payout_denomination === undefined || blob.payout_denomination === null
+              ? 5
+              : (Number(blob.payout_denomination) || 1)
+          );
+          setBountyAmount(t.bounty_amount != null ? String(t.bounty_amount) : '');
+          setSeatValue(blob.satellite?.seat_value != null ? String(blob.satellite.seat_value) : '');
+          setSeatsAwarded(
+            blob.satellite?.seats_awarded === undefined || blob.satellite?.seats_awarded === null
+              ? ''
+              : String(blob.satellite.seats_awarded)
+          );
+          setLeaderboardId(t.leaderboard_id || '');
+          // normalizeStructure repairs legacy rows that stored { big, small }
+          // instead of { big_blind, small_blind }. Nothing in the app reads
+          // those keys, so those events showed empty blinds here and 0/0 on
+          // the clock; loading through the normaliser means the next save
+          // writes the canonical keys and the event displays correctly.
+          const storedLevels = normalizeStructure(parseBlinds(t.blind_structure));
+          setLevels(storedLevels.length > 0 ? storedLevels : STRUCTURE_TEMPLATES.standard.levels);
           if (t.entry_count) setEstimatedEntries(t.entry_count);
+          else if (t.current_entries) setEstimatedEntries(t.current_entries);
+          // 2026-07-30: payout_structure is the canonical jsonb array of { place, pct }.
+          // Legacy rows may still hold a preset-key string (e.g. 'standard') - keep that
+          // as the generator selection. Older drafts used a `custom_payouts` field that is
+          // NOT a real column; fall back to it on read so saved payouts round-trip.
+          const savedPayouts = Array.isArray(t.payout_structure)
+            ? t.payout_structure
+            : (Array.isArray(t.custom_payouts) ? t.custom_payouts : null);
+          if (savedPayouts && savedPayouts.length > 0) {
+            setCustomPayouts(savedPayouts.map((p, i) => ({
+              place: p.place || i + 1,
+              pct: Number(p.pct != null ? p.pct : p.percentage) || 0
+            })));
+            if (typeof t.payout_structure === 'string' && t.payout_structure) setPayoutStructure(t.payout_structure);
+          } else {
+            if (typeof t.payout_structure === 'string' && t.payout_structure) setPayoutStructure(t.payout_structure);
+            const seedEntries = t.entry_count || t.current_entries || 30;
+            const seedKey = (typeof t.payout_structure === 'string' && t.payout_structure) || 'standard';
+            const seedStruct = PAYOUT_STRUCTURES[seedKey] || PAYOUT_STRUCTURES.standard;
+            setCustomPayouts(calculatePayouts(seedEntries, t.buyin_amount || 100, seedStruct).map(p => ({ place: p.place, pct: p.percentage })));
+          }
         }
       } catch (err) { console.warn(err); }
       finally { setLoading(false); }
@@ -324,10 +394,10 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
   const addLevel = () => {
     const lastLevel = levels.filter(l => !l.is_break).pop();
     setLevels([...levels, {
-      small_blind: (lastLevel?.small_blind || 500) * 1.5,
-      big_blind: (lastLevel?.big_blind || 1000) * 1.5,
-      ante: (lastLevel?.ante || 100) * 1.5,
-      duration: lastLevel?.duration || 20
+      small_blind: Math.round((lastLevel?.small_blind || 500) * 1.5),
+      big_blind: Math.round((lastLevel?.big_blind || 1000) * 1.5),
+      ante: Math.round((lastLevel?.ante || 100) * 1.5),
+      duration: (lastLevel?.duration ?? lastLevel?.duration_minutes) || 20
     }]);
   };
 
@@ -359,9 +429,205 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
     setStartingChips(template.starting_chips);
   };
 
+  // ===== PAYOUT MANAGEMENT =====
+  // Canonical payout table is customPayouts: an array of { place, pct }.
+  const genPayoutsFromPreset = (key) => {
+    setPayoutStructure(key);
+    const struct = PAYOUT_STRUCTURES[key] || PAYOUT_STRUCTURES.standard;
+    setCustomPayouts(calculatePayouts(estimatedEntries, buyinAmount, struct).map(p => ({ place: p.place, pct: p.percentage })));
+  };
+
+  const updatePayoutPct = (index, value) => {
+    const updated = [...customPayouts];
+    updated[index] = { ...updated[index], pct: parseFloat(value) || 0 };
+    setCustomPayouts(updated);
+  };
+
+  const addPayoutPlace = () => {
+    setCustomPayouts([...customPayouts, { place: customPayouts.length + 1, pct: 0 }]);
+  };
+
+  const removePayoutPlace = (index) => {
+    setCustomPayouts(customPayouts.filter((_, i) => i !== index).map((p, i) => ({ ...p, place: i + 1 })));
+  };
+
+  // ===== SEASON LEADERBOARDS (venue-scoped) =====
+  useEffect(() => {
+    if (!tournament?.venue_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const json = await commanderFetchJSON('/api/commander/tournaments/leaderboards', {});
+        if (!cancelled && json?.success) setLeaderboards(json.data?.leaderboards || []);
+      } catch (err) { console.warn('Fetch leaderboards error:', err); }
+    })();
+    return () => { cancelled = true; };
+  }, [tournament?.venue_id]);
+
+  // ===== SAVED TEMPLATES (venue-scoped) =====
+  const fetchTemplates = async () => {
+    if (!tournament?.venue_id) return;
+    try {
+      const json = await commanderFetchJSON(`/api/commander/tournaments/templates?venue_id=${tournament.venue_id}`);
+      if (json.success) setTemplates(json.data?.templates || []);
+    } catch (err) { console.warn(err); }
+  };
+
+  const openTemplatePicker = () => {
+    const next = !showTemplatePicker;
+    setShowTemplatePicker(next);
+    if (next) fetchTemplates();
+  };
+
+  /**
+   * The settings jsonb to save.
+   *
+   * MERGED onto whatever is already stored, never replaced. This screen used
+   * to send { clock_color } alone, so a save from here wiped every other key
+   * in the blob. clock_state is additionally re-applied server-side by the
+   * tournament route, so a live clock is safe either way.
+   */
+  const buildSettings = () => {
+    const next = { ...(settingsBlob || {}), clock_color: clockColor };
+
+    const denom = Number(payoutDenomination) || 1;
+    next.payout_denomination = denom > 1 ? denom : 1;
+
+    if (tournamentType === 'satellite') {
+      const value = seatValue === '' ? 0 : parseInt(seatValue, 10) || 0;
+      next.satellite = {
+        seat_value: value,
+        // null means "award as many seats as the prize pool funds".
+        seats_awarded: seatsAwarded === '' ? null : Math.max(0, parseInt(seatsAwarded, 10) || 0)
+      };
+    } else if (next.satellite) {
+      // Type changed away from satellite: drop the seat schedule so the payout
+      // engine cannot keep paying seats for a cash tournament.
+      delete next.satellite;
+    }
+
+    return next;
+  };
+
+  const saveAsTemplate = async () => {
+    if (!tournament?.venue_id || !templateName.trim()) return;
+    // A broken structure saved as a template breaks every future event cloned
+    // from it, so the template path is gated the same way the save is.
+    const templateCheck = validateBlindStructure(levels);
+    const templateErrors = templateCheck.errors.filter(e => e.severity === 'error');
+    if (templateErrors.length > 0) {
+      setActiveTab('structure');
+      setToast({
+        type: 'error',
+        text: `Cannot Save Template: ${templateErrors.length.toLocaleString()} Blind Structure Error${templateErrors.length === 1 ? '' : 's'}.`
+      });
+      return;
+    }
+    setTemplateBusy(true);
+    const payoutPayload = customPayouts.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct) || 0 }));
+    try {
+      const res = await commanderFetch('/api/commander/tournaments/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: tournament.venue_id,
+          name: templateName.trim(),
+          tournament_type: tournamentType,
+          buyin_amount: buyinAmount,
+          buyin_fee: buyinFee,
+          starting_chips: startingChips,
+          blind_structure: levels,
+          payout_structure: payoutPayload,
+          late_registration_levels: lateRegLevels,
+          allows_rebuys: rebuyAllowed,
+          rebuy_amount: rebuyCost,
+          rebuy_chips: rebuyChips,
+          rebuy_end_level: rebuyLevels,
+          allows_addon: addonAllowed,
+          addon_amount: addonCost,
+          addon_chips: addonChips,
+          max_entries: maxEntries ? parseInt(maxEntries) : null,
+          bounty_amount: ['bounty', 'pko'].includes(tournamentType)
+            ? (bountyAmount === '' ? null : parseInt(bountyAmount, 10))
+            : null,
+          settings: buildSettings()
+        })
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      const json = await res.json();
+      if (json.success) {
+        setTemplateName('');
+        setToast({ type: 'success', text: 'Template Saved.' });
+        fetchTemplates();
+      }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Failed To Save Template.' }); }
+    finally { setTemplateBusy(false); }
+  };
+
+  const loadSavedTemplate = (tpl) => {
+    if (!tpl) return;
+    setName(tpl.name || name);
+    if (tpl.tournament_type) setTournamentType(tpl.tournament_type);
+    if (tpl.buyin_amount != null) setBuyinAmount(tpl.buyin_amount);
+    if (tpl.buyin_fee != null) setBuyinFee(tpl.buyin_fee);
+    if (tpl.starting_chips != null) setStartingChips(tpl.starting_chips);
+    const tplLevels = normalizeStructure(parseBlinds(tpl.blind_structure));
+    if (tplLevels.length > 0) setLevels(tplLevels);
+    if (tpl.late_registration_levels != null) setLateRegLevels(tpl.late_registration_levels);
+    setRebuyAllowed(tpl.allows_rebuys || false);
+    if (tpl.rebuy_amount != null) setRebuyCost(tpl.rebuy_amount);
+    if (tpl.rebuy_chips != null) setRebuyChips(tpl.rebuy_chips);
+    if (tpl.rebuy_end_level != null) setRebuyLevels(tpl.rebuy_end_level);
+    setAddonAllowed(tpl.allows_addon || false);
+    if (tpl.addon_amount != null) setAddonCost(tpl.addon_amount);
+    if (tpl.addon_chips != null) setAddonChips(tpl.addon_chips);
+    if (tpl.max_entries != null) setMaxEntries(tpl.max_entries);
+    if (Array.isArray(tpl.payout_structure) && tpl.payout_structure.length > 0) {
+      setCustomPayouts(tpl.payout_structure.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct != null ? p.pct : p.percentage) || 0 })));
+    }
+    setShowTemplatePicker(false);
+    setToast({ type: 'success', text: `Loaded Template "${tpl.name}".` });
+  };
+
+  // ===== BLIND STRUCTURE VALIDATION =====
+  // Same rule set the create/update APIs run, so the screen can never offer a
+  // save the server will reject, and the TD sees the problem against the level
+  // it belongs to instead of as a 400 after the fact.
+  const structureCheck = validateBlindStructure(levels);
+  const structureErrorList = structureCheck.errors.filter(e => e.severity === 'error');
+  const structureWarningList = structureCheck.errors.filter(e => e.severity === 'warning');
+  // Row index -> worst severity on that row, for the inline highlight.
+  const rowSeverity = {};
+  structureCheck.errors.forEach(e => {
+    if (e.level_index == null) return;
+    if (e.severity === 'error' || !rowSeverity[e.level_index]) rowSeverity[e.level_index] = e.severity;
+  });
+  const warningSignature = structureWarningList.map(w => `${w.level_index}:${w.code}`).join('|');
+  const warningsAcknowledged = structureWarningList.length === 0 || ackedWarnings === warningSignature;
+  const saveBlocked = structureErrorList.length > 0 || !warningsAcknowledged;
+
   // ===== SAVE =====
   const saveSettings = async () => {
+    // Hard stop. A structure with blinds that go down, a 0-minute level, an
+    // ante above the big blind, or a break on row one breaks the clock for the
+    // whole event, and there is no clean mid-event repair.
+    if (structureErrorList.length > 0) {
+      setActiveTab('structure');
+      setToast({
+        type: 'error',
+        text: `Cannot Save: ${structureErrorList.length.toLocaleString()} Blind Structure Error${structureErrorList.length === 1 ? '' : 's'}. Fix Them In The Blind Structure Tab.`
+      });
+      return;
+    }
+    if (!warningsAcknowledged) {
+      setActiveTab('structure');
+      setToast({ type: 'error', text: 'Review The Blind Structure Warnings And Acknowledge Them Before Saving.' });
+      return;
+    }
     setSaving(true);
+    // 2026-07-30: persist the canonical editable payout table as payout_structure
+    // (array of { place, pct }) + paying_places. `custom_payouts` is not a real column.
+    const payoutPayload = customPayouts.map((p, i) => ({ place: p.place || i + 1, pct: Number(p.pct) || 0 }));
     try {
 const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
         method: 'PUT',
@@ -372,29 +638,53 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
           starting_chips: startingChips,
           max_entries: maxEntries ? parseInt(maxEntries) : null,
           guaranteed_pool: guaranteedPool ? parseInt(guaranteedPool) : null,
-          // 2026-07-25 audit fix: PUT passes fields straight to the DB — use the
+          // 2026-07-25 audit fix: PUT passes fields straight to the DB - use the
           // real column names, not the drifted rebuy_cost/rebuy_levels/addon_cost
           allows_rebuys: rebuyAllowed, rebuy_end_level: rebuyLevels,
           rebuy_amount: rebuyCost, rebuy_chips: rebuyChips,
           allows_addon: addonAllowed, addon_amount: addonCost, addon_chips: addonChips,
           late_registration_levels: lateRegLevels,
           blind_structure: levels,
-          payout_structure: payoutStructure,
-          custom_payouts: customPayouts.length > 0 ? customPayouts : null,
-          settings: { clock_color: clockColor }
+          payout_structure: payoutPayload,
+          paying_places: payoutPayload.length,
+          // null means "score into the venue's active season" rather than
+          // pinning this event to one board.
+          leaderboard_id: leaderboardId || null,
+          // Bounty portion of the buy-in. Only meaningful for bounty and PKO
+          // events; cleared otherwise so a type change cannot leave a stale
+          // slice being carved out of the prize pool.
+          bounty_amount: ['bounty', 'pko'].includes(tournamentType)
+            ? (bountyAmount === '' ? null : parseInt(bountyAmount, 10))
+            : null,
+          // MERGED, never replaced: the blob also carries clock_state (kept
+          // server-side) and anything a future screen adds.
+          settings: buildSettings()
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) { setSaved(true); setTimeout(() => setSaved(false), 2000); broadcastChange('tournaments'); }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+      // The server runs the same structure rules. Surface ITS message rather
+      // than a generic failure, so a rejection nobody expected is readable.
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        const serverMsg = json?.error?.message;
+        setToast({ type: 'error', text: serverMsg || `Save Failed (${res.status}). Please Try Again.` });
+        return;
+      }
+      setSaved(true); setTimeout(() => setSaved(false), 2000); broadcastChange('tournaments');
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Save Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSaving(false); }
   };
 
   // Calculate payouts
-  const payouts = calculatePayouts(estimatedEntries, buyinAmount, PAYOUT_STRUCTURES[payoutStructure] || PAYOUT_STRUCTURES.standard);
   const totalPool = estimatedEntries * buyinAmount;
-  const totalMinutes = levels.reduce((sum, l) => sum + (l.duration || 0), 0);
+  // 2026-07-30: canonical editable payout table (array of { place, pct }) + live validation.
+  const payoutSum = customPayouts.reduce((s, p) => s + (Number(p.pct) || 0), 0);
+  const payoutSumOk = customPayouts.length > 0 && Math.abs(payoutSum - 100) <= 0.5;
+  const payoutRows = customPayouts.map((p, i) => ({
+    place: p.place || i + 1,
+    pct: Number(p.pct) || 0,
+    amount: Math.round(totalPool * (Number(p.pct) || 0) / 100)
+  }));
+  const totalMinutes = levels.reduce((sum, l) => sum + (l.duration ?? l.duration_minutes ?? 0), 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
   const levelCount = levels.filter(l => !l.is_break).length;
   const breakCount = levels.filter(l => l.is_break).length;
@@ -414,7 +704,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
   return (
     <>
       <SEOHead
-        title="Commander — Settings"
+        title="Commander - Settings"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -432,12 +722,18 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               <p className="text-xs text-[#B0B3B8]">{name}</p>
             </div>
           </div>
-          <button onClick={saveSettings} disabled={saving}
+          <button onClick={saveSettings} disabled={saving || saveBlocked}
+            title={saveBlocked
+              ? (structureErrorList.length > 0
+                ? 'Fix The Blind Structure Errors First'
+                : 'Acknowledge The Blind Structure Warnings First')
+              : 'Save'}
             className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 ${saved ? 'bg-[#31A24C] text-white' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'
               } disabled:opacity-50`}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
               saved ? <Check className="w-4 h-4" /> :
-                <Save className="w-4 h-4" />}
+                saveBlocked ? <AlertTriangle className="w-4 h-4" /> :
+                  <Save className="w-4 h-4" />}
             {saved ? 'Saved' : 'Save'}
           </button>
         </div>
@@ -453,6 +749,40 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               <tab.icon className="w-4 h-4" /> {tab.label}
             </button>
           ))}
+        </div>
+
+        {/* Saved Templates toolbar */}
+        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-2 flex items-center gap-2 flex-wrap">
+          <button onClick={openTemplatePicker}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#3A3B3C] text-[#E4E6EB] active:bg-[#4A4B4C]">
+            {showTemplatePicker ? 'Hide Templates' : 'Load Template'}
+          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)}
+              placeholder="Template Name"
+              className="px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-xs text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none w-40 placeholder-[#6A6B6D]" />
+            <button onClick={saveAsTemplate} disabled={templateBusy || !templateName.trim()}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1877F2] text-white disabled:opacity-50">
+              {templateBusy ? 'Saving...' : 'Save As Template'}
+            </button>
+          </div>
+          {showTemplatePicker && (
+            <div className="w-full mt-2 border-t border-[#3A3B3C] pt-2">
+              {templates.length === 0 ? (
+                <p className="text-xs text-[#64748B]">No Saved Templates For This Venue Yet.</p>
+              ) : (
+                <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  {templates.map(tpl => (
+                    <button key={tpl.id} onClick={() => loadSavedTemplate(tpl)}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0D192E] hover:bg-[#132240] text-left">
+                      <span className="text-sm text-[#E4E6EB]">{tpl.name}</span>
+                      <span className="text-[10px] text-[#64748B]">{parseBlinds(tpl.blind_structure).filter(l => !l.is_break).length} Levels</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -482,6 +812,72 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 </div>
               </div>
 
+              {/* ===== VALIDATION PANEL =====
+                  Errors block the save outright. Warnings are shown and can be
+                  acknowledged, because a turbo with 8-minute levels or a deep
+                  stack with 90-minute levels is a real structure, not a typo. */}
+              {structureErrorList.length > 0 && (
+                <div className="bg-[#EF4444]/10 border border-[#EF4444]/40 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-[#EF4444]" />
+                    <p className="text-sm font-semibold text-[#EF4444]">
+                      {structureErrorList.length.toLocaleString()} Structure Error{structureErrorList.length === 1 ? '' : 's'}, Saving Is Blocked
+                    </p>
+                  </div>
+                  <ul className="space-y-1">
+                    {structureErrorList.map((e, i) => (
+                      <li key={`err-${i}`} className="text-xs text-[#E4E6EB] flex gap-2">
+                        <span className="text-[#EF4444] font-mono flex-shrink-0">
+                          {e.level_index == null ? '--' : `#${e.level_index + 1}`}
+                        </span>
+                        <span>{e.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {structureWarningList.length > 0 && (
+                <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/40 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
+                    <p className="text-sm font-semibold text-[#F59E0B]">
+                      {structureWarningList.length.toLocaleString()} Warning{structureWarningList.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <ul className="space-y-1 mb-3">
+                    {structureWarningList.map((w, i) => (
+                      <li key={`warn-${i}`} className="text-xs text-[#E4E6EB] flex gap-2">
+                        <span className="text-[#F59E0B] font-mono flex-shrink-0">
+                          {w.level_index == null ? '--' : `#${w.level_index + 1}`}
+                        </span>
+                        <span>{w.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => setAckedWarnings(warningsAcknowledged ? '' : warningSignature)}
+                    className={`w-full min-h-[44px] rounded-lg text-sm font-semibold flex items-center justify-center gap-2 ${warningsAcknowledged
+                      ? 'bg-[#31A24C]/20 text-[#31A24C] border border-[#31A24C]/40'
+                      : 'bg-[#F59E0B] text-[#18191A]'}`}>
+                    {warningsAcknowledged ? <ShieldCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                    {warningsAcknowledged ? 'Warnings Acknowledged' : 'Acknowledge Warnings And Allow Saving'}
+                  </button>
+                </div>
+              )}
+
+              {structureErrorList.length === 0 && structureWarningList.length === 0 && levels.length > 0 && (
+                <div className="bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#31A24C]" />
+                  <p className="text-xs text-[#31A24C] font-medium">
+                    Structure Checks Passed, {structureCheck.summary.playing_levels.toLocaleString()} Level{structureCheck.summary.playing_levels === 1 ? '' : 's'}
+                    {structureCheck.summary.first_break_after != null
+                      ? `, First Break After Level ${structureCheck.summary.first_break_after.toLocaleString()}`
+                      : ''}
+                  </p>
+                </div>
+              )}
+
               {/* Templates */}
               <div>
                 <p className="text-xs text-[#B0B3B8] mb-2 uppercase tracking-wider">Load Template</p>
@@ -504,13 +900,19 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
                 {levels.map((level, i) => {
                   const levelNum = levels.slice(0, i + 1).filter(l => !l.is_break).length;
+                  // Inline highlight so the TD sees WHICH row is wrong without
+                  // matching a message list against the table by eye.
+                  const sev = rowSeverity[i];
+                  const rowBorder = sev === 'error'
+                    ? 'border-[#EF4444]'
+                    : sev === 'warning' ? 'border-[#F59E0B]' : null;
 
                   if (level.is_break) {
                     return (
-                      <div key={i} className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                      <div key={i} className={`bg-[#F59E0B]/10 border ${rowBorder || 'border-[#F59E0B]/30'} rounded-lg px-3 py-2 flex items-center gap-2`}>
                         <Coffee className="w-4 h-4 text-[#F59E0B]" />
-                        <span className="text-sm font-medium text-[#F59E0B] flex-1">BREAK</span>
-                        <input type="number" value={level.duration}
+                        <span className="text-sm font-medium text-[#F59E0B] flex-1">{level.label ? level.label.toUpperCase() : 'BREAK'}</span>
+                        <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
                           onChange={e => updateLevel(i, 'duration', e.target.value)}
                           className="w-14 px-2 py-1 bg-[#3A3B3C] rounded text-center text-sm text-white"
                         />
@@ -523,7 +925,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   }
 
                   return (
-                    <div key={i} className="grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 items-center bg-[#242526] border border-[#3A3B3C] rounded-lg px-2 py-1.5">
+                    <div key={i} className={`grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 items-center bg-[#242526] border ${rowBorder || 'border-[#3A3B3C]'} rounded-lg px-2 py-1.5`}>
                       <span className="text-xs text-[#B0B3B8] font-mono">{levelNum}</span>
                       <input type="number" value={level.small_blind}
                         onChange={e => updateLevel(i, 'small_blind', e.target.value)}
@@ -534,7 +936,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                       <input type="number" value={level.ante}
                         onChange={e => updateLevel(i, 'ante', e.target.value)}
                         className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
-                      <input type="number" value={level.duration}
+                      <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
                         onChange={e => updateLevel(i, 'duration', e.target.value)}
                         className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
                       <div className="flex flex-col">
@@ -574,19 +976,92 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Type */}
               <div>
                 <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Tournament Type</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {['freezeout', 'rebuy', 'bounty', 'satellite'].map(type => (
-                    <button key={type} onClick={() => setTournamentType(type)}
-                      className={`py-2.5 rounded-lg text-sm font-medium capitalize ${tournamentType === type ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
-                        }`}>{type}</button>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'freezeout', label: 'Freezeout' },
+                    { key: 'rebuy', label: 'Rebuy' },
+                    { key: 'bounty', label: 'Bounty' },
+                    { key: 'pko', label: 'PKO' },
+                    { key: 'satellite', label: 'Satellite' },
+                    { key: 'turbo', label: 'Turbo' },
+                  ].map(type => (
+                    <button key={type.key} onClick={() => setTournamentType(type.key)}
+                      className={`h-11 rounded-lg text-sm font-medium ${tournamentType === type.key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                        }`}>{type.label}</button>
                   ))}
                 </div>
               </div>
 
+              {/* Payout Rounding */}
+              <div>
+                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Round Payouts To</label>
+                <p className="text-[10px] text-[#64748B] mb-2">
+                  Every Place Is Floored To This Denomination And The Remainder Goes To 1st Place, So The Total Still Equals The Prize Pool
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { value: 1, label: 'Exact' },
+                    { value: 5, label: '$5' },
+                    { value: 25, label: '$25' },
+                    { value: 100, label: '$100' },
+                  ].map(d => (
+                    <button key={d.value} onClick={() => setPayoutDenomination(d.value)}
+                      className={`h-11 rounded-lg text-sm font-medium ${Number(payoutDenomination) === d.value ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                        }`}>{d.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bounty / PKO */}
+              {['bounty', 'pko'].includes(tournamentType) && (
+                <div>
+                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">
+                    {tournamentType === 'pko' ? 'Starting Bounty' : 'Bounty Per Knockout'}
+                  </label>
+                  <p className="text-[10px] text-[#64748B] mb-2">
+                    Taken Out Of The Buy-In, Not Added On Top. A ${Number(buyinAmount || 0).toLocaleString()} Buy-In
+                    With A ${Number(bountyAmount || 0).toLocaleString()} Bounty Puts
+                    ${Math.max(0, Number(buyinAmount || 0) - Number(bountyAmount || 0)).toLocaleString()} Into The Prize Pool.
+                    {tournamentType === 'pko'
+                      ? ' On A Knockout The Eliminator Takes Half In Cash And Adds Half To Their Own Bounty.'
+                      : ' Every Knockout Pays This Amount In Cash.'}
+                  </p>
+                  <input type="number" inputMode="numeric" value={bountyAmount}
+                    onChange={e => setBountyAmount(e.target.value)}
+                    placeholder={tournamentType === 'pko' ? String(Math.floor(Number(buyinAmount || 0) / 2)) : '25'}
+                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                </div>
+              )}
+
+              {/* Satellite */}
+              {tournamentType === 'satellite' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Seat Value</label>
+                    <p className="text-[10px] text-[#64748B] mb-2">
+                      What One Seat Is Worth. Leave At 0 To Pay A Normal Cash Ladder Instead Of Seats.
+                    </p>
+                    <input type="number" inputMode="numeric" value={seatValue}
+                      onChange={e => setSeatValue(e.target.value)} placeholder="500"
+                      className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Seats Awarded</label>
+                    <p className="text-[10px] text-[#64748B] mb-2">
+                      Leave Blank To Award As Many Seats As The Prize Pool Funds. Any Money Left Over Is Paid To The
+                      Next Finisher As A Cash Bubble Prize.
+                    </p>
+                    <input type="number" inputMode="numeric" value={seatsAwarded}
+                      onChange={e => setSeatsAwarded(e.target.value)} placeholder="Auto"
+                      className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                  </div>
+                </div>
+              )}
+
               {/* Clock Color */}
               <div>
                 <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Clock Color</label>
-                <p className="text-[10px] text-[#64748B] mb-2">Assign a unique color to distinguish this tournament's clock display</p>
+                <p className="text-[10px] text-[#64748B] mb-2">Assign A Unique Color To Distinguish This Tournament's Clock Display</p>
                 <div className="grid grid-cols-6 gap-2">
                   {[
                     { key: 'navy', label: 'Navy', from: '#2C3E6B', to: '#1E2D52' },
@@ -604,6 +1079,29 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Season Leaderboard */}
+              <div>
+                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Season Leaderboard</label>
+                <p className="text-[10px] text-[#64748B] mb-2">
+                  Points Are Awarded When This Tournament Is Finalized. Leave On Automatic To Score
+                  Into Whichever Season Is Active At The Time.
+                </p>
+                <select value={leaderboardId} onChange={e => setLeaderboardId(e.target.value)}
+                  className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none">
+                  <option value="">Automatic (Venue's Active Season)</option>
+                  {leaderboards.map(lb => (
+                    <option key={lb.id} value={lb.id}>
+                      {lb.name}{lb.is_active ? ' (Active)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {leaderboards.length === 0 && (
+                  <p className="text-[10px] text-[#F59E0B] mt-1">
+                    No Seasons Exist Yet. Create One At Commander, Tournament Leaderboards.
+                  </p>
+                )}
               </div>
 
               {/* Buy-in */}
@@ -628,7 +1126,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Late Reg (levels)</label>
+                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Late Reg (Levels)</label>
                   <input type="number" value={lateRegLevels} onChange={e => setLateRegLevels(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
                 </div>
@@ -737,51 +1235,70 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 </div>
                 <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
                   <p className="text-xs text-[#B0B3B8]">Paid Places</p>
-                  <p className="text-lg font-bold text-white">{payouts.length}</p>
+                  <p className="text-lg font-bold text-white">{payoutRows.length}</p>
                 </div>
               </div>
 
-              {/* Payout structure selector */}
+              {/* Generate from preset */}
               <div>
-                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Payout Structure</p>
+                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Generate From Preset</p>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(PAYOUT_STRUCTURES || {}).map(([key, struct]) => (
-                    <button key={key} onClick={() => setPayoutStructure(key)}
+                    <button key={key} onClick={() => genPayoutsFromPreset(key)}
                       className={`py-2.5 rounded-lg text-xs font-medium ${payoutStructure === key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
                         }`}>{struct.name.split('(')[0].trim()}</button>
                   ))}
                 </div>
+                <p className="text-[10px] text-[#64748B] mt-2">Presets Seed The Table Below From Your Estimated Entries. Every Place And Percentage Stays Editable Afterwards.</p>
               </div>
 
-              {/* Payout table */}
+              {/* Total allocation validation */}
+              <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg border ${payoutSumOk
+                ? 'bg-[#31A24C]/10 border-[#31A24C]/30'
+                : 'bg-[#EF4444]/10 border-[#EF4444]/30'}`}>
+                <span className="text-xs text-[#B0B3B8] uppercase tracking-wider">Total Allocation</span>
+                <span className={`text-sm font-bold ${payoutSumOk ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>
+                  {payoutSum.toFixed(2)}%{payoutSumOk ? '' : ', Must Total 100%'}
+                </span>
+              </div>
+
+              {/* Editable payout table */}
               <div className="space-y-1">
-                {payouts.map(p => (
-                  <div key={p.place}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg ${p.place === 1 ? 'bg-[#F59E0B]/10 border border-[#F59E0B]/30' :
+                <div className="grid grid-cols-[52px_1fr_1fr_40px] gap-2 px-2 text-[10px] text-[#B0B3B8] uppercase tracking-wider">
+                  <span>Place</span><span>Percent</span><span className="text-right">Payout</span><span></span>
+                </div>
+                {payoutRows.map((p, i) => (
+                  <div key={i}
+                    className={`grid grid-cols-[52px_1fr_1fr_40px] gap-2 items-center px-2 py-1.5 rounded-lg ${p.place === 1 ? 'bg-[#F59E0B]/10 border border-[#F59E0B]/30' :
                       p.place === 2 ? 'bg-white/5 border border-white/10' :
                         p.place === 3 ? 'bg-[#B87333]/10 border border-[#B87333]/30' :
                           'bg-[#242526] border border-[#3A3B3C]'
                       }`}>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${p.place === 1 ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
-                      p.place === 2 ? 'bg-white/10 text-white' :
-                        p.place === 3 ? 'bg-[#B87333]/20 text-[#B87333]' :
-                          'bg-[#3A3B3C] text-[#B0B3B8]'
-                      }`}>{p.place}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">{p.place === 1 ? '1st Place' : p.place === 2 ? '2nd Place' : p.place === 3 ? '3rd Place' : `${p.place}th Place`}</p>
-                      <p className="text-[10px] text-[#B0B3B8]">{p.percentage}%</p>
+                    <span className="text-sm font-bold text-white pl-1">{p.place}</span>
+                    <div className="flex items-center gap-1">
+                      <input type="number" step="0.01" min="0" value={p.pct}
+                        onChange={e => updatePayoutPct(i, e.target.value)}
+                        className="w-20 px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
+                      <span className="text-xs text-[#B0B3B8]">%</span>
                     </div>
-                    <span className="text-lg font-bold text-[#31A24C]">${p.amount.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-[#31A24C] text-right">${p.amount.toLocaleString()}</span>
+                    <button onClick={() => removePayoutPlace(i)} className="p-1 justify-self-end"><Trash2 className="w-3.5 h-3.5 text-[#EF4444]" /></button>
                   </div>
                 ))}
               </div>
+
+              {/* Add place */}
+              <button onClick={addPayoutPlace}
+                className="w-full py-3 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1877F2]/20">
+                <Plus className="w-4 h-4" /> Add Place
+              </button>
 
               {/* Guarantee check */}
               {guaranteedPool && totalPool < parseInt(guaranteedPool) && (
                 <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-4">
                   <p className="text-sm text-[#EF4444] font-medium">
-                    Pool (${totalPool.toLocaleString()}) is below guarantee (${parseInt(guaranteedPool).toLocaleString()}).
-                    House covers ${(parseInt(guaranteedPool) - totalPool).toLocaleString()} overlay.
+                    Pool (${totalPool.toLocaleString()}) Is Below Guarantee (${parseInt(guaranteedPool).toLocaleString()}).
+                    House Covers ${(parseInt(guaranteedPool) - totalPool).toLocaleString()} Overlay.
                   </p>
                 </div>
               )}

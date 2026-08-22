@@ -1,5 +1,5 @@
 /**
- * apiRateLimit.js — Commander-local override (2026-07-26 audit follow-up).
+ * apiRateLimit.js - Commander-local override (2026-07-26 audit follow-up).
  *
  * This file previously re-exported the shared package verbatim. It now owns a
  * corrected implementation, following the same local-override pattern already
@@ -9,7 +9,7 @@
  * THE BUG THIS FIXES
  * ------------------
  * The shared implementation derived rate-limit identity from
- * `authorization.slice(7, 39)` — "the first 32 characters of the JWT". Every
+ * `authorization.slice(7, 39)` - "the first 32 characters of the JWT". Every
  * Supabase HS256 token begins with the SAME base64url-encoded header
  * (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9), so those 32 characters are a
  * constant. Every authenticated user therefore shared ONE bucket per endpoint:
@@ -24,7 +24,7 @@
  * 2026-07-28 audit fix: the staff-session branch of getIdentifier trusted the
  * raw x-staff-session JSON. On an unauthenticated route nothing validates that
  * header, so an attacker could send a fresh {"id":"<random>"} on every request
- * and mint a brand-new bucket each time — unlimited requests. The signature is
+ * and mint a brand-new bucket each time - unlimited requests. The signature is
  * now verified before the session is allowed to name its own bucket.
  */
 import crypto from 'crypto';
@@ -87,7 +87,7 @@ function hashToken(token) {
  *
  * getIdentifier is SYNCHRONOUS (it runs on every request, before any await), so
  * this cannot call the async verifyStaffSession. Instead it recomputes the HMAC
- * through signStaffSession — the same helper that issues sessions — which keeps
+ * through signStaffSession - the same helper that issues sessions - which keeps
  * the canonical-string construction and secret resolution in exactly one place
  * (src/lib/commander/auth.js) rather than duplicating them here.
  */
@@ -98,7 +98,7 @@ function staffSessionIsAuthentic(parsed) {
     const expected = signStaffSession(parsed).sig;
     const a = Buffer.from(String(parsed.sig), 'utf8');
     const b = Buffer.from(String(expected), 'utf8');
-    // timingSafeEqual throws on unequal-length buffers — check length first.
+    // timingSafeEqual throws on unequal-length buffers - check length first.
     return a.length === b.length && crypto.timingSafeEqual(a, b);
   } catch {
     return false;

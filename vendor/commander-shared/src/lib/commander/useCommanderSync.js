@@ -1,5 +1,5 @@
 /**
- * useCommanderSync — Entity-Aware Two-Layer Real-Time Sync for Commander
+ * useCommanderSync - Entity-Aware Two-Layer Real-Time Sync for Commander
  * ═══════════════════════════════════════════════════════════════════
  *
  * Layer 1: BroadcastChannel (instant, same browser, zero cost)
@@ -8,24 +8,24 @@
  *   Self-tab broadcasts are suppressed via tab ID.
  *
  * Layer 2: Supabase Realtime (cross-device, ~1s)
- *   Uses a SINGLETON channel manager — one Supabase channel per venue
+ *   Uses a SINGLETON channel manager - one Supabase channel per venue
  *   shared across all hook instances in the same tab. Automatically
  *   expands the table subscription set when new subscribers need
  *   additional tables.
  *
  * Hardening Features:
- *   ✓ Entity-aware filtering — only refetch when YOUR entities change
- *   ✓ Singleton channel — one channel per venue per tab (no duplicates)
- *   ✓ Selective subscriptions — pages only listen to tables they need
- *   ✓ Tab visibility awareness — skips refetch when hidden, catches up on focus
- *   ✓ Online/offline resilience — refetches when network comes back
- *   ✓ Self-tab suppression — won't refetch from your own broadcasts
- *   ✓ Per-instance throttle — prevents refetch storms (max 1 per 500ms)
- *   ✓ Supabase reconnect — retries on channel failure (exponential backoff)
- *   ✓ Stale closure prevention — uses refs for callbacks
- *   ✓ SSR-safe — all browser APIs guarded
- *   ✓ setTimeout leak prevention — pending timers cleaned on unmount
- *   ✓ Full entity coverage — 12 Supabase tables with entity mapping
+ *   ✓ Entity-aware filtering - only refetch when YOUR entities change
+ *   ✓ Singleton channel - one channel per venue per tab (no duplicates)
+ *   ✓ Selective subscriptions - pages only listen to tables they need
+ *   ✓ Tab visibility awareness - skips refetch when hidden, catches up on focus
+ *   ✓ Online/offline resilience - refetches when network comes back
+ *   ✓ Self-tab suppression - won't refetch from your own broadcasts
+ *   ✓ Per-instance throttle - prevents refetch storms (max 1 per 500ms)
+ *   ✓ Supabase reconnect - retries on channel failure (exponential backoff)
+ *   ✓ Stale closure prevention - uses refs for callbacks
+ *   ✓ SSR-safe - all browser APIs guarded
+ *   ✓ setTimeout leak prevention - pending timers cleaned on unmount
+ *   ✓ Full entity coverage - 12 Supabase tables with entity mapping
  *
  * Usage:
  *   // Subscribe to ALL entities (backward compatible):
@@ -34,22 +34,32 @@
  *   // Subscribe to SPECIFIC entities only (selective subscription):
  *   useCommanderSync(venueId, fetchData, { entities: ['tables', 'games'] });
  *
- *   // Writer side — broadcast after mutation:
+ *   // Writer side - broadcast after mutation:
  *   import { broadcastChange } from '@/lib/commander/useCommanderSync';
  *   await fetch('/api/...');
  *   broadcastChange('tables');
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { broadcastSync, listenBroadcast } from '../broadcastSync';
+import useAdaptivePoll from '../../hooks/useAdaptivePoll';
 
 // ─── Constants ─────────────────────────────────────────────────
 const CHANNEL_NAME = 'commander-sync';
 const THROTTLE_MS = 500;       // Max 1 refetch per 500ms per hook instance
 const RECONNECT_DELAY = 3000;      // Base retry delay on Supabase channel failure
-const MAX_RECONNECT_DELAY = 60000; // Backoff ceiling — retries continue indefinitely
+const MAX_RECONNECT_DELAY = 60000; // Backoff ceiling - retries continue indefinitely
 
-// Unique ID for this tab — used to suppress self-broadcasts
+// ─── Adaptive fallback poll defaults (2026-08-20) ──────────────
+// Screens used to run their own fixed setInterval next to this hook. Pass
+// opts.poll and the hook owns the fallback instead, backing off only while
+// the venue channel is SUBSCRIBED and has actually delivered an event inside
+// the trust window. Anything less certain polls at the old fixed rate.
+const POLL_FAST_MS = 30000;
+const POLL_LIVE_MS = 300000;
+const EVENT_TRUST_MS = 600000;
+
+// Unique ID for this tab - used to suppress self-broadcasts
 const TAB_ID = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `tab_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -60,7 +70,7 @@ const TABLE_TO_ENTITY = {
     commander_games: 'games',
     commander_waitlist: 'waitlist',
     commander_floor_calls: 'floor_calls',
-    // commander_seats excluded — lacks venue_id column (changes propagate via commander_games/commander_tables)
+    // commander_seats excluded - lacks venue_id column (changes propagate via commander_games/commander_tables)
     // 2026-07-28 fix: this key was `commander_settings`, a table that has never
     // existed in the database (to_regclass('public.commander_settings') is NULL).
     // The Realtime binding therefore targeted a nonexistent relation: settings
@@ -77,7 +87,7 @@ const TABLE_TO_ENTITY = {
     commander_dealer_rotations: 'dealers',     // Rotation changes affect dealer views
     commander_table_sessions: 'tables',        // Session changes affect table views
     commander_tournaments: 'tournaments',
-    // commander_tournament_entries excluded — lacks venue_id column (changes propagate via commander_tournaments)
+    // commander_tournament_entries excluded - lacks venue_id column (changes propagate via commander_tournaments)
     commander_incidents: 'incidents',
     commander_notifications: 'notifications',
     commander_club_announcements: 'announcements',
@@ -105,7 +115,7 @@ const ENTITY_TO_TABLES = {
     notifications: ['commander_notifications'],
     announcements: ['commander_club_announcements'],
     streaming: ['commander_streams'],              // Realtime not yet enabled
-    // 'marketplace' — no dedicated Supabase table, BroadcastChannel only
+    // 'marketplace' - no dedicated Supabase table, BroadcastChannel only
 };
 
 // All Supabase tables (used when no entity filter is specified)
@@ -131,14 +141,21 @@ const channelManager = {
         if (!client) return;
 
         if (!this.venues[key]) {
-            // First subscriber for this venue — create the entry
+            // First subscriber for this venue - create the entry
             this.venues[key] = {
                 channel: null,
                 subscribers: new Set(),
+                // Watchers are notified on connection-state changes only, so a
+                // screen can render Live vs Reconnecting without re-fetching.
+                watchers: new Set(),
                 tables: new Set(tables),
                 reconnects: 0,
                 reconnectTimer: null,
                 status: null,
+                // Epoch ms of the last postgres_changes event actually
+                // delivered on this venue's channel. Zero means the channel
+                // has never proved itself, which keeps the fallback poll fast.
+                lastEventAt: 0,
             };
             this.venues[key].subscribers.add(callback);
             this._connect(key);
@@ -168,8 +185,8 @@ const channelManager = {
 
         entry.subscribers.delete(callback);
 
-        if (entry.subscribers.size === 0) {
-            // Last subscriber gone — tear down the channel and clear reconnect timer
+        if (entry.subscribers.size === 0 && entry.watchers.size === 0) {
+            // Last subscriber gone - tear down the channel and clear reconnect timer
             if (entry.reconnectTimer) {
                 clearTimeout(entry.reconnectTimer);
                 entry.reconnectTimer = null;
@@ -177,6 +194,63 @@ const channelManager = {
             this._disconnect(key);
             delete this.venues[key];
         }
+    },
+
+    /**
+     * Register a connection-state watcher. Called with
+     * { status, lastEventAt } whenever the venue channel changes state.
+     * Watchers never trigger a refetch, they only drive the Live indicator.
+     * @param {string|number} venueId
+     * @param {function} watcher
+     */
+    watch(venueId, watcher) {
+        const key = String(venueId);
+        const entry = this.venues[key];
+        if (!entry) return;
+        entry.watchers.add(watcher);
+        try { watcher(this.getState(venueId)); } catch { /* ignore */ }
+    },
+
+    /**
+     * Remove a connection-state watcher, tearing the channel down if this was
+     * the last thing holding it open.
+     * @param {string|number} venueId
+     * @param {function} watcher
+     */
+    unwatch(venueId, watcher) {
+        const key = String(venueId);
+        const entry = this.venues[key];
+        if (!entry) return;
+        entry.watchers.delete(watcher);
+        if (entry.subscribers.size === 0 && entry.watchers.size === 0) {
+            if (entry.reconnectTimer) {
+                clearTimeout(entry.reconnectTimer);
+                entry.reconnectTimer = null;
+            }
+            this._disconnect(key);
+            delete this.venues[key];
+        }
+    },
+
+    /**
+     * Current connection state for a venue.
+     * @param {string|number} venueId
+     * @returns {{ status: string|null, lastEventAt: number }}
+     */
+    getState(venueId) {
+        const entry = this.venues[String(venueId)];
+        if (!entry) return { status: null, lastEventAt: 0 };
+        return { status: entry.status, lastEventAt: entry.lastEventAt };
+    },
+
+    /** @private Tell every watcher the connection state moved */
+    _notifyWatchers(venueKey) {
+        const entry = this.venues[venueKey];
+        if (!entry) return;
+        const state = { status: entry.status, lastEventAt: entry.lastEventAt };
+        entry.watchers.forEach(w => {
+            try { w(state); } catch { /* watcher error must not break others */ }
+        });
     },
 
     /**
@@ -189,13 +263,13 @@ const channelManager = {
     ensureHealthy(venueId) {
         const key = String(venueId);
         const entry = this.venues[key];
-        if (!entry || entry.subscribers.size === 0) return;
+        if (!entry || (entry.subscribers.size === 0 && entry.watchers.size === 0)) return;
         if (entry.status === 'SUBSCRIBED') return;
         if (entry.reconnectTimer) {
             clearTimeout(entry.reconnectTimer);
             entry.reconnectTimer = null;
         }
-        entry.reconnects = 0; // fresh start — this is a user-driven revival
+        entry.reconnects = 0; // fresh start - this is a user-driven revival
         this._connect(key);
     },
 
@@ -225,11 +299,14 @@ const channelManager = {
                     filter: `venue_id=eq.${venueKey}`,
                 },
                 () => {
-                    // Map Supabase table name → entity name
+                    // An event arriving proves this channel is delivering end
+                    // to end, which is what lets the fallback poll back off.
+                    entry.lastEventAt = Date.now();
+                    // Map Supabase table name to entity name
                     const entity = TABLE_TO_ENTITY[table] || table;
                     // Notify ALL subscribers (each does its own entity filtering)
                     entry.subscribers.forEach(cb => {
-                        try { cb(entity); } catch { /* subscriber error — don't break others */ }
+                        try { cb(entity); } catch { /* subscriber error - don't break others */ }
                     });
                 }
             );
@@ -239,11 +316,17 @@ const channelManager = {
             entry.status = status;
             if (status === 'SUBSCRIBED') {
                 entry.reconnects = 0;
+                this._notifyWatchers(venueKey);
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                // A dead channel is an unproven channel: drop the trust so any
+                // adaptive poll attached to this venue returns to its fast tier
+                // on the next supervisor tick.
+                entry.lastEventAt = 0;
+                this._notifyWatchers(venueKey);
                 // 2026-07-27 audit fix: this previously stopped retrying after 5
                 // attempts (~45s) and never resumed, because `reconnects` only
                 // reset on a successful SUBSCRIBE. Any outage longer than that
-                // silently killed realtime for the whole venue in that tab —
+                // silently killed realtime for the whole venue in that tab -
                 // every Commander screen stopped updating until a manual reload,
                 // and FloorCallAlert (which has no polling fallback) stopped
                 // announcing floor calls entirely.
@@ -322,23 +405,48 @@ export function broadcastChange(entity) {
  * @param {object} [opts] - Options
  * @param {string[]} [opts.entities] - Entity types to listen for (selective subscription)
  * @param {string[]} [opts.tables] - Override Supabase tables to subscribe to (advanced)
+ * @param {boolean|object} [opts.poll] - Own the screen's fallback poll here
+ *        instead of a fixed setInterval on the page. Pass true for the
+ *        defaults, or { fastMs, slowMs, trustMs } to tune it. fastMs must be
+ *        whatever the page polled at before, so a channel that is not proven
+ *        live is never slower than it is today.
+ * @returns {{ status: string, isLive: boolean, isReconnecting: boolean, lastEventAt: number }}
  */
 export function useCommanderSync(venueId, onRefetch, opts = {}) {
     const refetchRef = useRef(onRefetch);
     refetchRef.current = onRefetch;
 
-    const lastRefetchRef = useRef(0);
+    // Seeded with mount time: every screen fetches once on mount outside this
+    // hook, so counting mount as a refresh stops the adaptive poll firing a
+    // duplicate the instant the page opens.
+    const lastRefetchRef = useRef(Date.now());
     const pendingWhileHiddenRef = useRef(false);
     const pendingTimerRef = useRef(null);
 
-    // Entity filter — if provided, only refetch when matching entity changes
+    // ── Connection state (drives the Live / Reconnecting indicator) ──
+    const pollOpts = opts.poll && typeof opts.poll === 'object' ? opts.poll : {};
+    const pollEnabled = !!opts.poll;
+    const fastMs = Number(pollOpts.fastMs) > 0 ? Number(pollOpts.fastMs) : POLL_FAST_MS;
+    const slowMs = Number(pollOpts.slowMs) > 0 ? Number(pollOpts.slowMs) : POLL_LIVE_MS;
+    const trustMs = Number(pollOpts.trustMs) > 0 ? Number(pollOpts.trustMs) : EVENT_TRUST_MS;
+
+    const [channelStatus, setChannelStatus] = useState(null);
+    const channelStatusRef = useRef(null);
+    const lastEventAtRef = useRef(0);
+
+    const pollNow = useCallback(() => {
+        lastRefetchRef.current = Date.now();
+        refetchRef.current?.();
+    }, []);
+
+    // Entity filter - if provided, only refetch when matching entity changes
     const entitiesRef = useRef(opts.entities || null);
     entitiesRef.current = opts.entities || null;
 
     // ── Throttled refetch ───────────────────────────────────────
     const throttledRefetchRef = useRef(null);
     throttledRefetchRef.current = (entity) => {
-        // Entity filtering — skip if this hook doesn't care about this entity
+        // Entity filtering - skip if this hook doesn't care about this entity
         if (entitiesRef.current && entity && !entitiesRef.current.includes(entity)) {
             return;
         }
@@ -378,7 +486,7 @@ export function useCommanderSync(venueId, onRefetch, opts = {}) {
         const cleanup = listenBroadcast(CHANNEL_NAME, (msg) => {
             if (msg?.type !== 'data-changed') return;
 
-            // Suppress self-tab broadcasts — this tab already has fresh data
+            // Suppress self-tab broadcasts - this tab already has fresh data
             if (msg.tabId === TAB_ID) return;
 
             // Guard against stale messages (older than 10s)
@@ -417,7 +525,7 @@ export function useCommanderSync(venueId, onRefetch, opts = {}) {
         };
 
         const handleOnline = () => {
-            // Network came back — revive the channel, then refetch to catch up
+            // Network came back - revive the channel, then refetch to catch up
             if (venueId) channelManager.ensureHealthy(venueId);
             lastRefetchRef.current = Date.now();
             refetchRef.current?.();
@@ -441,10 +549,57 @@ export function useCommanderSync(venueId, onRefetch, opts = {}) {
 
         channelManager.subscribe(venueId, neededTables, stableCallbackRef.current);
 
+        // Watch the shared channel's connection state. Registered AFTER
+        // subscribe so the entry exists, and torn down before unsubscribe so
+        // the channel is only released once nothing is holding it.
+        const watcher = (state) => {
+            channelStatusRef.current = state.status;
+            lastEventAtRef.current = state.lastEventAt || 0;
+            setChannelStatus(state.status);
+        };
+        channelManager.watch(venueId, watcher);
+
         return () => {
+            channelManager.unwatch(venueId, watcher);
             channelManager.unsubscribe(venueId, stableCallbackRef.current);
+            channelStatusRef.current = null;
+            lastEventAtRef.current = 0;
         };
     }, [venueId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── Adaptive fallback poll (opt-in) ─────────────────────────
+    // Proven means: this venue's channel is SUBSCRIBED right now AND it has
+    // delivered an event inside the trust window. The manager zeroes
+    // lastEventAt the moment a channel errors, so a drop returns the poll to
+    // its fast tier on the next supervisor tick.
+    const pollProven = () => {
+        if (!venueId) return false;
+        const state = channelManager.getState(venueId);
+        return state.status === 'SUBSCRIBED' &&
+            state.lastEventAt > 0 &&
+            (Date.now() - state.lastEventAt) < trustMs;
+    };
+
+    useAdaptivePoll({
+        enabled: pollEnabled && !!venueId,
+        // Tick at a quarter of the fast interval so the effective worst case
+        // stays close to the fixed interval this replaced (a 3s screen polls
+        // within 3.75s, not 4.5s).
+        checkMs: Math.max(500, Math.min(5000, Math.floor(fastMs / 4))),
+        getIntervalMs: () => (pollProven() ? slowMs : fastMs),
+        getLastFetchAt: () => lastRefetchRef.current,
+        onPoll: pollNow
+    });
+
+    const isLive = channelStatus === 'SUBSCRIBED';
+    return {
+        status: isLive ? 'live' : (channelStatus ? 'reconnecting' : 'connecting'),
+        isLive,
+        isReconnecting: !isLive,
+        // Read through the manager rather than the ref: watchers are only
+        // notified on state changes, so the ref lags between them.
+        lastEventAt: venueId ? channelManager.getState(venueId).lastEventAt : lastEventAtRef.current
+    };
 }
 
 export default useCommanderSync;

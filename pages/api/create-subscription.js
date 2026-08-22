@@ -5,7 +5,7 @@ import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { COMMANDER_FREE_MODE } from '../../src/lib/commander/tierConfig';
 import { reportApiError } from '../../src/lib/sentryWrap';
-// Note: No auth guard — this route is called during REGISTRATION before any session exists.
+// Note: No auth guard - this route is called during REGISTRATION before any session exists.
 // It creates the user account itself, so no pre-existing auth is possible.
 
 let _supabase = null;
@@ -23,7 +23,7 @@ function getSupabase() {
 // where Stripe is never used.
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-// 2026-07-25 audit fix: single trial-length constant — UI copy promises a
+// 2026-07-25 audit fix: single trial-length constant - UI copy promises a
 // 14-day trial but this file previously hardcoded 30 days in three places.
 const TRIAL_DAYS = 14;
 
@@ -42,7 +42,7 @@ const TIER_PRICES = {
   },
 };
 
-// Robust user lookup — tries multiple methods
+// Robust user lookup - tries multiple methods
 async function findUserByEmail(email) {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -140,6 +140,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid subscription tier' });
     }
 
+    let userId = null;
+    let venueId = null;
+    let createdUser = false;
+    let createdVenue = false;
+
+    const doRollback = async () => {
+      try {
+        if (createdVenue && venueId) {
+          console.warn('[Rollback] Deleting orphaned venue:', venueId);
+          await getSupabase().from('poker_venues').delete().eq('id', venueId);
+        }
+        if (createdUser && userId) {
+          console.warn('[Rollback] Deleting orphaned user:', userId);
+          await getSupabase().auth.admin.deleteUser(userId);
+        }
+      } catch (rollbackErr) {
+        console.error('[Rollback Failed]', rollbackErr);
+      }
+    };
+
     try {
       const email = ownerInfo.email?.toLowerCase().trim();
       if (!email) {
@@ -147,18 +167,27 @@ export default async function handler(req, res) {
       }
 
       // ─── Duplicate prevention: check if this email already has an active Commander subscription ──
-      const { data: existingEmailSub } = await getSupabase()
-        .from('commander_subscriptions')
-        .select('id, status, venue:poker_venues(name)')
-        .eq('billing_email', email)
-        .in('status', ['active', 'trialing'])
-        .limit(1);
+      // MULTI-CLUB (2026-08-19): this gate previously blocked ALL second
+      // venues, contradicting the additional-venue logic further down (free
+      // trial check + "additional venue" payment requirement). It now only
+      // applies to the NEW-ACCOUNT path. The existing-account path is
+      // authenticated below (valid Supabase session whose email must match),
+      // so a signed-in owner may legitimately add another club; pricing for
+      // the additional venue is enforced by the free-trial/payment logic.
+      if (!existingAccount) {
+        const { data: existingEmailSub } = await getSupabase()
+          .from('commander_subscriptions')
+          .select('id, status, venue:poker_venues(name)')
+          .eq('billing_email', email)
+          .in('status', ['active', 'trialing'])
+          .limit(1);
 
-      if (existingEmailSub && existingEmailSub.length > 0) {
-        const venueName = existingEmailSub[0].venue?.name || 'a venue';
-        return res.status(400).json({
-          error: `An active Club Commander account already exists for ${email} (${venueName}). Please sign in instead.`
-        });
+        if (existingEmailSub && existingEmailSub.length > 0) {
+          const venueName = existingEmailSub[0].venue?.name || 'a venue';
+          return res.status(400).json({
+            error: `An active Club Commander account already exists for ${email} (${venueName}). Please check "I already have a Smarter.Poker account" and sign in to add another venue.`
+          });
+        }
       }
 
       // ─── Duplicate prevention: check if a Commander venue already exists at this address ──
@@ -178,13 +207,13 @@ export default async function handler(req, res) {
         }
       }
 
-      let userId = null;
+
 
       if (existingAccount) {
         // ─── Path A: Existing account ──────────────────────────────────
         // 2026-07-25 audit fix (P1): this path previously linked a venue,
-        // subscription, and owner-staff role to ANY account by email — and
-        // overwrote that account's user_metadata — with zero authentication.
+        // subscription, and owner-staff role to ANY account by email - and
+        // overwrote that account's user_metadata - with zero authentication.
         // It now requires a valid Supabase session for that same account.
         const authHeader = req.headers.authorization || '';
         const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
@@ -217,13 +246,14 @@ export default async function handler(req, res) {
           });
         } catch (e) { console.warn('[create-subscription] Metadata update non-critical error:', e.message); }
       } else {
-        // ─── Path B: New account — create user ─────────────────────────
+        // ─── Path B: New account - create user ─────────────────────────
         const password = ownerInfo.password || ('Tmp' + require('crypto').randomBytes(12).toString('base64url') + 'X1!');
 
         const { data: authData, error: authError } = await getSupabase().auth.admin.createUser({
           email,
           password,
-          email_confirm: true,
+          email_confirm: false, // Wait for user to verify email
+          phone_confirm: true,  // Phone verified via Twilio in Step 1!
           user_metadata: {
             full_name: ownerInfo.name,
             phone: ownerInfo.phone,
@@ -233,11 +263,14 @@ export default async function handler(req, res) {
 
         if (!authError && authData?.user) {
           userId = authData.user.id;
+          createdUser = true;
+
+          // Defer email verification trigger until after Stripe payment succeeds (moved to end of file)
         } else if (authError?.message?.toLowerCase().includes('already') ||
           authError?.message?.toLowerCase().includes('exists') ||
           authError?.message?.toLowerCase().includes('registered')) {
           // 2026-07-25 audit fix (P1): do NOT silently link the existing
-          // account here — that let anyone claim a venue under a victim's
+          // account here - that let anyone claim a venue under a victim's
           // email by "registering" with it. Route them through the
           // authenticated existing-account path instead.
           return res.status(400).json({
@@ -254,7 +287,6 @@ export default async function handler(req, res) {
       }
 
       // ─── 2. Create or find the venue (handle optional address) ─────
-      let venueId;
       const venueAddress = clubInfo.address?.trim() || null;
       const venueCity = clubInfo.city?.trim() || null;
       const venueState = clubInfo.state?.trim() || null;
@@ -329,14 +361,17 @@ export default async function handler(req, res) {
 
         if (venueError) {
           console.warn('Venue creation error:', venueError);
+          await doRollback();
           return res.status(400).json({ error: 'Failed to create venue: ' + venueError.message });
         }
 
         if (!newVenue) {
+          await doRollback();
           return res.status(500).json({ error: 'Venue creation returned no data' });
         }
 
         venueId = newVenue.id;
+        createdVenue = true;
       }
 
       // ─── Free Trial Eligibility Check (Anti-Fraud) ───────────────────
@@ -362,6 +397,7 @@ export default async function handler(req, res) {
 
       if (requiresPaymentNow && hasRealStripeConfig) {
         if (!paymentMethodId) {
+           await doRollback();
            return res.status(400).json({ error: 'Free trial already used. A valid payment method is required to activate an additional venue.' });
         }
         
@@ -462,9 +498,11 @@ export default async function handler(req, res) {
 
         if (subError) {
           console.warn('Subscription creation error:', subError);
+          await doRollback();
           return res.status(500).json({ error: 'Failed to create subscription' });
         }
         if (!newSub) {
+          await doRollback();
           return res.status(500).json({ error: 'Subscription creation returned no data' });
         }
         subscriptionData = newSub;
@@ -570,6 +608,16 @@ export default async function handler(req, res) {
         });
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
+      // ─── 8. Trigger Supabase Email Verification (New Users Only) ─────
+      if (createdUser && email) {
+        try {
+          await getSupabase().auth.resend({ type: 'signup', email });
+          console.log(`[create-subscription] Sent verification email to ${email}`);
+        } catch (e) {
+          console.warn('[create-subscription] Failed to send verification email:', e.message);
+        }
+      }
+
       // ─── Done ────────────────────────────────────────────────────────
       return res.status(200).json({
         success: true,
@@ -583,6 +631,12 @@ export default async function handler(req, res) {
 
     } catch (error) {
       console.warn('Registration error:', error);
+      
+      // ─── ROLLBACK ORPHANED RECORDS ───
+      if (typeof doRollback === 'function') {
+        await doRollback();
+      }
+      
       return res.status(500).json({ error: error.message || 'Registration failed' });
     }
 

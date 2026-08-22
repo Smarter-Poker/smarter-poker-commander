@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  SEOHead — Reusable SEO Meta Tag Component
+ *  SEOHead - Reusable SEO Meta Tag Component
  * ═══════════════════════════════════════════════════════════════════════════════
  * Renders <title>, <meta description>, Open Graph, Twitter Card, canonical URL,
  * and optional JSON-LD structured data for any page on smarter.poker.
@@ -32,7 +32,7 @@ export default function SEOHead({
     twitterCard = 'summary_large_image',
     children,
 }) {
-    const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — The Future Of The Game`;
+    const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - The Future Of The Game`;
     const fullCanonical = canonical
         ? canonical.startsWith('http')
             ? canonical

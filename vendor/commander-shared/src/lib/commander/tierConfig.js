@@ -1,5 +1,5 @@
 /**
- * Commander Tier Configuration — Single Source of Truth
+ * Commander Tier Configuration - Single Source of Truth
  * ═══════════════════════════════════════════════════════
  * Defines features, nav permissions, and limits for each tier.
  * Used by both frontend (sidebar gating) and backend (API gating).
@@ -9,7 +9,7 @@
 // TEMPORARY PROMOTIONAL FLAG
 // All Commander tiers (Home Game, Charity, Club) are FREE while this
 // flag is true. Users still must go through the Commander sign-up /
-// activation flow to access Commander features — only billing is
+// activation flow to access Commander features - only billing is
 // waived. Flip this to `false` when pricing goes live; all pricing UI
 // and the server-side create-subscription endpoint will switch back to
 // the tier prices defined in TIERS below.
@@ -19,7 +19,7 @@ export const COMMANDER_FREE_TAGLINE = 'Free While In Beta';
 export const COMMANDER_FREE_SUBTEXT = 'No credit card required';
 
 /**
- * UI helper — returns the string to display for a tier's price.
+ * UI helper - returns the string to display for a tier's price.
  * Returns 'Free' for every tier while COMMANDER_FREE_MODE is true.
  */
 export function displayTierPrice(tier) {
@@ -29,7 +29,7 @@ export function displayTierPrice(tier) {
 }
 
 /**
- * UI helper — returns the period suffix (e.g. '/month') for a tier.
+ * UI helper - returns the period suffix (e.g. '/month') for a tier.
  * Returns empty string in free mode so UI shows just 'Free' without
  * an awkward '/month' after it.
  */
@@ -39,7 +39,7 @@ export function displayTierPeriod(tier) {
 }
 
 /**
- * UI helper — returns the trial-style tagline for a tier.
+ * UI helper - returns the trial-style tagline for a tier.
  * Replaces '14-Day Free Trial' messaging while in free mode.
  */
 export function displayTierTrialTagline() {
@@ -54,14 +54,15 @@ export const TIER_NAMES = {
 };
 
 /**
- * Normalize tier names — maps unknown/legacy tiers to valid ones.
+ * Normalize tier names - maps unknown/legacy tiers to valid ones.
  * 'enterprise' and any unrecognized tier get mapped to 'club' (highest).
  */
 export function normalizeTier(tier) {
     if (!tier) return TIER_NAMES.HOME_GAME;
-    if (TIERS[tier]) return tier;
+    const lower = tier.toLowerCase();
+    if (TIERS[lower]) return lower;
     // Enterprise, pro, premium, etc. → treat as club (highest tier)
-    if (tier === 'enterprise' || tier === 'pro' || tier === 'premium') return TIER_NAMES.CLUB;
+    if (lower === 'enterprise' || lower === 'pro' || lower === 'premium') return TIER_NAMES.CLUB;
     return TIER_NAMES.HOME_GAME; // unknown defaults to lowest
 }
 
@@ -77,7 +78,7 @@ export const TIERS = {
         maxStaff: 3,
         maxSmsPerMonth: 100,
         features: {
-            // Core — all tiers
+            // Core - all tiers
             club_page: true,
             waitlist: true,
             tournaments: true,
@@ -87,7 +88,7 @@ export const TIERS = {
             tables: true,
             qr_code: true,
             settings: true,
-            // Operations — charity + club only
+            // Operations - charity + club only
             floor_map: false,
             floor_calls: false,
             dealers: false,
@@ -103,7 +104,7 @@ export const TIERS = {
             close_day: false,
             member_import: false,
             advanced_analytics: false,
-            // Texas Revenue — club only
+            // Texas Revenue - club only
             paid_memberships: false,
             time_billing: false,
             membership_plans: false,
@@ -119,7 +120,7 @@ export const TIERS = {
         maxStaff: 10,
         maxSmsPerMonth: 500,
         features: {
-            // Core — all tiers
+            // Core - all tiers
             club_page: true,
             waitlist: true,
             tournaments: true,
@@ -129,7 +130,7 @@ export const TIERS = {
             tables: true,
             qr_code: true,
             settings: true,
-            // Operations — charity + club
+            // Operations - charity + club
             floor_map: true,
             floor_calls: true,
             dealers: true,
@@ -145,7 +146,7 @@ export const TIERS = {
             close_day: true,
             member_import: true,
             advanced_analytics: true,
-            // Texas Revenue — club only
+            // Texas Revenue - club only
             paid_memberships: false,
             time_billing: false,
             membership_plans: false,
@@ -161,7 +162,7 @@ export const TIERS = {
         maxStaff: 999,
         maxSmsPerMonth: 99999,
         features: {
-            // Core — all tiers
+            // Core - all tiers
             club_page: true,
             waitlist: true,
             tournaments: true,
@@ -171,7 +172,7 @@ export const TIERS = {
             tables: true,
             qr_code: true,
             settings: true,
-            // Operations — charity + club
+            // Operations - charity + club
             floor_map: true,
             floor_calls: true,
             dealers: true,
@@ -187,7 +188,7 @@ export const TIERS = {
             close_day: true,
             member_import: true,
             advanced_analytics: true,
-            // Texas Revenue — club only
+            // Texas Revenue - club only
             paid_memberships: true,
             time_billing: true,
             membership_plans: true,
@@ -333,8 +334,6 @@ export function getMinimumTier(featureKey) {
  * Get the upgrade target for a given tier
  */
 export function getUpgradeTier(currentTier) {
-    const normalized = normalizeTier(currentTier);
-    if (normalized === TIER_NAMES.HOME_GAME) return TIER_NAMES.CHARITY;
-    if (normalized === TIER_NAMES.CHARITY) return TIER_NAMES.CLUB;
-    return null; // Already on highest tier (club/enterprise)
+    // User requested that the upgrade prompt strictly suggests the plan matching their venue type
+    return normalizeTier(currentTier);
 }

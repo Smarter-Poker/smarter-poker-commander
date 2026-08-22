@@ -3,7 +3,7 @@
  * GET /api/commander/responsible-gaming/check/:playerId
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
@@ -17,13 +17,18 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF on EVERY method, reads included.
+// 2026-08-20 audit fix: this route is GET-only and used guardWriteStaff, which
+// returns `true` for GET without verifying anything - meaning anyone could ask
+// whether an arbitrary player id was self-excluded (problem-gambling status is
+// among the most sensitive data this platform holds) and read their spending
+// limits. venue_id is now pinned to the caller's staff session so a venue can
+// only run exclusion checks against its own scope.
 export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    // Auth guard: require staff auth for write operations
-    const _authResult = await guardWriteStaff(req, res);
+    const _authResult = await guardStaff(req, res);
     if (!_authResult) return;
 
     if (req.method !== 'GET') {
@@ -34,7 +39,9 @@ export default async function handler(req, res) {
     }
 
     const { playerId } = req.query;
-    const { venue_id } = req.query;
+    const venue_id = (_authResult.venue_id !== undefined && _authResult.venue_id !== null)
+      ? _authResult.venue_id
+      : req.query.venue_id;
 
     try {
       // Check for active exclusions (not yet expired + not lifted)

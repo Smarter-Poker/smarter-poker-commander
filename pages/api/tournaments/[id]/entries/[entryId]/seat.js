@@ -8,6 +8,7 @@ import { createClient } from '../../../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
+import { seatConflictResponse } from '../../../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -19,7 +20,7 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE — requires manager or owner role
+// Auth: STAFF_WRITE - requires manager or owner role
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -30,12 +31,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'PUT') {
       res.setHeader('Allow', ['PUT']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     const { id: tournamentId, entryId } = req.query;
     if (!tournamentId || !entryId) {
-      return res.status(400).json({ success: false, error: 'Tournament ID and Entry ID required' });
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Tournament ID And Entry ID Required' } });
     }
 
     try {
@@ -46,12 +47,18 @@ export default async function handler(req, res) {
         .select('id, venue_id')
         .eq('id', tournamentId)
         .maybeSingle();
-      if (!tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (!tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
 
 
       const { table_number, seat_number } = req.body;
-      if (table_number === undefined || seat_number === undefined) {
-        return res.status(400).json({ success: false, error: 'table_number and seat_number required' });
+      // Both columns are INTEGER. A non-numeric body value used to reach
+      // PostgREST and come back as an opaque 500; validate up front instead.
+      const tableNum = Number(table_number);
+      const seatNum = Number(seat_number);
+      if (table_number === undefined || seat_number === undefined
+        || !Number.isInteger(tableNum) || tableNum < 1
+        || !Number.isInteger(seatNum) || seatNum < 1 || seatNum > 12) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A Whole-Number table_number And seat_number (1 To 12) Are Required' } });
       }
 
       const { data: entry } = await getSupabase()
@@ -60,37 +67,70 @@ export default async function handler(req, res) {
         .eq('id', entryId)
         .eq('tournament_id', tournamentId)
         .maybeSingle();
-      if (!entry) return res.status(404).json({ success: false, error: 'Entry not found' });
+      if (!entry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Entry Not Found' } });
 
-      // Check seat not occupied
-      const { data: existing } = await getSupabase()
+      // Only live entries hold seats. Without this an eliminated or cancelled
+      // player could be given a live seat that the floor then could not fill.
+      // 'bagged' is permitted: this is the only route that puts a NAMED
+      // returning player in a NAMED chair, which the floor needs when a Day 2
+      // player has an accessibility requirement or arrives after the resume
+      // draw has already run. The status is advanced to 'seated' below.
+      if (!['registered', 'seated', 'active', 'alternate', 'bagged'].includes(entry.status)) {
+        return res.status(400).json({ success: false, error: { code: 'PLAYER_NOT_ACTIVE', message: `Cannot Seat A Player With Status ${entry.status}` } });
+      }
+
+      // Check seat not occupied.
+      // .maybeSingle() throws when two rows share the seat (exactly the state
+      // this guard exists to catch) and the discarded error let the change through.
+      const { data: existingRows, error: occErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, player_name')
         .eq('tournament_id', tournamentId)
-        .eq('table_number', table_number)
-        .eq('seat_number', seat_number)
-        .in('status', ['active', 'seated'])
+        .eq('table_number', tableNum)
+        .eq('seat_number', seatNum)
+        // SEAT OCCUPANCY: only a player physically in the chair blocks it.
+        // 'bagged' is deliberately excluded (bag-and-tag nulls their seat, so
+        // they could not match anyway, and including it would keep a released
+        // chair blocked forever).
+        // 2026-08-20: 'registered' MUST be included. A player seated before the
+        // clock starts keeps status 'registered' until play begins, and
+        // production currently has 52 such entries holding real seats. Omitting
+        // them made this probe report an occupied chair as free, so the TD
+        // could assign two players to it, which is exactly the double-booking
+        // the seat conflict repair tool exists to clean up.
+        .in('status', ['active', 'seated', 'registered'])
         .neq('id', entryId)
-        .maybeSingle();
+        .limit(1);
 
+      if (occErr) {
+        console.error('[tournaments/entries/seat] seat occupancy read failed', {
+          tournamentId, code: occErr.code, message: occErr.message, details: occErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Seat' } });
+      }
+
+      const existing = (existingRows || [])[0];
       if (existing) {
         return res.status(409).json({
           success: false,
-          error: `Seat ${seat_number} at Table ${table_number} occupied by ${existing.player_name}`
+          error: { code: 'SEAT_OCCUPIED', message: `Seat ${seatNum} At Table ${tableNum} Occupied By ${existing.player_name}` }
         });
       }
 
       const fromTable = entry.table_number;
       const fromSeat = entry.seat_number;
 
-      // If the player is currently 'registered' but is given a seat, advance them to 'seated'
-      const newStatus = entry.status === 'registered' ? 'seated' : entry.status;
+      // A player who is given a seat is sitting in it. 'registered' (never
+      // seated) and 'bagged' (returning from an overnight break) both advance
+      // to 'seated'; leaving a seated player marked 'bagged' would hide them
+      // from every occupancy check while they physically hold the chair.
+      const newStatus = ['registered', 'bagged'].includes(entry.status) ? 'seated' : entry.status;
 
       const { error: uErr } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
-          table_number,
-          seat_number,
+          table_number: tableNum,
+          seat_number: seatNum,
           status: newStatus,
           metadata: {
             ...(entry.metadata || {}),
@@ -99,9 +139,20 @@ export default async function handler(req, res) {
             move_reason: 'seat_change'
           }
         })
-        .eq('id', entryId);
+        .eq('id', entryId)
+        .eq('tournament_id', tournamentId);
 
-      if (uErr) return res.status(500).json({ success: false, error: 'Failed to change seat' });
+      if (uErr) {
+        // The occupancy probe above is a read, so a seat can still be filled
+        // between that read and this write. uq_commander_entries_live_seat now
+        // rejects the second writer with 23505 instead of double-booking the
+        // chair; turn that into the same actionable 409 the probe returns.
+        if (seatConflictResponse(res, uErr, { tableNumber: tableNum, seatNumber: seatNum, action: 'Seat Change' })) return;
+        console.error('[tournaments/entries/seat] seat write failed', {
+          tournamentId, entryId, code: uErr.code, message: uErr.message, details: uErr.details,
+        });
+        return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Change Seat' } });
+      }
 
       return res.status(200).json({
         success: true,
@@ -110,18 +161,18 @@ export default async function handler(req, res) {
           player_name: entry.player_name,
           from_table: fromTable,
           from_seat: fromSeat,
-          to_table: table_number,
-          to_seat: seat_number
+          to_table: tableNum,
+          to_seat: seatNum
         }
       });
     } catch (err) {
       console.warn('Seat change error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

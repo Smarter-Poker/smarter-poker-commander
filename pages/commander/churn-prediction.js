@@ -56,7 +56,7 @@ export default function ChurnPrediction() {
     finally { setLoading(false); }
   };
 
-  // Commander Data Bus — sync when members change
+  // Commander Data Bus - sync when members change
   useCommanderSync(staff?.venue_id || '', fetchPredictions, { entities: ['members'] });
 
   const filtered = predictions.filter(p => {
@@ -74,7 +74,7 @@ export default function ChurnPrediction() {
   return (
     <CommanderLayout title="Churn Prediction" backHref="/commander/dashboard?card=reports">
       <SEOHead
-        title="Commander — Churn Prediction"
+        title="Commander - Churn Prediction"
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
@@ -124,7 +124,7 @@ export default function ChurnPrediction() {
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
-              {filter === 'all' ? 'No player data to analyze — need at least 2 sessions per player' : `No ${filter} risk players`}
+              {filter === 'all' ? 'No Player Data To Analyze. Need At Least 2 Sessions Per Player' : `No ${filter} Risk Players`}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -142,8 +142,8 @@ export default function ChurnPrediction() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#1C2526' }}>{p.player_name}</div>
                         <div style={{ fontSize: 12, color: '#65676B', display: 'flex', gap: 8 }}>
-                          <span>{p.days_since_visit}d ago</span>
-                          <span>{p.visits_last_30} visits/30d</span>
+                          <span>{p.days_since_visit}d Ago</span>
+                          <span>{p.visits_last_30} Visits/30d</span>
                         </div>
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: rc.bg, color: rc.text, textTransform: 'uppercase' }}>
@@ -164,7 +164,7 @@ export default function ChurnPrediction() {
                         {/* Stats */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 10 }}>
                           {[
-                            { label: 'Last Visit', val: `${p.days_since_visit}d ago`, icon: Calendar },
+                            { label: 'Last Visit', val: `${p.days_since_visit}d Ago`, icon: Calendar },
                             { label: 'Avg Gap', val: `${p.avg_gap_days}d`, icon: Clock },
                             { label: '90d Sessions', val: p.total_sessions_90d, icon: Users },
                           ].map(s => (
@@ -195,7 +195,7 @@ export default function ChurnPrediction() {
                         {/* Risk factors */}
                         {p.factors.length > 0 && (
                           <div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#65676B', marginBottom: 4 }}>RISK FACTORS</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#65676B', marginBottom: 4 }}>Risk Factors</div>
                             {p.factors.map((f, i) => (
                               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', fontSize: 13 }}>
                                 <AlertTriangle size={12} color={rc.bar} />

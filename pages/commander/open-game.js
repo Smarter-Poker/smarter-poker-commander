@@ -58,7 +58,7 @@ export default function OpenGame() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // fetchTables declared first — must precede useEffect/useCommanderSync that reference it
+  // fetchTables declared first - must precede useEffect/useCommanderSync that reference it
   const fetchTables = useCallback(async () => {
     setLoading(true);
     try {
@@ -79,7 +79,7 @@ const json = await commanderFetchJSON(`/api/commander/tables?venue_id=${venueId}
     fetchTables();
   }, [step, fetchTables]);
 
-  // Commander Data Bus — both BroadcastChannel (instant) + Supabase Realtime (cross-device)
+  // Commander Data Bus - both BroadcastChannel (instant) + Supabase Realtime (cross-device)
   useCommanderSync(getVenueId(), fetchTables, { entities: ['games', 'tables'] });
 
   // Fetch waitlist for this game type
@@ -125,9 +125,10 @@ const headers = { 'Content-Type': 'application/json' };
           max_players: selectedTable.max_seats || selectedTable.seats || 9
         })
       });
-      if (!gameRes.ok) throw new Error('Request failed');
-
-      const gameJson = await gameRes.json();
+      // 2026-08-04 audit fix: do not abort the flow when game creation fails -
+      // the block below already handles gameJson.success === false by falling
+      // back to updating the table only.
+      const gameJson = await gameRes.json().catch(() => ({ success: false }));
       if (!gameJson.success) {
         console.warn('Failed to create game:', gameJson.error);
         // Fallback: still update table even if game creation fails
@@ -154,7 +155,7 @@ const headers = { 'Content-Type': 'application/json' };
         // Navigate to dealer view for this table
         router.push(`/commander/dealer/${tNum}`);
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setOpening(false); }
   };
 
@@ -165,7 +166,7 @@ const headers = { 'Content-Type': 'application/json' };
         {/* Progress bar */}
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
-            <p className="text-xs text-[#B0B3B8]">Step {step} of 3</p>
+            <p className="text-xs text-[#B0B3B8]">Step {step} Of 3</p>
           </div>
           <div className="flex gap-1.5">
             {[1, 2, 3].map(s => (
@@ -210,7 +211,7 @@ const headers = { 'Content-Type': 'application/json' };
                   </div>
                   <input type="text" value={customStakes}
                     onChange={e => { setCustomStakes(e.target.value); setSelectedStakes(null); }}
-                    placeholder="Custom Stakes (e.g. $5/$10/$25)"
+                    placeholder="Custom Stakes (E.g. $5/$10/$25)"
                     className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
                 </>
               )}
@@ -228,7 +229,7 @@ const headers = { 'Content-Type': 'application/json' };
           {step === 2 && (
             <>
               <h2 className="text-xl font-bold text-white">
-                Select Table for {selectedGame?.name} {stakes}
+                Select Table For {selectedGame?.name} {stakes}
               </h2>
 
               {loading ? (
@@ -252,7 +253,7 @@ const headers = { 'Content-Type': 'application/json' };
                           }`}>
                         <div>
                           <p className="text-lg font-bold text-white">Table {tNum}</p>
-                          <p className="text-xs text-[#B0B3B8]">{t.max_seats || t.seats || 9} seats</p>
+                          <p className="text-xs text-[#B0B3B8]">{t.max_seats || t.seats || 9} Seats</p>
                         </div>
                         {isSelected && <Check className="w-6 h-6 text-[#1877F2]" />}
                       </button>
@@ -299,7 +300,7 @@ const headers = { 'Content-Type': 'application/json' };
               {waitlistPlayers.length > 0 && (
                 <div className="bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl p-4">
                   <p className="text-sm font-semibold text-[#31A24C] mb-2">
-                    {waitlistPlayers.length} players waiting for {selectedGame?.type}
+                    {waitlistPlayers.length} Players Waiting For {selectedGame?.type}
                   </p>
                   <div className="space-y-1">
                     {waitlistPlayers.map((p, i) => (
