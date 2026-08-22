@@ -36,7 +36,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, statSync, lstatSync, realpathSync } from 'fs';
 import { join, relative, sep } from 'path';
 
 const ROOT = process.cwd();
@@ -222,6 +222,67 @@ function checkOverrideBypass() {
   return violations;
 }
 
+// ── CHECK C: the installed package must BE the vendor dir, not a copy of it ──
+//
+// `"@smarter-poker/commander-shared": "file:vendor/commander-shared"` normally
+// makes npm SYMLINK node_modules/@smarter-poker/commander-shared at the vendor
+// directory, so an edit to the vendor source is live immediately. Under some
+// npm versions and flag combinations it materialises a real COPY instead, and
+// from that moment the two diverge silently: you edit vendor/, the app keeps
+// running the snapshot, and nothing anywhere says so. Every symptom points at
+// the source file being wrong, which it is not.
+//
+// This is a LOCAL hazard. CI checks out clean and `npm install` repopulates
+// node_modules from vendor on every run, so a stale copy cannot exist there —
+// which is exactly why nothing caught it. The check therefore SKIPS when
+// node_modules is absent (this step deliberately runs before install) and only
+// speaks on a developer or agent machine, where the damage happens.
+function checkInstalledLinkage() {
+  const installed = join(ROOT, 'node_modules', VENDOR_NAME);
+  if (!existsSync(join(ROOT, 'node_modules'))) {
+    return { skipped: true, reason: 'node_modules absent (pre-install step)' };
+  }
+  if (!existsSync(installed)) {
+    return { skipped: true, reason: 'vendor package not installed' };
+  }
+
+  let st;
+  try {
+    st = lstatSync(installed);
+  } catch (err) {
+    return { skipped: true, reason: `unreadable: ${err.message}` };
+  }
+
+  if (st.isSymbolicLink()) {
+    // A symlink is right, but it has to point at THIS repo's vendor dir.
+    try {
+      const target = realpathSync(installed);
+      const expected = realpathSync(join(ROOT, VENDOR_PKG));
+      if (target !== expected) {
+        return { copy: false, wrongTarget: true, target, expected };
+      }
+    } catch {
+      /* a broken link is reported by the install itself; not this check's job */
+    }
+    return { ok: true };
+  }
+
+  // A real directory here means npm copied. Report how far it has already
+  // drifted so the message is a fact rather than a warning about a maybe.
+  const drifted = [];
+  for (const file of walkJs(join(VENDOR_PKG, 'src'))) {
+    const rel = relative(join(ROOT, VENDOR_PKG), join(ROOT, file)).split(sep).join('/');
+    const twin = join(installed, rel);
+    if (!existsSync(twin)) { drifted.push(`${rel} (missing from the copy)`); continue; }
+    try {
+      if (readFileSync(join(ROOT, file), 'utf8') !== readFileSync(twin, 'utf8')) {
+        drifted.push(rel);
+      }
+    } catch { /* unreadable twin counts as drift, reported by the missing case */ }
+  }
+  return { copy: true, drifted };
+}
+
 // ── run ──────────────────────────────────────────────────────────────────────
 
 let failed = false;
@@ -250,6 +311,35 @@ if (bypass.length) {
   }
 } else {
   console.log('[vendor-drift] CHECK B ok — no caller bypasses a local override.');
+}
+
+const linkage = checkInstalledLinkage();
+if (linkage.skipped) {
+  console.log(`[vendor-drift] CHECK C skipped — ${linkage.reason}.`);
+} else if (linkage.copy) {
+  failed = true;
+  console.error('');
+  console.error('[vendor-drift] Installed package is a COPY of vendor/commander-shared, not a symlink.');
+  console.error('  Edits to vendor/ will NOT be picked up. Nothing will error; the app just runs');
+  console.error('  the snapshot npm took at install time.');
+  if (linkage.drifted.length) {
+    console.error(`  It has already drifted on ${linkage.drifted.length} file(s):`);
+    for (const f of linkage.drifted.slice(0, 20)) console.error(`    ${f}`);
+    if (linkage.drifted.length > 20) console.error(`    ... and ${linkage.drifted.length - 20} more`);
+  } else {
+    console.error('  It matches vendor/ right now, but nothing keeps it that way.');
+  }
+  console.error('');
+  console.error('  Fix:  rm -rf node_modules/@smarter-poker && npm install --legacy-peer-deps');
+} else if (linkage.wrongTarget) {
+  failed = true;
+  console.error('');
+  console.error('[vendor-drift] Installed package points at the WRONG vendor directory.');
+  console.error(`    links to: ${linkage.target}`);
+  console.error(`    expected: ${linkage.expected}`);
+  console.error('  Fix:  rm -rf node_modules/@smarter-poker && npm install --legacy-peer-deps');
+} else {
+  console.log('[vendor-drift] CHECK C ok — vendor package is symlinked, not copied.');
 }
 
 if (failed) {

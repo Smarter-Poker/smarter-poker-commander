@@ -71,6 +71,10 @@ import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 import { logAction } from '../../../../../../src/lib/commander/audit';
 import { isUniqueViolation } from '../../../../../../src/lib/commander/dbErrors';
 import { entryBountyWinnings } from '../../../../../../src/lib/commander/tournamentBounty';
+import {
+  CASH_TX_PAYMENT_METHODS,
+  DEFAULT_PAYMENT_METHOD
+} from '../../../../../../src/lib/commander/paymentMethods';
 
 let _supabase = null;
 function getSupabase() {
@@ -87,11 +91,10 @@ export const PAYOUT_STATUS_PAID = 'paid';
 export const PAYOUT_STATUS_UNPAID = 'unpaid';
 export const PAYOUT_STATUS_VOIDED = 'voided';
 
-// commander_cash_transactions.payment_method CHECK, verified live 2026-08-20.
-// Wider than the list register.js carries (that copy predates a migration and
-// is merely conservative, not wrong).
-const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'credit', 'comp', 'chips', 'transfer', 'marker', 'other'];
-const DEFAULT_PAYMENT_METHOD = 'cash';
+// commander_cash_transactions.payment_method CHECK. This list used to live
+// here; it now comes from the shared vocabulary so it cannot drift from the
+// copies register.js and payoutPayments.js carried (both of which had).
+// See src/lib/commander/paymentMethods.js for the constraint it mirrors.
 
 /** Rounded to cents, matching numeric(12,2) on both money columns. */
 function money(value) {

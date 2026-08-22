@@ -17,6 +17,10 @@ import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
 import { isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
+import {
+  CASH_TX_PAYMENT_METHODS,
+  normalizeCashTxPaymentMethod
+} from '../../../../src/lib/commander/paymentMethods';
 
 let _supabase = null;
 function getSupabase() {
@@ -59,12 +63,20 @@ export default async function handler(req, res) {
   }
 }
 
-// 2026-07-28: commander_tournament_entries.payment_method is CHECK-constrained.
-const ENTRY_PAYMENT_METHODS = ['cash', 'card', 'credit', 'comp', 'chips', 'transfer', 'other'];
-// commander_cash_transactions.payment_method has a NARROWER CHECK - passing an
-// entry-only value ('credit'/'chips'/'transfer'/'other') would make the whole
-// cash-drawer insert fail, so it is only forwarded when it is legal there.
-const CASH_TX_PAYMENT_METHODS = ['cash', 'card', 'comp', 'marker'];
+// 2026-08-22: commander_tournament_entries.payment_method and
+// commander_cash_transactions.payment_method are guarded by CHECK constraints
+// that are now IDENTICAL - both accept the same eight values, verified live.
+//
+// The two hand-maintained lists that used to sit here were both stale. The
+// cash-drawer one carried four values and the comment beside it claimed that
+// column's CHECK was "narrower"; it is not, and has not been since the
+// migration that widened it. The effect was silent: a buy-in genuinely taken
+// on chips, credit or by transfer fell through the includes() below and was
+// FILED AS CASH, so the reconciliation's by-payment-method breakdown did not
+// match what the cage actually did. Nothing errored.
+//
+// Both now come from the single shared vocabulary.
+const ENTRY_PAYMENT_METHODS = CASH_TX_PAYMENT_METHODS;
 
 // registerPlayerForTournament returns a { status, body } pair instead of
 // writing to `res`, so the same code path serves the HTTP route AND the
@@ -428,9 +440,10 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
         amount: totalAmount,
         // Only forward a method this table's CHECK constraint accepts; otherwise
         // keep the column's existing default behaviour.
-        payment_method: (paymentMethod && CASH_TX_PAYMENT_METHODS.includes(paymentMethod))
-          ? paymentMethod
-          : 'cash',
+        // Case-insensitive and defaulting, so an unexpected value can never
+        // reject the whole drawer insert - but a LEGAL one is now stored as
+        // itself rather than being quietly relabelled 'cash'.
+        payment_method: normalizeCashTxPaymentMethod(paymentMethod),
         // 2026-07-25 audit fix: _staff is out of scope here; use the staff param
         processed_by: staff.id || null,
         notes: `Tournament: ${tournament.name || 'Tournament'} (Buy-In: $${tournament.buyin_amount || 0}, Fee: $${tournament.buyin_fee || 0})`

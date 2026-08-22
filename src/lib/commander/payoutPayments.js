@@ -16,6 +16,10 @@
  *   'voided'  paid then reversed. Owed again.
  */
 import { commanderFetch } from './commanderFetch';
+import {
+  CASH_TX_PAYMENT_METHOD_OPTIONS,
+  DEFAULT_PAYMENT_METHOD
+} from './paymentMethods';
 
 export const PAYOUT_STATUS_PAID = 'paid';
 export const PAYOUT_STATUS_UNPAID = 'unpaid';
@@ -23,20 +27,20 @@ export const PAYOUT_STATUS_VOIDED = 'voided';
 
 /**
  * Methods commander_cash_transactions.payment_method accepts, in the order a
- * cage window actually uses them. Verified against the live CHECK constraint
- * 2026-08-20.
+ * cage window actually uses them.
+ *
+ * Re-exported rather than re-declared. The literal that used to sit here was
+ * missing 'credit', so the cage's payout dropdown could not offer a method the
+ * database would have accepted - the kind of gap a private copy of a shared
+ * vocabulary produces every time. The single source is
+ * src/lib/commander/paymentMethods.js, checked against the live constraint.
+ *
+ * The two names are kept because both are already imported by screens; they
+ * are now the same objects, not two lists that must be kept in step.
  */
-export const PAYOUT_PAYMENT_METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'chips', label: 'Chips' },
-  { value: 'card', label: 'Card' },
-  { value: 'transfer', label: 'Transfer' },
-  { value: 'marker', label: 'Marker' },
-  { value: 'comp', label: 'Comp' },
-  { value: 'other', label: 'Other' }
-];
+export const PAYOUT_PAYMENT_METHODS = CASH_TX_PAYMENT_METHOD_OPTIONS;
 
-export const DEFAULT_PAYOUT_PAYMENT_METHOD = 'cash';
+export const DEFAULT_PAYOUT_PAYMENT_METHOD = DEFAULT_PAYMENT_METHOD;
 
 /** Normalized payout status for an entry row. NULL reads as 'unpaid'. */
 export function entryPayoutStatus(entry) {
