@@ -25,6 +25,7 @@ import {
 } from './payout';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 // Inlined to avoid a broken CJS re-export shim (src/lib/parseBlindStructure ->
 // @smarter-poker/commander-shared) that resolved to undefined at runtime and
@@ -47,6 +48,26 @@ function displayLevelNumber(structure, index) {
     if (!structure[i]?.is_break) n++;
   }
   return n;
+}
+
+/**
+ * Duration in ms of the level the clock is currently sitting on.
+ *
+ * Reads the CURRENT level off clockState (falling back to the tournament row),
+ * indexes the raw structure array - break rows are inline, so the index is the
+ * array position, not the displayed level number - and tolerates both the
+ * `duration` and `duration_minutes` key names.
+ *
+ * Returns 0 when the level cannot be resolved, which callers must treat as
+ * "unknown", never as "zero length".
+ */
+function levelDurationMs(tournament, clockState) {
+  const structure = parseBlindStructure(tournament?.blind_structure);
+  const idx = Number(clockState?.currentLevel ?? tournament?.current_level ?? 0);
+  const row = structure[idx];
+  if (!row) return 0;
+  const mins = Number(row.duration ?? row.duration_minutes ?? 0);
+  return Number.isFinite(mins) && mins > 0 ? mins * 60 * 1000 : 0;
 }
 
 // Fields inside settings.clock_state that this route does NOT own. They are
@@ -421,6 +442,12 @@ async function handleClockAction(req, res, tournamentId, staff) {
       });
     }
 
+    // Venue scope: a valid session for one room must never act on another
+    // room's clock. The GET above is deliberately PUBLIC (the room's clock
+    // display is unauthenticated by design), so this guards writes only.
+    // See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
+
     // Read persisted clock state from settings
     const settings = tournament.settings || {};
     let clockState = settings.clock_state || {
@@ -551,7 +578,18 @@ async function handleClockAction(req, res, tournamentId, staff) {
             error: { code: 'VALIDATION_ERROR', message: 'Tournament is not active' }
           });
         }
-        const prevLevel = Math.max(0, (tournament.current_level || 0) - 1);
+        const currentLevelNow = tournament.current_level || 0;
+        // At level 0 there is nowhere to go back to. This used to fall through
+        // and rebuild clockState anyway, which restarted the CURRENT level's
+        // timer: tapping "back" on Level 1 with 3 minutes left put 20:00 up on
+        // every screen and the level ran its full length a second time.
+        if (currentLevelNow <= 0) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'AT_FIRST_LEVEL', message: 'Already On The First Level' }
+          });
+        }
+        const prevLevel = currentLevelNow - 1;
         updates = { current_level: prevLevel };
         clockState = {
           isRunning: tournament.status === 'running',
@@ -564,10 +602,28 @@ async function handleClockAction(req, res, tournamentId, staff) {
 
       case 'set_level': {
         const { level } = req.body;
-        if (typeof level !== 'number' || level < 0) {
+        // next_level and prev_level are both bounded by the structure;
+        // set_level was not, so POST {level: 999} was accepted. current_level
+        // then indexed past the end of blind_structure: currentBlind resolved
+        // to null, the timer branch was skipped so time froze at 0:00, and
+        // every display in the room showed no blinds. next_level could not
+        // recover it (it refuses to advance past the end), leaving prev_level,
+        // one step per call, as the only way back.
+        const structureRows = parseBlindStructure(tournament.blind_structure);
+        const maxLevel = Math.max(0, structureRows.length - 1);
+        if (typeof level !== 'number' || !Number.isInteger(level) || level < 0) {
           return res.status(400).json({
             success: false,
             error: { code: 'VALIDATION_ERROR', message: 'Valid level required' }
+          });
+        }
+        if (structureRows.length > 0 && level > maxLevel) {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'LEVEL_OUT_OF_RANGE',
+              message: `Level Must Be Between 0 And ${maxLevel.toLocaleString()}`
+            }
           });
         }
         updates = { current_level: level };
@@ -581,24 +637,41 @@ async function handleClockAction(req, res, tournamentId, staff) {
       }
 
       case 'add_time': {
-        // Add time by pushing levelStartedAt earlier (less elapsed, more remaining).
-        // Accepts an optional seconds amount from the console; defaults to 60.
+        // ADD time = move levelStartedAt LATER.
+        //
+        // remaining = levelDuration - (now - levelStartedAt - pausedDuration)
+        //
+        // so levelStartedAt and remaining move TOGETHER: pushing the start
+        // later shrinks elapsed and grows what is left. This was inverted
+        // until 2026-08-22 - it subtracted, and the comment asserted that an
+        // earlier start meant "less elapsed", which is backwards. The TD's
+        // "+1:00" button took a minute OFF the level on every screen in the
+        // room, and the "-1:00" button added one.
         if (!clockState.levelStartedAt) break;
         const addSecs = Math.min(3600, Math.max(1, Number(req.body.seconds) || 60));
         const started = new Date(clockState.levelStartedAt);
-        started.setSeconds(started.getSeconds() - addSecs);
+        started.setSeconds(started.getSeconds() + addSecs);
         clockState.levelStartedAt = started.toISOString();
         break;
       }
 
       case 'subtract_time': {
-        // Remove time by pushing levelStartedAt later (more elapsed, less remaining).
-        // Accepts an optional seconds amount from the console; defaults to 60.
+        // REMOVE time = move levelStartedAt EARLIER (more elapsed, less left).
+        // See add_time above: these two were transposed.
+        //
+        // Clamped so the start can never be pushed past "the level is already
+        // over". Without the clamp, subtracting more than remains drives
+        // elapsed beyond the level duration; remaining is floored at 0 by the
+        // reader, but the overshoot is real and silently eats into the NEXT
+        // level the moment the clock advances.
         if (!clockState.levelStartedAt) break;
         const subSecs = Math.min(3600, Math.max(1, Number(req.body.seconds) || 60));
-        const started2 = new Date(clockState.levelStartedAt);
-        started2.setSeconds(started2.getSeconds() + subSecs);
-        clockState.levelStartedAt = started2.toISOString();
+        const startedMs = new Date(clockState.levelStartedAt).getTime();
+        const elapsedMs = Date.now() - startedMs - (clockState.pausedDuration || 0);
+        const levelMs = levelDurationMs(tournament, clockState);
+        const maxRemoveMs = Math.max(0, levelMs - elapsedMs);
+        const removeMs = Math.min(subSecs * 1000, maxRemoveMs);
+        clockState.levelStartedAt = new Date(startedMs - removeMs).toISOString();
         break;
       }
 

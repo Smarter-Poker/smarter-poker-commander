@@ -14,6 +14,7 @@ import {
 } from '../../../../src/lib/commander/pushNotifications';
 import { parseBlindStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -73,6 +74,10 @@ export default async function handler(req, res) {
           if (tErr || !tournament) {
               return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
           }
+          
+          // Venue scope: a valid session for one room must never reach
+          // another room's tournament. See src/lib/commander/venueScope.js.
+          if (denyCrossVenue(res, _g, tournament)) return;
 
           const venueName = tournament.poker_venues?.name || 'Venue';
           const tournamentName = tournament.name || 'Tournament';

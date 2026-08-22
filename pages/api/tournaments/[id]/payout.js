@@ -13,6 +13,7 @@ import { reportApiError } from '../../../../src/lib/sentryWrap';
 // gross. See src/lib/commander/taxEvents.js for the rule and why one entry is
 // one wager.
 import { recordTournamentTaxEvent } from '../../../../src/lib/commander/taxEvents';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -36,9 +37,9 @@ export default async function handler(req, res) {
 
     const { id } = req.query;
 
-    if (req.method === 'GET') return handleGetPayouts(req, res, id);
-    if (req.method === 'POST') return handlePayout(req, res, id);
-    if (req.method === 'PUT') return handleBulkPayouts(req, res, id);
+    if (req.method === 'GET') return handleGetPayouts(req, res, id, _staff);
+    if (req.method === 'POST') return handlePayout(req, res, id, _staff);
+    if (req.method === 'PUT') return handleBulkPayouts(req, res, id, _staff);
 
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
@@ -489,7 +490,7 @@ export function buildPayoutTable(tournament, pool, fieldSize) {
   };
 }
 
-async function handleGetPayouts(req, res, tournamentId) {
+async function handleGetPayouts(req, res, tournamentId, staff) {
   try {
     const { mode } = req.query;
 
@@ -505,6 +506,10 @@ async function handleGetPayouts(req, res, tournamentId) {
     if (!tournament) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
     }
+
+    // Venue scope: a valid session for one room must never read another
+    // room's entry list. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     // Get all entries for prize pool calculation
     const { data: entries } = await getSupabase()
@@ -654,7 +659,7 @@ async function handleGetPayouts(req, res, tournamentId) {
   }
 }
 
-async function handlePayout(req, res, tournamentId) {
+async function handlePayout(req, res, tournamentId, staff) {
   const { player_id, place } = req.body;
   const amount = Number(req.body.amount);
 
@@ -675,6 +680,17 @@ async function handlePayout(req, res, tournamentId) {
       .select('id, venue_id, buyin_amount, buyin_fee, rebuy_amount, addon_amount, ended_at, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
+
+    // A missing tournament used to fall straight through here: every field
+    // below reads off `tournament?.` and the payout was written anyway,
+    // against an event that does not exist.
+    if (!tournament) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+    }
+
+    // Venue scope: a valid session for one room must never write a payout
+    // into another room's event. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     const { data: entry, error } = await getSupabase()
       .from('commander_tournament_entries')
@@ -742,7 +758,7 @@ async function handlePayout(req, res, tournamentId) {
  * Bulk final payouts - save all overridden amounts at once
  * Used for deal/chop scenarios at final table
  */
-async function handleBulkPayouts(req, res, tournamentId) {
+async function handleBulkPayouts(req, res, tournamentId, staff) {
   try {
     const { payouts } = req.body;
     // payouts = [{ entry_id?, player_id?, position, amount }, ...]
@@ -774,6 +790,17 @@ async function handleBulkPayouts(req, res, tournamentId) {
       .select('id, venue_id, buyin_amount, buyin_fee, rebuy_amount, addon_amount, bounty_amount, tournament_type, settings, ended_at, leaderboard_id, scheduled_start, actual_start')
       .eq('id', tournamentId)
       .maybeSingle();
+
+    // A missing tournament used to fall straight through here: every field
+    // below reads off `tournament?.` and the payout was written anyway,
+    // against an event that does not exist.
+    if (!tournament) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+    }
+
+    // Venue scope: a valid session for one room must never write a payout
+    // into another room's event. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     // ── Denomination rounding on the DEAL path ──
     // A chop struck at the table is paid out of the cage in real notes, so the

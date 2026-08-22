@@ -21,6 +21,8 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -57,6 +59,10 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       if (req.method === 'GET') return handleCheck(req, res, tournament);
       if (req.method === 'POST') return handleExecute(req, res, tournament, _g);
@@ -103,9 +109,11 @@ async function getTableData(tournamentId, venueId) {
     .from('commander_tournament_entries')
     .select('id, player_name, table_number, seat_number, current_chips, player_id')
     .eq('tournament_id', tournamentId)
-    // SEAT OCCUPANCY: a 'bagged' player (multi-day) holds no chair, so they
-    // never count toward a table's headcount and are never moved by a break.
-    .in('status', ['active', 'seated'])
+    // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+    // index exactly. 'registered' holds a chair - omitting it made this probe
+    // report a taken seat as free, and the index then raised a 23505 the floor
+    // saw as a phantom "another device filled it first". 'bagged' holds none.
+        .in('status', LIVE_SEAT_STATUSES)
     .order('table_number')
     .order('seat_number');
 
@@ -293,9 +301,11 @@ async function handleExecute(req, res, tournament, staff) {
     .from('commander_tournament_entries')
     .select('id, table_number, seat_number, player_name, current_chips, status')
     .eq('tournament_id', tournament.id)
-    // SEAT OCCUPANCY, same rule: bagged players hold no seat and can never
-    // make a destination chair look taken.
-    .in('status', ['active', 'seated']);
+    // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+    // index exactly. 'registered' holds a chair - omitting it made this probe
+    // report a taken seat as free, and the index then raised a 23505 the floor
+    // saw as a phantom "another device filled it first". 'bagged' holds none.
+        .in('status', LIVE_SEAT_STATUSES);
 
   // A discarded error here made the guard pass on an empty result and the break
   // went on to overwrite live seats.

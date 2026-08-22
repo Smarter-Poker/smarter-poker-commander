@@ -9,6 +9,8 @@ import { guardWriteStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 import { seatConflictResponse } from '../../../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -48,6 +50,10 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (!tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
 
       const { table_number, seat_number } = req.body;
@@ -98,7 +104,7 @@ export default async function handler(req, res) {
         // them made this probe report an occupied chair as free, so the TD
         // could assign two players to it, which is exactly the double-booking
         // the seat conflict repair tool exists to clean up.
-        .in('status', ['active', 'seated', 'registered'])
+        .in('status', LIVE_SEAT_STATUSES)
         .neq('id', entryId)
         .limit(1);
 

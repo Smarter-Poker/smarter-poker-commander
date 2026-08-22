@@ -19,6 +19,8 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -66,6 +68,10 @@ export default async function handler(req, res) {
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
+    
+    // Venue scope: a valid session for one room must never reach
+    // another room's tournament. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
     if (!['scheduled', 'registration', 'registering', 'running', 'paused'].includes(tournament.status)) {
       return res.status(400).json({
         success: false,
@@ -257,9 +263,11 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
-        // SEAT OCCUPANCY: only a player physically in the chair can have
-        // taken it. 'bagged' excluded on purpose.
-        .in('status', ['seated', 'active'])
+        // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+        // index exactly. 'registered' holds a chair - omitting it made this probe
+        // report a taken seat as free, and the index then raised a 23505 the floor
+        // saw as a phantom "another device filled it first". 'bagged' holds none.
+                .in('status', LIVE_SEAT_STATUSES)
         .in('table_number', drawnTables);
 
       if (liveErr) {

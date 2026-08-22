@@ -9,6 +9,8 @@ import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { seatConflictResponse } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -51,6 +53,10 @@ export default async function handler(req, res) {
       if (tErr || !tournament) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       const { entry_id, to_table, to_seat } = req.body;
       if (!entry_id || to_table === undefined || to_seat === undefined) {
@@ -89,7 +95,7 @@ export default async function handler(req, res) {
         // clock starts keeps status 'registered' until play begins, and
         // production currently has 52 such entries holding real seats. Omitting
         // them let a move drop a player straight on top of one of them.
-        .in('status', ['active', 'seated', 'registered'])
+        .in('status', LIVE_SEAT_STATUSES)
         .neq('id', entry_id)
         .limit(1);
 

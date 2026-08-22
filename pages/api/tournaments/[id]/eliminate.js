@@ -23,6 +23,7 @@ import { isUniqueViolation, conflictError, conflictMessage } from '../../../../s
 // winner's payout here always matches position 1 there).
 import { buildPayoutTable, collectedPrizePool, effectivePrizePool as poolFor } from './payout';
 import { applyKnockoutBounty } from '../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 
 let _supabase = null;
@@ -78,6 +79,10 @@ export default async function handler(req, res) {
       if (tournamentError || !tournament) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
 
 

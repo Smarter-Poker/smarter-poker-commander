@@ -8,6 +8,8 @@ import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -43,6 +45,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'moves Array Required' } });
       }
 
+      // This route never loaded the tournament at all - it wrote entries
+      // scoped only by .eq('tournament_id', tournamentId), taken from the URL.
+      // A valid staff session for any room could therefore reseat any other
+      // room's live event. The row is loaded here purely to establish whose
+      // tournament this is before a single seat is written.
+      const { data: tournament } = await getSupabase()
+        .from('commander_tournaments')
+        .select('id, venue_id')
+        .eq('id', tournamentId)
+        .maybeSingle();
+
+      if (!tournament) {
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      }
+      if (denyCrossVenue(res, _g, tournament)) return;
+
       const results = [];
       const errors = [];
       const timestamp = new Date().toISOString();
@@ -73,9 +91,11 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
-        // SEAT OCCUPANCY: balancing moves people between chairs, and a
-        // 'bagged' player is not in one. Excluded on purpose.
-        .in('status', ['active', 'seated'])
+        // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+        // index exactly. 'registered' holds a chair - omitting it made this probe
+        // report a taken seat as free, and the index then raised a 23505 the floor
+        // saw as a phantom "another device filled it first". 'bagged' holds none.
+                .in('status', LIVE_SEAT_STATUSES)
         .in('table_number', destTables.length > 0 ? destTables : [-1]);
 
       // A discarded error here made the guard pass on an empty result and the

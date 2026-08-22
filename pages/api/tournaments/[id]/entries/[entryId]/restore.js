@@ -17,6 +17,7 @@ import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
 import { reverseKnockoutBounty } from '../../../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -66,6 +67,10 @@ export default async function handler(req, res) {
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
+    
+    // Venue scope: a valid session for one room must never reach
+    // another room's tournament. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
     if (!entry) {
       return res.status(404).json({
         success: false,

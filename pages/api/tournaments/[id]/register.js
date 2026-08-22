@@ -21,6 +21,7 @@ import {
   CASH_TX_PAYMENT_METHODS,
   normalizeCashTxPaymentMethod
 } from '../../../../src/lib/commander/paymentMethods';
+import { denyCrossVenue, isSameVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -198,6 +199,18 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
       return _result(404, {
         success: false,
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
+      });
+    }
+
+    // Venue scope. This function returns a { status, body } pair rather than
+    // writing to `res` (it also serves the waitlist-conversion route), so the
+    // shared denyCrossVenue guard cannot be used here - the predicate is.
+    // A staff session for one room must never register a player into another
+    // room's event, or put that room's cash in this drawer.
+    if (!isSameVenue(staff, tournament)) {
+      return _result(403, {
+        success: false,
+        error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' }
       });
     }
 
@@ -615,6 +628,9 @@ async function handleUnregister(req, res, tournamentId, staff) {
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
+
+    // Venue scope: unregistering is a write on another room's field.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     if (tournament.status === 'running' || tournament.status === 'completed') {
       return res.status(400).json({

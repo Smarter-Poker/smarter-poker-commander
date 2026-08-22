@@ -17,6 +17,7 @@ import { reportApiError } from '../../../../src/lib/sentryWrap';
 // payouts screen, the public live page and every bust.
 import { collectedPrizePool, collectedBountyPool, bountyPortionPerEntry } from './payout';
 import { entryBountyValue, entryBountyWinnings } from '../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -264,6 +265,10 @@ export default async function handler(req, res) {
 
       const { data: tournament, error: tErr } = tournamentRes;
       if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+
+      // Venue scope: this payload is the whole floor - every player name,
+      // chip count, seat and the alternate queue.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       let entriesResult = entriesRes;
       if (entriesResult.error && isMissingColumn(entriesResult.error)) {

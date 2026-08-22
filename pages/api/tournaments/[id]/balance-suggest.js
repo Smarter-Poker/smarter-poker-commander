@@ -13,6 +13,8 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -58,15 +60,21 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       // Get all active entries with table/seat info
       const { data: entries, error: eErr } = await getSupabase()
         .from('commander_tournament_entries')
         .select('id, player_name, table_number, seat_number, status, current_chips, metadata')
         .eq('tournament_id', tournamentId)
-        // SEAT OCCUPANCY: balancing moves people between chairs, and a
-        // 'bagged' player is not in one. Excluded on purpose.
-        .in('status', ['active', 'seated']);
+        // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+        // index exactly. 'registered' holds a chair - omitting it made this probe
+        // report a taken seat as free, and the index then raised a 23505 the floor
+        // saw as a phantom "another device filled it first". 'bagged' holds none.
+                .in('status', LIVE_SEAT_STATUSES);
 
       // A discarded read error here used to look identical to "no players" and
       // the TD was told the tables were balanced when nothing had been read.

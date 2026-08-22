@@ -9,6 +9,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -43,10 +44,14 @@ export default async function handler(req, res) {
       // Read the current clock_state so the new message merges into it
       const { data: tournament, error: tErr } = await getSupabase()
         .from('commander_tournaments')
-        .select('id, settings')
+        .select('id, venue_id, settings')
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       const { message, type, duration_seconds } = req.body;
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
