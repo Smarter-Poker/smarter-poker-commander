@@ -262,6 +262,13 @@ export async function buildReconciliation(tournamentId, staff) {
   // The drawer therefore balances on CAGE payouts only. Bounty cash is
   // reported alongside as its own reconciliation line so it is still visible
   // and still checked against the bounty pool below.
+  //
+  // 2026-08-22, Dan: this is SETTLED, not a gap awaiting a ledger. A dedicated
+  // bounty event table and a 'bounty_payout' cash-transaction type were both
+  // considered and rejected. Reasoning, and the one condition that would
+  // reopen it (a venue that pays bounties from the cage instead of the table):
+  //   .agent/audits/2026-08-22-bounty-cash-is-not-a-drawer-variance.md
+  // Please read that before proposing a bounty ledger again.
   const expectedOutTotal = money(expectedPayouts);
   const expectedOutIncludingBounties = money(expectedPayouts + expectedBountyWinnings);
 
