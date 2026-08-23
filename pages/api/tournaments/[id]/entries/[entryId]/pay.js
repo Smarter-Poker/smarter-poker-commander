@@ -75,6 +75,7 @@ import {
   CASH_TX_PAYMENT_METHODS,
   DEFAULT_PAYMENT_METHOD
 } from '../../../../../../src/lib/commander/paymentMethods';
+import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -192,9 +193,8 @@ async function loadContext(tournamentId, entryId, staff) {
   if (!tournament) {
     return { status: 404, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } };
   }
-  if (staff?.venue_id != null && Number(tournament.venue_id) !== Number(staff.venue_id)) {
-    return { status: 403, error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' } };
-  }
+  // One shared check. This spelling fell OPEN on a null venue_id.
+  if (denyCrossVenue(res, staff, tournament)) return;
 
   // bounty_winnings arrived in a later migration; fall back so a deploy that
   // lands before it still pays people.

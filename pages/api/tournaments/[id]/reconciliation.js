@@ -50,6 +50,7 @@ import {
 } from './payout';
 import { entryBountyWinnings, hasBounties } from '../../../../src/lib/commander/tournamentBounty';
 import { assessEntryW2G } from '../../../../src/lib/commander/taxEvents';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -174,9 +175,8 @@ export async function buildReconciliation(tournamentId, staff) {
   if (!tournament) {
     return { status: 404, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } };
   }
-  if (staff?.venue_id != null && Number(tournament.venue_id) !== Number(staff.venue_id)) {
-    return { status: 403, error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' } };
-  }
+  // One shared check. This spelling fell OPEN on a null venue_id.
+  if (denyCrossVenue(res, staff, tournament)) return;
 
   // ── Entries ──────────────────────────────────────────────────────────────
   const BASE_ENTRY_COLUMNS = `

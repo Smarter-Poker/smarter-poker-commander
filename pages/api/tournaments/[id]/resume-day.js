@@ -29,6 +29,8 @@ import { logAction } from '../../../../src/lib/commander/audit';
 import { enqueuePrintJob } from '../../../../src/lib/commander/printQueue';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -107,12 +109,9 @@ export default async function handler(req, res) {
       });
     }
 
-    if (staff.venue_id && Number(staff.venue_id) !== Number(tournament.venue_id)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' }
-      });
-    }
+    // One shared check. This was one of three hand-written spellings, and
+    // this one fell OPEN on a null or 0 venue_id.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     if (!tournament.is_multi_day) {
       return res.status(400).json({
@@ -206,11 +205,14 @@ export default async function handler(req, res) {
     // ── Occupancy ──
     // Anyone already holding a seat (a re-entry seated this morning, or a
     // player the floor placed by hand) keeps it, exactly like seat-draw.js.
+    // LIVE_SEAT_STATUSES mirrors uq_commander_entries_live_seat: a re-entry
+    // registered this morning is 'registered' and holds a chair, so omitting
+    // it made the resume draw hand that chair to somebody else.
     const { data: liveSeated, error: seatErr } = await getSupabase()
       .from('commander_tournament_entries')
       .select('id, table_number, seat_number, player_name')
       .eq('tournament_id', tournamentId)
-      .in('status', ['seated', 'active'])
+      .in('status', LIVE_SEAT_STATUSES)
       .limit(5000);
 
     if (seatErr) {
@@ -311,7 +313,8 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
-        .in('status', ['seated', 'active'])
+        // Same occupancy rule as the read above.
+        .in('status', LIVE_SEAT_STATUSES)
         .in('table_number', drawnTables);
 
       if (recheckErr) {

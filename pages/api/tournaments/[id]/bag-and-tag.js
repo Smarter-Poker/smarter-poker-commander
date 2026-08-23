@@ -32,6 +32,8 @@ import { logAction } from '../../../../src/lib/commander/audit';
 import { enqueuePrintJob } from '../../../../src/lib/commander/printQueue';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -116,12 +118,9 @@ export default async function handler(req, res) {
 
     // Venue scope: a signed staff session for one room must never be able to
     // close the day on another room's event.
-    if (staff.venue_id && Number(staff.venue_id) !== Number(tournament.venue_id)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' }
-      });
-    }
+    // One shared check. This was one of three hand-written spellings, and
+    // this one fell OPEN on a null or 0 venue_id.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     if (!tournament.is_multi_day) {
       return res.status(400).json({
@@ -158,7 +157,13 @@ export default async function handler(req, res) {
       .from('commander_tournament_entries')
       .select('id, player_id, player_name, status, table_number, seat_number, current_chips, metadata')
       .eq('tournament_id', tournamentId)
-      .in('status', ['seated', 'active'])
+      // Everyone still ALIVE in the event gets bagged, and 'registered' is
+      // alive: rooms run the day with players still in that status (52 such
+      // rows in production hold a table and seat). Leaving them out meant a
+      // player physically at a table at the end of Day 1 was never bagged -
+      // no bagged_chips, missing from day_end_chip_counts, and still holding
+      // their chair overnight so the room could not release the table.
+      .in('status', LIVE_SEAT_STATUSES)
       .limit(5000);
     if (requestedIds) entryQuery = entryQuery.in('id', requestedIds);
 
@@ -212,9 +217,11 @@ export default async function handler(req, res) {
         .eq('id', e.id)
         .eq('tournament_id', tournamentId)
         // Status predicate makes a double-tap safe: only a player who is still
-        // seated can be bagged, so a second request writes zero rows instead
-        // of re-stamping a fresh bag time over the real one.
-        .in('status', ['seated', 'active']);
+        // in the event can be bagged, so a second request writes zero rows
+        // instead of re-stamping a fresh bag time over the real one. Must
+        // match the selection set above or the write silently skips rows the
+        // read returned.
+        .in('status', LIVE_SEAT_STATUSES);
 
       if (uErr) {
         // This write NULLs the seat, so it sits outside both partial unique
@@ -289,7 +296,8 @@ export default async function handler(req, res) {
       .from('commander_tournament_entries')
       .select('id', { count: 'exact', head: true })
       .eq('tournament_id', tournamentId)
-      .in('status', ['seated', 'active']);
+      // Same set as the bag selection, so "any left to bag" agrees with it.
+      .in('status', LIVE_SEAT_STATUSES);
 
     // A discarded error here reads as a count of null, which is falsy, and the
     // tables would be released out from under players who are still sitting.
