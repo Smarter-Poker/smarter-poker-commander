@@ -167,11 +167,3 @@ export function countCollisions(errors) {
  * Standard batch summary sentence. Kept here so every batch route words it the
  * same way.
  */
-export function batchSummary({ succeeded, failed, collided, noun = 'Player', verb = 'Updated' }) {
-  const plural = succeeded === 1 ? '' : 's';
-  if (!failed) return `${succeeded} ${noun}${plural} ${verb}.`;
-  const collisionNote = collided > 0
-    ? ` ${collided} Of Those Failed Because The Seat Or Finish Position Was Already Taken.`
-    : '';
-  return `${succeeded} ${noun}${plural} ${verb}, ${failed} Failed.${collisionNote}`;
-}

@@ -82,7 +82,12 @@ const CARRIED_CLOCK_FIELDS = [
   'messages',
   'current_message',
   'on_break',
-  'break_started_at'
+  'break_started_at',
+  // Which running state to return to when the break ends ('running' or
+  // 'final_table'). Without it here, any timer action taken DURING a break -
+  // a pause, a level change - rebuilds clockState without it, and ending the
+  // break then demotes a final table back to 'running'.
+  'pre_break_status'
 ];
 
 
@@ -696,22 +701,39 @@ async function handleClockAction(req, res, tournamentId, staff) {
         };
         // Merge into clockState so it persists with the main settings write below
         clockState = updatedBreakField;
-        // If starting break, pause the clock; if ending break, resume it
-        if (!isCurrentlyOnBreak && tournament.status === 'running') {
+        // If starting break, pause the clock; if ending break, resume it.
+        //
+        // 'final_table' used to satisfy NEITHER branch - the first required
+        // 'running', the second 'paused' - so calling a break at the final
+        // table flipped on_break to true while isRunning stayed true and the
+        // status stayed 'final_table'. Every display in the room showed BREAK
+        // while the timer kept counting the level down, and ending the break
+        // did nothing either. The final table is exactly where a break gets
+        // called and watched by the most people.
+        //
+        // The pre-break status is remembered so resuming returns to
+        // 'final_table' rather than demoting the event to 'running'.
+        const RUNNING_STATES = ['running', 'final_table'];
+        if (!isCurrentlyOnBreak && RUNNING_STATES.includes(tournament.status)) {
           updates = { status: 'paused' };
           clockState = {
             ...clockState,
             isRunning: false,
             pausedAt: new Date().toISOString(),
-            pausedDuration: clockState.pausedDuration || 0
+            pausedDuration: clockState.pausedDuration || 0,
+            pre_break_status: tournament.status
           };
         } else if (isCurrentlyOnBreak && tournament.status === 'paused') {
-          updates = { status: 'running' };
+          const resumeTo = RUNNING_STATES.includes(clockState.pre_break_status)
+            ? clockState.pre_break_status
+            : 'running';
+          updates = { status: resumeTo };
           clockState = {
             ...clockState,
             isRunning: true,
             pausedAt: null,
-            pausedDuration: (clockState.pausedDuration || 0) + (clockState.pausedAt ? Date.now() - new Date(clockState.pausedAt).getTime() : 0)
+            pausedDuration: (clockState.pausedDuration || 0) + (clockState.pausedAt ? Date.now() - new Date(clockState.pausedAt).getTime() : 0),
+            pre_break_status: null
           };
         }
         break;

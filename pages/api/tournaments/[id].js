@@ -11,6 +11,10 @@ import { logAction } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/sentryWrap';
 import { structureRejection, normalizeStructure } from '../../../src/lib/commander/structureValidation';
+// One copy of the payload shape rules. This file and its twin each carried a
+// byte-identical private version, imported by nothing and free to drift - so a
+// rule tightened on create would simply not apply on update.
+import { validateTournamentPayload } from '../../../src/lib/commander/tournamentPayload';
 
 let _supabase = null;
 function getSupabase() {
@@ -34,31 +38,6 @@ function publicAlias(name) {
 
 // Shared structure validation - rejects obviously invalid tournament payloads
 // before they persist. `partial` mode only checks the fields actually provided.
-function validateTournamentPayload(body, { partial = false } = {}) {
-    const { blind_structure, payout_structure, paying_places, max_entries } = body || {};
-
-    if (blind_structure !== undefined) {
-        let bs = blind_structure;
-        if (typeof bs === 'string') { try { bs = JSON.parse(bs); } catch { bs = null; } }
-        if (!Array.isArray(bs) || bs.length === 0) return 'blind_structure Must Be A Non-Empty Array Of Levels';
-        if (!bs.some(l => l && !l.is_break)) return 'blind_structure Must Contain At Least One Playing Level';
-    } else if (!partial) {
-        return 'blind_structure Is Required And Must Be A Non-Empty Array Of Levels';
-    }
-
-    if (Array.isArray(payout_structure) && payout_structure.length > 0) {
-        const sum = payout_structure.reduce((s, p) => s + (Number(p && (p.pct != null ? p.pct : p.percentage)) || 0), 0);
-        if (Math.abs(sum - 100) > 0.5) return `payout_structure Percentages Must Total ~100% (Got ${sum.toFixed(2)}%)`;
-    }
-
-    const cap = (max_entries !== undefined && max_entries !== null && max_entries !== '') ? parseInt(max_entries) : null;
-    if (cap && Number.isFinite(cap) && paying_places != null && parseInt(paying_places) > cap) {
-        return `paying_places (${paying_places}) Cannot Exceed max_entries (${cap})`;
-    }
-
-    return null;
-}
-
 // Auth: GET is PUBLIC (live clock page); writes require STAFF_WRITE.
 export default async function handler(req, res) {
   try {

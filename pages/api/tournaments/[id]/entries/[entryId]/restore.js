@@ -257,6 +257,64 @@ export default async function handler(req, res) {
       req
     });
 
+    // ── Retract the auto-story ────────────────────────────────────────────
+    // eliminate.js publishes "IN THE MONEY! Finished 5th In X, $Y" (or "I WON
+    // X!") to the player's public feed. Undoing the bust used to leave it
+    // there forever, because the row carried no reference to the tournament.
+    // It now carries link_url, so it can be found and removed. Only on a
+    // forced undo - that is the case where the result is being retracted.
+    let storyRetracted = 0;
+    if (force && entry.player_id) {
+      try {
+        const { data: removed } = await getSupabase()
+          .from('social_stories')
+          .delete()
+          .eq('author_id', entry.player_id)
+          .eq('link_url', `/commander/tournaments/${tournamentId}/public`)
+          .select('id');
+        storyRetracted = (removed || []).length;
+      } catch (storyErr) {
+        // Never fail an undo over a social post.
+        console.warn('[restore] story retraction failed:', storyErr?.message || storyErr);
+      }
+    }
+
+    // ── Did this bust already pull an alternate into the field? ───────────
+    // eliminate.js auto-seats the longest-waiting alternate into the freed
+    // chair during late registration, and stamps promoted_for_entry. Restoring
+    // the busted player WITHOUT noticing that grows the field by one, and
+    // commander_claim_finish_position derives every subsequent place from the
+    // field count - so the finishing order silently shifts.
+    //
+    // This deliberately REPORTS rather than demotes. The alternate has been
+    // sitting and playing hands; pulling them back out is a floor decision
+    // about two real people, not something an undo endpoint should choose on
+    // its own. Naming them is what lets the TD make it.
+    let replacedBy = null;
+    try {
+      const { data: promoted } = await getSupabase()
+        .from('commander_tournament_entries')
+        .select('id, player_name, table_number, seat_number, metadata')
+        .eq('tournament_id', tournamentId)
+        .contains('metadata', { promoted_for_entry: entryId })
+        .limit(1);
+      const p = (promoted || [])[0];
+      if (p) {
+        replacedBy = {
+          entry_id: p.id,
+          player_name: p.player_name,
+          table_number: p.table_number,
+          seat_number: p.seat_number
+        };
+      }
+    } catch (promErr) {
+      console.warn('[restore] promoted-alternate lookup failed:', promErr?.message || promErr);
+    }
+
+    const baseMessage = seatAssignment
+      ? `Elimination Undone. Player Is Back In At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
+      : 'Elimination Undone. Player Is Back In The Field. Assign A Seat Manually.';
+
     return res.status(200).json({
       success: true,
       data: {
@@ -264,9 +322,11 @@ export default async function handler(req, res) {
         bounty_reversed: bountyReversed,
         bounty_reversal: bountyReversal || undefined,
         seat_assignment: seatAssignment || undefined,
-        message: seatAssignment
-          ? `Elimination Undone. Player Is Back In At Table ${seatAssignment.table_number}, Seat ${seatAssignment.seat_number}.`
-          : 'Elimination Undone. Player Is Back In The Field. Assign A Seat Manually.'
+        story_retracted: storyRetracted,
+        replaced_by: replacedBy || undefined,
+        message: replacedBy
+          ? `${baseMessage} NOTE: ${replacedBy.player_name || 'An Alternate'} Was Seated From The Alternate List When This Player Busted. The Field Is Now One Larger Than Before. Decide Which Of Them Keeps The Seat.`
+          : baseMessage
       }
     });
   } catch (err) {
