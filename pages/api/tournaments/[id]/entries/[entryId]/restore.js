@@ -17,6 +17,7 @@ import { reportApiError } from '../../../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
 import { reverseKnockoutBounty } from '../../../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -66,6 +67,10 @@ export default async function handler(req, res) {
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
+    
+    // Venue scope: a valid session for one room must never reach
+    // another room's tournament. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
     if (!entry) {
       return res.status(404).json({
         success: false,
@@ -102,7 +107,27 @@ export default async function handler(req, res) {
         finish_position: null,
         eliminated_at: null,
         eliminated_by: null,
-        ...(force ? { payout_amount: null, payout_position: null, payout_status: null } : {})
+        // eliminate.js stamps metadata.won_seat / seat_value when a finish
+        // lands in a seat-paying place on a satellite. Restoring cleared the
+        // payout but never these, so the player came back INTO PLAY still
+        // flagged as having won a seat - the results sheet and the public
+        // payouts tab both label them 'Seat' while they are still at the
+        // table. Cleared alongside the payout they belong to.
+        ...(force
+          ? {
+              payout_amount: null,
+              payout_position: null,
+              payout_status: null,
+              metadata: {
+                ...(entry.metadata || {}),
+                won_seat: null,
+                seat_value: null,
+                prize_amount: null,
+                won_at: null,
+                restored_at: new Date().toISOString()
+              }
+            }
+          : {})
       })
       .eq('id', entryId)
       .eq('tournament_id', tournamentId)

@@ -27,6 +27,7 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -41,18 +42,35 @@ function getSupabase() {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Entry statuses that mean a human is physically sitting at the table.
-// 'registered' players are not seated yet, so they never block a release.
-// 'bagged' players (multi-day, chips in a bag overnight) are not sitting
-// either - they are still in the tournament but hold no chair, and bag-and-tag
-// releases the room's tables precisely so cash games can use them. Counting
-// them here would make every table look occupied until the next day started.
-const SEATED_STATUSES = ['active', 'seated'];
+//
+// 2026-08-22: the line below used to read `['active', 'seated']`, justified by
+// the claim that "'registered' players are not seated yet, so they never block
+// a release." That is not true of this product. Rooms seat their field during
+// registration, before the clock starts - production holds 52 'registered'
+// rows carrying a table AND seat number against 78 'active' ones - and the
+// database agrees: uq_commander_entries_live_seat covers exactly
+// ('registered','seated','active').
+//
+// The consequences of the narrower list were both real: DELETE /tables
+// released a table with players physically sitting at it, and handleGet
+// reported player_count 0 for a full pre-start table.
+//
+// 'bagged' remains excluded, and that reasoning was always right: a multi-day
+// player with chips in a bag holds no chair overnight, and bag-and-tag frees
+// the room's tables on purpose so cash games can use them.
+const SEATED_STATUSES = LIVE_SEAT_STATUSES;
 
 /** A table nobody is using: free of a tournament, not a live cash game. */
 function isAvailable(t) {
   if (t.tournament_id) return false;
   if (t.mode === 'cash') return false;
-  if (t.status && !['available', 'open', 'idle'].includes(t.status)) return false;
+  // commander_tables_status_check allows exactly
+  //   available | in_use | reserved | maintenance
+  // 'open' and 'idle' are not among them and never were, so they were dead
+  // entries in this list - the same silent no-op class as the 'closed' filter
+  // already fixed in tournamentSeating.js and seat-draw.js. Listing values a
+  // column cannot hold reads like the check is broader than it is.
+  if (t.status && t.status !== 'available') return false;
   return true;
 }
 

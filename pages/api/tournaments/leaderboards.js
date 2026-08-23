@@ -102,7 +102,12 @@ async function listLeaderboards(req, res, staff) {
         if (!venueId) {
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Venue Could Not Be Resolved For This Session' } });
         }
-        if (staff.venue_id && Number(req.query.venue_id) && Number(req.query.venue_id) !== Number(staff.venue_id)) {
+        // This compares a QUERY PARAM rather than a row, so denyCrossVenue does
+        // not apply - but the same fail-open leg did: `staff.venue_id &&` let a
+        // session with a null or 0 venue read any venue's seasons. The session
+        // layer guarantees a real venue_id, so requiring one here costs
+        // nothing and removes the bypass.
+        if (Number(req.query.venue_id) && String(req.query.venue_id) !== String(staff.venue_id)) {
             return res.status(403).json({ success: false, error: { code: 'WRONG_VENUE', message: 'Leaderboard Belongs To A Different Venue' } });
         }
 

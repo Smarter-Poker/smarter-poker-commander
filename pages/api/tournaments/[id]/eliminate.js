@@ -23,6 +23,7 @@ import { isUniqueViolation, conflictError, conflictMessage } from '../../../../s
 // winner's payout here always matches position 1 there).
 import { buildPayoutTable, collectedPrizePool, effectivePrizePool as poolFor } from './payout';
 import { applyKnockoutBounty } from '../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 
 let _supabase = null;
@@ -78,6 +79,10 @@ export default async function handler(req, res) {
       if (tournamentError || !tournament) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
 
 
@@ -509,10 +514,23 @@ async function getTotalEntries(tournamentId) {
 }
 
 async function getTotalRebuys(tournamentId) {
-  const { data } = await getSupabase()
+  // No .limit() here meant PostgREST's server-side max-rows cap silently
+  // truncated the scan on a big field, undercounting rebuys -> undercounting
+  // the collected prize pool -> paying every finisher less than the figure the
+  // public payouts tab shows, which computes its own total with .limit(5000).
+  // The two screens disagreed and the busted player was short.
+  const { data, error } = await getSupabase()
     .from('commander_tournament_entries')
     .select('rebuy_count')
     .eq('tournament_id', tournamentId)
+    .limit(5000);
+
+  if (error) {
+    console.error('[eliminate] rebuy total read failed', {
+      tournamentId, code: error.code, message: error.message
+    });
+    throw error;
+  }
 
   return data?.reduce((sum, e) => sum + (e.rebuy_count || 0), 0) || 0;
 }

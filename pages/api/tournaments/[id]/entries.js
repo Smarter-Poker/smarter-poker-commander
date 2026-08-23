@@ -13,6 +13,7 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { claimOpenSeat, promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
 import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue, isSameVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -168,8 +169,19 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
     }
 
+    // Venue scope, STAFF CALLERS ONLY. This route also serves player
+    // self-registration (auth.user with no staff row), and a player has no
+    // venue to compare - their eligibility is decided by the checks below,
+    // not by which room they are standing in. A STAFF session, though, must
+    // not reach another room's event. See src/lib/commander/venueScope.js.
+    if (auth.staff && denyCrossVenue(res, auth.staff, tournament)) return;
+
     // Check if registration is allowed
-    if (!['scheduled', 'registering', 'running'].includes(tournament.status)) {
+    // 'registration' is the value commander_tournaments_status_check actually
+    // allows; 'registering' is not and never matched a row, so a tournament
+    // whose registration had been OPENED was the one state in which nobody
+    // could register. Same fix as register.js:210 - this copy was missed.
+    if (!['scheduled', 'registration', 'registering', 'running'].includes(tournament.status)) {
       return res.status(400).json({ success: false, error: { code: 'REGISTRATION_CLOSED', message: 'Registration Is Closed For This Tournament' } });
     }
 
@@ -405,8 +417,13 @@ async function unregisterPlayer(req, res, tournamentId) {
 
     const tournament = entry.commander_tournaments;
 
-    // Only allow unregister before tournament starts
-    if (!['scheduled', 'registering'].includes(tournament.status)) {
+    // Only allow unregister before tournament starts.
+    // 'registration' is the real constraint value and was missing here, so a
+    // player trying to unregister from an event whose registration was OPEN
+    // fell through to the staff-only branch below and was refused. Same class
+    // of bug as register.js:223 and entries.js:184, both already corrected.
+    // 'registering' is kept as a tolerated alias for older callers.
+    if (!['scheduled', 'registration', 'registering'].includes(tournament.status)) {
       // Check if staff
       const { data: staff } = await getSupabase()
         .from('commander_staff')

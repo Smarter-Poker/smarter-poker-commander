@@ -13,6 +13,8 @@ import { reportApiError } from '../../../../src/lib/sentryWrap';
 // gross. See src/lib/commander/taxEvents.js for the rule and why one entry is
 // one wager.
 import { recordTournamentTaxEvent } from '../../../../src/lib/commander/taxEvents';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { isUniqueViolation } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -36,9 +38,9 @@ export default async function handler(req, res) {
 
     const { id } = req.query;
 
-    if (req.method === 'GET') return handleGetPayouts(req, res, id);
-    if (req.method === 'POST') return handlePayout(req, res, id);
-    if (req.method === 'PUT') return handleBulkPayouts(req, res, id);
+    if (req.method === 'GET') return handleGetPayouts(req, res, id, _staff);
+    if (req.method === 'POST') return handlePayout(req, res, id, _staff);
+    if (req.method === 'PUT') return handleBulkPayouts(req, res, id, _staff);
 
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
@@ -489,7 +491,7 @@ export function buildPayoutTable(tournament, pool, fieldSize) {
   };
 }
 
-async function handleGetPayouts(req, res, tournamentId) {
+async function handleGetPayouts(req, res, tournamentId, staff) {
   try {
     const { mode } = req.query;
 
@@ -505,6 +507,10 @@ async function handleGetPayouts(req, res, tournamentId) {
     if (!tournament) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
     }
+
+    // Venue scope: a valid session for one room must never read another
+    // room's entry list. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     // Get all entries for prize pool calculation
     const { data: entries } = await getSupabase()
@@ -654,7 +660,39 @@ async function handleGetPayouts(req, res, tournamentId) {
   }
 }
 
-async function handlePayout(req, res, tournamentId) {
+/**
+ * Resolve ONE entry row to write a payout against.
+ *
+ * A player_id is not unique within a tournament: register.js creates a second
+ * entry row for a re-entry. Any UPDATE filtered on player_id alone can match
+ * several rows, which PostgREST then refuses to return as a single object
+ * (PGRST116). Where that error was thrown it became a 500; where it was
+ * swallowed the row was skipped in silence - no payout, no W-2G, no points,
+ * and an `updated` count that under-reported while the prize pool was still
+ * computed from the full list.
+ *
+ * The entry that cashed is the surviving one - earlier bullets are already
+ * 'eliminated' - so the newest non-cancelled entry is the answer. An explicit
+ * entry_id from the caller always wins.
+ *
+ * @returns {Promise<string|null>} the entry id, or null when the player has none
+ */
+async function resolvePayoutEntryId(tournamentId, { entry_id, player_id }) {
+  if (entry_id) return entry_id;
+  if (!player_id) return null;
+  const { data, error } = await getSupabase()
+    .from('commander_tournament_entries')
+    .select('id')
+    .eq('tournament_id', tournamentId)
+    .eq('player_id', player_id)
+    .neq('status', 'cancelled')
+    .order('registered_at', { ascending: false, nullsFirst: false })
+    .limit(1);
+  if (error) throw error;
+  return (data || [])[0]?.id || null;
+}
+
+async function handlePayout(req, res, tournamentId, staff) {
   const { player_id, place } = req.body;
   const amount = Number(req.body.amount);
 
@@ -676,6 +714,43 @@ async function handlePayout(req, res, tournamentId) {
       .eq('id', tournamentId)
       .maybeSingle();
 
+    // A missing tournament used to fall straight through here: every field
+    // below reads off `tournament?.` and the payout was written anyway,
+    // against an event that does not exist.
+    if (!tournament) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+    }
+
+    // Venue scope: a valid session for one room must never write a payout
+    // into another room's event. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
+
+    // RESOLVE ONE ENTRY FIRST.
+    //
+    // This used to UPDATE ... .eq('player_id', player_id).maybeSingle().
+    // register.js deliberately creates a SECOND entry row with the same
+    // player_id for a re-entry, so that filter matches two rows, PostgREST
+    // rejects the singular response with PGRST116, and `throw error` turned it
+    // into a 500. The effect: a payout could not be recorded through this
+    // route AT ALL for any player who fired more than one bullet - no W-2G
+    // event, no leaderboard points, no payout.
+    //
+    // The entry that cashed is the one still standing: earlier bullets are
+    // already 'eliminated'. Resolve it explicitly (newest non-cancelled), or
+    // take an explicit entry_id from the caller, and update by primary key so
+    // the statement can only ever touch one row.
+    const targetEntryId = await resolvePayoutEntryId(tournamentId, {
+      entry_id: req.body.entry_id,
+      player_id
+    });
+
+    if (!targetEntryId) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'ENTRY_NOT_FOUND', message: 'That Player Has No Entry In This Tournament' }
+      });
+    }
+
     const { data: entry, error } = await getSupabase()
       .from('commander_tournament_entries')
       .update({
@@ -685,8 +760,8 @@ async function handlePayout(req, res, tournamentId) {
         // Only 1st place is the winner; every other paid finish is 'cashed'.
         status: Number(place) === 1 ? 'winner' : 'cashed'
       })
+      .eq('id', targetEntryId)
       .eq('tournament_id', tournamentId)
-      .eq('player_id', player_id)
       .select()
       .maybeSingle();
 
@@ -742,7 +817,7 @@ async function handlePayout(req, res, tournamentId) {
  * Bulk final payouts - save all overridden amounts at once
  * Used for deal/chop scenarios at final table
  */
-async function handleBulkPayouts(req, res, tournamentId) {
+async function handleBulkPayouts(req, res, tournamentId, staff) {
   try {
     const { payouts } = req.body;
     // payouts = [{ entry_id?, player_id?, position, amount }, ...]
@@ -775,6 +850,17 @@ async function handleBulkPayouts(req, res, tournamentId) {
       .eq('id', tournamentId)
       .maybeSingle();
 
+    // A missing tournament used to fall straight through here: every field
+    // below reads off `tournament?.` and the payout was written anyway,
+    // against an event that does not exist.
+    if (!tournament) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+    }
+
+    // Venue scope: a valid session for one room must never write a payout
+    // into another room's event. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
+
     // ── Denomination rounding on the DEAL path ──
     // A chop struck at the table is paid out of the cage in real notes, so the
     // agreed numbers are rounded to the room's denomination with the remainder
@@ -787,6 +873,9 @@ async function handleBulkPayouts(req, res, tournamentId) {
     // after they left the building. Send denomination: 1 to skip entirely.
     let roundingRemainder = 0;
     let appliedDenomination = 1;
+    // Per-player differences the denomination rounding introduced. Empty when
+    // nothing moved. Reported so a chop is never quietly restated.
+    let roundingAdjustments = [];
     if (dealOnly && payouts.length > 0) {
       const requested = req.body?.denomination;
       const denomSource = (requested === undefined || requested === null || requested === '')
@@ -796,18 +885,56 @@ async function handleBulkPayouts(req, res, tournamentId) {
       // Sorted by position so index 0 really is 1st place. The rows are the
       // same objects as in `payouts`, so writing p.amount here is what the
       // update loop below picks up.
-      const ordered = [...payouts].sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
+      // Sorted by position so index 0 really is 1st place - that is the row
+      // roundPayoutsToDenomination gives the remainder to. `Number(x) || 0`
+      // maps a missing or zero position to 0, which sorts it AHEAD of 1st and
+      // hands it the entire remainder as though it had won. Rows without a
+      // real position now sort last instead.
+      const posOf = (r) => {
+        const n = Number(r?.position);
+        return Number.isFinite(n) && n > 0 ? n : Number.MAX_SAFE_INTEGER;
+      };
+      const ordered = [...payouts].sort((a, b) => posOf(a) - posOf(b));
       const total = ordered.reduce((s, p) => s + Math.round(Number(p.amount) || 0), 0);
       if (denom > 1 && total > 0) {
+        const before = ordered.map(p => Math.round(Number(p.amount) || 0));
         const rounded = roundPayoutsToDenomination(ordered.map(p => p.amount), total, denom);
         ordered.forEach((p, i) => { p.amount = rounded.amounts[i]; });
         roundingRemainder = rounded.remainder;
         appliedDenomination = rounded.denomination;
+
+        // A CHOP IS AN AGREEMENT BETWEEN PLAYERS, AND THIS CHANGES IT.
+        //
+        // The total is preserved - the header above is right about that - but
+        // the SPLIT is not. A 3-way even chop of $10,000 comes off the Deal
+        // Calculator as 3334/3333/3333 and leaves here as 3340/3330/3330: 1st
+        // gains $6 and the other two lose $3 each, relative to the numbers
+        // they shook hands on at the table. The response carried
+        // rounding_remainder, but the screen only read `updated`, so nothing
+        // ever said the numbers had moved.
+        //
+        // The rounding itself is kept - the cage pays in real notes and rooms
+        // set a denomination on purpose - but it is no longer silent. Every
+        // player whose amount changed is named, so the TD can tell the table
+        // before anybody is paid.
+        roundingAdjustments = ordered
+          .map((p, i) => ({
+            position: p.position ?? null,
+            entry_id: p.entry_id || null,
+            player_id: p.player_id || null,
+            from: before[i],
+            to: Math.round(Number(p.amount) || 0),
+            delta: Math.round(Number(p.amount) || 0) - before[i]
+          }))
+          .filter(a => a.delta !== 0);
       }
     }
 
     // Update each entry
     const results = [];
+    // Rows this finalize could NOT write. Reported in the response instead of
+    // vanishing, so the cage can see that N of M payouts did not land.
+    const skipped = [];
     // W-2G assessments raised by this call, echoed back so the finalize screen
     // can name the players the cage must collect a TIN from.
     const w2gEvents = [];
@@ -837,22 +964,62 @@ async function handleBulkPayouts(req, res, tournamentId) {
             ...statusPatch
           };
 
-      let updateQuery = getSupabase()
-        .from('commander_tournament_entries')
-        .update(updatePayload)
-        .eq('tournament_id', tournamentId);
-
-      if (p.entry_id) {
-        updateQuery = updateQuery.eq('id', p.entry_id);
-      } else if (p.player_id) {
-        updateQuery = updateQuery.eq('player_id', p.player_id);
-      } else {
+      // A PROJECTED slot is the calculator's GUESS at who will finish where,
+      // matched to still-active players by current chip count (see
+      // handleGetPayouts, `is_projected`). It is a preview, not a result.
+      //
+      // The TD screen dropped the flag when building this body, so pressing
+      // Save at level 5 with 40 players left stamped payout_amount and
+      // payout_position onto nine people who were still in their seats. pay.js
+      // only refuses when payout_amount <= 0, so the cage window would then
+      // hand them the money, and the reconciliation counted them as owed.
+      //
+      // A chop is different and still allowed: those rows are submitted
+      // deliberately for named live players and never carry this flag.
+      if (p.is_projected) {
+        skipped.push({
+          entry_id: p.entry_id || null,
+          player_id: p.player_id || null,
+          position: p.position ?? null,
+          reason: 'Projected Finish, Not A Result. Not Saved.'
+        });
         continue;
       }
 
-      const { data: entry, error } = await updateQuery
+      // Always update by primary key. Filtering on player_id matched BOTH
+      // rows of a re-entry, and the `if (!error && entry)` below then dropped
+      // the row without a word: the player was never paid, no points and no
+      // W-2G were recorded, `updated` under-counted - and actual_prizepool was
+      // still summed from the full payouts array, so the books disagreed with
+      // what actually happened.
+      const rowEntryId = await resolvePayoutEntryId(tournamentId, p);
+      if (!rowEntryId) {
+        skipped.push({
+          entry_id: p.entry_id || null,
+          player_id: p.player_id || null,
+          position: p.position ?? null,
+          reason: 'No Matching Entry In This Tournament'
+        });
+        continue;
+      }
+
+      const { data: entry, error } = await getSupabase()
+        .from('commander_tournament_entries')
+        .update(updatePayload)
+        .eq('id', rowEntryId)
+        .eq('tournament_id', tournamentId)
         .select()
         .maybeSingle();
+
+      if (error || !entry) {
+        // A failure here is REPORTED, never swallowed.
+        skipped.push({
+          entry_id: rowEntryId,
+          player_id: p.player_id || null,
+          position: p.position ?? null,
+          reason: error?.message || 'Update Matched No Row'
+        });
+      }
 
       if (!error && entry) {
         results.push(entry);
@@ -906,26 +1073,66 @@ async function handleBulkPayouts(req, res, tournamentId) {
     // Persist the total paid out as the actual prize pool, and the final
     // override table itself in final_payouts (real jsonb column; the GET
     // handler reads it back for the payouts screen).
-    const actualPrizepool = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-    if (actualPrizepool > 0) {
-      await getSupabase()
-        .from('commander_tournaments')
-        .update({ actual_prizepool: actualPrizepool, final_payouts: payouts })
-        .eq('id', tournamentId);
+    // ── Recording the pool ────────────────────────────────────────────────
+    // NEVER on the deal path.
+    //
+    // A chop is struck between the players STILL IN, so `payouts` carries only
+    // them - the Deal Calculator builds it from the remaining field. Writing
+    // its sum into actual_prizepool therefore REPLACED the tournament's prize
+    // pool with the chopped remainder. Concretely: a $50,000 pool where places
+    // 4-9 have already been paid $20,000 and the last three chop $30,000 came
+    // out as actual_prizepool = 30,000.
+    //
+    // That number is not cosmetic. effectivePrizePool() returns actual_prizepool
+    // whenever it is > 0, so from that moment the payouts screen, the
+    // reconciliation, the registration report, the clock and floor-view all
+    // believed the pool was 30,000, buildPayoutTable recomputed the whole
+    // ladder off it, and the reconciliation raised PAYOUTS_EXCEED_PRIZE_POOL
+    // for the rest of the event.
+    //
+    // A chop redistributes money already collected; it does not change how
+    // much was collected. So the pool is only recorded on a true finalize,
+    // where `payouts` is the complete ladder. final_payouts is still stored on
+    // the deal path - that IS the agreed schedule and the public page reads it.
+    const payoutsTotal = payouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const poolPatch = (!dealOnly && payoutsTotal > 0)
+      ? { actual_prizepool: payoutsTotal, final_payouts: payouts }
+      : { final_payouts: payouts };
+
+    // The result of this write used to be discarded entirely: a rejected
+    // update left the entries paid and the tournament's pool stale, silently.
+    const { error: poolErr } = await getSupabase()
+      .from('commander_tournaments')
+      .update(poolPatch)
+      .eq('id', tournamentId);
+
+    if (poolErr) {
+      console.error('[payout] failed to record final payouts', {
+        tournamentId, dealOnly, code: poolErr.code, message: poolErr.message
+      });
     }
 
     return res.status(200).json({
       success: true,
       data: {
         updated: results.length,
+        // Rows that did not land. Previously these disappeared: `updated` just
+        // came out lower than the list the cage submitted, with nothing saying
+        // which players were missed.
+        skipped,
+        skipped_count: skipped.length,
         payouts: results,
         deal_only: dealOnly,
         denomination: appliedDenomination,
         rounding_remainder: roundingRemainder,
+        rounding_adjustments: roundingAdjustments,
         w2g_events: w2gEvents,
-        message: dealOnly
-          ? 'Deal Recorded. Play Continues And Finishing Order Is Still Assigned On Elimination.'
-          : 'Final Payouts Saved.'
+        message: skipped.length > 0
+          ? `${results.length.toLocaleString()} Payout${results.length === 1 ? '' : 's'} Saved. ${skipped.length.toLocaleString()} Could Not Be Written - See skipped.`
+          : (dealOnly
+            ? 'Deal Recorded. Play Continues And Finishing Order Is Still Assigned On Elimination.'
+            : 'Final Payouts Saved.'),
+        pool_recorded: !dealOnly && payoutsTotal > 0
       }
     });
   } catch (error) {
@@ -1052,7 +1259,36 @@ async function awardTournamentPoints(tournament, tournamentId, entry) {
         player_id: entry.player_id || null,
         player_name: entry.player_name || null
       });
-    if (error) console.warn('Award points insert failed:', error.message || error);
+
+    // The select-then-insert above is not atomic against
+    // uq_ctp_tournament_player. Two concurrent finalizes both pass the read,
+    // one inserts, and the loser used to be console.warn'd and dropped - the
+    // player simply never scored. A 23505 here means the row this call was
+    // trying to create ALREADY EXISTS, which is the outcome it wanted, so
+    // retry as the update it should have been. Every other money route in this
+    // file handles 23505 properly; this one did not.
+    if (error && isUniqueViolation(error)) {
+      let retryQuery = getSupabase()
+        .from('commander_tournament_points')
+        .update(row)
+        .eq('tournament_id', tournamentId);
+      retryQuery = entry.player_id
+        ? retryQuery.eq('player_id', entry.player_id)
+        : retryQuery.is('player_id', null).eq('player_name', entry.player_name);
+      const { error: retryErr } = await retryQuery;
+      if (retryErr) {
+        console.error('[payout] points lost after a concurrent insert', {
+          tournamentId, entryId: entry.id, code: retryErr.code, message: retryErr.message
+        });
+      }
+      return;
+    }
+
+    if (error) {
+      console.error('[payout] award points insert failed', {
+        tournamentId, entryId: entry.id, code: error.code, message: error.message
+      });
+    }
   } catch (err) {
     console.warn('Award points error:', err);
   }

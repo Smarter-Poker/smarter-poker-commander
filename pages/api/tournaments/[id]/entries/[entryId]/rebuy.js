@@ -8,6 +8,7 @@ import { createClient } from '../../../../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../../src/lib/sentryWrap';
+import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -50,6 +51,10 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (!tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
 
       // Validate rebuys allowed

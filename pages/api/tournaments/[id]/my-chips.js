@@ -13,6 +13,9 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { requireAuth } from '../../../../src/lib/commander/auth';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 
+// Matches entries/[entryId]/chips.js: the staff-side writer of the same column.
+const MAX_CHIPS = 2000000000;
+
 let _supabase = null;
 function getSupabase() {
     if (!_supabase) {
@@ -103,8 +106,16 @@ export default async function handler(req, res) {
       try {
           const { chips } = req.body;
 
-          if (chips === undefined || chips === null || isNaN(Number(chips)) || Number(chips) < 0) {
-              return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Valid Chip Count Required' } });
+          // Upper bound matches chips.js MAX_CHIPS. Without it, Number('1e20')
+          // passes isNaN and < 0, survives Math.floor, and the integer column
+          // raises 22003 - a 500 for what is a validation error.
+          const parsedChips = Number(chips);
+          if (chips === undefined || chips === null || !Number.isFinite(parsedChips) ||
+              parsedChips < 0 || parsedChips > MAX_CHIPS) {
+              return res.status(400).json({
+                  success: false,
+                  error: { code: 'VALIDATION_ERROR', message: `Valid Chip Count Required (A Whole Number From 0 To ${MAX_CHIPS.toLocaleString()})` }
+              });
           }
 
           // Verify tournament exists and is running
@@ -118,7 +129,16 @@ export default async function handler(req, res) {
               return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
           }
 
-          if (!['running', 'break', 'final_table'].includes(tournament.status)) {
+          // commander_tournaments_status_check allows
+          //   scheduled | registration | running | paused | final_table
+          //   | completed | cancelled
+          // There is no 'break' - the break toggle in clock.js sets status
+          // 'paused' and flips clock_state.on_break. So this list tested for a
+          // value that can never occur while OMITTING the one that actually
+          // happens, and self-report returned 400 NOT_RUNNING for the whole
+          // break: precisely the interval in which players count their stacks.
+          // The feature was dead exactly when it was needed.
+          if (!['running', 'paused', 'final_table'].includes(tournament.status)) {
               return res.status(400).json({ success: false, error: { code: 'NOT_RUNNING', message: 'Tournament Is Not Currently Running' } });
           }
 
@@ -134,6 +154,13 @@ export default async function handler(req, res) {
               // over it. (The route also gates on a running tournament, and
               // bag-and-tag leaves the event 'paused'.)
               .in('status', ['active', 'seated', 'registered'])
+              // A re-entry player has MORE THAN ONE row here, and maybeSingle()
+              // errors on multiple rows rather than picking one - so eErr was
+              // truthy and every re-entered player got 404 NOT_REGISTERED. The
+              // GET branch above was fixed with exactly this order+limit;
+              // the POST branch was left behind. Newest entry is the live one.
+              .order('registered_at', { ascending: false, nullsFirst: false })
+              .limit(1)
               .maybeSingle();
 
           if (eErr || !entry) {

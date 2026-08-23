@@ -266,7 +266,16 @@ export default function TDTablesMap() {
             to_table: m.to_table,
             to_seat: m.to_seat,
             reason: m.reason || (suggestion.type === 'break' ? 'table_break' : 'balance')
-          }))
+          })),
+          // Ask for the emptied table to be freed. Without this the players
+          // moved off it but the commander_tables row kept tournament_id and
+          // status 'in_use', so the table stayed in the seat pool and the next
+          // alternate was seated straight back onto the table just broken.
+          // The route only honours it when every move landed and nobody is
+          // still sitting there. Only a COMPLETE break sets table_to_break.
+          release_table: suggestion.type === 'break' && suggestion.table_to_break != null
+            ? suggestion.table_to_break
+            : undefined
         })
       });
       const json = await res.json().catch(() => null);
@@ -1049,6 +1058,16 @@ export default function TDTablesMap() {
                     {balanceSuggestion.type === 'break' ? 'Break And Rebalance' : 'Balance Tables'}
                   </h3>
                   <p className="text-xs text-[#B0B3B8]">{balanceSuggestion.message || 'Review The Proposed Moves'}</p>
+                  {/* Players the plan could not seat anywhere. The route used to
+                      drop these silently while still reporting the full
+                      headcount, so the floor could approve a break that leaves
+                      people at a table it believes is being emptied. */}
+                  {(balanceSuggestion.unplaced || []).length > 0 && (
+                    <p className="mt-1 text-xs font-bold text-[#F02849]">
+                      {balanceSuggestion.unplaced.length} Player(s) Have Nowhere To Go:{' '}
+                      {balanceSuggestion.unplaced.map(u => u.player_name || 'Unknown').join(', ')}
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => { setBalanceSuggestion(null); setBalanceFailures([]); }}
                   disabled={balanceExecuting}

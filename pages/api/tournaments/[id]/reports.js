@@ -15,6 +15,7 @@ import {
   effectivePrizePool
 } from './payout';
 import { entryBountyValue, entryBountyWinnings, hasBounties } from '../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -41,9 +42,9 @@ export default async function handler(req, res) {
       const { id: tournamentId, type } = req.query;
 
       switch (type) {
-          case 'registration': return registrationReport(req, res, tournamentId);
-          case 'cashier': return cashierReport(req, res, tournamentId);
-          case 'activity': return activityReport(req, res, tournamentId);
+          case 'registration': return registrationReport(req, res, tournamentId, _staff);
+          case 'cashier': return cashierReport(req, res, tournamentId, _staff);
+          case 'activity': return activityReport(req, res, tournamentId, _staff);
           default:
               return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'type Required: registration, cashier, Or activity' } });
       }
@@ -59,15 +60,23 @@ export default async function handler(req, res) {
  * Registration Report - per-entry breakdown
  * Player name, seat, buy-in, payment method, cashier, timestamp
  */
-async function registrationReport(req, res, tournamentId) {
+async function registrationReport(req, res, tournamentId, staff) {
     try {
         const { data: tournament } = await getSupabase()
             .from('commander_tournaments')
             // tournament_type, bounty_amount and settings are needed for the
             // bounty slice that is held out of the prize pool.
-            .select('name, tournament_type, buyin_amount, buyin_fee, bounty_amount, rebuy_amount, addon_amount, guaranteed_pool, actual_prizepool, settings, scheduled_start')
+            .select('name, venue_id, tournament_type, buyin_amount, buyin_fee, bounty_amount, rebuy_amount, addon_amount, guaranteed_pool, actual_prizepool, settings, scheduled_start')
             .eq('id', tournamentId)
             .maybeSingle();
+
+        if (!tournament) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+        }
+
+        // Venue scope: this report carries player names, payment methods and
+        // cashier attribution. See src/lib/commander/venueScope.js.
+        if (denyCrossVenue(res, staff, tournament)) return;
 
         // payment_method and cashier_staff_id ARE real columns on
         // commander_tournament_entries (verified against the live schema
@@ -203,13 +212,21 @@ async function registrationReport(req, res, tournamentId) {
  * derivable and reported. Entries taken before the columns were populated
  * (or via self-registration) appear under the 'unattributed' bucket.
  */
-async function cashierReport(req, res, tournamentId) {
+async function cashierReport(req, res, tournamentId, staff) {
     try {
         const { data: tournament } = await getSupabase()
             .from('commander_tournaments')
-            .select('name, buyin_amount, buyin_fee, rebuy_amount, addon_amount, scheduled_start')
+            .select('name, venue_id, buyin_amount, buyin_fee, rebuy_amount, addon_amount, scheduled_start')
             .eq('id', tournamentId)
             .maybeSingle();
+
+        if (!tournament) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+        }
+
+        // Venue scope: this report carries player names, payment methods and
+        // cashier attribution. See src/lib/commander/venueScope.js.
+        if (denyCrossVenue(res, staff, tournament)) return;
 
         const { data: entries, error } = await getSupabase()
             .from('commander_tournament_entries')
@@ -291,8 +308,22 @@ async function cashierReport(req, res, tournamentId) {
  * Activity Report - chronological event log
  * All registrations, eliminations, rebuys with timestamps
  */
-async function activityReport(req, res, tournamentId) {
+async function activityReport(req, res, tournamentId, staff) {
     try {
+        // This report read the entry list directly, with no tournament row and
+        // therefore no way to tell whose event it was. The load exists solely
+        // so the venue can be checked before any player name is returned.
+        const { data: tournament } = await getSupabase()
+            .from('commander_tournaments')
+            .select('id, venue_id')
+            .eq('id', tournamentId)
+            .maybeSingle();
+
+        if (!tournament) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+        }
+        if (denyCrossVenue(res, staff, tournament)) return;
+
         const { data: entries, error } = await getSupabase()
             .from('commander_tournament_entries')
             .select(`

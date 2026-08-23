@@ -8,6 +8,8 @@ import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -43,6 +45,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'moves Array Required' } });
       }
 
+      // This route never loaded the tournament at all - it wrote entries
+      // scoped only by .eq('tournament_id', tournamentId), taken from the URL.
+      // A valid staff session for any room could therefore reseat any other
+      // room's live event. The row is loaded here purely to establish whose
+      // tournament this is before a single seat is written.
+      const { data: tournament } = await getSupabase()
+        .from('commander_tournaments')
+        .select('id, venue_id')
+        .eq('id', tournamentId)
+        .maybeSingle();
+
+      if (!tournament) {
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      }
+      if (denyCrossVenue(res, _g, tournament)) return;
+
       const results = [];
       const errors = [];
       const timestamp = new Date().toISOString();
@@ -73,9 +91,11 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
-        // SEAT OCCUPANCY: balancing moves people between chairs, and a
-        // 'bagged' player is not in one. Excluded on purpose.
-        .in('status', ['active', 'seated'])
+        // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+        // index exactly. 'registered' holds a chair - omitting it made this probe
+        // report a taken seat as free, and the index then raised a 23505 the floor
+        // saw as a phantom "another device filled it first". 'bagged' holds none.
+                .in('status', LIVE_SEAT_STATUSES)
         .in('table_number', destTables.length > 0 ? destTables : [-1]);
 
       // A discarded error here made the guard pass on an empty result and the
@@ -172,12 +192,78 @@ export default async function handler(req, res) {
 
       const collided = countCollisions(errors);
 
+      // ── RELEASE THE BROKEN TABLE ──────────────────────────────────────────
+      // This route moves players and stops. It has no commander_tables write
+      // at all, yet the TD screen sends a table-BREAK plan straight here
+      // (tables.js posts suggestion.moves for type 'break'). So the table was
+      // emptied of players while its row kept tournament_id, mode 'tournament'
+      // and status 'in_use' - which means it stayed in the seat pool used by
+      // commander_claim_open_seat and findOpenSeat, and the very next
+      // alternate or late registration was seated back onto the table that had
+      // just been broken. It also kept appearing under assigned_tables.
+      //
+      // Only released when the caller asked, every move landed, and nothing is
+      // left sitting there - a half-applied break must not free the table.
+      let tableReleased = null;
+      const releaseTable = Number(req.body.release_table);
+      if (Number.isInteger(releaseTable) && errors.length === 0) {
+        const { data: stillThere, error: stillErr } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .eq('table_number', releaseTable)
+          .in('status', LIVE_SEAT_STATUSES)
+          .limit(1);
+
+        if (stillErr) {
+          console.error('[tournaments/balance-execute] post-break occupancy check failed', {
+            tournamentId, releaseTable, code: stillErr.code, message: stillErr.message
+          });
+        } else if ((stillThere || []).length > 0) {
+          console.warn('[tournaments/balance-execute] refusing to release a table that still has players', {
+            tournamentId, releaseTable
+          });
+        } else {
+          const { data: released, error: relErr } = await getSupabase()
+            .from('commander_tables')
+            .update({
+              mode: 'inactive',
+              table_purpose: null,
+              tournament_id: null,
+              game_type: null,
+              stakes: null,
+              status: 'available',
+              assigned_at: null,
+              assigned_by: null,
+            })
+            .eq('venue_id', tournament.venue_id)
+            .eq('tournament_id', tournamentId)
+            .eq('table_number', releaseTable)
+            .select('id');
+
+          if (relErr) {
+            console.error('[tournaments/balance-execute] table release failed', {
+              tournamentId, releaseTable, code: relErr.code, message: relErr.message
+            });
+          } else {
+            // A zero-row update is not a PostgREST error, so say which it was.
+            tableReleased = (released || []).length > 0 ? releaseTable : null;
+            if (!tableReleased) {
+              console.warn('[tournaments/balance-execute] release matched no rows', {
+                tournamentId, releaseTable
+              });
+            }
+          }
+        }
+      }
+
       return res.status(200).json({
         success: errors.length === 0,
         data: {
           executed: results.length,
           failed: errors.length,
           seat_collisions: collided,
+          table_released: tableReleased,
           moves: results,
           errors: errors.length > 0 ? errors : undefined,
           message: errors.length === 0

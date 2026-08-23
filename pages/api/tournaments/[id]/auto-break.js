@@ -21,6 +21,8 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -57,6 +59,10 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       if (req.method === 'GET') return handleCheck(req, res, tournament);
       if (req.method === 'POST') return handleExecute(req, res, tournament, _g);
@@ -103,9 +109,11 @@ async function getTableData(tournamentId, venueId) {
     .from('commander_tournament_entries')
     .select('id, player_name, table_number, seat_number, current_chips, player_id')
     .eq('tournament_id', tournamentId)
-    // SEAT OCCUPANCY: a 'bagged' player (multi-day) holds no chair, so they
-    // never count toward a table's headcount and are never moved by a break.
-    .in('status', ['active', 'seated'])
+    // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+    // index exactly. 'registered' holds a chair - omitting it made this probe
+    // report a taken seat as free, and the index then raised a 23505 the floor
+    // saw as a phantom "another device filled it first". 'bagged' holds none.
+        .in('status', LIVE_SEAT_STATUSES)
     .order('table_number')
     .order('seat_number');
 
@@ -275,6 +283,65 @@ async function handleExecute(req, res, tournament, staff) {
   const venueState = venueRes.data?.state || null;
   const venueLogoUrl = settingsRes.data?.club_logo_url || venueRes.data?.logo_url || null;
 
+  // DESTINATIONS MUST BE REAL CHAIRS.
+  //
+  // This route validated only that the batch had no internal duplicate and
+  // that no live entry already held a destination - never that the destination
+  // EXISTS. { to_table: 3, to_seat: 99 } was written verbatim, and a seat
+  // outside 1..max_seats is invisible to every occupancy scan in the codebase
+  // (they all walk `for (s = 1; s <= max_seats; s++)`, as does
+  // commander_claim_open_seat), so the player vanished from the floor map
+  // while the index still reserved the pair.
+  const { data: tableRows, error: tblErr } = await getSupabase()
+    .from('commander_tables')
+    .select('table_number, max_seats')
+    .eq('venue_id', tournament.venue_id)
+    .eq('tournament_id', tournament.id)
+    .limit(200);
+
+  if (tblErr) {
+    console.error('[tournaments/auto-break] table read failed', {
+      tournamentId: tournament.id, code: tblErr.code, message: tblErr.message,
+    });
+    return res.status(500).json({ success: false, error: { code: 'DB_ERROR', message: 'Failed To Verify Destination Tables' } });
+  }
+
+  // Only enforce against a real table list. A room that seats without
+  // commander_tables rows would otherwise have every break rejected, so an
+  // empty list falls back to a plain bounds check.
+  const seatCapacity = new Map((tableRows || []).map(t => [Number(t.table_number), Number(t.max_seats) || 9]));
+
+  for (const a of assignments) {
+    const t = Number(a.to_table);
+    const st = Number(a.to_seat);
+    if (!Number.isInteger(t) || t < 1 || !Number.isInteger(st) || st < 1) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: `Table And Seat Must Be Whole Numbers Above Zero (Got Table ${a.to_table} Seat ${a.to_seat})` }
+      });
+    }
+    if (seatCapacity.size > 0) {
+      if (!seatCapacity.has(t)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'UNKNOWN_TABLE', message: `Table ${t.toLocaleString()} Is Not Assigned To This Tournament` }
+        });
+      }
+      const cap = seatCapacity.get(t);
+      if (st > cap) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'SEAT_OUT_OF_RANGE', message: `Table ${t.toLocaleString()} Has ${cap.toLocaleString()} Seats. Seat ${st.toLocaleString()} Does Not Exist.` }
+        });
+      }
+    } else if (st > 12) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'SEAT_OUT_OF_RANGE', message: `Seat ${st.toLocaleString()} Is Outside The Largest Supported Table.` }
+      });
+    }
+  }
+
   // Validate no seat conflicts
   const seatKeys = new Set();
   for (const a of assignments) {
@@ -293,9 +360,11 @@ async function handleExecute(req, res, tournament, staff) {
     .from('commander_tournament_entries')
     .select('id, table_number, seat_number, player_name, current_chips, status')
     .eq('tournament_id', tournament.id)
-    // SEAT OCCUPANCY, same rule: bagged players hold no seat and can never
-    // make a destination chair look taken.
-    .in('status', ['active', 'seated']);
+    // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+    // index exactly. 'registered' holds a chair - omitting it made this probe
+    // report a taken seat as free, and the index then raised a 23505 the floor
+    // saw as a phantom "another device filled it first". 'bagged' holds none.
+    .in('status', LIVE_SEAT_STATUSES);
 
   // A discarded error here made the guard pass on an empty result and the break
   // went on to overwrite live seats.

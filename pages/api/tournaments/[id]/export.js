@@ -29,6 +29,7 @@ import { buildReconciliation } from './reconciliation';
 import { buildHendonMobCSV, buildHendonMobJSON } from '../../exports/hendon-mob';
 import { entryBountyWinnings, entryBountyValue, hasBounties } from '../../../../src/lib/commander/tournamentBounty';
 import { assessEntryW2G, entryTotalInvested } from '../../../../src/lib/commander/taxEvents';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -114,6 +115,11 @@ export default async function handler(req, res) {
     if (!tournament) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
     }
+
+    // Venue scope. buildReconciliation above is venue-checked, but this route
+    // must not depend on a check living in another module to protect the
+    // packet it assembles here: names, seats, payouts and tax figures.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     // Audit every export: a results packet leaves the building with player
     // names and money on it.

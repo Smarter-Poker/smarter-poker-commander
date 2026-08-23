@@ -13,6 +13,33 @@
  *   registration is still open, TableCaptain-waitlist style.
  */
 
+/**
+ * Entry statuses that HOLD A CHAIR.
+ *
+ * This is not a judgement call - it is a mirror of the database. The partial
+ * unique index that actually enforces one-player-per-seat is:
+ *
+ *   uq_commander_entries_live_seat ON (tournament_id, table_number, seat_number)
+ *     WHERE status IN ('registered','seated','active')
+ *       AND table_number IS NOT NULL AND seat_number IS NOT NULL
+ *
+ * and commander_claim_open_seat counts the same three. Any occupancy probe in
+ * JS that uses a NARROWER set disagrees with the constraint that will actually
+ * fire, which produces the worst possible failure: the probe says the chair is
+ * free, the write is attempted, and the index raises 23505 - so the floor is
+ * told "another device filled it first, refresh the table map" when no other
+ * device did anything, and pressing the button again reproduces it forever.
+ *
+ * 'registered' is the one that kept being left out, and it is not an edge
+ * case: production holds 52 'registered' rows sitting on a table and seat
+ * against 78 'active' ones. Rooms seat their field before the clock starts.
+ *
+ * 'bagged' is deliberately EXCLUDED and that part was always right: a bagged
+ * multi-day player holds no chair overnight, and counting them would make the
+ * floor look full until the next day began.
+ */
+export const LIVE_SEAT_STATUSES = Object.freeze(['registered', 'seated', 'active']);
+
 export async function findOpenSeat(supabase, tournament) {
   const tournamentId = tournament.id;
 
@@ -36,10 +63,9 @@ export async function findOpenSeat(supabase, tournament) {
       .from('commander_tournament_entries')
       .select('table_number, seat_number')
       .eq('tournament_id', tournamentId)
-      // SEAT OCCUPANCY. 'bagged' excluded on purpose: a bagged player holds no
-      // chair, so their old seat must be offered to the next player. Counting
-      // them here would make findOpenSeat report a full floor overnight.
-      .in('status', ['seated', 'active'])
+      // SEAT OCCUPANCY. See LIVE_SEAT_STATUSES: 'registered' holds a chair
+      // (rooms seat the field before the clock starts) and 'bagged' does not.
+      .in('status', LIVE_SEAT_STATUSES)
       .limit(5000)
   ]);
 

@@ -17,6 +17,7 @@ import { reportApiError } from '../../../../src/lib/sentryWrap';
 // payouts screen, the public live page and every bust.
 import { collectedPrizePool, collectedBountyPool, bountyPortionPerEntry } from './payout';
 import { entryBountyValue, entryBountyWinnings } from '../../../../src/lib/commander/tournamentBounty';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -265,6 +266,10 @@ export default async function handler(req, res) {
       const { data: tournament, error: tErr } = tournamentRes;
       if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
 
+      // Venue scope: this payload is the whole floor - every player name,
+      // chip count, seat and the alternate queue.
+      if (denyCrossVenue(res, _g, tournament)) return;
+
       let entriesResult = entriesRes;
       if (entriesResult.error && isMissingColumn(entriesResult.error)) {
         // Pre-migration deploy: retry once without the bounty columns and
@@ -484,7 +489,10 @@ export default async function handler(req, res) {
       let clockState = tournamentSettings.clock_state || null;
 
       // Auto-initialize clock_state for running tournaments that were never properly started
-      if (!clockState && ['running', 'break', 'final_table'].includes(tournament.status)) {
+      // 'break' is not a commander_tournaments status - the break toggle sets
+      // 'paused'. This branch therefore never fired for a paused event, so the
+      // clock backfill was skipped for exactly the tournaments on a break.
+      if (!clockState && ['running', 'paused', 'final_table'].includes(tournament.status)) {
         // 2026-07-25 audit fix: when backfilling mid-tournament use now as
         // levelStartedAt - using actual_start made the level appear long expired.
         clockState = {

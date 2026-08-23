@@ -22,6 +22,7 @@ import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { claimOpenSeat } from '../../../../src/lib/commander/tournamentSeating';
 import { rowConflict, countCollisions, isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -108,12 +109,9 @@ export default async function handler(req, res) {
         error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
-    if (staff.venue_id && Number(staff.venue_id) !== Number(tournament.venue_id)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' }
-      });
-    }
+    // One shared check. This was one of three hand-written spellings, and
+    // this one fell OPEN on a null or 0 venue_id.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     if (req.method === 'GET') {
       const conflicts = await loadConflicts(tournamentId);

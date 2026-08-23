@@ -19,6 +19,7 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { notifyAlternates } from '../../../../src/lib/commander/alternateNotifications';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -60,13 +61,9 @@ export default async function handler(req, res) {
     }
 
     // Venue scoping: staff can only message their own room's players.
-    if (staff.venue_id !== undefined && staff.venue_id !== null
-      && String(staff.venue_id) !== String(tournament.venue_id)) {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'FORBIDDEN', message: 'You Are Not Staff At This Venue' }
-      });
-    }
+    // One shared check. This was one of three hand-written spellings, and
+    // this one fell OPEN on a null or 0 venue_id.
+    if (denyCrossVenue(res, staff, tournament)) return;
 
     const rawLimit = req.body?.limit;
     const limit = (rawLimit === undefined || rawLimit === null || rawLimit === '')

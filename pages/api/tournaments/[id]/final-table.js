@@ -8,6 +8,7 @@ import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -46,6 +47,10 @@ export default async function handler(req, res) {
         .eq('id', tournamentId)
         .maybeSingle();
       if (tErr || !tournament) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       const { final_table_number } = req.body;
       const targetTable = final_table_number || 1;
@@ -175,6 +180,31 @@ export default async function handler(req, res) {
         final_table_started_at: timestamp
       };
 
+      // DO NOT declare a final table that was not actually formed.
+      //
+      // This wrote status 'final_table' unconditionally and returned HTTP 200
+      // even when every single move had failed - so the event was marked as
+      // being on its final table while the players were still spread across
+      // the room, or worse, sitting with NULL table/seat after the pre-release
+      // above succeeded and their re-seat did not. Those players are live with
+      // no chair and appear only inside data.errors.
+      //
+      // If nothing could be seated, the tournament state is left alone and the
+      // caller gets a 409 describing what collided, so the floor can fix the
+      // table and run it again.
+      if (moves.length === 0 && moveErrors.length > 0) {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: 'FINAL_TABLE_NOT_FORMED',
+            message: 'No Player Could Be Seated At The Final Table. Tournament Status Unchanged.',
+            players_failed: moveErrors.length,
+            seat_collisions: countCollisions(moveErrors),
+            errors: moveErrors
+          }
+        });
+      }
+
       const { error: uErr } = await getSupabase().rpc('commander_clock_write', {
         p_tournament_id: tournamentId,
         p_clock_state: updatedClockState,
@@ -191,6 +221,13 @@ export default async function handler(req, res) {
           players_seated: moves.length,
           players_failed: moveErrors.length,
           seat_collisions: countCollisions(moveErrors),
+          // A player whose pre-release succeeded and whose re-seat failed is
+          // now live with NO table and NO seat. That is a floor emergency, not
+          // a line item, so it is named explicitly rather than left for
+          // somebody to infer from the errors array.
+          players_left_unseated: moveErrors.length > 0
+            ? moveErrors.map(e => e.player_name || e.entry_id).filter(Boolean)
+            : undefined,
           moves,
           errors: moveErrors.length > 0 ? moveErrors : undefined,
           message: moveErrors.length === 0

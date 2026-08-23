@@ -11,6 +11,8 @@ import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { enqueueSeatChangeReceipts } from '../../../../src/lib/commander/printQueue';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -59,6 +61,10 @@ export default async function handler(req, res) {
       if (tErr || !tournament) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
       // Fetch real venue data from both tables in parallel.
       // 2026-08-20 audit fix: this read `venues`, whose id is a UUID and which
@@ -107,9 +113,11 @@ export default async function handler(req, res) {
         .from('commander_tournament_entries')
         .select('id, table_number, seat_number, player_name')
         .eq('tournament_id', tournamentId)
-        // SEAT OCCUPANCY: only a player physically in a chair can conflict
-        // with a destination seat. 'bagged' excluded on purpose.
-        .in('status', ['active', 'seated']);
+        // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+        // index exactly. 'registered' holds a chair - omitting it made this probe
+        // report a taken seat as free, and the index then raised a 23505 the floor
+        // saw as a phantom "another device filled it first". 'bagged' holds none.
+                .in('status', LIVE_SEAT_STATUSES);
 
       // A discarded error here made the guard pass on an empty result and the
       // break went on to overwrite live seats.

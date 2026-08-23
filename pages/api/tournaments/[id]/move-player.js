@@ -9,6 +9,8 @@ import { guardWriteStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { seatConflictResponse } from '../../../../src/lib/commander/dbErrors';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';
 
 let _supabase = null;
 function getSupabase() {
@@ -51,10 +53,28 @@ export default async function handler(req, res) {
       if (tErr || !tournament) {
         return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } });
       }
+      
+      // Venue scope: a valid session for one room must never reach
+      // another room's tournament. See src/lib/commander/venueScope.js.
+      if (denyCrossVenue(res, _g, tournament)) return;
 
-      const { entry_id, to_table, to_seat } = req.body;
-      if (!entry_id || to_table === undefined || to_seat === undefined) {
-        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'entry_id, to_table, And to_seat Required' } });
+      const { entry_id } = req.body;
+      // Both columns are INTEGER, and this route only tested for `undefined`.
+      // Two consequences, both real:
+      //   to_seat: 0 or 99 was written verbatim, putting the player in a chair
+      //   outside every `for (s = 1; s <= max_seats; s++)` scan - so they were
+      //   never counted as occupying it while the index still reserved the
+      //   pair, and the table map drew a seat that does not exist;
+      //   a STRING "3" made the destination-occupied guard below compare
+      //   "3" === 3 and pass, because that check uses ===  against an INTEGER
+      //   column. Coercing here closes both.
+      // Bounds match seat.js, which already validated this properly.
+      const to_table = Number(req.body.to_table);
+      const to_seat = Number(req.body.to_seat);
+      if (!entry_id || req.body.to_table === undefined || req.body.to_seat === undefined
+        || !Number.isInteger(to_table) || to_table < 1
+        || !Number.isInteger(to_seat) || to_seat < 1 || to_seat > 12) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'entry_id, A Whole-Number to_table, And to_seat (1 To 12) Are Required' } });
       }
 
       // Get the entry
@@ -89,7 +109,7 @@ export default async function handler(req, res) {
         // clock starts keeps status 'registered' until play begins, and
         // production currently has 52 such entries holding real seats. Omitting
         // them let a move drop a player straight on top of one of them.
-        .in('status', ['active', 'seated', 'registered'])
+        .in('status', LIVE_SEAT_STATUSES)
         .neq('id', entry_id)
         .limit(1);
 
@@ -111,12 +131,24 @@ export default async function handler(req, res) {
       const fromTable = entry.table_number;
       const fromSeat = entry.seat_number;
 
+      // This route accepts an 'alternate' (line 79) but used to write NO status
+      // at all, so the player ended up in a chair still marked 'alternate'.
+      // uq_commander_entries_live_seat only covers
+      // ('registered','seated','active'), so that row is invisible to the one
+      // constraint that stops two people sharing a seat - and to every
+      // occupancy probe. Moving someone into a chair means they are sitting in
+      // it; say so. Matches seat.js and promote.js.
+      const movedStatus = ['registered', 'bagged', 'alternate'].includes(entry.status)
+        ? 'seated'
+        : entry.status;
+
       // Execute move
       const { data: updated, error: uErr } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
           table_number: to_table,
           seat_number: to_seat,
+          status: movedStatus,
           metadata: {
             ...entry.metadata,
             last_moved_at: new Date().toISOString(),

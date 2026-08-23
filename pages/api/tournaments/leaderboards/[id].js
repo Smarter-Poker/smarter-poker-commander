@@ -8,6 +8,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -46,14 +47,15 @@ export default async function handler(req, res) {
   }
 }
 
-/** A staff session may only touch its own venue's seasons. */
+/**
+ * A staff session may only touch its own venue's seasons.
+ *
+ * Delegates to the shared guard. The local version required BOTH venue ids to
+ * be non-null before it would compare them, so a null on either side waved the
+ * request through - the same fail-open shape found in six other routes.
+ */
 function wrongVenue(res, staff, lb) {
-    if (staff?.venue_id != null && lb?.venue_id != null &&
-        Number(staff.venue_id) !== Number(lb.venue_id)) {
-        res.status(403).json({ success: false, error: { code: 'WRONG_VENUE', message: 'Leaderboard Belongs To A Different Venue' } });
-        return true;
-    }
-    return false;
+    return denyCrossVenue(res, staff, lb, 'Leaderboard');
 }
 
 async function loadBoard(id) {

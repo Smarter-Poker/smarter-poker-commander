@@ -29,18 +29,12 @@ const WAIT_SAMPLE_MINUTES = 120;
 const MAX_QUOTED_WAIT_MINUTES = 180;
 
 /** 1 -> '1st', 2 -> '2nd', 3 -> '3rd', 11 -> '11th', 21 -> '21st'. */
-export function ordinal(n) {
-  const num = Number(n);
-  if (!Number.isFinite(num) || num < 1) return String(n);
-  const rem100 = num % 100;
-  if (rem100 >= 11 && rem100 <= 13) return `${num.toLocaleString()}th`;
-  switch (num % 10) {
-    case 1: return `${num.toLocaleString()}st`;
-    case 2: return `${num.toLocaleString()}nd`;
-    case 3: return `${num.toLocaleString()}rd`;
-    default: return `${num.toLocaleString()}th`;
-  }
-}
+// Imported AND re-exported: `export { x } from` alone creates no local
+// binding, and this module calls ordinal() itself further down. Lives in a
+// dependency-free module so a client screen can use it without importing this
+// file, which pulls in pushNotifications.
+import { ordinal } from './ordinal';
+export { ordinal };
 
 /**
  * The waiting alternates, in the order they will be seated.

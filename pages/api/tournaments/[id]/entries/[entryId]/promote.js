@@ -15,10 +15,11 @@ import {
   sendPushNotification,
   isOneSignalConfigured
 } from '../../../../../../src/lib/commander/pushNotifications';
-import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
+import { claimOpenSeat, LIVE_SEAT_STATUSES } from '../../../../../../src/lib/commander/tournamentSeating';
 import { sendSeatNotification } from '../../../../../../src/lib/commander/twilio';
 import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
 import { notifyNextAlternates } from '../../../../../../src/lib/commander/alternateNotifications';
+import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -65,6 +66,10 @@ export default async function handler(req, res) {
         error: { code: 'NOT_FOUND', message: !tournament ? 'Tournament Not Found' : 'Entry Not Found' }
       });
     }
+    
+    // Venue scope: a valid session for one room must never reach
+    // another room's tournament. See src/lib/commander/venueScope.js.
+    if (denyCrossVenue(res, staff, tournament)) return;
     if (entry.status !== 'alternate') {
       return res.status(400).json({
         success: false,
@@ -90,9 +95,11 @@ export default async function handler(req, res) {
         .eq('tournament_id', tournamentId)
         .eq('table_number', tableNumber)
         .eq('seat_number', seatNumber)
-        // SEAT OCCUPANCY: only a player physically in the chair blocks it.
-        // 'bagged' excluded on purpose (they hold no seat).
-        .in('status', ['seated', 'active'])
+        // SEAT OCCUPANCY: LIVE_SEAT_STATUSES mirrors the uq_commander_entries_live_seat
+        // index exactly. 'registered' holds a chair - omitting it made this probe
+        // report a taken seat as free, and the index then raised a 23505 the floor
+        // saw as a phantom "another device filled it first". 'bagged' holds none.
+                .in('status', LIVE_SEAT_STATUSES)
         .neq('id', entryId)
         .maybeSingle();
       if (occupant) {

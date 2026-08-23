@@ -23,6 +23,9 @@ import { calculateICM } from '../../../../src/lib/commander/icm-utils';
 // and it is the same component the Results screen renders.
 import CagePayoutsCard from '../../../../src/components/commander/tournaments/CagePayoutsCard';
 import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/payoutPayments';
+// ordinal() lives in a dependency-free shared module; four screens had each
+// defined their own private copy.
+import { ordinal } from '../../../../src/lib/commander/ordinal';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -174,12 +177,20 @@ export default function TDPayouts() {
         try {
             // 2026-07-25 audit fix: pass entry_id so chop payouts for still-active
             // players (player_id null) are saved per-entry instead of filtered out
+            // is_projected marks a slot the calculator FILLED IN from the
+            // current chip counts so the TD can see the shape of the ladder.
+            // Those players are still sitting at their tables. Saving them
+            // writes a real payout_amount against someone who has not finished,
+            // and the cage will pay it. The flag was being dropped here, so
+            // every Save mid-tournament persisted the projection. Carried
+            // through now, and the route refuses them as well.
             const payouts = (calcData.calculated_payouts || []).map(p => ({
                 entry_id: p.entry_id || null,
                 player_id: p.player_id,
                 position: p.position,
+                is_projected: !!p.is_projected,
                 amount: overrides[p.position] !== undefined ? overrides[p.position] : p.amount
-            })).filter(p => p.entry_id || p.player_id);
+            })).filter(p => (p.entry_id || p.player_id) && !p.is_projected);
 
             // deal_only true records the money without ending anyone's
             // tournament, which is the right default while play continues. Once
@@ -306,13 +317,20 @@ export default function TDPayouts() {
                         </div>
                     </div>
 
+                    {/* prize_pool is ALREADY max(collected, guaranteed), so
+                        `guaranteed - prizePool` is 0 by construction whenever
+                        this banner is shown: it read "Exceeds Prize Pool By $0
+                        Overlay" on the one screen the TD uses to size the
+                        room's overlay exposure. The route returns the real
+                        figures - overlay and collected_pool - and they were
+                        simply never read. */}
                     {calcData?.is_overlay && (
                         <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl px-4 py-3 flex items-center gap-3">
                             <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-[#EF4444]">Overlay Alert</p>
                                 <p className="text-xs text-[#B0B3B8]">
-                                    Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Prize Pool By {formatMoney(calcData.guaranteed - prizePool)} Overlay
+                                    Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Collected {formatMoney(calcData.collected_pool)} By {formatMoney(calcData.overlay)} Overlay
                                 </p>
                             </div>
                         </div>
@@ -687,7 +705,28 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
             });
             const json = await res.json().catch(() => null);
             if (json?.success) {
-                setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved. Play Continues.` });
+                // The route rounds a deal to the room's cash denomination. That
+                // preserves the TOTAL but not the SPLIT: an even 3-way chop of
+                // $10,000 is agreed as 3334/3333/3333 and stored as
+                // 3340/3330/3330. Until now the screen read only `updated`, so
+                // the players were paid different numbers from the ones they
+                // shook hands on and nothing said so. Name it, and hold the
+                // toast open long enough to be read.
+                const adj = Array.isArray(json.data?.rounding_adjustments)
+                    ? json.data.rounding_adjustments
+                    : [];
+                if (adj.length > 0) {
+                    const denom = json.data?.denomination || 1;
+                    const detail = adj
+                        .map(a => `${ordinal(a.position)} ${formatMoney(a.from)} to ${formatMoney(a.to)}`)
+                        .join(', ');
+                    setToast({
+                        type: 'warning',
+                        text: `Deal Applied, Rounded To ${formatMoney(denom)} Notes: ${detail}. Tell The Table Before Paying.`
+                    });
+                } else {
+                    setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved. Play Continues.` });
+                }
                 await onApplied();
                 onClose();
             } else {
