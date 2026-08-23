@@ -153,7 +153,41 @@ async function getTournament(req, res, id) {
       };
     });
 
-    const { created_by, commander_tournament_entries, ...publicTournament } = tournament;
+    // ALLOWLIST, not a blacklist.
+    //
+    // This used to be `const { created_by, commander_tournament_entries,
+    // ...publicTournament } = tournament` over a `select('*')`, which shipped
+    // every other column on the row to an unauthenticated caller. That
+    // included:
+    //   day_end_chip_counts - bag-and-tag writes { player_name, chips,
+    //                         table_number, seat_number } per player, so this
+    //                         was full names against exact overnight stacks;
+    //   final_payouts       - negotiated deal amounts, carrying entry_id and
+    //                         player_id per eliminate.js;
+    //   settings            - clock_state and the room's internal config.
+    //
+    // A blacklist over `*` fails open by construction: every column added to
+    // commander_tournaments in future would publish itself. index.js already
+    // solved this with a PUBLIC_COLUMNS allowlist; this is the same field set,
+    // so the two public surfaces cannot disagree.
+    const PUBLIC_TOURNAMENT_FIELDS = [
+      'id', 'venue_id', 'name', 'description', 'tournament_type', 'variant',
+      'buyin_amount', 'buyin_fee', 'starting_chips', 'scheduled_start',
+      'registration_opens', 'late_registration_levels', 'late_reg_open',
+      'min_entries', 'max_entries', 'guaranteed_pool', 'actual_prizepool',
+      'paying_places', 'payout_structure', 'blind_structure', 'break_schedule',
+      'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'max_rebuys', 'rebuy_end_level',
+      'allows_addon', 'addon_amount', 'addon_chips', 'addon_at_break', 'bounty_amount',
+      'status', 'current_level', 'current_entries', 'players_remaining',
+      'total_chips_in_play', 'average_stack', 'tables_remaining', 'hands_played',
+      'actual_start', 'ended_at', 'series_id', 'leaderboard_id',
+      'is_multi_day', 'total_days', 'current_day', 'flight_label', 'resume_time'
+    ];
+    const publicTournament = {};
+    for (const k of PUBLIC_TOURNAMENT_FIELDS) {
+      if (k in tournament) publicTournament[k] = tournament[k];
+    }
+    publicTournament.poker_venues = tournament.poker_venues || null;
 
     return res.status(200).json({
       success: true,

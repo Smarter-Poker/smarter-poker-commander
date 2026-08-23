@@ -489,7 +489,10 @@ export default async function handler(req, res) {
       let clockState = tournamentSettings.clock_state || null;
 
       // Auto-initialize clock_state for running tournaments that were never properly started
-      if (!clockState && ['running', 'break', 'final_table'].includes(tournament.status)) {
+      // 'break' is not a commander_tournaments status - the break toggle sets
+      // 'paused'. This branch therefore never fired for a paused event, so the
+      // clock backfill was skipped for exactly the tournaments on a break.
+      if (!clockState && ['running', 'paused', 'final_table'].includes(tournament.status)) {
         // 2026-07-25 audit fix: when backfilling mid-tournament use now as
         // levelStartedAt - using actual_start made the level appear long expired.
         clockState = {

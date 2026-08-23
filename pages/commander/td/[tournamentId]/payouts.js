@@ -174,12 +174,20 @@ export default function TDPayouts() {
         try {
             // 2026-07-25 audit fix: pass entry_id so chop payouts for still-active
             // players (player_id null) are saved per-entry instead of filtered out
+            // is_projected marks a slot the calculator FILLED IN from the
+            // current chip counts so the TD can see the shape of the ladder.
+            // Those players are still sitting at their tables. Saving them
+            // writes a real payout_amount against someone who has not finished,
+            // and the cage will pay it. The flag was being dropped here, so
+            // every Save mid-tournament persisted the projection. Carried
+            // through now, and the route refuses them as well.
             const payouts = (calcData.calculated_payouts || []).map(p => ({
                 entry_id: p.entry_id || null,
                 player_id: p.player_id,
                 position: p.position,
+                is_projected: !!p.is_projected,
                 amount: overrides[p.position] !== undefined ? overrides[p.position] : p.amount
-            })).filter(p => p.entry_id || p.player_id);
+            })).filter(p => (p.entry_id || p.player_id) && !p.is_projected);
 
             // deal_only true records the money without ending anyone's
             // tournament, which is the right default while play continues. Once

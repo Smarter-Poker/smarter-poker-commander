@@ -67,13 +67,13 @@ export default async function handler(req, res) {
       }
 
       const { id: tournamentId } = req.query;
+      // chip_count / finish_position / payout_amount are deliberately NOT
+      // read from the body any more - see the story-content block below.
+      // Accepting them silently would leave the same forgery one line away.
       const {
           story_type = 'custom',
           content,
-          media_url,
-          chip_count,
-          finish_position,
-          payout_amount
+          media_url
       } = req.body;
 
       if (!VALID_STORY_TYPES.includes(story_type)) {
@@ -140,11 +140,24 @@ export default async function handler(req, res) {
               ? content.trim().slice(0, 500)
               : buildStoryContent(story_type, {
               tournamentName: tournament.name,
-              chipCount: Number(chip_count ?? entry?.current_chips) || null,
-              finishPosition: Number(finish_position ?? entry?.finish_position) || null,
+              // RESULTS COME FROM THE DATABASE, NEVER THE REQUEST BODY.
+              //
+              // These three read `body_value ?? entry_value`, so the client
+              // won. Any player with an entry in the event - the only thing
+              // checked above - could POST { story_type: 'winner',
+              // payout_amount: 50000 } and publish "I Won <real tournament
+              // name>! $50,000" to social_stories, in the templated, sysgen
+              // format that makes it read as verified. Same for finishing
+              // position and chip count.
+              //
+              // The entry row is the record of what happened; the body has no
+              // standing here. Free-text `content` is still the author's own
+              // words, which is a different thing from a fabricated result.
+              chipCount: Number(entry?.current_chips) || null,
+              finishPosition: Number(entry?.finish_position) || null,
               // payout_amount is NUMERIC, i.e. a string over PostgREST, and
               // String.prototype.toLocaleString is a no-op that printed "250.00".
-              payoutAmount: Number(payout_amount ?? entry?.payout_amount) || null,
+              payoutAmount: Number(entry?.payout_amount) || null,
               level: displayLevel,
               blinds: blindRows[levelIndex]
           });

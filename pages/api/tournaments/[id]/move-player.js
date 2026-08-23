@@ -117,12 +117,24 @@ export default async function handler(req, res) {
       const fromTable = entry.table_number;
       const fromSeat = entry.seat_number;
 
+      // This route accepts an 'alternate' (line 79) but used to write NO status
+      // at all, so the player ended up in a chair still marked 'alternate'.
+      // uq_commander_entries_live_seat only covers
+      // ('registered','seated','active'), so that row is invisible to the one
+      // constraint that stops two people sharing a seat - and to every
+      // occupancy probe. Moving someone into a chair means they are sitting in
+      // it; say so. Matches seat.js and promote.js.
+      const movedStatus = ['registered', 'bagged', 'alternate'].includes(entry.status)
+        ? 'seated'
+        : entry.status;
+
       // Execute move
       const { data: updated, error: uErr } = await getSupabase()
         .from('commander_tournament_entries')
         .update({
           table_number: to_table,
           seat_number: to_seat,
+          status: movedStatus,
           metadata: {
             ...entry.metadata,
             last_moved_at: new Date().toISOString(),

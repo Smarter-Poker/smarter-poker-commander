@@ -322,6 +322,46 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
         .maybeSingle()
     ]);
 
+    // ── EVERY ONE OF THESE FOUR GATES USED TO FAIL OPEN ───────────────────
+    // supabase-js RESOLVES on a PostgREST error rather than rejecting, so
+    // Promise.all above never throws. Each destructure below took `data` and
+    // dropped `error`, which meant an errored query was indistinguishable from
+    // a clean "nothing found":
+    //
+    //   capacity  -> count undefined; `undefined >= max_entries` is false, so
+    //                the field cap was bypassed and the room oversold.
+    //   exclusion -> undefined, so A SELF-EXCLUDED PLAYER WAS REGISTERED AND
+    //                CHARGED. The .or() filter is built by interpolating
+    //                tournament.venue_id, and a null there produces the literal
+    //                `venue_id.eq.null`, which is exactly the malformed filter
+    //                that errors here.
+    //   limits    -> undefined, so the daily spend limit was skipped entirely.
+    //   existing  -> undefined, so a duplicate registration and a duplicate
+    //                cash-drawer row both went through.
+    //
+    // A gate that cannot be evaluated is not a gate that passed. Refuse.
+    const gateFailure = [
+      ['existing registration', existingResult?.error],
+      ['field capacity', capacityResult?.error],
+      ['self-exclusion', exclusionResult?.error],
+      ['spending limits', limitsResult?.error]
+    ].find(([, err]) => !!err);
+
+    if (gateFailure) {
+      const [gateName, gateErr] = gateFailure;
+      console.error('[tournaments/register] registration gate could not be evaluated', {
+        tournamentId, player_id, gate: gateName,
+        code: gateErr.code, message: gateErr.message, details: gateErr.details
+      });
+      return _result(503, {
+        success: false,
+        error: {
+          code: 'GATE_CHECK_FAILED',
+          message: 'Registration Checks Could Not Be Completed. Please Try Again.'
+        }
+      });
+    }
+
     const { data: existing } = existingResult;
     if (existing) {
       return _result(400, {

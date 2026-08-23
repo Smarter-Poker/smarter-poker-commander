@@ -126,11 +126,24 @@ export default async function handler(req, res) {
       const fromTable = entry.table_number;
       const fromSeat = entry.seat_number;
 
-      // A player who is given a seat is sitting in it. 'registered' (never
-      // seated) and 'bagged' (returning from an overnight break) both advance
-      // to 'seated'; leaving a seated player marked 'bagged' would hide them
-      // from every occupancy check while they physically hold the chair.
-      const newStatus = ['registered', 'bagged'].includes(entry.status) ? 'seated' : entry.status;
+      // A player who is given a seat is sitting in it, so the status must say
+      // so. 'registered' (never seated), 'bagged' (returning from an overnight
+      // break) and 'alternate' (called off the list into a named chair) all
+      // advance to 'seated'.
+      //
+      // 'alternate' was missing, and it was the dangerous one. The partial
+      // index that enforces one-player-per-seat covers only
+      // ('registered','seated','active'), so an entry left as 'alternate'
+      // while holding a table and seat is INVISIBLE to it - the database will
+      // happily seat a second human in the same chair - and invisible to every
+      // JS occupancy probe too. The seat renders empty on the floor map while
+      // somebody is sitting in it, the player stays in the alternate queue and
+      // keeps getting "You Are Nth In Line", and promoteNextAlternate can seat
+      // them a second time elsewhere, silently blocking the first chair for
+      // the rest of the event. promote.js already writes 'seated' here.
+      const newStatus = ['registered', 'bagged', 'alternate'].includes(entry.status)
+        ? 'seated'
+        : entry.status;
 
       const { error: uErr } = await getSupabase()
         .from('commander_tournament_entries')
