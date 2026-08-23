@@ -183,3 +183,92 @@ grep-only guards in repos untouched by this work). Verified locally instead:
 A bounty ledger. Recorded as a settled decision, with the one condition that
 would reopen it, in
 `.agent/audits/2026-08-22-bounty-cash-is-not-a-drawer-variance.md`.
+
+---
+
+# Second pass — the remainder
+
+Everything above shipped in PRs #51 / #663 / #674. This section covers the rest
+of the audit list, shipped in #54.
+
+## An undo that did not undo
+
+`eliminate.js` does more than mark an entry eliminated. Two of its side effects
+had no reversal at all, and both corrupt something quietly:
+
+- **It auto-seats an alternate** into the freed chair while late registration
+  is open. `restore.js` did not know that, so undoing a bust put the original
+  player back *as well* and the field grew by one. Field size is exactly what
+  `commander_claim_finish_position` counts, so every place handed out from that
+  moment was shifted. `eliminate` now stamps `promoted_for_entry` and `restore`
+  names the replacement.
+
+  It **reports rather than demotes** on purpose. The alternate has been sitting
+  and playing hands; deciding which of two real people keeps the seat is a
+  floor call, not something an undo endpoint should make silently.
+
+- **It publishes a story** — "IN THE MONEY! Finished 5th In X, $Y" — to the
+  player's public feed. The row carried no reference to the tournament or the
+  entry, so nothing could find it afterwards. A bust reversed thirty seconds
+  later left the post up permanently. It now sets `link_url` (which also makes
+  the story clickable through to the event) and a forced undo retracts it.
+
+## A break at the final table did nothing
+
+The break toggle matched `'running'` to pause and `'paused'` to resume.
+`'final_table'` matched neither, so `on_break` flipped true while `isRunning`
+stayed true: every display in the room showed BREAK while the timer kept
+counting the level down, and ending the break did nothing either. The final
+table is the one place a break is watched by everybody.
+
+The pre-break status is now remembered so resuming returns to `'final_table'`
+rather than demoting the event to `'running'` — and it is in
+`CARRIED_CLOCK_FIELDS`, because otherwise any pause or level change taken
+during the break would erase it and the demotion would happen anyway.
+
+## Money that was promised but not funded
+
+A satellite with an explicit `seats_awarded` emits its seat rows at full value
+regardless of the pool: five seats at $2,500 against a $10,000 pool schedules
+$12,500. Nothing complained — the bubble remainder floors at 0, and `overlay`
+is measured against `guaranteed_pool` so it stays 0 — so the TD was shown a
+seat schedule the pool does not fund and only learned otherwise when the
+reconciliation raised `PAYOUTS_EXCEED_PRIZE_POOL`, after the seats had been
+awarded. Now surfaced as `seat_shortfall` on the payouts screen.
+
+## Comments that overstated the guard
+
+Seventeen route headers read *"Auth: STAFF_WRITE — requires manager or owner
+role"*. Neither `guardStaff` nor `guardWriteStaff` performs any role check, so
+every role in `commander_staff` — dealer and brush included — passes. That is
+worse than no comment, because the next reader trusts it and stops looking.
+
+Corrected to state what is enforced. **Whether the cash-taking routes should be
+manager-only is left open deliberately**: `rebuy` and `addon` move real money,
+but floor and cashier staff ringing up rebuys is normal in a card room, and
+locking them out mid-session is a product decision with a 2am failure mode. It
+is Dan's call, not a bug fix.
+
+Related and fixed: ten POST-only routes used `guardWriteStaff`, whose GET
+pass-through returns the **boolean** `true`. `rebuy` and `addon` read `_g.id`
+for money attribution, which would silently become `undefined` if the method
+check were ever reordered. They now use `guardStaff` — identical behaviour
+today, no trap tomorrow.
+
+## Dead code, and one duplicate that mattered
+
+`validateTournamentPayload` existed twice, byte for byte: exported from
+`index.js` (imported by nothing) and re-declared privately in `[id].js`. Create
+and update could drift, and update is the half that runs after an event is live
+with entries in it. Now one shared module.
+
+Removed outright: `findOpenSeat` (exported, imported nowhere, and a non-atomic
+re-implementation of `commander_claim_open_seat` — precisely the read-then-write
+that caused duplicate seat assignments), `batchSummary`, `PAYOUT_DENOMINATIONS`.
+
+Also: `clone.js` copies `is_multi_day` but dropped `resume_time`, so every
+cloned Day 1 printed bag tags with a blank return time; `notify.js` built
+"Your Seat Is Ready: Table 4, Seat 7" from the request body rather than the
+player's actual chair; `notify-alternates` turned `limit: 0` into `limit: 1`;
+and the `payout` GET, which recomputes the ladder across the whole field, was
+the only read in the tournament path with no rate limit.
