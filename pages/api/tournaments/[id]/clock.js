@@ -379,7 +379,17 @@ async function getClockState(req, res, tournamentId) {
           levelStartedAt: clockState?.levelStartedAt
         },
         // 2026-07-25 audit fix: expose the floor message stored in settings.clock_state
-        currentMessage: clockState?.current_message || null,
+        // message.js stamps expires_at on every floor announcement, and this
+        // returned it regardless. The TD's own display filters on expiry, but
+        // the PUBLIC clock GET feeds the room's TVs, the table tablets, the
+        // structure display and the public page - so "Registration Closing"
+        // stayed burned onto every screen for the rest of the night.
+        currentMessage: (() => {
+          const m = clockState?.current_message || null;
+          if (!m) return null;
+          if (m.expires_at && new Date(m.expires_at).getTime() <= Date.now()) return null;
+          return m;
+        })(),
         currentBlind: currentBlind ? {
           level: displayLevelNumber(blindStructure, currentLevel),
           smallBlind: currentBlind.small_blind,

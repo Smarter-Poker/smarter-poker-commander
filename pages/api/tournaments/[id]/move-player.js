@@ -58,9 +58,23 @@ export default async function handler(req, res) {
       // another room's tournament. See src/lib/commander/venueScope.js.
       if (denyCrossVenue(res, _g, tournament)) return;
 
-      const { entry_id, to_table, to_seat } = req.body;
-      if (!entry_id || to_table === undefined || to_seat === undefined) {
-        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'entry_id, to_table, And to_seat Required' } });
+      const { entry_id } = req.body;
+      // Both columns are INTEGER, and this route only tested for `undefined`.
+      // Two consequences, both real:
+      //   to_seat: 0 or 99 was written verbatim, putting the player in a chair
+      //   outside every `for (s = 1; s <= max_seats; s++)` scan - so they were
+      //   never counted as occupying it while the index still reserved the
+      //   pair, and the table map drew a seat that does not exist;
+      //   a STRING "3" made the destination-occupied guard below compare
+      //   "3" === 3 and pass, because that check uses ===  against an INTEGER
+      //   column. Coercing here closes both.
+      // Bounds match seat.js, which already validated this properly.
+      const to_table = Number(req.body.to_table);
+      const to_seat = Number(req.body.to_seat);
+      if (!entry_id || req.body.to_table === undefined || req.body.to_seat === undefined
+        || !Number.isInteger(to_table) || to_table < 1
+        || !Number.isInteger(to_seat) || to_seat < 1 || to_seat > 12) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'entry_id, A Whole-Number to_table, And to_seat (1 To 12) Are Required' } });
       }
 
       // Get the entry

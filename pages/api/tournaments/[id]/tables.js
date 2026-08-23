@@ -64,7 +64,13 @@ const SEATED_STATUSES = LIVE_SEAT_STATUSES;
 function isAvailable(t) {
   if (t.tournament_id) return false;
   if (t.mode === 'cash') return false;
-  if (t.status && !['available', 'open', 'idle'].includes(t.status)) return false;
+  // commander_tables_status_check allows exactly
+  //   available | in_use | reserved | maintenance
+  // 'open' and 'idle' are not among them and never were, so they were dead
+  // entries in this list - the same silent no-op class as the 'closed' filter
+  // already fixed in tournamentSeating.js and seat-draw.js. Listing values a
+  // column cannot hold reads like the check is broader than it is.
+  if (t.status && t.status !== 'available') return false;
   return true;
 }
 

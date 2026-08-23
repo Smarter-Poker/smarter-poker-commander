@@ -14,6 +14,7 @@ import { reportApiError } from '../../../../src/lib/sentryWrap';
 // one wager.
 import { recordTournamentTaxEvent } from '../../../../src/lib/commander/taxEvents';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { isUniqueViolation } from '../../../../src/lib/commander/dbErrors';
 
 let _supabase = null;
 function getSupabase() {
@@ -1219,7 +1220,36 @@ async function awardTournamentPoints(tournament, tournamentId, entry) {
         player_id: entry.player_id || null,
         player_name: entry.player_name || null
       });
-    if (error) console.warn('Award points insert failed:', error.message || error);
+
+    // The select-then-insert above is not atomic against
+    // uq_ctp_tournament_player. Two concurrent finalizes both pass the read,
+    // one inserts, and the loser used to be console.warn'd and dropped - the
+    // player simply never scored. A 23505 here means the row this call was
+    // trying to create ALREADY EXISTS, which is the outcome it wanted, so
+    // retry as the update it should have been. Every other money route in this
+    // file handles 23505 properly; this one did not.
+    if (error && isUniqueViolation(error)) {
+      let retryQuery = getSupabase()
+        .from('commander_tournament_points')
+        .update(row)
+        .eq('tournament_id', tournamentId);
+      retryQuery = entry.player_id
+        ? retryQuery.eq('player_id', entry.player_id)
+        : retryQuery.is('player_id', null).eq('player_name', entry.player_name);
+      const { error: retryErr } = await retryQuery;
+      if (retryErr) {
+        console.error('[payout] points lost after a concurrent insert', {
+          tournamentId, entryId: entry.id, code: retryErr.code, message: retryErr.message
+        });
+      }
+      return;
+    }
+
+    if (error) {
+      console.error('[payout] award points insert failed', {
+        tournamentId, entryId: entry.id, code: error.code, message: error.message
+      });
+    }
   } catch (err) {
     console.warn('Award points error:', err);
   }

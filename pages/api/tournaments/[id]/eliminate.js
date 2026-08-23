@@ -514,10 +514,23 @@ async function getTotalEntries(tournamentId) {
 }
 
 async function getTotalRebuys(tournamentId) {
-  const { data } = await getSupabase()
+  // No .limit() here meant PostgREST's server-side max-rows cap silently
+  // truncated the scan on a big field, undercounting rebuys -> undercounting
+  // the collected prize pool -> paying every finisher less than the figure the
+  // public payouts tab shows, which computes its own total with .limit(5000).
+  // The two screens disagreed and the busted player was short.
+  const { data, error } = await getSupabase()
     .from('commander_tournament_entries')
     .select('rebuy_count')
     .eq('tournament_id', tournamentId)
+    .limit(5000);
+
+  if (error) {
+    console.error('[eliminate] rebuy total read failed', {
+      tournamentId, code: error.code, message: error.message
+    });
+    throw error;
+  }
 
   return data?.reduce((sum, e) => sum + (e.rebuy_count || 0), 0) || 0;
 }

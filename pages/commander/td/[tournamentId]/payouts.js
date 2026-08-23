@@ -314,13 +314,20 @@ export default function TDPayouts() {
                         </div>
                     </div>
 
+                    {/* prize_pool is ALREADY max(collected, guaranteed), so
+                        `guaranteed - prizePool` is 0 by construction whenever
+                        this banner is shown: it read "Exceeds Prize Pool By $0
+                        Overlay" on the one screen the TD uses to size the
+                        room's overlay exposure. The route returns the real
+                        figures - overlay and collected_pool - and they were
+                        simply never read. */}
                     {calcData?.is_overlay && (
                         <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl px-4 py-3 flex items-center gap-3">
                             <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-[#EF4444]">Overlay Alert</p>
                                 <p className="text-xs text-[#B0B3B8]">
-                                    Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Prize Pool By {formatMoney(calcData.guaranteed - prizePool)} Overlay
+                                    Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Collected {formatMoney(calcData.collected_pool)} By {formatMoney(calcData.overlay)} Overlay
                                 </p>
                             </div>
                         </div>

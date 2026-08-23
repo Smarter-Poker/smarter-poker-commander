@@ -417,8 +417,13 @@ async function unregisterPlayer(req, res, tournamentId) {
 
     const tournament = entry.commander_tournaments;
 
-    // Only allow unregister before tournament starts
-    if (!['scheduled', 'registering'].includes(tournament.status)) {
+    // Only allow unregister before tournament starts.
+    // 'registration' is the real constraint value and was missing here, so a
+    // player trying to unregister from an event whose registration was OPEN
+    // fell through to the staff-only branch below and was refused. Same class
+    // of bug as register.js:223 and entries.js:184, both already corrected.
+    // 'registering' is kept as a tolerated alias for older callers.
+    if (!['scheduled', 'registration', 'registering'].includes(tournament.status)) {
       // Check if staff
       const { data: staff } = await getSupabase()
         .from('commander_staff')

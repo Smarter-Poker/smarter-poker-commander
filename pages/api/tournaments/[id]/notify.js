@@ -198,7 +198,14 @@ export default async function handler(req, res) {
           const notificationRows = targetUserIds.map(uid => ({
               player_id: uid,
               venue_id: tournament.venue_id,
-              notification_type: type === 'custom' ? 'custom' : 'tournament_starting',
+              // Every non-custom announcement was stored as
+              // 'tournament_starting' - so a break, a level change, a final
+              // table and a winner all wrote a row claiming the tournament had
+              // started, and anything filtering or counting by
+              // notification_type saw one tournament start per announcement.
+              // The real type only survived in metadata.sub_type. The push
+              // payload at line 188 already carried the correct value.
+              notification_type: type,
               title: notification.title,
               message: notification.body,
               channel: 'push',
