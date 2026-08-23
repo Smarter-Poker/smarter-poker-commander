@@ -2,7 +2,19 @@
 
 # One working tree per agent (rule 1a). Runs FIRST: if this commit should
 # not be happening in this directory at all, there is no point checking it.
-bash "$(git rev-parse --show-toplevel)/scripts/guard-shared-clone.sh"
+# BOTH GUARDS END IN "|| exit 1" ON PURPOSE.
+#
+# 2026-08-23: guard-shared-clone.sh was called here as a bare command, and this
+# file's `set -e` is ten lines BELOW it. A hook's exit status is the status of
+# its last command, so the one-worktree-per-agent guard could print a full
+# refusal and the commit would be created regardless. It could warn. It could
+# never refuse. Club Arena had the identical defect via a missing set -e.
+bash "$(git rev-parse --show-toplevel)/scripts/guard-shared-clone.sh" || exit 1
+
+# A commit Vercel cannot attribute never builds - the deployment goes to
+# BLOCKED with no logs at all. One of the five blocked on 2026-08-23 was this
+# project. Catch it here, not in CI after the deploy has been refused.
+bash "$(git rev-parse --show-toplevel)/scripts/guard-commit-identity.sh" || exit 1
 # Commander pre-commit hook — Phase 3.2 scaffold completion (2026-04-27)
 #
 # Mirrors the World Hub pre-commit pattern at a smaller surface area:
