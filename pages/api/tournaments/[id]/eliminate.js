@@ -7,7 +7,7 @@
  * Auto-Stories: Creates tournament stories for ITM and winner milestones
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardWriteStaff, guardStaff } from '../../../../src/lib/commander/auth';
 import {
   sendPushNotification,
   isOneSignalConfigured
@@ -36,14 +36,28 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: any active staff session for THIS venue (guardStaff + denyCrossVenue).
+// NOT role-gated. This header used to claim "requires manager or owner
+// role"; neither guardStaff nor guardWriteStaff performs any role check,
+// so every role in commander_staff - including dealer and brush - passes.
+// Stated accurately rather than aspirationally: a comment that overstates
+// the guard is worse than none, because the next reader trusts it.
+// Whether the cash-taking routes SHOULD be manager-only is a product
+// decision, not a bug fix - see .agent/audits/.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // guardStaff, not guardWriteStaff. This route only accepts POST (it 405s
+    // everything else immediately below), so the GET pass-through in
+    // guardWriteStaff buys nothing here - it just means _g is the BOOLEAN true
+    // on a path that can still be reached if the method check is ever moved or
+    // reordered. Two routes already read _g.id to attribute money
+    // (rebuy/addon p_processed_by), which would silently become undefined.
+    // guardStaff always returns the staff row or ends the request.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
@@ -418,6 +432,27 @@ export default async function handler(req, res) {
         try {
           promotedAlternate = await promoteNextAlternate(getSupabase(), freshTournament);
           if (promotedAlternate) {
+            // Record WHICH bust freed this seat. Without it, an elimination
+            // undo cannot tell that the field already absorbed a replacement,
+            // and restoring the busted player silently grows the field by one -
+            // which then shifts every finish position the RPC hands out.
+            try {
+              await getSupabase()
+                .from('commander_tournament_entries')
+                .update({
+                  metadata: {
+                    ...(promotedAlternate.metadata || {}),
+                    promoted_for_entry: entry_id,
+                    promoted_at: new Date().toISOString()
+                  }
+                })
+                .eq('id', promotedAlternate.id)
+                .eq('tournament_id', tournamentId);
+            } catch (stampErr) {
+              // Non-fatal: the seat is already taken and the bust is recorded.
+              console.warn('[eliminate] could not stamp promoted alternate:', stampErr?.message || stampErr);
+            }
+
             // The queue advanced. Tell the next few where they now stand.
             // Fire and forget: the bust is already recorded and a push outage
             // must not turn a successful elimination into a 500.
@@ -590,13 +625,20 @@ async function createAutoStory(playerId, storyType, tournament, position, payout
     winner: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%)'
   };
 
+  // link_url ties the story to the event it is about. Two reasons, both real:
+  // the story becomes clickable through to the public tournament page, AND an
+  // elimination UNDO can find this row again. Until now the insert carried no
+  // reference of any kind to the tournament or the entry, so a bust reversed
+  // thirty seconds later left "IN THE MONEY! Finished 5th" permanently on that
+  // player's public feed with nothing able to retract it.
   await getSupabase()
     .from('social_stories')
     .insert({
       author_id: playerId,
       content: contentMap[storyType] || `Playing In ${tournament.name}`,
       media_type: 'text',
-      background_color: gradients[storyType] || gradients.itm
+      background_color: gradients[storyType] || gradients.itm,
+      link_url: `/commander/tournaments/${tournament.id}/public`
     });
 }
 

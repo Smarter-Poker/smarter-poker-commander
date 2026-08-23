@@ -31,6 +31,11 @@ export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
+    } else if (!applyRateLimit(req, res, LIMITS.read)) {
+      // The GET recomputes the whole payout ladder over every entry in the
+      // field. It was the only read in the tournament path with no limit at
+      // all, while reconciliation, export and reports all apply LIMITS.read.
+      return;
     }
 
     const _staff = await guardStaff(req, res);
@@ -141,7 +146,6 @@ export function allocateAmounts(slots, pool) {
 // ---------------------------------------------------------------------------
 
 // Cash denominations a room can round payouts to. 1 means no rounding.
-export const PAYOUT_DENOMINATIONS = [1, 5, 25, 100];
 
 // Default when a tournament has no settings.payout_denomination. Real rooms
 // pay in $5 notes, so $5 is the house default rather than exact dollars.
@@ -293,6 +297,14 @@ export function calculateSatellitePayouts(pool, seatValue, seatsAwarded) {
   if (remainder > 0) {
     rows.push({ position: seats + 1, amount: remainder, is_seat: false, is_bubble: true });
   }
+
+  // ...but the room should be TOLD it is eating one. With an explicit
+  // seats_awarded the rows above are emitted at full seat value regardless of
+  // the pool: 5 seats at $2,500 against a $10,000 pool schedules $12,500. The
+  // remainder floors at 0 so nothing complains, `overlay` is computed only
+  // against guaranteed_pool so it stays 0, and the TD is shown a seat schedule
+  // the pool does not fund with no warning anywhere - until the reconciliation
+  // raises PAYOUTS_EXCEED_PRIZE_POOL after the seats have been awarded.
   return rows;
 }
 
@@ -446,13 +458,26 @@ export function buildPayoutTable(tournament, pool, fieldSize) {
   if (isSatelliteTournament(tournament)) {
     const cfg = satelliteConfig(tournament);
     const rows = calculateSatellitePayouts(effectivePool, cfg.seat_value, cfg.seats_awarded);
+    const seatRows = rows.filter(r => r.is_seat);
+    // With an explicit seats_awarded the seat rows are emitted at FULL seat
+    // value regardless of what the pool holds: 5 seats at $2,500 against a
+    // $10,000 pool schedules $12,500. Nothing complained about that - the
+    // bubble remainder floors at 0, and `overlay` is measured against
+    // guaranteed_pool so it stays 0 - so the TD was shown a seat schedule the
+    // pool does not fund, and only found out when the reconciliation raised
+    // PAYOUTS_EXCEED_PRIZE_POOL after the seats had been awarded.
+    const scheduled = seatRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const seatShortfall = Math.max(0, Math.round((scheduled - effectivePool) * 100) / 100);
     return {
       rows: rows.map(r => ({ percentage: 0, ...r })),
       denomination: 1,
       rounding_remainder: 0,
       is_satellite: true,
       seat_value: cfg.seat_value,
-      seats_awarded: rows.filter(r => r.is_seat).length
+      seats_awarded: seatRows.length,
+      // > 0 means the room is funding the difference out of its own pocket.
+      seat_shortfall: seatShortfall,
+      seats_underfunded: seatShortfall > 0
     };
   }
 
@@ -616,6 +641,10 @@ async function handleGetPayouts(req, res, tournamentId, staff) {
           is_satellite: table.is_satellite,
           seat_value: table.seat_value,
           seats_awarded: table.seats_awarded,
+          // > 0 means the seat schedule promises more than the pool holds and
+          // the room is funding the difference. Silent until now.
+          seat_shortfall: table.seat_shortfall || 0,
+          seats_underfunded: !!table.seats_underfunded,
           // Bounty accounting. bounty_pool is money collected but deliberately
           // held OUT of the prize pool; the two together reconcile to the cash
           // the cage actually took.

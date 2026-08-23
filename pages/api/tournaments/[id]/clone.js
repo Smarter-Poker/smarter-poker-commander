@@ -42,6 +42,13 @@ const CONFIG_COLUMNS = [
   // event was configured. is_multi_day/total_days were lost the same way and
   // turned a Day 1/Day 2 event into a one-day freezeout.
   'paying_places', 'is_multi_day', 'total_days',
+  // 2026-08-22: the same class again. is_multi_day IS copied, so a clone is a
+  // Day 1/Day 2 event - but resume_time was not, and bag-and-tag prints it on
+  // every bag tag (`resume_time || null`). Every clone therefore sent the field
+  // home with a BLANK RETURN TIME on paper. registration_opens was lost too, so
+  // the registration window never opened on schedule, and flight_label meant
+  // Flight A and Flight B were indistinguishable.
+  'registration_opens', 'resume_time', 'flight_label',
   'allows_rebuys', 'rebuy_amount', 'rebuy_chips', 'max_rebuys', 'rebuy_end_level',
   'allows_addon', 'addon_amount', 'addon_chips', 'addon_at_break',
   'bounty_amount', 'broadcast_to_smarter', 'series_id', 'leaderboard_id'

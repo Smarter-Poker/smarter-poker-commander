@@ -324,6 +324,18 @@ export default function TDPayouts() {
                         room's overlay exposure. The route returns the real
                         figures - overlay and collected_pool - and they were
                         simply never read. */}
+                    {/* A satellite whose seat schedule exceeds the pool. The
+                        room eats the difference, and until now nothing said so
+                        - the bubble remainder floors at 0 and `overlay` only
+                        measures the guarantee, so both read as fine. */}
+                    {calcData?.seats_underfunded && (
+                      <div className="mb-3 px-3 py-2 rounded-lg bg-[#F02849]/15 border border-[#F02849]/40">
+                        <p className="text-xs font-bold text-[#F02849]">
+                          Seat Schedule Exceeds The Prize Pool By {formatMoney(calcData.seat_shortfall)}.
+                          The Room Funds The Difference.
+                        </p>
+                      </div>
+                    )}
                     {calcData?.is_overlay && (
                         <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl px-4 py-3 flex items-center gap-3">
                             <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0" />

@@ -34,7 +34,14 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: any active staff session for THIS venue (guardStaff + denyCrossVenue).
+// NOT role-gated. This header used to claim "requires manager or owner
+// role"; neither guardStaff nor guardWriteStaff performs any role check,
+// so every role in commander_staff - including dealer and brush - passes.
+// Stated accurately rather than aspirationally: a comment that overstates
+// the guard is worse than none, because the next reader trusts it.
+// Whether the cash-taking routes SHOULD be manager-only is a product
+// decision, not a bug fix - see .agent/audits/.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {

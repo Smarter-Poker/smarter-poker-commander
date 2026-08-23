@@ -44,7 +44,8 @@ function getSupabase() {
 // A dealer past this on one table is flagged. Most rooms push every 30
 // minutes; anything beyond it is either a missed push or a short-staffed
 // stretch, and both are things the TD wants to see before the dealer does.
-export const DOWN_TIME_LIMIT_MINUTES = 30;
+// Not exported: this is a page module, and nothing outside it reads this.
+const DOWN_TIME_LIMIT_MINUTES = 30;
 
 function minutesSince(ts) {
   if (!ts) return null;

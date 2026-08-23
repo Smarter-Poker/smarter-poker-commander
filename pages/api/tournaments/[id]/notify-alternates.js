@@ -68,7 +68,22 @@ export default async function handler(req, res) {
     const rawLimit = req.body?.limit;
     const limit = (rawLimit === undefined || rawLimit === null || rawLimit === '')
       ? undefined
-      : Math.max(1, Math.min(200, parseInt(rawLimit, 10) || 0));
+      // A caller asking for ZERO notifications used to get ONE: parseInt('0')
+      // is 0, `|| 0` keeps it 0, and Math.max(1, 0) lifts it to 1. Same for
+      // any unparseable value. An explicit 0 now means none, and a value that
+      // is not a number at all is rejected rather than silently becoming 1.
+      : (() => {
+          const n = parseInt(rawLimit, 10);
+          if (!Number.isFinite(n) || n < 0) return null;
+          return Math.min(200, n);
+        })();
+
+    if (limit === null) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'limit Must Be A Whole Number Of Zero Or More' }
+      });
+    }
 
     const entryIds = Array.isArray(req.body?.entry_ids)
       ? req.body.entry_ids.filter(v => typeof v === 'string' && v.trim()).slice(0, 200)

@@ -6,7 +6,7 @@
  * Used for announcements like "Table 3 is breaking", "Hand for hand", "Color up"
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardWriteStaff } from '../../../../src/lib/commander/auth';
+import { guardWriteStaff, guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
@@ -21,14 +21,28 @@ function getSupabase() {
     return _supabase;
 }
 
-// Auth: STAFF_WRITE - requires manager or owner role
+// Auth: any active staff session for THIS venue (guardStaff + denyCrossVenue).
+// NOT role-gated. This header used to claim "requires manager or owner
+// role"; neither guardStaff nor guardWriteStaff performs any role check,
+// so every role in commander_staff - including dealer and brush - passes.
+// Stated accurately rather than aspirationally: a comment that overstates
+// the guard is worse than none, because the next reader trusts it.
+// Whether the cash-taking routes SHOULD be manager-only is a product
+// decision, not a bug fix - see .agent/audits/.
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    const _g = await guardWriteStaff(req, res); if (!_g) return;
+    // guardStaff, not guardWriteStaff. This route only accepts POST (it 405s
+    // everything else immediately below), so the GET pass-through in
+    // guardWriteStaff buys nothing here - it just means _g is the BOOLEAN true
+    // on a path that can still be reached if the method check is ever moved or
+    // reordered. Two routes already read _g.id to attribute money
+    // (rebuy/addon p_processed_by), which would silently become undefined.
+    // guardStaff always returns the staff row or ends the request.
+    const _g = await guardStaff(req, res); if (!_g) return;
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
