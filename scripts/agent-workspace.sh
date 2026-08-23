@@ -92,6 +92,14 @@ else
   git -C "$ROOT" worktree add --force -B "$BRANCH" "$DIR" origin/main >/dev/null
 fi
 
+git -C "$DIR" config user.name  "Smarter-Poker"
+git -C "$DIR" config user.email "254329056+Smarter-Poker@users.noreply.github.com"
+bash "$ROOT/scripts/ensure-hooks.sh" 2>&1 | sed "s/^/# /" >&2 || true
+if [ ! -e "$DIR/node_modules" ] && [ -d "$ROOT/node_modules" ]; then
+  ln -s "$ROOT/node_modules" "$DIR/node_modules" 2>/dev/null \
+    && echo "# node_modules: linked from the main clone" >&2
+fi
+
 echo "# worktree: $DIR" >&2
 echo "# branch:   $BRANCH  (from origin/main)" >&2
 if [ "$MODE" = "--print-path" ]; then
