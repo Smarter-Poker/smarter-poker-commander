@@ -23,6 +23,9 @@ import { calculateICM } from '../../../../src/lib/commander/icm-utils';
 // and it is the same component the Results screen renders.
 import CagePayoutsCard from '../../../../src/components/commander/tournaments/CagePayoutsCard';
 import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/payoutPayments';
+// ordinal() lives in a dependency-free shared module; four screens had each
+// defined their own private copy.
+import { ordinal } from '../../../../src/lib/commander/ordinal';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -702,7 +705,28 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
             });
             const json = await res.json().catch(() => null);
             if (json?.success) {
-                setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved. Play Continues.` });
+                // The route rounds a deal to the room's cash denomination. That
+                // preserves the TOTAL but not the SPLIT: an even 3-way chop of
+                // $10,000 is agreed as 3334/3333/3333 and stored as
+                // 3340/3330/3330. Until now the screen read only `updated`, so
+                // the players were paid different numbers from the ones they
+                // shook hands on and nothing said so. Name it, and hold the
+                // toast open long enough to be read.
+                const adj = Array.isArray(json.data?.rounding_adjustments)
+                    ? json.data.rounding_adjustments
+                    : [];
+                if (adj.length > 0) {
+                    const denom = json.data?.denomination || 1;
+                    const detail = adj
+                        .map(a => `${ordinal(a.position)} ${formatMoney(a.from)} to ${formatMoney(a.to)}`)
+                        .join(', ');
+                    setToast({
+                        type: 'warning',
+                        text: `Deal Applied, Rounded To ${formatMoney(denom)} Notes: ${detail}. Tell The Table Before Paying.`
+                    });
+                } else {
+                    setToast({ type: 'success', text: `Deal Applied. ${json.data?.updated ?? payouts.length} Payouts Saved. Play Continues.` });
+                }
                 await onApplied();
                 onClose();
             } else {

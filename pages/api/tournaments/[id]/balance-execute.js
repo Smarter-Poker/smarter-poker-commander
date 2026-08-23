@@ -192,12 +192,78 @@ export default async function handler(req, res) {
 
       const collided = countCollisions(errors);
 
+      // ── RELEASE THE BROKEN TABLE ──────────────────────────────────────────
+      // This route moves players and stops. It has no commander_tables write
+      // at all, yet the TD screen sends a table-BREAK plan straight here
+      // (tables.js posts suggestion.moves for type 'break'). So the table was
+      // emptied of players while its row kept tournament_id, mode 'tournament'
+      // and status 'in_use' - which means it stayed in the seat pool used by
+      // commander_claim_open_seat and findOpenSeat, and the very next
+      // alternate or late registration was seated back onto the table that had
+      // just been broken. It also kept appearing under assigned_tables.
+      //
+      // Only released when the caller asked, every move landed, and nothing is
+      // left sitting there - a half-applied break must not free the table.
+      let tableReleased = null;
+      const releaseTable = Number(req.body.release_table);
+      if (Number.isInteger(releaseTable) && errors.length === 0) {
+        const { data: stillThere, error: stillErr } = await getSupabase()
+          .from('commander_tournament_entries')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .eq('table_number', releaseTable)
+          .in('status', LIVE_SEAT_STATUSES)
+          .limit(1);
+
+        if (stillErr) {
+          console.error('[tournaments/balance-execute] post-break occupancy check failed', {
+            tournamentId, releaseTable, code: stillErr.code, message: stillErr.message
+          });
+        } else if ((stillThere || []).length > 0) {
+          console.warn('[tournaments/balance-execute] refusing to release a table that still has players', {
+            tournamentId, releaseTable
+          });
+        } else {
+          const { data: released, error: relErr } = await getSupabase()
+            .from('commander_tables')
+            .update({
+              mode: 'inactive',
+              table_purpose: null,
+              tournament_id: null,
+              game_type: null,
+              stakes: null,
+              status: 'available',
+              assigned_at: null,
+              assigned_by: null,
+            })
+            .eq('venue_id', tournament.venue_id)
+            .eq('tournament_id', tournamentId)
+            .eq('table_number', releaseTable)
+            .select('id');
+
+          if (relErr) {
+            console.error('[tournaments/balance-execute] table release failed', {
+              tournamentId, releaseTable, code: relErr.code, message: relErr.message
+            });
+          } else {
+            // A zero-row update is not a PostgREST error, so say which it was.
+            tableReleased = (released || []).length > 0 ? releaseTable : null;
+            if (!tableReleased) {
+              console.warn('[tournaments/balance-execute] release matched no rows', {
+                tournamentId, releaseTable
+              });
+            }
+          }
+        }
+      }
+
       return res.status(200).json({
         success: errors.length === 0,
         data: {
           executed: results.length,
           failed: errors.length,
           seat_collisions: collided,
+          table_released: tableReleased,
           moves: results,
           errors: errors.length > 0 ? errors : undefined,
           message: errors.length === 0

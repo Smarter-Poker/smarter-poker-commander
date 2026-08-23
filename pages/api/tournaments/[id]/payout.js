@@ -873,6 +873,9 @@ async function handleBulkPayouts(req, res, tournamentId, staff) {
     // after they left the building. Send denomination: 1 to skip entirely.
     let roundingRemainder = 0;
     let appliedDenomination = 1;
+    // Per-player differences the denomination rounding introduced. Empty when
+    // nothing moved. Reported so a chop is never quietly restated.
+    let roundingAdjustments = [];
     if (dealOnly && payouts.length > 0) {
       const requested = req.body?.denomination;
       const denomSource = (requested === undefined || requested === null || requested === '')
@@ -882,13 +885,48 @@ async function handleBulkPayouts(req, res, tournamentId, staff) {
       // Sorted by position so index 0 really is 1st place. The rows are the
       // same objects as in `payouts`, so writing p.amount here is what the
       // update loop below picks up.
-      const ordered = [...payouts].sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
+      // Sorted by position so index 0 really is 1st place - that is the row
+      // roundPayoutsToDenomination gives the remainder to. `Number(x) || 0`
+      // maps a missing or zero position to 0, which sorts it AHEAD of 1st and
+      // hands it the entire remainder as though it had won. Rows without a
+      // real position now sort last instead.
+      const posOf = (r) => {
+        const n = Number(r?.position);
+        return Number.isFinite(n) && n > 0 ? n : Number.MAX_SAFE_INTEGER;
+      };
+      const ordered = [...payouts].sort((a, b) => posOf(a) - posOf(b));
       const total = ordered.reduce((s, p) => s + Math.round(Number(p.amount) || 0), 0);
       if (denom > 1 && total > 0) {
+        const before = ordered.map(p => Math.round(Number(p.amount) || 0));
         const rounded = roundPayoutsToDenomination(ordered.map(p => p.amount), total, denom);
         ordered.forEach((p, i) => { p.amount = rounded.amounts[i]; });
         roundingRemainder = rounded.remainder;
         appliedDenomination = rounded.denomination;
+
+        // A CHOP IS AN AGREEMENT BETWEEN PLAYERS, AND THIS CHANGES IT.
+        //
+        // The total is preserved - the header above is right about that - but
+        // the SPLIT is not. A 3-way even chop of $10,000 comes off the Deal
+        // Calculator as 3334/3333/3333 and leaves here as 3340/3330/3330: 1st
+        // gains $6 and the other two lose $3 each, relative to the numbers
+        // they shook hands on at the table. The response carried
+        // rounding_remainder, but the screen only read `updated`, so nothing
+        // ever said the numbers had moved.
+        //
+        // The rounding itself is kept - the cage pays in real notes and rooms
+        // set a denomination on purpose - but it is no longer silent. Every
+        // player whose amount changed is named, so the TD can tell the table
+        // before anybody is paid.
+        roundingAdjustments = ordered
+          .map((p, i) => ({
+            position: p.position ?? null,
+            entry_id: p.entry_id || null,
+            player_id: p.player_id || null,
+            from: before[i],
+            to: Math.round(Number(p.amount) || 0),
+            delta: Math.round(Number(p.amount) || 0) - before[i]
+          }))
+          .filter(a => a.delta !== 0);
       }
     }
 
@@ -1087,6 +1125,7 @@ async function handleBulkPayouts(req, res, tournamentId, staff) {
         deal_only: dealOnly,
         denomination: appliedDenomination,
         rounding_remainder: roundingRemainder,
+        rounding_adjustments: roundingAdjustments,
         w2g_events: w2gEvents,
         message: skipped.length > 0
           ? `${results.length.toLocaleString()} Payout${results.length === 1 ? '' : 's'} Saved. ${skipped.length.toLocaleString()} Could Not Be Written - See skipped.`

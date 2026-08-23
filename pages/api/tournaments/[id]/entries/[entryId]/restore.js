@@ -107,7 +107,27 @@ export default async function handler(req, res) {
         finish_position: null,
         eliminated_at: null,
         eliminated_by: null,
-        ...(force ? { payout_amount: null, payout_position: null, payout_status: null } : {})
+        // eliminate.js stamps metadata.won_seat / seat_value when a finish
+        // lands in a seat-paying place on a satellite. Restoring cleared the
+        // payout but never these, so the player came back INTO PLAY still
+        // flagged as having won a seat - the results sheet and the public
+        // payouts tab both label them 'Seat' while they are still at the
+        // table. Cleared alongside the payout they belong to.
+        ...(force
+          ? {
+              payout_amount: null,
+              payout_position: null,
+              payout_status: null,
+              metadata: {
+                ...(entry.metadata || {}),
+                won_seat: null,
+                seat_value: null,
+                prize_amount: null,
+                won_at: null,
+                restored_at: new Date().toISOString()
+              }
+            }
+          : {})
       })
       .eq('id', entryId)
       .eq('tournament_id', tournamentId)

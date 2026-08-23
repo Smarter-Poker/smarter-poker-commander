@@ -150,10 +150,31 @@ export default async function handler(req, res) {
 
         let destIdx = 0;
         const assignedSeats = {}; // track seats we're assigning in this batch
+        // A player the plan could not place. Previously these were skipped by
+        // the bare `if (seat)` below and never mentioned again, while the
+        // message still reported the FULL headcount - so a break of an
+        // 8-handed table into 3 free seats announced "Move 8 Players" beside a
+        // moves array holding 3, and the TD approved a plan that strands 5
+        // people at a table it believes is being broken.
+        const unplaced = [];
 
         for (const player of playersToMove) {
-          while (destIdx < otherCounts.length && otherCounts[destIdx].count >= maxSeatsFor(otherCounts[destIdx].tn)) destIdx++;
-          if (destIdx >= otherCounts.length) destIdx = 0;
+          // Advance past any destination that is already full. The wrap to 0
+          // used to happen WITHOUT re-testing capacity, so once every table
+          // was full this pointed back at a full table and findAvailableSeat
+          // returned null for every remaining player.
+          let scanned = 0;
+          while (scanned < otherCounts.length
+                 && otherCounts[destIdx].count >= maxSeatsFor(otherCounts[destIdx].tn)) {
+            destIdx = (destIdx + 1) % otherCounts.length;
+            scanned++;
+          }
+
+          // Every destination is full: the field genuinely does not fit.
+          if (scanned >= otherCounts.length) {
+            unplaced.push({ entry_id: player.id, player_name: player.player_name });
+            continue;
+          }
 
           const targetTable = otherCounts[destIdx].tn;
           const occupied = entries
@@ -175,17 +196,27 @@ export default async function handler(req, res) {
             if (!assignedSeats[targetTable]) assignedSeats[targetTable] = [];
             assignedSeats[targetTable].push(seat);
             otherCounts[destIdx].count++;
+          } else {
+            unplaced.push({ entry_id: player.id, player_name: player.player_name });
           }
         }
+
+        // A break that cannot move everybody is NOT a break. Reporting it as
+        // one invites the floor to empty a table it has nowhere to empty into.
+        const breakIsComplete = unplaced.length === 0;
 
         return res.status(200).json({
           success: true,
           data: {
-            type: 'break',
-            table_to_break: tableToBreak,
+            type: breakIsComplete ? 'break' : 'break_incomplete',
+            table_to_break: breakIsComplete ? tableToBreak : null,
             moves,
+            unplaced,
             table_counts: tableCounts,
-            message: `Break Table ${tableToBreak}, Move ${playersToMove.length} Players`
+            // Reports what the plan ACHIEVES, not what it set out to do.
+            message: breakIsComplete
+              ? `Break Table ${tableToBreak}, Move ${moves.length.toLocaleString()} Player${moves.length === 1 ? '' : 's'}`
+              : `Cannot Break Table ${tableToBreak}: Only ${moves.length.toLocaleString()} Of ${playersToMove.length.toLocaleString()} Players Fit. Add A Table Or Balance Instead.`
           }
         });
       }
