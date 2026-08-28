@@ -17,7 +17,7 @@ import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
   Monitor, DollarSign, Gift, Calendar, Tv, Activity, BarChart3,
   AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle, Timer
-, ChevronDown, LayoutGrid, Printer } from 'lucide-react';
+, ChevronDown, LayoutGrid, Printer, Menu, ArrowLeft } from 'lucide-react';
 import CommanderErrorBoundary from './CommanderErrorBoundary';
 import FloorCallAlert from './FloorCallAlert';
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../../lib/commander/tierConfig';
@@ -27,6 +27,7 @@ import { supabase } from '../../../lib/supabase';
 import CommanderEffectsProvider from './CommanderEffectsProvider';
 import PushNotificationProvider from './PushNotificationProvider';
 import useBusBridge from '../../../lib/commander/useBusBridge';
+import { ClubButtonsSurface, ClubButton, ClubIconButton, ClubNavItem } from '../../club-buttons/ClubButtons';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/commander/dashboard', icon: Layout },
@@ -192,11 +193,8 @@ export default function CommanderLayout({ children, title, backHref = '/commande
     return () => window.removeEventListener('commander:session-expiring', handler);
   }, []);
 
-  // ── UNAUTHORIZED BANNER ──
-  // commanderFetch used to swallow every 401 and hand callers a fabricated
-  // HTTP 200, so an expired session painted a plausible but invented screen.
-  // It now passes the 401 through and announces it once; this turns that into
-  // something the floor can actually see and act on.
+  // An expired Commander session must remain visible rather than painting
+  // plausible but unauthorized empty data after commanderFetch reports a 401.
   const [unauthorized, setUnauthorized] = useState(false);
   useEffect(() => {
     const onUnauthorized = () => setUnauthorized(true);
@@ -833,33 +831,82 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           width: 24px;
           height: 24px;
         }
+
+        /* #ClubButtons Commander mode: denser hardware, same shared material DNA. */
+        .cmd-clubbuttons .cmd-global-header {
+          background: linear-gradient(180deg, #171b20 0%, #080a0d 68%, #030405 100%);
+          border-bottom: 1px solid #777e85;
+          box-shadow: inset 0 -3px 0 #050607, 0 8px 20px rgba(0,0,0,.42);
+        }
+        .cmd-clubbuttons .cmd-hamburger,
+        .cmd-clubbuttons .cmd-hub-btn,
+        .cmd-clubbuttons .cmd-back-img-btn,
+        .cmd-clubbuttons .cmd-menu-close {
+          width: 48px;
+          min-width: 48px;
+          height: 48px;
+          padding: 12px;
+        }
+        .cmd-clubbuttons .cmd-menu-panel {
+          width: min(320px, 88vw);
+          padding: 12px 8px;
+          background: linear-gradient(145deg, #22282e 0, #080a0d 7%, #030405 92%, #171b20 100%);
+          border-right: 1px solid #a9afb5;
+          box-shadow: 16px 0 38px rgba(0,0,0,.66), inset -4px 0 0 #11151a;
+        }
+        .cmd-clubbuttons .cmd-menu-item.cb-nav-item {
+          background: var(--club-shell-nav) center / 100% 100% no-repeat;
+          border: 0;
+          min-height: 48px;
+          margin: 2px 0;
+          padding: 10px 18px;
+          color: #d7dbdf;
+        }
+        .cmd-clubbuttons .cmd-menu-item.cb-nav-item:hover,
+        .cmd-clubbuttons .cmd-menu-item.cb-nav-item.active {
+          background: var(--club-shell-nav) center / 100% 100% no-repeat;
+          color: #fff;
+        }
+        .cmd-clubbuttons .cmd-menu-item.cb-nav-item.active {
+          filter: brightness(1.12) drop-shadow(0 0 7px rgba(0,168,255,.24));
+        }
+        .cmd-clubbuttons .cmd-pin-gate-modal {
+          border-radius: 0;
+          border: 1px solid rgba(215,219,223,.58);
+          background: linear-gradient(145deg, #22282e, #050607 12% 88%, #171b20);
+          box-shadow: inset 0 0 0 4px #050607, inset 0 0 0 5px rgba(215,219,223,.28), 0 18px 56px rgba(0,0,0,.72);
+          clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
+        }
       `}</style>
 
+      <ClubButtonsSurface mode="commander" className="cmd-clubbuttons">
       <CommanderErrorBoundary>
         {/* ── GLOBAL HEADER BAR ── */}
         <div className="cmd-global-header" style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
           <div className="cmd-global-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <button className="cmd-hamburger" onClick={() => setMenuOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              <img src="/images/commander/btn-hamburger.png" alt="Menu" style={{ width: '36px', height: '36px' }} />
-            </button>
+            <ClubIconButton label="Open Menu" className="cmd-hamburger" onClick={() => setMenuOpen(true)}>
+              <Menu size={22} />
+            </ClubIconButton>
             {hideBack ? (
               /* Dashboard: show HUB button */
-              <button
+              <ClubIconButton
                 className="cmd-hub-btn"
                 onClick={() => router.push('/hub')}
                 title="Back To Smarter.Poker Hub"
+                label="Back To Smarter.Poker Hub"
               >
-                <img src="/images/btn-hub.png" alt="Hub" />
-              </button>
+                <Globe size={21} />
+              </ClubIconButton>
             ) : (
               /* All other pages: show metallic BACK image */
-              <button
+              <ClubIconButton
                 className="cmd-back-img-btn"
                 onClick={() => router.back()}
                 title="Go Back"
+                label="Go Back"
               >
-                <img src="/images/commander/btn-back.png" alt="Back" />
-              </button>
+                <ArrowLeft size={21} />
+              </ClubIconButton>
             )}
           </div>
           <div className="cmd-global-center" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
@@ -975,15 +1022,13 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 Your Session Is Not Valid For This Data. Some Panels May Be Empty.
               </span>
             </div>
-            <button
+            <ClubButton
+              variant="danger"
+              compact
               onClick={() => { window.location.href = '/commander/login?expired=1'; }}
-              style={{
-                background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6,
-                padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}
             >
               Sign In Again
-            </button>
+            </ClubButton>
           </div>
         )}
 
@@ -1025,21 +1070,22 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                   ) : null}
                   <span className="cmd-menu-header-text">{venueName}</span>
                 </div>
-                <button className="cmd-menu-close" onClick={() => setMenuOpen(false)}>
+                <ClubIconButton label="Close Menu" className="cmd-menu-close" onClick={() => setMenuOpen(false)}>
                   <X size={18} />
-                </button>
+                </ClubIconButton>
               </div>
               {/* Tier badge */}
               <div className="cmd-menu-tier-badge">
                 {currentTierLabel} Plan
               </div>
-              <button
+              <ClubNavItem
                 className="cmd-menu-item"
                 style={{ color: '#22D3EE', fontWeight: 600 }}
                 onClick={() => { setMenuOpen(false); router.push('/hub'); }}
+                icon={<Globe size={18} />}
               >
-                <Globe size={18} /> Back To Hub
-              </button>
+                Back To Hub
+              </ClubNavItem>
               <div className="cmd-menu-divider" />
               {NAV_ITEMS.map((item, idx) => {
                 if (item.divider) return <div key={`d-${idx}`} className="cmd-menu-divider" />;
@@ -1051,23 +1097,25 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 const isRoleBlocked = !canRoleAccessRoute(staffRole, item.href);
                 if (isRoleBlocked) return null; // Don't show in menu at all
                 return (
-                  <button
+                  <ClubNavItem
                     key={item.href}
                     className={`cmd-menu-item ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
                     onClick={() => handleNavClick(item)}
+                    active={isActive}
+                    icon={<Icon size={18} />}
                   >
-                    <Icon size={18} /> {item.label}
+                    {item.label}
                     {isLocked && (
                       <span className="cmd-menu-lock-badge">
                         <Lock size={12} /> Upgrade
                       </span>
                     )}
-                  </button>
+                  </ClubNavItem>
                 );
               })}
               <div className="cmd-menu-divider" />
               {/* Dynamic Club Page Link */}
-              <button
+              <ClubNavItem
                 className="cmd-menu-item"
                 style={{ color: clubPageId ? '#1877F2' : '#31A24C', fontWeight: 600 }}
                 onClick={() => {
@@ -1078,13 +1126,13 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                     window.location.href = '/hub/social-media?createPage=true';
                   }
                 }}
+                icon={clubPageId ? <Globe size={18} /> : <FileText size={18} />}
               >
-                {clubPageId ? <Globe size={18} /> : <FileText size={18} />}
                 {clubPageId ? 'My Club Page' : 'Create Club Page'}
-              </button>
-              <button className="cmd-menu-item danger" onClick={handleLogout}>
-                <LogOut size={18} /> Sign Out
-              </button>
+              </ClubNavItem>
+              <ClubNavItem className="cmd-menu-item danger" onClick={handleLogout} icon={<LogOut size={18} />}>
+                Sign Out
+              </ClubNavItem>
             </div>
           </>
         )}
@@ -1207,19 +1255,21 @@ export default function CommanderLayout({ children, title, backHref = '/commande
                 autoFocus
               />
               {pinError && <div className="cmd-pin-gate-error">{pinError}</div>}
-              <button
+              <ClubButton
                 className="cmd-pin-gate-btn"
                 onClick={handlePinSubmit}
                 disabled={pinLoading || pinInput.length < 4}
+                loading={pinLoading}
               >
-                {pinLoading ? 'Verifying...' : 'Unlock'}
-              </button>
-              <button
+                Unlock
+              </ClubButton>
+              <ClubButton
                 className="cmd-pin-gate-back"
+                variant="secondary"
                 onClick={() => router.push('/commander/dashboard')}
               >
                 ← Back To Dashboard
-              </button>
+              </ClubButton>
             </div>
           </div>
         )}
@@ -1236,6 +1286,7 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           </PushNotificationProvider>
         )}
       </CommanderErrorBoundary>
+      </ClubButtonsSurface>
     </>
   );
 }
