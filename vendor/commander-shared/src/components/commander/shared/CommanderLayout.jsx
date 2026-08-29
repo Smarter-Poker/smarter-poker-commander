@@ -9,7 +9,7 @@
  *   title       - page title for <Head> tag
  *   children    - page content
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
