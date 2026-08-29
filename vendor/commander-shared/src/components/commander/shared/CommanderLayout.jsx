@@ -7,11 +7,9 @@
  * 
  * Props:
  *   title       - page title for <Head> tag
- *   backHref    - where Back button navigates (default: /commander/dashboard)
- *   hideBack    - set true on dashboard to hide the back button
  *   children    - page content
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
@@ -60,7 +58,7 @@ const NAV_ITEMS = [
   { label: 'Settings', href: '/commander/settings', icon: Settings },
 ];
 
-export default function CommanderLayout({ children, title, backHref = '/commander/dashboard', hideBack }) {
+export default function CommanderLayout({ children, title }) {
   // ── Cross-tab EventBus bridge ──
   useBusBridge();
   const router = useRouter();
@@ -70,6 +68,23 @@ export default function CommanderLayout({ children, title, backHref = '/commande
 
 
   const [staff, setStaff] = useState(null);
+  const [profileAvatar, setProfileAvatar] = useState('/default-avatar.png');
+
+  useEffect(() => {
+    try {
+      const cachedHeader = JSON.parse(localStorage.getItem('sp-cached-header-user') || '{}');
+      const cachedAuth = JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}');
+      const nextAvatar =
+        staff?.avatar_url ||
+        staff?.avatar ||
+        cachedHeader?.avatar_url ||
+        cachedHeader?.avatar ||
+        cachedAuth?.user?.user_metadata?.avatar_url;
+      if (nextAvatar) setProfileAvatar(nextAvatar);
+    } catch (_) {
+      // Keep the neutral fallback inside the approved profile frame.
+    }
+  }, [staff]);
 
   // Multi-club account switcher. Declared AFTER `staff` on purpose: this
   // effect reads staff?.user_id in its dependency array, which is evaluated
@@ -833,119 +848,110 @@ export default function CommanderLayout({ children, title, backHref = '/commande
           width: 24px;
           height: 24px;
         }
+
+        /* Approved global header: one complete desktop row, uniformly scaled at every width. */
+        .cmd-approved-header {
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          width: 100%;
+          box-sizing: border-box;
+          padding-top: env(safe-area-inset-top, 0px);
+          overflow: hidden;
+          background: #000;
+          line-height: 0;
+          isolation: isolate;
+        }
+        .cmd-approved-header__art {
+          display: block;
+          width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+          height: auto;
+          margin-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+          aspect-ratio: 1648 / 168;
+          object-fit: contain;
+          object-position: center;
+          user-select: none;
+          pointer-events: none;
+        }
+        .cmd-approved-header__controls {
+          position: absolute;
+          top: env(safe-area-inset-top, 0px);
+          right: env(safe-area-inset-right, 0px);
+          left: env(safe-area-inset-left, 0px);
+          aspect-ratio: 1648 / 168;
+        }
+        .cmd-approved-header__button {
+          position: absolute;
+          top: 13%;
+          height: 74%;
+          margin: 0;
+          padding: 0;
+          appearance: none;
+          border: 0;
+          border-radius: 8px;
+          background: transparent;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        .cmd-approved-header__button:focus-visible {
+          outline: 3px solid #20a9ff;
+          outline-offset: -3px;
+          box-shadow: 0 0 0 2px #000;
+        }
+        .cmd-approved-header__button:active { opacity: .76; }
+        .cmd-approved-header__menu { left: 1.7%; width: 7%; }
+        .cmd-approved-header__back { left: 8%; width: 12%; }
+        .cmd-approved-header__hub { left: 19.1%; width: 12.9%; }
+        .cmd-approved-header__profile { left: 66.5%; width: 7.5%; }
+        .cmd-approved-header__wallet { left: 73.2%; width: 7.1%; }
+        .cmd-approved-header__vip { left: 79.9%; width: 6.5%; }
+        .cmd-approved-header__messenger { left: 86%; width: 6.9%; }
+        .cmd-approved-header__notifications { left: 92.3%; width: 6.2%; }
+        .cmd-approved-header__avatar {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 56%;
+          height: auto;
+          aspect-ratio: 1;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          background: #05070a;
+          object-fit: cover;
+          pointer-events: none;
+        }
+        @media (display-mode: standalone), (display-mode: fullscreen) {
+          .cmd-approved-header { padding-top: max(env(safe-area-inset-top, 0px), 24px); }
+          .cmd-approved-header__controls { top: max(env(safe-area-inset-top, 0px), 24px); }
+        }
       `}</style>
 
       <CommanderErrorBoundary>
-        {/* ── GLOBAL HEADER BAR ── */}
-        <div className="cmd-global-header" style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
-          <div className="cmd-global-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <button className="cmd-hamburger" onClick={() => setMenuOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              <img src="/images/commander/btn-hamburger.png" alt="Menu" style={{ width: '36px', height: '36px' }} />
-            </button>
-            {hideBack ? (
-              /* Dashboard: show HUB button */
-              <button
-                className="cmd-hub-btn"
-                onClick={() => router.push('/hub')}
-                title="Back To Smarter.Poker Hub"
-              >
-                <img src="/images/btn-hub.png" alt="Hub" />
-              </button>
-            ) : (
-              /* All other pages: show metallic BACK image */
-              <button
-                className="cmd-back-img-btn"
-                onClick={() => router.back()}
-                title="Go Back"
-              >
-                <img src="/images/commander/btn-back.png" alt="Back" />
-              </button>
-            )}
-          </div>
-          <div className="cmd-global-center" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
-            <div className="cmd-global-title">Club Commander</div>
-          </div>
-          <div className="cmd-global-right" style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', flex: 1, whiteSpace: 'nowrap' }}>
-            <div 
-              className="cmd-global-venue" 
-              style={{ cursor: Array.isArray(commanderAccounts) && commanderAccounts.length > 1 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '4px' }}
-              onClick={() => Array.isArray(commanderAccounts) && commanderAccounts.length > 1 && setShowAccountSwitcher(!showAccountSwitcher)}
-            >
-              {venueName}
-              {Array.isArray(commanderAccounts) && commanderAccounts.length > 1 && <ChevronDown size={14} />}
-            </div>
-            {showAccountSwitcher && (
-              <>
-                <div 
-                  style={{ position: 'fixed', inset: 0, zIndex: 199 }} 
-                  onClick={() => setShowAccountSwitcher(false)} 
-                />
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '8px',
-                  background: '#242526',
-                  border: '1px solid #3A3B3C',
-                  borderRadius: '8px',
-                  padding: '8px',
-                  minWidth: '220px',
-                  zIndex: 200,
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
-                }}>
-                  <div style={{ fontSize: '11px', color: '#B0B3B8', textTransform: 'uppercase', padding: '4px 8px 8px', fontWeight: 600, letterSpacing: '0.05em' }}>
-                    Switch Account
-                  </div>
-                  {Array.isArray(commanderAccounts) && commanderAccounts.map(acc => (
-                    <button
-                      key={`acc-${acc.venue_id}`}
-                      onClick={() => switchAccount(acc)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        width: '100%',
-                        padding: '10px 8px',
-                        borderRadius: '6px',
-                        background: Number(staff?.venue_id) === acc.venue_id ? '#3A3B3C' : 'transparent',
-                        border: 'none',
-                        color: '#E4E6EB',
-                        cursor: 'pointer',
-                        textAlign: 'left'
-                      }}
-                      onMouseOver={(e) => {
-                        if (Number(staff?.venue_id) !== acc.venue_id) e.currentTarget.style.background = '#3A3B3C50';
-                      }}
-                      onMouseOut={(e) => {
-                        if (Number(staff?.venue_id) !== acc.venue_id) e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <div style={{
-                        width: '24px', height: '24px', borderRadius: '4px', overflow: 'hidden', background: '#18191A',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                      }}>
-                        {acc.club_logo ? (
-                          <img src={acc.club_logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <LayoutGrid size={12} color="#8A8D91" />
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {acc.venue_name}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#8A8D91', textTransform: 'uppercase' }}>
-                          {acc.role === 'owner' ? 'Owner' : 'Staff'} • {acc.sub_tier || 'FREE'}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
 
+        <header className="cmd-approved-header" data-artwork="approved-global-header">
+        <img src="/images/global-header/global-header-desktop.png" alt="" width="1648" height="168" className="cmd-approved-header__art" aria-hidden="true" fetchpriority="high" decoding="sync" />
+          <div className="cmd-approved-header__controls">
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__menu" onClick={() => setMenuOpen(true)} aria-label="Open Menu" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__back" onClick={() => router.back()} aria-label="Go back" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__hub" onClick={() => router.push('/hub')} aria-label="Go to the Hub" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__profile" onClick={() => router.push('/hub/profile')} aria-label="My Profile">
+              <img
+                src={profileAvatar}
+                alt=""
+                className="cmd-approved-header__avatar"
+                aria-hidden="true"
+                onError={(event) => { event.currentTarget.src = '/default-avatar.png'; }}
+              />
+            </button>
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__wallet" onClick={() => router.push('/hub/diamond-store')} aria-label="Diamond Wallet" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__vip" onClick={() => router.push('/hub/vip-membership')} aria-label="VIP" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__messenger" onClick={() => router.push('/hub/messenger')} aria-label="Messages" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__notifications" onClick={() => router.push('/hub/notifications')} aria-label="Notifications" />
+          </div>
+        </header>
+
+        {/* ── GLOBAL HEADER BAR ── */}
         {/* ── OFFLINE DETECTION BANNER ── */}
         {isOffline && (
           <div style={{
@@ -1033,6 +1039,28 @@ export default function CommanderLayout({ children, title, backHref = '/commande
               <div className="cmd-menu-tier-badge">
                 {currentTierLabel} Plan
               </div>
+              {Array.isArray(commanderAccounts) && commanderAccounts.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="cmd-menu-item"
+                    onClick={() => setShowAccountSwitcher((open) => !open)}
+                  >
+                    <LayoutGrid size={18} /> Switch Account <ChevronDown size={14} />
+                  </button>
+                  {showAccountSwitcher && commanderAccounts.map((account) => (
+                    <button
+                      type="button"
+                      className="cmd-menu-item"
+                      key={account.venue_id}
+                      onClick={() => switchAccount(account)}
+                    >
+                      {account.venue_name}
+                    </button>
+                  ))}
+                  <div className="cmd-menu-divider" />
+                </>
+              )}
               <button
                 className="cmd-menu-item"
                 style={{ color: '#22D3EE', fontWeight: 600 }}

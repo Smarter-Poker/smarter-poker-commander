@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:global-header": "node --test tests/integrity/global-header.test.mjs",
     "test:e2e": "playwright test",
     "prepare": "git config core.hooksPath .husky 2>/dev/null || true"
   },
