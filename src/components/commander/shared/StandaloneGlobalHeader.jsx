@@ -17,20 +17,46 @@ export default function StandaloneGlobalHeader() {
   const [profileAvatar, setProfileAvatar] = useState('/default-avatar.png');
 
   useEffect(() => {
+    const refreshProfileAvatar = (event) => {
+      try {
+        const staff = JSON.parse(localStorage.getItem('commander_staff') || '{}');
+        const cachedHeader = JSON.parse(localStorage.getItem('sp-cached-header-user') || '{}');
+        const cachedAuth = JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}');
+        const nextAvatar =
+          event?.detail?.avatar_url ||
+          staff?.avatar_url ||
+          staff?.avatar ||
+          cachedHeader?.avatar_url ||
+          cachedHeader?.avatar ||
+          cachedAuth?.user?.user_metadata?.avatar_url ||
+          '/default-avatar.png';
+        setProfileAvatar(nextAvatar);
+      } catch (_) {
+        setProfileAvatar('/default-avatar.png');
+      }
+    };
+    const handleStorage = (event) => {
+      if (['commander_staff', 'sp-cached-header-user', 'smarter-poker-auth'].includes(event.key)) {
+        refreshProfileAvatar();
+      }
+    };
+
+    let avatarChannel = null;
     try {
-      const staff = JSON.parse(localStorage.getItem('commander_staff') || '{}');
-      const cachedHeader = JSON.parse(localStorage.getItem('sp-cached-header-user') || '{}');
-      const cachedAuth = JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}');
-      const nextAvatar =
-        staff?.avatar_url ||
-        staff?.avatar ||
-        cachedHeader?.avatar_url ||
-        cachedHeader?.avatar ||
-        cachedAuth?.user?.user_metadata?.avatar_url;
-      if (nextAvatar) setProfileAvatar(nextAvatar);
+      avatarChannel = new BroadcastChannel('smarter_poker_avatar_sync');
+      avatarChannel.onmessage = refreshProfileAvatar;
     } catch (_) {
-      // Keep the neutral profile picture inside the supplied metallic frame.
+      // BroadcastChannel is optional; storage + same-tab events remain active.
     }
+
+    refreshProfileAvatar();
+    window.addEventListener('profile-updated', refreshProfileAvatar);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('profile-updated', refreshProfileAvatar);
+      window.removeEventListener('storage', handleStorage);
+      try { avatarChannel?.close(); } catch (_) { /* noop */ }
+    };
   }, []);
 
   const go = (path) => {
@@ -93,22 +119,47 @@ export default function StandaloneGlobalHeader() {
         .standalone-approved-header__menu { left: 1.7%; width: 7%; }
         .standalone-approved-header__back { left: 8%; width: 12%; }
         .standalone-approved-header__hub { left: 19.1%; width: 12.9%; }
-        .standalone-approved-header__profile { left: 66.5%; width: 7.5%; }
+        .standalone-approved-header__profile {
+          left: 66.5%;
+          width: 7.5%;
+          position: absolute !important;
+          overflow: hidden;
+          contain: layout paint;
+          isolation: isolate;
+        }
         .standalone-approved-header__wallet { left: 73.2%; width: 7.1%; }
         .standalone-approved-header__vip { left: 79.9%; width: 6.5%; }
         .standalone-approved-header__messenger { left: 86%; width: 6.9%; }
         .standalone-approved-header__notifications { left: 92.3%; width: 6.2%; }
-        .standalone-approved-header__avatar {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 56%;
+        .standalone-approved-header__avatar-slot {
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          z-index: 1;
+          display: block;
+          width: 58%;
           height: auto;
-          aspect-ratio: 1;
-          transform: translate(-50%, -50%);
+          aspect-ratio: .78;
+          transform: translate(-50%, -50%) !important;
+          overflow: hidden;
           border-radius: 50%;
-          background: #05070a;
-          object-fit: cover;
+          background: #020305;
+          pointer-events: none;
+        }
+        .standalone-approved-header__avatar-slot > .standalone-approved-header__avatar {
+          position: absolute !important;
+          inset: 0 !important;
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+          max-width: none !important;
+          aspect-ratio: auto !important;
+          transform: none !important;
+          border-radius: inherit !important;
+          background: #020305;
+          object-fit: cover !important;
+          object-position: center !important;
+          opacity: 1 !important;
           pointer-events: none;
         }
         .standalone-approved-menu-backdrop {
@@ -159,7 +210,9 @@ export default function StandaloneGlobalHeader() {
           <button type="button" className="standalone-approved-header__button standalone-approved-header__back" onClick={() => router.back()} aria-label="Go back" />
           <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => router.push('/hub')} aria-label="Go to the Hub" />
           <button type="button" className="standalone-approved-header__button standalone-approved-header__profile" onClick={() => router.push('/hub/profile')} aria-label="My Profile">
-            <img src={profileAvatar} alt="" className="standalone-approved-header__avatar" aria-hidden="true" onError={(event) => { event.currentTarget.src = '/default-avatar.png'; }} />
+            <span className="standalone-approved-header__avatar-slot" aria-hidden="true">
+              <img src={profileAvatar} alt="" className="standalone-approved-header__avatar" onError={(event) => { event.currentTarget.src = '/default-avatar.png'; }} />
+            </span>
           </button>
           <button type="button" className="standalone-approved-header__button standalone-approved-header__wallet" onClick={() => router.push('/hub/diamond-store')} aria-label="Diamond Wallet" />
           <button type="button" className="standalone-approved-header__button standalone-approved-header__vip" onClick={() => router.push('/hub/vip-membership')} aria-label="VIP" />
