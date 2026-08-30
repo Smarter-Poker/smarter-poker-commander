@@ -51,6 +51,12 @@ test('both Commander owners use the approved row, a live avatar, and eight wired
     assert.match(source, /global-header-desktop\.png/);
     assert.match(source, /aspect-ratio: 1648 \/ 168/);
     assert.match(source, /profileAvatar/);
+    assert.match(source, /approved-header__avatar-slot/);
+    assert.match(source, /contain: layout paint/);
+    assert.match(source, /width: 58%/);
+    assert.match(source, /aspect-ratio: \.78/);
+    assert.match(source, /profile-updated/);
+    assert.match(source, /smarter_poker_avatar_sync/);
     for (const label of [
       'Open Menu',
       'Go back',
