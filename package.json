@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:auth",
+    "test:auth": "node --test tests/integrity/jwt-verification-contract.test.mjs",
     "test:global-header": "node --test tests/integrity/global-header.test.mjs",
     "test:e2e": "playwright test",
     "prepare": "git config core.hooksPath .husky 2>/dev/null || true"
