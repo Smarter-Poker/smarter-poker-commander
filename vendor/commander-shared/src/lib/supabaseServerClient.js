@@ -8,13 +8,23 @@
  * supabase.auth.getUser(token) makes a network call to GoTrue which
  * intermittently fails on Vercel (timeout/AbortError), causing ALL API
  * routes to return 401 "Invalid token". This patch catches those failures
- * and falls back to local HMAC verification.
+ * and falls back to local verification.
  *
  * Phase 4.1d port:
- *   - require/module.exports → ESM import/export
+ *   - require/module.exports -> ESM import/export
  *   - decodeSupabaseJWT() now async (depends on async verifySupabaseJwt)
  *   - patched getUser still resolves the full call asynchronously, so
  *     no caller signature change.
+ *
+ * Phase 4.2 (2026-09-01):
+ *   - Removed the SUPABASE_JWT_SECRET guard from decodeSupabaseJWT. The
+ *     project migrated to asymmetric signing keys; that env var is absent
+ *     from .env.example and the symmetric secret no longer exists. The
+ *     guard therefore fired on every request and returned null BEFORE
+ *     reaching the verifier, which silently defeated the ES256 migration
+ *     in serverAuth.js for every file that imports this module.
+ *   - verifySupabaseJwt() now resolves keys from the project JWKS and
+ *     ignores its legacy `secret` argument, so nothing here needs it.
  */
 
 import { createClient as originalCreateClient } from '@supabase/supabase-js';
@@ -23,18 +33,19 @@ import { verifySupabaseJwt } from './serverAuth.js';
 /**
  * Decode a Supabase JWT locally without network call.
  * Returns a user-like object or null. Async.
+ *
+ * Verification (signature over the project JWKS, plus exp/nbf/iss/aud)
+ * lives entirely in serverAuth.js verifySupabaseJwt. Do NOT add an env-var
+ * precondition in front of it again - JWKS is fetched from
+ * NEXT_PUBLIC_SUPABASE_URL and cached, there is no secret to configure.
+ * An env guard here is indistinguishable from a total auth outage in the
+ * logs, because both look like "GoTrue is serving every request".
  */
 async function decodeSupabaseJWT(token) {
   try {
     if (!token || token.length < 10) return null;
 
-    const secret = process.env.SUPABASE_JWT_SECRET;
-    if (!secret) {
-      console.warn('[supabase-patch] SUPABASE_JWT_SECRET not configured, refusing to locally verify token.');
-      return null;
-    }
-
-    const decoded = await verifySupabaseJwt(token, secret);
+    const decoded = await verifySupabaseJwt(token);
     if (!decoded) return null;
     if (!decoded.sub) return null;
 
@@ -73,6 +84,13 @@ export function createClient(url, key, options) {
 
   // Replace with resilient version
   client.auth.getUser = async function patchedGetUser(token) {
+    // NOTE (2026-09-01): this copy still calls GoTrue FIRST and only decodes
+    // locally when that call fails or returns no user. World Hub reversed
+    // this ordering on 2026-08-24 for performance (local-first, network
+    // second); commander never received that change. Reversing it here is a
+    // deliberate follow-up, not part of this PR, because it changes the
+    // request path for every API route at once. See the PR body.
+
     // First try the original GoTrue call
     try {
       const result = await originalGetUser(token);
