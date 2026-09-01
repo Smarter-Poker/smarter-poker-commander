@@ -1,14 +1,24 @@
 /**
  * SUPABASE SERVER CLIENT PATCH - Phase 4.1d ESM port (2026-04-25)
  *
- * Patches the Supabase client's auth.getUser method to use local JWT
- * decoding when the GoTrue network call fails.
+ * Patches the Supabase client's auth.getUser method to verify JWTs LOCALLY
+ * first, falling back to the GoTrue network call only when local verification
+ * fails or cannot run.
  *
  * WHY:
  * supabase.auth.getUser(token) makes a network call to GoTrue which
  * intermittently fails on Vercel (timeout/AbortError), causing ALL API
- * routes to return 401 "Invalid token". This patch catches those failures
- * and falls back to local verification.
+ * routes to return 401 "Invalid token". That is the resilience the patch was
+ * originally written for. Since 2026-09-01 the ordering is also a volume
+ * control: every authenticated route calls getUser on every request, so doing
+ * the network call first meant a full HTTPS round trip to GoTrue per request,
+ * which saturated the project-wide GoTrue rate limit.
+ *
+ * ORDERING NOTE: local-first, network-second. The docblock here used to say
+ * the patch falls back to local decoding "when the GoTrue network call fails",
+ * which described the pre-2026-09-01 ordering and is now backwards. The
+ * authoritative explanation of the ordering, and why it must not be flipped
+ * back, is the comment block inside patchedGetUser below.
  *
  * Phase 4.1d port:
  *   - require/module.exports -> ESM import/export
@@ -25,6 +35,7 @@
  *     in serverAuth.js for every file that imports this module.
  *   - verifySupabaseJwt() now resolves keys from the project JWKS and
  *     ignores its legacy `secret` argument, so nothing here needs it.
+ *   - patchedGetUser flipped to local-first, network-second.
  */
 
 import { createClient as originalCreateClient } from '@supabase/supabase-js';
