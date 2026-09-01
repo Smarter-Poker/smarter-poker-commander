@@ -20,9 +20,30 @@
  *   const profile = await queryProfiles(userId);
  */
 
-// Supabase credentials - use env vars with hardcoded fallback for production stability
+import { resolveAnonKey, anonKeyWarning } from './supabaseKeys.js';
+
+// Supabase credentials.
+//
+// [2026-09-01] SUPABASE_ANON_KEY used to fall back to a hardcoded legacy JWT
+// API-key literal committed in this file. Legacy API keys were disabled on
+// project kuklfnapbkmacvwxktbh on 2026-08-16, so that fallback shipped a dead
+// key: every fetchWithAuth() that reached it got
+// 401 {"message":"Legacy API keys are disabled"}. It also bypassed
+// resolveAnonKey(), the guard that exists specifically to keep legacy keys off
+// the wire (see src/lib/supabaseKeys.js).
+//
+// The literal is gone. The key is resolved through the same guard used by
+// src/lib/supabase.js and middleware.ts, which substitutes the publishable key
+// when the configured value is a legacy JWT or is missing.
+//
+// This warns; it deliberately does NOT throw. This module is imported by
+// browser code, and a module-scope throw would white-screen the app rather
+// than degrade one request. Same approach as World-Hub's src/lib/authUtils.ts.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbkmacvwxktbh.supabase.co';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MzA4NDQsImV4cCI6MjA4MzMwNjg0NH0.ZGFrUYq7yAbkveFdudh4q_Xk0qN0AZ-jnu4FkX9YKjo';
+const _anonResolved = resolveAnonKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY = _anonResolved.key;
+const _anonWarning = anonKeyWarning(_anonResolved.source);
+if (_anonWarning) console.warn('[authUtils] ' + _anonWarning);
 
 /**
  * Get the current authenticated user from localStorage
