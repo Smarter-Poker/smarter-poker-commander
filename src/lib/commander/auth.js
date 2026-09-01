@@ -9,11 +9,13 @@
  *    two P0s found in the Club Commander audit:
  *      1. verifyStaffSession trusted the raw client-supplied x-staff-session
  *         JSON with no signature - any caller could forge a staff/owner
- *         identity. Sessions are now HMAC-signed server-side (SUPABASE_JWT_SECRET,
- *         same secret pinSession.js uses) and verified on every request.
+ *         identity. Sessions are now HMAC-signed server-side (see
+ *         sessionSecret() below) and verified on every request.
  *      2. Staff lookups matched only linked_user_id while registration wrote
  *         user_id, locking newly registered owners/staff out. All lookups now
  *         match either column.
+ *  - 2026-09-01: the signing secret was decoupled from SUPABASE_JWT_SECRET.
+ *    See the comment block on sessionSecret().
  *
  * Signed session shape (issued by /api/staff/verify-pin and
  * /api/check-subscription, stored client-side as `commander_staff`):
@@ -95,10 +97,90 @@ export async function verifyPin(venueId, pinCode) {
 const PIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;      // PIN terminals: 12h
 const OWNER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // Owner logins: 7d
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * STAFF-SESSION SIGNING SECRET - read this before touching any of these vars.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * WHAT THIS SIGNS
+ *   The HMAC-SHA256 `sig` on the `x-staff-session` token, whose canonical form
+ *   is `${id}|${user_id}|${venue_id}|${role}|${session_ts}`. Tokens are issued
+ *   by /api/staff/verify-pin and /api/check-subscription and held client-side
+ *   in localStorage as `commander_staff`. Every guard in this file
+ *   (guardStaff / guardManager / guardOwnerStaff / verifyManagerSession)
+ *   ultimately depends on this signature.
+ *
+ * TTLs
+ *   - 12h  (PIN_SESSION_TTL_MS)   venue PIN terminals on the floor
+ *   - 7d   (OWNER_SESSION_TTL_MS) owner logins
+ *   The TTL is enforced against `session_ts`, which is INSIDE the signed
+ *   payload, so it cannot be extended by the client.
+ *
+ * CHANGING THE VALUE LOGS EVERYONE OUT
+ *   Every previously issued signature stops verifying the instant the value
+ *   changes. verifyStaffSession then returns SESSION_EXPIRED. That is every
+ *   active staff member at once - including unattended PIN terminals on venue
+ *   floors, which will need a PIN re-entry by someone physically present. It
+ *   is recoverable, but it is a floor-operations event, not a config tweak.
+ *
+ * WHY A DEDICATED VARIABLE (2026-09-01)
+ *   This used to be `SUPABASE_JWT_SECRET || SUPABASE_SERVICE_ROLE_KEY`.
+ *   Two problems:
+ *     1. SUPABASE_JWT_SECRET is dead config for JWT verification since the
+ *        move to ES256/JWKS, so it is exactly the sort of variable someone
+ *        deletes as cleanup. Deleting it did NOT fail loudly - the chain
+ *        silently advanced to SUPABASE_SERVICE_ROLE_KEY, which is set in
+ *        every environment, invalidating every live session with no error
+ *        and no log line anywhere.
+ *     2. SUPABASE_SERVICE_ROLE_KEY is a full-database-bypass credential.
+ *        Using it as HMAC key material is a smell in its own right, and it
+ *        couples two rotations that must stay independent: rotating the
+ *        service-role key would silently log out every staff member.
+ *
+ * MIGRATION ORDER - do not skip a step
+ *   1. Set COMMANDER_STAFF_SESSION_SECRET to the CURRENT value of
+ *      SUPABASE_JWT_SECRET, in every environment. Same value means the same
+ *      signatures, which means ZERO invalidation.
+ *   2. Deploy. Confirm staff and owner logins still work and that no
+ *      `[commander-auth] falling back to SUPABASE_SERVICE_ROLE_KEY` line
+ *      appears in the logs.
+ *   3. Soak past the longest TTL - 7 days (owner sessions) - so that every
+ *      session still in circulation was issued under the new variable.
+ *   4. ONLY THEN remove the SUPABASE_JWT_SECRET and SUPABASE_SERVICE_ROLE_KEY
+ *      fallbacks from the chain below, and only then delete
+ *      SUPABASE_JWT_SECRET from the environment.
+ *   Removing either fallback before step 3 causes the exact mass invalidation
+ *   this whole change exists to prevent.
+ *
+ * Once COMMANDER_STAFF_SESSION_SECRET is set, rotating it is a deliberate
+ * "log every staff member out" action. Treat it as such.
+ */
+
+// Warn-once latch: this runs on a hot path (every guarded request), so the
+// fallback warning must be process-scoped, not per-call.
+let _warnedServiceRoleFallback = false;
+
 function sessionSecret() {
-  const secret = process.env.SUPABASE_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error('[commander-auth] no signing secret configured');
-  return secret;
+  const dedicated = process.env.COMMANDER_STAFF_SESSION_SECRET;
+  if (dedicated) return dedicated;
+
+  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+  if (jwtSecret) return jwtSecret;
+
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceRoleKey) {
+    if (!_warnedServiceRoleFallback) {
+      _warnedServiceRoleFallback = true;
+      console.warn(
+        '[commander-auth] falling back to SUPABASE_SERVICE_ROLE_KEY for staff session signing — ' +
+        'set COMMANDER_STAFF_SESSION_SECRET. If SUPABASE_JWT_SECRET was just removed, every ' +
+        'staff session (12h PIN terminals, 7d owner logins) has been invalidated.'
+      );
+    }
+    return serviceRoleKey;
+  }
+
+  throw new Error('[commander-auth] no signing secret configured');
 }
 
 function canonicalSessionString(s) {
