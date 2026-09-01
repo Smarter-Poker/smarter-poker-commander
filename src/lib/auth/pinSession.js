@@ -7,8 +7,8 @@
  *
  * Cookie shape:
  *   commander_admin_session = base64url({userId, exp})
- *   Signed with HMAC-SHA256 using SUPABASE_JWT_SECRET (same secret
- *   used elsewhere - keeps secret count down).
+ *   Signed with HMAC-SHA256 using COMMANDER_PIN_SESSION_SECRET, falling
+ *   back to SUPABASE_JWT_SECRET. See the note on getPinSessionSecret().
  *
  * Lifecycle:
  *   - 30 min sliding window
@@ -18,6 +18,37 @@
 
 const SESSION_COOKIE = 'commander_admin_session';
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 min
+
+/**
+ * Resolve the HMAC signing secret for the admin PIN session cookie.
+ *
+ * [2026-09-01] This used to read SUPABASE_JWT_SECRET directly, on the
+ * reasoning that reusing one secret keeps the secret count down. That coupling
+ * became a live hazard: after the ES256/JWKS migration (PR #77) nothing reads
+ * SUPABASE_JWT_SECRET for JWT verification any more. It is dead config for its
+ * original purpose - .github/workflows/ci.yml even sets it to a literal
+ * `dummy` - so it is exactly the kind of variable someone deletes during
+ * cleanup. Deleting it would have silently invalidated every live admin PIN
+ * session and locked admins out of the dashboard, with nothing in the logs
+ * pointing at the cause.
+ *
+ * The dedicated variable is COMMANDER_PIN_SESSION_SECRET.
+ *
+ * DO NOT REMOVE THE SUPABASE_JWT_SECRET FALLBACK YET. Removing it today
+ * invalidates every session signed with that secret the moment this deploys -
+ * the precise failure this change exists to prevent. The fallback can be
+ * dropped only once COMMANDER_PIN_SESSION_SECRET is set, to the SAME value, in
+ * every environment. See .env.example.
+ *
+ * Changing the value of the resolved secret invalidates all admin PIN
+ * sessions; admins simply re-enter their PIN.
+ *
+ * NOTE: this .js copy is the one middleware.ts imports, so it is on the hot
+ * path for every admin request. Keep it in sync with pinSession.ts.
+ */
+function getPinSessionSecret() {
+  return process.env.COMMANDER_PIN_SESSION_SECRET || process.env.SUPABASE_JWT_SECRET;
+}
 
 function base64UrlEncode(bytes) {
   const bin = Array.from(bytes, (b) => String.fromCharCode(b)).join('');
@@ -58,8 +89,13 @@ function constantTimeEqual(a, b) {
  * via res.setHeader('Set-Cookie', ...).
  */
 export async function createPinSession(userId) {
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret) throw new Error('[pinSession] SUPABASE_JWT_SECRET not configured');
+  const secret = getPinSessionSecret();
+  if (!secret) {
+    throw new Error(
+      '[pinSession] no signing secret configured - set COMMANDER_PIN_SESSION_SECRET '
+      + '(or, during migration, SUPABASE_JWT_SECRET)',
+    );
+  }
 
   const session = {
     userId,
@@ -75,7 +111,7 @@ export async function createPinSession(userId) {
  */
 export async function verifyPinSession(cookieValue) {
   if (!cookieValue) return null;
-  const secret = process.env.SUPABASE_JWT_SECRET;
+  const secret = getPinSessionSecret();
   if (!secret) return null;
 
   const parts = cookieValue.split('.');
