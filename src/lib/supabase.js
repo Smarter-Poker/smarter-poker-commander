@@ -9,6 +9,14 @@
  * [2026-08-19] Applied resolveAnonKey() guard (same as main hub) to prevent
  * "Legacy API keys are disabled" - the Vercel env var still holds the old JWT,
  * so we fall back to the publishable key automatically.
+ *
+ * [2026-09-01] Single-instance guard. This module and
+ * vendor/commander-shared/src/lib/supabase.js both created a real browser
+ * client with storageKey 'smarter-poker-auth'. Two GoTrue instances
+ * autorefreshing one storage key means each writes tokens the other then
+ * re-reads - a refresh storm plus a rotation race. Both modules now share the
+ * SAME instance via globalThis.__commanderSharedSupabase, so whichever
+ * evaluates first wins and the other returns the identical object.
  */
 import { createClient } from '@supabase/supabase-js';
 import { resolveAnonKey, anonKeyWarning } from './supabaseKeys.js';
@@ -28,7 +36,12 @@ if (!supabaseAnonKey) {
 // premiumFeatureGate (both read 'smarter-poker-auth' / sb-*), so users who
 // logged in on the commander origin sent no Authorization header and were
 // bounced by Bearer-authenticated APIs.
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+//
+// The storage key is ALSO the reason the globalThis cache below exists: two
+// clients on one storage key is the failure mode, not two clients per se.
+const _g = typeof globalThis !== 'undefined' ? globalThis : null;
+
+const supabase = (_g && _g.__commanderSharedSupabase) || createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -36,6 +49,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'smarter-poker-auth',
   },
 });
+
+// Publish for vendor/commander-shared/src/lib/supabase.js, which reads the
+// same slot. Keep this key and the client options in sync with that file.
+if (_g && !_g.__commanderSharedSupabase) _g.__commanderSharedSupabase = supabase;
 
 export { supabase };
 export default supabase;
