@@ -48,12 +48,16 @@ const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishab
 const TIMEOUT_MS = Number(process.env.PROBE_TIMEOUT_MS || 20000);
 
 const results = [];
-function record(leg, name, ok, detail = '') {
-  results.push({ leg, name, ok, detail });
-  const mark = ok ? 'PASS' : 'FAIL';
+function record(leg, name, ok, detail = '', { warnOnly = false } = {}) {
+  // warnOnly: reported in the table, never counted as a failure. Reserved for
+  // configuration the platform CAN run without (it just runs blind) - a probe
+  // that is permanently red for a config item stops being read.
+  results.push({ leg, name, ok, detail, warnOnly });
+  const mark = ok ? 'PASS' : warnOnly ? 'WARN' : 'FAIL';
   console.log(`[${mark}] ${leg} :: ${name}${detail ? ` - ${detail}` : ''}`);
   return ok;
 }
+const failures = () => results.filter((r) => !r.ok && !r.warnOnly);
 
 async function http(url, init = {}) {
   const ctl = new AbortController();
@@ -164,7 +168,8 @@ async function structuralLeg() {
   if (health.json?.auth) {
     record(leg, 'signing secret configured', health.json.auth.staff_session_secret === true);
     record(leg, 'service-role key configured', health.json.auth.supabase_service_role === true);
-    record(leg, 'client Sentry DSN configured', health.json.observability?.sentry_client_dsn === true, 'set NEXT_PUBLIC_SENTRY_DSN in Vercel (production) - browser errors are invisible without it');
+    record(leg, 'client Sentry DSN configured', health.json.observability?.sentry_client_dsn === true, 'set NEXT_PUBLIC_SENTRY_DSN in Vercel (production) - browser errors are invisible without it', { warnOnly: true });
+    record(leg, 'dedicated staff-session secret configured', health.json.auth.dedicated_staff_session_secret === true, 'set COMMANDER_STAFF_SESSION_SECRET (see docs/runbooks/staff-session-secret-rotation.md, step "first-time setup")', { warnOnly: true });
   } else {
     record(leg, 'health exposes auth/observability booleans', false, 'deploy predates this probe - redeploy');
   }
@@ -230,15 +235,16 @@ async function signedInLeg() {
 }
 
 function markdownReport() {
-  const failed = results.filter((r) => !r.ok);
+  const failed = failures();
+  const warned = results.filter((r) => !r.ok && r.warnOnly);
   const lines = [
-    `## Login-bridge probe - ${failed.length ? `${failed.length} FAILED` : 'all passed'}`,
+    `## Login-bridge probe - ${failed.length ? `${failed.length} FAILED` : 'all passed'}${warned.length ? ` (${warned.length} config warning${warned.length > 1 ? 's' : ''})` : ''}`,
     '',
     `Hub: ${HUB}  Commander: ${CMD}  At: ${new Date().toISOString()}`,
     '',
     '| Leg | Check | Result | Detail |',
     '|---|---|---|---|',
-    ...results.map((r) => `| ${r.leg} | ${r.name} | ${r.ok ? 'PASS' : '**FAIL**'} | ${String(r.detail).replace(/\|/g, '\\|')} |`),
+    ...results.map((r) => `| ${r.leg} | ${r.name} | ${r.ok ? 'PASS' : r.warnOnly ? 'WARN' : '**FAIL**'} | ${String(r.detail).replace(/\|/g, '\\|')} |`),
   ];
   return lines.join('\n');
 }
@@ -254,8 +260,8 @@ function markdownReport() {
   if (process.env.GITHUB_OUTPUT) {
     const fs = await import('node:fs');
     fs.appendFileSync(process.env.GITHUB_OUTPUT, `report<<PROBE_EOF\n${md}\nPROBE_EOF\n`);
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, `failed=${results.filter((r) => !r.ok).length}\n`);
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `failed=${failures().length}\n`);
   }
   console.log('\n' + md);
-  process.exit(results.some((r) => !r.ok) ? 1 : 0);
+  process.exit(failures().length ? 1 : 0);
 })();
