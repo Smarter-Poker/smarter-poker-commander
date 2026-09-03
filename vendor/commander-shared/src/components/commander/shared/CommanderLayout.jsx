@@ -25,6 +25,8 @@ import { supabase } from '../../../lib/supabase';
 import CommanderEffectsProvider from './CommanderEffectsProvider';
 import PushNotificationProvider from './PushNotificationProvider';
 import useBusBridge from '../../../lib/commander/useBusBridge';
+import { getToken } from '../../../lib/commander/clientAuth';
+import { mintStaffSession, refreshStaffSession, readStaffSession, isStaffSessionHealthy } from '../../../lib/commander/staffSession';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/commander/dashboard', icon: Layout },
@@ -173,35 +175,52 @@ export default function CommanderLayout({ children, title }) {
     fetchAccounts();
   }, [staff?.user_id]);
 
-  const switchAccount = (account) => {
-    // We update local storage with the new staff and venue, then reload.
-    // The account object has venue_id, role, sub_tier, venue_name, club_logo
-    const currentStaff = JSON.parse(localStorage.getItem('commander_staff') || '{}');
-    const newStaff = {
-      ...currentStaff,
-      venue_id: account.venue_id,
-      venue_name: account.venue_name,
-      role: account.role || 'owner',
-      sub_tier: account.sub_tier || 'PRO'
-    };
-    localStorage.setItem('commander_staff', JSON.stringify(newStaff));
-    
-    // Set venue info
-    localStorage.setItem('commander_venue', JSON.stringify({
-      id: account.venue_id,
-      name: account.venue_name,
-      images: account.club_logo ? [account.club_logo] : []
-    }));
-    
-    // Also mock a minimal subscription for the UI logic if needed
-    const sub = {
-      venue_id: account.venue_id,
-      venue: { id: account.venue_id, name: account.venue_name },
-      plan: account.sub_tier === 'ELITE' ? 'elite' : 'pro'
-    };
-    localStorage.setItem('commander_subscription', JSON.stringify(sub));
-    
-    window.location.href = '/commander/dashboard';
+  const [switchingAccount, setSwitchingAccount] = useState(false);
+  const switchAccount = async (account) => {
+    // 2026-09-03 FIX: this used to spread the stored `commander_staff` and
+    // overwrite venue_id/role client-side. That session is HMAC-signed over
+    // exactly those fields, so the edited copy failed signature verification
+    // on the very next API call -> every panel 401'd -> "Your Session Is Not
+    // Valid For This Data" -> a login page that could not complete. The only
+    // thing that can issue a session for another venue is the server: ask
+    // check-subscription for one, scoped to the venue the user picked
+    // (`preferred_venue_id`, still filtered by ownership server-side).
+    if (switchingAccount) return;
+    setSwitchingAccount(true);
+    try {
+      try { localStorage.setItem('commander_active_venue_id', String(account.venue_id)); } catch (_) { /* ignore */ }
+
+      const token = getToken();
+      const current = readStaffSession() || {};
+      const result = await mintStaffSession(token, {
+        user: current.user_id ? { id: current.user_id, email: current.email } : undefined,
+        preferredVenueId: account.venue_id,
+      });
+
+      if (!result.ok) {
+        // Staff (non-owner) accounts have no subscription of their own to
+        // switch to via check-subscription; the PIN terminal flow covers them.
+        console.warn('[Commander] account switch rejected:', result.error);
+        alert(result.error || 'Could not switch clubs. Please sign in to that club directly.');
+        setSwitchingAccount(false);
+        return;
+      }
+
+      // Cosmetic fields the server does not know about
+      try {
+        const venue = JSON.parse(localStorage.getItem('commander_venue') || '{}');
+        if (account.club_logo && !(venue.images || []).length) {
+          venue.images = [account.club_logo];
+          localStorage.setItem('commander_venue', JSON.stringify(venue));
+        }
+      } catch (_) { /* ignore */ }
+      try { localStorage.removeItem('commander_branding'); } catch (_) { /* ignore */ }
+
+      window.location.href = '/commander/dashboard';
+    } catch (err) {
+      console.warn('[Commander] account switch failed:', err);
+      setSwitchingAccount(false);
+    }
   };
   const [showClubPagePopup, setShowClubPagePopup] = useState(false);
   const [clubPageId, setClubPageId] = useState(null); // Set when venue has an existing club page
@@ -238,11 +257,48 @@ export default function CommanderLayout({ children, title }) {
   // HTTP 200, so an expired session painted a plausible but invented screen.
   // It now passes the 401 through and announces it once; this turns that into
   // something the floor can actually see and act on.
+  //
+  // 2026-09-03: commanderFetch now re-mints the signed staff session from the
+  // live Smarter.Poker session and retries before it ever announces a 401, so
+  // this banner only appears when the platform session itself is gone (or the
+  // account has no subscription). We still make one last forced attempt here
+  // - it covers 401s from callers that bypass commanderFetch (raw fetch with
+  // x-staff-session) - and reload on success so the panels repaint with data
+  // instead of asking a signed-in user to sign in.
   const [unauthorized, setUnauthorized] = useState(false);
   useEffect(() => {
-    const onUnauthorized = () => setUnauthorized(true);
+    let cancelled = false;
+    const onUnauthorized = async () => {
+      let healed = false;
+      try { healed = await refreshStaffSession({ force: true }); } catch (_) { healed = false; }
+      if (cancelled) return;
+      if (healed) {
+        try {
+          const k = 'commander_401_heal_reload_ts';
+          const last = Number(sessionStorage.getItem(k) || 0);
+          if (Date.now() - last > 30000) {
+            sessionStorage.setItem(k, String(Date.now()));
+            window.location.reload();
+            return;
+          }
+        } catch (_) { /* ignore */ }
+      }
+      setUnauthorized(true);
+    };
+    const onRefreshed = () => {
+      try {
+        const stored = localStorage.getItem('commander_staff');
+        if (stored) setStaff(JSON.parse(stored));
+      } catch (_) { /* ignore */ }
+      setUnauthorized(false);
+    };
     window.addEventListener('commander:unauthorized', onUnauthorized);
-    return () => window.removeEventListener('commander:unauthorized', onUnauthorized);
+    window.addEventListener('commander:staff-session-refreshed', onRefreshed);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('commander:unauthorized', onUnauthorized);
+      window.removeEventListener('commander:staff-session-refreshed', onRefreshed);
+    };
   }, []);
 
   // ── OFFLINE DETECTION ──
@@ -264,6 +320,13 @@ export default function CommanderLayout({ children, title }) {
     try {
       const stored = localStorage.getItem('commander_staff');
       if (stored) setStaff(JSON.parse(stored));
+      // 2026-09-03: an owner session that is unsigned, hand-edited, or inside
+      // the last 12h of its 7-day TTL will 401 on the first request. Re-mint it
+      // now, before any panel asks for data, so the floor never sees the
+      // "Session Is Not Valid" banner for a session the platform still honours.
+      if (stored && !isStaffSessionHealthy()) {
+        refreshStaffSession().catch(() => {});
+      }
     } catch (e) { console.warn('[App] Handled exception:', e); }
     try {
       const sub = JSON.parse(localStorage.getItem('commander_subscription') || '{}');
