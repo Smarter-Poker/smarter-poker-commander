@@ -8,7 +8,21 @@ const nextConfig = {
   // See failed deploys 4xJcGVy2N / DWyP5RYRT (April 2026).
   transpilePackages: ['@smarter-poker/commander-shared'],
 
-  // ─── Serverless Bundle Slimming ──────────────────────────────────────────────────
+  // ─── Assets must load from THIS origin, even when the page is proxied ───────
+  // The World Hub rewrites smarter.poker/commander/* to this app. Without an
+  // absolute assetPrefix the proxied HTML references /_next/static/... and the
+  // browser fetches them from smarter.poker - the HUB's Next build - which
+  // 404s every chunk ("Refused to execute script ... MIME type text/plain").
+  // Every Commander page opened through the hub origin therefore rendered an
+  // infinite spinner, and the same-origin SSO path the login design relies on
+  // never executed. commander.smarter.poker already answers _next/static and
+  // _next/data with Access-Control-Allow-Origin: *, so pinning the prefix in
+  // production makes the proxied pages run. Previews keep relative assets so
+  // their chunk hashes stay self-consistent with their own build.
+  // (2026-09-03)
+  assetPrefix: process.env.VERCEL_ENV === 'production' ? 'https://commander.smarter.poker' : undefined,
+
+  // ─── Serverless Bundle Slimming ────────────────────────────────────────────────────
   // 'standalone' output makes Next trace actual require()s and copies ONLY
   // what each API route / page needs into .next/standalone. Cuts the
   // serverless function zipped bundle ~40% and reduces the build tracing
@@ -29,14 +43,14 @@ const nextConfig = {
   poweredByHeader: false,
 
   experimental: {
-    // ─── Parallel webpack workers ──────────────────────────────────────────────
+    // ─── Parallel webpack workers ──────────────────────────────────────────────────
     // Two parallel workers each compile half the pages, cutting wall-clock
     // build time ~50% and reducing Vercel Build Minutes billed.
     // Matches World Hub cpus:2 already in production.
     // Revert to cpus: 1 if Commander deploys OOM.
     cpus: 2,
 
-    // ─── Server External Packages ────────────────────────────────────────────
+    // ─── Server External Packages ──────────────────────────────────────────────
     // Keep heavy runtime-only packages out of the webpack bundle.
     // These must be require()d at runtime but must NOT be compiled into
     // the serverless function chunk — doing so inflates the webpack
@@ -50,7 +64,7 @@ const nextConfig = {
       'openai',
     ],
 
-    // ─── Output File Tracing Exclusions ──────────────────────────────────────
+    // ─── Output File Tracing Exclusions ────────────────────────────────────────
     // Explicitly exclude large dev-only packages from the file-system
     // tracer so they are never included in the deployed serverless bundle.
     // Match Phase 1.1 of World Hub.
