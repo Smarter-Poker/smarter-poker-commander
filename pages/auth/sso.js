@@ -8,20 +8,28 @@
  *   1. smarter.poker hub redirects here with ?token=<raw>&uid=<userId>
  *   2. This page calls /api/auth/sso-exchange with the token + uid
  *   3. The exchange API verifies hash, marks token used, returns a Supabase
- *      magic-link / custom token that setSession() can consume.
- *   4. completeLogin() stores commander_staff + commander_venue in localStorage.
- *   5. Redirect to /commander/dashboard.
+ *      magic-link token that verifyOtp() can consume.
+ *   4. completeCommanderLogin() (shared staffSession module) stores the
+ *      signed commander_staff + commander_venue in localStorage.
+ *   5. Redirect to /commander/dashboard (or the stashed return URL).
  *
  * Security notes:
  *   - Token is single-use (marked used=true in DB on first exchange)
- *   - Token TTL is 60 seconds - stale URLs silently fail
+ *   - Token TTL is 5 minutes - stale URLs fail with a clear message
  *   - No sensitive data is in the URL except the random token (no JWT)
+ *
+ * [2026-09-03] The private completeCommanderLogin copy that lived here was
+ * replaced by the shared implementation so /auth/sso and /commander/login can
+ * never drift apart again (the login page's copy had gone missing entirely).
+ * If the user already holds a valid session on this origin, the one-time
+ * token is skipped: nothing to exchange, straight to the dashboard.
  */
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 import SEOHead from '../../src/components/seo/SEOHead';
+import { completeCommanderLogin } from '../../src/lib/commander/staffSession';
 
 export default function SSOPage() {
   const router = useRouter();
@@ -32,14 +40,35 @@ export default function SSOPage() {
     if (!router.isReady) return;
     const { token, uid } = router.query;
 
-    if (!token || !uid) {
-      setError('Invalid SSO link. Please sign in manually.');
+    async function finish(user, accessToken) {
+      const result = await completeCommanderLogin(user, accessToken);
+      if (result === true) {
+        setStatus('success');
+        return true;
+      }
+      setError(result?.error || 'No active Club Commander subscription found for this account. Please sign up.');
       setStatus('error');
-      return;
+      return false;
     }
 
     async function exchangeToken() {
       try {
+        // Already signed in on this origin (e.g. the user re-opened an old
+        // SSO link, or two tabs raced)? Nothing to exchange.
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && (!uid || session.user.id === uid)) {
+            await finish(session.user, session.access_token);
+            return;
+          }
+        } catch { /* fall through to the token exchange */ }
+
+        if (!token || !uid) {
+          setError('Invalid SSO link. Please sign in manually.');
+          setStatus('error');
+          return;
+        }
+
         // Exchange the one-time token for a Supabase session
         const res = await fetch('/api/auth/sso-exchange', {
           method: 'POST',
@@ -77,9 +106,8 @@ export default function SSOPage() {
           return;
         }
 
-        // Now run the same subscription check + staff session storage as the login page
-        await completeCommanderLogin(user, accessToken);
-        setStatus('success');
+        // Same subscription check + signed staff session as the login page
+        await finish(user, accessToken);
       } catch (err) {
         console.error('[SSO] Exchange error:', err);
         setError('An error occurred during sign-in. Please try again.');
@@ -90,92 +118,7 @@ export default function SSOPage() {
     exchangeToken();
   }, [router.isReady, router.query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /**
-   * Mirrors the completeLogin() function in commander/login.js -
-   * checks subscription and stores commander_staff, commander_venue,
-   * commander_subscription in localStorage, then redirects to dashboard.
-   */
-  async function completeCommanderLogin(user, accessToken) {
-    const abortController = new AbortController();
-    const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
-
-    // Multi-club support: pass the last venue the user switched to (set by
-    // the hamburger club switcher) so SSO login restores that club, not just
-    // the newest subscription. Server validates ownership.
-    let preferredVenueId = null;
-    try { preferredVenueId = localStorage.getItem('commander_active_venue_id') || null; } catch { /* ignore */ }
-
-    const subRes = await fetch('/api/commander/check-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ userId: user.id, preferred_venue_id: preferredVenueId }),
-      signal: abortController.signal,
-    });
-    clearTimeout(fetchTimeout);
-
-    const subData = await subRes.json().catch(() => ({}));
-
-    if (!subRes.ok || !subData.subscription) {
-      setError(
-        subData.error ||
-        'No active Club Commander subscription found for this account. Please sign up.'
-      );
-      setStatus('error');
-      return;
-    }
-
-    const subscription = subData.subscription;
-
-    localStorage.setItem('commander_venue', JSON.stringify(subscription.venue));
-    localStorage.setItem('commander_subscription', JSON.stringify(subscription));
-
-    const staffSession = {
-      ...(subData.staff_session || {
-        user_id: user.id,
-        role: 'owner',
-        venue_id: subscription.venue_id,
-      }),
-      email: user.email,
-      display_name:
-        subscription.billing_name ||
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email,
-      venue_name: subscription.venue?.name || 'My Venue',
-      permissions: {
-        manage_games: true,
-        manage_waitlist: true,
-        manage_staff: true,
-        manage_tables: true,
-        manage_tournaments: true,
-        manage_settings: true,
-        view_analytics: true,
-        view_reports: true,
-        send_announcements: true,
-      },
-    };
-    localStorage.setItem('commander_staff', JSON.stringify(staffSession));
-    localStorage.setItem('commander_remember', 'true');
-    // Drop any previous user's cached club/home-game switcher list
-    try { sessionStorage.removeItem('commander_accounts_cache'); } catch { /* ignore */ }
-
-    // Redirect to dashboard (or stored return URL)
-    let redirectTo = '/commander/dashboard';
-    try {
-      const returnUrl = sessionStorage.getItem('commander_return_url');
-      if (returnUrl && returnUrl.startsWith('/commander/')) {
-        redirectTo = returnUrl;
-        sessionStorage.removeItem('commander_return_url');
-      }
-    } catch { /* sessionStorage unavailable */ }
-
-    window.location.href = redirectTo;
-  }
-
-  // ── UI ──────────────────────────────────────────────────────────────────
+  // -- UI ----------------------------------------------------------------
   return (
     <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
       <SEOHead

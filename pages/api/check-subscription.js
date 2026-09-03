@@ -26,10 +26,16 @@ export default async function handler(req, res) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // IP rate limit: 5 sub checks per minute (abuse prevention)
+    // IP rate limit (abuse prevention).
+    // 2026-09-03: raised from 5/min. This route is now also the silent
+    // self-heal for stale staff sessions (commanderFetch 401 retry, dashboard
+    // guard, club switcher), and a whole poker room's phones share one carrier
+    // NAT address - at 5/min the second manager to open the app on their
+    // phone was getting 429 => "No active subscription". Still a hard cap;
+    // the per-token identity limit below is what actually protects the data.
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
-    const rl = checkMemoryRateLimit(`chksub:${ip}`, 5, 60000);
+    const rl = checkMemoryRateLimit(`chksub:${ip}`, 40, 60000);
     if (!rl.allowed) { return res.status(429).json({ error: 'Too many requests' }); }
 
       if (req.method !== 'POST') {
@@ -42,6 +48,11 @@ export default async function handler(req, res) {
       if (!token) {
           return res.status(401).json({ error: 'Authentication required' });
       }
+
+      // Per-identity limit: one user cannot burn the whole IP budget, and a
+      // stolen token cannot be used to enumerate quickly.
+      const tokenRl = checkMemoryRateLimit(`chksub:tok:${token.slice(-32)}`, 12, 60000);
+      if (!tokenRl.allowed) { return res.status(429).json({ error: 'Too many requests' }); }
 
       const { data: authData, error: authErr } = await getSupabase().auth.getUser(token);
       const user = authData?.user;

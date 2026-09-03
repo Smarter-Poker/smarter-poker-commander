@@ -6,13 +6,41 @@
  * [2026-08-19] Added SSO bridge: if user is already signed in on smarter.poker
  * (detected via shared 'smarter-poker-auth' localStorage key), a
  * "Continue as [email]" button appears so they never need to re-enter credentials.
+ *
+ * [2026-09-03] ROOT-CAUSE FIX. Every sign-in path on this page (password,
+ * Google, silent restore, ?expired=1 recovery, SSO) ended in a call to
+ * `completeLogin()`, which no longer existed in this file. Supabase accepted
+ * the credentials and then the page threw `completeLogin is not defined` -
+ * shown to the user as the login error. Login completion now lives in the
+ * shared staffSession module (same code the /auth/sso page uses).
+ *
+ * Also fixed here:
+ *   - "Continue As Smarter.Poker" was a dead button whenever this page was
+ *     opened directly on commander.smarter.poker (no hub session in THIS
+ *     origin's localStorage => onClick was undefined). It now bridges through
+ *     the smarter.poker origin (?bridge=1), which holds the hub session and
+ *     hands back a one-time SSO token - no second login.
+ *   - When a Supabase session already exists on this origin, "Continue"
+ *     completes the login directly instead of a needless SSO round-trip.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
 import Link from 'next/link';
-import { Loader2, Check } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
+import {
+  completeCommanderLogin,
+  isStaffSessionHealthy,
+  readAccessToken,
+} from '../../src/lib/commander/staffSession';
+
+const HUB_ORIGIN = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
+
+function isHubOrigin() {
+  if (typeof window === 'undefined') return false;
+  try { return window.location.origin === new URL(HUB_ORIGIN).origin; } catch { return false; }
+}
 
 export default function CommanderLogin() {
   const router = useRouter();
@@ -25,9 +53,22 @@ export default function CommanderLogin() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [showReset, setShowReset] = useState(false);
 
-  // SSO bridge state - set when smarter.poker session detected in localStorage
+  // SSO bridge state - set when a smarter.poker session is readable from
+  // THIS origin's localStorage (same-origin /commander/* rewrite path).
   const [ssoEmail, setSsoEmail] = useState(null);
   const [ssoLoading, setSsoLoading] = useState(false);
+
+  /**
+   * Finish a Commander login for an authenticated Supabase user. Resolves
+   * `true` when we are navigating away, `false` when the form should stay
+   * (the specific reason is already in `error`).
+   */
+  const completeLogin = useCallback(async (user, accessToken) => {
+    const result = await completeCommanderLogin(user, accessToken);
+    if (result === true) return true;
+    setError(result?.error || 'Sign-In Could Not Be Completed. Please Try Again.');
+    return false;
+  }, []);
 
   // Pre-fill email from stored staff data if available (remember me)
   useEffect(() => {
@@ -43,17 +84,12 @@ export default function CommanderLogin() {
       setError('No Active Club Commander Subscription Found. Please Sign Up Below To Create Your Venue.');
     }
 
-    // ── SSO Bridge Detection ──────────────────────────────────────────
-    // Check if the user is already logged into smarter.poker. Both apps
-    // use the storage key 'smarter-poker-auth' on Supabase's SDK, so if
-    // this Commander tab was opened from within smarter.poker, the shared
-    // localStorage key should already have the session.
-    // NOTE: This only works when both origins share a parent domain AND
-    // the browser allows cross-origin localStorage sharing - which it doesn't.
-    // For the common case (cross-origin), the hub passes ?hub_token= in the
-    // URL when navigating to Commander, which we use below.
-    //
-    // Same-origin path (works when Commander is served via smarter.poker/commander/* rewrite):
+    // -- SSO Bridge Detection ----------------------------------------------
+    // Both apps use the storage key 'smarter-poker-auth', so when this page
+    // is served through the smarter.poker/commander/* rewrite the hub session
+    // is right here in localStorage. On commander.smarter.poker it is not
+    // (localStorage is origin-scoped) - that case is handled by the
+    // cross-origin bridge in handleSSOContinue.
     try {
       const authRaw = localStorage.getItem('smarter-poker-auth');
       if (authRaw) {
@@ -66,6 +102,34 @@ export default function CommanderLogin() {
     } catch (e) { /* localStorage may be unavailable */ }
   }, [router.query.expired, router.query.no_sub]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // -- Cross-origin bridge: hand a hub session to commander.smarter.poker --
+  // Runs on the smarter.poker origin (where the hub session lives). Calls the
+  // hub SSO endpoint with the local access token and redirects to
+  // commander.smarter.poker/auth/sso?token=... which completes the login
+  // there. Returns false when there is no local session to bridge.
+  const bridgeToCommanderOrigin = useCallback(async () => {
+    let accessToken = readAccessToken();
+    if (!accessToken) {
+      const { data: { session } } = await supabase.auth.getSession();
+      accessToken = session?.access_token || null;
+    }
+    if (!accessToken) return false;
+
+    const ssoRes = await fetch(`${HUB_ORIGIN}/api/auth/commander-sso`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      credentials: 'include',
+    });
+    const ssoData = await ssoRes.json().catch(() => ({}));
+    if (!ssoRes.ok || !ssoData.url) {
+      throw new Error(ssoData.error || 'SSO Failed. Please Sign In With Your Email And Password Below.');
+    }
+    window.location.href = ssoData.url;
+    return true;
+  }, []);
 
   // Auto-restore session - silently sign in whenever a Supabase session exists
   useEffect(() => {
@@ -77,21 +141,34 @@ export default function CommanderLogin() {
     const stuckTimeout = setTimeout(() => setShowReset(true), 4000);
     // Force stop checking if stuck for > 8s
     const safetyTimeout = setTimeout(() => setCheckingSession(false), 8000);
+    const stopTimers = () => { clearTimeout(safetyTimeout); clearTimeout(stuckTimeout); };
 
     async function checkExistingSession() {
       try {
-        // ── ?expired=1: the server rejected the commander staff session ──
+        // -- ?bridge=1: we were sent here from commander.smarter.poker to pick
+        // up the hub session that only exists on THIS origin. If it is here,
+        // hop straight back with a one-time SSO token. If it is not, the user
+        // is signed out of the platform entirely - show the form.
+        if (router.query.bridge === '1' && isHubOrigin()) {
+          try {
+            const bridged = await bridgeToCommanderOrigin();
+            if (bridged) { stopTimers(); return; }
+          } catch (e) {
+            console.warn('[SSO] bridge failed:', e?.message || e);
+            setError(e?.message || 'SSO Failed. Please Sign In With Your Email And Password Below.');
+          }
+          stopTimers();
+          setCheckingSession(false);
+          return;
+        }
+
+        // -- ?expired=1: the server rejected the commander staff session --
         // 2026-08-20 FIX: this handler previously wiped 'smarter-poker-auth'
-        // (the SHARED hub session on the smarter.poker/commander/* path) and
-        // called supabase.auth.signOut() (which revokes refresh tokens),
-        // logging the user out of the ENTIRE platform whenever the commander
-        // staff session lapsed. The staff session and the Supabase session
-        // are separate: only the staff session was rejected, so only the
-        // commander_* state should be cleared - then, if the Supabase
-        // session is still valid, silently mint a FRESH signed staff session
-        // via completeLogin instead of demanding credentials. This both
-        // breaks the original redirect loop (fresh session = dashboard stops
-        // bouncing) and never signs the user out of smarter.poker.
+        // (the SHARED hub session) and called supabase.auth.signOut(), logging
+        // the user out of the ENTIRE platform whenever the commander staff
+        // session lapsed. Only the commander_* state is cleared; if the
+        // Supabase session is still valid we silently mint a FRESH signed
+        // staff session instead of demanding credentials.
         if (router.query.expired === '1') {
           localStorage.removeItem('commander_staff');
           localStorage.removeItem('commander_venue');
@@ -111,14 +188,12 @@ export default function CommanderLogin() {
           let recoveryTried = false;
           if (session?.user && !recentAttempt) {
             try { sessionStorage.setItem('commander_expired_recovery_ts', String(Date.now())); } catch { /* ignore */ }
-            clearTimeout(safetyTimeout);
-            clearTimeout(stuckTimeout);
+            stopTimers();
             recoveryTried = true;
             const ok = await completeLogin(session.user, session.access_token).catch(() => false);
             if (ok) return; // redirecting to dashboard with a fresh session
           }
-          clearTimeout(safetyTimeout);
-          clearTimeout(stuckTimeout);
+          stopTimers();
           // completeLogin sets its own, more specific error when it fails -
           // only show the generic expiry message when we could not even try
           if (!recoveryTried) setError('Your Session Has Expired. Please Sign In Again.');
@@ -126,33 +201,19 @@ export default function CommanderLogin() {
           return;
         }
 
-        // ── Silent sign-in whenever a Supabase session exists ──
-        // 2026-08-20 FIX: previously this path required commander_remember
-        // AND commander_staff in localStorage, so a user who was already
-        // logged into smarter.poker (same-origin session via the
-        // smarter.poker/commander/* rewrite) was still shown the login form.
+        // -- Silent sign-in whenever a Supabase session exists --
         // If a valid Supabase session exists, complete the commander login
         // automatically - the user should NEVER be asked to re-authenticate
-        // while their platform session is alive. completeLogin surfaces its
-        // own error (e.g. no commander subscription) and falls back to the
-        // form when it cannot proceed.
-        const staffDataRaw = localStorage.getItem('commander_staff');
-        let validStaff = false;
-        try {
-          const parsed = JSON.parse(staffDataRaw || '{}');
-          if (parsed.id || parsed.user_id) validStaff = true;
-        } catch { }
-
+        // while their platform session is alive. A healthy (signed, unexpired)
+        // staff session goes straight to the dashboard; anything else is
+        // re-minted from the live session first.
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          clearTimeout(safetyTimeout);
-          clearTimeout(stuckTimeout);
-          if (validStaff) {
-            // Staff state intact - straight to dashboard
+          stopTimers();
+          if (isStaffSessionHealthy()) {
             window.location.href = '/commander/dashboard';
             return;
           }
-          // No commander state yet - mint it silently from the live session
           const ok = await completeLogin(session.user, session.access_token).catch(() => false);
           if (ok) return;
           setCheckingSession(false);
@@ -162,9 +223,8 @@ export default function CommanderLogin() {
         // No session - try to refresh (works when a refresh token survives)
         const { data: { session: refreshed } } = await supabase.auth.refreshSession();
         if (refreshed?.user) {
-          clearTimeout(safetyTimeout);
-          clearTimeout(stuckTimeout);
-          if (validStaff) {
+          stopTimers();
+          if (isStaffSessionHealthy()) {
             window.location.href = '/commander/dashboard';
             return;
           }
@@ -179,13 +239,13 @@ export default function CommanderLogin() {
         localStorage.removeItem('commander_subscription');
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
-      clearTimeout(safetyTimeout);
-      clearTimeout(stuckTimeout);
+      stopTimers();
       setCheckingSession(false);
     }
-    
+
     checkExistingSession();
-  }, [router.isReady]);
+    return stopTimers;
+  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -203,7 +263,11 @@ export default function CommanderLogin() {
 
       if (authError) throw authError;
 
-      await completeLogin(data.user, data.session.access_token);
+      if (!rememberMe) {
+        try { localStorage.removeItem('commander_remember'); } catch { /* ignore */ }
+      }
+      const ok = await completeLogin(data.user, data.session.access_token);
+      if (ok) return; // navigating
     } catch (err) {
       console.warn('Login error:', err);
       if (err.name === 'AbortError') {
@@ -216,73 +280,37 @@ export default function CommanderLogin() {
     }
   }
 
-  // ── SSO Continue handler ─────────────────────────────────────────────
-  // Called when the user clicks "Continue as [email]". Reads their current
-  // smarter.poker JWT from localStorage, calls the hub SSO endpoint to get
-  // a one-time bridge token, then redirects to /auth/sso on Commander to
-  // finish the session transfer.
+  // -- SSO Continue handler ---------------------------------------------
+  // "Continue As Smarter.Poker". Three situations:
+  //   1. A Supabase session is readable on THIS origin -> complete the
+  //      Commander login directly (no round-trip needed).
+  //   2. We are on commander.smarter.poker with no local session -> send the
+  //      browser to smarter.poker/commander/login?bridge=1, where the hub
+  //      session lives; that page mints a one-time SSO token and returns to
+  //      commander.smarter.poker/auth/sso to finish.
+  //   3. We are already on the hub origin with no session -> nothing to
+  //      bridge; the user is signed out of the platform.
   const handleSSOContinue = async () => {
     setError(null);
     setSsoLoading(true);
     try {
-      // Read the current smarter.poker session token
-      let accessToken = null;
-      try {
-        const authRaw = localStorage.getItem('smarter-poker-auth');
-        if (authRaw) {
-          const auth = JSON.parse(authRaw);
-          accessToken = auth?.access_token;
-        }
-        // Fallback: check Supabase default storage keys
-        if (!accessToken) {
-          const sbKeys = Object.keys(localStorage || {}).filter(
-            k => k.startsWith('sb-') && k.endsWith('-auth-token')
-          );
-          if (sbKeys.length > 0) {
-            const raw = localStorage.getItem(sbKeys[0]);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              accessToken = parsed?.access_token;
-            }
-          }
-        }
-      } catch (e) { /* localStorage unavailable */ }
-
-      if (!accessToken) {
-        // No local token - fall back to supabase.auth.getSession()
-        const { data: { session } } = await supabase.auth.getSession();
-        accessToken = session?.access_token;
-      }
-
-      if (!accessToken) {
-        setError('Could Not Read Your Smarter.Poker Session. Please Sign In Manually.');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && session?.access_token) {
+        const ok = await completeLogin(session.user, session.access_token);
+        if (ok) return;
         setSsoLoading(false);
         return;
       }
 
-      // Call the hub SSO endpoint - this works when Commander is accessed via
-      // smarter.poker/commander/* rewrite. When accessed directly at
-      // commander.smarter.poker, this URL hits the main hub API.
-      const hubOrigin = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
-      const ssoRes = await fetch(`${hubOrigin}/api/auth/commander-sso`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        credentials: 'include',
-      });
-
-      const ssoData = await ssoRes.json().catch(() => ({}));
-
-      if (!ssoRes.ok || !ssoData.url) {
-        setError(ssoData.error || 'SSO Failed. Please Sign In With Your Email And Password Below.');
-        setSsoLoading(false);
+      if (!isHubOrigin()) {
+        try { sessionStorage.setItem('commander_return_url', window.location.pathname); } catch { /* ignore */ }
+        window.location.href = `${HUB_ORIGIN}/commander/login?bridge=1`;
         return;
       }
 
-      // Redirect to Commander SSO landing page with the one-time token
-      window.location.href = ssoData.url;
+      // Hub origin, no session anywhere: the user really is signed out.
+      setError('You Are Not Signed In To Smarter.Poker. Please Sign In Below.');
+      setSsoLoading(false);
     } catch (err) {
       console.warn('[SSO] Continue error:', err);
       setError('SSO Sign-In Failed. Please Use Email And Password Below.');
@@ -300,7 +328,8 @@ export default function CommanderLogin() {
         setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          await completeLogin(session.user, session.access_token);
+          const ok = await completeLogin(session.user, session.access_token);
+          if (ok) return;
         } else {
           setError('Sign-In Could Not Be Completed. Please Try Again.');
         }
@@ -314,7 +343,6 @@ export default function CommanderLogin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.query.oauth]);
 
-  // Show loading while checking for existing session
   async function handleOAuthSignIn(provider) {
     try {
       setLoading(true);
@@ -333,18 +361,28 @@ export default function CommanderLogin() {
     }
   }
 
+  // Show loading while checking for existing session
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-[#02050A] flex items-center justify-center">
+      <div className="min-h-screen bg-[#02050A] flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+        {showReset && (
+          <button
+            type="button"
+            onClick={() => setCheckingSession(false)}
+            className="text-xs text-cyan-300 underline"
+          >
+            Taking Too Long? Sign In Manually
+          </button>
+        )}
       </div>
     );
   }
 
   const autofillCss = `
     input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
     input:-webkit-autofill:active {
         transition: background-color 9999s ease-in-out 0s;
         -webkit-text-fill-color: white !important;
@@ -361,20 +399,20 @@ export default function CommanderLogin() {
           noindex={true}
         />
 
-        <div 
-          className="relative w-full h-full z-10" 
+        <div
+          className="relative w-full h-full z-10"
         >
           {/* Stretch the image to fill the screen exactly as requested, no black bars, no blur */}
-          <img 
-            src="/images/commander/login-bg-v2.jpg" 
-            className="absolute inset-0 w-full h-full object-fill pointer-events-none" 
-            alt="Login Background" 
+          <img
+            src="/images/commander/login-bg-v2.jpg"
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none"
+            alt="Login Background"
           />
 
           {/* 1. SSO Bridge Button overlay / Recent Login */}
           <button
             type="button"
-            onClick={ssoEmail ? handleSSOContinue : undefined}
+            onClick={handleSSOContinue}
             disabled={ssoLoading || loading}
             style={{
               position: 'absolute',
@@ -421,13 +459,14 @@ export default function CommanderLogin() {
           />
 
           <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
-            
+
             {/* 3. Email Input overlay */}
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="username"
               style={{
                 position: 'absolute',
                 top: '50.3%',
@@ -450,6 +489,7 @@ export default function CommanderLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               style={{
                 position: 'absolute',
                 top: '58.1%',
@@ -513,7 +553,7 @@ export default function CommanderLogin() {
             />
 
             {/* 7. Forgot Password Link overlay */}
-            <a 
+            <a
               href="#"
               style={{
                 position: 'absolute',
@@ -556,7 +596,7 @@ export default function CommanderLogin() {
 
           {/* Error Message Display Overlay */}
           {error && (
-            <div 
+            <div
               className="animate-in fade-in slide-in-from-bottom-2 duration-300 shadow-xl"
               style={{
                 position: 'absolute',
