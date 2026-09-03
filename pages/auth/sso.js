@@ -30,6 +30,7 @@ import { Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../src/lib/supabase';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { completeCommanderLogin } from '../../src/lib/commander/staffSession';
+import { reportLoginFailure } from '../../src/lib/authFlowMonitor';
 
 export default function SSOPage() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function SSOPage() {
         setStatus('success');
         return true;
       }
+      reportLoginFailure('sso', result?.error || 'completion failed', { status: result?.status });
       setError(result?.error || 'No active Club Commander subscription found for this account. Please sign up.');
       setStatus('error');
       return false;
@@ -110,6 +112,7 @@ export default function SSOPage() {
         await finish(user, accessToken);
       } catch (err) {
         console.error('[SSO] Exchange error:', err);
+        reportLoginFailure('sso', err);
         setError('An error occurred during sign-in. Please try again.');
         setStatus('error');
       }

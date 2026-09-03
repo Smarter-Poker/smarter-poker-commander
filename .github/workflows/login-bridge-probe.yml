@@ -1,0 +1,142 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# LOGIN-BRIDGE PROBE — is the Smarter.Poker -> Club Commander handshake
+# actually working in production right now?
+#
+# 2026-09-03: every Commander login had been failing for days
+# (`completeLogin is not defined`), the hub-origin proxy served an app whose
+# JS chunks 404'd, and nothing paged. Unit tests guard the source; this guards
+# the RUNNING system across the hub rewrite, the commander deploy and Supabase,
+# which no single repo's CI can see. scripts/probe-login-bridge.mjs runs a
+# credential-less structural leg every time, and a signed-in leg when the
+# PROBE_EMAIL / PROBE_PASSWORD secrets are set (a Commander owner test
+# account). On failure it files ONE self-updating issue with the full report.
+#
+# This is CI-side monitoring, not application logic; it needs no database and
+# runs against public URLs, which is why it is a GitHub schedule and not an
+# Open Claw job.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Login Bridge Probe
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'   # every 30 minutes
+  workflow_dispatch:
+  # Also run on merge to main so a bad deploy is caught within minutes.
+  push:
+    branches: [main]
+    paths:
+      - 'pages/commander/login.js'
+      - 'pages/auth/**'
+      - 'pages/api/auth/**'
+      - 'pages/api/check-subscription.js'
+      - 'pages/api/health.js'
+      - 'vendor/commander-shared/src/lib/commander/**'
+      - 'next.config.js'
+      - 'middleware.ts'
+      - 'scripts/probe-login-bridge.mjs'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: login-bridge-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Handshake is working in production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wait for the production deploy to settle (push trigger only)
+        if: github.event_name == 'push'
+        run: sleep 240
+      - name: Probe
+        id: probe
+        continue-on-error: true
+        env:
+          PROBE_EMAIL: ${{ secrets.PROBE_EMAIL }}
+          PROBE_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+        run: node scripts/probe-login-bridge.mjs
+
+      - name: File or refresh the incident issue
+        if: steps.probe.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          REPORT: ${{ steps.probe.outputs.report }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const title = 'Login bridge probe FAILING - Commander sign-in may be broken in production';
+            const body = [
+              `**Run:** ${runUrl}`,
+              `**Trigger:** ${context.eventName}`,
+              '',
+              process.env.REPORT || '(no report captured)',
+              '',
+              'Auto-filed by `.github/workflows/login-bridge-probe.yml`. It re-checks every 30 minutes and closes this issue itself when the probe passes again.',
+              'Runbook: `docs/runbooks/login-bridge.md`.',
+            ].join('\n');
+            const open = await github.rest.issues.listForRepo({ owner, repo, labels: 'login-bridge-probe', state: 'open', per_page: 1 });
+            if (open.data.length) {
+              await github.rest.issues.update({ owner, repo, issue_number: open.data[0].number, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body, labels: ['login-bridge-probe', 'incident'] });
+            }
+
+      - name: Close the incident issue when green again
+        if: steps.probe.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const open = await github.rest.issues.listForRepo({ owner, repo, labels: 'login-bridge-probe', state: 'open', per_page: 5 });
+            for (const issue of open.data) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: issue.number,
+                body: `Probe passed again at ${new Date().toISOString()} (run https://github.com/${owner}/${repo}/actions/runs/${context.runId}). Closing.` });
+              await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
+            }
+
+      - name: Fail the run if the probe failed
+        if: steps.probe.outcome == 'failure'
+        run: exit 1
+
+  e2e:
+    name: Handshake works in a real browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: probe
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        run: npm install --legacy-peer-deps
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Wait for the production deploy to settle (push trigger only)
+        if: github.event_name == 'push'
+        run: sleep 60
+      - name: Playwright - tests/e2e/login-bridge.spec.ts against production
+        env:
+          CI: '1'
+          PLAYWRIGHT_BASE_URL: https://commander.smarter.poker
+          PLAYWRIGHT_HUB_ORIGIN: https://smarter.poker
+          PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PROBE_EMAIL }}
+          PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+        run: npx playwright test tests/e2e/login-bridge.spec.ts --reporter=line
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-bridge-e2e-traces
+          path: test-results/
+          retention-days: 7

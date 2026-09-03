@@ -673,7 +673,7 @@ async function sendPushNotification(notification) {
       })
       .eq('id', notification.id);
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, null); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('OneSignal push error:', error);
     await getSupabase()
       .from('commander_notifications')

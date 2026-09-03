@@ -34,6 +34,7 @@ import {
   isStaffSessionHealthy,
   readAccessToken,
 } from '../../src/lib/commander/staffSession';
+import { reportLoginFailure } from '../../src/lib/authFlowMonitor';
 
 const HUB_ORIGIN = process.env.NEXT_PUBLIC_MAIN_HUB_URL || 'https://smarter.poker';
 
@@ -66,6 +67,7 @@ export default function CommanderLogin() {
   const completeLogin = useCallback(async (user, accessToken) => {
     const result = await completeCommanderLogin(user, accessToken);
     if (result === true) return true;
+    reportLoginFailure('login', result?.error || 'completion failed', { status: result?.status });
     setError(result?.error || 'Sign-In Could Not Be Completed. Please Try Again.');
     return false;
   }, []);
@@ -270,6 +272,9 @@ export default function CommanderLogin() {
       if (ok) return; // navigating
     } catch (err) {
       console.warn('Login error:', err);
+      // Wrong password is not an incident; anything else after Supabase
+      // answered is (that is exactly what the missing-completeLogin bug was).
+      if (!/invalid login credentials/i.test(err?.message || '')) reportLoginFailure('login', err);
       if (err.name === 'AbortError') {
         setError('Login Timed Out. Please Check Your Connection And Try Again.');
       } else {

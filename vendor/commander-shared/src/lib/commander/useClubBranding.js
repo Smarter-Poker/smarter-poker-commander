@@ -13,6 +13,7 @@
  *   - Dealer Ticker
  */
 import { useState, useEffect, useCallback } from 'react';
+import { commanderFetch } from './commanderFetch';
 
 const CACHE_KEY = 'commander_branding';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -60,9 +61,9 @@ export default function useClubBranding() {
             let staff = {};
             try { staff = JSON.parse(staffSession); } catch { staff = {}; }
 
-            const res = await fetch('/api/commander/settings', {
-                headers: { 'x-staff-session': staffSession }
-            });
+            // 2026-09-03: through commanderFetch so a stale staff session is
+            // re-minted and retried instead of silently dropping the logo.
+            const res = await commanderFetch('/api/commander/settings');
             const json = await res.json();
 
             if (json.success && json.data) {

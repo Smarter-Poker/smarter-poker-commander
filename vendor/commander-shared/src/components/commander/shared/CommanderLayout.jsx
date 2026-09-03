@@ -26,6 +26,7 @@ import CommanderEffectsProvider from './CommanderEffectsProvider';
 import PushNotificationProvider from './PushNotificationProvider';
 import useBusBridge from '../../../lib/commander/useBusBridge';
 import { getToken } from '../../../lib/commander/clientAuth';
+import { commanderFetch } from '../../../lib/commander/commanderFetch';
 import { mintStaffSession, refreshStaffSession, readStaffSession, isStaffSessionHealthy } from '../../../lib/commander/staffSession';
 
 const NAV_ITEMS = [
@@ -135,7 +136,9 @@ export default function CommanderLayout({ children, title }) {
           } catch (e) { /* ignore */ }
         }
         
-        const res = await fetch('/api/my-commander-accounts');
+        // 2026-09-03: commanderFetch adds the Bearer token (this route needs it)
+        // and self-heals the staff session on 401.
+        const res = await commanderFetch('/api/my-commander-accounts');
         if (res.ok) {
           const json = await res.json();
           // The API returns { clubs, staff_venues, home_groups } directly on the root of the response, NOT inside json.data.accounts
