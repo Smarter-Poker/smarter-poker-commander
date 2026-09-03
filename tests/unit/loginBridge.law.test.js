@@ -191,3 +191,101 @@ describe('CommanderLayout never invalidates or abandons a live session (pin 7)',
     expect(src).toMatch(/if\s*\(stored\s*&&\s*!isStaffSessionHealthy\(\)\)\s*\{\s*refreshStaffSession\(\)/);
   });
 });
+
+// ── 2026-09-03 hardening pass: the guards that keep the guards honest ────────
+
+describe('one auth authority (pin 8)', () => {
+  it('middleware only gates the admin PIN and never builds a second Supabase client', () => {
+    const src = code(read('middleware.ts'));
+    expect(src).not.toMatch(/@supabase\/ssr|createServerClient|auth\.getUser|auth\.getSession/);
+    expect(src).toMatch(/verifyPinSession/);
+    expect(src, 'matcher must be scoped to admin paths, not the whole app').toMatch(/matcher:\s*\[\s*'\/commander\/admin\/:path\*'/);
+  });
+
+  it('every guarded client fetch goes through commanderFetch (self-heal)', () => {
+    const branding = code(read('vendor/commander-shared/src/lib/commander/useClubBranding.js'));
+    expect(branding).toMatch(/commanderFetch\('\/api\/commander\/settings'\)/);
+    expect(branding).not.toMatch(/\bfetch\('\/api\/commander\/settings'/);
+    const layout = code(read(LAYOUT));
+    expect(layout).toMatch(/commanderFetch\('\/api\/my-commander-accounts'\)/);
+    expect(layout).not.toMatch(/[^r]fetch\('\/api\/my-commander-accounts'\)/);
+  });
+});
+
+describe('the lint that would have caught the outage is blocking (pin 9)', () => {
+  it('package.json wires lint:undef into npm test and CI runs it without continue-on-error', () => {
+    const pkg = JSON.parse(read('package.json'));
+    expect(pkg.scripts['lint:undef']).toMatch(/eslint --config eslint\.undef\.config\.mjs/);
+    expect(pkg.scripts.test).toMatch(/^npm run lint:undef && /);
+    const ci = read('.github/workflows/ci.yml');
+    const step = ci.slice(ci.indexOf('Undefined identifiers (blocking)'), ci.indexOf('- name: Lint\n'));
+    expect(step).toMatch(/run: npm run lint:undef/);
+    expect(step).not.toMatch(/continue-on-error/);
+  });
+
+  it('the undef config enforces no-undef and nothing weaker', () => {
+    const cfg = read('eslint.undef.config.mjs');
+    expect(cfg).toMatch(/'no-undef':\s*'error'/);
+    expect(cfg).not.toMatch(/'no-undef':\s*'(warn|off)'/);
+  });
+
+  it('the two ReferenceErrors the gate found stay fixed', () => {
+    for (const f of ['pages/api/tournaments/[id]/entries/[entryId]/pay.js', 'pages/api/tournaments/[id]/reconciliation.js']) {
+      const src = code(read(f));
+      // Helper functions have no `res`; the refusal must be returned as data.
+      expect(src, `${f} must not call denyCrossVenue(res) outside the handler`).not.toMatch(/denyCrossVenue\(res/);
+      expect(src).toMatch(/isSameVenue\(staff, tournament\)/);
+    }
+    for (const f of ['vendor/commander-shared/src/components/commander/admin/MultiVenueDashboard.jsx', 'vendor/commander-shared/src/components/commander/analytics/AnalyticsDashboard.jsx']) {
+      expect(code(read(f))).not.toMatch(/\bIsNegative\b/);
+    }
+  });
+});
+
+describe('the outage would be visible (pin 10)', () => {
+  it('client Sentry is actually loaded and the auth-flow monitor is installed', () => {
+    const app = code(read('pages/_app.js'));
+    expect(app).toMatch(/require\('\.\.\/sentry\.client\.config'\)/);
+    expect(app).toMatch(/installAuthFlowMonitor\(\)/);
+    const mon = code(read('src/lib/authFlowMonitor.js'));
+    for (const ev of ['commander.auth.reference_error', 'commander.auth.login_failed', 'commander.auth.unauthorized']) {
+      expect(mon).toContain(ev);
+    }
+    for (const f of [LOGIN, SSO]) expect(code(read(f))).toMatch(/reportLoginFailure\(/);
+  });
+
+  it('server/edge Sentry configs are loaded through instrumentation.js', () => {
+    const inst = code(read('instrumentation.js'));
+    expect(inst).toMatch(/sentry\.server\.config/);
+    expect(inst).toMatch(/sentry\.edge\.config/);
+    expect(read(NEXT_CONFIG)).toMatch(/instrumentationHook:\s*true/);
+  });
+
+  it('/api/health exposes the booleans the probe asserts (never values)', () => {
+    const h = code(read('pages/api/health.js'));
+    expect(h).toMatch(/sentry_client_dsn:\s*Boolean\(/);
+    expect(h).toMatch(/staff_session_secret:\s*Boolean\(/);
+    expect(h).not.toMatch(/process\.env\.[A-Z_]+\s*,?\s*\n?\s*\}/); // no raw env value in the payload
+  });
+});
+
+describe('production is watched (pin 11)', () => {
+  it('the probe script and its 30-minute workflow exist and cover both legs', () => {
+    const probe = read('scripts/probe-login-bridge.mjs');
+    for (const s of ['/commander/login', '/auth/sso', '/api/auth/sso-exchange', '/api/commander/check-subscription', '/api/auth/commander-sso', '/api/health', 'completeLogin(', 'x-staff-session']) {
+      expect(probe, `probe must check ${s}`).toContain(s);
+    }
+    const wf = read('.github/workflows/login-bridge-probe.yml');
+    expect(wf).toMatch(/cron: '7,37 \* \* \* \*'/);
+    expect(wf).toMatch(/node scripts\/probe-login-bridge\.mjs/);
+    expect(wf).toMatch(/login-bridge-probe/); // the issue label
+    expect(wf).toMatch(/playwright test tests\/e2e\/login-bridge\.spec\.ts/);
+  });
+
+  it('the Playwright spec covers the outage shapes', () => {
+    const spec = read('tests/e2e/login-bridge.spec.ts');
+    for (const s of ['bridge', 'ReferenceError', '/auth/sso?token=', 'expired=1', 'commander_staff', 'tampered']) {
+      expect(spec).toContain(s);
+    }
+  });
+});

@@ -17,3 +17,8 @@ test-results/
 playwright-report/
 .vercel
 _to_delete/
+
+# Build artefacts and editor leftovers (2026-09-03 cleanup)
+tsconfig.tsbuildinfo
+*.bak
+test_output.png

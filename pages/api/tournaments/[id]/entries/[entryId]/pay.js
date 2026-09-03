@@ -75,7 +75,7 @@ import {
   CASH_TX_PAYMENT_METHODS,
   DEFAULT_PAYMENT_METHOD
 } from '../../../../../../src/lib/commander/paymentMethods';
-import { denyCrossVenue } from '../../../../../../src/lib/commander/venueScope';
+import { isSameVenue } from '../../../../../../src/lib/commander/venueScope';
 
 let _supabase = null;
 function getSupabase() {
@@ -194,7 +194,14 @@ async function loadContext(tournamentId, entryId, staff) {
     return { status: 404, error: { code: 'NOT_FOUND', message: 'Tournament Not Found' } };
   }
   // One shared check. This spelling fell OPEN on a null venue_id.
-  if (denyCrossVenue(res, staff, tournament)) return;
+  // 2026-09-03: this helper has no `res` in scope - the old
+  // `denyCrossVenue(res, ...)` line threw ReferenceError on EVERY request that
+  // reached it (i.e. every request for a tournament that exists), which the
+  // handler's catch turned into a 500. Return the refusal as data instead; the
+  // handler already knows how to send { status, error }.
+  if (!isSameVenue(staff, tournament)) {
+    return { status: 403, error: { code: 'WRONG_VENUE', message: 'Tournament Belongs To A Different Venue' } };
+  }
 
   // bounty_winnings arrived in a later migration; fall back so a deploy that
   // lands before it still pays people.

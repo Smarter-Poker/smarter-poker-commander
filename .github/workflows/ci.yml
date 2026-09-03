@@ -50,6 +50,13 @@ jobs:
           exit $CODE
       - name: Install
         run: npm install --legacy-peer-deps
+      # BLOCKING. `npm run lint` below is advisory and has been red for months,
+      # which is how `completeLogin is not defined` sat in pages/commander/login.js
+      # while every production login failed with that exact ReferenceError
+      # (2026-09-03). This step runs ONE rule - no-undef - over pages/, src/,
+      # vendor/ and scripts/. A hit is a ReferenceError waiting for a user.
+      - name: Undefined identifiers (blocking)
+        run: npm run lint:undef
       - name: Lint
         run: npm run lint
         continue-on-error: true

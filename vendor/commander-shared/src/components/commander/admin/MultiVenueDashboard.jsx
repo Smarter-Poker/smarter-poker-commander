@@ -105,7 +105,7 @@ function SummaryCard({ icon: Icon, label, value, change, color = '#22D3EE' }) {
           <div className={`flex items-center gap-1 text-xs ${
             isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-[#4A5E78]'
           }`}>
-            {isPositive ? <TrendingUp size={14} /> : IsNegative ? <TrendingDown size={14} /> : null}
+            {isPositive ? <TrendingUp size={14} /> : isNegative ? <TrendingDown size={14} /> : null}
             {Math.abs(change).toFixed(1)}%
           </div>
         )}

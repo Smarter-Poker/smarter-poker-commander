@@ -468,7 +468,7 @@ async function dispatchRequesterNotification(supabase, ctx) {
       messageType: 'text',
     });
   } catch (e) {
-      try { reportApiError(e, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(e, null); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('[rsvps/[id]] DM dispatch threw:', e?.message || e);
   }
 }
