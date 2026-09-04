@@ -2,15 +2,15 @@
 
 Commander — poker venue/club operator dashboard.
 
-## Status: Phase 3.2 SCAFFOLD (2026-04-25)
+## Status: LIVE. Agent instructions: `CLAUDE.md` (read `AGENT-PLAYBOOK.md` first)
 
 Extracted from `Smarter-Poker-World-Hub` per Phase 3 of the optimization plan.
 
 - **Hosting:** Vercel (new project)
 - **URL:** smarter.poker/commander/* via Vercel rewrites (URL preserved)
 - **Internal URL:** commander.smarter.poker
-- **Auth:** Shared `.smarter.poker` Supabase cookie domain
-- **Sentry:** Separate project (cleaner error dashboards)
+- **Auth:** Supabase session in localStorage (`smarter-poker-auth`) on each origin, bridged hub -> commander by a one-time SSO token; derived HMAC-signed staff session for Commander APIs. See `CLAUDE.md` section 3 and `docs/runbooks/login-bridge.md`. (A shared cookie session is designed, not built: `docs/runbooks/cross-subdomain-session.md`.)
+- **Sentry:** reports into the World Hub's Sentry project (same DSN); see `docs/runbooks/sentry-auth-alerts.md`
 
 ## Migration status
 
