@@ -57,6 +57,12 @@ answered 429 for eleven days. `/api/health` exposes `observability.*` and
 `auth.*` booleans, and the login-bridge probe posts one event per run and
 WARNs on 429. When you touch monitoring, prove an event arrives - do not
 trust the absence of red.
+Since 2026-09-04 Commander reports to its OWN Sentry project `club-commander`
+(id 4512029155393536; DSN in Vercel env, alert rules in
+`docs/runbooks/sentry-auth-alerts.md`), not the World Hub project. The quota
+is still org-wide (exhausted until 2026-09-16 by the engine loops the Club
+Arena budget now caps); the separate project keeps the rules and rate
+limits from being drowned by hub noise.
 
 **3.3 The staff session is minted in ONE place.** `completeCommanderLogin()` in
 `vendor/commander-shared/src/lib/commander/staffSession.js` (shimmed at
@@ -116,6 +122,22 @@ It reads no credentials itself; two callers pass their own:
   self-closing issue labelled `login-bridge-probe`. If that issue is open,
   sign-in is or was broken. Its signed-in leg needs the `PROBE_EMAIL` /
   `PROBE_PASSWORD` secrets on THIS repo (not Club Arena's).
+
+- **Before merge: the same probe runs against the pull request.** The
+  required `build` job in `ci.yml` starts the build it just made
+  (`next start`, no secrets) and runs the structural leg in local mode
+  (`PROBE_LOCAL=1`). A free `completeLogin(` call in the login chunk fails
+  the PR. Vercel preview URLs are SSO-protected on this project, so the
+  local build is what gets probed.
+- **The browser leg runs the hop users take** - signed in on the hub, nothing
+  on the commander origin, press Continue, dashboard with no password - in
+  desktop Chromium, desktop WebKit and an iPhone-sized mobile Safari
+  (`playwright.config.ts`). The incident report's first line was "issues
+  with mobile"; a Chromium-only suite would have called it green.
+- **A failing Open Claw run pages.** The hub dispatcher lists the probe in
+  `CRITICAL_JOBS` (two consecutive non-200s, including a 401 from
+  `CRON_SECRET` drift, send an SMS through its existing alert path; one
+  recovery SMS when it is 200 again).
 
 Runbook: `docs/runbooks/login-bridge.md`.
 

@@ -320,6 +320,40 @@ describe('production is watched (pin 11)', () => {
       expect(spec).toContain(s);
     }
   });
+
+  it('the Playwright spec walks the hop users take, in three browsers (pin 17)', () => {
+    // Signed in on the hub, nothing on the commander origin, press Continue,
+    // land on the dashboard with no password. That is the 2026-09-03 path.
+    const spec = code(read('tests/e2e/login-bridge.spec.ts'));
+    expect(spec).toMatch(/hubSessionViaPasswordGrant\(/);
+    expect(spec).toMatch(/localStorage\.setItem\('smarter-poker-auth'/);
+    expect(spec, 'the hop must never fall back to a password grant').toMatch(/grant_type=password[\s\S]*typedPassword = true/);
+    expect(spec).toMatch(/expect\(typedPassword[^)]*\)\.toBe\(false\)/);
+    // "Issues with mobile" was the first line of the incident report.
+    const cfg = code(read('playwright.config.ts'));
+    for (const b of ["devices\\['Desktop Chrome'\\]", "devices\\['Desktop Safari'\\]", "devices\\['iPhone 13'\\]"]) {
+      expect(cfg, `playwright.config must run ${b}`).toMatch(new RegExp(b));
+    }
+    expect(read('.github/workflows/login-bridge-probe.yml')).toMatch(/playwright install --with-deps chromium webkit/);
+  });
+
+  it('every pull request is probed before it can merge (pin 18)', () => {
+    // ci.yml starts the build it just made and runs the structural leg in
+    // local mode inside the REQUIRED `build` job. The 2026-09-03 outage
+    // (a free completeLogin( call in the login chunk) fails here, not in
+    // production.
+    const ci = read('.github/workflows/ci.yml');
+    const step = ci.slice(ci.indexOf('Start the build and probe it'), ci.indexOf('notify-failure:'));
+    expect(step).toMatch(/PROBE_LOCAL: '1'/);
+    expect(step).toMatch(/npx next start -p 3199/);
+    expect(step).toMatch(/node scripts\/probe-login-bridge\.mjs/);
+    expect(step).not.toMatch(/continue-on-error/);
+    const core = code(read('src/lib/probe/loginBridgeProbe.mjs'));
+    expect(core).toMatch(/const LOCAL = opts\.local === true;/);
+    // Local mode must still run the row that names the outage.
+    expect(core).toMatch(/login chunk has no free `completeLogin\(` call/);
+    expect(code(read('scripts/probe-login-bridge.mjs'))).toMatch(/local: process\.env\.PROBE_LOCAL === '1'/);
+  });
 });
 
 describe('the self-heal uses a fresh token and the right user (pin 13)', () => {

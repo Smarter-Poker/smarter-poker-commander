@@ -28,10 +28,23 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
+  // Three browsers on purpose (2026-09-04). The first report of the 2026-09-03
+  // login outage said "issues with mobile, desktop loads but does not work";
+  // a Chromium-only suite would have called that green. WebKit is Safari's
+  // engine, and Safari partitions storage per site in ways Chromium does not,
+  // which is exactly where a cross-subdomain login goes wrong first.
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 13'] },
     },
   ],
 

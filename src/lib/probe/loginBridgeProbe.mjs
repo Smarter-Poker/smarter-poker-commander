@@ -33,6 +33,14 @@ export const DEFAULTS = {
  * @param {string} [opts.email]      signed-in leg runs only when both are set
  * @param {string} [opts.password]
  * @param {(line: string) => void} [opts.log]  defaults to console.log
+ * @param {boolean} [opts.local]  the target is a `next start` of THIS commit on
+ *   a CI runner with no production secrets (2026-09-04, pull-request gate).
+ *   Skips what only production can answer - the hub-origin rows, the Sentry
+ *   ingest row, and the secrets-present health rows become warnings - and
+ *   keeps every row that would have caught the 2026-09-03 outage: the login
+ *   chunk's free `completeLogin(` call, the bridge, the SSO page, the API 401
+ *   contracts. A preview URL cannot be used instead: Vercel SSO-protects
+ *   preview deployments on this project.
  * @returns {Promise<{ ok: boolean, results: Array<{leg:string,name:string,ok:boolean,detail:string,warnOnly:boolean}>, failures: Array, warnings: Array, markdown: string, hub: string, commander: string }>}
  */
 export async function runLoginBridgeProbe(opts = {}) {
@@ -41,6 +49,7 @@ export async function runLoginBridgeProbe(opts = {}) {
   const SUPABASE_URL = opts.supabaseUrl || DEFAULTS.supabaseUrl;
   const SUPABASE_ANON = opts.supabaseAnon || DEFAULTS.supabaseAnon;
   const TIMEOUT_MS = Number(opts.timeoutMs || DEFAULTS.timeoutMs);
+  const LOCAL = opts.local === true;
   const log = typeof opts.log === 'function' ? opts.log : (line) => console.log(line);
 
   const results = [];
@@ -115,7 +124,9 @@ export async function runLoginBridgeProbe(opts = {}) {
     const leg = 'structural';
 
     // 1. Commander origin login page + chunks
-    const cmdLogin = await checkPageAndAssets(leg, `${CMD}/commander/login`, CMD, { mustPointAt: `${CMD}/_next/` });
+    // Production pins assetPrefix to the commander origin (absolute URLs); a
+    // local `next start` has no prefix, so its chunks are root-relative.
+    const cmdLogin = await checkPageAndAssets(leg, `${CMD}/commander/login`, CMD, { mustPointAt: LOCAL ? '/_next/' : `${CMD}/_next/` });
     if (cmdLogin) {
       const loginChunk = cmdLogin.srcs.find((s) => /pages\/commander\/login-[a-z0-9]+\.js/.test(s));
       if (record(leg, 'login page chunk is present', !!loginChunk, loginChunk || '')) {
@@ -140,27 +151,41 @@ export async function runLoginBridgeProbe(opts = {}) {
       }
     }
 
-    // 2. Hub-origin proxy of the same page
-    await checkPageAndAssets(leg, `${HUB}/commander/login`, HUB, { mustPointAt: `${CMD}/_next/` });
+    // 2. Hub-origin proxy of the same page (production only: a local build is
+    //    not behind the hub rewrite)
+    if (!LOCAL) await checkPageAndAssets(leg, `${HUB}/commander/login`, HUB, { mustPointAt: `${CMD}/_next/` });
 
     // 3. SSO landing page renders
     const sso = await http(`${CMD}/auth/sso`);
     record(leg, '/auth/sso responds 200', sso.status === 200, `status=${sso.status}`);
 
     // 4. API contracts
-    const ex = await http(`${CMD}/api/auth/sso-exchange`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: '0'.repeat(64), uid: '00000000-0000-0000-0000-000000000000' }),
-    });
-    record(leg, 'sso-exchange rejects an unknown token with 401 JSON', ex.status === 401 && !!ex.json?.error, `status=${ex.status} body=${ex.text.slice(0, 80)}`);
+    if (LOCAL) {
+      // No service-role key on a CI build, so the token lookup cannot run;
+      // the format check before it can, and proves the route exists and
+      // enforces its contract.
+      const ex = await http(`${CMD}/api/auth/sso-exchange`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'not-a-token', uid: 'not-a-uuid' }),
+      });
+      record(leg, 'sso-exchange rejects a malformed token with 400 JSON', ex.status === 400 && !!ex.json?.error, `status=${ex.status} body=${ex.text.slice(0, 80)}`);
+    } else {
+      const ex = await http(`${CMD}/api/auth/sso-exchange`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: '0'.repeat(64), uid: '00000000-0000-0000-0000-000000000000' }),
+      });
+      record(leg, 'sso-exchange rejects an unknown token with 401 JSON', ex.status === 401 && !!ex.json?.error, `status=${ex.status} body=${ex.text.slice(0, 80)}`);
+    }
 
     const cs = await http(`${CMD}/api/commander/check-subscription`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
     });
     record(leg, 'check-subscription requires auth (401 JSON)', cs.status === 401 && !!cs.json?.error, `status=${cs.status}`);
 
-    const hubSso = await http(`${HUB}/api/auth/commander-sso`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-    record(leg, 'hub commander-sso requires auth (401)', hubSso.status === 401, `status=${hubSso.status}`);
+    if (!LOCAL) {
+      const hubSso = await http(`${HUB}/api/auth/commander-sso`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+      record(leg, 'hub commander-sso requires auth (401)', hubSso.status === 401, `status=${hubSso.status}`);
+    }
 
     const guarded = await http(`${CMD}/api/commander/settings`, { headers: { 'x-staff-session': JSON.stringify({ user_id: 'x', venue_id: 1, role: 'owner', session_ts: Date.now() }) } });
     record(leg, 'guarded API rejects an UNSIGNED staff session (401)', guarded.status === 401, `status=${guarded.status}`);
@@ -172,8 +197,9 @@ export async function runLoginBridgeProbe(opts = {}) {
     const health = await http(`${CMD}/api/health`);
     record(leg, '/api/health responds 200', health.status === 200, `status=${health.status}`);
     if (health.json?.auth) {
-      record(leg, 'signing secret configured', health.json.auth.staff_session_secret === true);
-      record(leg, 'service-role key configured', health.json.auth.supabase_service_role === true);
+      // A CI `next start` has no production secrets: these are warnings there.
+      record(leg, 'signing secret configured', health.json.auth.staff_session_secret === true, LOCAL ? 'not expected on a local build' : '', { warnOnly: LOCAL });
+      record(leg, 'service-role key configured', health.json.auth.supabase_service_role === true, LOCAL ? 'not expected on a local build' : '', { warnOnly: LOCAL });
       record(leg, 'client Sentry DSN configured', health.json.observability?.sentry_client_dsn === true, 'set NEXT_PUBLIC_SENTRY_DSN in Vercel (production) - browser errors are invisible without it', { warnOnly: true });
       record(leg, 'dedicated staff-session secret configured', health.json.auth.dedicated_staff_session_secret === true, 'set COMMANDER_STAFF_SESSION_SECRET (see docs/runbooks/staff-session-secret-rotation.md, step "first-time setup")', { warnOnly: true });
     } else {
@@ -186,7 +212,7 @@ export async function runLoginBridgeProbe(opts = {}) {
     // said "0 issues". One tiny event per probe run (48/day) is the cost of
     // knowing. WARN, not FAIL: a quota is a billing decision, not an outage in
     // the handshake itself.
-    if (discoveredDsn) {
+    if (discoveredDsn && !LOCAL) {
       const eventId = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
       const now = new Date().toISOString();
       const envelope = [

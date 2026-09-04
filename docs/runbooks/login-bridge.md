@@ -42,10 +42,11 @@ forever.
 | Source | `no-undef` blocking lint | `npm run lint:undef`, CI step "Undefined identifiers (blocking)" |
 | Source | Login-bridge law (static pins) | `tests/unit/loginBridge.law.test.js` |
 | Behaviour | staffSession suite | `tests/unit/clientStaffSession.test.js` |
-| Production | Structural + signed-in probe, hourly at :22 (PRIMARY, real cron) | Open Claw on Hetzner -> `smarter.poker/api/commander/internal/login-bridge-probe` -> `pages/api/internal/login-bridge-probe.js` -> `src/lib/probe/loginBridgeProbe.mjs` |
+| Pull request | Structural probe against the built commit (`next start`, local mode) inside the REQUIRED `build` check | `ci.yml` step "Start the build and probe it" -> `scripts/probe-login-bridge.mjs` with `PROBE_LOCAL=1` |
+| Production | Structural + signed-in probe, hourly at :22 (PRIMARY, real cron); two consecutive failures page by SMS | Open Claw on Hetzner (`CRITICAL_JOBS` in the hub dispatcher) -> `smarter.poker/api/commander/internal/login-bridge-probe` -> `pages/api/internal/login-bridge-probe.js` -> `src/lib/probe/loginBridgeProbe.mjs` |
 | Production | Structural + signed-in probe, every 30 min (secondary, files the issue) | `.github/workflows/login-bridge-probe.yml` -> `scripts/probe-login-bridge.mjs` (CLI over the same core) |
-| Production | Real-browser E2E, every 30 min | same workflow, job `e2e` -> `tests/e2e/login-bridge.spec.ts` |
-| Runtime | Sentry: `commander.auth.*` messages | `src/lib/authFlowMonitor.js`, alert rules in `sentry-auth-alerts.md` |
+| Production | Real-browser E2E, every 30 min, in Chromium + WebKit + iPhone Safari, including the hub -> Continue -> dashboard hop | same workflow, job `e2e` -> `tests/e2e/login-bridge.spec.ts` (`playwright.config.ts` projects) |
+| Runtime | Sentry: `commander.auth.*` messages, project `club-commander` | `src/lib/authFlowMonitor.js`, alert rules in `sentry-auth-alerts.md` |
 
 The probe files ONE self-updating issue labelled `login-bridge-probe` and closes
 it when green. If that issue is open, sign-in is (or was) broken in production.

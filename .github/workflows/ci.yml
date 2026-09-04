@@ -97,6 +97,29 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy
           SUPABASE_SERVICE_ROLE_KEY: dummy
           SUPABASE_JWT_SECRET: dummy
+      # 2026-09-04: the login-bridge probe runs against THIS commit before it
+      # can merge. `next start` the build just made (no secrets at all), then
+      # the structural leg in local mode: the login chunk's free
+      # `completeLogin(` call, the bridge, the SSO page, the API contracts,
+      # health. That is the 2026-09-03 outage caught at pull-request time
+      # instead of by a player. Production-only rows (hub rewrite, Sentry
+      # ingest, secrets present) are skipped or warnings here; the scheduled
+      # production probe still owns those. A Vercel preview URL cannot be used
+      # for this: previews are SSO-protected on this project.
+      - name: Start the build and probe it (login-bridge, local mode)
+        env:
+          PROBE_LOCAL: '1'
+          PROBE_COMMANDER_ORIGIN: http://127.0.0.1:3199
+        run: |
+          npx next start -p 3199 > /tmp/next-start.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf --max-time 3 http://127.0.0.1:3199/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          if ! curl -sf --max-time 3 http://127.0.0.1:3199/api/health > /dev/null; then
+            echo "::error::next start did not answer /api/health in 30s"; cat /tmp/next-start.log; exit 1
+          fi
+          node scripts/probe-login-bridge.mjs
 
   # Auto-file (or refresh) a GitHub Issue when CI fails on main — ported from
   # World Hub's Build Safety Gate. Private-repo Actions results are otherwise

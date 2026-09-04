@@ -133,7 +133,7 @@ jobs:
       - name: Install
         run: npm install --legacy-peer-deps
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: Wait for the production deploy to settle (push trigger only)
         if: github.event_name == 'push'
         # A blind sleep raced the deploy: on 2026-09-04 the probe ran 4 minutes
