@@ -115,6 +115,17 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // 2026-09-04: the root of the commander origin was a scaffold stub
+      // ("Status: scaffolded, migration in progress"). Nothing links to it -
+      // smarter.poker/commander rewrites to /commander since hub #1344 - but
+      // a typed URL or an old bookmark landed on it. Send it to the real
+      // landing page. A redirect, on this origin only, from a path the hub
+      // never rewrites to, so it cannot loop with the hub.
+      {
+        source: '/',
+        destination: '/commander',
+        permanent: false,
+      },
       // 2026-07-25 audit: /hub/* pages only exist on smarter.poker — staff
       // clicking "Back To Hub" (or any club-page link) on the commander
       // origin previously hit a 404. Send them to the real origin.
