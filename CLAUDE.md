@@ -124,8 +124,10 @@ Runbook: `docs/runbooks/login-bridge.md`.
 - `docs/runbooks/login-bridge.md` - the handshake, its guards, triage.
 - `docs/runbooks/staff-session-secret-rotation.md` - rotating the HMAC secret.
 - `docs/runbooks/sentry-auth-alerts.md` - rule ids, the quota, what to check.
-- `docs/runbooks/cross-subdomain-session.md` - the one-session design and
-  why it is not a hotfix (refresh-token rotation).
+- `docs/runbooks/cross-subdomain-session.md` - the one-session design, why
+  it is not a hotfix (refresh-token rotation), and the 2026-09-04 decision
+  NOT to build it yet with the three conditions that would reopen it. Do not
+  start it as a side quest; it is a Tier 3 hub programme Dan approves.
 - `docs/changelog/` - one file per change, never appended to a shared one.
 
 ## 6. Working rules (Dan's, binding, same as every repo)
