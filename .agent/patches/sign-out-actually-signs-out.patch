@@ -1,0 +1,450 @@
+diff --git a/pages/commander/login.js b/pages/commander/login.js
+index 21bced0..7ffb8c5 100644
+--- a/pages/commander/login.js
++++ b/pages/commander/login.js
+@@ -204,0 +205,16 @@ export default function CommanderLogin() {
++        // -- An explicit Sign Out outranks the silent sign-in --
++        // 2026-09-04: Sign Out clears the staff session, so an unhealthy staff
++        // session plus a surviving Supabase session (the exact state a failed
++        // signOut leaves behind) made the block below re-mint the login and
++        // bounce back to the dashboard. The user saw a flash and no logout.
++        // CommanderLayout.handleLogout sets this marker; it is honoured once
++        // and deleted, so it can never wedge a user out of a working session.
++        try {
++          if (sessionStorage.getItem('commander_explicit_logout')) {
++            sessionStorage.removeItem('commander_explicit_logout');
++            stopTimers();
++            setCheckingSession(false);
++            return;
++          }
++        } catch { /* private mode - fall through to the normal path */ }
++
+diff --git a/src/components/commander/shared/StandaloneGlobalHeader.jsx b/src/components/commander/shared/StandaloneGlobalHeader.jsx
+index 9d9988f..40f7820 100644
+--- a/src/components/commander/shared/StandaloneGlobalHeader.jsx
++++ b/src/components/commander/shared/StandaloneGlobalHeader.jsx
+@@ -1 +1 @@
+-import { useEffect, useState } from 'react';
++import { useEffect, useRef, useState } from 'react';
+@@ -2,0 +3,2 @@ import { useRouter } from 'next/router';
++import { supabase } from '../../../lib/supabase';
++import { commanderSignOut } from '../../../lib/commanderLogout';
+@@ -17,0 +20,21 @@ export default function StandaloneGlobalHeader() {
++  const signingOutRef = useRef(false);
++
++  /**
++   * /hub/* belongs to the World Hub, not to this Next build. router.push()
++   * cannot resolve it, so Next logged a console.error on every one of these
++   * clicks before falling back to a hard navigation. Go there directly.
++   */
++  const goHub = (href) => { window.location.assign(href); };
++
++  /**
++   * This header is mounted by pages/_app.js on the 29 routes that do not render
++   * CommanderLayout — the waitlist desk, the kiosk, the lobby, every report.
++   * Until 2026-09-04 it had no Sign Out at all, so an operator on any of them
++   * could not sign out without navigating somewhere else first.
++   */
++  const handleSignOut = async () => {
++    if (signingOutRef.current) return;
++    signingOutRef.current = true;
++    setMenuOpen(false);
++    await commanderSignOut(supabase);
++  };
+@@ -199,0 +223 @@ export default function StandaloneGlobalHeader() {
++        .standalone-approved-menu__signout { color: #ff8a8a; border-color: rgba(255,138,138,.42); }
+@@ -211,2 +235,2 @@ export default function StandaloneGlobalHeader() {
+-          <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => router.push('/hub')} aria-label="Go to the Hub" />
+-          <button type="button" className="standalone-approved-header__button standalone-approved-header__profile" onClick={() => router.push('/hub/profile')} aria-label="My Profile">
++          <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => goHub('/hub')} aria-label="Go to the Hub" />
++          <button type="button" className="standalone-approved-header__button standalone-approved-header__profile" onClick={() => goHub('/hub/profile')} aria-label="My Profile">
+@@ -217,4 +241,4 @@ export default function StandaloneGlobalHeader() {
+-          <button type="button" className="standalone-approved-header__button standalone-approved-header__wallet" onClick={() => router.push('/hub/diamond-store')} aria-label="Diamond Wallet" />
+-          <button type="button" className="standalone-approved-header__button standalone-approved-header__vip" onClick={() => router.push('/hub/vip-membership')} aria-label="VIP" />
+-          <button type="button" className="standalone-approved-header__button standalone-approved-header__messenger" onClick={() => router.push('/hub/messenger')} aria-label="Messages" />
+-          <button type="button" className="standalone-approved-header__button standalone-approved-header__notifications" onClick={() => router.push('/hub/notifications')} aria-label="Notifications" />
++          <button type="button" className="standalone-approved-header__button standalone-approved-header__wallet" onClick={() => goHub('/hub/diamond-store')} aria-label="Diamond Wallet" />
++          <button type="button" className="standalone-approved-header__button standalone-approved-header__vip" onClick={() => goHub('/hub/vip-membership')} aria-label="VIP" />
++          <button type="button" className="standalone-approved-header__button standalone-approved-header__messenger" onClick={() => goHub('/hub/messenger')} aria-label="Messages" />
++          <button type="button" className="standalone-approved-header__button standalone-approved-header__notifications" onClick={() => goHub('/hub/notifications')} aria-label="Notifications" />
+@@ -231,0 +256 @@ export default function StandaloneGlobalHeader() {
++            <button type="button" className="standalone-approved-menu__item standalone-approved-menu__signout" onClick={handleSignOut}>Sign Out</button>
+diff --git a/src/lib/commanderLogout.js b/src/lib/commanderLogout.js
+new file mode 100644
+index 0000000..f619dc6
+--- /dev/null
++++ b/src/lib/commanderLogout.js
+@@ -0,0 +1,114 @@
++/**
++ * COMMANDER SIGN-OUT — one implementation, used by every surface that offers it.
++ * ═══════════════════════════════════════════════════════════════════════════
++ * 2026-09-04. "Sign Out silently fails."
++ *
++ * Sign Out existed in exactly one of Commander's two headers. CommanderLayout
++ * had it; StandaloneGlobalHeader — the header `pages/_app.js` mounts on the 29
++ * routes in COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT, including the waitlist desk,
++ * the kiosk, the lobby and every report — had no sign-out control at all. An
++ * operator on those routes could not sign out without navigating away first.
++ *
++ * The one that did exist was not safe either. What it got wrong, and what this
++ * function gets right:
++ *
++ *  - supabase.auth.signOut() REPORTS FAILURE BY RETURN VALUE. GoTrue resolves
++ *    with { error } rather than throwing for anything that is not 401/403/404
++ *    (offline, 5xx, the 429 saturation this repo hit on 2026-09-01), and on that
++ *    path it returns before _removeSession(). A try/catch around it is decorative.
++ *    So we never depend on it: the local clear below runs on every path and is
++ *    what actually ends the session.
++ *
++ *  - THE SERVER-SIDE PIN GRANT NEEDS A SERVER CALL. `commander_admin_session` is
++ *    HttpOnly with a 30-minute TTL. /api/admin/pin-logout was written to clear it
++ *    and had no caller in the repo, so on a shared floor terminal the next person
++ *    walked into /commander/admin/* with no PIN.
++ *
++ *  - THE PATH PREFIX MATTERS. /api/commander/* resolves on both origins
++ *    (next.config.js rewrites it to /api/* here; the World Hub's vercel.json
++ *    forwards the same prefix). A bare /api/* 404s whenever Commander is reached
++ *    through smarter.poker.
++ *
++ * Keep in step with CommanderLayout.handleLogout, which cannot import this file
++ * (it lives in vendor/commander-shared and must not depend on app code).
++ * tests/integrity/sign-out-contract.test.mjs fails if the two drift.
++ */
++
++/** localStorage keys that must not survive a sign-out. */
++export const LOGOUT_LOCAL_KEYS = [
++  // The platform session itself.
++  'smarter-poker-auth',
++  'sp-cached-header-user',
++  // Commander's own session state.
++  'commander_staff',
++  'commander_venue',
++  'commander_subscription',
++  'commander_remember',
++  'commander_security_gate',
++  'commander_login_origin',
++  'commander_branding',
++  'commander_active_venue_id',
++  'commander_expired_recovery_ts',
++  'club_page_popup_dismissed',
++];
++
++/** sessionStorage keys that must not survive a sign-out. */
++export const LOGOUT_SESSION_KEYS = [
++  // Read by the Switch Account drawer before any auth check, so the next user
++  // saw the previous user's club list.
++  'commander_accounts_v2_cache',
++  'commander_nav_history',
++];
++
++/** Marker read once by pages/commander/login.js, which then deletes it. */
++export const EXPLICIT_LOGOUT_KEY = 'commander_explicit_logout';
++
++/** Clear every trace of the session from this device. Never throws. */
++export function clearCommanderSessionStorage() {
++  try {
++    LOGOUT_LOCAL_KEYS.forEach((k) => localStorage.removeItem(k));
++    Object.keys(localStorage || {})
++      .filter((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
++      .forEach((k) => localStorage.removeItem(k));
++  } catch (e) { console.warn('[commanderLogout] localStorage:', e?.message || e); }
++
++  try {
++    Object.keys(sessionStorage || {}).forEach((k) => {
++      if (k.startsWith('pin_unlock_')) sessionStorage.removeItem(k);
++    });
++    LOGOUT_SESSION_KEYS.forEach((k) => sessionStorage.removeItem(k));
++    // Tells login.js to stand down for exactly one load. Without it, the silent
++    // sign-in there re-mints the staff session from a surviving Supabase session
++    // and bounces straight back to the dashboard — the "nothing happened" bug.
++    sessionStorage.setItem(EXPLICIT_LOGOUT_KEY, '1');
++  } catch (e) { console.warn('[commanderLogout] sessionStorage:', e?.message || e); }
++}
++
++/** Kill the HttpOnly PIN cookie. Best effort — the local clear still runs. */
++export async function clearAdminPinSession() {
++  try {
++    await fetch('/api/commander/admin/pin-logout', {
++      method: 'POST',
++      credentials: 'include',
++      keepalive: true,
++    });
++  } catch { /* offline or blocked — nothing else depends on this resolving */ }
++}
++
++/**
++ * Sign out and go to the login page.
++ * @param {object} supabase - the Supabase client to sign out of.
++ */
++export async function commanderSignOut(supabase) {
++  await clearAdminPinSession();
++
++  try {
++    const { error } = (await supabase?.auth?.signOut()) || {};
++    if (error) console.warn('[commanderLogout] signOut reported:', error?.message || error);
++  } catch (e) {
++    console.warn('[commanderLogout] signOut threw:', e?.message || e);
++  }
++
++  clearCommanderSessionStorage();
++  window.location.href = '/commander/login';
++}
+diff --git a/tests/integrity/sign-out-contract.test.mjs b/tests/integrity/sign-out-contract.test.mjs
+new file mode 100644
+index 0000000..39f4f06
+--- /dev/null
++++ b/tests/integrity/sign-out-contract.test.mjs
+@@ -0,0 +1,135 @@
++/**
++ * SIGN-OUT CONTRACT — both headers, one behaviour.
++ * ═══════════════════════════════════════════════════════════════════════════
++ * 2026-09-04. Commander ships TWO hamburger drawers and they disagreed.
++ *
++ *   - CommanderLayout (vendor/commander-shared) — 25 nav items and a Sign Out.
++ *   - StandaloneGlobalHeader (src/) — mounted by pages/_app.js on the 29 routes
++ *     in COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT, including the waitlist desk,
++ *     the kiosk, the lobby and every report. It had NO sign-out control at all.
++ *
++ * The one that existed was not safe either:
++ *   - `try { await supabase.auth.signOut(); } catch {}` cannot see failure.
++ *     GoTrue resolves with { error } rather than throwing for anything that is
++ *     not 401/403/404, and on that path returns before _removeSession(), so the
++ *     session in localStorage survives.
++ *   - It never removed `smarter-poker-auth` itself, only the commander_* keys.
++ *   - login.js then silently signed the user back in from the surviving session
++ *     and bounced to the dashboard: a flash, then no logout.
++ *   - The HttpOnly `commander_admin_session` PIN cookie outlived the logout by
++ *     up to 30 minutes. /api/admin/pin-logout existed with zero callers.
++ *
++ * CommanderLayout lives in vendor/ and must not import app code, so it carries
++ * its own copy of the clear. This test is what stops the two drifting.
++ */
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++
++const ROOT = process.cwd();
++const read = (p) => readFileSync(join(ROOT, p), 'utf8');
++
++const LAYOUT = read('vendor/commander-shared/src/components/commander/shared/CommanderLayout.jsx');
++const STANDALONE = read('src/components/commander/shared/StandaloneGlobalHeader.jsx');
++const HELPER = read('src/lib/commanderLogout.js');
++const LOGIN = read('pages/commander/login.js');
++
++/** Keys no sign-out may leave behind, whichever header the user is looking at. */
++const REQUIRED_CLEARED = [
++  'smarter-poker-auth',        // the platform session itself
++  'commander_staff',
++  'commander_venue',
++  'commander_subscription',
++  'commander_active_venue_id', // else the next operator inherits the venue
++];
++
++test('both drawers offer a Sign Out', () => {
++  assert.match(LAYOUT, /Sign Out/,
++    'CommanderLayout must keep its Sign Out row');
++  assert.match(STANDALONE, /Sign Out/,
++    'StandaloneGlobalHeader must offer Sign Out. It is the only header on the ' +
++      '29 routes in COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT; without it an ' +
++      'operator on the waitlist desk or kiosk cannot sign out at all.');
++});
++
++test('every sign-out path clears the same keys', () => {
++  for (const key of REQUIRED_CLEARED) {
++    assert.ok(LAYOUT.includes(`'${key}'`),
++      `CommanderLayout.handleLogout must clear ${key}`);
++    assert.ok(HELPER.includes(`'${key}'`),
++      `commanderLogout must clear ${key}`);
++  }
++});
++
++test('the sb-*-auth-token keys go too', () => {
++  for (const [name, src] of [['CommanderLayout', LAYOUT], ['commanderLogout', HELPER]]) {
++    assert.match(src, /startsWith\('sb-'\)/,
++      `${name} must sweep the sb-*-auth-token keys GoTrue may have left behind`);
++  }
++});
++
++/** Block comments quote the old broken code on purpose; never match on those. */
++const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '');
++
++test('signOut failure is read, not assumed away', () => {
++  for (const [name, src] of [['CommanderLayout', LAYOUT], ['commanderLogout', HELPER]]) {
++    const code = stripComments(src);
++    assert.match(code, /auth\??\.signOut\(\)/, `${name} must call signOut`);
++    assert.match(
++      code,
++      /const\s*\{\s*error\s*\}\s*=\s*\(await\s+\w+\??\.auth\??\.signOut\(\)\)/,
++      `${name} must read signOut's { error } return value. A bare try/catch ` +
++        'never fires: GoTrue resolves rather than throws for offline/5xx/429, ' +
++        'and on that path returns before _removeSession() — the session survives.'
++    );
++    assert.doesNotMatch(
++      code,
++      /try\s*\{\s*await\s+supabase\.auth\.signOut\(\);\s*\}\s*catch/,
++      `${name} must not restore the fire-and-forget signOut`
++    );
++  }
++});
++
++test('the server-side PIN grant is revoked on sign-out', () => {
++  for (const [name, src] of [['CommanderLayout', LAYOUT], ['commanderLogout', HELPER]]) {
++    assert.match(src, /\/api\/commander\/admin\/pin-logout/,
++      `${name} must POST /api/commander/admin/pin-logout. commander_admin_session ` +
++        'is HttpOnly with a 30-minute TTL, so only the server can clear it — and ' +
++        'on a shared floor terminal it let the next person into /commander/admin/*.');
++  }
++  assert.doesNotMatch(LAYOUT, /fetch\('\/api\/admin\/pin-logout'/,
++    'use the /api/commander/* prefix: it resolves on both origins, a bare ' +
++      '/api/* 404s when Commander is served through smarter.poker');
++});
++
++test('an explicit sign-out defeats the login page silent sign-in', () => {
++  assert.match(LAYOUT, /commander_explicit_logout/,
++    'handleLogout must set the marker');
++  assert.match(HELPER, /commander_explicit_logout/,
++    'the shared helper must set the marker');
++  assert.match(LOGIN, /commander_explicit_logout/,
++    'login.js must honour the marker before its silent sign-in, or a surviving ' +
++      'Supabase session re-mints the staff session and bounces to the dashboard');
++  const i = LOGIN.indexOf('commander_explicit_logout');
++  const j = LOGIN.indexOf('-- Silent sign-in whenever a Supabase session exists --');
++  assert.ok(i !== -1 && j !== -1 && i < j,
++    'the marker check must run BEFORE the silent sign-in block');
++  assert.match(LOGIN, /removeItem\('commander_explicit_logout'\)/,
++    'the marker must be consumed once, never left to wedge a user out');
++});
++
++test('neither sign-out can fire twice', () => {
++  assert.match(LAYOUT, /signingOutRef/, 'CommanderLayout must latch');
++  assert.match(STANDALONE, /signingOutRef/, 'StandaloneGlobalHeader must latch');
++});
++
++test('cross-origin API calls use the /api/commander prefix', () => {
++  // next.config.js rewrites /api/commander/:path* -> /api/:path* on this origin,
++  // and the World Hub's vercel.json forwards the same prefix. A bare /api/* path
++  // 404s whenever Commander is reached through smarter.poker — which is how
++  // `Switch Account` silently vanished for multi-club owners on the main domain.
++  assert.doesNotMatch(LAYOUT, /commanderFetch\('\/api\/my-commander-accounts'\)/,
++    'use /api/commander/my-commander-accounts');
++  assert.match(LAYOUT, /commanderFetch\('\/api\/commander\/my-commander-accounts'\)/);
++});
+diff --git a/vendor/commander-shared/src/components/commander/shared/CommanderLayout.jsx b/vendor/commander-shared/src/components/commander/shared/CommanderLayout.jsx
+index 52af62a..c7490f3 100644
+--- a/vendor/commander-shared/src/components/commander/shared/CommanderLayout.jsx
++++ b/vendor/commander-shared/src/components/commander/shared/CommanderLayout.jsx
+@@ -12 +12 @@
+-import { useState, useEffect } from 'react';
++import { useState, useEffect, useRef } from 'react';
+@@ -140 +140,5 @@ export default function CommanderLayout({ children, title }) {
+-        const res = await commanderFetch('/api/my-commander-accounts');
++        // /api/commander/* resolves on BOTH origins (next.config.js rewrite here,
++        // vercel.json forward on the hub). The bare /api/* path 404'd whenever
++        // Commander was reached through smarter.poker, so `Switch Account` never
++        // appeared for multi-club owners on the primary domain.
++        const res = await commanderFetch('/api/commander/my-commander-accounts');
+@@ -464,0 +469,34 @@ export default function CommanderLayout({ children, title }) {
++  /**
++   * SIGN OUT — the redirect always fired; the sign-out did not.
++   *
++   * 2026-09-04, "Sign Out silently fails". The old body looked bulletproof and
++   * was not, for four reasons:
++   *
++   * 1. `try { await supabase.auth.signOut(); } catch {}` CANNOT SEE FAILURE.
++   *    GoTrue resolves with { error } instead of throwing for everything that
++   *    is not 401/403/404 — offline, 5xx, and the GoTrue 429 saturation this
++   *    repo hit on 2026-09-01. On that path it returns BEFORE _removeSession(),
++   *    so the session in localStorage survives. The catch never ran and the
++   *    return value was never read.
++   * 2. IT NEVER REMOVED THE SUPABASE SESSION ITSELF. Seven `commander_*` keys
++   *    were cleared; `smarter-poker-auth` and the `sb-*-auth-token` keys were
++   *    not. So after (1), the platform session was still on the device.
++   * 3. THE LOGIN PAGE THEN SIGNED THE USER STRAIGHT BACK IN. login.js does a
++   *    deliberate silent sign-in whenever a Supabase session exists. With the
++   *    session surviving and `commander_staff` freshly deleted, it re-minted
++   *    the staff session and bounced to the dashboard. The user saw a flash of
++   *    the login page and landed back where they started — the clearest
++   *    possible "nothing happened". `commander_explicit_logout` below tells
++   *    that page to stand down exactly once.
++   * 4. THE SERVER-SIDE PIN COOKIE OUTLIVED THE LOGOUT. `commander_admin_session`
++   *    is HttpOnly with a 30-minute TTL, so only the server can clear it, and
++   *    /api/admin/pin-logout — written for this — had no caller anywhere in the
++   *    repo. On a shared floor terminal the next person walked into
++   *    /commander/admin/* with no PIN. That is a security defect, not a
++   *    cosmetic one.
++   *
++   * The API path is /api/commander/* on purpose: next.config.js rewrites it to
++   * /api/* on this origin, and the World Hub forwards the same prefix from
++   * smarter.poker. A bare /api/* 404s when Commander is served through the hub.
++   */
++  const signingOutRef = useRef(false);
+@@ -466,11 +504,46 @@ export default function CommanderLayout({ children, title }) {
+-    // HARDENED: Sign out of Supabase first to kill the auth session cookie
+-    try { await supabase.auth.signOut(); } catch { /* non-critical */ }
+-    // Clear ALL commander-related localStorage keys
+-    localStorage.removeItem('commander_staff');
+-    localStorage.removeItem('commander_venue');
+-    localStorage.removeItem('commander_subscription');
+-    localStorage.removeItem('commander_remember');
+-    localStorage.removeItem('commander_security_gate');
+-    localStorage.removeItem('commander_login_origin');
+-    localStorage.removeItem('commander_branding');
+-    // Clear all PIN unlock grants from this session
++    if (signingOutRef.current) return; // second tap while the first is in flight
++    signingOutRef.current = true;
++
++    // Kill the server-side PIN grant first — it is the only piece the client
++    // cannot clear on its own, and it must die even if everything below throws.
++    try {
++      await fetch('/api/commander/admin/pin-logout', {
++        method: 'POST',
++        credentials: 'include',
++        keepalive: true,
++      });
++    } catch { /* best effort — the local clear below still runs */ }
++
++    try {
++      const { error } = (await supabase.auth.signOut()) || {};
++      if (error) console.warn('[CommanderLayout] signOut reported:', error?.message || error);
++    } catch (e) {
++      console.warn('[CommanderLayout] signOut threw:', e?.message || e);
++    }
++
++    // Local clear runs unconditionally. This — not signOut — is what makes the
++    // sign-out real.
++    try {
++      // The platform session itself, plus whatever GoTrue left behind.
++      localStorage.removeItem('smarter-poker-auth');
++      localStorage.removeItem('sp-cached-header-user');
++      Object.keys(localStorage || {})
++        .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
++        .forEach(k => localStorage.removeItem(k));
++    } catch (e) { console.warn('[App] Handled exception:', e); }
++
++    [
++      'commander_staff',
++      'commander_venue',
++      'commander_subscription',
++      'commander_remember',
++      'commander_security_gate',
++      'commander_login_origin',
++      'commander_branding',
++      // Left behind before: the next operator on this terminal inherited the
++      // previous one's venue and recovery state.
++      'commander_active_venue_id',
++      'commander_expired_recovery_ts',
++      'club_page_popup_dismissed',
++    ].forEach(k => { try { localStorage.removeItem(k); } catch { /* private mode */ } });
++
+@@ -480,0 +554,7 @@ export default function CommanderLayout({ children, title }) {
++      // The Switch Account drawer read this cache before any auth check, so the
++      // next user saw the previous user's club list.
++      sessionStorage.removeItem('commander_accounts_v2_cache');
++      sessionStorage.removeItem('commander_nav_history');
++      // Read once by login.js, which then deletes it. Without this the silent
++      // sign-in undoes the logout — see (3) above.
++      sessionStorage.setItem('commander_explicit_logout', '1');
+@@ -482 +562 @@ export default function CommanderLayout({ children, title }) {
+-    // Bulletproof redirect
++
