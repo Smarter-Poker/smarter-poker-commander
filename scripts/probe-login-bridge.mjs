@@ -47,6 +47,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbk
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable__41LpJpzrfrb3hSUpEaYCA_tF53bBJx';
 const TIMEOUT_MS = Number(process.env.PROBE_TIMEOUT_MS || 20000);
 
+let discoveredDsn = null;
 const results = [];
 function record(leg, name, ok, detail = '', { warnOnly = false } = {}) {
   // warnOnly: reported in the table, never counted as a failure. Reserved for
@@ -134,6 +135,10 @@ async function structuralLeg() {
         all += (await http(absolutize(s, CMD))).text;
       }
       record(leg, 'login bundle talks to check-subscription (staff session issuer)', all.includes('check-subscription'));
+      // The public DSN is in the bundle by design; remember it for the ingest check.
+      const dsnMatch = all.match(/https:\/\/([a-f0-9]+)@(o\d+\.ingest\.[a-z.]*sentry\.io)\/(\d+)/);
+      if (dsnMatch) discoveredDsn = { key: dsnMatch[1], host: dsnMatch[2], project: dsnMatch[3] };
+      record(leg, 'client bundle carries a Sentry DSN', !!dsnMatch, dsnMatch ? `project ${dsnMatch[3]}` : 'Sentry not initialised in the browser', { warnOnly: true });
     }
   }
 
@@ -172,6 +177,29 @@ async function structuralLeg() {
     record(leg, 'dedicated staff-session secret configured', health.json.auth.dedicated_staff_session_secret === true, 'set COMMANDER_STAFF_SESSION_SECRET (see docs/runbooks/staff-session-secret-rotation.md, step "first-time setup")', { warnOnly: true });
   } else {
     record(leg, 'health exposes auth/observability booleans', false, 'deploy predates this probe - redeploy');
+  }
+
+  // 6. Sentry actually ACCEPTS events. Found 2026-09-04: the org's error quota
+  // had been exhausted since 08-24 - every envelope answered 429 - so every
+  // alert rule on the estate was blind for eleven days while the dashboards
+  // said "0 issues". One tiny event per probe run (48/day) is the cost of
+  // knowing. WARN, not FAIL: a quota is a billing decision, not an outage in
+  // the handshake itself.
+  if (discoveredDsn) {
+    const eventId = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const now = new Date().toISOString();
+    const envelope = [
+      JSON.stringify({ event_id: eventId, sent_at: now, dsn: `https://${discoveredDsn.key}@${discoveredDsn.host}/${discoveredDsn.project}` }),
+      JSON.stringify({ type: 'event' }),
+      JSON.stringify({ event_id: eventId, timestamp: now, platform: 'javascript', level: 'info', logger: 'login-bridge-probe',
+        message: 'commander.sentry_ingest_check', tags: { app: 'commander', source: 'login-bridge-probe' } }),
+    ].join('\n');
+    const ing = await http(`https://${discoveredDsn.host}/api/${discoveredDsn.project}/envelope/?sentry_key=${discoveredDsn.key}&sentry_version=7`, {
+      method: 'POST', headers: { 'content-type': 'application/x-sentry-envelope' }, body: envelope,
+    });
+    record(leg, 'Sentry accepts events (alert rules can fire)', ing.status === 200,
+      ing.status === 429 ? 'HTTP 429 - error quota exhausted, EVERY Sentry alert is blind until it renews or is raised' : `HTTP ${ing.status}`,
+      { warnOnly: true });
   }
 }
 

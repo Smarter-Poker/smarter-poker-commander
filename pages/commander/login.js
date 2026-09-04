@@ -32,7 +32,7 @@ import { supabase } from '../../src/lib/supabase';
 import {
   completeCommanderLogin,
   isStaffSessionHealthy,
-  readAccessToken,
+  readStaffSession,
 } from '../../src/lib/commander/staffSession';
 import { reportLoginFailure } from '../../src/lib/authFlowMonitor';
 
@@ -110,11 +110,10 @@ export default function CommanderLogin() {
   // commander.smarter.poker/auth/sso?token=... which completes the login
   // there. Returns false when there is no local session to bridge.
   const bridgeToCommanderOrigin = useCallback(async () => {
-    let accessToken = readAccessToken();
-    if (!accessToken) {
-      const { data: { session } } = await supabase.auth.getSession();
-      accessToken = session?.access_token || null;
-    }
+    // getSession() refreshes an expired access token before handing it over;
+    // the raw localStorage copy may be an hour stale.
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token || null;
     if (!accessToken) return false;
 
     const ssoRes = await fetch(`${HUB_ORIGIN}/api/auth/commander-sso`, {
@@ -212,7 +211,10 @@ export default function CommanderLogin() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           stopTimers();
-          if (isStaffSessionHealthy()) {
+          // A healthy staff session is only reusable when it belongs to THIS
+          // Supabase user - a different account signed in on the same device
+          // must get its own session, not the previous owner's venue.
+          if (isStaffSessionHealthy() && readStaffSession()?.user_id === session.user.id) {
             window.location.href = '/commander/dashboard';
             return;
           }
@@ -226,7 +228,7 @@ export default function CommanderLogin() {
         const { data: { session: refreshed } } = await supabase.auth.refreshSession();
         if (refreshed?.user) {
           stopTimers();
-          if (isStaffSessionHealthy()) {
+          if (isStaffSessionHealthy() && readStaffSession()?.user_id === refreshed.user.id) {
             window.location.href = '/commander/dashboard';
             return;
           }
@@ -265,10 +267,12 @@ export default function CommanderLogin() {
 
       if (authError) throw authError;
 
+      const ok = await completeLogin(data.user, data.session.access_token);
+      // completeLogin stores commander_remember=true; honour an unticked box
+      // AFTER it has written (the navigation it started is still pending).
       if (!rememberMe) {
         try { localStorage.removeItem('commander_remember'); } catch { /* ignore */ }
       }
-      const ok = await completeLogin(data.user, data.session.access_token);
       if (ok) return; // navigating
     } catch (err) {
       console.warn('Login error:', err);

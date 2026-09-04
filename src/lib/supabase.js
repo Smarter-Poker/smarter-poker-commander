@@ -20,6 +20,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { resolveAnonKey, anonKeyWarning } from './supabaseKeys.js';
+import { setAccessTokenProvider } from './commander/staffSession';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbkmacvwxktbh.supabase.co';
 const _anonResolved = resolveAnonKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -53,6 +54,16 @@ const supabase = (_g && _g.__commanderSharedSupabase) || createClient(supabaseUr
 // Publish for vendor/commander-shared/src/lib/supabase.js, which reads the
 // same slot. Keep this key and the client options in sync with that file.
 if (_g && !_g.__commanderSharedSupabase) _g.__commanderSharedSupabase = supabase;
+
+// 2026-09-04: give the staff-session self-heal a token that is refreshed on
+// demand. Without this it re-minted with whatever expired access_token was
+// last cached in localStorage and got 401 "Invalid token" after an hour idle.
+if (typeof window !== 'undefined') {
+  setAccessTokenProvider(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || '';
+  });
+}
 
 export { supabase };
 export default supabase;

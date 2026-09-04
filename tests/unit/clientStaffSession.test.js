@@ -147,6 +147,27 @@ describe('refreshStaffSession', () => {
   });
 });
 
+describe('access-token provider (expired-token self-heal)', () => {
+  it('prefers a registered provider over the cached localStorage token', async () => {
+    withHubSession(); // cached token = 'tok'
+    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner' }));
+    mod.setAccessTokenProvider(async () => 'fresh-tok');
+    expect(await mod.currentAccessToken()).toBe('fresh-tok');
+    expect(await mod.refreshStaffSession({ force: true })).toBe(true);
+    expect(fetchCalls[0].auth).toBe('Bearer fresh-tok');
+  });
+
+  it('falls back to the cached token when the provider throws or returns nothing', async () => {
+    withHubSession();
+    mod.setAccessTokenProvider(async () => { throw new Error('sdk not ready'); });
+    expect(await mod.currentAccessToken()).toBe('tok');
+    mod.setAccessTokenProvider(async () => '');
+    expect(await mod.currentAccessToken()).toBe('tok');
+    mod.setAccessTokenProvider(null);
+    expect(await mod.currentAccessToken()).toBe('tok');
+  });
+});
+
 describe('completeCommanderLogin', () => {
   it('stores the server session and navigates to the dashboard', async () => {
     const r = await mod.completeCommanderLogin({ id: 'u1', email: 'a@b.c' }, 'tok');

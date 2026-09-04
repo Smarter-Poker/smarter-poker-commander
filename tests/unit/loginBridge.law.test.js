@@ -85,6 +85,7 @@ describe('login completion is defined and shared (pins 1 + 2)', () => {
     for (const name of [
       'readStaffSession', 'isStaffSessionHealthy', 'readAccessToken', 'mintStaffSession',
       'storeCommanderSession', 'completeCommanderLogin', 'refreshStaffSession', 'consumeReturnUrl',
+      'setAccessTokenProvider', 'currentAccessToken',
     ]) {
       expect(src, `staffSession must export ${name}`).toMatch(new RegExp(`export\\s+(async\\s+)?function\\s+${name}\\b`));
     }
@@ -289,6 +290,32 @@ describe('production is watched (pin 11)', () => {
     for (const s of ['bridge', 'ReferenceError', '/auth/sso?token=', 'expired=1', 'commander_staff', 'tampered']) {
       expect(spec).toContain(s);
     }
+  });
+});
+
+describe('the self-heal uses a fresh token and the right user (pin 13)', () => {
+  it('refreshStaffSession asks the provider, and the app registers one where the client is created', () => {
+    const session = code(read(SESSION));
+    const body = session.slice(session.indexOf('export function refreshStaffSession'));
+    expect(body).toMatch(/await currentAccessToken\(\)/);
+    expect(body, 'must not re-mint with the possibly-expired cached token').not.toMatch(/const token = readAccessToken\(\)/);
+    const client = code(read('src/lib/supabase.js'));
+    expect(client).toMatch(/setAccessTokenProvider\(/);
+    expect(client).toMatch(/supabase\.auth\.getSession\(\)/);
+  });
+
+  it('silent sign-in reuses a stored staff session only for the SAME Supabase user', () => {
+    const src = code(read(LOGIN));
+    const hits = src.match(/isStaffSessionHealthy\(\)\s*&&\s*readStaffSession\(\)\?\.user_id\s*===\s*(session|refreshed)\.user\.id/g) || [];
+    expect(hits.length, 'both silent paths (live session + refreshed session) must check user_id').toBe(2);
+    expect(src).not.toMatch(/if \(isStaffSessionHealthy\(\)\) \{/);
+  });
+
+  it('the hub bridge always sends a token the SDK just refreshed', () => {
+    const src = code(read(LOGIN));
+    const fn = src.slice(src.indexOf('const bridgeToCommanderOrigin'), src.indexOf('// Auto-restore session'));
+    expect(fn).toMatch(/supabase\.auth\.getSession\(\)/);
+    expect(fn).not.toMatch(/readAccessToken\(\)/);
   });
 });
 
