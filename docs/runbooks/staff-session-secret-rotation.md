@@ -41,5 +41,7 @@ invalidation. Rotate to a fresh value later, using the procedure above.
 
 - Do not "fix" a rotation by disabling signature verification, even briefly.
   Unsigned sessions are forgeable owner sessions (2026-07-25 audit P0).
-- Do not extend the 7-day owner TTL to avoid re-mints. Re-minting is silent
-  now; the TTL bounds the damage of a leaked token.
+- Do not extend the 24h owner TTL (48h renew window) to avoid re-mints.
+  Re-minting is silent now - `/api/staff-session/renew` re-signs an authentic
+  session without a DB lookup, and check-subscription covers the rest - so
+  the TTL only bounds the damage of a leaked token.

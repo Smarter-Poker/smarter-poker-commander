@@ -16,11 +16,15 @@ process.env.SUPABASE_JWT_SECRET = 'test-signing-secret-for-unit-tests';
 
 let signStaffSession;
 let verifyStaffSession;
+let renewOwnerSession;
+let STAFF_SESSION_TTLS;
 
 beforeAll(async () => {
   const mod = await import('../../src/lib/commander/auth');
   signStaffSession = mod.signStaffSession;
   verifyStaffSession = mod.verifyStaffSession;
+  renewOwnerSession = mod.renewOwnerSession;
+  STAFF_SESSION_TTLS = mod.STAFF_SESSION_TTLS;
 });
 
 const asHeader = (session) => ({ headers: { 'x-staff-session': JSON.stringify(session) } });
@@ -96,5 +100,41 @@ describe('verifyStaffSession rejects anything it did not sign', () => {
     const stale = signStaffSession({ user_id: 'owner-1', venue_id: 42, role: 'owner', session_ts: eightDaysAgo });
     const r = await verifyStaffSession(asHeader(stale));
     expect(r.error?.code).toBe('SESSION_EXPIRED');
+  });
+});
+
+describe('owner TTL is 24h and renewal is cheap but strict (2026-09-04)', () => {
+  it('exposes the constants the client mirrors', () => {
+    expect(STAFF_SESSION_TTLS.OWNER_SESSION_TTL_MS).toBe(24 * 60 * 60 * 1000);
+    expect(STAFF_SESSION_TTLS.OWNER_SESSION_RENEW_WINDOW_MS).toBe(48 * 60 * 60 * 1000);
+  });
+
+  it('rejects an owner session older than 24h', async () => {
+    const twentyFiveHoursAgo = Date.now() - 25 * 60 * 60 * 1000;
+    const stale = signStaffSession({ user_id: 'owner-1', venue_id: 42, role: 'owner', session_ts: twentyFiveHoursAgo });
+    const r = await verifyStaffSession(asHeader(stale));
+    expect(r.error?.code).toBe('SESSION_EXPIRED');
+  });
+
+  it('renews an EXPIRED but authentic owner session for the same user, without a DB', () => {
+    const twentyFiveHoursAgo = Date.now() - 25 * 60 * 60 * 1000;
+    const stale = signStaffSession({ user_id: 'owner-1', venue_id: 42, role: 'owner', session_ts: twentyFiveHoursAgo });
+    const renewed = renewOwnerSession(stale, 'owner-1');
+    expect(renewed.error).toBeUndefined();
+    expect(renewed.user_id).toBe('owner-1');
+    expect(renewed.venue_id).toBe(42);
+    expect(renewed.session_ts).toBeGreaterThan(twentyFiveHoursAgo);
+    expect(renewed.sig).not.toBe(stale.sig);
+  });
+
+  it('refuses to renew a tampered session, a different user, a PIN session, or one past the 48h window', () => {
+    const fresh = signStaffSession({ user_id: 'owner-1', venue_id: 42, role: 'owner' });
+    expect(renewOwnerSession({ ...fresh, venue_id: 99 }, 'owner-1').error?.code).toBe('SESSION_EXPIRED');
+    expect(renewOwnerSession(fresh, 'someone-else').error?.code).toBe('FORBIDDEN');
+    const pin = signStaffSession({ id: 'staff-1', venue_id: 42, role: 'floor' });
+    expect(renewOwnerSession(pin, 'owner-1').error?.code).toBe('NOT_RENEWABLE');
+    const old = signStaffSession({ user_id: 'owner-1', venue_id: 42, role: 'owner', session_ts: Date.now() - 49 * 60 * 60 * 1000 });
+    expect(renewOwnerSession(old, 'owner-1').error?.code).toBe('RENEW_WINDOW_PASSED');
+    expect(renewOwnerSession(null, 'owner-1').error?.code).toBe('INVALID_SESSION');
   });
 });

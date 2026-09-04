@@ -85,7 +85,7 @@ describe('login completion is defined and shared (pins 1 + 2)', () => {
     for (const name of [
       'readStaffSession', 'isStaffSessionHealthy', 'readAccessToken', 'mintStaffSession',
       'storeCommanderSession', 'completeCommanderLogin', 'refreshStaffSession', 'consumeReturnUrl',
-      'setAccessTokenProvider', 'currentAccessToken',
+      'setAccessTokenProvider', 'currentAccessToken', 'renewStaffSession',
     ]) {
       expect(src, `staffSession must export ${name}`).toMatch(new RegExp(`export\\s+(async\\s+)?function\\s+${name}\\b`));
     }
@@ -331,5 +331,31 @@ describe('repo hygiene that bit this branch (pin 12)', () => {
       tracked = require('child_process').execSync('git ls-files -s node_modules', { cwd: ROOT, encoding: 'utf8' }).trim();
     } catch { /* not a git checkout (tarball) - nothing to check */ }
     expect(tracked, 'node_modules must not be in the index').toBe('');
+  });
+});
+
+describe('owner sessions are short-lived and renewed cheaply (pin 14)', () => {
+  it('server TTL is 24h with a 48h renew window, mirrored in the client', () => {
+    const auth = code(read('src/lib/commander/auth.js'));
+    expect(auth).toMatch(/const OWNER_SESSION_TTL_MS = 24 \* 60 \* 60 \* 1000;/);
+    expect(auth).toMatch(/const OWNER_SESSION_RENEW_WINDOW_MS = 48 \* 60 \* 60 \* 1000;/);
+    expect(auth).toMatch(/export function renewOwnerSession\(/);
+    const client = code(read(SESSION));
+    expect(client).toMatch(/const OWNER_SESSION_TTL_MS = 24 \* 60 \* 60 \* 1000;/);
+    expect(client).toMatch(/const OWNER_SESSION_RENEW_WINDOW_MS = 48 \* 60 \* 60 \* 1000;/);
+  });
+
+  it('the renew endpoint verifies the JWT locally and delegates to renewOwnerSession', () => {
+    const ep = code(read('pages/api/staff-session/renew.js'));
+    expect(ep).toMatch(/verifySupabaseJwt\(/);
+    expect(ep).toMatch(/renewOwnerSession\(session, payload\.sub\)/);
+    expect(ep, 'renew must never touch the database').not.toMatch(/createClient|\.from\(/);
+  });
+
+  it('the client tries renew before check-subscription', () => {
+    const body = code(read(SESSION));
+    const fn = body.slice(body.indexOf('export function refreshStaffSession'));
+    expect(fn.indexOf('renewStaffSession(')).toBeGreaterThan(-1);
+    expect(fn.indexOf('renewStaffSession(')).toBeLessThan(fn.indexOf('mintStaffSession('));
   });
 });

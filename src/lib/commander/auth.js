@@ -95,7 +95,21 @@ export async function verifyPin(venueId, pinCode) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;      // PIN terminals: 12h
-const OWNER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // Owner logins: 7d
+// Owner logins: 24h (was 7d until 2026-09-04). Re-minting is silent now
+// (commanderFetch self-heal + /api/staff-session/renew), so a long TTL buys
+// nothing for the user and a leaked token is worth a day instead of a week.
+const OWNER_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+// A session past its TTL may still be RENEWED (re-signed with a fresh
+// session_ts) for this long after issuance, provided the caller presents a
+// valid Supabase JWT for the same user. Beyond it the subscription must be
+// re-checked in the database (check-subscription). Bounds how long a
+// cancelled subscription can keep renewing: <= 48h.
+const OWNER_SESSION_RENEW_WINDOW_MS = 48 * 60 * 60 * 1000;
+export const STAFF_SESSION_TTLS = Object.freeze({
+  PIN_SESSION_TTL_MS,
+  OWNER_SESSION_TTL_MS,
+  OWNER_SESSION_RENEW_WINDOW_MS,
+});
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -112,7 +126,7 @@ const OWNER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // Owner logins: 7d
  *
  * TTLs
  *   - 12h  (PIN_SESSION_TTL_MS)   venue PIN terminals on the floor
- *   - 7d   (OWNER_SESSION_TTL_MS) owner logins
+ *   - 24h  (OWNER_SESSION_TTL_MS) owner logins (renewable to 48h, see renewOwnerSession)
  *   The TTL is enforced against `session_ts`, which is INSIDE the signed
  *   payload, so it cannot be extended by the client.
  *
@@ -144,7 +158,7 @@ const OWNER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // Owner logins: 7d
  *   2. Deploy. Confirm staff and owner logins still work and that no
  *      `[commander-auth] falling back to SUPABASE_SERVICE_ROLE_KEY` line
  *      appears in the logs.
- *   3. Soak past the longest TTL - 7 days (owner sessions) - so that every
+ *   3. Soak past the longest renew window - 48h (owner sessions) - so that every
  *      session still in circulation was issued under the new variable.
  *   4. ONLY THEN remove the SUPABASE_JWT_SECRET and SUPABASE_SERVICE_ROLE_KEY
  *      fallbacks from the chain below, and only then delete
@@ -174,7 +188,7 @@ function sessionSecret() {
       console.warn(
         '[commander-auth] falling back to SUPABASE_SERVICE_ROLE_KEY for staff session signing — ' +
         'set COMMANDER_STAFF_SESSION_SECRET. If SUPABASE_JWT_SECRET was just removed, every ' +
-        'staff session (12h PIN terminals, 7d owner logins) has been invalidated.'
+        'staff session (12h PIN terminals, 24h owner logins) has been invalidated.'
       );
     }
     return serviceRoleKey;
@@ -199,6 +213,45 @@ export function signStaffSession(payload) {
     .update(canonicalSessionString(body))
     .digest('hex');
   return { ...body, sig };
+}
+
+/**
+ * Re-sign an OWNER session without touching the database.
+ *
+ * The full path (check-subscription) verifies the JWT with GoTrue and reads
+ * commander_subscriptions on every re-mint. With a 24h TTL and a self-heal
+ * that runs from many browser tabs, that is a lot of identical DB work for
+ * sessions that were fine yesterday. This path is the cheap one:
+ *
+ *   - the existing session must carry a VALID signature (so it was issued by
+ *     us, never edited) - an expired-but-authentic session is exactly what
+ *     we want to renew;
+ *   - it must be an owner session (user_id + venue_id + role owner);
+ *   - it must be younger than OWNER_SESSION_RENEW_WINDOW_MS - after that the
+ *     subscription has to be re-checked in the database;
+ *   - `userId` (from a JWT the CALLER verified) must equal session.user_id.
+ *
+ * Returns the re-signed session, or { error: { status, code, message } }.
+ */
+export function renewOwnerSession(sessionData, userId) {
+  if (!sessionData || typeof sessionData !== 'object') {
+    return { error: { status: 400, code: 'INVALID_SESSION', message: 'Invalid Session Format' } };
+  }
+  if (!verifySessionSignature(sessionData)) {
+    return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired - Please Sign In Again' } };
+  }
+  if (sessionData.id || !sessionData.user_id || sessionData.venue_id === undefined || sessionData.venue_id === null || sessionData.role !== 'owner') {
+    return { error: { status: 400, code: 'NOT_RENEWABLE', message: 'Only Owner Sessions Can Be Renewed' } };
+  }
+  if (!userId || String(userId) !== String(sessionData.user_id)) {
+    return { error: { status: 403, code: 'FORBIDDEN', message: 'Session Identity Mismatch' } };
+  }
+  const age = Date.now() - Number(sessionData.session_ts);
+  if (!(age >= 0) || age > OWNER_SESSION_RENEW_WINDOW_MS) {
+    return { error: { status: 401, code: 'RENEW_WINDOW_PASSED', message: 'Session Too Old To Renew - Subscription Must Be Re-Checked' } };
+  }
+  const { sig: _oldSig, session_ts: _oldTs, ...claims } = sessionData;
+  return signStaffSession({ ...claims, session_ts: Date.now() });
 }
 
 function verifySessionSignature(sessionData) {
