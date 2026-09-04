@@ -43,6 +43,35 @@ export default [
       },
     },
     linterOptions: { reportUnusedDisableDirectives: 'off' },
-    rules: { 'no-undef': 'error' },
+    rules: {
+      'no-undef': 'error',
+      // 2026-09-04: the rest of ESLint's "this is a bug, not a style" set,
+      // added the day `next lint` (advisory, no config, prompting
+      // interactively in CI) was deleted. Every rule below reported ZERO hits
+      // across pages/, src/, vendor/ and scripts/ when it was added, so each
+      // is free to keep green. Deliberately NOT here: no-unused-vars (1,642
+      // hits of style noise) and react-hooks/rules-of-hooks (the installed
+      // plugin predates ESLint 9's flat scope API and crashes).
+      'no-dupe-keys': 'error',
+      'no-dupe-args': 'error',
+      'no-duplicate-case': 'error',
+      'no-unreachable': 'error',
+      'no-const-assign': 'error',
+      'no-func-assign': 'error',
+      'no-import-assign': 'error',
+      'no-self-assign': 'error',
+      'no-unsafe-negation': 'error',
+      'use-isnan': 'error',
+      'valid-typeof': 'error',
+      'no-cond-assign': 'error',
+      'no-empty-pattern': 'error',
+      'no-async-promise-executor': 'error',
+      'no-compare-neg-zero': 'error',
+      'no-constant-condition': ['error', { checkLoops: false }],
+      'no-fallthrough': 'error',
+      'no-redeclare': 'error',
+      'no-sparse-arrays': 'error',
+      'no-unsafe-finally': 'error',
+    },
   },
 ];

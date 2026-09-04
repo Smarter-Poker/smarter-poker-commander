@@ -50,23 +50,21 @@ jobs:
           exit $CODE
       - name: Install
         run: npm install --legacy-peer-deps
-      # BLOCKING. `npm run lint` below is advisory and has been red for months,
+      # BLOCKING. `next lint` was advisory and red for months (deleted 2026-09-04),
       # which is how `completeLogin is not defined` sat in pages/commander/login.js
       # while every production login failed with that exact ReferenceError
       # (2026-09-03). This step runs ONE rule - no-undef - over pages/, src/,
       # vendor/ and scripts/. A hit is a ReferenceError waiting for a user.
       - name: Undefined identifiers (blocking)
         run: npm run lint:undef
-      - name: Lint
-        run: npm run lint
-        continue-on-error: true
-      # 2026-07-27 (audit hardening): this step used to carry
-      # `continue-on-error: true` while the repo contained no unit tests at all,
-      # so it could never fail and never reported anything. There is now a real
-      # suite covering the audit's highest-risk fixes — ICM payout math,
-      # rate-limit identity, and staff-session forgery — and this step gates on
-      # it. Lint stays advisory for now; that is pre-existing debt, not a
-      # regression, and blocking on it would stall unrelated work.
+      # `next lint` (advisory) was DELETED 2026-09-04: it had no ESLint config,
+      # prompted interactively, and could not fail. Law 3.1: fix it or delete
+      # it, never leave it advisory. The step above now also carries ESLint's
+      # bug-class rules (see eslint.undef.config.mjs).
+      # 2026-07-27 (audit hardening): the test step used to be advisory while
+      # the repo contained no unit tests at all, so it could never fail. There
+      # is now a real suite (ICM payout math, rate-limit identity, staff-session
+      # forgery, the login-bridge law) and this step gates on it.
       - name: Test
         run: npm test
       - name: Build

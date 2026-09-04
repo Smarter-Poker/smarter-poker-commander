@@ -221,9 +221,21 @@ describe('the lint that would have caught the outage is blocking (pin 9)', () =>
     expect(pkg.scripts['lint:undef']).toMatch(/eslint --config eslint\.undef\.config\.mjs/);
     expect(pkg.scripts.test).toMatch(/^npm run lint:undef && /);
     const ci = read('.github/workflows/ci.yml');
-    const step = ci.slice(ci.indexOf('Undefined identifiers (blocking)'), ci.indexOf('- name: Lint\n'));
+    const step = ci.slice(ci.indexOf('Undefined identifiers (blocking)'), ci.indexOf('- name: Test'));
     expect(step).toMatch(/run: npm run lint:undef/);
     expect(step).not.toMatch(/continue-on-error/);
+    // Law 3.1: no advisory lint survives. `next lint` had no config and could
+    // not fail; it was deleted 2026-09-04 rather than left advisory.
+    expect(ci).not.toMatch(/run: npm run lint\n/);
+    expect(ci).not.toMatch(/name: Lint\n\s+run:[^\n]*\n\s+continue-on-error/);
+    expect(pkg.scripts.lint, 'next lint without a config is a prompt, not a check').toBeUndefined();
+  });
+
+  it('the blocking config also carries the bug-class rules, all as errors', () => {
+    const cfg = read('eslint.undef.config.mjs');
+    for (const rule of ['no-dupe-keys', 'no-unreachable', 'no-const-assign', 'no-import-assign', 'use-isnan', 'valid-typeof', 'no-fallthrough', 'no-redeclare']) {
+      expect(cfg, `${rule} must be an error`).toMatch(new RegExp(`'${rule}':\\s*(\\[\\s*)?'error'`));
+    }
   });
 
   it('the undef config enforces no-undef and nothing weaker', () => {

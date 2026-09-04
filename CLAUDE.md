@@ -32,18 +32,22 @@ need env changes applied, a redeploy of the current production deployment is
 the way (`vercel redeploy <url>`), never `vercel --prod` from a laptop.
 
 Required check: `build` in `ci.yml`. It runs, in order, the vendor drift
-guard, `npm install`, **`npm run lint:undef` (blocking)**, `next lint`
-(advisory), `npm test`, `next build`.
+guard, the vendor <-> upstream ratchet, `npm install`, **`npm run lint:undef`
+(blocking: `no-undef` plus ESLint's bug-class rules)**, `npm test`,
+`next build`. There is no advisory lint any more (3.1).
 
 ## 3. LAWS (each one is an incident; read the changelog it names)
 
 **3.1 An advisory check is not a check.** `next lint` has been red for months
 and CI printed `completeLogin is not defined` on every build while every
 production login failed with that exact ReferenceError (2026-09-03). The
-`no-undef` rule now runs alone as a BLOCKING step (`eslint.undef.config.mjs`).
-Never add `continue-on-error` to a check that can name a user-facing failure.
-If a check is too noisy to block on, delete it or fix it; do not leave it
-advisory.
+`no-undef` rule now runs as a BLOCKING step (`eslint.undef.config.mjs`,
+joined 2026-09-04 by the bug-class rules - dupe keys, unreachable code,
+const reassignment, bad typeof, fallthrough - all at zero when added). The
+advisory `next lint` step was DELETED the same day: it had no config and
+prompted interactively, so it could not fail. Never add `continue-on-error`
+to a check that can name a user-facing failure. If a check is too noisy to
+block on, delete it or fix it; do not leave it advisory.
 
 **3.2 A Sentry dashboard showing 0 issues is not health.** Client Sentry was
 never loaded in this app (the config file needs `withSentryConfig` or a manual
