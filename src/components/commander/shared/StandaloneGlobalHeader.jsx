@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import { supabase } from '../../../lib/supabase';
+import { commanderSignOut } from '../../../lib/commanderLogout';
 
 const MENU_ITEMS = [
   ['Dashboard', '/commander/dashboard'],
@@ -15,6 +17,27 @@ export default function StandaloneGlobalHeader() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState('/default-avatar.png');
+  const signingOutRef = useRef(false);
+
+  /**
+   * /hub/* belongs to the World Hub, not to this Next build. router.push()
+   * cannot resolve it, so Next logged a console.error on every one of these
+   * clicks before falling back to a hard navigation. Go there directly.
+   */
+  const goHub = (href) => { window.location.assign(href); };
+
+  /**
+   * This header is mounted by pages/_app.js on the 29 routes that do not render
+   * CommanderLayout — the waitlist desk, the kiosk, the lobby, every report.
+   * Until 2026-09-04 it had no Sign Out at all, so an operator on any of them
+   * could not sign out without navigating somewhere else first.
+   */
+  const handleSignOut = async () => {
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
+    setMenuOpen(false);
+    await commanderSignOut(supabase);
+  };
 
   useEffect(() => {
     const refreshProfileAvatar = (event) => {
@@ -197,6 +220,7 @@ export default function StandaloneGlobalHeader() {
         }
         .standalone-approved-menu__close { padding: 0 16px; color: #56bdff; }
         .standalone-approved-menu__item { padding: 0 18px; }
+        .standalone-approved-menu__signout { color: #ff8a8a; border-color: rgba(255,138,138,.42); }
         @media (display-mode: standalone), (display-mode: fullscreen) {
           .standalone-approved-header { padding-top: max(env(safe-area-inset-top, 0px), 24px); }
           .standalone-approved-header__controls { top: max(env(safe-area-inset-top, 0px), 24px); }
@@ -208,16 +232,16 @@ export default function StandaloneGlobalHeader() {
         <div className="standalone-approved-header__controls">
           <button type="button" className="standalone-approved-header__button standalone-approved-header__menu" onClick={() => setMenuOpen(true)} aria-label="Open Menu" />
           <button type="button" className="standalone-approved-header__button standalone-approved-header__back" onClick={() => router.back()} aria-label="Go back" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => router.push('/hub')} aria-label="Go to the Hub" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__profile" onClick={() => router.push('/hub/profile')} aria-label="My Profile">
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => goHub('/hub')} aria-label="Go to the Hub" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__profile" onClick={() => goHub('/hub/profile')} aria-label="My Profile">
             <span className="standalone-approved-header__avatar-slot" aria-hidden="true">
               <img src={profileAvatar} alt="" className="standalone-approved-header__avatar" onError={(event) => { event.currentTarget.src = '/default-avatar.png'; }} />
             </span>
           </button>
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__wallet" onClick={() => router.push('/hub/diamond-store')} aria-label="Diamond Wallet" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__vip" onClick={() => router.push('/hub/vip-membership')} aria-label="VIP" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__messenger" onClick={() => router.push('/hub/messenger')} aria-label="Messages" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__notifications" onClick={() => router.push('/hub/notifications')} aria-label="Notifications" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__wallet" onClick={() => goHub('/hub/diamond-store')} aria-label="Diamond Wallet" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__vip" onClick={() => goHub('/hub/vip-membership')} aria-label="VIP" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__messenger" onClick={() => goHub('/hub/messenger')} aria-label="Messages" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__notifications" onClick={() => goHub('/hub/notifications')} aria-label="Notifications" />
         </div>
       </header>
 
@@ -229,6 +253,7 @@ export default function StandaloneGlobalHeader() {
             {MENU_ITEMS.map(([label, href]) => (
               <button type="button" className="standalone-approved-menu__item" key={href} onClick={() => go(href)}>{label}</button>
             ))}
+            <button type="button" className="standalone-approved-menu__item standalone-approved-menu__signout" onClick={handleSignOut}>Sign Out</button>
           </nav>
         </>
       )}
