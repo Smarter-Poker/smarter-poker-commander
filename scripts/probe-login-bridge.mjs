@@ -167,6 +167,9 @@ async function structuralLeg() {
   const guarded = await http(`${CMD}/api/commander/settings`, { headers: { 'x-staff-session': JSON.stringify({ user_id: 'x', venue_id: 1, role: 'owner', session_ts: Date.now() }) } });
   record(leg, 'guarded API rejects an UNSIGNED staff session (401)', guarded.status === 401, `status=${guarded.status}`);
 
+  const renewNoAuth = await http(`${CMD}/api/commander/staff-session/renew`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  record(leg, 'staff-session/renew requires a Bearer token (401)', renewNoAuth.status === 401, `status=${renewNoAuth.status}`);
+
   // 5. Health: secrets + observability present (booleans only)
   const health = await http(`${CMD}/api/health`);
   record(leg, '/api/health responds 200', health.status === 200, `status=${health.status}`);
@@ -260,6 +263,21 @@ async function signedInLeg() {
   const tampered = { ...staff, venue_id: Number(staff.venue_id) + 1 };
   const bad = await http(`${CMD}/api/commander/settings`, { headers: { 'x-staff-session': JSON.stringify(tampered), authorization: `Bearer ${accessToken}` } });
   record(leg, 'guarded API rejects a hand-edited session (401)', bad.status === 401, `status=${bad.status}`);
+
+  // The cheap renew path: same claims, fresh signature, no DB.
+  const renew = await http(`${CMD}/api/commander/staff-session/renew`, {
+    method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ session: staff }),
+  });
+  const renewed = renew.json?.staff_session;
+  record(leg, 'staff-session/renew re-signs an authentic session (200)', renew.status === 200 && !!renewed?.sig && renewed.sig !== staff.sig && renewed.user_id === staff.user_id, `status=${renew.status}`);
+  const renewBad = await http(`${CMD}/api/commander/staff-session/renew`, {
+    method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ session: tampered }),
+  });
+  record(leg, 'staff-session/renew refuses a hand-edited session (401)', renewBad.status === 401, `status=${renewBad.status}`);
+  if (renewed?.sig) {
+    const okRenewed = await http(`${CMD}/api/commander/settings`, { headers: { 'x-staff-session': JSON.stringify(renewed), authorization: `Bearer ${accessToken}` } });
+    record(leg, 'guarded API accepts the RENEWED session (200)', okRenewed.status === 200, `status=${okRenewed.status}`);
+  }
 }
 
 function markdownReport() {

@@ -30,6 +30,7 @@ function fakeStorage() {
 let mod;
 let fetchCalls;
 let subscriptionResponse;
+let renewResponse;
 
 beforeEach(async () => {
   vi.resetModules();
@@ -49,8 +50,10 @@ beforeEach(async () => {
       staff_session: { user_id: 'u1', venue_id: 77, role: 'owner', session_ts: Date.now(), sig: 'server-sig' },
     }),
   });
+  renewResponse = () => ({ ok: false, status: 401, json: async () => ({ error: 'no' }) });
   globalThis.fetch = vi.fn(async (url, opts) => {
     fetchCalls.push({ url, body: JSON.parse(opts.body), auth: opts.headers.Authorization });
+    if (url.includes('/staff-session/renew')) return renewResponse();
     return subscriptionResponse();
   });
 
@@ -68,10 +71,13 @@ describe('isStaffSessionHealthy', () => {
     localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner' }));
     expect(mod.isStaffSessionHealthy()).toBe(false);
   });
-  it('is false when the owner TTL is nearly spent, so we refresh BEFORE the server rejects it', () => {
-    const sixAndAHalfDays = Date.now() - 6.6 * 24 * 60 * 60 * 1000;
-    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner', sig: 'x', session_ts: sixAndAHalfDays }));
+  it('is false when the 24h owner TTL is nearly spent, so we refresh BEFORE the server rejects it', () => {
+    const twentyOneHours = Date.now() - 21 * 60 * 60 * 1000;
+    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner', sig: 'x', session_ts: twentyOneHours }));
     expect(mod.isStaffSessionHealthy()).toBe(false);
+    const nineteenHours = Date.now() - 19 * 60 * 60 * 1000;
+    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner', sig: 'x', session_ts: nineteenHours }));
+    expect(mod.isStaffSessionHealthy()).toBe(true);
   });
   it('is true for a fresh signed owner session', () => {
     localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner', sig: 'x', session_ts: Date.now() }));
@@ -113,7 +119,8 @@ describe('refreshStaffSession', () => {
     expect(await mod.refreshStaffSession()).toBe(false);
     expect(fetchCalls).toHaveLength(1);
     expect(await mod.refreshStaffSession({ force: true })).toBe(true);
-    expect(fetchCalls).toHaveLength(2);
+    // second, forced refresh: renew is tried first (mock refuses), then the full path
+    expect(fetchCalls.filter((c) => c.url.includes('check-subscription'))).toHaveLength(2);
   });
 
   it('re-signs for the venue the client is on (club switcher edited venue_id)', async () => {
@@ -121,7 +128,8 @@ describe('refreshStaffSession', () => {
     localStorage.setItem('commander_active_venue_id', '77');
     localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 99, role: 'owner', sig: 'now-invalid', session_ts: Date.now() }));
     await mod.refreshStaffSession();
-    expect(fetchCalls[0].body.preferred_venue_id).toBe(99);
+    const sub = fetchCalls.find((c) => c.url.includes('check-subscription'));
+    expect(sub.body.preferred_venue_id).toBe(99);
   });
 
   it('never touches a PIN terminal session', async () => {
@@ -144,6 +152,41 @@ describe('refreshStaffSession', () => {
     subscriptionResponse = () => ({ ok: false, status: 404, json: async () => ({ error: 'No active subscription found' }) });
     expect(await mod.refreshStaffSession({ force: true })).toBe(false);
     expect(localStorage.getItem('commander_venue')).toBeNull();
+  });
+});
+
+describe('renew-first self-heal', () => {
+  it('re-signs an authentic expired session via /staff-session/renew and never touches check-subscription', async () => {
+    withHubSession();
+    const stale = { user_id: 'u1', venue_id: 77, role: 'owner', sig: 'authentic-but-expired', session_ts: Date.now() - 25 * 60 * 60 * 1000, venue_name: 'Test Room' };
+    localStorage.setItem('commander_staff', JSON.stringify(stale));
+    renewResponse = () => ({ ok: true, status: 200, json: async () => ({ staff_session: { user_id: 'u1', venue_id: 77, role: 'owner', session_ts: Date.now(), sig: 'renewed-sig' } }) });
+    expect(await mod.refreshStaffSession({ force: true })).toBe(true);
+    expect(fetchCalls.map((c) => c.url)).toEqual(['/api/commander/staff-session/renew']);
+    expect(fetchCalls[0].body.session.sig).toBe('authentic-but-expired');
+    const stored = JSON.parse(localStorage.getItem('commander_staff'));
+    expect(stored.sig).toBe('renewed-sig');
+    expect(stored.venue_name, 'display fields survive a renew').toBe('Test Room');
+    expect(globalThis.dispatchEvent.mock.calls[0][0].detail.via).toBe('renew');
+  });
+
+  it('falls back to check-subscription when renew refuses (tampered, too old, wrong user)', async () => {
+    withHubSession();
+    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner', sig: 'tampered', session_ts: Date.now() }));
+    expect(await mod.refreshStaffSession({ force: true })).toBe(true);
+    expect(fetchCalls.map((c) => c.url)).toEqual(['/api/commander/staff-session/renew', '/api/commander/check-subscription']);
+    expect(JSON.parse(localStorage.getItem('commander_staff')).sig).toBe('server-sig');
+  });
+
+  it('skips renew entirely for an unsigned session, a switched venue, or one past 48h', async () => {
+    withHubSession();
+    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner' }));
+    await mod.refreshStaffSession({ force: true });
+    expect(fetchCalls.map((c) => c.url)).toEqual(['/api/commander/check-subscription']);
+    fetchCalls.length = 0;
+    localStorage.setItem('commander_staff', JSON.stringify({ user_id: 'u1', venue_id: 77, role: 'owner', sig: 'x', session_ts: Date.now() - 49 * 60 * 60 * 1000 }));
+    await mod.refreshStaffSession({ force: true });
+    expect(fetchCalls.map((c) => c.url)).toEqual(['/api/commander/check-subscription']);
   });
 });
 

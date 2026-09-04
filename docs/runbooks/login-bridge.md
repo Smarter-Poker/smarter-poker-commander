@@ -24,8 +24,9 @@ POST /api/auth/commander-sso  --one-time token-->  /auth/sso?token&uid
 
 Every guarded API needs **two** things: the Supabase Bearer token (`Authorization`)
 and the signed staff session (`x-staff-session`). The staff session is derived,
-has a 7-day TTL, and is invalidated by a signing-secret change. When it goes
-stale, `commanderFetch` re-mints it from the live Supabase session and retries
+has a 24h TTL (renewable to 48h via `/api/staff-session/renew`, no DB), and is
+invalidated by a signing-secret change. When it goes stale, `commanderFetch`
+re-mints it from the live Supabase session and retries
 **before** anything is shown. Only when the Supabase session itself is gone
 does the user see "Your Session Is Not Valid" / "Sign In Again".
 

@@ -23,9 +23,10 @@
  * `refreshStaffSession()` without importing the Supabase client.
  */
 
-const OWNER_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // matches src/lib/commander/auth.js
+const OWNER_SESSION_TTL_MS = 24 * 60 * 60 * 1000;        // matches src/lib/commander/auth.js
+const OWNER_SESSION_RENEW_WINDOW_MS = 48 * 60 * 60 * 1000; // matches renewOwnerSession()
 // Re-mint before the server would reject the session, not after.
-const PROACTIVE_REFRESH_AFTER_MS = OWNER_SESSION_TTL_MS - 12 * 60 * 60 * 1000;
+const PROACTIVE_REFRESH_AFTER_MS = OWNER_SESSION_TTL_MS - 4 * 60 * 60 * 1000;
 
 const OWNER_PERMISSIONS = {
   manage_games: true,
@@ -235,6 +236,32 @@ export async function mintStaffSession(accessToken, { user, preferredVenueId, ti
 }
 
 /**
+ * The cheap re-mint: POST the stored (signed, possibly expired) session to
+ * /api/commander/staff-session/renew with a live Bearer token. The server
+ * re-signs it without a database round trip. Returns true when a renewed
+ * session was stored; false means "fall back to mintStaffSession()".
+ */
+export async function renewStaffSession(accessToken, existing) {
+  if (!accessToken || !existing?.sig || !existing?.session_ts || existing.id || !existing.user_id) return false;
+  if (Date.now() - Number(existing.session_ts) > OWNER_SESSION_RENEW_WINDOW_MS) return false;
+  try {
+    const res = await fetch('/api/commander/staff-session/renew', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ session: existing }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => ({}));
+    if (!data?.staff_session?.sig) return false;
+    // Keep the display fields the server does not carry.
+    lsSet('commander_staff', JSON.stringify({ ...existing, ...data.staff_session }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Where to send the user after a successful login. Honors the return URL
  * stashed by commanderFetch / CommanderLayout before a redirect.
  */
@@ -308,6 +335,17 @@ export function refreshStaffSession({ force = false } = {}) {
       // resulting 401 into a correctly re-signed session for the club the
       // user actually picked instead of silently snapping back to the old one.
       const preferredVenueId = existing?.venue_id ?? lsGet('commander_active_venue_id') ?? null;
+
+      // Cheap path first: re-sign an authentic session without a DB lookup.
+      // Only for the venue the session already names - a club switch needs
+      // the full path so ownership of the NEW venue is checked.
+      if (existing && String(existing.venue_id) === String(preferredVenueId) && await renewStaffSession(token, existing)) {
+        try {
+          window.dispatchEvent(new CustomEvent('commander:staff-session-refreshed', { detail: { venue_id: existing.venue_id, via: 'renew' } }));
+        } catch { /* ignore */ }
+        return true;
+      }
+
       const result = await mintStaffSession(token, {
         user: authUser || (existing?.user_id ? { id: existing.user_id, email: existing.email } : undefined),
         preferredVenueId,
