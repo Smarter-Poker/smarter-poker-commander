@@ -114,8 +114,14 @@ It reads no credentials itself; two callers pass their own:
   (Vercel env on this project), writes its run to `cron_execution_log` as
   `/commander/internal/login-bridge-probe` (so the hub's cron watchdogs see
   it) and sends `commander.probe.login_bridge_failed` to Sentry on failure.
-  It answers 503 until `CRON_SECRET` is set on THIS Vercel project with the
-  hub-vanguard value (Dan-only: it is a sensitive env there).
+  **Auth is a hub-signed ticket, not a CRON_SECRET copy** (since 2026-09-04,
+  after the first live run 401'd on a drifted copy): the dispatcher calls the
+  hub's `/api/internal/login-bridge-probe` with CRON_SECRET like every other
+  job, and the hub relays here with `X-Probe-Ticket`, an HMAC over the
+  minute signed with `SUPABASE_JWT_SECRET` - which both projects hold by
+  construction (one Supabase project). `src/lib/probe/ticket.js` is
+  byte-identical to the hub's `src/lib/probeTicket.js`; both pin one vector.
+  Do not "simplify" this back to a shared CRON_SECRET.
 - **Secondary: `.github/workflows/login-bridge-probe.yml`** runs the CLI
   `scripts/probe-login-bridge.mjs` plus `tests/e2e/login-bridge.spec.ts`
   (Playwright) every 30 minutes and on relevant merges. It files ONE

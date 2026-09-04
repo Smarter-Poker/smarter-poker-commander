@@ -5,6 +5,7 @@
  * probe outcome, and a Sentry signal on failure.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mintProbeTicket, verifyProbeTicket } from '../../src/lib/probe/ticket.js';
 
 const probeResult = { current: null };
 const sentry = { captured: [], scope: null };
@@ -58,6 +59,7 @@ beforeEach(async () => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://x.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
   process.env.CRON_SECRET = 'top-secret';
+  process.env.SUPABASE_JWT_SECRET = 'jwt-secret';
   process.env.PROBE_LOGIN_EMAIL = 'probe@example.com';
   process.env.PROBE_LOGIN_PASSWORD = 'pw';
   probeResult.current = {
@@ -74,12 +76,39 @@ describe('/api/internal/login-bridge-probe', () => {
     expect(res.statusCode).toBe(405);
   });
 
-  it('answers 503 (never a silent pass) when CRON_SECRET is not configured', async () => {
+  it('answers 503 (never a silent pass) when neither secret is configured', async () => {
     delete process.env.CRON_SECRET;
+    delete process.env.SUPABASE_JWT_SECRET;
     const res = mockRes();
     await handler(req('Bearer anything'), res);
     expect(res.statusCode).toBe(503);
     expect(res.body.error).toMatch(/CRON_SECRET/);
+  });
+
+  it('accepts a fresh hub ticket signed with SUPABASE_JWT_SECRET, without any CRON_SECRET', async () => {
+    delete process.env.CRON_SECRET;
+    const res = mockRes();
+    const r = req(undefined);
+    r.headers['x-probe-ticket'] = mintProbeTicket('jwt-secret');
+    await handler(r, res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.auth).toBe('hub-ticket');
+  });
+
+  it('rejects a stale, forged or malformed ticket with 401', async () => {
+    for (const [label, t] of [
+      ['stale', mintProbeTicket('jwt-secret', Date.now() - 10 * 60 * 1000)],
+      ['future', mintProbeTicket('jwt-secret', Date.now() + 10 * 60 * 1000)],
+      ['forged', mintProbeTicket('other-secret')],
+      ['malformed', 'v1.abc.def'],
+    ]) {
+      const res = mockRes();
+      const r = req(undefined);
+      r.headers['x-probe-ticket'] = t;
+      await handler(r, res);
+      expect(res.statusCode, label).toBe(401);
+    }
+    expect(db.inserts).toHaveLength(0);
   });
 
   it('rejects a missing or wrong bearer with 401', async () => {
@@ -130,5 +159,20 @@ describe('/api/internal/login-bridge-probe', () => {
     expect(sentry.captured[0].tags).toMatchObject({ app: 'commander', probe: 'login-bridge' });
     expect(db.inserts[0].row).toMatchObject({ job_name: '/commander/internal/login-bridge-probe', status: 'error' });
     expect(db.inserts[0].row.error).toMatch(/grant - status=400/);
+  });
+});
+
+describe('probe ticket (shared with the World Hub relay - identical file, identical vector)', () => {
+  it('mints the pinned vector and verifies it in constant time', () => {
+    // The same vector is pinned in the World Hub's tests/probe-ticket.test.mjs.
+    // If either side changes the format, one of the two goes red.
+    const t = mintProbeTicket('k', 1700000000000);
+    expect(t).toBe('v1.1700000000000.9ae520ae96223798a843414cee48929719c33d937ec319ea13e13512a55bdfb1');
+    expect(verifyProbeTicket(t, 'k', 1700000000000)).toEqual({ ok: true, ts: 1700000000000 });
+    expect(verifyProbeTicket(t, 'k', 1700000000000 + 4 * 60 * 1000).ok).toBe(true);
+    expect(verifyProbeTicket(t, 'k', 1700000000000 + 6 * 60 * 1000)).toEqual({ ok: false, reason: 'expired' });
+    expect(verifyProbeTicket(t, 'not-k', 1700000000000)).toEqual({ ok: false, reason: 'bad_signature' });
+    expect(verifyProbeTicket(t, '', 1700000000000)).toEqual({ ok: false, reason: 'no_secret' });
+    expect(verifyProbeTicket(undefined, 'k')).toEqual({ ok: false, reason: 'malformed' });
   });
 });

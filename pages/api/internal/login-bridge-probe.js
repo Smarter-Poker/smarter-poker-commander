@@ -9,10 +9,17 @@
  * job carries. The GitHub Actions workflow (login-bridge-probe.yml) keeps
  * running as the secondary schedule and is the one that files issues.
  *
- * Auth: CRON_SECRET must be set on THIS Vercel project with the same value as
- * hub-vanguard (Dan-only: it is a `sensitive` env there). Until it is, this
- * route answers 503 and the dispatcher journal shows it - a loud, honest
- * "not configured", never a silent pass.
+ * Auth, either of:
+ *   - `X-Probe-Ticket: v1.<ms>.<hmac>` minted by the hub relay
+ *     (World Hub pages/api/internal/login-bridge-probe.js) with
+ *     SUPABASE_JWT_SECRET - the one secret both projects hold by construction
+ *     (src/lib/probe/ticket.js). THIS is the path Open Claw uses: dispatcher ->
+ *     hub (CRON_SECRET, as for every other job) -> here (ticket). Added
+ *     2026-09-04 after the first live run 401'd on a drifted CRON_SECRET copy.
+ *   - `Authorization: Bearer <CRON_SECRET>` (timing-safe), if CRON_SECRET on
+ *     this project happens to match the hub's. Kept as a manual/curl path.
+ * 503 only when NEITHER secret is configured - a loud "not configured", never
+ * a silent pass.
  *
  * Credentials for the signed-in leg come from PROBE_LOGIN_EMAIL /
  * PROBE_LOGIN_PASSWORD (already set on the project). No secret value ever
@@ -28,6 +35,7 @@ import crypto from 'crypto';
 import * as Sentry from '@sentry/nextjs';
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { runLoginBridgeProbe } from '../../../src/lib/probe/loginBridgeProbe.mjs';
+import { verifyProbeTicket } from '../../../src/lib/probe/ticket.js';
 
 /**
  * The hub's cron routes record every run in `cron_execution_log` (job_name =
@@ -82,15 +90,19 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
+  const cronSecret = process.env.CRON_SECRET;
+  const ticketSecret = process.env.SUPABASE_JWT_SECRET;
+  if (!cronSecret && !ticketSecret) {
     return res.status(503).json({
       ok: false,
-      error: 'CRON_SECRET is not configured on the commander project; set it to the hub-vanguard value',
+      error: 'Neither SUPABASE_JWT_SECRET (hub relay ticket) nor CRON_SECRET is configured on the commander project',
     });
   }
-  if (!bearerMatches(req, secret)) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  const ticket = verifyProbeTicket(req.headers['x-probe-ticket'], ticketSecret);
+  const viaTicket = ticket.ok;
+  const viaBearer = !viaTicket && bearerMatches(req, cronSecret);
+  if (!viaTicket && !viaBearer) {
+    return res.status(401).json({ error: 'Unauthorized', ticket: ticket.reason });
   }
 
   const startedAt = Date.now();
@@ -113,6 +125,7 @@ export default async function handler(req, res) {
     elapsed_ms: elapsedMs,
     at: new Date().toISOString(),
     version: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 8) ?? 'local',
+    auth: viaTicket ? 'hub-ticket' : 'cron-secret',
   };
 
   if (!report.ok) {

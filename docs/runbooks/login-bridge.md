@@ -84,7 +84,8 @@ signed-out legs only and say so in the log. The Open Claw job uses
 `PROBE_LOGIN_EMAIL`/`PROBE_LOGIN_PASSWORD` (Vercel env on
 smarter-poker-commander, already set) and so runs the signed-in leg.
 
-| `CRON_SECRET` | Vercel: smarter-poker-commander (same value as hub-vanguard) | the Open Claw probe route; 503 with a clear message until set |
+| `SUPABASE_JWT_SECRET` | Vercel: smarter-poker-commander AND hub-vanguard (same Supabase project, so the same value by construction) | signs/verifies the `X-Probe-Ticket` the hub relay presents to the Open Claw probe route |
+| `CRON_SECRET` | Vercel: smarter-poker-commander (optional; must equal hub-vanguard's to be useful) | manual/curl access to the probe route; NOT what Open Claw uses since 2026-09-04 - a copy drifted on its first day |
 
 The Open Claw run is visible three ways: the dispatcher journal on the
 `openclaw-dispatcher` VM (`journalctl -u openclaw`), a row per run in
@@ -92,4 +93,6 @@ The Open Claw run is visible three ways: the dispatcher journal on the
 which the hub's `check-cron-liveness.mjs` and `cron-staleness-watchdog` read),
 and on failure a Sentry event `commander.probe.login_bridge_failed`
 (tags `app=commander probe=login-bridge`). Run it by hand:
-`curl -H "Authorization: Bearer $CRON_SECRET" https://smarter.poker/api/commander/internal/login-bridge-probe`.
+`curl -H "Authorization: Bearer $CRON_SECRET" https://smarter.poker/api/internal/login-bridge-probe`
+(the hub relay; it mints the ticket and returns Commander's answer verbatim).
+Two consecutive non-200s from that relay page by SMS (`CRITICAL_JOBS`).

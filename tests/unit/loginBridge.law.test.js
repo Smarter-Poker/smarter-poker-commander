@@ -308,7 +308,13 @@ describe('production is watched (pin 11)', () => {
     expect(route).toMatch(/runLoginBridgeProbe\(/);
     expect(route).toMatch(/process\.env\.CRON_SECRET/);
     expect(route, 'bearer must be compared in constant time').toMatch(/timingSafeEqual/);
-    expect(route, 'missing CRON_SECRET must fail loudly, never pass').toMatch(/status\(503\)/);
+    expect(route, 'missing secrets must fail loudly, never pass').toMatch(/status\(503\)/);
+    // 2026-09-04: the dispatcher reaches this route THROUGH the hub, which
+    // signs a short-lived ticket with SUPABASE_JWT_SECRET - no CRON_SECRET
+    // copy on Commander to drift (the first live run 401'd on exactly that).
+    expect(route).toMatch(/verifyProbeTicket\(req\.headers\['x-probe-ticket'\], ticketSecret\)/);
+    expect(route).toMatch(/process\.env\.SUPABASE_JWT_SECRET/);
+    expect(code(read('src/lib/probe/ticket.js'))).toMatch(/timingSafeEqual/);
     expect(route).toMatch(/PROBE_LOGIN_EMAIL/);
     expect(route, 'a failing probe must reach Sentry').toMatch(/commander\.probe\.login_bridge_failed/);
     expect(route).toMatch(/maxDuration/);
