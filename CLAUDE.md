@@ -73,9 +73,13 @@ Session Is Not Valid" is for a platform session that is actually gone.
 `vendor/commander-shared/src/` must land in `Smarter-Poker/commander-shared`
 too, or the next sync overwrites your fix with the old bug (upstream was
 BEHIND vendor by two weeks on 2026-09-03 and still fabricated HTTP 200s for
-401s). `scripts/check-vendor-upstream-sync.mjs` fails CI when the two trees
-differ; `scripts/sync-vendor-from-upstream.sh` brings vendor up to date.
-The order is: upstream PR first, then sync, then the consumer PR.
+401s). `scripts/check-vendor-upstream-sync.mjs` (CI, blocking) fails on any vendor
+file that differs from upstream main and is not listed in
+`scripts/ci/vendor-upstream-divergence.json` - the RATCHET. That list is the
+historical debt (54 files on 2026-09-04, each with a reason and a direction)
+and may only shrink. `scripts/sync-vendor-from-upstream.sh <path>` brings a
+file up to date. The order is: upstream PR first, wait for its merge, then
+sync, then the consumer PR.
 
 **3.6 The one auth authority is `src/lib/commander/auth.js`.** Bearer JWT via
 `getUser`/`guardUser`, signed staff session via `guardStaff`/`guardManager`.
