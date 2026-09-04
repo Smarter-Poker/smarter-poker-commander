@@ -221,9 +221,21 @@ describe('the lint that would have caught the outage is blocking (pin 9)', () =>
     expect(pkg.scripts['lint:undef']).toMatch(/eslint --config eslint\.undef\.config\.mjs/);
     expect(pkg.scripts.test).toMatch(/^npm run lint:undef && /);
     const ci = read('.github/workflows/ci.yml');
-    const step = ci.slice(ci.indexOf('Undefined identifiers (blocking)'), ci.indexOf('- name: Lint\n'));
+    const step = ci.slice(ci.indexOf('Undefined identifiers (blocking)'), ci.indexOf('- name: Test'));
     expect(step).toMatch(/run: npm run lint:undef/);
     expect(step).not.toMatch(/continue-on-error/);
+    // Law 3.1: no advisory lint survives. `next lint` had no config and could
+    // not fail; it was deleted 2026-09-04 rather than left advisory.
+    expect(ci).not.toMatch(/run: npm run lint\n/);
+    expect(ci).not.toMatch(/name: Lint\n\s+run:[^\n]*\n\s+continue-on-error/);
+    expect(pkg.scripts.lint, 'next lint without a config is a prompt, not a check').toBeUndefined();
+  });
+
+  it('the blocking config also carries the bug-class rules, all as errors', () => {
+    const cfg = read('eslint.undef.config.mjs');
+    for (const rule of ['no-dupe-keys', 'no-unreachable', 'no-const-assign', 'no-import-assign', 'use-isnan', 'valid-typeof', 'no-fallthrough', 'no-redeclare']) {
+      expect(cfg, `${rule} must be an error`).toMatch(new RegExp(`'${rule}':\\s*(\\[\\s*)?'error'`));
+    }
   });
 
   it('the undef config enforces no-undef and nothing weaker', () => {
@@ -273,16 +285,33 @@ describe('the outage would be visible (pin 10)', () => {
 });
 
 describe('production is watched (pin 11)', () => {
-  it('the probe script and its 30-minute workflow exist and cover both legs', () => {
-    const probe = read('scripts/probe-login-bridge.mjs');
+  it('the probe core and its 30-minute workflow exist and cover both legs', () => {
+    const probe = read('src/lib/probe/loginBridgeProbe.mjs');
     for (const s of ['/commander/login', '/auth/sso', '/api/auth/sso-exchange', '/api/commander/check-subscription', '/api/auth/commander-sso', '/api/health', 'completeLogin(', 'x-staff-session']) {
       expect(probe, `probe must check ${s}`).toContain(s);
     }
+    // The core never reads credentials itself; each caller passes its own.
+    expect(code(probe)).not.toMatch(/process\.env/);
+    expect(code(read('scripts/probe-login-bridge.mjs'))).toMatch(/runLoginBridgeProbe\(/);
     const wf = read('.github/workflows/login-bridge-probe.yml');
     expect(wf).toMatch(/cron: '7,37 \* \* \* \*'/);
     expect(wf).toMatch(/node scripts\/probe-login-bridge\.mjs/);
     expect(wf).toMatch(/login-bridge-probe/); // the issue label
     expect(wf).toMatch(/playwright test tests\/e2e\/login-bridge\.spec\.ts/);
+  });
+
+  it('the probe is also an Open Claw HTTP job on the commander origin (pin 16)', () => {
+    // hub CLAUDE.md 10.9: nothing critical on the Claude scheduler; 11: every
+    // scheduled application trigger goes through Open Claw. The GitHub cron is
+    // best-effort; this route is what the real cron on Hetzner calls.
+    const route = code(read('pages/api/internal/login-bridge-probe.js'));
+    expect(route).toMatch(/runLoginBridgeProbe\(/);
+    expect(route).toMatch(/process\.env\.CRON_SECRET/);
+    expect(route, 'bearer must be compared in constant time').toMatch(/timingSafeEqual/);
+    expect(route, 'missing CRON_SECRET must fail loudly, never pass').toMatch(/status\(503\)/);
+    expect(route).toMatch(/PROBE_LOGIN_EMAIL/);
+    expect(route, 'a failing probe must reach Sentry').toMatch(/commander\.probe\.login_bridge_failed/);
+    expect(route).toMatch(/maxDuration/);
   });
 
   it('the Playwright spec covers the outage shapes', () => {
@@ -357,5 +386,20 @@ describe('owner sessions are short-lived and renewed cheaply (pin 14)', () => {
     const fn = body.slice(body.indexOf('export function refreshStaffSession'));
     expect(fn.indexOf('renewStaffSession(')).toBeGreaterThan(-1);
     expect(fn.indexOf('renewStaffSession(')).toBeLessThan(fn.indexOf('mintStaffSession('));
+  });
+});
+
+describe('vendor edits go upstream in the same change (pin 15)', () => {
+  it('the ratchet, its baseline and the sync script exist and CI runs the ratchet with a token', () => {
+    expect(read('scripts/check-vendor-upstream-sync.mjs')).toMatch(/NEW DIVERGENCE/);
+    expect(read('scripts/sync-vendor-from-upstream.sh')).toMatch(/commander-shared/);
+    const ci = read('.github/workflows/ci.yml');
+    const step = ci.slice(ci.indexOf('Vendor <-> upstream ratchet'), ci.indexOf('- name: Install\n'));
+    expect(step).toMatch(/run: node scripts\/check-vendor-upstream-sync\.mjs/);
+    // The upstream repo is private: the step must carry a token that can read
+    // it (the App token first - GH_PAT alone failed the clone on 2026-09-04).
+    expect(step).toMatch(/GH_PAT: \$\{\{ steps\.upstream-token\.outputs\.token \|\| secrets\.GH_PAT \}\}/);
+    expect(ci).toMatch(/repositories: commander-shared/);
+    expect(step).not.toMatch(/continue-on-error/);
   });
 });

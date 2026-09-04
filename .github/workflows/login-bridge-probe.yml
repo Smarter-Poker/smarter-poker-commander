@@ -55,7 +55,19 @@ jobs:
           node-version: '20'
       - name: Wait for the production deploy to settle (push trigger only)
         if: github.event_name == 'push'
-        run: sleep 240
+        # A blind sleep raced the deploy: on 2026-09-04 the probe ran 4 minutes
+        # after the merge that added /api/staff-session/renew, the build was
+        # still going, the route 404'd and a false incident was filed. Wait for
+        # /api/health to report THIS commit instead (bounded: Vercel skips the
+        # build when only docs/scripts changed, so the version may never move).
+        run: |
+          want="${GITHUB_SHA:0:8}"
+          for i in $(seq 1 60); do
+            got=$(curl -s --max-time 15 https://commander.smarter.poker/api/health | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
+            if [ "$got" = "$want" ]; then echo "production serves $got"; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::production still serves ${got:-?} after 10 min (wanted $want) - probing what is live"
       - name: Probe
         id: probe
         continue-on-error: true
@@ -124,7 +136,19 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Wait for the production deploy to settle (push trigger only)
         if: github.event_name == 'push'
-        run: sleep 60
+        # A blind sleep raced the deploy: on 2026-09-04 the probe ran 4 minutes
+        # after the merge that added /api/staff-session/renew, the build was
+        # still going, the route 404'd and a false incident was filed. Wait for
+        # /api/health to report THIS commit instead (bounded: Vercel skips the
+        # build when only docs/scripts changed, so the version may never move).
+        run: |
+          want="${GITHUB_SHA:0:8}"
+          for i in $(seq 1 60); do
+            got=$(curl -s --max-time 15 https://commander.smarter.poker/api/health | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
+            if [ "$got" = "$want" ]; then echo "production serves $got"; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::production still serves ${got:-?} after 10 min (wanted $want) - probing what is live"
       - name: Playwright - tests/e2e/login-bridge.spec.ts against production
         env:
           CI: '1'

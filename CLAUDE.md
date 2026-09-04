@@ -32,18 +32,22 @@ need env changes applied, a redeploy of the current production deployment is
 the way (`vercel redeploy <url>`), never `vercel --prod` from a laptop.
 
 Required check: `build` in `ci.yml`. It runs, in order, the vendor drift
-guard, `npm install`, **`npm run lint:undef` (blocking)**, `next lint`
-(advisory), `npm test`, `next build`.
+guard, the vendor <-> upstream ratchet, `npm install`, **`npm run lint:undef`
+(blocking: `no-undef` plus ESLint's bug-class rules)**, `npm test`,
+`next build`. There is no advisory lint any more (3.1).
 
 ## 3. LAWS (each one is an incident; read the changelog it names)
 
 **3.1 An advisory check is not a check.** `next lint` has been red for months
 and CI printed `completeLogin is not defined` on every build while every
 production login failed with that exact ReferenceError (2026-09-03). The
-`no-undef` rule now runs alone as a BLOCKING step (`eslint.undef.config.mjs`).
-Never add `continue-on-error` to a check that can name a user-facing failure.
-If a check is too noisy to block on, delete it or fix it; do not leave it
-advisory.
+`no-undef` rule now runs as a BLOCKING step (`eslint.undef.config.mjs`,
+joined 2026-09-04 by the bug-class rules - dupe keys, unreachable code,
+const reassignment, bad typeof, fallthrough - all at zero when added). The
+advisory `next lint` step was DELETED the same day: it had no config and
+prompted interactively, so it could not fail. Never add `continue-on-error`
+to a check that can name a user-facing failure. If a check is too noisy to
+block on, delete it or fix it; do not leave it advisory.
 
 **3.2 A Sentry dashboard showing 0 issues is not health.** Client Sentry was
 never loaded in this app (the config file needs `withSentryConfig` or a manual
@@ -73,9 +77,13 @@ Session Is Not Valid" is for a platform session that is actually gone.
 `vendor/commander-shared/src/` must land in `Smarter-Poker/commander-shared`
 too, or the next sync overwrites your fix with the old bug (upstream was
 BEHIND vendor by two weeks on 2026-09-03 and still fabricated HTTP 200s for
-401s). `scripts/check-vendor-upstream-sync.mjs` fails CI when the two trees
-differ; `scripts/sync-vendor-from-upstream.sh` brings vendor up to date.
-The order is: upstream PR first, then sync, then the consumer PR.
+401s). `scripts/check-vendor-upstream-sync.mjs` (CI, blocking) fails on any vendor
+file that differs from upstream main and is not listed in
+`scripts/ci/vendor-upstream-divergence.json` - the RATCHET. That list is the
+historical debt (54 files on 2026-09-04, each with a reason and a direction)
+and may only shrink. `scripts/sync-vendor-from-upstream.sh <path>` brings a
+file up to date. The order is: upstream PR first, wait for its merge, then
+sync, then the consumer PR.
 
 **3.6 The one auth authority is `src/lib/commander/auth.js`.** Bearer JWT via
 `getUser`/`guardUser`, signed staff session via `guardStaff`/`guardManager`.
@@ -88,20 +96,38 @@ both `node_modules` and `node_modules/`; the law test checks the index.
 
 ## 4. The probe is the truth about production
 
-`.github/workflows/login-bridge-probe.yml` runs `scripts/probe-login-bridge.mjs`
-plus `tests/e2e/login-bridge.spec.ts` (Playwright) every 30 minutes and on
-relevant merges. It files ONE self-closing issue labelled `login-bridge-probe`.
-If that issue is open, sign-in is or was broken. Runbook:
-`docs/runbooks/login-bridge.md`. The signed-in leg needs the `PROBE_EMAIL` /
-`PROBE_PASSWORD` secrets on THIS repo (not Club Arena's).
+The probe core is `src/lib/probe/loginBridgeProbe.mjs` (`runLoginBridgeProbe`).
+It reads no credentials itself; two callers pass their own:
+
+- **Primary schedule: Open Claw on Hetzner, hourly at :22** (since 2026-09-04;
+  hub CLAUDE.md 10.9 forbids the Claude scheduler, 11 routes every scheduled
+  trigger through Open Claw). The hub dispatcher fires
+  `smarter.poker/api/commander/internal/login-bridge-probe`, the hub rewrite
+  lands on `pages/api/internal/login-bridge-probe.js`, which checks the
+  `CRON_SECRET` bearer, runs both legs with `PROBE_LOGIN_EMAIL`/`_PASSWORD`
+  (Vercel env on this project), writes its run to `cron_execution_log` as
+  `/commander/internal/login-bridge-probe` (so the hub's cron watchdogs see
+  it) and sends `commander.probe.login_bridge_failed` to Sentry on failure.
+  It answers 503 until `CRON_SECRET` is set on THIS Vercel project with the
+  hub-vanguard value (Dan-only: it is a sensitive env there).
+- **Secondary: `.github/workflows/login-bridge-probe.yml`** runs the CLI
+  `scripts/probe-login-bridge.mjs` plus `tests/e2e/login-bridge.spec.ts`
+  (Playwright) every 30 minutes and on relevant merges. It files ONE
+  self-closing issue labelled `login-bridge-probe`. If that issue is open,
+  sign-in is or was broken. Its signed-in leg needs the `PROBE_EMAIL` /
+  `PROBE_PASSWORD` secrets on THIS repo (not Club Arena's).
+
+Runbook: `docs/runbooks/login-bridge.md`.
 
 ## 5. Runbooks
 
 - `docs/runbooks/login-bridge.md` - the handshake, its guards, triage.
 - `docs/runbooks/staff-session-secret-rotation.md` - rotating the HMAC secret.
 - `docs/runbooks/sentry-auth-alerts.md` - rule ids, the quota, what to check.
-- `docs/runbooks/cross-subdomain-session.md` - the one-session design and
-  why it is not a hotfix (refresh-token rotation).
+- `docs/runbooks/cross-subdomain-session.md` - the one-session design, why
+  it is not a hotfix (refresh-token rotation), and the 2026-09-04 decision
+  NOT to build it yet with the three conditions that would reopen it. Do not
+  start it as a side quest; it is a Tier 3 hub programme Dan approves.
 - `docs/changelog/` - one file per change, never appended to a shared one.
 
 ## 6. Working rules (Dan's, binding, same as every repo)

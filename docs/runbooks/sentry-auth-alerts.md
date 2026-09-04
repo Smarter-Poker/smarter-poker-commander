@@ -21,6 +21,7 @@ and asserted by the login-bridge probe.
 | `commander.auth.reference_error` | fatal | A `ReferenceError` on `/commander/login` or `/auth/sso`. The 2026-09-03 class. Should be 0 forever. |
 | `commander.auth.login_failed` | error | Supabase accepted the user but Commander completion failed (check-subscription, SSO exchange). Includes `error` and `status` extras. |
 | `commander.auth.unauthorized` | warning | A 401 that `refreshStaffSession()` could NOT heal - the platform session is gone or the account has no subscription. A steady trickle is normal; a spike is an incident. |
+| `commander.probe.login_bridge_failed` | error | The Open Claw login-bridge probe (`/api/internal/login-bridge-probe`) found at least one failing check. Extras `failures` (the rows) and `markdown` (the full table). Tags `probe=login-bridge flow=probe`. One issue, fingerprinted. |
 
 API-route exceptions still go through `reportApiError()` (tags `route`, `method`).
 
@@ -34,6 +35,7 @@ the World Hub's Sentry project; all rules live there). Org `smarter-software-inc
 | 17436063 | Commander login ReferenceError (page) | >= 1 event in 5 min | message contains `commander.auth.reference_error` |
 | 17436064 | Commander login completion failing (page) | >= 5 events in 15 min | message contains `commander.auth.login_failed` |
 | 17436065 | Commander unhealable 401 spike (warn) | >= 20 events in 15 min | message contains `commander.auth.unauthorized` |
+| 17436248 | Commander login-bridge probe FAILED (Open Claw) | every event (30 min per issue) | message contains `commander.probe.login_bridge_failed` |
 | 17435218 | Auth Failure Spike | >= 10 events in 5 min | message contains `commander.auth` OR `auth` (was unfiltered - fired on any noisy issue) |
 | 17435219 | Session Token Validation Error | first seen | message contains `jwt` |
 | 17435220 | Repeated Probe Auth Failure | >= 3 in 15 min | message contains `probe` |

@@ -178,6 +178,10 @@ export default function CommanderLayout({ children, title }) {
   }, [staff?.user_id]);
 
   const [switchingAccount, setSwitchingAccount] = useState(false);
+  // Inline notice for a refused club switch. Was a window.alert(): a modal the
+  // user must dismiss, invisible to screen readers as a state, and it froze
+  // the page behind it. Auto-clears; the next attempt replaces it.
+  const [switchNotice, setSwitchNotice] = useState('');
   const switchAccount = async (account) => {
     // 2026-09-03 FIX: this used to spread the stored `commander_staff` and
     // overwrite venue_id/role client-side. That session is HMAC-signed over
@@ -189,6 +193,7 @@ export default function CommanderLayout({ children, title }) {
     // (`preferred_venue_id`, still filtered by ownership server-side).
     if (switchingAccount) return;
     setSwitchingAccount(true);
+    setSwitchNotice('');
     try {
       try { localStorage.setItem('commander_active_venue_id', String(account.venue_id)); } catch (_) { /* ignore */ }
 
@@ -204,7 +209,7 @@ export default function CommanderLayout({ children, title }) {
         // Staff (non-owner) accounts have no subscription of their own to
         // switch to via check-subscription; the PIN terminal flow covers them.
         console.warn('[Commander] account switch rejected:', result.error);
-        alert(result.error || 'Could not switch clubs. Please sign in to that club directly.');
+        setSwitchNotice(result.error || 'Could Not Switch Clubs. Please Sign In To That Club Directly.');
         setSwitchingAccount(false);
         return;
       }
@@ -1082,6 +1087,36 @@ export default function CommanderLayout({ children, title }) {
             <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>
               You are offline - changes will not save until reconnected
             </span>
+          </div>
+        )}
+
+        {/* ── CLUB SWITCH NOTICE (inline; replaces a window.alert) ── */}
+        {switchNotice && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              background: 'linear-gradient(90deg, #F59E0B22, #D9770622)',
+              borderBottom: '1px solid #F59E0B44',
+              padding: '8px 16px',
+              display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertCircle size={16} color="#F59E0B" />
+              <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>{switchNotice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSwitchNotice('')}
+              aria-label="Dismiss"
+              style={{
+                background: 'transparent', color: '#F59E0B', border: '1px solid #F59E0B66', borderRadius: 6,
+                padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
