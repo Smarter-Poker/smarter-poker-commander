@@ -137,10 +137,16 @@ export default function CommanderLayout({ children, title }) {
         
         // 2026-09-03: commanderFetch adds the Bearer token (this route needs it)
         // and self-heals the staff session on 401.
-        // /api/commander/* resolves on BOTH origins (next.config.js rewrite here,
-        // vercel.json forward on the hub). The bare /api/* path 404'd whenever
-        // Commander was reached through smarter.poker, so `Switch Account` never
-        // appeared for multi-club owners on the primary domain.
+        // The /api/commander/ prefix resolves on BOTH origins (next.config.js
+        // rewrite here, vercel.json forward on the hub). The bare /api/ path
+        // 404'd whenever Commander was reached through smarter.poker, so
+        // `Switch Account` never appeared for multi-club owners there.
+        // Never write that prefix with a trailing wildcard here.
+        // loginBridge.law.test.js strips comments with a naive block-comment
+        // regex, so a slash-asterisk pair inside a line comment reads as a
+        // block-comment opener and silently deletes the next sixty lines of
+        // source before any pin is checked. Two pins failed that way on
+        // 2026-09-04 while the code they guard was correct.
         const res = await commanderFetch('/api/commander/my-commander-accounts');
         if (res.ok) {
           const json = await res.json();
