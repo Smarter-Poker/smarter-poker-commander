@@ -28,6 +28,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -287,5 +289,20 @@ describe('production is watched (pin 11)', () => {
     for (const s of ['bridge', 'ReferenceError', '/auth/sso?token=', 'expired=1', 'commander_staff', 'tampered']) {
       expect(spec).toContain(s);
     }
+  });
+});
+
+describe('repo hygiene that bit this branch (pin 12)', () => {
+  it('node_modules is never tracked, even as a symlink', () => {
+    // 2026-09-03: an agent worktree symlinked node_modules to the main clone
+    // and `.gitignore`'s `node_modules/` (trailing slash = directories only)
+    // did not match the SYMLINK, so PR #97 committed it. CI survived by luck.
+    const ignore = read('.gitignore').split('\n').map((l) => l.trim());
+    expect(ignore, '.gitignore needs a bare `node_modules` line (matches files and symlinks)').toContain('node_modules');
+    let tracked = '';
+    try {
+      tracked = require('child_process').execSync('git ls-files -s node_modules', { cwd: ROOT, encoding: 'utf8' }).trim();
+    } catch { /* not a git checkout (tarball) - nothing to check */ }
+    expect(tracked, 'node_modules must not be in the index').toBe('');
   });
 });
