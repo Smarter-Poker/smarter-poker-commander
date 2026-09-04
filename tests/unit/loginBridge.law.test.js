@@ -36,10 +36,15 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 // Strip comments so prose (like this header) can neither satisfy nor trip a
 // pin. Strings are kept: several pins deliberately match literal values.
+// Line comments are stripped FIRST, deliberately. Doing it the other way round
+// (2026-09-04) meant a URL written in a line comment - "/api/commander/" with a
+// trailing wildcard - was read as a block-comment opener, and everything up to
+// the next real block terminator sixty lines later vanished before any pin was
+// checked. Two pins failed against source that was correct.
 function code(src) {
   return src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
+    .replace(/(^|[^:'"`])\/\/.*$/gm, '$1')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
 const LOGIN = 'pages/commander/login.js';
@@ -210,8 +215,13 @@ describe('one auth authority (pin 8)', () => {
     expect(branding).toMatch(/commanderFetch\('\/api\/commander\/settings'\)/);
     expect(branding).not.toMatch(/\bfetch\('\/api\/commander\/settings'/);
     const layout = code(read(LAYOUT));
-    expect(layout).toMatch(/commanderFetch\('\/api\/my-commander-accounts'\)/);
-    expect(layout).not.toMatch(/[^r]fetch\('\/api\/my-commander-accounts'\)/);
+    // 2026-09-04: the path moved to the /api/commander/ prefix, which resolves
+    // on BOTH origins (next.config.js rewrite here, vercel.json forward on the
+    // hub). The bare path 404'd through smarter.poker, so Switch Account never
+    // appeared there. The pin still says the same thing: it must go through
+    // commanderFetch, never a raw fetch.
+    expect(layout).toMatch(/commanderFetch\('\/api\/commander\/my-commander-accounts'\)/);
+    expect(layout).not.toMatch(/[^r]fetch\('\/api\/(commander\/)?my-commander-accounts'\)/);
   });
 });
 

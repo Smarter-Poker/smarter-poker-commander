@@ -9,7 +9,7 @@
  *   title       - page title for <Head> tag
  *   children    - page content
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { X, Users, Clock, Layout, Map, Bell, Trophy,
@@ -137,7 +137,17 @@ export default function CommanderLayout({ children, title }) {
         
         // 2026-09-03: commanderFetch adds the Bearer token (this route needs it)
         // and self-heals the staff session on 401.
-        const res = await commanderFetch('/api/my-commander-accounts');
+        // The /api/commander/ prefix resolves on BOTH origins (next.config.js
+        // rewrite here, vercel.json forward on the hub). The bare /api/ path
+        // 404'd whenever Commander was reached through smarter.poker, so
+        // `Switch Account` never appeared for multi-club owners there.
+        // Never write that prefix with a trailing wildcard here.
+        // loginBridge.law.test.js strips comments with a naive block-comment
+        // regex, so a slash-asterisk pair inside a line comment reads as a
+        // block-comment opener and silently deletes the next sixty lines of
+        // source before any pin is checked. Two pins failed that way on
+        // 2026-09-04 while the code they guard was correct.
+        const res = await commanderFetch('/api/commander/my-commander-accounts');
         if (res.ok) {
           const json = await res.json();
           // The API returns { clubs, staff_venues, home_groups } directly on the root of the response, NOT inside json.data.accounts
@@ -462,24 +472,100 @@ export default function CommanderLayout({ children, title }) {
     localStorage.setItem('club_page_popup_dismissed', new Date().toISOString());
   };
 
+  /**
+   * SIGN OUT — the redirect always fired; the sign-out did not.
+   *
+   * 2026-09-04, "Sign Out silently fails". The old body looked bulletproof and
+   * was not, for four reasons:
+   *
+   * 1. `try { await supabase.auth.signOut(); } catch {}` CANNOT SEE FAILURE.
+   *    GoTrue resolves with { error } instead of throwing for everything that
+   *    is not 401/403/404 — offline, 5xx, and the GoTrue 429 saturation this
+   *    repo hit on 2026-09-01. On that path it returns BEFORE _removeSession(),
+   *    so the session in localStorage survives. The catch never ran and the
+   *    return value was never read.
+   * 2. IT NEVER REMOVED THE SUPABASE SESSION ITSELF. Seven `commander_*` keys
+   *    were cleared; `smarter-poker-auth` and the `sb-*-auth-token` keys were
+   *    not. So after (1), the platform session was still on the device.
+   * 3. THE LOGIN PAGE THEN SIGNED THE USER STRAIGHT BACK IN. login.js does a
+   *    deliberate silent sign-in whenever a Supabase session exists. With the
+   *    session surviving and `commander_staff` freshly deleted, it re-minted
+   *    the staff session and bounced to the dashboard. The user saw a flash of
+   *    the login page and landed back where they started — the clearest
+   *    possible "nothing happened". `commander_explicit_logout` below tells
+   *    that page to stand down exactly once.
+   * 4. THE SERVER-SIDE PIN COOKIE OUTLIVED THE LOGOUT. `commander_admin_session`
+   *    is HttpOnly with a 30-minute TTL, so only the server can clear it, and
+   *    /api/admin/pin-logout — written for this — had no caller anywhere in the
+   *    repo. On a shared floor terminal the next person walked into
+   *    /commander/admin/* with no PIN. That is a security defect, not a
+   *    cosmetic one.
+   *
+   * The API path is /api/commander/* on purpose: next.config.js rewrites it to
+   * /api/* on this origin, and the World Hub forwards the same prefix from
+   * smarter.poker. A bare /api/* 404s when Commander is served through the hub.
+   */
+  const signingOutRef = useRef(false);
   const handleLogout = async () => {
-    // HARDENED: Sign out of Supabase first to kill the auth session cookie
-    try { await supabase.auth.signOut(); } catch { /* non-critical */ }
-    // Clear ALL commander-related localStorage keys
-    localStorage.removeItem('commander_staff');
-    localStorage.removeItem('commander_venue');
-    localStorage.removeItem('commander_subscription');
-    localStorage.removeItem('commander_remember');
-    localStorage.removeItem('commander_security_gate');
-    localStorage.removeItem('commander_login_origin');
-    localStorage.removeItem('commander_branding');
-    // Clear all PIN unlock grants from this session
+    if (signingOutRef.current) return; // second tap while the first is in flight
+    signingOutRef.current = true;
+
+    // Kill the server-side PIN grant first — it is the only piece the client
+    // cannot clear on its own, and it must die even if everything below throws.
+    try {
+      await fetch('/api/commander/admin/pin-logout', {
+        method: 'POST',
+        credentials: 'include',
+        keepalive: true,
+      });
+    } catch { /* best effort — the local clear below still runs */ }
+
+    try {
+      const { error } = (await supabase.auth.signOut()) || {};
+      if (error) console.warn('[CommanderLayout] signOut reported:', error?.message || error);
+    } catch (e) {
+      console.warn('[CommanderLayout] signOut threw:', e?.message || e);
+    }
+
+    // Local clear runs unconditionally. This — not signOut — is what makes the
+    // sign-out real.
+    try {
+      // The platform session itself, plus whatever GoTrue left behind.
+      localStorage.removeItem('smarter-poker-auth');
+      localStorage.removeItem('sp-cached-header-user');
+      Object.keys(localStorage || {})
+        .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach(k => localStorage.removeItem(k));
+    } catch (e) { console.warn('[App] Handled exception:', e); }
+
+    [
+      'commander_staff',
+      'commander_venue',
+      'commander_subscription',
+      'commander_remember',
+      'commander_security_gate',
+      'commander_login_origin',
+      'commander_branding',
+      // Left behind before: the next operator on this terminal inherited the
+      // previous one's venue and recovery state.
+      'commander_active_venue_id',
+      'commander_expired_recovery_ts',
+      'club_page_popup_dismissed',
+    ].forEach(k => { try { localStorage.removeItem(k); } catch { /* private mode */ } });
+
     try {
       Object.keys(sessionStorage || {}).forEach(k => {
         if (k.startsWith('pin_unlock_')) sessionStorage.removeItem(k);
       });
+      // The Switch Account drawer read this cache before any auth check, so the
+      // next user saw the previous user's club list.
+      sessionStorage.removeItem('commander_accounts_v2_cache');
+      sessionStorage.removeItem('commander_nav_history');
+      // Read once by login.js, which then deletes it. Without this the silent
+      // sign-in undoes the logout — see (3) above.
+      sessionStorage.setItem('commander_explicit_logout', '1');
     } catch (e) { console.warn('[App] Handled exception:', e); }
-    // Bulletproof redirect
+
     window.location.href = '/commander/login';
   };
 

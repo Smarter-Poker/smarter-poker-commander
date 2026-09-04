@@ -202,6 +202,22 @@ export default function CommanderLogin() {
           return;
         }
 
+        // -- An explicit Sign Out outranks the silent sign-in --
+        // 2026-09-04: Sign Out clears the staff session, so an unhealthy staff
+        // session plus a surviving Supabase session (the exact state a failed
+        // signOut leaves behind) made the block below re-mint the login and
+        // bounce back to the dashboard. The user saw a flash and no logout.
+        // CommanderLayout.handleLogout sets this marker; it is honoured once
+        // and deleted, so it can never wedge a user out of a working session.
+        try {
+          if (sessionStorage.getItem('commander_explicit_logout')) {
+            sessionStorage.removeItem('commander_explicit_logout');
+            stopTimers();
+            setCheckingSession(false);
+            return;
+          }
+        } catch { /* private mode - fall through to the normal path */ }
+
         // -- Silent sign-in whenever a Supabase session exists --
         // If a valid Supabase session exists, complete the commander login
         // automatically - the user should NEVER be asked to re-authenticate

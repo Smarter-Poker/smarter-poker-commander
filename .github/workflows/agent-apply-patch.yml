@@ -1,0 +1,97 @@
+name: Agent Apply Patch
+
+# Applies queued unified diffs pushed to patch/** branches. Purpose: the
+# agent-side GitHub bridge caps a single pushed file at ~65KB, so large files
+# could never be edited remotely. A patch file is a few KB regardless of target
+# size. Flow:
+#   1. agent creates branch patch/<name> from main
+#   2. agent pushes .agent/patches/<name>.patch (unified diff, -p1 paths)
+#   3. this workflow applies it, removes the patch file, commits, pushes
+#   4. agent opens a normal PR from the branch — build gate runs as usual
+# Pushes made with GITHUB_TOKEN do not trigger workflows, so the apply
+# commit cannot recurse.
+
+on:
+  push:
+    branches:
+      - 'patch/**'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 2026-08-15: full history, NOT the default depth-1 shallow clone.
+          # `git apply --3way` needs the patch's preimage blob to be present
+          # locally; under a shallow checkout it never is, so the 3-way
+          # fallback silently degraded to "falling back to direct application"
+          # and failed on any patch cut against a slightly older main.
+          fetch-depth: 0
+
+      - name: Apply queued patches
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          patches=(.agent/patches/*.patch)
+          if [ ${#patches[@]} -eq 0 ]; then
+            echo "No queued patches — nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Base commit: $(git log --oneline -1)"
+          for p in "${patches[@]}"; do
+            echo "::group::Applying $p"
+            # --index stages the result; a patch that does not apply cleanly
+            # fails the job loudly instead of committing garbage.
+            #
+            # Three forms, in order. Zero-context (-U0) diffs are attractive
+            # across the agent bridge — they carry NO context lines, so a
+            # mis-transcribed character in a box-drawing comment cannot break
+            # the apply — but git refuses them without --unidiff-zero. A 3-way
+            # merge is the last resort for a patch cut against a main that has
+            # since moved.
+            #
+            # ORDER MATTERS. --unidiff-zero MUST be tried FIRST, and this
+            # workflow had it second until 2026-08-16.
+            #
+            # Plain `git apply` does not REJECT a zero-context hunk it cannot
+            # place. It reports success and appends the content at the END of
+            # the file. Reproduced directly:
+            #
+            #   8-line file, -U0 patch inserting one line at line 3, applied to
+            #   a file whose content had since changed:
+            #     git apply               -> exit 0, line landed at line 9 (EOF)
+            #     git apply --unidiff-zero-> exit 0, line landed at line 3
+            #
+            # Both exit 0. Only the second is correct. The sibling Club Arena
+            # repo hit exactly this on 2026-08-15: six imports and a JSX block
+            # were appended after a component's closing brace, at line 1402
+            # instead of lines 28/54/713/1060, and the job went green. It was
+            # caught only by byte-diffing the runner's output afterwards.
+            #
+            # Trying --unidiff-zero first is safe for patches that DO carry
+            # context: verified that a context-bearing patch whose context has
+            # drifted is still rejected under --unidiff-zero, exactly as it is
+            # under the plain form. The flag relaxes the no-context sanity
+            # check, not context matching itself.
+            if git apply --index --unidiff-zero --whitespace=nowarn "$p"; then
+              echo "applied (unidiff-zero)"
+            elif git apply --index --whitespace=nowarn "$p"; then
+              echo "applied (standard)"
+            elif git apply --index --3way --whitespace=nowarn "$p"; then
+              echo "applied (3-way)"
+            else
+              echo "::error::Patch $p did not apply. Reject detail follows."
+              git apply --check --verbose "$p" || true
+              exit 1
+            fi
+            git rm -q "$p"
+            git commit -m "agent-patch: apply $(basename "$p")"
+            echo "::endgroup::"
+          done
+          git push
