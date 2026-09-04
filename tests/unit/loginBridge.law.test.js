@@ -367,7 +367,10 @@ describe('vendor edits go upstream in the same change (pin 15)', () => {
     const ci = read('.github/workflows/ci.yml');
     const step = ci.slice(ci.indexOf('Vendor <-> upstream ratchet'), ci.indexOf('- name: Install\n'));
     expect(step).toMatch(/run: node scripts\/check-vendor-upstream-sync\.mjs/);
-    expect(step).toMatch(/GH_PAT: \$\{\{ secrets\.GH_PAT \}\}/);
+    // The upstream repo is private: the step must carry a token that can read
+    // it (the App token first - GH_PAT alone failed the clone on 2026-09-04).
+    expect(step).toMatch(/GH_PAT: \$\{\{ steps\.upstream-token\.outputs\.token \|\| secrets\.GH_PAT \}\}/);
+    expect(ci).toMatch(/repositories: commander-shared/);
     expect(step).not.toMatch(/continue-on-error/);
   });
 });

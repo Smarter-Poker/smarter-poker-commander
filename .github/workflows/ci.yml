@@ -52,9 +52,24 @@ jobs:
       # copy of Smarter-Poker/commander-shared; a vendor file that differs
       # from upstream main and is not in scripts/ci/vendor-upstream-divergence.json
       # fails here. Land the change upstream first, then sync. CLAUDE.md 3.5.
+      # The ratchet clones the PRIVATE upstream repo, which GITHUB_TOKEN cannot
+      # see (it is scoped to this repo). Mint an App installation token scoped
+      # to commander-shared - the same App agent-open-pr / agent-autopilot use,
+      # installed on all seven repos. GH_PAT is the fallback; it FAILED the
+      # clone on 2026-09-04 (first run of this step), which is why the App is
+      # first here too.
+      - name: Mint an App token that can read commander-shared
+        id: upstream-token
+        if: vars.AUTOPILOT_APP_ID != ''
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.AUTOPILOT_APP_ID }}
+          private-key: ${{ secrets.AUTOPILOT_APP_PRIVATE_KEY }}
+          owner: Smarter-Poker
+          repositories: commander-shared
       - name: Vendor <-> upstream ratchet
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ steps.upstream-token.outputs.token || secrets.GH_PAT }}
         run: node scripts/check-vendor-upstream-sync.mjs
       - name: Install
         run: npm install --legacy-peer-deps
