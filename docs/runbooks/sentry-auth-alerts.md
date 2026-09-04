@@ -25,21 +25,28 @@ and asserted by the login-bridge probe.
 
 API-route exceptions still go through `reportApiError()` (tags `route`, `method`).
 
-## Alert rules (created 2026-09-03/04 - IDs are real, links are the Sentry UI)
+## Alert rules (IDs are real, links are the Sentry UI)
 
-Project: `javascript-nextjsmarter-poker-world-hubs` (the Commander DSN points at
-the World Hub's Sentry project; all rules live there). Org `smarter-software-inc`.
+**Since 2026-09-04 Commander has its OWN project: `club-commander`
+(id 4512029155393536), org `smarter-software-inc`.** `SENTRY_DSN` and
+`NEXT_PUBLIC_SENTRY_DSN` on the commander Vercel project point at it (applied
+by the deploy that carried this file). Before that the DSN pointed at the
+World Hub project and the rules below lived there under other ids (17436063,
+17436064, 17436065, 17436248 - deleted once this deploy was live, see the
+changelog). The quota is still org-wide; see THE QUOTA below.
 
 | Rule id | Name | Trigger | Filter |
 |---|---|---|---|
-| 17436063 | Commander login ReferenceError (page) | >= 1 event in 5 min | message contains `commander.auth.reference_error` |
-| 17436064 | Commander login completion failing (page) | >= 5 events in 15 min | message contains `commander.auth.login_failed` |
-| 17436065 | Commander unhealable 401 spike (warn) | >= 20 events in 15 min | message contains `commander.auth.unauthorized` |
-| 17436248 | Commander login-bridge probe FAILED (Open Claw) | every event (30 min per issue) | message contains `commander.probe.login_bridge_failed` |
-| 17435218 | Auth Failure Spike | >= 10 events in 5 min | message contains `commander.auth` OR `auth` (was unfiltered - fired on any noisy issue) |
-| 17435219 | Session Token Validation Error | first seen | message contains `jwt` |
-| 17435220 | Repeated Probe Auth Failure | >= 3 in 15 min | message contains `probe` |
-| 17435221 | New Unhandled Auth Error | first seen | message contains `auth` |
+| 17436602 | Commander login ReferenceError (page) | >= 1 event in 5 min | message contains `commander.auth.reference_error` |
+| 17436603 | Commander login completion failing (page) | >= 5 events in 15 min | message contains `commander.auth.login_failed` |
+| 17436604 | Commander unhealable 401 spike (warn) | >= 20 events in 15 min | message contains `commander.auth.unauthorized` |
+| 17436605 | Commander login-bridge probe FAILED (Open Claw) | every event (30 min per issue) | message contains `commander.probe.login_bridge_failed` |
+| 17436606 | Commander: any new server error (first seen) | first seen | (none) - a new issue in a project that carries only Commander is worth one email |
+
+Rules that remain in the World Hub project and are NOT Commander's any more:
+17435218 Auth Failure Spike, 17435219 Session Token Validation Error, 17435220
+Repeated Probe Auth Failure, 17435221 New Unhandled Auth Error (they were
+created 2026-09-03 with hub-wide filters; the hub keeps them).
 
 All notify the org member (fallthrough: active members). Rule URLs:
 `https://smarter-software-inc.sentry.io/alerts/rules/javascript-nextjsmarter-poker-world-hubs/<id>/details/`

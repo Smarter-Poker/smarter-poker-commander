@@ -50,6 +50,9 @@ const report = await runLoginBridgeProbe({
   timeoutMs: process.env.PROBE_TIMEOUT_MS,
   email: process.env.PROBE_EMAIL,
   password: process.env.PROBE_PASSWORD,
+  // PROBE_LOCAL=1: the target is a `next start` of this commit in CI (see the
+  // core's `local` option) - production-only rows are skipped or warnings.
+  local: process.env.PROBE_LOCAL === '1',
 });
 
 if (process.env.GITHUB_OUTPUT) {

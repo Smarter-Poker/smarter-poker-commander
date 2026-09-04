@@ -13,6 +13,14 @@
  *     password -> check-subscription -> dashboard flow lands on the dashboard
  *     with no "Session Is Not Valid" banner, and a hand-tampered staff session
  *     self-heals on reload instead of bouncing to login.
+ *   - [signed-in] THE HOP USERS ACTUALLY TAKE: already signed in on
+ *     smarter.poker, nothing on commander.smarter.poker, press "Continue As
+ *     Smarter.Poker" - and land on the commander dashboard without ever
+ *     typing a password. That is the path that was broken on 2026-09-03.
+ *
+ * Runs in three browsers (playwright.config.ts): desktop Chromium, desktop
+ * WebKit and an iPhone-sized mobile Safari, because the first report of the
+ * outage said "issues with mobile" and Safari partitions storage differently.
  *
  * Base URL: PLAYWRIGHT_BASE_URL (CI points it at production; locally it is the
  * dev server on :3001). The hub origin is PLAYWRIGHT_HUB_ORIGIN
@@ -23,6 +31,26 @@ import { test, expect, type Page } from '@playwright/test';
 const HUB = process.env.PLAYWRIGHT_HUB_ORIGIN || 'https://smarter.poker';
 const EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL;
 const PASSWORD = process.env.PLAYWRIGHT_TEST_PASSWORD;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuklfnapbkmacvwxktbh.supabase.co';
+// Publishable key - it ships in the client bundle.
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable__41LpJpzrfrb3hSUpEaYCA_tF53bBJx';
+
+/**
+ * A hub session the way the hub itself stores it: supabase-js v2 writes the
+ * password-grant response verbatim under localStorage['smarter-poker-auth'].
+ * Obtained over the API so the spec does not depend on the hub's login form.
+ */
+async function hubSessionViaPasswordGrant(): Promise<Record<string, unknown>> {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', apikey: SUPABASE_ANON },
+    body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+  });
+  if (!res.ok) throw new Error(`password grant failed: ${res.status}`);
+  const session = await res.json();
+  if (!session?.access_token || !session?.refresh_token || !session?.user) throw new Error('grant returned no session');
+  return session;
+}
 
 function collectReferenceErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -129,5 +157,43 @@ test.describe('signed-in flow', () => {
     }, { timeout: 20_000 }).not.toBe('tampered');
     await expect(page.getByText(/your session is not valid/i)).toHaveCount(0);
     expect(page.url()).not.toContain('/commander/login');
+  });
+
+  test('signed in on the hub, "Continue As Smarter.Poker" reaches the commander dashboard with no password', async ({ page, baseURL }) => {
+    const refErrors = collectReferenceErrors(page);
+    const commanderOrigin = new URL(baseURL!).origin;
+    test.skip(commanderOrigin === new URL(HUB).origin, 'the hop only exists between two origins');
+
+    // 1. Be signed in on smarter.poker, and ONLY there.
+    const session = await hubSessionViaPasswordGrant();
+    await page.goto(`${HUB}/commander/login?probe=1`);
+    await page.evaluate((s) => {
+      localStorage.setItem('smarter-poker-auth', JSON.stringify(s));
+      localStorage.removeItem('commander_staff');
+    }, session);
+
+    // 2. Arrive on the commander origin with nothing, the way a bookmark does.
+    await page.goto('/commander/login');
+    await expect(page.getByRole('button', { name: /continue with sso/i })).toBeVisible({ timeout: 15_000 });
+    const hasSessionHere = await page.evaluate(() => !!localStorage.getItem('smarter-poker-auth'));
+    expect(hasSessionHere, 'the commander origin must start signed out for this to be the hop').toBe(false);
+
+    // 3. Press the button. Hub bridge (?bridge=1) -> one-time SSO token ->
+    //    /auth/sso on the commander origin -> dashboard. No form, no password.
+    let typedPassword = false;
+    page.on('request', (req) => {
+      if (req.method() === 'POST' && /grant_type=password/.test(req.url())) typedPassword = true;
+    });
+    await page.getByRole('button', { name: /continue with sso/i }).click();
+    await page.waitForURL((u) => u.origin === commanderOrigin && /\/commander\/dashboard/.test(u.pathname), { timeout: 45_000 });
+
+    expect(typedPassword, 'the hop must never fall back to a password grant').toBe(false);
+    await expect(page.getByText(/your session is not valid/i)).toHaveCount(0);
+    await expect(page.getByText(/sign-in failed/i)).toHaveCount(0);
+    const staff = await page.evaluate(() => JSON.parse(localStorage.getItem('commander_staff') || 'null'));
+    expect(staff?.sig, 'the commander origin must now hold a server-signed staff session').toBeTruthy();
+    const copied = await page.evaluate(() => !!localStorage.getItem('smarter-poker-auth'));
+    expect(copied, 'the platform session must have been copied to the commander origin').toBe(true);
+    expect(refErrors).toEqual([]);
   });
 });
