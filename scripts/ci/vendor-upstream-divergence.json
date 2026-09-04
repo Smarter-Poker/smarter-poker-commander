@@ -1,0 +1,275 @@
+{
+  "$comment": "Every vendor/commander-shared/src file allowed to differ from Smarter-Poker/commander-shared main. Read scripts/check-vendor-upstream-sync.mjs. This list may only SHRINK: removing an entry means the file is identical again. Adding one is a reviewed decision - say why and which direction the fix goes.",
+  "allowed": {
+    "components/commander/admin/ArenaLedger.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/members/AddMemberModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/members/MemberCard.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/members/MemberDetailPanel.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/modals/AddBuyinModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/modals/CreateTournamentModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/modals/EliminatePlayerModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/modals/PayoutModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/modals/SeatPlayerModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/promotions/PromotionBuilder.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/promotions/PromotionCard.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/shared/CommanderLayout.jsx": {
+      "kind": "differs",
+      "reason": "upstream carries the #ClubButtons surface the hub uses; vendor does not ship club-buttons/. Direction: reconcile by vendoring club-buttons, then UPSTREAM -> vendor.",
+      "since": "2026-09-04"
+    },
+    "components/commander/shared/ConfirmModal.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/shared/ConnectionPill.jsx": {
+      "kind": "vendor-only",
+      "reason": "vendor-only component. Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "components/commander/shared/DealerTicker.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/shared/FloorCallAlert.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/tournaments/BlindStructureEditor.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/commander/tournaments/tournamentTemplates.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/seo/SEOHead.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "components/ui/SkeletonDark.jsx": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "engine/EventBus.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "hooks/useAdaptivePoll.js": {
+      "kind": "vendor-only",
+      "reason": "vendor-only hook. Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "hooks/useDebounce.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "hooks/useTournamentRealtime.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "hooks/useTrainingBus.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "hooks/useWakeLock.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "index.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/apiRateLimit.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/authUtils.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/broadcastSync.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/audit.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/auth.js": {
+      "kind": "differs",
+      "reason": "vendor: dedicated signing-secret chain, TTLs, owner renew. Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/clientAuth.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/colorUtils.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/formatters.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/icm-utils.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/rateLimit.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/structureValidation.js": {
+      "kind": "vendor-only",
+      "reason": "vendor-only module (used by tournament pages). Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/tournamentAutoBreak.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/useBusBridge.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/commander/useCommanderSync.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/gates/premiumFeatureGate.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/home-games/messenger.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/home-games/rpcBridge.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/parseBlindStructure.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/sentryWrap.js": {
+      "kind": "differs",
+      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
+      "since": "2026-09-04"
+    },
+    "lib/serverAuth.js": {
+      "kind": "differs",
+      "reason": "vendor carries the 2026-09-01 ES256/JWKS fix; upstream still HS256. Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "lib/supabase.js": {
+      "kind": "differs",
+      "reason": "vendor: single-instance guard + publishable key. Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "lib/supabaseKeys.js": {
+      "kind": "vendor-only",
+      "reason": "vendor-only: publishable-key resolver (2026-08-19). Direction: VENDOR -> upstream.",
+      "since": "2026-09-04"
+    },
+    "lib/supabaseServerClient.js": {
+      "kind": "differs",
+      "reason": "vendor: JWT-decode fallback patches. Direction: VENDOR -> upstream (review).",
+      "since": "2026-09-04"
+    },
+    "components/club-buttons/ClubButtons.jsx": {
+      "kind": "upstream-only",
+      "reason": "upstream-only: #ClubButtons surface (hub). Direction: UPSTREAM -> vendor together with CommanderLayout.",
+      "since": "2026-09-04"
+    },
+    "components/club-buttons/club-buttons.css": {
+      "kind": "upstream-only",
+      "reason": "upstream-only: #ClubButtons surface (hub). Direction: UPSTREAM -> vendor together with CommanderLayout.",
+      "since": "2026-09-04"
+    },
+    "components/club-buttons/index.js": {
+      "kind": "upstream-only",
+      "reason": "upstream-only: #ClubButtons surface (hub). Direction: UPSTREAM -> vendor together with CommanderLayout.",
+      "since": "2026-09-04"
+    },
+    "lib/gates/vipCache.js": {
+      "kind": "upstream-only",
+      "reason": "upstream-only (hub VIP cache). Direction: UPSTREAM -> vendor if Commander ever needs it; otherwise leave.",
+      "since": "2026-09-04"
+    }
+  }
+}

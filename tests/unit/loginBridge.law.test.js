@@ -388,3 +388,15 @@ describe('owner sessions are short-lived and renewed cheaply (pin 14)', () => {
     expect(fn.indexOf('renewStaffSession(')).toBeLessThan(fn.indexOf('mintStaffSession('));
   });
 });
+
+describe('vendor edits go upstream in the same change (pin 15)', () => {
+  it('the ratchet, its baseline and the sync script exist and CI runs the ratchet with a token', () => {
+    expect(read('scripts/check-vendor-upstream-sync.mjs')).toMatch(/NEW DIVERGENCE/);
+    expect(read('scripts/sync-vendor-from-upstream.sh')).toMatch(/commander-shared/);
+    const ci = read('.github/workflows/ci.yml');
+    const step = ci.slice(ci.indexOf('Vendor <-> upstream ratchet'), ci.indexOf('- name: Install\n'));
+    expect(step).toMatch(/run: node scripts\/check-vendor-upstream-sync\.mjs/);
+    expect(step).toMatch(/GH_PAT: \$\{\{ secrets\.GH_PAT \}\}/);
+    expect(step).not.toMatch(/continue-on-error/);
+  });
+});

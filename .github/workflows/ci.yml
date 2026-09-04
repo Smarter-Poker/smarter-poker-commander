@@ -48,6 +48,14 @@ jobs:
             echo 'DRIFT_EOF'
           } >> "$GITHUB_OUTPUT"
           exit $CODE
+      # Vendor <-> upstream ratchet (2026-09-04). vendor/commander-shared is a
+      # copy of Smarter-Poker/commander-shared; a vendor file that differs
+      # from upstream main and is not in scripts/ci/vendor-upstream-divergence.json
+      # fails here. Land the change upstream first, then sync. CLAUDE.md 3.5.
+      - name: Vendor <-> upstream ratchet
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: node scripts/check-vendor-upstream-sync.mjs
       - name: Install
         run: npm install --legacy-peer-deps
       # BLOCKING. `next lint` was advisory and red for months (deleted 2026-09-04),
