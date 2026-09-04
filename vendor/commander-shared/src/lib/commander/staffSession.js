@@ -95,6 +95,34 @@ export function readAccessToken() {
   return '';
 }
 
+// ── Live token provider ─────────────────────────────────────────────────────
+// readAccessToken() returns whatever the SDK last wrote to localStorage. After
+// a tab sits idle past the 1-hour JWT expiry that token is dead and every
+// re-mint fails with 401 "Invalid token" - the self-heal heals nothing. The
+// SDK knows how to refresh it, but this module is dependency-free (it lives
+// in the vendored package), so the app registers a provider instead:
+//
+//   setAccessTokenProvider(async () => (await supabase.auth.getSession()).data.session?.access_token)
+//
+// currentAccessToken() prefers the provider (fresh token, refreshed on demand)
+// and falls back to the raw localStorage read when none is registered or the
+// provider throws.
+let _tokenProvider = null;
+
+export function setAccessTokenProvider(fn) {
+  _tokenProvider = typeof fn === 'function' ? fn : null;
+}
+
+export async function currentAccessToken() {
+  if (_tokenProvider) {
+    try {
+      const t = await _tokenProvider();
+      if (typeof t === 'string' && t) return t;
+    } catch { /* fall back to the cached token */ }
+  }
+  return readAccessToken();
+}
+
 /** The Supabase user object cached in localStorage by the SDK, or null. */
 export function readAuthUser() {
   const unified = lsGet('smarter-poker-auth');
@@ -271,7 +299,7 @@ export function refreshStaffSession({ force = false } = {}) {
 
   _refreshPromise = (async () => {
     try {
-      const token = readAccessToken();
+      const token = await currentAccessToken();
       if (!token) return false;
       const authUser = readAuthUser();
       // The venue the client believes it is in wins. CommanderLayout's club
