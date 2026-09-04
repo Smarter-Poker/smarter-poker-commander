@@ -273,16 +273,33 @@ describe('the outage would be visible (pin 10)', () => {
 });
 
 describe('production is watched (pin 11)', () => {
-  it('the probe script and its 30-minute workflow exist and cover both legs', () => {
-    const probe = read('scripts/probe-login-bridge.mjs');
+  it('the probe core and its 30-minute workflow exist and cover both legs', () => {
+    const probe = read('src/lib/probe/loginBridgeProbe.mjs');
     for (const s of ['/commander/login', '/auth/sso', '/api/auth/sso-exchange', '/api/commander/check-subscription', '/api/auth/commander-sso', '/api/health', 'completeLogin(', 'x-staff-session']) {
       expect(probe, `probe must check ${s}`).toContain(s);
     }
+    // The core never reads credentials itself; each caller passes its own.
+    expect(code(probe)).not.toMatch(/process\.env/);
+    expect(code(read('scripts/probe-login-bridge.mjs'))).toMatch(/runLoginBridgeProbe\(/);
     const wf = read('.github/workflows/login-bridge-probe.yml');
     expect(wf).toMatch(/cron: '7,37 \* \* \* \*'/);
     expect(wf).toMatch(/node scripts\/probe-login-bridge\.mjs/);
     expect(wf).toMatch(/login-bridge-probe/); // the issue label
     expect(wf).toMatch(/playwright test tests\/e2e\/login-bridge\.spec\.ts/);
+  });
+
+  it('the probe is also an Open Claw HTTP job on the commander origin (pin 16)', () => {
+    // hub CLAUDE.md 10.9: nothing critical on the Claude scheduler; 11: every
+    // scheduled application trigger goes through Open Claw. The GitHub cron is
+    // best-effort; this route is what the real cron on Hetzner calls.
+    const route = code(read('pages/api/internal/login-bridge-probe.js'));
+    expect(route).toMatch(/runLoginBridgeProbe\(/);
+    expect(route).toMatch(/process\.env\.CRON_SECRET/);
+    expect(route, 'bearer must be compared in constant time').toMatch(/timingSafeEqual/);
+    expect(route, 'missing CRON_SECRET must fail loudly, never pass').toMatch(/status\(503\)/);
+    expect(route).toMatch(/PROBE_LOGIN_EMAIL/);
+    expect(route, 'a failing probe must reach Sentry').toMatch(/commander\.probe\.login_bridge_failed/);
+    expect(route).toMatch(/maxDuration/);
   });
 
   it('the Playwright spec covers the outage shapes', () => {

@@ -88,12 +88,28 @@ both `node_modules` and `node_modules/`; the law test checks the index.
 
 ## 4. The probe is the truth about production
 
-`.github/workflows/login-bridge-probe.yml` runs `scripts/probe-login-bridge.mjs`
-plus `tests/e2e/login-bridge.spec.ts` (Playwright) every 30 minutes and on
-relevant merges. It files ONE self-closing issue labelled `login-bridge-probe`.
-If that issue is open, sign-in is or was broken. Runbook:
-`docs/runbooks/login-bridge.md`. The signed-in leg needs the `PROBE_EMAIL` /
-`PROBE_PASSWORD` secrets on THIS repo (not Club Arena's).
+The probe core is `src/lib/probe/loginBridgeProbe.mjs` (`runLoginBridgeProbe`).
+It reads no credentials itself; two callers pass their own:
+
+- **Primary schedule: Open Claw on Hetzner, hourly at :22** (since 2026-09-04;
+  hub CLAUDE.md 10.9 forbids the Claude scheduler, 11 routes every scheduled
+  trigger through Open Claw). The hub dispatcher fires
+  `smarter.poker/api/commander/internal/login-bridge-probe`, the hub rewrite
+  lands on `pages/api/internal/login-bridge-probe.js`, which checks the
+  `CRON_SECRET` bearer, runs both legs with `PROBE_LOGIN_EMAIL`/`_PASSWORD`
+  (Vercel env on this project), writes its run to `cron_execution_log` as
+  `/commander/internal/login-bridge-probe` (so the hub's cron watchdogs see
+  it) and sends `commander.probe.login_bridge_failed` to Sentry on failure.
+  It answers 503 until `CRON_SECRET` is set on THIS Vercel project with the
+  hub-vanguard value (Dan-only: it is a sensitive env there).
+- **Secondary: `.github/workflows/login-bridge-probe.yml`** runs the CLI
+  `scripts/probe-login-bridge.mjs` plus `tests/e2e/login-bridge.spec.ts`
+  (Playwright) every 30 minutes and on relevant merges. It files ONE
+  self-closing issue labelled `login-bridge-probe`. If that issue is open,
+  sign-in is or was broken. Its signed-in leg needs the `PROBE_EMAIL` /
+  `PROBE_PASSWORD` secrets on THIS repo (not Club Arena's).
+
+Runbook: `docs/runbooks/login-bridge.md`.
 
 ## 5. Runbooks
 

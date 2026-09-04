@@ -42,7 +42,8 @@ forever.
 | Source | `no-undef` blocking lint | `npm run lint:undef`, CI step "Undefined identifiers (blocking)" |
 | Source | Login-bridge law (static pins) | `tests/unit/loginBridge.law.test.js` |
 | Behaviour | staffSession suite | `tests/unit/clientStaffSession.test.js` |
-| Production | Structural + signed-in probe, every 30 min | `.github/workflows/login-bridge-probe.yml` -> `scripts/probe-login-bridge.mjs` |
+| Production | Structural + signed-in probe, hourly at :22 (PRIMARY, real cron) | Open Claw on Hetzner -> `smarter.poker/api/commander/internal/login-bridge-probe` -> `pages/api/internal/login-bridge-probe.js` -> `src/lib/probe/loginBridgeProbe.mjs` |
+| Production | Structural + signed-in probe, every 30 min (secondary, files the issue) | `.github/workflows/login-bridge-probe.yml` -> `scripts/probe-login-bridge.mjs` (CLI over the same core) |
 | Production | Real-browser E2E, every 30 min | same workflow, job `e2e` -> `tests/e2e/login-bridge.spec.ts` |
 | Runtime | Sentry: `commander.auth.*` messages | `src/lib/authFlowMonitor.js`, alert rules in `sentry-auth-alerts.md` |
 
@@ -77,5 +78,17 @@ it when green. If that issue is open, sign-in is (or was) broken in production.
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | Vercel: smarter-poker-commander | error capture |
 | `PROBE_EMAIL`, `PROBE_PASSWORD` | GitHub repo secrets | signed-in probe leg + Playwright signed-in spec (a Commander owner test account) |
 
-Until `PROBE_EMAIL`/`PROBE_PASSWORD` exist, the probe and E2E run their
-signed-out legs only and say so in the log.
+Until `PROBE_EMAIL`/`PROBE_PASSWORD` exist, the GitHub probe and E2E run their
+signed-out legs only and say so in the log. The Open Claw job uses
+`PROBE_LOGIN_EMAIL`/`PROBE_LOGIN_PASSWORD` (Vercel env on
+smarter-poker-commander, already set) and so runs the signed-in leg.
+
+| `CRON_SECRET` | Vercel: smarter-poker-commander (same value as hub-vanguard) | the Open Claw probe route; 503 with a clear message until set |
+
+The Open Claw run is visible three ways: the dispatcher journal on the
+`openclaw-dispatcher` VM (`journalctl -u openclaw`), a row per run in
+`cron_execution_log` (`job_name = '/commander/internal/login-bridge-probe'`,
+which the hub's `check-cron-liveness.mjs` and `cron-staleness-watchdog` read),
+and on failure a Sentry event `commander.probe.login_bridge_failed`
+(tags `app=commander probe=login-bridge`). Run it by hand:
+`curl -H "Authorization: Bearer $CRON_SECRET" https://smarter.poker/api/commander/internal/login-bridge-probe`.
