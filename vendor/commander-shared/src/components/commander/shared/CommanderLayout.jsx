@@ -25,9 +25,8 @@ import { supabase } from '../../../lib/supabase';
 import CommanderEffectsProvider from './CommanderEffectsProvider';
 import PushNotificationProvider from './PushNotificationProvider';
 import useBusBridge from '../../../lib/commander/useBusBridge';
-import { getToken } from '../../../lib/commander/clientAuth';
 import { commanderFetch } from '../../../lib/commander/commanderFetch';
-import { mintStaffSession, refreshStaffSession, readStaffSession, isStaffSessionHealthy } from '../../../lib/commander/staffSession';
+import { mintStaffSession, refreshStaffSession, readStaffSession, isStaffSessionHealthy, currentAccessToken } from '../../../lib/commander/staffSession';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/commander/dashboard', icon: Layout },
@@ -193,7 +192,8 @@ export default function CommanderLayout({ children, title }) {
     try {
       try { localStorage.setItem('commander_active_venue_id', String(account.venue_id)); } catch (_) { /* ignore */ }
 
-      const token = getToken();
+      // Refreshed on demand - the cached token may be an hour stale.
+      const token = await currentAccessToken();
       const current = readStaffSession() || {};
       const result = await mintStaffSession(token, {
         user: current.user_id ? { id: current.user_id, email: current.email } : undefined,
