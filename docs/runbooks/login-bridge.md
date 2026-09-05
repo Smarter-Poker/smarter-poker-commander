@@ -51,6 +51,36 @@ forever.
 The probe files ONE self-updating issue labelled `login-bridge-probe` and closes
 it when green. If that issue is open, sign-in is (or was) broken in production.
 
+## First: is it a 401? Then the bridge is probably fine.
+
+A page reading `CRITICAL /api/internal/login-bridge-probe failed 2x in a row:
+HTTP 401 {"error":"Unauthorized"}` is **not** a broken sign-in. That body is
+the HUB RELAY's own refusal (World Hub `pages/api/internal/login-bridge-probe.js`),
+which happens before Commander is called at all. Commander's own 401 carries a
+`ticket` field and the relay adds `relay` and `commander_status`, so a bare
+`{"error":"Unauthorized"}` means the dispatcher's `CRON_SECRET` was rejected by
+the hub - the probe never ran.
+
+On 2026-09-05 that exact page arrived while the bridge was passing 36/36
+checks on both legs. `CRON_SECRET` had been rotated in Vercel at 03:20:56 UTC
+and never reached the Open Claw host, so **every** cron job on the estate was
+401ing; this probe is just the one wired to page. Confirm in one command,
+before opening anything:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -m 90 \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  https://smarter.poker/api/internal/login-bridge-probe
+```
+
+200 (or 500 with failing rows) means the relay let you in and the answer is
+real - continue below. 401 means the secret drifted: the fix is
+`/etc/openclaw.env` on the Open Claw host - the `EnvironmentFile` that
+`openclaw.service` reads - then `systemctl restart openclaw`. Editing
+`/opt/openclaw/.env` does nothing; it is only the deploy seed, and the 3.5-hour
+repair on 2026-09-05 lost a restart cycle to that. See the World Hub changelog
+`docs/changelog/2026-09-05-the-secret-file-that-is-read-and-the-one-that-is-not.md`.
+
 ## Triage, fastest first
 
 1. **Open the probe issue.** The table names the exact check. Most-likely rows:
