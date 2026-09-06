@@ -9,6 +9,16 @@ import { createClient } from '../../../../../src/lib/supabaseServerClient';
 import { guardUser } from '../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../src/lib/sentryWrap';
+import { respondToMembershipRpcError } from '../../../../../src/lib/home-games/membershipRpcError';
+import {
+  isHomeGamesUuid,
+  resolveGroupMembershipAccess,
+} from '../../../../../src/lib/home-games/membershipBoundary';
+import {
+  groupManagerRsvps,
+  MANAGER_RSVP_SELECT,
+  toManagerRsvpDto,
+} from '../../../../../src/lib/home-games/rsvpBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -20,6 +30,21 @@ function getSupabase() {
     return _supabase;
 }
 
+const RSVP_WITH_EVENT_SELECT = `
+  id,
+  game_id,
+  user_id,
+  response,
+  is_confirmed,
+  bringing_guests,
+  guest_names,
+  message,
+  seat_number,
+  responded_at,
+  updated_at,
+  commander_home_games (group_id, host_id, max_players, rsvp_yes)
+`;
+
 export default async function handler(req, res) {
   try {
     if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
@@ -30,8 +55,8 @@ export default async function handler(req, res) {
 
     const { id: eventId } = req.query;
 
-    if (!eventId) {
-      return res.status(400).json({ error: 'Event ID required' });
+    if (!isHomeGamesUuid(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
     }
 
     if (req.method === 'GET') {
@@ -71,56 +96,70 @@ async function getRsvps(req, res, eventId) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // Get event and check membership
-    const { data: event } = await getSupabase()
+    // Only the event host, canonical group owner, or an approved group admin
+    // may read the full RSVP roster and its private messages/guest names.
+    const { data: event, error: eventError } = await getSupabase()
       .from('commander_home_games')
       .select('group_id, host_id')
       .eq('id', eventId)
       .maybeSingle();
+    if (eventError) throw eventError;
 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const { data: membership } = await getSupabase()
-      .from('commander_home_members')
-      .select('role')
-      .eq('group_id', event.group_id)
-      .eq('user_id', user.id)
-      .eq('status', 'approved')
-      .maybeSingle();
+    const [groupResult, membershipResult] = await Promise.all([
+      getSupabase()
+        .from('commander_home_groups')
+        .select('id, owner_id')
+        .eq('id', event.group_id)
+        .maybeSingle(),
+      getSupabase()
+        .from('commander_home_members')
+        .select('role, status')
+        .eq('group_id', event.group_id)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+    if (groupResult.error) throw groupResult.error;
+    if (membershipResult.error) throw membershipResult.error;
+    if (!groupResult.data) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
 
-    if (!membership) {
-      return res.status(403).json({ error: 'You are not a member of this group' });
+    const access = resolveGroupMembershipAccess({
+      ownerId: groupResult.data.owner_id,
+      userId: user.id,
+      membership: membershipResult.data,
+    });
+    const mayManageRsvps = event.host_id === user.id || access.isManager;
+    if (!mayManageRsvps) {
+      return res.status(403).json({ error: 'Only the event host or group managers can view RSVPs' });
     }
 
     const { data: rsvps, error } = await getSupabase()
       .from('commander_home_rsvps')
-      .select(`
-        *,
-        profiles:user_id (id, display_name, avatar_url)
-      `)
+      .select(MANAGER_RSVP_SELECT)
       .eq('game_id', eventId)
       .order('responded_at', { ascending: true })
-          .limit(100);
+      .limit(100);
 
     if (error) throw error;
 
-    // Group by response
-    const grouped = {
-      yes: rsvps?.filter(r => r.response === 'yes') || [],
-      maybe: rsvps?.filter(r => r.response === 'maybe') || [],
-      no: rsvps?.filter(r => r.response === 'no') || [],
-      waitlist: rsvps?.filter(r => r.response === 'waitlist') || []
-    };
+    const normalizedRsvps = (rsvps || []).map(toManagerRsvpDto).filter(Boolean);
+    const grouped = groupManagerRsvps(normalizedRsvps);
 
     // Find user's RSVP
-    const myRsvp = rsvps?.find(r => r.user_id === user.id);
+    const myRsvp = normalizedRsvps.find(r => r.user_id === user.id);
 
     return res.status(200).json({
-      rsvps: grouped,
+      // The live World manager renders an array. Keep the grouped view under
+      // an explicit key for callers that need counts by response.
+      rsvps: normalizedRsvps,
+      grouped,
       my_rsvp: myRsvp || null,
-      is_host: event.host_id === user.id
+      is_host: mayManageRsvps,
     });
   } catch (error) {
     console.warn('Get RSVPs error:', error);
@@ -143,7 +182,7 @@ async function submitRsvp(req, res, eventId) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { response, bringing_guests, guest_names, message } = req.body;
+    const { response, bringing_guests, guest_names, message } = req.body || {};
 
     if (!response || !['yes', 'maybe', 'no'].includes(response)) {
       return res.status(400).json({ error: 'Valid response required (yes, maybe, no)' });
@@ -152,11 +191,12 @@ async function submitRsvp(req, res, eventId) {
     // Get event
     const { data: event, error: eventError } = await getSupabase()
       .from('commander_home_games')
-      .select('group_id, host_id, max_players, rsvp_yes, allow_guests, guest_limit, status, scheduled_date, start_time, rsvp_closes_at, cancelled_at')
+      .select('group_id, host_id, max_players, allow_guests, guest_limit, status, scheduled_date, start_time, rsvps_closed, rsvp_closes_at, cancelled_at')
       .eq('id', eventId)
       .maybeSingle();
 
-    if (eventError || !event) {
+    if (eventError) throw eventError;
+    if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
@@ -169,6 +209,9 @@ async function submitRsvp(req, res, eventId) {
     }
     if (event.cancelled_at) {
       return res.status(400).json({ error: 'This event has been cancelled' });
+    }
+    if (event.rsvps_closed) {
+      return res.status(400).json({ error: 'RSVPs are closed for this event' });
     }
     // Hard deadline if host set one (unambiguous timestamptz)
     if (event.rsvp_closes_at && new Date(event.rsvp_closes_at).getTime() <= Date.now()) {
@@ -186,70 +229,114 @@ async function submitRsvp(req, res, eventId) {
       }
     }
 
-    // Check membership
-    const { data: membership } = await getSupabase()
-      .from('commander_home_members')
-      .select('role')
-      .eq('group_id', event.group_id)
-      .eq('user_id', user.id)
-      .eq('status', 'approved')
-      .maybeSingle();
+    const [groupResult, membershipResult] = await Promise.all([
+      getSupabase()
+        .from('commander_home_groups')
+        .select('id, owner_id, is_active')
+        .eq('id', event.group_id)
+        .maybeSingle(),
+      getSupabase()
+        .from('commander_home_members')
+        .select('role, status')
+        .eq('group_id', event.group_id)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+    if (groupResult.error) throw groupResult.error;
+    if (membershipResult.error) throw membershipResult.error;
+    if (!groupResult.data) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    if (groupResult.data.is_active === false) {
+      return res.status(409).json({ error: 'This group is not accepting RSVPs' });
+    }
 
-    if (!membership) {
+    const access = resolveGroupMembershipAccess({
+      ownerId: groupResult.data.owner_id,
+      userId: user.id,
+      membership: membershipResult.data,
+    });
+    if (event.host_id !== user.id && !access.isMember) {
       return res.status(403).json({ error: 'You are not a member of this group' });
     }
 
-    // Check capacity for "yes" responses
-    let finalResponse = response;
-    if (response === 'yes') {
-      const totalGuests = bringing_guests || 0;
-      const spotsNeeded = 1 + totalGuests;
-
-      // Validate guest count
-      if (totalGuests > 0) {
-        if (!event.allow_guests) {
-          return res.status(400).json({ error: 'Guests are not allowed at this event' });
-        }
-        if (totalGuests > event.guest_limit) {
-          return res.status(400).json({ error: `Maximum ${event.guest_limit} guest(s) allowed` });
-        }
-      }
-
-      // Check if there's room
-      if (event.rsvp_yes + spotsNeeded > event.max_players) {
-        // Put on waitlist instead
-        finalResponse = 'waitlist';
-      }
+    const parsedGuestCount = Number(bringing_guests ?? 0);
+    if (!Number.isInteger(parsedGuestCount) || parsedGuestCount < 0 || parsedGuestCount > 10) {
+      return res.status(400).json({ error: 'bringing_guests must be an integer between 0 and 10' });
     }
+    const totalGuests = response === 'yes' ? parsedGuestCount : 0;
+    if (totalGuests > 0 && !event.allow_guests) {
+      return res.status(400).json({ error: 'Guests are not allowed at this event' });
+    }
+    if (totalGuests > 0 && event.guest_limit != null && totalGuests > event.guest_limit) {
+      return res.status(400).json({ error: `Maximum ${event.guest_limit} guest(s) allowed` });
+    }
+    if (guest_names != null && !Array.isArray(guest_names)) {
+      return res.status(400).json({ error: 'guest_names must be an array' });
+    }
+    const normalizedGuestNames = totalGuests > 0
+      ? (guest_names || [])
+          .slice(0, totalGuests)
+          .filter((name) => typeof name === 'string' && name.trim())
+          .map((name) => name.trim().slice(0, 80))
+      : [];
+    if (message != null && typeof message !== 'string') {
+      return res.status(400).json({ error: 'message must be a string' });
+    }
+    const normalizedMessage = typeof message === 'string'
+      ? message.trim().slice(0, 500) || null
+      : null;
+
+    // The World migration's BEFORE trigger owns the capacity decision under
+    // a parent-game row lock and counts guests. An application-side check of
+    // the cached rsvp_yes row count races and can incorrectly waitlist an
+    // existing RSVP, so always request the caller's intended response and
+    // reconcile from the row returned by Postgres.
+    const finalResponse = response;
 
     // Check for existing RSVP
-    const { data: existing } = await getSupabase()
+    const { data: existing, error: existingError } = await getSupabase()
       .from('commander_home_rsvps')
-      .select('id')
+      .select('id, response, is_confirmed, bringing_guests, seat_number')
       .eq('game_id', eventId)
       .eq('user_id', user.id)
       .maybeSingle();
+    if (existingError) throw existingError;
 
     let rsvp;
     if (existing) {
       // Update existing
+      const preservesConfirmation = finalResponse === 'yes'
+        && existing.response === 'yes'
+        && existing.is_confirmed === true
+        && totalGuests <= Number(existing.bringing_guests || 0);
+      const updatePayload = {
+        response: finalResponse,
+        bringing_guests: totalGuests,
+        guest_names: normalizedGuestNames,
+        message: normalizedMessage,
+        is_confirmed: event.host_id === user.id
+          ? finalResponse === 'yes'
+          : preservesConfirmation,
+        updated_at: new Date().toISOString(),
+      };
+      if (!preservesConfirmation && event.host_id !== user.id) {
+        updatePayload.seat_number = null;
+      } else if (finalResponse !== 'yes') {
+        updatePayload.seat_number = null;
+      }
+
       const { data, error } = await getSupabase()
         .from('commander_home_rsvps')
-        .update({
-          response: finalResponse,
-          bringing_guests: bringing_guests || 0,
-          guest_names: guest_names || [],
-          message,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', existing.id)
-        .select(`
-          *,
-          profiles:user_id (id, display_name, avatar_url)
-        `)
+        .select(MANAGER_RSVP_SELECT)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        if (respondToMembershipRpcError(res, error, { includeSuccess: false })) return;
+        throw error;
+      }
       rsvp = data;
     } else {
       // Create new
@@ -259,24 +346,29 @@ async function submitRsvp(req, res, eventId) {
           game_id: eventId,
           user_id: user.id,
           response: finalResponse,
-          bringing_guests: bringing_guests || 0,
-          guest_names: guest_names || [],
-          message,
+          bringing_guests: totalGuests,
+          guest_names: normalizedGuestNames,
+          message: normalizedMessage,
           is_confirmed: event.host_id === user.id // Auto-confirm host
         })
-        .select(`
-          *,
-          profiles:user_id (id, display_name, avatar_url)
-        `)
+        .select(MANAGER_RSVP_SELECT)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        if (respondToMembershipRpcError(res, error, { includeSuccess: false })) return;
+        throw error;
+      }
       rsvp = data;
     }
 
+    const normalizedRsvp = toManagerRsvpDto(rsvp);
+    if (!normalizedRsvp) {
+      return res.status(502).json({ error: 'RSVP was saved but could not be loaded' });
+    }
+
     return res.status(200).json({
-      rsvp,
-      message: finalResponse === 'waitlist'
+      rsvp: normalizedRsvp,
+      message: normalizedRsvp.response === 'waitlist'
         ? 'Added to waitlist - the event is currently full'
         : 'RSVP submitted'
     });
@@ -301,19 +393,20 @@ async function updateRsvp(req, res, eventId) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { rsvp_id, action, seat_number } = req.body;
+    const { rsvp_id, action, seat_number } = req.body || {};
 
     if (!rsvp_id || !action) {
       return res.status(400).json({ error: 'rsvp_id and action required' });
     }
 
     // Get event and RSVP
-    const { data: rsvp } = await getSupabase()
+    const { data: rsvp, error: rsvpError } = await getSupabase()
       .from('commander_home_rsvps')
-      .select('*, commander_home_games(group_id, host_id, max_players, rsvp_yes)')
+      .select(RSVP_WITH_EVENT_SELECT)
       .eq('id', rsvp_id)
       .eq('game_id', eventId)
       .maybeSingle();
+    if (rsvpError) throw rsvpError;
 
     if (!rsvp) {
       return res.status(404).json({ error: 'RSVP not found' });
@@ -323,16 +416,30 @@ async function updateRsvp(req, res, eventId) {
 
     // Check if user is host
     if (event.host_id !== user.id) {
-      // Check if admin
-      const { data: membership } = await getSupabase()
-        .from('commander_home_members')
-        .select('role')
-        .eq('group_id', event.group_id)
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .maybeSingle();
-
-      if (membership?.role !== 'owner' && membership?.role !== 'admin') {
+      const [groupResult, membershipResult] = await Promise.all([
+        getSupabase()
+          .from('commander_home_groups')
+          .select('id, owner_id')
+          .eq('id', event.group_id)
+          .maybeSingle(),
+        getSupabase()
+          .from('commander_home_members')
+          .select('role, status')
+          .eq('group_id', event.group_id)
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ]);
+      if (groupResult.error) throw groupResult.error;
+      if (membershipResult.error) throw membershipResult.error;
+      if (!groupResult.data) {
+        return res.status(404).json({ error: 'Group not found' });
+      }
+      const access = resolveGroupMembershipAccess({
+        ownerId: groupResult.data.owner_id,
+        userId: user.id,
+        membership: membershipResult.data,
+      });
+      if (!access.isManager) {
         return res.status(403).json({ error: 'Only the host or admins can manage RSVPs' });
       }
     }
@@ -389,15 +496,20 @@ async function updateRsvp(req, res, eventId) {
       .from('commander_home_rsvps')
       .update(updates)
       .eq('id', rsvp_id)
-      .select(`
-        *,
-        profiles:user_id (id, display_name, avatar_url)
-      `)
+      .select(MANAGER_RSVP_SELECT)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      if (respondToMembershipRpcError(res, error, { includeSuccess: false })) return;
+      throw error;
+    }
 
-    return res.status(200).json({ rsvp: updated });
+    const normalizedRsvp = toManagerRsvpDto(updated);
+    if (!normalizedRsvp) {
+      return res.status(502).json({ error: 'RSVP was updated but could not be loaded' });
+    }
+
+    return res.status(200).json({ rsvp: normalizedRsvp });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Update RSVP error:', error);

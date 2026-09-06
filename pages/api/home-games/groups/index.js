@@ -5,9 +5,15 @@
  * POST /api/commander/home-games/groups - Create group
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardUser } from '../../../../src/lib/commander/auth';
+import { getUser, guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import {
+  PUBLIC_GROUP_SELECT,
+  toPublicGroup,
+  STAFF_GROUP_SELECT,
+  toStaffGroup,
+} from '../../../../src/lib/home-games/publicGroupBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -23,7 +29,9 @@ function escapeIlike(s) { return (s || '').replace(/[%_\\]/g, c => '\\' + c); }
 
 export default async function handler(req, res) {
   try {
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+    if (req.method === 'GET') {
+      if (!applyRateLimit(req, res, LIMITS.read)) return;
+    } else if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
@@ -49,50 +57,46 @@ export default async function handler(req, res) {
 
 async function listGroups(req, res) {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.replace('Bearer ', '');
-
-    let userId = null;
-    if (token) {
-      const { data: authData } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-      userId = user?.id;
-    }
+    const userId = (await getUser(req, res))?.id || null;
 
     const safeP = (v) => Array.isArray(v) ? v[0] : (v || '');
     const my_groups = safeP(req.query.my_groups);
     const city = safeP(req.query.city);
     const state = safeP(req.query.state);
     const game_type = safeP(req.query.game_type);
+    let callerMemberships = [];
 
     let query = getSupabase()
       .from('commander_home_groups')
-      .select(`
-        *,
-        profiles:owner_id (id, display_name, avatar_url)
-      `)
+      .select(PUBLIC_GROUP_SELECT)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-          .limit(100);
+      .limit(100);
 
     // Filter to user's groups
-    if (my_groups === 'true' && userId) {
-      const { data: memberships } = await getSupabase()
+    if (my_groups === 'true') {
+      if (!userId) {
+        return res.status(401).json({ error: 'Authorization required' });
+      }
+
+      const { data: memberships, error: membershipError } = await getSupabase()
         .from('commander_home_members')
-        .select('group_id')
+        .select('group_id, role, status')
         .eq('user_id', userId)
         .eq('status', 'approved')
-            .limit(100);
+        .limit(100);
 
-      const groupIds = memberships?.map(m => m.group_id) || [];
+      if (membershipError) throw membershipError;
+      callerMemberships = memberships || [];
+
+      const groupIds = callerMemberships.map(m => m.group_id).filter(Boolean);
       if (groupIds.length > 0) {
-        query = query.in('id', groupIds)
-            .limit(100);
+        query = query.or(`owner_id.eq.${userId},id.in.(${groupIds.join(',')})`);
       } else {
-        return res.status(200).json({ groups: [] });
+        query = query.eq('owner_id', userId);
       }
     } else {
-      // Only show public groups to non-members
+      // The general directory is public-only, even for an authenticated user.
       query = query.eq('is_private', false);
     }
 
@@ -112,36 +116,29 @@ async function listGroups(req, res) {
 
     if (error) throw error;
 
-    // Add membership info for logged-in user
+    // Attach only the caller's own membership. Other member identities never
+    // cross the list endpoint.
     if (userId && data?.length > 0) {
-      const { data: memberships } = await getSupabase()
-        .from('commander_home_members')
-        .select('group_id, role, status')
-        .eq('user_id', userId)
-        .in('group_id', data.map(g => g.id));
+      if (my_groups !== 'true') {
+        const { data: memberships, error: membershipError } = await getSupabase()
+          .from('commander_home_members')
+          .select('group_id, role, status')
+          .eq('user_id', userId)
+          .in('group_id', data.map(g => g.id));
+        if (membershipError) throw membershipError;
+        callerMemberships = memberships || [];
+      }
 
       const membershipMap = {};
-      memberships?.forEach(m => {
+      callerMemberships.forEach(m => {
         membershipMap[m.group_id] = m;
       });
-
-      data.forEach(group => {
-        group.my_membership = membershipMap[group.id] || null;
-        // DEFENSIVE: Ensure profile data is never null
-        if (!group.profiles) {
-          group.profiles = { id: group.owner_id, display_name: 'Unknown Host', avatar_url: null };
-        }
-      });
-    } else if (data?.length > 0) {
-      // Add fallback profiles even for non-authenticated requests
-      data.forEach(group => {
-        if (!group.profiles) {
-          group.profiles = { id: group.owner_id, display_name: 'Unknown Host', avatar_url: null };
-        }
+      return res.status(200).json({
+        groups: data.map(group => toPublicGroup(group, membershipMap[group.id] || null)),
       });
     }
 
-    return res.status(200).json({ groups: data });
+    return res.status(200).json({ groups: (data || []).map(group => toPublicGroup(group)) });
   } catch (error) {
     console.warn('List groups error:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -229,13 +226,11 @@ async function createGroup(req, res) {
         profile_photo_url,   // Phase 17: required, validated above
         settings: settings || {}
       })
-      .select(`
-        *,
-        profiles:owner_id (id, display_name, avatar_url)
-      `)
+      .select(STAFF_GROUP_SELECT)
       .maybeSingle();
 
     if (error) throw error;
+    const responseGroup = toStaffGroup(group);
 
     // Fetch the social_pages row the autocreate trigger just created.
     // Relationship is reverse - social_pages.linked_entity_type='home_group'
@@ -248,13 +243,13 @@ async function createGroup(req, res) {
     try {
       const { data: socialPage } = await getSupabase()
         .from('social_pages')
-        .select('*')
+        .select('id, slug, name, description, avatar_url, cover_url, location_city, location_state, metadata')
         .eq('linked_entity_type', 'home_group')
         .eq('linked_entity_id', String(group.id))
         .maybeSingle();
 
       if (socialPage) {
-        group.social_page = socialPage;
+        responseGroup.social_page = socialPage;
       }
     } catch (fetchSocialPageErr) {
       console.warn('Failed to fetch auto-created social page:', fetchSocialPageErr);
@@ -262,7 +257,7 @@ async function createGroup(req, res) {
       // social page on next load via the same linked_entity lookup.
     }
 
-    return res.status(201).json({ group });
+    return res.status(201).json({ group: responseGroup });
   } catch (error) {
       try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
     console.warn('Create group error:', error);

@@ -5,10 +5,16 @@
  * POST /api/commander/home-games/join/[code] - Join club by code
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardUser } from '../../../../src/lib/commander/auth';
+import { getUser, guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { getUserScopedClient } from '../../../../src/lib/home-games/rpcBridge';
+import { respondToMembershipRpcError } from '../../../../src/lib/home-games/membershipRpcError';
+import {
+  allowsDeclinedReRequest,
+  normalizeJoinResult,
+  toPublicGroup,
+} from '../../../../src/lib/home-games/publicGroupBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -22,7 +28,9 @@ function getSupabase() {
 
 export default async function handler(req, res) {
   try {
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+    if (req.method === 'GET') {
+      if (!applyRateLimit(req, res, LIMITS.read)) return;
+    } else if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
@@ -55,7 +63,9 @@ export default async function handler(req, res) {
 async function getClubByCode(req, res, code) {
   try {
     const upperCode = String(code).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (!upperCode) return res.status(400).json({ error: 'Invalid club code format' });
+    if (!upperCode || upperCode.length > 64) {
+      return res.status(400).json({ error: 'Invalid club code format' });
+    }
 
     // Try club_code first (6 chars), then invite_code (8 chars)
     let { data: group, error } = await getSupabase()
@@ -64,14 +74,21 @@ async function getClubByCode(req, res, code) {
         id,
         name,
         description,
+        tagline,
+        owner_id,
         club_code,
         is_private,
+        requires_approval,
         city,
         state,
         default_game_type,
         default_stakes,
         member_count,
         frequency,
+        cover_photo_url,
+        profile_photo_url,
+        created_at,
+        settings,
         profiles:owner_id (id, display_name, avatar_url)
       `)
       .or(`club_code.eq.${upperCode},invite_code.eq.${upperCode}`)
@@ -83,30 +100,28 @@ async function getClubByCode(req, res, code) {
     }
 
     // Check if user is already a member (if logged in)
-    const authHeader = req.headers.authorization;
     let myMembership = null;
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: authData } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
+    const user = await getUser(req, res);
+    if (user) {
+      const { data: membership, error: membershipError } = await getSupabase()
+        .from('commander_home_members')
+        .select('status, role')
+        .eq('group_id', group.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
 
-      if (user) {
-        const { data: membership } = await getSupabase()
-          .from('commander_home_members')
-          .select('status, role')
-          .eq('group_id', group.id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        myMembership = membership;
-      }
+      myMembership = membership;
     }
 
+    const allowDeclined = allowsDeclinedReRequest(group.settings);
     return res.status(200).json({
-      group,
+      group: toPublicGroup(group),
       my_membership: myMembership,
-      can_join: !myMembership || myMembership.status === 'declined'
+      can_join: !myMembership || (
+        myMembership.status === 'declined' && allowDeclined
+      ),
     });
   } catch (error) {
     console.warn('Get club by code error:', error);
@@ -130,12 +145,14 @@ async function joinClubByCode(req, res, code) {
     }
 
     const upperCode = String(code).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (!upperCode) return res.status(400).json({ error: 'Invalid club code format' });
+    if (!upperCode || upperCode.length > 64) {
+      return res.status(400).json({ error: 'Invalid club code format' });
+    }
 
     // Find group
     const { data: group, error: groupError } = await getSupabase()
       .from('commander_home_groups')
-      .select('id, name, requires_approval, invite_code, club_code')
+      .select('id, name')
       .or(`club_code.eq.${upperCode},invite_code.eq.${upperCode}`)
       .eq('is_active', true)
       .maybeSingle();
@@ -155,36 +172,47 @@ async function joinClubByCode(req, res, code) {
     const { data: result, error: rpcError } = await userClient.rpc('join_home_group', {
       p_group_id: group.id,
       p_caller_user_id: user.id,
-      p_invite_code: code
+      p_invite_code: upperCode,
     });
 
     if (rpcError) {
-      throw rpcError; // Hard error
+      if (respondToMembershipRpcError(res, rpcError, { includeSuccess: false })) return;
+      throw rpcError;
     }
 
-    if (!result.success) {
+    if (!result?.success) {
       // Soft failures mapped to friendly messages
-      switch (result.error) {
+      switch (result?.error) {
         case 'INVALID_INVITE_CODE':
           return res.status(403).json({ error: 'Invite code is incorrect' });
         case 'RATE_LIMITED':
           return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
         case 'BANNED':
           return res.status(403).json({ error: "You're banned from this group" });
+        case 'DECLINED':
+          return res.status(403).json({ error: 'The host has declined this membership request' });
         case 'ALREADY_MEMBER':
           return res.status(400).json({ error: 'You are already a member of this club' });
         case 'PENDING_APPROVAL':
           return res.status(400).json({ error: 'Your membership request is pending approval' });
         default:
-          return res.status(400).json({ error: result.error || 'Failed to join group' });
+          return res.status(400).json({ error: result?.error || 'Failed to join group' });
       }
     }
 
-    // Success response should mimic the expected return structure from the RPC,
-    // which likely contains the membership object
-    const status = result.membership?.status || 'approved';
+    // join_home_group returns status/member_id at the top level. The old
+    // adapter looked only for result.membership.status and defaulted any
+    // unfamiliar success payload to approved, so a pending private request
+    // was displayed as immediate membership.
+    const normalized = normalizeJoinResult(result);
+    if (!normalized) {
+      return res.status(502).json({ error: 'Join service returned an invalid membership state' });
+    }
+
+    const { status, membership } = normalized;
     return res.status(200).json({
-      membership: result.membership,
+      status,
+      membership,
       group: { id: group.id, name: group.name },
       message: status === 'approved'
         ? `Welcome to ${group.name}!`
