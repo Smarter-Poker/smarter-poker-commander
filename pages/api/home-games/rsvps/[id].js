@@ -102,17 +102,18 @@ function resolveAction(body) {
 
 export default async function handler(req, res) {
   try {
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    if (req.method === 'GET') {
+      if (!applyRateLimit(req, res, LIMITS.read)) return;
+    } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
-    // GET is open to any authenticated user (they need to be able to read
-    // their own RSVP), but we still authorize below before returning rows
-    // for non-hosts.
-    if (req.method !== 'GET') {
-      const _u = await guardUser(req, res);
-      if (!_u) return;
-    }
+    // Resolve identity before the service-role client reads the RSVP/event
+    // resource chain. The resource-specific owner/staff check still happens
+    // below, but unauthenticated callers cannot use 404/timing differences as
+    // an RSVP existence oracle.
+    const caller = await guardUser(req, res);
+    if (!caller) return;
 
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
@@ -149,10 +150,8 @@ export default async function handler(req, res) {
     // ── Authorization (GET) ────────────────────────────────────────────────
     // For GET, allow: the RSVP's own user, or a host/admin of the group.
     if (req.method === 'GET') {
-      const user = await guardUser(req, res);
-      if (!user) return;
-      const isSelf = user.id === rsvp.user_id;
-      const isGroupStaff = await callerIsGroupStaff(supabase, user.id, group.id);
+      const isSelf = caller.id === rsvp.user_id;
+      const isGroupStaff = await callerIsGroupStaff(supabase, caller.id, group.id);
       if (!isSelf && !isGroupStaff) {
         return res.status(403).json({ success: false, error: 'Not authorized' });
       }
@@ -172,9 +171,7 @@ export default async function handler(req, res) {
     }
 
     // ── Authorization (PATCH / DELETE): staff only ────────────────────────
-    // guardUser above populated req session; re-fetch the user for the check.
-    const staffUser = await guardUser(req, res);
-    if (!staffUser) return; // already 401'd
+    const staffUser = caller;
     const isGroupStaff = await callerIsGroupStaff(supabase, staffUser.id, group.id);
     if (!isGroupStaff) {
       return res.status(403).json({

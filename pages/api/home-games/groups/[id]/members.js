@@ -11,6 +11,7 @@ import { guardUser } from '../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../src/lib/sentryWrap';
 import { getUserScopedClient } from '../../../../../src/lib/home-games/rpcBridge';
+import { normalizeJoinResult } from '../../../../../src/lib/home-games/publicGroupBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -225,6 +226,8 @@ async function joinOrInvite(req, res, groupId) {
           return res.status(429).json({ success: false, error: 'Too many attempts. Try again in a few minutes.' });
         case 'BANNED':
           return res.status(403).json({ success: false, error: "You're banned from this group" });
+        case 'DECLINED':
+          return res.status(403).json({ success: false, error: 'The host has declined this membership request' });
         case 'ALREADY_MEMBER':
           return res.status(400).json({ success: false, error: 'You are already a member' });
         case 'PENDING_APPROVAL':
@@ -234,10 +237,19 @@ async function joinOrInvite(req, res, groupId) {
       }
     }
 
-    const { membership: member } = result;
-    const isApproved = member?.status === 'approved';
+    const normalized = normalizeJoinResult(result);
+    if (!normalized) {
+      return res.status(502).json({
+        success: false,
+        error: 'Join service returned an invalid membership state',
+      });
+    }
+
+    const { status, membership: member } = normalized;
+    const isApproved = status === 'approved';
 
     return res.status(201).json({
+      status,
       member,
       message: isApproved
         ? 'You have joined the group'

@@ -6,9 +6,19 @@
  * DELETE /api/commander/home-games/groups/[id] - Delete group
  */
 import { createClient } from '../../../../src/lib/supabaseServerClient';
-import { guardUser } from '../../../../src/lib/commander/auth';
+import { getUser, guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import {
+  determineGroupAccess,
+  MEMBER_SELECT,
+  PUBLIC_GAME_SELECT,
+  PUBLIC_GROUP_SELECT,
+  STAFF_GROUP_SELECT,
+  toMemberDto,
+  toPublicGroup,
+  toStaffGroup,
+} from '../../../../src/lib/home-games/publicGroupBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -22,7 +32,9 @@ function getSupabase() {
 
 export default async function handler(req, res) {
   try {
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+    if (req.method === 'GET') {
+      if (!applyRateLimit(req, res, LIMITS.read)) return;
+    } else if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
@@ -72,32 +84,17 @@ export default async function handler(req, res) {
 
 async function getGroup(req, res, id) {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.replace('Bearer ', '');
-
-    let userId = null;
-    if (token) {
-      const { data: authData } = await getSupabase().auth.getUser(token);
-      const user = authData?.user;
-      userId = user?.id;
-    }
+    const userId = (await getUser(req, res))?.id || null;
 
     // Check if request is via invite code
     const isInviteCode = id.length === 8 && /^[A-Z0-9]+$/.test(id.toUpperCase());
 
+    // First read only the safe boundary projection. Memberships, invite
+    // credentials, exact location and settings are not read until the caller
+    // has been authorized for this specific group.
     let query = getSupabase()
       .from('commander_home_groups')
-      .select(`
-        *,
-        profiles:owner_id (id, display_name, avatar_url),
-        commander_home_members (
-          id, user_id, role, status, games_attended,
-          profiles:user_id (id, display_name, avatar_url)
-        ),
-        commander_home_games (
-          id, title, scheduled_date, start_time, status, rsvp_yes, max_players
-        )
-      `);
+      .select(PUBLIC_GROUP_SELECT);
 
     if (isInviteCode) {
       query = query.eq('invite_code', id.toUpperCase());
@@ -111,74 +108,88 @@ async function getGroup(req, res, id) {
       return res.status(404).json({ success: false, error: 'Group not found' });
     }
 
-    // Check access for private groups
-    if (group.is_private && userId !== group.owner_id) {
-      const isMember = group.commander_home_members?.some(
-        m => m.user_id === userId && m.status === 'approved'
-      );
+    let userMembership = null;
+    if (userId) {
+      const { data: membership, error: membershipError } = await getSupabase()
+        .from('commander_home_members')
+        .select('id, user_id, role, status')
+        .eq('group_id', group.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      userMembership = membership;
+    }
 
-      if (!isMember && !isInviteCode) {
-        return res.status(403).json({ success: false, error: 'This is a private group' });
+    const access = determineGroupAccess({
+      group,
+      userId,
+      membership: userMembership,
+      viaInviteCode: isInviteCode,
+    });
+    if (!access.allowed) {
+      return res.status(403).json({ success: false, error: 'This is a private group' });
+    }
+
+    if (access.isPreview) {
+      res.setHeader('Cache-Control', 'private, no-store');
+      return res.status(200).json({
+        group: toPublicGroup(group),
+        is_preview: true,
+      });
+    }
+
+    let responseGroup = toPublicGroup(group);
+    if (access.mayReadPrivilegedGroup) {
+      const { data: staffGroup, error: staffGroupError } = await getSupabase()
+        .from('commander_home_groups')
+        .select(STAFF_GROUP_SELECT)
+        .eq('id', group.id)
+        .maybeSingle();
+      if (staffGroupError) throw staffGroupError;
+      if (!staffGroup) {
+        return res.status(404).json({ success: false, error: 'Group not found' });
       }
-
-      // For invite code access, only show limited info
-      if (isInviteCode && !isMember) {
-        return res.status(200).json({
-          group: {
-            id: group.id,
-            name: group.name,
-            description: group.description,
-            member_count: group.member_count,
-            default_game_type: group.default_game_type,
-            city: group.city,
-            state: group.state,
-            invite_code: group.invite_code
-          },
-          is_preview: true
-        });
-      }
+      responseGroup = toStaffGroup(staffGroup);
     }
 
-    // Filter members to only approved for non-admins. IMPORTANT: we ALSO
-    // require the viewing user's membership to be status='approved' - a
-    // member whose role is 'admin' but whose status is 'pending', 'banned',
-    // or 'declined' should NOT see the full (including pending/banned)
-    // member list. Prior code checked role only and leaked.
-    let members = group.commander_home_members || [];
-    const userMembership = members.find(m => m.user_id === userId);
-    const isAdmin =
-      userMembership?.status === 'approved' &&
-      (userMembership?.role === 'owner' || userMembership?.role === 'admin');
+    const { data: gameRows, error: gamesError } = await getSupabase()
+      .from('commander_home_games')
+      .select(PUBLIC_GAME_SELECT)
+      .eq('group_id', group.id)
+      .order('scheduled_date', { ascending: true })
+      .limit(20);
+    if (gamesError) throw gamesError;
 
-    if (!isAdmin) {
-      members = members.filter(m => m.status === 'approved');
-    }
-
-    // DEFENSIVE: Ensure all member profiles have required fields
-    members = members.map(m => ({
-      ...m,
-      profiles: m.profiles || { id: m.user_id, display_name: 'Unknown Member', avatar_url: null }
-    }));
-
-    // DEFENSIVE: Ensure owner profile exists
-    if (!group.profiles) {
-      group.profiles = { id: group.owner_id, display_name: 'Unknown Host', avatar_url: null };
-    }
-
-    // Filter upcoming games
-    const upcomingGames = (group.commander_home_games || [])
+    const upcomingGames = (gameRows || [])
       .filter(g => g.status !== 'cancelled' && g.status !== 'completed')
       .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
       .slice(0, 5);
 
+    let members = [];
+    if (access.mayReadMembers) {
+      let memberQuery = getSupabase()
+        .from('commander_home_members')
+        .select(MEMBER_SELECT)
+        .eq('group_id', group.id)
+        .limit(100);
+      if (!access.isAdmin) memberQuery = memberQuery.eq('status', 'approved');
+      const { data: memberRows, error: membersError } = await memberQuery;
+      if (membersError) throw membersError;
+      members = (memberRows || []).map(toMemberDto).filter(Boolean);
+    }
+
+    res.setHeader(
+      'Cache-Control',
+      userId ? 'private, no-store' : 'public, s-maxage=30, stale-while-revalidate=120'
+    );
     return res.status(200).json({
       group: {
-        ...group,
-        commander_home_members: members,
-        commander_home_games: upcomingGames
+        ...responseGroup,
+        ...(access.mayReadMembers ? { commander_home_members: members } : {}),
+        commander_home_games: upcomingGames,
       },
       my_membership: userMembership || null,
-      is_admin: isAdmin
+      is_admin: access.isAdmin,
     });
   } catch (error) {
     console.warn('Get group error:', error);
