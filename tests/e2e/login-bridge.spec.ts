@@ -126,6 +126,23 @@ test.describe('login page (signed out)', () => {
 test.describe('signed-in flow', () => {
   test.skip(!EMAIL || !PASSWORD, 'PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set');
 
+  /* Every test in here waits on a real navigation, and two of them ask for a
+     budget the suite would not let them have. playwright.config.ts caps a test
+     at 30_000ms; the cross-origin hop below asks `waitForURL(..., 45_000)` and
+     the password path asks 30_000 - so neither wait could ever reach its own
+     limit, and the test died at the cap first. The hop's failure read as
+     "Test timeout of 30000ms exceeded" every time, which says nothing about
+     the hop.
+
+     These are the only tests here that cross an origin boundary three times
+     (commander -> hub ?bridge=1 -> one-time SSO token -> /auth/sso -> the
+     dashboard), on top of a password grant and two page loads, so the cap is
+     what is wrong, not the waits. This gives them the budget they declare;
+     every assertion is unchanged. If the hop still does not land inside 45
+     seconds after this, that is the product, and the failure will finally say
+     so. */
+  test.describe.configure({ timeout: 90_000 });
+
   test('password login lands on the dashboard with no session banner, and a tampered staff session self-heals', async ({ page }) => {
     const refErrors = collectReferenceErrors(page);
     await page.goto('/commander/login');
