@@ -92,10 +92,15 @@ export const PUBLIC_GAME_SELECT = `
 export const MEMBER_SELECT = `
   id,
   user_id,
+  display_name,
   role,
   status,
+  can_host,
+  joined_at,
+  created_at,
   games_attended,
-  profiles:user_id (id, display_name, avatar_url)
+  is_roster_only,
+  profiles:user_id (id, username, display_name, avatar_url)
 `;
 
 function hostProfile(group) {
@@ -129,6 +134,11 @@ export function toPublicGroup(group, membership = null) {
     state: group.state || null,
     default_game_type: group.default_game_type || null,
     default_stakes: group.default_stakes || null,
+    // Existing World Hub screens consume the legacy aliases. Keep both wire
+    // names until those clients have migrated to the canonical DB columns.
+    game_type: group.default_game_type || null,
+    stakes: group.default_stakes || null,
+    visibility: group.is_private ? 'private' : 'public',
     typical_buyin_min: group.typical_buyin_min ?? null,
     typical_buyin_max: group.typical_buyin_max ?? null,
     max_players: group.max_players ?? null,
@@ -175,21 +185,35 @@ export function toStaffGroup(group) {
 export function toMemberDto(member) {
   if (!member) return null;
   const profile = member.profiles;
+  const displayName = profile?.display_name || member.display_name || 'Unknown Member';
+  const username = profile?.username || null;
+  const avatarUrl = profile?.avatar_url || null;
   return {
     id: member.id,
     user_id: member.user_id,
+    // Keep the safe flat aliases used by the public home-game dashboard and
+    // the nested profile used by Commander management surfaces.
+    display_name: displayName,
+    username,
+    avatar_url: avatarUrl,
     role: member.role,
     status: member.status,
+    can_host: member.can_host === true,
+    joined_at: member.joined_at || null,
+    created_at: member.created_at || null,
     games_attended: Number(member.games_attended || 0),
+    is_roster_only: member.is_roster_only === true,
     profiles: profile
       ? {
           id: profile.id || member.user_id,
-          display_name: profile.display_name || 'Unknown Member',
-          avatar_url: profile.avatar_url || null,
+          username,
+          display_name: displayName,
+          avatar_url: avatarUrl,
         }
       : {
           id: member.user_id,
-          display_name: 'Unknown Member',
+          username: null,
+          display_name: displayName,
           avatar_url: null,
         },
   };
@@ -232,4 +256,62 @@ export function normalizeJoinResult(result) {
       role: result.membership?.role || result.role || 'member',
     },
   };
+}
+
+const GROUP_UPDATE_FIELDS = new Set([
+  'name',
+  'description',
+  'tagline',
+  'is_private',
+  'requires_approval',
+  'city',
+  'state',
+  'zip_code',
+  'latitude',
+  'longitude',
+  'default_game_type',
+  'default_stakes',
+  'typical_buyin_min',
+  'typical_buyin_max',
+  'max_players',
+  'typical_day',
+  'typical_time',
+  'frequency',
+  'cover_photo_url',
+  'profile_photo_url',
+  'tags',
+  'auto_generate_games',
+  'auto_generate_weeks_ahead',
+  'auto_ban_after_flakes',
+  'is_21_plus',
+  'is_charity',
+  'charity_beneficiary',
+  'smoking_policy',
+  'messenger_conversation_id',
+  'settings',
+  'contact_phone',
+  'website_url',
+]);
+
+export function normalizeGroupUpdates(body, updatedAt = new Date().toISOString()) {
+  const input = body && typeof body === 'object' ? body : {};
+  const updates = { updated_at: updatedAt };
+  for (const key of GROUP_UPDATE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(input, key)) updates[key] = input[key];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'game_type')) {
+    updates.default_game_type = input.game_type;
+  }
+  if (Object.prototype.hasOwnProperty.call(input, 'stakes')) {
+    updates.default_stakes = input.stakes;
+  }
+  if (Object.prototype.hasOwnProperty.call(input, 'visibility')) {
+    if (!['private', 'public'].includes(input.visibility)) {
+      return { updates: null, error: 'Visibility must be private or public' };
+    }
+    updates.is_private = input.visibility === 'private';
+  }
+
+  return { updates, error: null };
 }

@@ -9,6 +9,7 @@ import { getUser, guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
 import { getUserScopedClient } from '../../../../src/lib/home-games/rpcBridge';
+import { respondToMembershipRpcError } from '../../../../src/lib/home-games/membershipRpcError';
 import {
   allowsDeclinedReRequest,
   normalizeJoinResult,
@@ -175,12 +176,13 @@ async function joinClubByCode(req, res, code) {
     });
 
     if (rpcError) {
-      throw rpcError; // Hard error
+      if (respondToMembershipRpcError(res, rpcError, { includeSuccess: false })) return;
+      throw rpcError;
     }
 
-    if (!result.success) {
+    if (!result?.success) {
       // Soft failures mapped to friendly messages
-      switch (result.error) {
+      switch (result?.error) {
         case 'INVALID_INVITE_CODE':
           return res.status(403).json({ error: 'Invite code is incorrect' });
         case 'RATE_LIMITED':
@@ -194,7 +196,7 @@ async function joinClubByCode(req, res, code) {
         case 'PENDING_APPROVAL':
           return res.status(400).json({ error: 'Your membership request is pending approval' });
         default:
-          return res.status(400).json({ error: result.error || 'Failed to join group' });
+          return res.status(400).json({ error: result?.error || 'Failed to join group' });
       }
     }
 

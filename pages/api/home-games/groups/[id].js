@@ -15,6 +15,7 @@ import {
   PUBLIC_GAME_SELECT,
   PUBLIC_GROUP_SELECT,
   STAFF_GROUP_SELECT,
+  normalizeGroupUpdates,
   toMemberDto,
   toPublicGroup,
   toStaffGroup,
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
 
     let { id } = req.query;
 
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return res.status(400).json({ success: false, error: 'Group ID required' });
     }
 
@@ -50,14 +51,24 @@ export default async function handler(req, res) {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     const isInviteCode = !isUUID && id.length === 8 && /^[A-Z0-9]+$/i.test(id);
     if (!isUUID && !isInviteCode) {
-      const { data: sp } = await getSupabase()
+      const { data: sp, error: socialPageError } = await getSupabase()
         .from('social_pages')
         .select('linked_entity_id')
         .eq('linked_entity_type', 'home_group')
         .eq('slug', id)
         .maybeSingle();
+      if (socialPageError) throw socialPageError;
       if (!sp) return res.status(404).json({ success: false, error: 'Group not found' });
       id = sp.linked_entity_id;
+    } else if (isInviteCode && req.method !== 'GET') {
+      const { data: inviteGroup, error: inviteGroupError } = await getSupabase()
+        .from('commander_home_groups')
+        .select('id')
+        .eq('invite_code', id.toUpperCase())
+        .maybeSingle();
+      if (inviteGroupError) throw inviteGroupError;
+      if (!inviteGroup) return res.status(404).json({ success: false, error: 'Group not found' });
+      id = inviteGroup.id;
     }
 
     if (req.method === 'GET') {
@@ -213,23 +224,25 @@ async function updateGroup(req, res, id) {
     }
 
     // Check if user is owner or admin
-    const { data: group } = await getSupabase()
+    const { data: group, error: groupError } = await getSupabase()
       .from('commander_home_groups')
       .select('owner_id')
       .eq('id', id)
       .maybeSingle();
+    if (groupError) throw groupError;
 
     if (!group) {
       return res.status(404).json({ success: false, error: 'Group not found' });
     }
 
-    const { data: membership } = await getSupabase()
+    const { data: membership, error: membershipError } = await getSupabase()
       .from('commander_home_members')
       .select('role')
       .eq('group_id', id)
       .eq('user_id', user.id)
       .eq('status', 'approved')
       .maybeSingle();
+    if (membershipError) throw membershipError;
 
     const canEdit = group.owner_id === user.id ||
       membership?.role === 'owner' ||
@@ -254,56 +267,24 @@ async function updateGroup(req, res, id) {
     // Only expose the fields that hosts/admins are supposed to be able to
     // edit from the Commander group-settings UI. Unknown keys are silently
     // dropped (not rejected) so clients with cached extra fields don't fail.
-    const EDITABLE = [
-      'name',
-      'description',
-      'tagline',
-      'is_private',
-      'requires_approval',
-      'city',
-      'state',
-      'zip_code',
-      'latitude',
-      'longitude',
-      'default_game_type',
-      'default_stakes',
-      'typical_buyin_min',
-      'typical_buyin_max',
-      'max_players',
-      'typical_day',
-      'typical_time',
-      'frequency',
-      'cover_photo_url',
-      'profile_photo_url',
-      'tags',
-      'auto_generate_games',
-      'auto_generate_weeks_ahead',
-      'auto_ban_after_flakes',
-      'is_21_plus',
-      'is_charity',
-      'charity_beneficiary',
-      'smoking_policy',
-      'messenger_conversation_id',
-      'settings',
-    ];
-    const body = req.body || {};
-    const updates = { updated_at: new Date().toISOString() };
-    for (const key of EDITABLE) {
-      if (Object.prototype.hasOwnProperty.call(body, key)) {
-        updates[key] = body[key];
-      }
+    const { updates, error: updateValidationError } = normalizeGroupUpdates(req.body);
+    if (updateValidationError) {
+      return res.status(400).json({ success: false, error: updateValidationError });
     }
 
     const { data: updated, error } = await getSupabase()
       .from('commander_home_groups')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select(STAFF_GROUP_SELECT)
       .maybeSingle();
 
     if (error) throw error;
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Group not found' });
+    }
 
-    return res.status(200).json({ success: true, group: updated });
+    return res.status(200).json({ success: true, group: toStaffGroup(updated) });
   } catch (error) {
     console.warn('Update group error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
@@ -326,11 +307,12 @@ async function deleteGroup(req, res, id) {
     }
 
     // Only owner can delete
-    const { data: group } = await getSupabase()
+    const { data: group, error: groupError } = await getSupabase()
       .from('commander_home_groups')
       .select('owner_id')
       .eq('id', id)
       .maybeSingle();
+    if (groupError) throw groupError;
 
     if (!group) {
       return res.status(404).json({ success: false, error: 'Group not found' });

@@ -59,11 +59,18 @@
  */
 
 import { createClient } from '../../../../src/lib/supabaseServerClient';
+import { createPagesServerClient } from '@supabase/auth-helpers-nextjs';
 import { guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { sendPushNotification } from '../../../../src/lib/commander/pushNotifications';
 import { sendDirectMessageBetweenUsers } from '../../../../src/lib/home-games/messenger';
 import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { getUserScopedClient } from '../../../../src/lib/home-games/rpcBridge';
+import { respondToMembershipRpcError } from '../../../../src/lib/home-games/membershipRpcError';
+import {
+  isHomeGamesUuid,
+  rsvpMembershipTransition,
+} from '../../../../src/lib/home-games/membershipBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -100,6 +107,84 @@ function resolveAction(body) {
   }
 }
 
+function getCallerRpcClient(req, res) {
+  const authHeader = req?.headers?.authorization || req?.headers?.Authorization || '';
+  const bearer = typeof authHeader === 'string' ? authHeader.match(/^Bearer\s+(.+)$/i) : null;
+  return bearer
+    ? getUserScopedClient(bearer[1].trim())
+    : createPagesServerClient({ req, res });
+}
+
+async function ensureRsvpMembershipEligible(
+  req,
+  res,
+  supabase,
+  { caller, event, group, rsvp, approvePending = false }
+) {
+  const { data: membership, error: membershipError } = await supabase
+    .from('commander_home_members')
+    .select('id, status')
+    .eq('group_id', group.id)
+    .eq('user_id', rsvp.user_id)
+    .maybeSingle();
+  if (membershipError) throw membershipError;
+
+  const transition = rsvpMembershipTransition({
+    targetUserId: rsvp.user_id,
+    groupOwnerId: group.owner_id,
+    eventHostId: event.host_id,
+    membershipStatus: membership?.status || null,
+  });
+  if (transition === 'eligible' || (transition === 'approve' && !approvePending)) {
+    return { ok: true };
+  }
+  if (transition === 'ineligible') {
+    return {
+      ok: false,
+      status: membership ? 409 : 403,
+      body: {
+        success: false,
+        code: membership ? 'RSVP_MEMBER_INELIGIBLE' : 'RSVP_MEMBERSHIP_REQUIRED',
+        error: membership
+          ? 'This member must have an approved membership before the RSVP can be approved'
+          : 'This player is not a member of the group',
+      },
+    };
+  }
+
+  const rpcClient = getCallerRpcClient(req, res);
+  const { data: approvalResult, error: approvalError } = await rpcClient.rpc(
+    'manage_home_group_member',
+    {
+      p_group_id: group.id,
+      p_member_user_id: rsvp.user_id,
+      p_action: 'approve',
+      p_caller_user_id: caller.id,
+    }
+  );
+  if (!approvalError && approvalResult?.success) return { ok: true };
+
+  // A concurrent host can approve the same membership after our read. Treat
+  // that race as success only after re-reading the authoritative state.
+  if (approvalError && /\bTARGET_NOT_PENDING\b/.test(String(approvalError.message || ''))) {
+    const { data: current, error: currentError } = await supabase
+      .from('commander_home_members')
+      .select('status')
+      .eq('group_id', group.id)
+      .eq('user_id', rsvp.user_id)
+      .maybeSingle();
+    if (currentError) throw currentError;
+    if (current?.status === 'approved') return { ok: true };
+  }
+
+  if (approvalError) return { ok: false, rpcError: approvalError };
+  return {
+    ok: false,
+    status: 409,
+    body: { success: false, error: 'Membership approval was not applied' },
+  };
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
@@ -116,8 +201,8 @@ export default async function handler(req, res) {
     if (!caller) return;
 
     const { id } = req.query;
-    if (!id || typeof id !== 'string') {
-      return res.status(400).json({ success: false, error: 'Missing RSVP id' });
+    if (!isHomeGamesUuid(id)) {
+      return res.status(400).json({ success: false, error: 'Valid RSVP id required' });
     }
 
     const supabase = getSupabase();
@@ -152,12 +237,13 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const isSelf = caller.id === rsvp.user_id;
       const isGroupStaff = await callerIsGroupStaff(supabase, caller.id, group.id);
-      if (!isSelf && !isGroupStaff) {
+      const isEventHost = caller.id === event.host_id;
+      if (!isSelf && !isGroupStaff && !isEventHost) {
         return res.status(403).json({ success: false, error: 'Not authorized' });
       }
       // Include address only if the RSVP belongs to the caller AND is confirmed
       // (mirrors the address_visible_to='rsvp' contract), or if caller is staff.
-      const includeAddress = isGroupStaff || (isSelf && rsvp.is_confirmed);
+      const includeAddress = isGroupStaff || isEventHost || (isSelf && rsvp.is_confirmed);
       return res.json({
         success: true,
         data: {
@@ -173,7 +259,8 @@ export default async function handler(req, res) {
     // ── Authorization (PATCH / DELETE): staff only ────────────────────────
     const staffUser = caller;
     const isGroupStaff = await callerIsGroupStaff(supabase, staffUser.id, group.id);
-    if (!isGroupStaff) {
+    const isEventHost = staffUser.id === event.host_id;
+    if (!isGroupStaff && !isEventHost) {
       return res.status(403).json({
         success: false,
         error: 'Only the group owner or admins can manage RSVPs',
@@ -213,6 +300,31 @@ export default async function handler(req, res) {
         return res.json({ success: true, data: { action, removed: true, rsvp_id: id } });
       }
 
+      // Every active RSVP must retain an eligible membership. Validate both
+      // host-controlled active states before the write. Host confirmation has
+      // historically promoted a pending applicant to approved membership, so
+      // that action uses the audited lifecycle RPC first. Waitlisting keeps a
+      // pending membership pending under the World database contract.
+      if (action === 'approve' || action === 'waitlist') {
+        const eligibility = await ensureRsvpMembershipEligible(
+          req,
+          res,
+          supabase,
+          {
+            caller: staffUser,
+            event,
+            group,
+            rsvp,
+            approvePending: action === 'approve' && isGroupStaff,
+          }
+        );
+        if (!eligibility.ok) {
+          if (eligibility.rpcError && respondToMembershipRpcError(res, eligibility.rpcError)) return;
+          if (eligibility.rpcError) throw eligibility.rpcError;
+          return res.status(eligibility.status).json(eligibility.body);
+        }
+      }
+
       // approve / decline / waitlist → translate to column writes
       const patch = { updated_at: new Date().toISOString() };
       switch (action) {
@@ -221,7 +333,7 @@ export default async function handler(req, res) {
         case 'waitlist': patch.response = 'waitlist'; patch.is_confirmed = false; break;
       }
 
-      const wasConfirmed = !!rsvp.is_confirmed;
+      const wasApproved = rsvp.response === 'yes' && rsvp.is_confirmed === true;
 
       const { data: updated, error: updErr } = await supabase
         .from('commander_home_rsvps')
@@ -230,32 +342,21 @@ export default async function handler(req, res) {
         .select('id, game_id, user_id, response, is_confirmed, bringing_guests, guest_names, message, responded_at, updated_at')
         .maybeSingle();
       if (updErr) {
+        if (respondToMembershipRpcError(res, updErr)) return;
         return res.status(500).json({ success: false, error: updErr.message });
       }
       if (!updated) {
         return res.status(404).json({ success: false, error: 'RSVP not found' });
       }
 
-      // Also promote the membership to 'approved' on approve - otherwise
-      // the group-level "approved members" list still shows the person as
-      // pending even though their RSVP is confirmed. Don't clobber a
-      // pre-existing owner/admin role: only update rows currently at
-      // status='pending'.
-      if (action === 'approve') {
-        try {
-          await supabase
-            .from('commander_home_members')
-            .update({ status: 'approved', joined_at: new Date().toISOString() })
-            .eq('group_id', group.id)
-            .eq('user_id', rsvp.user_id)
-            .eq('status', 'pending');
-        } catch (_) { console.warn('[App] Handled exception:', _?.message || _); }
-      }
-
       // Fire requester notification ONLY on state-change approve.
       // Re-approving an already-confirmed RSVP is a no-op. Wrapped in
       // try/catch so notification failure never fails the approval.
-      if (action === 'approve' && !wasConfirmed) {
+      const approvalApplied = action === 'approve'
+        && updated.response === 'yes'
+        && updated.is_confirmed === true;
+      const approvalStateChanged = approvalApplied && !wasApproved;
+      if (approvalStateChanged) {
         try {
           await dispatchRequesterNotification(supabase, {
             req,
@@ -275,7 +376,7 @@ export default async function handler(req, res) {
         data: {
           action,
           rsvp: updated,
-          state_changed: action === 'approve' && !wasConfirmed,
+          state_changed: approvalStateChanged,
         },
       });
     }

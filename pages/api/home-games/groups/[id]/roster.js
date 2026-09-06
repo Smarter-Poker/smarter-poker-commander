@@ -11,6 +11,7 @@ import { createClient } from '../../../../../src/lib/supabaseServerClient';
 import { guardUser } from '../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../src/lib/sentryWrap';
+import { normalizeHomeGroupRoster } from '../../../../../src/lib/home-games/rosterBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -62,7 +63,50 @@ export default async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'Internal server error' });
         }
 
-        return res.status(200).json({ success: true, roster: result || [] });
+        // The legacy RPC exposes member_* names and omits the member row id.
+        // Resolve the authoritative membership rows only after the RPC has
+        // authorized this caller, then return one canonical shape to clients.
+        const [membershipResult, groupResult] = await Promise.all([
+            getSupabase()
+                .from('commander_home_members')
+                .select(`
+                    id,
+                    user_id,
+                    display_name,
+                    role,
+                    status,
+                    joined_at,
+                    notifications_enabled,
+                    notify_new_games,
+                    notify_announcements,
+                    games_attended,
+                    last_attended,
+                    is_roster_only
+                `)
+                .eq('group_id', groupId)
+                .limit(1000),
+            getSupabase()
+                .from('commander_home_groups')
+                .select('owner_id')
+                .eq('id', groupId)
+                .maybeSingle(),
+        ]);
+
+        const { data: memberships, error: membershipError } = membershipResult;
+        const { data: group, error: groupError } = groupResult;
+
+        if (membershipError || groupError || !group) {
+            console.warn('[roster] normalization query failed:', membershipError || groupError);
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            roster: normalizeHomeGroupRoster(result || [], memberships || [], {
+                callerUserId: user.id,
+                ownerId: group.owner_id,
+            }),
+        });
     } catch (err) {
         try { reportApiError(err, req); } catch (_e) { console.warn('[App] Handled exception:', _e?.message || _e); }
         // eslint-disable-next-line no-console

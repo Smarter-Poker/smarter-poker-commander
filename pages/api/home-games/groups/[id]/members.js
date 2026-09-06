@@ -11,7 +11,17 @@ import { guardUser } from '../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../../src/lib/sentryWrap';
 import { getUserScopedClient } from '../../../../../src/lib/home-games/rpcBridge';
-import { normalizeJoinResult } from '../../../../../src/lib/home-games/publicGroupBoundary';
+import { respondToMembershipRpcError } from '../../../../../src/lib/home-games/membershipRpcError';
+import {
+  isHomeGamesUuid,
+  parseMembershipDeleteIntent,
+  resolveGroupMembershipAccess,
+} from '../../../../../src/lib/home-games/membershipBoundary';
+import {
+  MEMBER_SELECT,
+  normalizeJoinResult,
+  toMemberDto,
+} from '../../../../../src/lib/home-games/publicGroupBoundary';
 
 let _supabase = null;
 function getSupabase() {
@@ -25,7 +35,9 @@ function getSupabase() {
 
 export default async function handler(req, res) {
   try {
-    if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
+    if (req.method === 'GET') {
+      if (!applyRateLimit(req, res, LIMITS.read)) return;
+    } else if (['POST','PUT','PATCH','DELETE'].includes(req.method)) {
       if (!applyRateLimit(req, res, LIMITS.write)) return;
     }
 
@@ -33,8 +45,8 @@ export default async function handler(req, res) {
 
     const { id: groupId } = req.query;
 
-    if (!groupId) {
-      return res.status(400).json({ success: false, error: 'Group ID required' });
+    if (!isHomeGamesUuid(groupId)) {
+      return res.status(400).json({ success: false, error: 'Valid group ID required' });
     }
 
     if (req.method === 'GET') {
@@ -80,33 +92,49 @@ async function listMembers(req, res, groupId) {
 
     const { status } = req.query;
 
-    // Check if user is a member
-    const { data: myMembership } = await getSupabase()
-      .from('commander_home_members')
-      .select('role, status')
-      .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // The group row is the canonical ownership record. An owner must retain
+    // access even if the redundant owner membership row was never created or
+    // was lost; this mirrors manage_home_group_member in World Home Games.
+    const [groupResult, membershipResult] = await Promise.all([
+      getSupabase()
+        .from('commander_home_groups')
+        .select('id, owner_id')
+        .eq('id', groupId)
+        .maybeSingle(),
+      getSupabase()
+        .from('commander_home_members')
+        .select('role, status')
+        .eq('group_id', groupId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+    if (groupResult.error) throw groupResult.error;
+    if (membershipResult.error) throw membershipResult.error;
+    if (!groupResult.data) {
+      return res.status(404).json({ success: false, error: 'Group not found' });
+    }
 
-    if (!myMembership || myMembership.status !== 'approved') {
+    const access = resolveGroupMembershipAccess({
+      ownerId: groupResult.data.owner_id,
+      userId: user.id,
+      membership: membershipResult.data,
+    });
+    if (!access.isMember) {
       return res.status(403).json({ success: false, error: 'You are not a member of this group' });
     }
 
     let query = getSupabase()
       .from('commander_home_members')
-      .select(`
-        *,
-        profiles:user_id (id, display_name, avatar_url)
-      `)
+      .select(MEMBER_SELECT)
       .eq('group_id', groupId)
       .order('joined_at', { ascending: false })
           .limit(100);
 
     // Only admins can see pending/declined members
-    if (status && (myMembership.role === 'owner' || myMembership.role === 'admin')) {
+    if (status && access.isManager) {
       query = query.eq('status', status)
           .limit(100);
-    } else if (myMembership.role !== 'owner' && myMembership.role !== 'admin') {
+    } else if (!access.isManager) {
       query = query.eq('status', 'approved');
     }
 
@@ -115,8 +143,8 @@ async function listMembers(req, res, groupId) {
     if (error) throw error;
 
     return res.status(200).json({
-      members: data,
-      my_role: myMembership.role
+      members: (data || []).map(toMemberDto).filter(Boolean),
+      my_role: access.role
     });
   } catch (error) {
     console.warn('List members error:', error);
@@ -139,7 +167,10 @@ async function joinOrInvite(req, res, groupId) {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    const { user_id, invite_code } = req.body;
+    const { user_id, invite_code } = req.body || {};
+    if (user_id && !isHomeGamesUuid(user_id)) {
+      return res.status(400).json({ success: false, error: 'Valid user_id required' });
+    }
 
     // Get group info
     const { data: group, error: groupError } = await getSupabase()
@@ -148,60 +179,81 @@ async function joinOrInvite(req, res, groupId) {
       .eq('id', groupId)
       .maybeSingle();
 
-    if (groupError || !group) {
+    if (groupError) throw groupError;
+    if (!group) {
       return res.status(404).json({ success: false, error: 'Group not found' });
     }
 
     // If inviting another user, check if requester is admin
     if (user_id && user_id !== user.id) {
-      const { data: myMembership } = await getSupabase()
+      const { data: myMembership, error: membershipError } = await getSupabase()
         .from('commander_home_members')
-        .select('role')
+        .select('role, status')
         .eq('group_id', groupId)
         .eq('user_id', user.id)
-        .eq('status', 'approved')
         .maybeSingle();
+      if (membershipError) throw membershipError;
 
-      if (!myMembership || (myMembership.role !== 'owner' && myMembership.role !== 'admin')) {
+      const access = resolveGroupMembershipAccess({
+        ownerId: group.owner_id,
+        userId: user.id,
+        membership: myMembership,
+      });
+      if (!access.isManager) {
         return res.status(403).json({ success: false, error: 'Only admins can invite members' });
       }
 
       // Check if target user exists
-      const { data: targetUser } = await getSupabase()
+      const { data: targetUser, error: targetUserError } = await getSupabase()
         .from('profiles')
         .select('id')
         .eq('id', user_id)
         .maybeSingle();
+      if (targetUserError) throw targetUserError;
 
       if (!targetUser) {
         return res.status(404).json({ success: false, error: 'User not found' });
       }
 
-      // Add invited user
+      // Invitations are membership creation, so they use the same
+      // authenticated, atomic audit boundary as every later lifecycle action.
+      const userClient = getUserScopedClient(token);
+      const { data: inviteResult, error: inviteError } = await userClient.rpc(
+        'manage_home_group_member',
+        {
+          p_group_id: groupId,
+          p_member_user_id: user_id,
+          p_action: 'invite',
+          p_caller_user_id: user.id,
+        }
+      );
+      if (inviteError) {
+        if (respondToMembershipRpcError(res, inviteError)) return;
+        throw inviteError;
+      }
+      if (!inviteResult?.success) {
+        return res.status(409).json({ success: false, error: 'Member invitation was not applied' });
+      }
+
       const { data: member, error } = await getSupabase()
         .from('commander_home_members')
-        .insert({
-          group_id: groupId,
-          user_id: user_id,
-          role: 'member',
-          status: 'approved', // Direct invite = auto-approved
-          invited_by: user.id,
-          joined_at: new Date().toISOString()
-        })
-        .select(`
-          *,
-          profiles:user_id (id, display_name, avatar_url)
-        `)
+        .select(MEMBER_SELECT)
+        .eq('group_id', groupId)
+        .eq('user_id', user_id)
         .maybeSingle();
 
       if (error) {
-        if (error.code === '23505') {
-          return res.status(400).json({ success: false, error: 'User is already a member' });
-        }
         throw error;
       }
+      if (!member) {
+        return res.status(502).json({ success: false, error: 'Invitation succeeded but membership could not be loaded' });
+      }
 
-      return res.status(201).json({ member, message: 'User invited successfully' });
+      return res.status(201).json({
+        success: true,
+        member: toMemberDto(member),
+        message: 'User invited successfully',
+      });
     }
 
     // User joining themselves. CRITICAL: join_home_group checks
@@ -216,10 +268,13 @@ async function joinOrInvite(req, res, groupId) {
       p_invite_code: invite_code || null
     });
 
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      if (respondToMembershipRpcError(res, rpcError)) return;
+      throw rpcError;
+    }
 
-    if (!result.success) {
-      switch (result.error) {
+    if (!result?.success) {
+      switch (result?.error) {
         case 'INVALID_INVITE_CODE':
           return res.status(403).json({ success: false, error: 'Invite code is incorrect' });
         case 'RATE_LIMITED':
@@ -233,7 +288,7 @@ async function joinOrInvite(req, res, groupId) {
         case 'PENDING_APPROVAL':
           return res.status(400).json({ success: false, error: 'Your membership request is pending approval' });
         default:
-          return res.status(400).json({ success: false, error: result.error || 'Failed to join group' });
+          return res.status(400).json({ success: false, error: result?.error || 'Failed to join group' });
       }
     }
 
@@ -249,8 +304,10 @@ async function joinOrInvite(req, res, groupId) {
     const isApproved = status === 'approved';
 
     return res.status(201).json({
+      success: true,
       status,
       member,
+      membership: member,
       message: isApproved
         ? 'You have joined the group'
         : 'Your membership request is pending approval'
@@ -276,59 +333,83 @@ async function updateMembership(req, res, groupId) {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    const { member_id, action, role } = req.body;
+    const { member_id, action, role } = req.body || {};
 
     if (!member_id || !action) {
       return res.status(400).json({ success: false, error: 'member_id and action required' });
     }
 
-    // Check requester's role
-    const { data: myMembership } = await getSupabase()
-      .from('commander_home_members')
-      .select('role')
-      .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .eq('status', 'approved')
-      .maybeSingle();
+    if (!isHomeGamesUuid(member_id)) {
+      return res.status(400).json({ success: false, error: 'Valid member_id required' });
+    }
 
-    if (!myMembership || (myMembership.role !== 'owner' && myMembership.role !== 'admin')) {
+    const [groupResult, membershipResult] = await Promise.all([
+      getSupabase()
+        .from('commander_home_groups')
+        .select('id, owner_id')
+        .eq('id', groupId)
+        .maybeSingle(),
+      getSupabase()
+        .from('commander_home_members')
+        .select('role, status')
+        .eq('group_id', groupId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+    if (groupResult.error) throw groupResult.error;
+    if (membershipResult.error) throw membershipResult.error;
+    if (!groupResult.data) {
+      return res.status(404).json({ success: false, error: 'Group not found' });
+    }
+
+    const access = resolveGroupMembershipAccess({
+      ownerId: groupResult.data.owner_id,
+      userId: user.id,
+      membership: membershipResult.data,
+    });
+    if (!access.isManager) {
       return res.status(403).json({ success: false, error: 'Only owners and admins can manage members' });
     }
 
     // Get target membership
-    const { data: targetMember } = await getSupabase()
+    const { data: targetMember, error: targetMemberError } = await getSupabase()
       .from('commander_home_members')
-      .select('*')
+      .select('id, user_id, role, status, is_roster_only')
       .eq('id', member_id)
       .eq('group_id', groupId)
       .maybeSingle();
+    if (targetMemberError) throw targetMemberError;
 
     if (!targetMember) {
       return res.status(404).json({ success: false, error: 'Member not found' });
     }
 
-    // Owners can't be modified by admins
-    if (targetMember.role === 'owner' && myMembership.role !== 'owner') {
+    const targetIsOwner = targetMember.role === 'owner'
+      || targetMember.user_id === groupResult.data.owner_id;
+    if (targetIsOwner) {
       return res.status(403).json({ success: false, error: 'Cannot modify the owner' });
     }
+    if (access.role === 'admin' && targetMember.role === 'admin') {
+      return res.status(403).json({ success: false, error: 'Admins cannot modify another admin' });
+    }
 
-    let updates = {};
+    let rpcAction = null;
 
     switch (action) {
       case 'approve':
-        updates = { status: 'approved', joined_at: new Date().toISOString() };
+        rpcAction = 'approve';
         break;
 
       case 'decline':
-        updates = { status: 'declined' };
+        rpcAction = 'decline';
         break;
 
       case 'ban':
-        updates = { status: 'banned' };
+        rpcAction = 'ban';
         break;
 
       case 'unban':
-        updates = { status: 'approved' };
+        rpcAction = 'unban';
         break;
 
       case 'set_role':
@@ -338,30 +419,53 @@ async function updateMembership(req, res, groupId) {
         if (role === 'owner') {
           return res.status(400).json({ success: false, error: 'Cannot assign owner role this way' });
         }
-        updates = { role };
+        rpcAction = role === 'admin' ? 'promote_admin' : 'demote_member';
         break;
 
       case 'set_can_host':
-        updates = { can_host: req.body.can_host === true };
+        if (typeof req.body.can_host !== 'boolean') {
+          return res.status(400).json({ success: false, error: 'can_host must be true or false' });
+        }
+        rpcAction = req.body.can_host ? 'grant_host' : 'revoke_host';
         break;
 
       default:
         return res.status(400).json({ success: false, error: 'Invalid action' });
     }
 
+    // Every privileged member mutation goes through one authenticated,
+    // database-audited lifecycle. For roster-only rows, user_id is null, so
+    // the member row id is the target reference accepted by the RPC contract.
+    const userClient = getUserScopedClient(token);
+    const { data: rpcResult, error: rpcError } = await userClient.rpc(
+      'manage_home_group_member',
+      {
+        p_group_id: groupId,
+        p_member_user_id: targetMember.user_id || targetMember.id,
+        p_action: rpcAction,
+        p_caller_user_id: user.id,
+      }
+    );
+    if (rpcError) {
+      if (respondToMembershipRpcError(res, rpcError)) return;
+      throw rpcError;
+    }
+    if (!rpcResult?.success) {
+      return res.status(409).json({ success: false, error: 'Membership update was not applied' });
+    }
+
     const { data: updated, error } = await getSupabase()
       .from('commander_home_members')
-      .update(updates)
+      .select(MEMBER_SELECT)
       .eq('id', member_id)
-      .select(`
-        *,
-        profiles:user_id (id, display_name, avatar_url)
-      `)
       .maybeSingle();
 
     if (error) throw error;
+    if (!updated) {
+      return res.status(502).json({ success: false, error: 'Membership was updated but could not be loaded' });
+    }
 
-    return res.status(200).json({ member: updated });
+    return res.status(200).json({ member: toMemberDto(updated) });
   } catch (error) {
     console.warn('Update membership error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
@@ -383,69 +487,135 @@ async function leaveOrRemove(req, res, groupId) {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
 
-    const { member_id } = req.body;
+    const intent = parseMembershipDeleteIntent(req.body);
+    if (!intent) {
+      return res.status(400).json({
+        success: false,
+        code: 'MEMBERSHIP_DELETE_TARGET_REQUIRED',
+        error: 'Provide member_id to remove a member or action "leave" to leave the group',
+      });
+    }
 
-    // If no member_id, user is leaving themselves
-    if (!member_id) {
-      const { data: myMembership } = await getSupabase()
-        .from('commander_home_members')
-        .select('id, role')
-        .eq('group_id', groupId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+    if (intent.kind === 'leave') {
+      const [groupResult, membershipResult] = await Promise.all([
+        getSupabase()
+          .from('commander_home_groups')
+          .select('id, owner_id')
+          .eq('id', groupId)
+          .maybeSingle(),
+        getSupabase()
+          .from('commander_home_members')
+          .select('id, role, status')
+          .eq('group_id', groupId)
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ]);
+      if (groupResult.error) throw groupResult.error;
+      if (membershipResult.error) throw membershipResult.error;
+      if (!groupResult.data) {
+        return res.status(404).json({ success: false, error: 'Group not found' });
+      }
 
+      const myMembership = membershipResult.data;
+
+      if (user.id === groupResult.data.owner_id || myMembership?.role === 'owner') {
+        return res.status(400).json({ success: false, error: 'Owner cannot leave. Transfer ownership or delete the group.' });
+      }
       if (!myMembership) {
         return res.status(404).json({ success: false, error: 'You are not a member of this group' });
       }
 
-      if (myMembership.role === 'owner') {
-        return res.status(400).json({ success: false, error: 'Owner cannot leave. Transfer ownership or delete the group.' });
+      const userClient = getUserScopedClient(token);
+      const { data: leaveResult, error: leaveError } = await userClient.rpc(
+        'leave_home_group',
+        {
+          p_group_id: groupId,
+          p_caller_user_id: user.id,
+        }
+      );
+      if (leaveError) {
+        if (respondToMembershipRpcError(res, leaveError)) return;
+        throw leaveError;
       }
-
-      const { error } = await getSupabase()
-        .from('commander_home_members')
-        .delete()
-        .eq('id', myMembership.id);
-
-      if (error) throw error;
+      if (!leaveResult?.success) {
+        return res.status(409).json({ success: false, error: 'Group leave was not applied' });
+      }
 
       return res.status(200).json({ success: true, message: 'You have left the group' });
     }
 
-    // Removing another member - check permissions
-    const { data: myMembership } = await getSupabase()
-      .from('commander_home_members')
-      .select('role')
-      .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .eq('status', 'approved')
-      .maybeSingle();
+    const member_id = intent.memberId;
 
-    if (!myMembership || (myMembership.role !== 'owner' && myMembership.role !== 'admin')) {
+    // Removing another member - check permissions against canonical owner_id
+    // as well as approved membership roles.
+    const [groupResult, membershipResult] = await Promise.all([
+      getSupabase()
+        .from('commander_home_groups')
+        .select('id, owner_id')
+        .eq('id', groupId)
+        .maybeSingle(),
+      getSupabase()
+        .from('commander_home_members')
+        .select('id, role, status')
+        .eq('group_id', groupId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+    if (groupResult.error) throw groupResult.error;
+    if (membershipResult.error) throw membershipResult.error;
+    if (!groupResult.data) {
+      return res.status(404).json({ success: false, error: 'Group not found' });
+    }
+
+    const access = resolveGroupMembershipAccess({
+      ownerId: groupResult.data.owner_id,
+      userId: user.id,
+      membership: membershipResult.data,
+    });
+    if (!access.isManager) {
       return res.status(403).json({ success: false, error: 'Only owners and admins can remove members' });
     }
 
-    const { data: targetMember } = await getSupabase()
+    const { data: targetMember, error: targetMemberError } = await getSupabase()
       .from('commander_home_members')
-      .select('role')
+      .select('id, role, user_id, is_roster_only')
       .eq('id', member_id)
       .eq('group_id', groupId)
       .maybeSingle();
+    if (targetMemberError) throw targetMemberError;
 
     if (!targetMember) {
       return res.status(404).json({ success: false, error: 'Member not found' });
     }
 
-    if (targetMember.role === 'owner') {
-      return res.status(403).json({ success: false, error: 'Cannot remove the owner' });
+    if (targetMember.user_id === user.id) {
+      return res.status(400).json({ success: false, error: 'Use the leave action to leave this group' });
     }
 
-    const { error } = await getSupabase()
-      .from('commander_home_members')
-      .delete()
-      .eq('id', member_id);
+    if (targetMember.role === 'owner' || targetMember.user_id === groupResult.data.owner_id) {
+      return res.status(403).json({ success: false, error: 'Cannot remove the owner' });
+    }
+    if (access.role === 'admin' && targetMember.role === 'admin') {
+      return res.status(403).json({ success: false, error: 'Admins cannot remove another admin' });
+    }
 
-    if (error) throw error;
+    const userClient = getUserScopedClient(token);
+    const { data: removeResult, error: removeError } = await userClient.rpc(
+      'manage_home_group_member',
+      {
+        p_group_id: groupId,
+        p_member_user_id: targetMember.user_id || targetMember.id,
+        p_action: 'remove',
+        p_caller_user_id: user.id,
+      }
+    );
+    if (removeError) {
+      if (respondToMembershipRpcError(res, removeError)) return;
+      throw removeError;
+    }
+    if (!removeResult?.success) {
+      return res.status(409).json({ success: false, error: 'Member removal was not applied' });
+    }
 
     return res.status(200).json({ success: true, message: 'Member removed' });
   } catch (error) {
