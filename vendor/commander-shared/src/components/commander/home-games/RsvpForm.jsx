@@ -5,6 +5,7 @@
  */
 import { useState } from 'react';
 import { Check, X, HelpCircle, Users } from 'lucide-react';
+import { rsvpGuestCount } from './rsvpCapacity.mjs';
 
 export default function RsvpForm({
   event,
@@ -18,20 +19,38 @@ export default function RsvpForm({
   const [guestNames, setGuestNames] = useState(currentRsvp?.guest_names?.join(', ') || '');
   const [message, setMessage] = useState(currentRsvp?.message || '');
 
+  // A null event limit means the database-level global cap (10); zero means
+  // guests are explicitly disabled for this event. Do not turn a real zero
+  // into the old hard-coded one-guest fallback via `|| 1`.
+  const parsedGuestLimit = Number(event?.guest_limit);
+  const maxGuests = event?.allow_guests
+    ? (event?.guest_limit == null || !Number.isFinite(parsedGuestLimit)
+        ? 10
+        : Math.max(0, Math.min(10, Math.trunc(parsedGuestLimit))))
+    : 0;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!response) return;
 
+    const submittedGuestCount = response === 'yes'
+      ? Math.min(rsvpGuestCount({ bringing_guests: bringingGuests }), maxGuests)
+      : 0;
     onSubmit({
       response,
-      bringing_guests: bringingGuests,
-      guest_names: guestNames.split(',').map(n => n.trim()).filter(Boolean),
+      bringing_guests: submittedGuestCount,
+      guest_names: guestNames.split(',').map(n => n.trim()).filter(Boolean).slice(0, submittedGuestCount),
       message
     });
   };
 
-  const spotsLeft = event.max_players - event.rsvp_yes;
-  const willBeWaitlisted = response === 'yes' && spotsLeft <= 0;
+  const occupiedSeats = Number(event?.rsvp_seats ?? event?.rsvp_yes ?? 0) || 0;
+  const spotsLeft = Math.max(0, (Number(event?.max_players) || 0) - occupiedSeats);
+  const requestedSeats = 1 + Math.min(
+    rsvpGuestCount({ bringing_guests: bringingGuests }),
+    maxGuests
+  );
+  const willBeWaitlisted = response === 'yes' && requestedSeats > spotsLeft;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -90,7 +109,7 @@ export default function RsvpForm({
       )}
 
       {/* Guests (only if allowed and responding yes) */}
-      {event.allow_guests && response === 'yes' && (
+      {event.allow_guests && maxGuests > 0 && response === 'yes' && (
         <div>
           <label className="block text-sm font-medium text-white mb-2">
             Bringing Guests?
@@ -102,14 +121,14 @@ export default function RsvpForm({
               className="cmd-input px-3 py-2"
             >
               <option value={0}>No Guests</option>
-              {Array.from({ length: event.guest_limit || 1 }, (_, i) => (
+              {Array.from({ length: maxGuests }, (_, i) => (
                 <option key={i + 1} value={i + 1}>
                   {i + 1} guest{i > 0 ? 's' : ''}
                 </option>
               ))}
             </select>
             <span className="text-sm text-[#64748B]">
-              Max {event.guest_limit || 1} guest{(event.guest_limit || 1) > 1 ? 's' : ''} allowed
+              Max {maxGuests} guest{maxGuests === 1 ? '' : 's'} allowed
             </span>
           </div>
 

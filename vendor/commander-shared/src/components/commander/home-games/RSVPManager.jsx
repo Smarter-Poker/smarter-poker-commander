@@ -8,6 +8,7 @@ import {
   Users, UserCheck, UserX, Clock, Search, Check, X,
   MessageSquare, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { rsvpGuestCount, rsvpSeatCount } from './rsvpCapacity.mjs';
 
 const RSVP_STATUS = {
   yes: { label: 'Going', color: '#10B981', icon: UserCheck },
@@ -53,8 +54,11 @@ export default function RSVPManager({
   }, [rsvps, searchTerm, filterStatus]);
 
   const capacity = event?.max_players || 9;
-  const confirmed = grouped.yes.length;
-  const spotsLeft = capacity - confirmed;
+  // The database capacity gate counts the player plus every guest. Mirroring
+  // that contract here keeps the host dashboard from showing open spots after
+  // guest-inclusive capacity is already full.
+  const confirmed = rsvpSeatCount(grouped.yes);
+  const spotsLeft = Math.max(0, capacity - confirmed);
 
   return (
     <div className="space-y-4">
@@ -133,6 +137,7 @@ export default function RSVPManager({
               const playerName = rsvp.player_name || rsvp.profiles?.display_name || 'Unknown';
               const config = RSVP_STATUS[rsvp.status] || RSVP_STATUS.pending;
               const isExpanded = expandedRsvp === rsvp.id;
+              const guestCount = rsvpGuestCount(rsvp);
 
               return (
                 <div key={rsvp.id} className="p-4">
@@ -161,8 +166,8 @@ export default function RSVPManager({
                           >
                             {config.label}
                           </span>
-                          {rsvp.guest_count > 0 && (
-                            <span className="text-xs text-[#64748B]">+{rsvp.guest_count} guest(s)</span>
+                          {guestCount > 0 && (
+                            <span className="text-xs text-[#64748B]">+{guestCount} guest(s)</span>
                           )}
                         </div>
                         {rsvp.message && (
@@ -239,8 +244,8 @@ export default function RSVPManager({
                     <div className="mt-3 pl-13 pt-3 border-t border-[#4A5E78]/50 text-sm">
                       <div className="grid grid-cols-2 gap-2 text-[#64748B]">
                         <div>Status: <span className="text-white">{config.label}</span></div>
-                        {rsvp.guest_count > 0 && (
-                          <div>Guests: <span className="text-white">{rsvp.guest_count}</span></div>
+                        {guestCount > 0 && (
+                          <div>Guests: <span className="text-white">{guestCount}</span></div>
                         )}
                         {rsvp.seat_assignment && (
                           <div>Seat: <span className="text-white">{rsvp.seat_assignment}</span></div>
