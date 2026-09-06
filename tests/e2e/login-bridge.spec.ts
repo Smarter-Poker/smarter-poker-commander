@@ -174,7 +174,17 @@ test.describe('signed-in flow', () => {
 
     // 2. Arrive on the commander origin with nothing, the way a bookmark does.
     await page.goto('/commander/login');
-    await expect(page.getByRole('button', { name: /continue with sso/i })).toBeVisible({ timeout: 15_000 });
+    // LOCATOR CORRECTED 2026-09-06. This asked for the accessible name
+    // /continue with sso/i, which is the button's `title` attribute - a
+    // TOOLTIP. Playwright falls back to `title` for the accessible name only
+    // when an element has no text content, and this button has always had
+    // some: `{ssoLoading ? 'Signing In...' : 'Continue As ' + (ssoEmail ||
+    // 'Smarter.Poker')}`, in every revision of pages/commander/login.js back
+    // to the first. So the locator never matched, this test failed on all
+    // three browsers on every run from the day it landed (2026-09-04, #108),
+    // and the six sibling assertions in this same file were already using the
+    // right name. The button the user actually reads is what we look for.
+    await expect(page.getByRole('button', { name: /continue as/i })).toBeVisible({ timeout: 15_000 });
     const hasSessionHere = await page.evaluate(() => !!localStorage.getItem('smarter-poker-auth'));
     expect(hasSessionHere, 'the commander origin must start signed out for this to be the hop').toBe(false);
 
@@ -184,7 +194,7 @@ test.describe('signed-in flow', () => {
     page.on('request', (req) => {
       if (req.method() === 'POST' && /grant_type=password/.test(req.url())) typedPassword = true;
     });
-    await page.getByRole('button', { name: /continue with sso/i }).click();
+    await page.getByRole('button', { name: /continue as/i }).click();
     await page.waitForURL((u) => u.origin === commanderOrigin && /\/commander\/dashboard/.test(u.pathname), { timeout: 45_000 });
 
     expect(typedPassword, 'the hop must never fall back to a password grant').toBe(false);
