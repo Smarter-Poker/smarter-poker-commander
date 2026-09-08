@@ -7,11 +7,14 @@
  * 
  * NO EMOJIS - Lucide icons only (per /no-emoji-commander)
  */
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
     X, Camera, User, CreditCard, MapPin, Phone, Mail, Calendar,
-    FileText, Shield, ChevronRight, ChevronLeft, Check, AlertCircle, Loader2
+    FileText, Shield, ChevronRight, ChevronLeft, Check, AlertCircle, Loader2,
+    ScanLine, Keyboard, ShieldCheck
 } from 'lucide-react';
+import IdCaptureModal from './IdCaptureModal';
+import { parseAamva, looksLikeAamva, ageOn, isExpired } from '../../../lib/idscan/aamva.mjs';
 
 const ID_TYPES = [
     { value: 'drivers_license', label: "Driver's License" },
@@ -40,8 +43,13 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [showCamera, setShowCamera] = useState(false);
+    const [showIdCapture, setShowIdCapture] = useState(false);
+    const [idSource, setIdSource] = useState(null);   // 'camera' | 'scanner'
+    const [idNotice, setIdNotice] = useState(null);
+    const [wedgeOpen, setWedgeOpen] = useState(false);
     const videoRef = useRef(null);
     const streamRef = useRef(null);
+    const wedgeRef = useRef(null);
 
     const [form, setForm] = useState({
         first_name: '',
@@ -102,6 +110,72 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
         }
         setShowCamera(false);
     }, []);
+
+    // ── ID capture ──────────────────────────────────────────────────────────
+    // Two paths, one parser. A tablet camera reads the PDF417 barcode on the
+    // back of the licence; a hardware ID scanner types the identical AAMVA
+    // payload into the field below. Both arrive here as parsed fields.
+
+    const applyIdFields = useCallback((fields, meta, source) => {
+        if (!fields || !Object.keys(fields).length) {
+            setIdNotice({
+                tone: 'warn',
+                text: 'No Details Could Be Read. Enter Them By Hand Below.',
+            });
+            return;
+        }
+        // Merge, never clobber: anything staff already typed stays. The parser
+        // omits empty keys precisely so this cannot blank a filled field.
+        setForm((prev) => {
+            const next = { ...prev };
+            for (const [key, value] of Object.entries(fields)) {
+                if (key in next && !String(next[key] || '').trim()) next[key] = value;
+            }
+            return next;
+        });
+        setIdSource(source);
+        setError('');
+
+        const age = ageOn(fields.date_of_birth);
+        const expired = isExpired(fields.id_expiry);
+        const flags = [];
+        if (expired) flags.push(`This ID Expired On ${fields.id_expiry}`);
+        if (age != null && age < 21) flags.push(`Member Is ${age} Years Old`);
+        if (meta && meta.truncatedNames && meta.truncatedNames.length) {
+            flags.push(`The Card Truncates The ${meta.truncatedNames.join(' And ')} Name`);
+        }
+
+        setIdNotice({
+            tone: flags.length ? 'warn' : 'ok',
+            text: flags.length
+                ? `Details Filled In. ${flags.join('. ')}.`
+                : `Details Filled In From The ID${age != null ? ` - Age ${age}` : ''}.`,
+        });
+    }, []);
+
+    /**
+     * Keyboard-wedge ID scanners behave like a very fast typist and finish with
+     * a return. The payload is parsed as soon as it looks like an AAMVA record,
+     * then the field is cleared: the raw barcode string is the entire
+     * machine-readable record and there is no reason to leave it sitting in the
+     * DOM once its fields have been taken.
+     */
+    const handleWedgeInput = useCallback((value) => {
+        if (!looksLikeAamva(value)) return false;
+        const record = parseAamva(value);
+        if (!record.ok) {
+            setIdNotice({ tone: 'warn', text: 'That Scan Could Not Be Read As An ID.' });
+            return false;
+        }
+        applyIdFields(record.fields, record.meta, 'scanner');
+        if (wedgeRef.current) wedgeRef.current.value = '';
+        setWedgeOpen(false);
+        return true;
+    }, [applyIdFields]);
+
+    useEffect(() => {
+        if (wedgeOpen && wedgeRef.current) wedgeRef.current.focus();
+    }, [wedgeOpen]);
 
     const validateStep = (s) => {
         if (s === 1) {
@@ -174,6 +248,11 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
 
     const handleClose = () => {
         stopCamera();
+        setShowIdCapture(false);
+        setWedgeOpen(false);
+        setIdNotice(null);
+        setIdSource(null);
+        if (wedgeRef.current) wedgeRef.current.value = '';
         setStep(1);
         setForm({
             first_name: '', last_name: '', date_of_birth: '', id_type: 'drivers_license',
@@ -233,32 +312,93 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                         <>
                             <p className="text-sm text-[#B0B3B8] font-medium">Identification</p>
 
-                            {/* Camera / Photo Section */}
-                            <div className="bg-[#18191A] rounded-lg p-4">
-                                {showCamera ? (
-                                    <div className="space-y-3">
-                                        <video ref={videoRef} autoPlay playsInline className="w-full rounded-lg bg-black" />
-                                        <div className="flex gap-2">
-                                            <button onClick={capturePhoto} className="flex-1 py-2 bg-[#1877F2] text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                                                <Camera className="w-4 h-4" /> Capture Photo
-                                            </button>
-                                            <button onClick={stopCamera} className="px-4 py-2 bg-[#3A3B3C] text-[#B0B3B8] rounded-lg text-sm">
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : form.photo_url ? (
-                                    <div className="text-center space-y-2">
-                                        <img src={form.photo_url} alt="ID Photo" className="w-48 h-32 object-cover rounded-lg mx-auto" />
-                                        <button onClick={() => updateForm('photo_url', '')} className="text-xs text-[#1877F2]">Remove Photo</button>
-                                    </div>
-                                ) : (
-                                    <button onClick={startCamera} className="w-full py-6 border-2 border-dashed border-[#3A3B3C] rounded-lg flex flex-col items-center gap-2 hover:border-[#1877F2] transition-colors">
-                                        <Camera className="w-8 h-8 text-[#B0B3B8]" />
-                                        <span className="text-sm text-[#B0B3B8]">Scan ID Or Take Photo</span>
-                                        <span className="text-xs text-[#8A8D91]">Optional - Position ID In Front Of Camera</span>
+                            {/* ID capture: camera or hardware scanner, both optional */}
+                            <div className="bg-[#18191A] rounded-lg p-4 space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => { setIdNotice(null); setShowIdCapture(true); }}
+                                        className="py-5 px-3 border-2 border-dashed border-[#3A3B3C] rounded-lg flex flex-col items-center gap-2 hover:border-[#1877F2] transition-colors"
+                                    >
+                                        <ScanLine className="w-7 h-7 text-[#1877F2]" />
+                                        <span className="text-sm font-medium text-[#E4E6EB]">Scan ID</span>
+                                        <span className="text-xs text-[#8A8D91] text-center">Camera - Front And Back</span>
                                     </button>
+                                    <button
+                                        onClick={() => { setIdNotice(null); setWedgeOpen(true); }}
+                                        className="py-5 px-3 border-2 border-dashed border-[#3A3B3C] rounded-lg flex flex-col items-center gap-2 hover:border-[#1877F2] transition-colors"
+                                    >
+                                        <Keyboard className="w-7 h-7 text-[#B0B3B8]" />
+                                        <span className="text-sm font-medium text-[#E4E6EB]">ID Scanner</span>
+                                        <span className="text-xs text-[#8A8D91] text-center">Hardware Reader</span>
+                                    </button>
+                                </div>
+
+                                {/* Keyboard-wedge target. Cleared the moment it parses. */}
+                                {wedgeOpen && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-[#B0B3B8]">
+                                            Swipe Or Scan The ID Now. The Reader Types Into The Box Below.
+                                        </p>
+                                        <textarea
+                                            ref={wedgeRef}
+                                            rows={2}
+                                            onChange={(e) => handleWedgeInput(e.target.value)}
+                                            onBlur={() => { if (wedgeRef.current) wedgeRef.current.value = ''; }}
+                                            className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#1877F2] rounded-lg text-[#E4E6EB] text-xs font-mono focus:outline-none resize-none"
+                                            placeholder="Waiting For The ID Scanner..."
+                                            aria-label="ID scanner input"
+                                        />
+                                        <button onClick={() => { if (wedgeRef.current) wedgeRef.current.value = ''; setWedgeOpen(false); }}
+                                            className="text-xs text-[#B0B3B8]">Cancel</button>
+                                    </div>
                                 )}
+
+                                {idNotice && (
+                                    <div className={`p-2.5 rounded-lg flex items-start gap-2 border ${idNotice.tone === 'ok'
+                                        ? 'bg-[#31A24C]/10 border-[#31A24C]/30'
+                                        : 'bg-[#F59E0B]/10 border-[#F59E0B]/30'}`}>
+                                        {idNotice.tone === 'ok'
+                                            ? <ShieldCheck className="w-4 h-4 text-[#31A24C] flex-shrink-0 mt-0.5" />
+                                            : <AlertCircle className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5" />}
+                                        <p className={`text-xs ${idNotice.tone === 'ok' ? 'text-[#31A24C]' : 'text-[#F59E0B]'}`}>
+                                            {idNotice.text}
+                                            {idSource && idNotice.tone === 'ok' && (
+                                                <span className="text-[#8A8D91]">
+                                                    {idSource === 'camera' ? ' Image Discarded.' : ''}
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Member photo. A headshot for the member record, kept
+                                    separate from ID capture so the two are never confused. */}
+                                <div className="border-t border-[#3A3B3C] pt-3">
+                                    {showCamera ? (
+                                        <div className="space-y-3">
+                                            <video ref={videoRef} autoPlay playsInline className="w-full rounded-lg bg-black" />
+                                            <div className="flex gap-2">
+                                                <button onClick={capturePhoto} className="flex-1 py-2 bg-[#1877F2] text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                                    <Camera className="w-4 h-4" /> Capture Photo
+                                                </button>
+                                                <button onClick={stopCamera} className="px-4 py-2 bg-[#3A3B3C] text-[#B0B3B8] rounded-lg text-sm">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : form.photo_url ? (
+                                        <div className="text-center space-y-2">
+                                            <img src={form.photo_url} alt="Member" className="w-32 h-32 object-cover rounded-full mx-auto" />
+                                            <button onClick={() => updateForm('photo_url', '')} className="text-xs text-[#1877F2]">Remove Photo</button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={startCamera} className="w-full py-3 flex items-center justify-center gap-2 text-sm text-[#B0B3B8] hover:text-[#E4E6EB]">
+                                            <Camera className="w-4 h-4" />
+                                            Take Member Photo
+                                            <span className="text-xs text-[#8A8D91]">- Optional</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Name Fields */}
@@ -495,6 +635,14 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     )}
                 </div>
             </div>
+
+            {/* Front and back capture. Returns parsed fields only: the images
+                are destroyed inside the modal before it calls back. */}
+            <IdCaptureModal
+                isOpen={showIdCapture}
+                onClose={() => setShowIdCapture(false)}
+                onComplete={({ fields, meta, source }) => applyIdFields(fields, meta, source)}
+            />
         </div>
     );
 }
