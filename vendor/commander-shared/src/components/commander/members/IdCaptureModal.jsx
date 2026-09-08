@@ -39,6 +39,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
     X, Camera, RotateCcw, Check, AlertCircle, Loader2, ShieldCheck,
     ScanLine, ChevronRight, CreditCard,
@@ -578,7 +579,18 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
     const age = parsed ? ageOn(parsed.fields.date_of_birth) : null;
     const expired = parsed ? isExpired(parsed.fields.id_expiry) : false;
 
-    return (
+    /**
+     * Rendered into document.body, not in place.
+     *
+     * This modal is mounted from AddMemberModal, whose own overlay is
+     * `fixed inset-0 z-50`. That container is a stacking context, so z-[60]
+     * here only ever means "somewhere within 50", and anything outside that
+     * context with a higher z-index paints over this modal no matter what
+     * number it carries. The same shape of bug hid the receipt scanner's close
+     * button behind the World Hub header, where raising the z-index twice
+     * changed nothing. Escaping the context is the fix.
+     */
+    const tree = (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/70" onClick={handleClose} />
 
@@ -780,6 +792,10 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
             </div>
         </div>
     );
+
+    // Rendered in place while there is no document, which only happens under a
+    // server render; in the browser the portal is what runs.
+    return typeof document === 'undefined' ? tree : createPortal(tree, document.body);
 }
 
 function Detail({ label, value, span }) {
