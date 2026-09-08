@@ -31,6 +31,12 @@ const US_STATES = [
     'VA', 'WA', 'WV', 'WI', 'WY', 'DC'
 ];
 
+// Values the form starts with because a control needs one, not because a
+// member of staff picked them. A scan is allowed to replace these.
+const FIELD_DEFAULTS = {
+    id_type: 'drivers_license',
+};
+
 const TIERS = [
     { value: 'daily', label: 'Daily', desc: 'Single-day access pass', color: '#3B82F6' },
     { value: 'weekly', label: 'Weekly', desc: '7-day membership', color: '#F59E0B' },
@@ -126,10 +132,18 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
         }
         // Merge, never clobber: anything staff already typed stays. The parser
         // omits empty keys precisely so this cannot blank a filled field.
+        //
+        // A field still sitting at its initial default counts as untouched.
+        // id_type starts as 'drivers_license' because the select needs a
+        // value, not because anybody chose it, and treating that as staff
+        // input meant scanning a State ID silently filed it as a licence.
         setForm((prev) => {
             const next = { ...prev };
             for (const [key, value] of Object.entries(fields)) {
-                if (key in next && !String(next[key] || '').trim()) next[key] = value;
+                if (!(key in next)) continue;
+                const current = String(next[key] || '').trim();
+                const untouched = !current || current === FIELD_DEFAULTS[key];
+                if (untouched) next[key] = value;
             }
             return next;
         });
