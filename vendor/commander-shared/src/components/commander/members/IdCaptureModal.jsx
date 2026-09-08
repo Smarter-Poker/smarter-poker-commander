@@ -49,7 +49,7 @@ import { frameFromVideo } from '../../../lib/docscan/imageSource';
 import {
     CARD_ASPECT, fallbackQuad, scaleQuad, quadMotion, validateQuad, outputSizeFor,
 } from '../../../lib/docscan/pipeline.mjs';
-import { decodePdf417FromCandidates, isPdf417Supported } from '../../../lib/idscan/pdf417.mjs';
+import { decodePdf417FromCandidates } from '../../../lib/idscan/pdf417.mjs';
 import { parseAamva, ageOn, isExpired } from '../../../lib/idscan/aamva.mjs';
 
 const LIVE_DETECT_DIM = 384;

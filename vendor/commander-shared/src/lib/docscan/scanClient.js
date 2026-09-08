@@ -108,7 +108,13 @@ export function createScanClient() {
                     .catch(() => { clearTimeout(timer); done(false); });
             });
         }
-        return readyPromise;
+        // Re-check the worker after the handshake resolves. The answer is
+        // cached, but a worker can die LATER (onerror nulls it), and a cached
+        // "yes" then sent every subsequent call into postMessage on null. That
+        // threw a TypeError, which is not the 'worker-failed' the callers look
+        // for, so instead of falling back to the main thread they rethrew and
+        // detection stayed broken for the rest of the session.
+        return readyPromise.then((ok) => ok && Boolean(worker));
     }
 
     // ---- main-thread equivalents of the worker tasks -----------------------

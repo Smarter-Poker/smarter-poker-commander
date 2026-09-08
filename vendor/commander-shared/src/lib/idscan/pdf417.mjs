@@ -48,11 +48,6 @@ export async function isPdf417Supported() {
     return supportCache;
 }
 
-/** Test seam: lets the browser pass force the unsupported path. */
-export function resetPdf417SupportCache() {
-    supportCache = null;
-}
-
 let detector = null;
 async function getDetector() {
     if (detector) return detector;
