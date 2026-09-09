@@ -5,7 +5,7 @@
   "description": "Commander — poker venue/club operator dashboard. Extracted from Smarter-Poker-World-Hub per Phase 3 of the optimization plan. Hosted on Vercel as a separate project; URL preserved via Vercel rewrites at smarter.poker/commander/*.",
   "scripts": {
     "dev": "next dev -p 3001",
-    "prebuild": "node scripts/copy-zxing-wasm.mjs",
+    "prebuild": "node scripts/copy-zxing-wasm.mjs && node scripts/copy-tesseract-assets.mjs",
     "build": "next build",
     "start": "next start",
     "test": "npm run lint:undef && vitest run && npm run test:auth",
@@ -25,6 +25,7 @@
     "@smarter-poker/commander-shared": "file:vendor/commander-shared",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.103.3",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@vercel/og": "^0.8.6",
     "libphonenumber-js": "^1.13.11",
     "lucide-react": "^0.562.0",
@@ -34,6 +35,7 @@
     "react-dom": "18.3.1",
     "stripe": "^22.1.0",
     "swr": "^2.4.1",
+    "tesseract.js": "^7.0.0",
     "twilio": "^6.0.0",
     "zxing-wasm": "^3.1.3"
   },

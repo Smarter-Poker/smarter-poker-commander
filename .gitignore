@@ -24,5 +24,8 @@ tsconfig.tsbuildinfo
 *.bak
 test_output.png
 
-# Copied out of node_modules by scripts/copy-zxing-wasm.mjs at build time.
+# Copied out of node_modules by the copy scripts, in prebuild AND in the
+# vercel.json buildCommand, because only one of those is the build that
+# deploys. Build output, so never committed.
 public/zxing/
+public/tesseract/
