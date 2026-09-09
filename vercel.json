@@ -14,6 +14,15 @@
   "installCommand": "npm install --legacy-peer-deps",
   "headers": [
     {
+      "source": "/zxing/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
       "source": "/tesseract/(.*)",
       "headers": [
         {
