@@ -23,3 +23,6 @@ _to_delete/
 tsconfig.tsbuildinfo
 *.bak
 test_output.png
+
+# Copied out of node_modules by scripts/copy-zxing-wasm.mjs at build time.
+public/zxing/
