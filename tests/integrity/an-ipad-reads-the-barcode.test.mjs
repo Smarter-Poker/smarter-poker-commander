@@ -110,6 +110,40 @@ test('the wasm the browser fetches is copied out of the package, not from a CDN'
     assert.ok(existsSync(WASM) && statSync(WASM).size > 100000, 'the binary is in the package');
 });
 
+test('the wasm is copied by the build that actually deploys', () => {
+    // This file said "copied before every build" and checked `prebuild`. That
+    // was true of package.json and false of production.
+    //
+    // vercel.json sets its own buildCommand and it called `next build`
+    // directly. npm does not run the `prebuild` hook for a command nobody
+    // asked it to run, so the copy never happened on Vercel and, measured on
+    // 2026-09-09:
+    //
+    //   GET https://commander.smarter.poker/zxing/zxing_reader.wasm   404
+    //
+    // Every iPad that could not read a barcode natively fell through to a
+    // decoder whose wasm was not there. The feature shipped, was tested, and
+    // never worked once in production.
+    const vercel = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
+    assert.ok(vercel.buildCommand, 'vercel.json sets its own buildCommand, which is why this matters');
+    assert.match(vercel.buildCommand, /copy-zxing-wasm\.mjs/, 'the deployed build must copy the wasm');
+    const copyAt = vercel.buildCommand.indexOf('copy-zxing-wasm.mjs');
+    const buildAt = vercel.buildCommand.indexOf('next build');
+    assert.ok(copyAt >= 0 && buildAt >= 0 && copyAt < buildAt, 'and before next build collects public/');
+});
+
+test('the wasm is cached so an iPad with no signal keeps reading', () => {
+    // Vercel serves public/ as max-age=0, must-revalidate. A tablet with no
+    // network cannot revalidate, so a perfectly good cached decoder is
+    // unusable, which is the situation this feature exists for.
+    const vercel = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
+    const rule = (vercel.headers || []).find((h) => h.source === '/zxing/(.*)');
+    assert.ok(rule, 'no cache rule for the decoder');
+    const cc = rule.headers.find((h) => /^cache-control$/i.test(h.key));
+    assert.match(cc.value, /\bimmutable\b/);
+    assert.doesNotMatch(cc.value, /must-revalidate|max-age=0/);
+});
+
 test('the decoder is registered lazily, and only ID capture pulls it in', () => {
     const reg = readFileSync(join(ROOT, 'src/lib/idscan/registerPdf417Fallback.js'), 'utf8');
     assert.match(reg, /\{ lazy: true \}/, 'the loader runs on the first attempt, not at import');
