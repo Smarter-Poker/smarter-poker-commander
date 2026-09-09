@@ -1,11 +1,16 @@
 /**
- * ID capture enters the app here, so the PDF417 fallback is registered here.
+ * ID capture enters the app here, so both fallbacks are registered here.
  *
- * The import is a side effect on purpose: an iPad has no native barcode
- * decoder, and the registration has to have happened before IdCaptureModal
- * tries to read one. It costs nothing on a browser that can decode natively,
- * because the decoder itself is loaded lazily and only on failure to find one.
+ * The imports are side effects on purpose: the registration has to have
+ * happened before IdCaptureModal tries to read a card. Both cost nothing
+ * until they are needed, because both engines load lazily and only on a
+ * failure:
+ *
+ *   - PDF417, when the browser has no native barcode decoder (every iPad).
+ *   - the card FACE, when the barcode itself will not scan, which is what a
+ *     worn card does and what a room actually hits.
  */
 import '../../../lib/idscan/registerPdf417Fallback';
+import '../../../lib/idscan/registerFaceReader';
 
 export { default } from '@smarter-poker/commander-shared/components/commander/members/AddMemberModal';
