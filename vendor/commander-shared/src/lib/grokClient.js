@@ -14,28 +14,8 @@
 
 import OpenAI from 'openai';
 
-/**
- * Model mapping from OpenAI to Grok
- * Updated 2026-03-24: grok-2-image-1212 deprecated, using grok-imagine-image
- */
-const MODEL_MAP = {
-    'gpt-4o': 'grok-3',
-    'gpt-4o-mini': 'grok-3-mini',
-    'gpt-3.5-turbo': 'grok-3',
-    'gpt-4': 'grok-3',
-    'gpt-4-turbo': 'grok-3',
-    'gpt-4-vision-preview': 'grok-vision-beta',  // grok-vision-beta confirmed for vision
-    'dall-e-3': 'grok-imagine-image',  // Updated 2026-03-24: grok-2-image-1212 deprecated
-    'dall-e-2': 'grok-imagine-image',
-};
-
-/**
- * Map legacy OpenAI model names to Grok equivalents
- * This allows code using old gpt-4o references to work seamlessly
- */
-export function mapModelToGrok(legacyModel) {
-    return MODEL_MAP[legacyModel] || 'grok-3';
-}
+import { MODEL_MAP, mapModelToGrok } from './grokModels.js';
+export { MODEL_MAP, mapModelToGrok };
 
 /**
  * Create a proxied OpenAI client that automatically maps models

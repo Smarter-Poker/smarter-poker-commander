@@ -6,11 +6,6 @@
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
       "since": "2026-09-04"
     },
-    "components/commander/members/AddMemberModal.jsx": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
     "components/commander/members/MemberCard.jsx": {
       "kind": "differs",
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
