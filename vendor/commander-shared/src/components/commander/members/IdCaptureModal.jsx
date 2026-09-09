@@ -52,6 +52,7 @@ import {
 } from '../../../lib/docscan/pipeline.mjs';
 import { decodePdf417FromCandidates } from '../../../lib/idscan/pdf417.mjs';
 import { parseAamva, ageOn, isExpired } from '../../../lib/idscan/aamva.mjs';
+import { readLicenceFace, hasFaceReader } from '../../../lib/idscan/licenceFace.mjs';
 
 const LIVE_DETECT_DIM = 384;
 const DETECT_INTERVAL_MS = 120;
@@ -131,6 +132,7 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
 
     // The only places pixels live. Both are wiped, never uploaded, never named.
     const cropRef = useRef(null);       // { data, width, height } current side
+    const frontCropRef = useRef(null);  // the front, kept only until the back decodes
     const captureRef = useRef(null);
 
     if (!clientRef.current && typeof window !== 'undefined' && isOpen) {
@@ -155,6 +157,9 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
     /** Every exit runs this. There is no path out that leaves pixels behind. */
     const destroyImages = useCallback(() => {
         if (cropRef.current) { wipe(cropRef.current.data); cropRef.current = null; }
+        // The front is kept only long enough for the barcode to fail. It is a
+        // photograph of somebody's licence and obeys the same rule as the rest.
+        if (frontCropRef.current) { wipe(frontCropRef.current.data); frontCropRef.current = null; }
         smoothQuadRef.current = null;
         lastQuadRef.current = null;
         collapseCanvas(previewRef.current);
@@ -497,6 +502,34 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
         if (phase === 'confirm') paintPreview();
     }, [phase, paintPreview]);
 
+    /**
+     * The barcode would not scan. Read the printed face of the front instead.
+     *
+     * Returns a parsed record only when it is worth offering: a read that
+     * produced an address and no identity is not an identification, and
+     * showing it would invite somebody to accept it. Everything below the bar
+     * falls through to the honest "enter by hand".
+     */
+    const readFrontFace = useCallback(async () => {
+        const front = frontCropRef.current;
+        if (!front || !hasFaceReader()) return null;
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = front.width;
+            canvas.height = front.height;
+            canvas.getContext('2d').putImageData(
+                new ImageData(new Uint8ClampedArray(front.data), front.width, front.height), 0, 0,
+            );
+            const read = await readLicenceFace(canvas);
+            collapseCanvas(canvas);
+            return read && read.ok ? read : null;
+        } catch (_err) {
+            // The barcode already failed; this failing too just means the
+            // operator types it, which is what happened before either existed.
+            return null;
+        }
+    }, []);
+
     /** Decode the barcode from the crop, then from the crop rotated, then give up. */
     const decodeBack = useCallback(async () => {
         const crop = cropRef.current;
@@ -519,6 +552,15 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
             if (!mountedRef.current) return;
 
             if (!result.ok) {
+                const read = await readFrontFace();
+                if (!mountedRef.current) return;
+                if (read) {
+                    setParsed(read);
+                    setDecodeState('face');
+                    setCaptured((c) => ({ ...c, back: true }));
+                    setPhase('confirm');
+                    return;
+                }
                 setDecodeState(result.reason === 'unsupported' ? 'unsupported' : 'not-found');
                 setCaptured((c) => ({ ...c, back: true }));
                 setPhase('confirm');
@@ -529,6 +571,15 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
             // The payload string is the whole machine-readable record. It is
             // read once, turned into fields, and not kept.
             if (!record.ok) {
+                const read = await readFrontFace();
+                if (!mountedRef.current) return;
+                if (read) {
+                    setParsed(read);
+                    setDecodeState('face');
+                    setCaptured((c) => ({ ...c, back: true }));
+                    setPhase('confirm');
+                    return;
+                }
                 setDecodeState('not-found');
                 setCaptured((c) => ({ ...c, back: true }));
                 setPhase('confirm');
@@ -541,19 +592,38 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
         } finally {
             if (mountedRef.current) setBusy(false);
         }
-    }, []);
+    }, [readFrontFace]);
 
     const retake = useCallback(() => {
         if (cropRef.current) { wipe(cropRef.current.data); cropRef.current = null; }
+        // Retaking the FRONT invalidates the copy held for the fallback; a
+        // stale one would be read against a card the operator has replaced.
+        if (side === 'front' && frontCropRef.current) {
+            wipe(frontCropRef.current.data);
+            frontCropRef.current = null;
+        }
         collapseCanvas(previewRef.current);
         setDecodeState(null);
         capturingRef.current = false;
         setPhase('camera');
         startCamera();
-    }, [startCamera]);
+    }, [startCamera, side]);
 
     const goToBack = useCallback(() => {
-        if (cropRef.current) { wipe(cropRef.current.data); cropRef.current = null; }
+        // KEEP THE FRONT. If the barcode on the back will not scan - a worn
+        // card, which is the normal case - the printed face is the only other
+        // place these fields exist, and by then the camera is pointed at the
+        // other side. Held in memory only, wiped with everything else when
+        // the modal closes.
+        if (cropRef.current) {
+            frontCropRef.current = {
+                data: new Uint8ClampedArray(cropRef.current.data),
+                width: cropRef.current.width,
+                height: cropRef.current.height,
+            };
+            wipe(cropRef.current.data);
+            cropRef.current = null;
+        }
         collapseCanvas(previewRef.current);
         setSide('back');
         capturingRef.current = false;
@@ -756,6 +826,16 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                                 </div>
                             )}
 
+                            {side === 'back' && !busy && decodeState === 'face' && (
+                                <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg space-y-1">
+                                    <p className="text-sm font-medium text-[#F59E0B]">Read From The Front Of The Card</p>
+                                    <p className="text-xs text-[#B0B3B8]">
+                                        The Barcode Would Not Scan, So These Details Come From The Printed Side.
+                                        Check Them Against The Card Before You Continue.
+                                    </p>
+                                </div>
+                            )}
+
                             {side === 'back' && !busy && decodeState === 'unsupported' && (
                                 <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg space-y-1">
                                     <p className="text-sm font-medium text-[#F59E0B]">This Browser Cannot Read ID Barcodes</p>
@@ -784,7 +864,10 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                         ) : (
                             <button onClick={finish} disabled={busy}
                                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#31A24C] disabled:bg-[#3A3B3C] text-white rounded-lg text-sm font-medium">
-                                <Check className="w-4 h-4" /> {decodeState === 'ok' ? 'Use These Details' : 'Continue'}
+                                <Check className="w-4 h-4" />
+                                {decodeState === 'ok' ? 'Use These Details'
+                                    : decodeState === 'face' ? 'Use These Details After Checking'
+                                        : 'Continue'}
                             </button>
                         )}
                     </div>

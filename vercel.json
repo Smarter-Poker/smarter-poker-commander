@@ -10,9 +10,18 @@
     }
   },
   "ignoreCommand": "git diff HEAD~1 HEAD --name-only | grep -qE '\\.(ts|tsx|js|jsx|json|css|scss)$|^(src|pages|public)/' && exit 1 || exit 0",
-  "buildCommand": "NODE_OPTIONS='--max-old-space-size=7168' next build",
+  "buildCommand": "node scripts/copy-zxing-wasm.mjs && node scripts/copy-tesseract-assets.mjs && NODE_OPTIONS='--max-old-space-size=7168' next build",
   "installCommand": "npm install --legacy-peer-deps",
   "headers": [
+    {
+      "source": "/tesseract/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
     {
       "source": "/api/(.*)",
       "headers": [

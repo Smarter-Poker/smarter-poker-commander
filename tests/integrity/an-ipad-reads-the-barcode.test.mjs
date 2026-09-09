@@ -97,7 +97,10 @@ test('the wasm the browser fetches is copied out of the package, not from a CDN'
     assert.match(script, /node_modules\/zxing-wasm\/dist\/reader\/zxing_reader\.wasm/);
     assert.match(script, /public\/zxing/);
     const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-    assert.equal(pkg.scripts.prebuild, 'node scripts/copy-zxing-wasm.mjs', 'copied before every build');
+    // Contains, not equals. A second copy step joining prebuild is not a
+    // regression in this one, and an exact-equality pin turns every unrelated
+    // addition into a red build for the wrong reason.
+    assert.match(pkg.scripts.prebuild, /copy-zxing-wasm\.mjs/, 'copied by a local build');
     assert.ok(pkg.dependencies['zxing-wasm'], 'and the package is a real dependency');
 
     const reg = readFileSync(join(ROOT, 'src/lib/idscan/registerPdf417Fallback.js'), 'utf8');
