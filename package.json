@@ -5,10 +5,11 @@
   "description": "Commander — poker venue/club operator dashboard. Extracted from Smarter-Poker-World-Hub per Phase 3 of the optimization plan. Hosted on Vercel as a separate project; URL preserved via Vercel rewrites at smarter.poker/commander/*.",
   "scripts": {
     "dev": "next dev -p 3001",
+    "prebuild": "node scripts/copy-zxing-wasm.mjs",
     "build": "next build",
     "start": "next start",
     "test": "npm run lint:undef && vitest run && npm run test:auth",
-    "test:auth": "node --test tests/integrity/jwt-verification-contract.test.mjs tests/integrity/sign-out-contract.test.mjs",
+    "test:auth": "node --test tests/integrity/jwt-verification-contract.test.mjs tests/integrity/sign-out-contract.test.mjs tests/integrity/an-ipad-reads-the-barcode.test.mjs",
     "test:global-header": "node --test tests/integrity/global-header.test.mjs",
     "test:e2e": "playwright test",
     "prepare": "git config core.hooksPath .husky 2>/dev/null || true",
@@ -33,7 +34,8 @@
     "react-dom": "18.3.1",
     "stripe": "^22.1.0",
     "swr": "^2.4.1",
-    "twilio": "^6.0.0"
+    "twilio": "^6.0.0",
+    "zxing-wasm": "^3.1.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
@@ -41,12 +43,13 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.5.0",
+    "bwip-js": "^4.11.4",
     "eslint": "^9.15.0",
     "eslint-config-next": "^14.2.35",
+    "globals": "^14.0.0",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.5",
-    "globals": "^14.0.0"
+    "vitest": "^2.1.5"
   }
 }

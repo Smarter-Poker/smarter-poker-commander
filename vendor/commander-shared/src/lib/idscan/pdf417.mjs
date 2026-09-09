@@ -17,9 +17,10 @@
  * not shipped one, so an iPad cannot decode here. That is reported honestly
  * rather than failing quietly: capture still produces a clean cropped image,
  * and the keyboard-wedge ID scanner field and manual entry both remain open.
- * A WebAssembly decoder would close the gap and is the single extension point
- * marked below, deliberately left out for now rather than adding a multi
- * megabyte dependency to a shared package on a platform nobody here can test.
+ * A WebAssembly decoder closes that gap. It is REGISTERED by the consumer
+ * rather than imported here (see the extension point at the bottom), so this
+ * package stays dependency-free and the multi megabyte download is paid only
+ * by the browsers that cannot decode natively, at the moment they try.
  */
 
 const PDF417 = 'pdf417';
@@ -66,7 +67,7 @@ async function getDetector() {
  */
 export async function decodePdf417(source) {
     const det = await getDetector();
-    if (!det) return { ok: false, reason: 'unsupported' };
+    if (!det) return decodeWithFallback(source);
 
     try {
         const results = await det.detect(source);
@@ -94,7 +95,10 @@ export async function decodePdf417(source) {
  * @param {Array<{label:string, source:*}>} candidates in preference order
  */
 export async function decodePdf417FromCandidates(candidates) {
-    if (!(await isPdf417Supported())) return { ok: false, reason: 'unsupported' };
+    // No native decoder and nothing registered means nothing to try. With a
+    // fallback registered, every candidate goes through it exactly as it would
+    // through the native detector.
+    if (!(await isPdf417Supported()) && !hasPdf417Fallback()) return { ok: false, reason: 'unsupported' };
 
     let lastReason = 'not-found';
     for (const candidate of candidates) {
@@ -107,15 +111,101 @@ export async function decodePdf417FromCandidates(candidates) {
 }
 
 // ---------------------------------------------------------------------------
-// EXTENSION POINT
+// EXTENSION POINT, NOW WIRED
 // ---------------------------------------------------------------------------
-// To support iPad and Firefox, install a WebAssembly decoder here. The contract
-// is the whole of it: take the same sources decodePdf417 takes, return the same
-// shape. Nothing else in the ID capture flow needs to change, because
-// everything downstream consumes the raw payload string through aamva.mjs.
+// Safari on iOS and iPadOS implements no Barcode Detection API, so an iPad
+// could capture a licence and never read it. A WebAssembly decoder closes that
+// gap, and the cost of one is why it is registered rather than imported:
 //
-//   let wasmDecode = null;
-//   export function registerPdf417Fallback(fn) { wasmDecode = fn; }
+//   - This package stays dependency-free. A consumer that never sees an iPad
+//     never installs or ships a decoder.
+//   - The consumer's registration uses a dynamic import, so the download
+//     happens on the first decode attempt on a browser that needs it, not in
+//     anybody's initial bundle.
 //
-// It is left unregistered on purpose: the only browsers that need it are the
-// ones this change could not be tested on.
+// The contract is the whole of it: take the same sources decodePdf417 takes,
+// return the same shape. Everything downstream consumes the raw payload string
+// through aamva.mjs and does not care which decoder produced it.
+
+/** @type {null | ((source:*) => Promise<{ok:boolean, value?:string, reason?:string}>)} */
+let fallbackDecode = null;
+let fallbackLoader = null;
+let fallbackLoading = null;
+
+/**
+ * Register a decoder for browsers with no native PDF417 support.
+ *
+ * @param {Function} fn        decode(source) -> {ok, value?, reason?}
+ * @param {object}   [options]
+ * @param {boolean}  [options.lazy] when true, `fn` is a LOADER called once on
+ *                   the first attempt and expected to resolve to the decoder.
+ *                   This is how a consumer defers a multi megabyte import.
+ */
+export function registerPdf417Fallback(fn, options = {}) {
+    if (typeof fn !== 'function') { fallbackDecode = null; fallbackLoader = null; fallbackLoading = null; return; }
+    if (options.lazy) { fallbackLoader = fn; fallbackDecode = null; fallbackLoading = null; return; }
+    fallbackDecode = fn;
+    fallbackLoader = null;
+    fallbackLoading = null;
+}
+
+/** Is there anything to fall back TO? Registered counts, loaded or not. */
+export function hasPdf417Fallback() {
+    return Boolean(fallbackDecode || fallbackLoader);
+}
+
+/** Test seam: forget the native support answer and any registration. */
+export function resetPdf417ForTests() {
+    supportCache = null;
+    detector = null;
+    fallbackDecode = null;
+    fallbackLoader = null;
+    fallbackLoading = null;
+}
+
+async function decodeWithFallback(source) {
+    if (!hasPdf417Fallback()) return { ok: false, reason: 'unsupported' };
+    if (!fallbackDecode) {
+        // One load, however many candidates are tried. A loader that throws
+        // leaves the browser exactly where it was: unsupported, said plainly.
+        if (!fallbackLoading) {
+            fallbackLoading = Promise.resolve()
+                .then(() => fallbackLoader())
+                .then((fn) => { fallbackDecode = typeof fn === 'function' ? fn : null; })
+                .catch(() => { fallbackDecode = null; });
+        }
+        await fallbackLoading;
+        if (!fallbackDecode) return { ok: false, reason: 'unsupported' };
+    }
+    try {
+        const result = await fallbackDecode(source);
+        if (!result || typeof result !== 'object') return { ok: false, reason: 'decode-failed' };
+        if (result.ok && result.value) return { ok: true, value: result.value, via: 'wasm' };
+        return { ok: false, reason: result.reason || 'not-found' };
+    } catch (err) {
+        return { ok: false, reason: 'decode-failed', error: String((err && err.message) || err) };
+    }
+}
+
+/**
+ * Adapt a zxing-wasm style reader into the contract above.
+ *
+ * `loadReader` is called at most once and must resolve to a module exposing
+ * `readBarcodes(source, options)`. Kept here rather than in the consumer so
+ * every consumer adapts it the same way, and so the adaptation is tested in
+ * this package with a fake reader instead of in three apps with none.
+ */
+export function createZxingPdf417Decoder(loadReader) {
+    let readerPromise = null;
+    return async function decode(source) {
+        if (!readerPromise) readerPromise = Promise.resolve().then(() => loadReader());
+        const mod = await readerPromise;
+        const readBarcodes = mod && (mod.readBarcodes || (mod.default && mod.default.readBarcodes));
+        if (typeof readBarcodes !== 'function') return { ok: false, reason: 'unsupported' };
+        const results = await readBarcodes(source, { formats: ['PDF417'], tryHarder: true });
+        if (!Array.isArray(results) || results.length === 0) return { ok: false, reason: 'not-found' };
+        const best = results.reduce((a, b) => ((b.text || '').length > (a.text || '').length ? b : a));
+        const value = best.text || '';
+        return value ? { ok: true, value } : { ok: false, reason: 'not-found' };
+    };
+}
