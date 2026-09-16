@@ -24,7 +24,7 @@ import {
   bountyPortionPerEntry
 } from './payout';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 
 // Inlined to avoid a broken CJS re-export shim (src/lib/parseBlindStructure ->
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
@@ -883,7 +883,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
       }
     });
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[clock.js] Clock action exception:', error.message, error.stack);
     return res.status(500).json({
       success: false,

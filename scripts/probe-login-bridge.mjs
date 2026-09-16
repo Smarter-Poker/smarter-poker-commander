@@ -22,7 +22,7 @@
  *       /api/commander/check-subscription (no auth -> 401 JSON) and the hub's
  *       /api/auth/commander-sso (no auth -> 401) are alive and answer with
  *       the contract the client expects.
- *     - /api/health reports the signing secret and Sentry DSN present.
+ *     - /api/health reports the signing secret present.
  *
  *   SIGNED-IN (runs only when PROBE_EMAIL + PROBE_PASSWORD are set):
  *     - password grant against Supabase -> access token

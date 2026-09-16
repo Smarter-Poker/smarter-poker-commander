@@ -500,7 +500,7 @@ export default function PilotVenuesPage() {
               <ChecklistItem
                 pending
                 label="Error Monitoring Active"
-                description="Sentry Integration Configured"
+                description="Server Logs And Health Metrics Reviewed"
               />
               <ChecklistItem
                 pending

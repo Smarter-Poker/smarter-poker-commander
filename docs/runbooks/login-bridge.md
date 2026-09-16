@@ -46,7 +46,7 @@ forever.
 | Production | Structural + signed-in probe, hourly at :22 (PRIMARY, real cron); two consecutive failures page by SMS | Open Claw on Hetzner (`CRITICAL_JOBS` in the hub dispatcher) -> `smarter.poker/api/commander/internal/login-bridge-probe` -> `pages/api/internal/login-bridge-probe.js` -> `src/lib/probe/loginBridgeProbe.mjs` |
 | Production | Structural + signed-in probe, every 30 min (secondary, files the issue) | `.github/workflows/login-bridge-probe.yml` -> `scripts/probe-login-bridge.mjs` (CLI over the same core) |
 | Production | Real-browser E2E, every 30 min, in Chromium + WebKit + iPhone Safari, including the hub -> Continue -> dashboard hop | same workflow, job `e2e` -> `tests/e2e/login-bridge.spec.ts` (`playwright.config.ts` projects) |
-| Runtime | Sentry: `commander.auth.*` messages, project `club-commander` | `src/lib/authFlowMonitor.js`, alert rules in `sentry-auth-alerts.md` |
+| Runtime | Browser-local `commander.auth.*` messages and server logs | `src/lib/authFlowMonitor.js` |
 
 The probe files ONE self-updating issue labelled `login-bridge-probe` and closes
 it when green. If that issue is open, sign-in is (or was) broken in production.
@@ -92,8 +92,6 @@ repair on 2026-09-05 lost a restart cycle to that. See the World Hub changelog
      in `src/lib/commander/auth.js` was weakened. Security issue; fix first.
    - `signing secret configured` / `service-role key configured` -> Vercel env
      vars removed. See `staff-session-secret-rotation.md`.
-   - `client Sentry DSN configured` -> `NEXT_PUBLIC_SENTRY_DSN` missing in
-     Vercel production. Browser errors are invisible until it is set.
 2. **Run it yourself:** `node scripts/probe-login-bridge.mjs` (add
    `PROBE_EMAIL`/`PROBE_PASSWORD` for the signed-in leg). It prints a table.
 3. **Reproduce in a browser:** `CI=1 PLAYWRIGHT_BASE_URL=https://commander.smarter.poker npx playwright test tests/e2e/login-bridge.spec.ts`.
@@ -106,7 +104,6 @@ repair on 2026-09-05 lost a restart cycle to that. See the World Hub changelog
 |---|---|---|
 | `COMMANDER_STAFF_SESSION_SECRET` (fallbacks: `SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`) | Vercel: smarter-poker-commander | signing + verifying `x-staff-session` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Vercel: smarter-poker-commander, hub-vanguard | check-subscription, sso-exchange, commander-sso |
-| `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | Vercel: smarter-poker-commander | error capture |
 | `PROBE_EMAIL`, `PROBE_PASSWORD` | GitHub repo secrets | signed-in probe leg + Playwright signed-in spec (a Commander owner test account) |
 
 Until `PROBE_EMAIL`/`PROBE_PASSWORD` exist, the GitHub probe and E2E run their
@@ -121,8 +118,7 @@ The Open Claw run is visible three ways: the dispatcher journal on the
 `openclaw-dispatcher` VM (`journalctl -u openclaw`), a row per run in
 `cron_execution_log` (`job_name = '/commander/internal/login-bridge-probe'`,
 which the hub's `check-cron-liveness.mjs` and `cron-staleness-watchdog` read),
-and on failure a Sentry event `commander.probe.login_bridge_failed`
-(tags `app=commander probe=login-bridge`). Run it by hand:
+and on failure the Commander server error log. Run it by hand:
 `curl -H "Authorization: Bearer $CRON_SECRET" https://smarter.poker/api/internal/login-bridge-probe`
 (the hub relay; it mints the ticket and returns Commander's answer verbatim).
 Two consecutive non-200s from that relay page by SMS (`CRITICAL_JOBS`).

@@ -1,6 +1,6 @@
 // API route to serve Club Commander desktop downloads
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
-import { reportApiError } from '../../src/lib/sentryWrap';
+import { reportApiError } from '../../src/lib/apiErrorHandler';
 // Redirects to GitHub release assets so users download from smarter.poker
 
 const GITHUB_BASE = 'https://github.com/Smarter-Poker/club-commander-desktop/releases/download';
@@ -35,7 +35,7 @@ export default function handler(req, res) {
     // Redirect to GitHub release asset
     res.redirect(302, DOWNLOADS[platform]);
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
   }
 }

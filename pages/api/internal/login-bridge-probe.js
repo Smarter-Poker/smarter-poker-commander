@@ -26,13 +26,10 @@
  * appears in the response.
  *
  * Response: 200 when every check passed (config warnings allowed), 500 with
- * the failing rows when any check failed. Failures are also reported to
- * Sentry as `commander.probe.login_bridge_failed` (tag probe=login-bridge) so
- * the existing auth alert rules have a signal even when nobody reads the
- * dispatcher journal.
+ * the failing rows when any check failed. Failures remain visible in the
+ * server log and the existing cron_execution_log record.
  */
 import crypto from 'crypto';
-import * as Sentry from '@sentry/nextjs';
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { runLoginBridgeProbe } from '../../../src/lib/probe/loginBridgeProbe.mjs';
 import { verifyProbeTicket } from '../../../src/lib/probe/ticket.js';
@@ -129,19 +126,6 @@ export default async function handler(req, res) {
   };
 
   if (!report.ok) {
-    try {
-      Sentry.withScope((scope) => {
-        scope.setTag('app', 'commander');
-        scope.setTag('probe', 'login-bridge');
-        scope.setTag('flow', 'probe');
-        scope.setLevel('error');
-        scope.setExtra('failures', report.failures.map((r) => `${r.leg} :: ${r.name} - ${r.detail}`));
-        scope.setExtra('markdown', report.markdown);
-        scope.setFingerprint(['commander.probe.login_bridge_failed']);
-        Sentry.captureMessage('commander.probe.login_bridge_failed', 'error');
-      });
-      await Sentry.flush(2000);
-    } catch { /* observability must never break the probe */ }
     console.error('[login-bridge-probe] FAILED\n' + report.markdown);
     await recordRun({
       startedAt, ok: false, summary,

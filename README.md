@@ -10,7 +10,7 @@ Extracted from `Smarter-Poker-World-Hub` per Phase 3 of the optimization plan.
 - **URL:** smarter.poker/commander/* via Vercel rewrites (URL preserved)
 - **Internal URL:** commander.smarter.poker
 - **Auth:** Supabase session in localStorage (`smarter-poker-auth`) on each origin, bridged hub -> commander by a one-time SSO token; derived HMAC-signed staff session for Commander APIs. See `CLAUDE.md` section 3 and `docs/runbooks/login-bridge.md`. (A shared cookie session is designed, not built: `docs/runbooks/cross-subdomain-session.md`.)
-- **Sentry:** reports into the World Hub's Sentry project (same DSN); see `docs/runbooks/sentry-auth-alerts.md`
+- **Error diagnostics:** local browser/server logs and existing venue health metrics.
 
 ## Migration status
 

@@ -9,19 +9,6 @@ import { useRouter } from 'next/router';
 import StandaloneGlobalHeader from '../src/components/commander/shared/StandaloneGlobalHeader';
 import { installAuthFlowMonitor } from '../src/lib/authFlowMonitor';
 
-// [2026-09-03] Client-side Sentry was never running in Commander. The SDK's
-// normal injection of sentry.client.config.js happens through withSentryConfig,
-// which this repo does not use (build-memory reasons, same as the World Hub),
-// and Next 14 does not auto-load instrumentation-client. So the config file was
-// dead code, the production bundle contained no Sentry at all, and
-// `completeLogin is not defined` fired on every login for days with nothing
-// paging anyone. Importing it here is what actually turns it on. Init is gated
-// to production + a DSN inside the config, so dev is unaffected.
-if (typeof window !== 'undefined') {
-  // eslint-disable-next-line global-require
-  require('../sentry.client.config');
-}
-
 const COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT = new Set([
   '/commander/admin/pin-entry',
   '/commander/check-in/[code]',
@@ -59,7 +46,7 @@ export default function CommanderApp({ Component, pageProps }) {
   const needsAppHeader = COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT.has(router.pathname);
 
   // Report auth-flow failures (unhealable 401s, login/SSO completion errors)
-  // to Sentry with stable tags so an alert rule can page on them.
+  // to the local browser console with stable event names.
   useEffect(() => installAuthFlowMonitor(), []);
 
   return (

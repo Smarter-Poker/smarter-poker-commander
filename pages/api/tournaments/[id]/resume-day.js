@@ -27,7 +27,7 @@ import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
 import { enqueuePrintJob } from '../../../../src/lib/commander/printQueue';
-import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 import { rowConflict, countCollisions } from '../../../../src/lib/commander/dbErrors';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 import { LIVE_SEAT_STATUSES } from '../../../../src/lib/commander/tournamentSeating';

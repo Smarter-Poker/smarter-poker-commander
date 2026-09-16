@@ -9,7 +9,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { logAction } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 import { structureRejection, normalizeStructure } from '../../../src/lib/commander/structureValidation';
 // One copy of the payload shape rules. This file and its twin each carried a
 // byte-identical private version, imported by nothing and free to drift - so a
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
@@ -352,7 +352,7 @@ async function cancelTournament(req, res, id, staff) {
 
     return res.status(200).json({ success: true, data: { tournament, message: 'Tournament Cancelled' } });
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Cancel tournament error:', error);
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }

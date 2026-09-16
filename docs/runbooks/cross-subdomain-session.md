@@ -66,7 +66,7 @@ it. The answer is no, for reasons that are about risk and ownership, not effort:
 
 1. **The hop it removes is now the best-watched path on the platform.** The
    login bridge is probed hourly from Hetzner (Open Claw) and every 30 minutes
-   from GitHub, both legs, with a Sentry event and a self-closing issue on
+   from GitHub, both legs, with server-log diagnostics and a self-closing issue on
    failure; a real browser runs it end to end; the derived staff session lasts
    24 h and renews without a database read for 48 h; and a stale one self-heals
    before any banner shows. The remaining cost of the hop is one redirect on
@@ -89,7 +89,7 @@ it. The answer is no, for reasons that are about risk and ownership, not effort:
 
 **What would reopen it** (any one of these):
 
-- the probe or Sentry shows the SSO hop itself failing (rows "hub mints a
+- the probe or server logs show the SSO hop itself failing (rows "hub mints a
   one-time SSO token" / "sso-exchange returns the OTP payload") more than once
   a month for a reason that is not a deploy race;
 - the hub adopts `@supabase/ssr` cookie sessions for its own reasons, at which

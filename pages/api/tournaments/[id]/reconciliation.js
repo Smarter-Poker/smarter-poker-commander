@@ -37,7 +37,7 @@
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 // Shared money math. Every figure below that touches the prize pool, the
 // bounty slice or the payout ladder comes out of these, so this report can
 // never disagree with the payouts screen.

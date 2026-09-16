@@ -16,7 +16,7 @@
 import { verifySupabaseJwt } from '../../../src/lib/serverAuth';
 import { renewOwnerSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 export default async function handler(req, res) {
   try {
