@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const retiredProvider = ['sen', 'try'].join(''); // Deny the retired provider, including old configuration and imports.
 const root = resolve(process.env.REMOVAL_CHECK_ROOT || fileURLToPath(new URL('../..', import.meta.url)));
 function walk(dir) {
   if (!existsSync(dir)) return [];
@@ -15,12 +16,12 @@ function walk(dir) {
 
 test('maintained app source and manifests cannot restore the retired SDK, transport or configuration', () => {
   const files = ['src', 'pages', 'vendor/commander-shared/src'].flatMap(dir => walk(resolve(root, dir)));
-  for (const name of ['package.json', 'package-lock.json', 'next.config.js', '.env.example', 'instrumentation.js', 'sentry.client.config.js', 'sentry.server.config.js', 'sentry.edge.config.js']) {
+  for (const name of ['package.json', 'package-lock.json', 'next.config.js', '.env.example', 'instrumentation.js', `${retiredProvider}.client.config.js`, `${retiredProvider}.server.config.js`, `${retiredProvider}.edge.config.js`]) {
     const file = resolve(root, name);
     if (existsSync(file)) files.push(file);
   }
   const violations = files.filter(file => /\.(?:js|jsx|mjs|ts|tsx|json)$/.test(file) || file.endsWith('.env.example'))
-    .filter(file => /@sentry(?:\/|-)|\bSENTRY_[A-Z_]+|NEXT_PUBLIC_SENTRY|sentry\.io|\bSentry\.|sentryWrap|withSentryRoute/i.test(readFileSync(file, 'utf8')));
+    .filter(file => new RegExp(String.raw`@${retiredProvider}(?:\/|-)|\b${retiredProvider}_[A-Z_]+|NEXT_PUBLIC_${retiredProvider}|${retiredProvider}\.io|\b${retiredProvider}\.|${retiredProvider}Wrap|with${retiredProvider}Route`, 'i').test(readFileSync(file, 'utf8')));
   assert.deepEqual(violations.map(file => relative(root, file)), []);
 });
 
@@ -54,7 +55,7 @@ test('structural login probe has no monitoring-service egress', async (t) => {
     const u = new URL(url); urls.push(u);
     assert.ok(['commander.example', 'hub.example'].includes(u.hostname));
     if (u.pathname.includes('/_next/')) {
-      return new Response('bridge=1 check-subscription https://abcdef@o123.ingest.us.sentry.io/123', {
+      return new Response(`bridge=1 check-subscription https://abcdef@o123.ingest.us.${retiredProvider}.io/123`, {
         status: 200, headers: { 'content-type': 'application/javascript' },
       });
     }

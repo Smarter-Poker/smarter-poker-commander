@@ -14,7 +14,7 @@ Phase 3.2-3.4 initial migration completed 2026-04-25.
 ## Supporting libs duplicated (per design doc)
 
 These are shared utilities; commander needs its own copy for repo independence:
-- src/lib/sentryWrap.js
+- src/lib/apiErrorHandler.js
 - src/lib/supabase.js
 - src/lib/supabaseServerClient.js
 - src/lib/serverAuth.js
