@@ -8,7 +8,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 // 2026-07-25 audit fix: import verifyStaffSession for the preferred x-staff-session path.
 import { guardWriteStaff, verifyStaffSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 let _supabase = null;
 function getSupabase() {
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
 
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
@@ -230,7 +230,7 @@ async function createTransaction(req, res) {
         : `$${Math.abs(parseFloat(amount)).toFixed(2)} adjustment applied`
     });
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create transaction error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }

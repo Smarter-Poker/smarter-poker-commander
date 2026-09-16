@@ -1,60 +1,10 @@
-/**
- * Error Monitoring Utilities
- * Reference: IMPLEMENTATION_PHASES.md - Phase 6
- * Sentry integration and error tracking
- */
-
-// Sentry initialization (optional - configure if SENTRY_DSN is set)
-let Sentry = null;
-
-export async function initErrorMonitoring() {
-  if (process.env.SENTRY_DSN) {
-    try {
-      const sentryModule = '@sentry/nextjs';
-      Sentry = await import(/* webpackIgnore: true */ sentryModule);
-      Sentry.init({
-        dsn: process.env.SENTRY_DSN,
-        environment: process.env.NODE_ENV || 'development',
-        tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-        beforeSend(event) {
-          // Scrub sensitive data
-          if (event.request?.headers) {
-            delete event.request.headers.authorization;
-            delete event.request.headers.cookie;
-          }
-          return event;
-        }
-      });
-      console.debug('Sentry initialized');
-    } catch (err) {
-      console.warn('Sentry not available:', err.message);
-    }
-  }
-}
+/** Local error diagnostics and existing venue health metrics. */
 
 /**
  * Capture an exception
  */
 export function captureException(error, context = {}) {
   console.warn('Error captured:', error.message, context);
-
-  if (Sentry) {
-    Sentry.withScope(scope => {
-      if (context.user) {
-        scope.setUser({ id: context.user.id, email: context.user.email });
-      }
-      if (context.venue_id) {
-        scope.setTag('venue_id', context.venue_id);
-      }
-      if (context.action) {
-        scope.setTag('action', context.action);
-      }
-      if (context.extra) {
-        scope.setExtras(context.extra);
-      }
-      Sentry.captureException(error);
-    });
-  }
 
   // Also log to system health if venue context is available
   if (context.venue_id) {
@@ -70,53 +20,6 @@ export function captureException(error, context = {}) {
 export function captureMessage(message, level = 'info', context = {}) {
   console.debug(`[${level.toUpperCase()}] ${message}`, context);
 
-  if (Sentry) {
-    Sentry.withScope(scope => {
-      if (context.venue_id) {
-        scope.setTag('venue_id', context.venue_id);
-      }
-      if (context.extra) {
-        scope.setExtras(context.extra);
-      }
-      Sentry.captureMessage(message, level);
-    });
-  }
-}
-
-/**
- * Set user context for error tracking
- */
-export function setUserContext(user) {
-  if (Sentry && user) {
-    Sentry.setUser({
-      id: user.id,
-      email: user.email,
-      username: user.display_name
-    });
-  }
-}
-
-/**
- * Clear user context
- */
-export function clearUserContext() {
-  if (Sentry) {
-    Sentry.setUser(null);
-  }
-}
-
-/**
- * Add breadcrumb for debugging
- */
-export function addBreadcrumb(message, category = 'default', data = {}) {
-  if (Sentry) {
-    Sentry.addBreadcrumb({
-      message,
-      category,
-      data,
-      level: 'info'
-    });
-  }
 }
 
 /**

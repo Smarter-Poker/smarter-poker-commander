@@ -13,7 +13,7 @@
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 let _supabase = null;
 function getSupabase() {

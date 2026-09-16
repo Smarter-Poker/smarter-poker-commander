@@ -35,8 +35,8 @@ export const DEFAULTS = {
  * @param {(line: string) => void} [opts.log]  defaults to console.log
  * @param {boolean} [opts.local]  the target is a `next start` of THIS commit on
  *   a CI runner with no production secrets (2026-09-04, pull-request gate).
- *   Skips what only production can answer - the hub-origin rows, the Sentry
- *   ingest row, and the secrets-present health rows become warnings - and
+ *   Skips what only production can answer - the hub-origin rows
+ *   and the secrets-present health rows become warnings - and
  *   keeps every row that would have caught the 2026-09-03 outage: the login
  *   chunk's free `completeLogin(` call, the bridge, the SSO page, the API 401
  *   contracts. A preview URL cannot be used instead: Vercel SSO-protects
@@ -63,9 +63,6 @@ export async function runLoginBridgeProbe(opts = {}) {
     return ok;
   }
   const failures = () => results.filter((r) => !r.ok && !r.warnOnly);
-  // Sentry DSN discovered from the shipped bundle by the structural leg; the
-  // ingest check further down reuses it.
-  let discoveredDsn = null;
 
   async function http(url, init = {}) {
     const ctl = new AbortController();
@@ -144,10 +141,6 @@ export async function runLoginBridgeProbe(opts = {}) {
           all += (await http(absolutize(s, CMD))).text;
         }
         record(leg, 'login bundle talks to check-subscription (staff session issuer)', all.includes('check-subscription'));
-        // The public DSN is in the bundle by design; remember it for the ingest check.
-        const dsnMatch = all.match(/https:\/\/([a-f0-9]+)@(o\d+\.ingest\.[a-z.]*sentry\.io)\/(\d+)/);
-        if (dsnMatch) discoveredDsn = { key: dsnMatch[1], host: dsnMatch[2], project: dsnMatch[3] };
-        record(leg, 'client bundle carries a Sentry DSN', !!dsnMatch, dsnMatch ? `project ${dsnMatch[3]}` : 'Sentry not initialised in the browser', { warnOnly: true });
       }
     }
 
@@ -193,41 +186,18 @@ export async function runLoginBridgeProbe(opts = {}) {
     const renewNoAuth = await http(`${CMD}/api/commander/staff-session/renew`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     record(leg, 'staff-session/renew requires a Bearer token (401)', renewNoAuth.status === 401, `status=${renewNoAuth.status}`);
 
-    // 5. Health: secrets + observability present (booleans only)
+    // 5. Health: secrets present (booleans only)
     const health = await http(`${CMD}/api/health`);
     record(leg, '/api/health responds 200', health.status === 200, `status=${health.status}`);
     if (health.json?.auth) {
       // A CI `next start` has no production secrets: these are warnings there.
       record(leg, 'signing secret configured', health.json.auth.staff_session_secret === true, LOCAL ? 'not expected on a local build' : '', { warnOnly: LOCAL });
       record(leg, 'service-role key configured', health.json.auth.supabase_service_role === true, LOCAL ? 'not expected on a local build' : '', { warnOnly: LOCAL });
-      record(leg, 'client Sentry DSN configured', health.json.observability?.sentry_client_dsn === true, 'set NEXT_PUBLIC_SENTRY_DSN in Vercel (production) - browser errors are invisible without it', { warnOnly: true });
       record(leg, 'dedicated staff-session secret configured', health.json.auth.dedicated_staff_session_secret === true, 'set COMMANDER_STAFF_SESSION_SECRET (see docs/runbooks/staff-session-secret-rotation.md, step "first-time setup")', { warnOnly: true });
     } else {
-      record(leg, 'health exposes auth/observability booleans', false, 'deploy predates this probe - redeploy');
+      record(leg, 'health exposes auth booleans', false, 'deploy predates this probe - redeploy');
     }
 
-    // 6. Sentry actually ACCEPTS events. Found 2026-09-04: the org's error quota
-    // had been exhausted since 08-24 - every envelope answered 429 - so every
-    // alert rule on the estate was blind for eleven days while the dashboards
-    // said "0 issues". One tiny event per probe run (48/day) is the cost of
-    // knowing. WARN, not FAIL: a quota is a billing decision, not an outage in
-    // the handshake itself.
-    if (discoveredDsn && !LOCAL) {
-      const eventId = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      const now = new Date().toISOString();
-      const envelope = [
-        JSON.stringify({ event_id: eventId, sent_at: now, dsn: `https://${discoveredDsn.key}@${discoveredDsn.host}/${discoveredDsn.project}` }),
-        JSON.stringify({ type: 'event' }),
-        JSON.stringify({ event_id: eventId, timestamp: now, platform: 'javascript', level: 'info', logger: 'login-bridge-probe',
-          message: 'commander.sentry_ingest_check', tags: { app: 'commander', source: 'login-bridge-probe' } }),
-      ].join('\n');
-      const ing = await http(`https://${discoveredDsn.host}/api/${discoveredDsn.project}/envelope/?sentry_key=${discoveredDsn.key}&sentry_version=7`, {
-        method: 'POST', headers: { 'content-type': 'application/x-sentry-envelope' }, body: envelope,
-      });
-      record(leg, 'Sentry accepts events (alert rules can fire)', ing.status === 200,
-        ing.status === 429 ? 'HTTP 429 - error quota exhausted, EVERY Sentry alert is blind until it renews or is raised' : `HTTP ${ing.status}`,
-        { warnOnly: true });
-    }
   }
 
   async function signedInLeg() {

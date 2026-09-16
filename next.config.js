@@ -43,10 +43,6 @@ const nextConfig = {
   poweredByHeader: false,
 
   experimental: {
-    // Loads ./instrumentation.js on server boot so sentry.server.config.js and
-    // sentry.edge.config.js actually run (2026-09-03 - they never had before).
-    instrumentationHook: true,
-
     // ─── Parallel webpack workers ──────────────────────────────────────────────────
     // Two parallel workers each compile half the pages, cutting wall-clock
     // build time ~50% and reducing Vercel Build Minutes billed.
@@ -63,7 +59,6 @@ const nextConfig = {
     // to the top-level key `serverExternalPackages` in Next.js 15+.
     serverComponentsExternalPackages: [
       'twilio',
-      '@sentry/node',
       'stripe',
       'openai',
     ],

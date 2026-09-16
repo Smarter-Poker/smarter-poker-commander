@@ -49,20 +49,12 @@ prompted interactively, so it could not fail. Never add `continue-on-error`
 to a check that can name a user-facing failure. If a check is too noisy to
 block on, delete it or fix it; do not leave it advisory.
 
-**3.2 A Sentry dashboard showing 0 issues is not health.** Client Sentry was
-never loaded in this app (the config file needs `withSentryConfig` or a manual
-import - `pages/_app.js` now does the import), and separately the org's error
-quota had been exhausted since 2026-08-24 so EVERY event on the estate was
-answered 429 for eleven days. `/api/health` exposes `observability.*` and
-`auth.*` booleans, and the login-bridge probe posts one event per run and
-WARNs on 429. When you touch monitoring, prove an event arrives - do not
-trust the absence of red.
-Since 2026-09-04 Commander reports to its OWN Sentry project `club-commander`
-(id 4512029155393536; DSN in Vercel env, alert rules in
-`docs/runbooks/sentry-auth-alerts.md`), not the World Hub project. The quota
-is still org-wide (exhausted until 2026-09-16 by the engine loops the Club
-Arena budget now caps); the separate project keeps the rules and rate
-limits from being drowned by hub noise.
+**3.2 Error visibility is local.** Auth failures are recorded in the browser
+console. Server failures remain in server logs and the existing venue health
+metrics. The login-bridge probe preserves its HTTP result,
+`cron_execution_log` record and the existing dispatcher SMS path. No external
+error-reporting SDK, ingest probe or paid monitoring integration is installed.
+Do not restore one without an explicit owner request.
 
 **3.3 The staff session is minted in ONE place.** `completeCommanderLogin()` in
 `vendor/commander-shared/src/lib/commander/staffSession.js` (shimmed at
@@ -113,7 +105,7 @@ It reads no credentials itself; two callers pass their own:
   `CRON_SECRET` bearer, runs both legs with `PROBE_LOGIN_EMAIL`/`_PASSWORD`
   (Vercel env on this project), writes its run to `cron_execution_log` as
   `/commander/internal/login-bridge-probe` (so the hub's cron watchdogs see
-  it) and sends `commander.probe.login_bridge_failed` to Sentry on failure.
+  it) and preserves server-log diagnostics on failure.
   **Auth is a hub-signed ticket, not a CRON_SECRET copy** (since 2026-09-04,
   after the first live run 401'd on a drifted copy): the dispatcher calls the
   hub's `/api/internal/login-bridge-probe` with CRON_SECRET like every other
@@ -151,7 +143,6 @@ Runbook: `docs/runbooks/login-bridge.md`.
 
 - `docs/runbooks/login-bridge.md` - the handshake, its guards, triage.
 - `docs/runbooks/staff-session-secret-rotation.md` - rotating the HMAC secret.
-- `docs/runbooks/sentry-auth-alerts.md` - rule ids, the quota, what to check.
 - `docs/runbooks/cross-subdomain-session.md` - the one-session design, why
   it is not a hotfix (refresh-token rotation), and the 2026-09-04 decision
   NOT to build it yet with the three conditions that would reopen it. Do not

@@ -82,7 +82,7 @@ vi.mock('../../src/lib/apiRateLimit', () => ({
   LIMITS: { read: {}, write: {} },
   applyRateLimit: () => true,
 }));
-vi.mock('../../src/lib/sentryWrap', () => ({ reportApiError: vi.fn() }));
+vi.mock('../../src/lib/apiErrorHandler', () => ({ reportApiError: vi.fn() }));
 vi.mock('../../src/lib/home-games/rpcBridge', () => ({ getUserScopedClient }));
 
 function mockResponse() {

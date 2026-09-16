@@ -5,7 +5,7 @@
 import Stripe from 'stripe';
 import { guardManager } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
-import { reportApiError } from '../../src/lib/sentryWrap';
+import { reportApiError } from '../../src/lib/apiErrorHandler';
 
 // 2026-07-25 audit fix: guarded construction - `new Stripe(undefined)` throws
 // at import and 500s the route before auth even runs.
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
       message: 'Add these to your .env file',
     });
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Stripe setup error:', error);
     res.status(500).json({
       success: false, error: error.message,

@@ -17,7 +17,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../src/lib/commander/audit';
-import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 import { notifyAlternates } from '../../../../src/lib/commander/alternateNotifications';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 

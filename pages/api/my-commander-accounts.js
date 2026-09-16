@@ -31,7 +31,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { signStaffSession, DEFAULT_PERMISSIONS } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { checkMemoryRateLimit } from '../../src/lib/commander/rateLimit';
-import { reportApiError } from '../../src/lib/sentryWrap';
+import { reportApiError } from '../../src/lib/apiErrorHandler';
 import { logAction, AuditActions } from '../../src/lib/commander/audit';
 
 let _supabase = null;

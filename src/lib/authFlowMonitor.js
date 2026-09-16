@@ -1,36 +1,10 @@
-/**
- * Auth-flow monitor - turns the login/session events the app already emits
- * into Sentry signals with STABLE tags, so alert rules can be written against
- * them instead of against free-text messages.
- *
- * Tags (all events):   app=commander  flow=<login|sso|session>
- * Event names:
- *   commander.auth.unauthorized   a 401 that refreshStaffSession could NOT heal
- *                                 (the platform session is gone, or no subscription)
- *   commander.auth.login_failed   completeCommanderLogin / SSO exchange failed
- *                                 after Supabase accepted the user
- *   commander.auth.reference_error a ReferenceError anywhere under /commander/login
- *                                 or /auth/sso - the 2026-09-03 outage class
- *
- * Alert rules to create in Sentry (documented in docs/runbooks/sentry-auth-alerts.md):
- *   1. message:"commander.auth.reference_error"  count >= 1  in 5 min  -> page
- *   2. message:"commander.auth.login_failed"     count >= 5  in 10 min -> page
- *   3. message:"commander.auth.unauthorized"     count >= 20 in 10 min -> warn
- *
- * Never throws; never blocks the flow it observes.
- */
-import * as Sentry from '@sentry/nextjs';
-
+/** Browser-local auth failure diagnostics. Never sends events to a service. */
 function report(name, level, tags, extra) {
   try {
-    Sentry.withScope((scope) => {
-      scope.setTag('app', 'commander');
-      Object.entries(tags || {}).forEach(([k, v]) => scope.setTag(k, String(v)));
-      Object.entries(extra || {}).forEach(([k, v]) => scope.setExtra(k, v));
-      scope.setLevel(level);
-      Sentry.captureMessage(name, level);
-    });
-  } catch { /* observability must never break the app */ }
+    const log = level === 'warning' ? console.warn : console.error;
+    // Limit logged fields to flow and path; no session, user, URL query or form data.
+    log.call(console, name, { flow: tags?.flow, path: extra?.path, error: extra?.error || extra?.message });
+  } catch { /* Diagnostic failure cannot interrupt authentication. */ }
 }
 
 /** Called by login.js / sso.js when completion fails after auth succeeded. */
@@ -39,15 +13,6 @@ export function reportLoginFailure(flow, error, extra = {}) {
     error: typeof error === 'string' ? error : error?.message || String(error),
     ...extra,
   });
-  try {
-    if (error instanceof Error) {
-      Sentry.withScope((scope) => {
-        scope.setTag('app', 'commander');
-        scope.setTag('flow', flow);
-        Sentry.captureException(error);
-      });
-    }
-  } catch { /* ignore */ }
 }
 
 /**
@@ -70,7 +35,6 @@ export function installAuthFlowMonitor() {
       report('commander.auth.reference_error', 'fatal', { flow: window.location.pathname.includes('sso') ? 'sso' : 'login' }, {
         message: err.message, path: window.location.pathname,
       });
-      try { Sentry.captureException(err); } catch { /* ignore */ }
     }
   };
   const onRejection = (e) => {

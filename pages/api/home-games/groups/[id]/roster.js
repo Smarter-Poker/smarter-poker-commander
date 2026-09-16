@@ -10,7 +10,7 @@
 import { createClient } from '../../../../../src/lib/supabaseServerClient';
 import { guardUser } from '../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../../src/lib/apiErrorHandler';
 import { normalizeHomeGroupRoster } from '../../../../../src/lib/home-games/rosterBoundary';
 
 let _supabase = null;
