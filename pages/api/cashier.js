@@ -8,7 +8,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../src/lib/commander/auth';
 import { logAction } from '../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
-import { reportApiError } from '../../src/lib/sentryWrap';
+import { reportApiError } from '../../src/lib/apiErrorHandler';
 
 let _supabase = null;
 function getSupabase() {
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
 
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
@@ -235,7 +235,7 @@ async function handlePatch(req, res, staff) {
 
     return res.status(200).json({ success: true, data });
   } catch (err) {
-      try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Cashier PATCH error:', err);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }

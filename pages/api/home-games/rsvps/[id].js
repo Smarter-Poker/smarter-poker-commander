@@ -64,7 +64,7 @@ import { guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { sendPushNotification } from '../../../../src/lib/commander/pushNotifications';
 import { sendDirectMessageBetweenUsers } from '../../../../src/lib/home-games/messenger';
-import { reportApiError } from '../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 import { getUserScopedClient } from '../../../../src/lib/home-games/rpcBridge';
 import { respondToMembershipRpcError } from '../../../../src/lib/home-games/membershipRpcError';
 import {
@@ -566,7 +566,7 @@ async function dispatchRequesterNotification(supabase, ctx) {
       messageType: 'text',
     });
   } catch (e) {
-      try { reportApiError(e, null); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(e, null); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[rsvps/[id]] DM dispatch threw:', e?.message || e);
   }
 }

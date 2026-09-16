@@ -67,7 +67,7 @@
 import { createClient } from '../../../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../../../src/lib/apiErrorHandler';
 import { logAction } from '../../../../../../src/lib/commander/audit';
 import { isUniqueViolation } from '../../../../../../src/lib/commander/dbErrors';
 import { entryBountyWinnings } from '../../../../../../src/lib/commander/tournamentBounty';

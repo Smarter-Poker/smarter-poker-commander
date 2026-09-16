@@ -2,14 +2,14 @@
   "name": "smarter-poker-commander",
   "version": "0.1.0",
   "private": true,
-  "description": "Commander — poker venue/club operator dashboard. Extracted from Smarter-Poker-World-Hub per Phase 3 of the optimization plan. Hosted on Vercel as a separate project; URL preserved via Vercel rewrites at smarter.poker/commander/*.",
+  "description": "Commander \u2014 poker venue/club operator dashboard. Extracted from Smarter-Poker-World-Hub per Phase 3 of the optimization plan. Hosted on Vercel as a separate project; URL preserved via Vercel rewrites at smarter.poker/commander/*.",
   "scripts": {
     "dev": "next dev -p 3001",
     "prebuild": "node scripts/copy-zxing-wasm.mjs && node scripts/copy-tesseract-assets.mjs",
     "build": "next build",
     "start": "next start",
     "test": "npm run lint:undef && vitest run && npm run test:auth",
-    "test:auth": "node --test tests/integrity/jwt-verification-contract.test.mjs tests/integrity/sign-out-contract.test.mjs tests/integrity/an-ipad-reads-the-barcode.test.mjs",
+    "test:auth": "node --test tests/integrity/jwt-verification-contract.test.mjs tests/integrity/sign-out-contract.test.mjs tests/integrity/an-ipad-reads-the-barcode.test.mjs tests/integrity/api-error-handler.test.mjs tests/integrity/error-reporting-removal.test.mjs",
     "test:global-header": "node --test tests/integrity/global-header.test.mjs",
     "test:e2e": "playwright test",
     "prepare": "git config core.hooksPath .husky 2>/dev/null || true",
@@ -21,7 +21,6 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.38.0",
     "@smarter-poker/commander-shared": "file:vendor/commander-shared",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.103.3",

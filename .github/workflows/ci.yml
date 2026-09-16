@@ -102,7 +102,7 @@ jobs:
       # the structural leg in local mode: the login chunk's free
       # `completeLogin(` call, the bridge, the SSO page, the API contracts,
       # health. That is the 2026-09-03 outage caught at pull-request time
-      # instead of by a player. Production-only rows (hub rewrite, Sentry
+      # instead of by a player. Production-only rows (hub rewrite,
       # ingest, secrets present) are skipped or warnings here; the scheduled
       # production probe still owns those. A Vercel preview URL cannot be used
       # for this: previews are SSO-protected on this project.

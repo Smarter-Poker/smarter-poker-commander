@@ -10,7 +10,7 @@ import { isOneSignalConfigured } from '../../../src/lib/commander/pushNotificati
 import { guardWriteStaff } from '../../../src/lib/commander/auth';
 import { checkMemoryRateLimit } from '../../../src/lib/commander/rateLimit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 let _supabase = null;
 function getSupabase() {
@@ -268,7 +268,7 @@ export default async function handler(req, res) {
     }
 
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
@@ -673,7 +673,7 @@ async function sendPushNotification(notification) {
       })
       .eq('id', notification.id);
   } catch (error) {
-      try { reportApiError(error, null); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, null); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('OneSignal push error:', error);
     await getSupabase()
       .from('commander_notifications')

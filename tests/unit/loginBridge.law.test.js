@@ -268,9 +268,8 @@ describe('the lint that would have caught the outage is blocking (pin 9)', () =>
 });
 
 describe('the outage would be visible (pin 10)', () => {
-  it('client Sentry is actually loaded and the auth-flow monitor is installed', () => {
+  it('the local auth-flow monitor is installed', () => {
     const app = code(read('pages/_app.js'));
-    expect(app).toMatch(/require\('\.\.\/sentry\.client\.config'\)/);
     expect(app).toMatch(/installAuthFlowMonitor\(\)/);
     const mon = code(read('src/lib/authFlowMonitor.js'));
     for (const ev of ['commander.auth.reference_error', 'commander.auth.login_failed', 'commander.auth.unauthorized']) {
@@ -279,16 +278,8 @@ describe('the outage would be visible (pin 10)', () => {
     for (const f of [LOGIN, SSO]) expect(code(read(f))).toMatch(/reportLoginFailure\(/);
   });
 
-  it('server/edge Sentry configs are loaded through instrumentation.js', () => {
-    const inst = code(read('instrumentation.js'));
-    expect(inst).toMatch(/sentry\.server\.config/);
-    expect(inst).toMatch(/sentry\.edge\.config/);
-    expect(read(NEXT_CONFIG)).toMatch(/instrumentationHook:\s*true/);
-  });
-
   it('/api/health exposes the booleans the probe asserts (never values)', () => {
     const h = code(read('pages/api/health.js'));
-    expect(h).toMatch(/sentry_client_dsn:\s*Boolean\(/);
     expect(h).toMatch(/staff_session_secret:\s*Boolean\(/);
     expect(h).not.toMatch(/process\.env\.[A-Z_]+\s*,?\s*\n?\s*\}/); // no raw env value in the payload
   });
@@ -326,7 +317,8 @@ describe('production is watched (pin 11)', () => {
     expect(route).toMatch(/process\.env\.SUPABASE_JWT_SECRET/);
     expect(code(read('src/lib/probe/ticket.js'))).toMatch(/timingSafeEqual/);
     expect(route).toMatch(/PROBE_LOGIN_EMAIL/);
-    expect(route, 'a failing probe must reach Sentry').toMatch(/commander\.probe\.login_bridge_failed/);
+    expect(route, 'a failing probe must remain visible').toMatch(/console\.error\(/);
+    expect(route).toMatch(/recordRun\(/);
     expect(route).toMatch(/maxDuration/);
   });
 

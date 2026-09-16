@@ -13,7 +13,7 @@ import { createClient } from '../../../../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../../../src/lib/apiRateLimit';
 import { logAction } from '../../../../../../src/lib/commander/audit';
-import { reportApiError } from '../../../../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../../../../src/lib/apiErrorHandler';
 import { claimOpenSeat } from '../../../../../../src/lib/commander/tournamentSeating';
 import { isUniqueViolation, conflictError } from '../../../../../../src/lib/commander/dbErrors';
 import { reverseKnockoutBounty } from '../../../../../../src/lib/commander/tournamentBounty';

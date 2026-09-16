@@ -1,14 +1,13 @@
 /**
  * /api/internal/login-bridge-probe - the Open Claw entry point for the probe.
- * The probe core and Sentry are mocked; what is under test is the contract the
+ * The probe core and database are mocked; what is under test is the contract the
  * dispatcher relies on: bearer auth, loud 503 when unconfigured, 200/500 by
- * probe outcome, and a Sentry signal on failure.
+ * probe outcome, and retained local diagnostics on failure.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mintProbeTicket, verifyProbeTicket } from '../../src/lib/probe/ticket.js';
 
 const probeResult = { current: null };
-const sentry = { captured: [], scope: null };
 
 vi.mock('../../src/lib/probe/loginBridgeProbe.mjs', () => ({
   runLoginBridgeProbe: vi.fn(async (opts) => {
@@ -26,21 +25,6 @@ vi.mock('../../src/lib/supabaseServerClient', () => ({
     }),
   }),
 }));
-vi.mock('@sentry/nextjs', () => ({
-  withScope: (fn) => {
-    const tags = {}; const extra = {};
-    const scope = {
-      setTag: (k, v) => { tags[k] = v; },
-      setExtra: (k, v) => { extra[k] = v; },
-      setLevel: vi.fn(),
-      setFingerprint: vi.fn(),
-    };
-    sentry.scope = { tags, extra };
-    fn(scope);
-  },
-  captureMessage: (msg, level) => { sentry.captured.push({ msg, level, ...sentry.scope }); },
-  flush: vi.fn(async () => true),
-}));
 
 function mockRes() {
   const res = { statusCode: 200, headers: {}, body: null };
@@ -54,7 +38,6 @@ const req = (auth, method = 'GET') => ({ method, headers: auth ? { authorization
 let handler;
 beforeEach(async () => {
   vi.resetModules();
-  sentry.captured = [];
   db.inserts = [];
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://x.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
@@ -127,7 +110,6 @@ describe('/api/internal/login-bridge-probe', () => {
     expect(probeResult.opts).toMatchObject({ email: 'probe@example.com', password: 'pw' });
     expect(res.headers['Cache-Control']).toBe('no-store');
     expect(JSON.stringify(res.body)).not.toContain('pw');
-    expect(sentry.captured).toHaveLength(0);
     // The hub's cron watchdogs read cron_execution_log; this run is visible there.
     expect(db.inserts).toHaveLength(1);
     expect(db.inserts[0].table).toBe('cron_execution_log');
@@ -142,7 +124,7 @@ describe('/api/internal/login-bridge-probe', () => {
     expect(db.inserts).toHaveLength(0);
   });
 
-  it('returns 500 with the failing rows and reports to Sentry on failure', async () => {
+  it('returns 500 with the failing rows and records failure in the existing health log', async () => {
     probeResult.current = {
       ok: false,
       results: [{ leg: 'signed-in', name: 'grant', ok: false, detail: 'status=400', warnOnly: false }],
@@ -154,9 +136,6 @@ describe('/api/internal/login-bridge-probe', () => {
     expect(res.statusCode).toBe(500);
     expect(res.body.failures).toEqual([{ leg: 'signed-in', name: 'grant', detail: 'status=400' }]);
     expect(res.body.signed_in_leg).toBe(true);
-    expect(sentry.captured).toHaveLength(1);
-    expect(sentry.captured[0]).toMatchObject({ msg: 'commander.probe.login_bridge_failed', level: 'error' });
-    expect(sentry.captured[0].tags).toMatchObject({ app: 'commander', probe: 'login-bridge' });
     expect(db.inserts[0].row).toMatchObject({ job_name: '/commander/internal/login-bridge-probe', status: 'error' });
     expect(db.inserts[0].row.error).toMatch(/grant - status=400/);
   });

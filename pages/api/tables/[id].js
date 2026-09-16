@@ -7,7 +7,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { verifyStaffSession } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 let _supabase = null;
 function getSupabase() {
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     }
 
   } catch (err) {
-    try { reportApiError(err, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+    try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
     if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
   }
@@ -335,7 +335,7 @@ async function handleDelete(req, res, tableId) {
       data: { message: 'Table deleted successfully' }
     });
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Commander table DELETE error:', error);
     return res.status(500).json({
       success: false,

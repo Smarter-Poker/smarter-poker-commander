@@ -221,11 +221,6 @@
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
       "since": "2026-09-04"
     },
-    "lib/sentryWrap.js": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
     "lib/serverAuth.js": {
       "kind": "differs",
       "reason": "vendor carries the 2026-09-01 ES256/JWKS fix; upstream still HS256. Direction: VENDOR -> upstream.",

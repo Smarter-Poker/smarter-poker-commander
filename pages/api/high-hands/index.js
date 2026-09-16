@@ -7,7 +7,7 @@
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
-import { reportApiError } from '../../../src/lib/sentryWrap';
+import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 
 let _supabase = null;
@@ -183,7 +183,7 @@ async function createHighHand(req, res, staff) {
 
     return res.status(201).json({ high_hand: highHand });
   } catch (error) {
-      try { reportApiError(error, req); } catch (_sentryErr) { console.warn('[App] Handled exception:', _sentryErr?.message || _sentryErr); }
+      try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create high hand error:', error?.message || error, error?.code || '', error?.details || '');
     return res.status(500).json({ error: error?.message || 'Internal server error' });
   }
