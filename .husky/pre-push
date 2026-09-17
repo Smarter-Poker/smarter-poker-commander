@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+ROOT=$(git rev-parse --show-toplevel)
+# Read-only policy preflight; do not install dependencies or publish here.
+if ! command -v node >/dev/null 2>&1 && [ -x /opt/homebrew/bin/node ]; then
+  PATH="$PATH:/opt/homebrew/bin"; export PATH
+fi
+POLICY_PRECHECK_STARTED=$(date +%s)
+policy_precheck_result() {
+  policy_exit=$?
+  trap - EXIT
+  node "$ROOT/docs/agent-policy/agent-policy.mjs" hook-report "$POLICY_PRECHECK_STARTED" "$policy_exit" || policy_exit=1
+  exit "$policy_exit"
+}
+trap policy_precheck_result EXIT
+node "$ROOT/docs/agent-policy/agent-policy.mjs" check || exit 1
+node --test "$ROOT/docs/agent-policy/agent-policy.test.mjs" || exit 1
