@@ -1,5 +1,7 @@
 # Commander publishing
 
+**Non-engine delivery: push, publish, verify and finish without waiting for `:55`.** Apply the maintenance cutover only to an actual engine replacement or a specifically identified dependency on new engine behavior. A Club Arena client using existing engine APIs, an unrelated pending engine release, and a generic engine-health check do not create that dependency. Required checks and normal client publication/live proof still apply.
+
 Read `AGENTS.md`, `AGENT-PLAYBOOK.md` and `docs/agent-policy/OPERATING-LAW.md`. Own the assigned delivery: recover the existing worktree/branch/PR, commit explicit paths with normal hooks, push, pass the current required checks and complete protected squash merge. Preserve actual dependencies, product rules and other tasks' work. No autopilot, human approval label or numbered queue is required.
 
 The existing application uses Vercel Git source deployment for `smarter-poker-commander`. Verify the configured project/domain and actual deployment record before acting. Production is `https://commander.smarter.poker`; World Hub proxies the Commander paths. For a runtime release, require the applicable successful production deployment, expected commit at `https://commander.smarter.poker/api/health`, and affected behavior on the direct/proxied paths as relevant. Do not substitute Club Arena's publisher, a laptop/prebuilt upload, or a new project.
