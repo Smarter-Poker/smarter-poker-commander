@@ -133,7 +133,7 @@ Runbook: `docs/runbooks/login-bridge.md`.
 - `docs/runbooks/cross-subdomain-session.md` - the one-session design, why
   it is not a hotfix (refresh-token rotation), and the 2026-09-04 decision
   NOT to build it yet with the three conditions that would reopen it. Do not
-  start it as a side quest; it is a Tier 3 hub programme Dan approves.
+  start it as a side quest; it requires its own explicit assignment; the current repair does not add that programme.
 - `docs/changelog/` - one file per change, never appended to a shared one.
 
 ## 6. Working rules (Dan's, binding, same as every repo)
