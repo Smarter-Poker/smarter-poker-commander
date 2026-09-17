@@ -1,11 +1,8 @@
 # Club Commander -- Agent Instructions
 
-## START HERE: `AGENT-PLAYBOOK.md`
+## START HERE: current operating references
 
-Read [`AGENT-PLAYBOOK.md`](./AGENT-PLAYBOOK.md) before this file. It is
-byte-identical across all seven estate repos and says how to ship without
-losing work: claim a worktree, commit, push a branch, stop. This file is the
-Commander detail underneath it. If the two disagree, the playbook wins.
+Read root `AGENTS.md`, `AGENT-PLAYBOOK.md` and `docs/agent-policy/REFERENCE-INDEX.md` at task start and every resumption. They link to the current owner policy, operating law and hardening standard. Read `PUBLISHING.md` for delivery. Later owner instructions govern operating authority; the product and financial laws below remain applicable within the assigned scope. Historical programmes are not automatic assignments.
 
 ## 1. What this repo is
 
@@ -22,19 +19,7 @@ via `file:`). Section 4 says what that costs and how not to pay it twice.
 
 ## 2. How a change ships
 
-Push a branch. `agent-open-pr.yml` opens the PR, `agent-autopilot.yml`
-squash-merges it when the required `build` check is green, Vercel deploys
-`main`. Verify with `curl -s https://commander.smarter.poker/api/health` -
-`version` must equal the squash commit. `vercel.json`'s `ignoreCommand` skips
-the build when only non-app files changed (`.md`, `.mjs`, `.yml`...), so a
-merge that touches only `scripts/` or `docs/` does **not** redeploy - if you
-need env changes applied, a redeploy of the current production deployment is
-the way (`vercel redeploy <url>`), never `vercel --prod` from a laptop.
-
-Required check: `build` in `ci.yml`. It runs, in order, the vendor drift
-guard, the vendor <-> upstream ratchet, `npm install`, **`npm run lint:undef`
-(blocking: `no-undef` plus ESLint's bug-class rules)**, `npm test`,
-`next build`. There is no advisory lint any more (3.1).
+Follow `PUBLISHING.md`: owned branch, required `build` check, protected merge and the existing Vercel Git integration. The authorized agent handles the PR and merge; disabled autopilot is not a dependency. Verify the actual production deployment and the direct/proxied application behavior. Documentation-only changes may be intentionally ignored by the provider; verify source integration without claiming a new runtime deployment.
 
 ## 3. LAWS (each one is an incident; read the changelog it names)
 
