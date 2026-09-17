@@ -1,0 +1,10 @@
+# commander.smarter.poker - robots.txt
+#
+# This host is the ORIGIN behind the World Hub rewrite; the public address of
+# every page here is https://smarter.poker/commander/... and each public page
+# declares that canonical. Nothing on this host should be indexed under this
+# host name, so every crawler is asked to stay out. smarter.poker/robots.txt
+# governs the public address.
+
+User-agent: *
+Disallow: /
