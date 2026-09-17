@@ -10,13 +10,13 @@ Then read repository `AGENTS.md`, `CLAUDE.md` where present, `AGENT-PLAYBOOK.md`
 
 ## Component map
 
-| Assigned component | Repository | Additional applicable references |
-| --- | --- | --- |
-| World Hub / smarter.poker | Smarter-Poker-World-Hub | Relevant route, API, database and feature laws; migration safety for database changes |
-| Club Arena client | Smarter-Poker-Club-Arena | `.agent/architecture/deploy-paths.md`, relevant product laws and client checks |
-| Club Arena engine | Smarter-Poker-Club-Arena | `CLAUDE.md` maintenance rules, `.agent/architecture/deploy-paths.md`, owning release/maintenance contracts; `docs/HANDOFF_CURRENT_STATE.md` and `docs/ENGINE-RESTART-PROGRAMME.md` only for that assigned programme |
-| Club Commander | smarter-poker-commander | Applicable `docs/runbooks/`, Commander product laws and verified provider configuration |
-| Shared Commander package | commander-shared | `README.md`, `PUBLISHING.md`, consumer vendoring and lockfile contracts when assigned |
+| Assigned component        | Repository               | Additional applicable references                                                                                                                                                                                    |
+| ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| World Hub / smarter.poker | Smarter-Poker-World-Hub  | Relevant route, API, database and feature laws; migration safety for database changes                                                                                                                               |
+| Club Arena client         | Smarter-Poker-Club-Arena | `.agent/architecture/deploy-paths.md`, relevant product laws and client checks                                                                                                                                      |
+| Club Arena engine         | Smarter-Poker-Club-Arena | `CLAUDE.md` maintenance rules, `.agent/architecture/deploy-paths.md`, owning release/maintenance contracts; `docs/HANDOFF_CURRENT_STATE.md` and `docs/ENGINE-RESTART-PROGRAMME.md` only for that assigned programme |
+| Club Commander            | smarter-poker-commander  | Applicable `docs/runbooks/`, Commander product laws and verified provider configuration                                                                                                                             |
+| Shared Commander package  | commander-shared         | `README.md`, `PUBLISHING.md`, consumer vendoring and lockfile contracts when assigned                                                                                                                               |
 
 ## Keep one checkpoint per task
 
