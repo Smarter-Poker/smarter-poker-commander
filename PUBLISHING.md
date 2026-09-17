@@ -9,3 +9,7 @@ The tracked `ci.yml` runs the vendor drift and upstream synchronization checks, 
 Shared code is installed from `file:vendor/commander-shared`. When that code is assigned, land upstream first, then sync the reviewed consumer files and lockfile under the existing drift rules. An upstream merge or package publication alone does not update the consumer.
 
 A failed deployment enters immediate recovery: compare the last successful equivalent, fix the actual blocker, rerun affected/required checks and retry the existing eligible stage promptly. Establish uncertain remote outcomes first. Do not add a watcher or recurring retry. Retain source, checks, merge, provider and live evidence separately. Preserve credentials, existing schedules and required production safeguards.
+
+## Publication timing
+
+Push ready changes, run checks, complete protected merge, build and stage as soon as their prerequisites pass, throughout the hour. Do not hold these stages until `:55`. World Hub and Club Arena client publication have no hourly gate. Only game-engine activation uses its certified maintenance window; the immutable image must be prepared beforehand, followed by immediate live identity, behavior and rollback-budget verification at cutover. Commander and shared-package delivery retain their own component rules above. See the operating law for failed-attempt recovery.
