@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import SEOHead from '../../src/components/seo/SEOHead';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Users, Clock, Trophy, Monitor, Check, Play, Star, ArrowRight, Zap, Shield, BarChart3, Bell, Gift, Home } from 'lucide-react';
+import { Users, Clock, Trophy, Monitor, Check, Play, ArrowRight, Zap, Shield, BarChart3, Bell, Gift, Home } from 'lucide-react';
 import { COMMANDER_FREE_MODE, COMMANDER_FREE_TAGLINE } from '../../src/lib/commander/tierConfig';
 
 const FEATURES = [
@@ -108,28 +108,33 @@ const PRICING = [
   }
 ];
 
-// 2026-07-25 audit fix: removed real-venue attributions (Texas Card House,
-// Bay 101) - testimonials are role-only.
-const TESTIMONIALS = [
-  {
-    quote: "We Cut Our Waitlist Chaos In Half. Players Love Getting Texts When Their Seat Is Ready.",
-    author: "Mike R.",
-    role: "Floor Manager",
-    rating: 5
+// TESTIMONIALS REMOVED (AEO phase 1, 2026-09-17). The three quotes here were
+// written in-house and attributed to "Mike R., Floor Manager" and friends; the
+// 2026-07-25 audit had already stripped the real venue names because no venue
+// had said them. A page that is now indexed by Google and read by AI engines
+// cannot carry invented five-star reviews. Real reviews from named venues can
+// come back as a section when a venue gives one.
+
+const COMMANDER_JSON_LD = {
+  '@type': 'SoftwareApplication',
+  name: 'Club Commander',
+  alternateName: 'Club Commander By Smarter Poker',
+  url: 'https://smarter.poker/commander',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web, iOS, Android, macOS, Windows',
+  description:
+    'Free poker room management software for live venues, charity events and home games: digital waitlist, table tracking, tournament clock with Hendon Mob export, SMS and push seat alerts, promotions, comps and analytics.',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
   },
-  {
-    quote: "The Tournament Clock Alone Is Worth It. Export To Hendon Mob With One Click Saved Us Hours.",
-    author: "Sarah L.",
-    role: "Tournament Director",
-    rating: 5
+  publisher: {
+    '@type': 'Organization',
+    name: 'Smarter Software Inc.',
+    url: 'https://smarter.poker',
   },
-  {
-    quote: "Finally A Modern System That Doesn't Cost $10k. Our Players Think We're A Big Casino Now.",
-    author: "James T.",
-    role: "Owner, Private Club",
-    rating: 5
-  }
-];
+};
 
 function FeatureCard({ icon: Icon, title, description }) {
   return (
@@ -243,11 +248,20 @@ export default function CommanderLanding() {
 
   return (
     <>
+      {/* AEO PHASE 1 (2026-09-17). This is the one public marketing page of the
+          venue product and it was noindex with a nine-word description, so
+          Club Commander did not exist to Google or to any AI engine. It is
+          now indexable with a real description, and canonical on the public
+          host (World Hub rewrites smarter.poker/commander to this page;
+          commander.smarter.poker is the origin, not the address). Every staff
+          page stays noindex. jsonLd is ONE object on purpose: this vendored
+          SEOHead spreads an array into an object with numeric keys. */}
       <SEOHead
-                title="Club Commander - Poker Room Management Suite"
-                description="Club Commander Poker Room Management Tool."
-                noindex={true}
-            />
+        title="Club Commander - Free Poker Room Management Software"
+        description="Club Commander Is Free Poker Room Management Software From Smarter Poker: Digital Waitlist, Table Tracking, Tournament Clock With Hendon Mob Export, SMS And Push Seat Alerts, Promotions, Comps And Analytics For Live Venues, Charity Events And Home Games."
+        canonical="https://smarter.poker/commander"
+        jsonLd={COMMANDER_JSON_LD}
+      />
 
       <div className="min-h-screen" style={{ fontFamily: 'Inter, sans-serif', backgroundColor: '#18191A' }}>
         {/* Navigation */}
@@ -265,7 +279,6 @@ export default function CommanderLanding() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-[#B0B3B8] hover:text-white">Features</a>
               <a href="#pricing" className="text-[#B0B3B8] hover:text-white">Pricing</a>
-              <a href="#testimonials" className="text-[#B0B3B8] hover:text-white">Reviews</a>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/commander/login" className="text-[#B0B3B8] hover:text-white">
@@ -395,33 +408,6 @@ export default function CommanderLanding() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {PRICING.map((plan, i) => (
                 <PricingCard key={i} plan={plan} highlighted={plan.highlighted} onAction={handlePricingAction} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section id="testimonials" className="py-20 px-4 bg-[#0F1D32]">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Loved By Poker Rooms
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {TESTIMONIALS.map((t, i) => (
-                <div key={i} className="cmd-panel p-6">
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} size={18} fill="#F59E0B" className="text-yellow-500" />
-                    ))}
-                  </div>
-                  <p className="text-[#94A3B8] mb-4">"{t.quote}"</p>
-                  <div>
-                    <p className="font-semibold text-white">{t.author}</p>
-                    <p className="text-sm text-[#B0B3B8]">{t.role}</p>
-                  </div>
-                </div>
               ))}
             </div>
           </div>
