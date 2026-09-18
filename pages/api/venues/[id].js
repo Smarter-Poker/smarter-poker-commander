@@ -7,6 +7,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardManager } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { lookupOutcome, sendLookupFailure } from '../../../src/lib/commander/publicLookup';
 
 let _supabase = null;
 function getSupabase() {
@@ -72,12 +73,13 @@ async function handleGet(req, res, venueId) {
       .eq('id', venueId)
       .maybeSingle();
 
-    if (venueError || !venue) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: 'Venue not found' }
-      });
-    }
+    // A failed lookup is not a missing venue. The World Hub renders
+    // /hub/commander/venues/[id] from this response on the server, so a 404
+    // here asks Google to drop a real poker room from the index. Only a clean
+    // read that found nothing gets to say 404; a broken read says 503 and
+    // names when to come back. See src/lib/commander/publicLookup.js.
+    const outcome = lookupOutcome({ error: venueError, record: venue, noun: 'Venue' });
+    if (sendLookupFailure(res, outcome)) return;
 
     // Get current running games
     const { data: currentGames } = await getSupabase()
