@@ -27,6 +27,9 @@ jobs:
           node docs/agent-policy/agent-policy.mjs check
           node --test docs/agent-policy/agent-policy.test.mjs
 
+      - name: Build cost controls
+        run: node --test tests/vercel-build-queue.test.mjs
+
       # Vendor drift guard — ported from World Hub build-safety-gate CHECK 14.
       # Runs BEFORE npm install (dependency-free static analysis). Guards the
       # two vendoring-drift classes behind the Aug 2026 prod incidents:
