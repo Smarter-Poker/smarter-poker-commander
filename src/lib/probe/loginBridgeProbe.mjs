@@ -186,13 +186,30 @@ export async function runLoginBridgeProbe(opts = {}) {
     const renewNoAuth = await http(`${CMD}/api/commander/staff-session/renew`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     record(leg, 'staff-session/renew requires a Bearer token (401)', renewNoAuth.status === 401, `status=${renewNoAuth.status}`);
 
-    // 5. Health: secrets present (booleans only)
+    // 5. Health: secrets present (booleans only) AND the service-role key
+    //    actually accepted. "Present" stayed true for the whole 2026-09-18
+    //    outage while every read failed with `Unregistered API key`, so the
+    //    presence boolean alone is not a check. This probe is a CRITICAL_JOB
+    //    in the Open Claw dispatcher, which is what turns the line below into
+    //    a page rather than a log nobody reads.
     const health = await http(`${CMD}/api/health`);
     record(leg, '/api/health responds 200', health.status === 200, `status=${health.status}`);
     if (health.json?.auth) {
       // A CI `next start` has no production secrets: these are warnings there.
       record(leg, 'signing secret configured', health.json.auth.staff_session_secret === true, LOCAL ? 'not expected on a local build' : '', { warnOnly: LOCAL });
       record(leg, 'service-role key configured', health.json.auth.supabase_service_role === true, LOCAL ? 'not expected on a local build' : '', { warnOnly: LOCAL });
+      // null means no key is configured at all (a local build), already
+      // covered by the line above; false means Supabase refused the key we do
+      // have, which is an outage in progress.
+      record(
+        leg,
+        'service-role key is accepted by Supabase',
+        health.json.auth.supabase_service_role_valid !== false,
+        health.json.auth.supabase_service_role_detail
+          ? `supabase says: ${health.json.auth.supabase_service_role_detail}`
+          : '',
+        { warnOnly: LOCAL }
+      );
       record(leg, 'dedicated staff-session secret configured', health.json.auth.dedicated_staff_session_secret === true, 'set COMMANDER_STAFF_SESSION_SECRET (see docs/runbooks/staff-session-secret-rotation.md, step "first-time setup")', { warnOnly: true });
     } else {
       record(leg, 'health exposes auth booleans', false, 'deploy predates this probe - redeploy');
