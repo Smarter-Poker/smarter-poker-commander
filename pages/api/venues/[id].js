@@ -66,36 +66,84 @@ export default async function handler(req, res) {
 
 async function handleGet(req, res, venueId) {
   try {
-    // Get venue details
-    const { data: venue, error: venueError } = await getSupabase()
-      .from('poker_venues')
-      .select('*')
-      .eq('id', venueId)
-      .maybeSingle();
+    // ONE ROUND TRIP, NOT SIX (2026-09-22).
+    //
+    // These six reads ran one after another, each waiting for the last,
+    // though only the venue decides whether the rest are shown and none of
+    // them needs another's result. Measured from outside: 1.0-2.0s for one
+    // request and 2.4-3.1s with a dozen in flight. The World Hub renders
+    // /hub/commander/venues/[id] from this response on the server with a 4s
+    // budget, so a crawler reading the venue directory - 50 venue links in a
+    // burst, which is exactly what Googlebot does - pushed one page in five
+    // over the budget and got a 503 (10 of 50 in the 2026-09-22 crawl).
+    //
+    // All six now go out together. A missing venue still costs five small
+    // reads that are thrown away; that is rare, and cheaper than making every
+    // real venue wait for the slowest chain.
+    const supabase = getSupabase();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [venueRead, gamesRead, waitlistRead, settingsRead, tournamentsRead, promotionsRead] = await Promise.all([
+      supabase
+        .from('poker_venues')
+        .select('*')
+        .eq('id', venueId)
+        .maybeSingle(),
+      // Current running games
+      supabase
+        .from('commander_games')
+        .select('*')
+        .eq('venue_id', venueId)
+        .in('status', ['waiting', 'running'])
+        .order('created_at', { ascending: false })
+        .limit(100),
+      // Waitlist entries, summarised by game type and stakes below
+      supabase
+        .from('commander_waitlist')
+        .select('game_type, stakes, id')
+        .eq('venue_id', venueId)
+        .eq('status', 'waiting'),
+      // Public venue settings (comp rate, room open, house rules, display prefs).
+      // commander_venue_settings SELECT is public.
+      supabase
+        .from('commander_venue_settings')
+        .select('venue_id, auto_comp_rate, room_open, venue_type, show_player_names_on_display, house_rules, default_game_type, default_stakes, max_tables, hard_stop_enabled, hard_stop_time, club_logo_url')
+        .eq('venue_id', venueId)
+        .maybeSingle(),
+      // Today's + upcoming tournaments (sanitized public fields only).
+      supabase
+        .from('commander_tournaments')
+        .select('id, name, description, tournament_type, variant, buyin_amount, buyin_fee, starting_chips, scheduled_start, registration_opens, late_registration_levels, guaranteed_pool, max_entries, current_entries, players_remaining, status')
+        .eq('venue_id', venueId)
+        .in('status', ['scheduled', 'registration', 'running'])
+        .gte('scheduled_start', startOfToday.toISOString())
+        .order('scheduled_start', { ascending: true })
+        .limit(50),
+      // Active promotions (sanitized public fields only).
+      supabase
+        .from('commander_promotions')
+        .select('id, name, description, promotion_type, prize_type, prize_value, prize_description, start_date, end_date, days_of_week, start_time, end_time, is_recurring, image_url, is_featured, status')
+        .eq('venue_id', venueId)
+        .eq('status', 'active')
+        .order('is_featured', { ascending: false })
+        .limit(50),
+    ]);
 
     // A failed lookup is not a missing venue. The World Hub renders
     // /hub/commander/venues/[id] from this response on the server, so a 404
     // here asks Google to drop a real poker room from the index. Only a clean
     // read that found nothing gets to say 404; a broken read says 503 and
     // names when to come back. See src/lib/commander/publicLookup.js.
-    const outcome = lookupOutcome({ error: venueError, record: venue, noun: 'Venue' });
+    const venue = venueRead.data;
+    const outcome = lookupOutcome({ error: venueRead.error, record: venue, noun: 'Venue' });
     if (sendLookupFailure(res, outcome)) return;
 
-    // Get current running games
-    const { data: currentGames } = await getSupabase()
-      .from('commander_games')
-      .select('*')
-      .eq('venue_id', venueId)
-      .in('status', ['waiting', 'running'])
-      .order('created_at', { ascending: false })
-          .limit(100)
-
-    // Get waitlist summaries by game type/stakes
-    const { data: waitlists } = await getSupabase()
-      .from('commander_waitlist')
-      .select('game_type, stakes, id')
-      .eq('venue_id', venueId)
-      .eq('status', 'waiting')
+    const currentGames = gamesRead.data;
+    const waitlists = waitlistRead.data;
+    const settings = settingsRead.data;
+    const todaysTournaments = tournamentsRead.data;
+    const activePromotions = promotionsRead.data;
 
     // Group waitlists by game type and stakes
     const waitlistSummary = {};
@@ -110,35 +158,6 @@ async function handleGet(req, res, venueId) {
       }
       waitlistSummary[key].count++;
     });
-
-    // Public venue settings (comp rate, room open, house rules, display prefs).
-    // commander_venue_settings SELECT is public.
-    const { data: settings } = await getSupabase()
-      .from('commander_venue_settings')
-      .select('venue_id, auto_comp_rate, room_open, venue_type, show_player_names_on_display, house_rules, default_game_type, default_stakes, max_tables, hard_stop_enabled, hard_stop_time, club_logo_url')
-      .eq('venue_id', venueId)
-      .maybeSingle();
-
-    // Today's + upcoming tournaments (sanitized public fields only).
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const { data: todaysTournaments } = await getSupabase()
-      .from('commander_tournaments')
-      .select('id, name, description, tournament_type, variant, buyin_amount, buyin_fee, starting_chips, scheduled_start, registration_opens, late_registration_levels, guaranteed_pool, max_entries, current_entries, players_remaining, status')
-      .eq('venue_id', venueId)
-      .in('status', ['scheduled', 'registration', 'running'])
-      .gte('scheduled_start', startOfToday.toISOString())
-      .order('scheduled_start', { ascending: true })
-      .limit(50);
-
-    // Active promotions (sanitized public fields only).
-    const { data: activePromotions } = await getSupabase()
-      .from('commander_promotions')
-      .select('id, name, description, promotion_type, prize_type, prize_value, prize_description, start_date, end_date, days_of_week, start_time, end_time, is_recurring, image_url, is_featured, status')
-      .eq('venue_id', venueId)
-      .eq('status', 'active')
-      .order('is_featured', { ascending: false })
-      .limit(50);
 
     return res.status(200).json({
       success: true,
