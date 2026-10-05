@@ -40,7 +40,29 @@ fi
 ROOT=$(git rev-parse --path-format=absolute --git-common-dir)
 ROOT=${ROOT%/.git}
 REPO=$(basename "$ROOT")
-TREES="${AGENT_WORKTREE_ROOT:-$HOME/Documents/.agent-trees/$REPO}"
+# ── WORKTREES LIVE ON THE EXTERNAL SSD (2026-09-29) ────────────────────────
+#
+# AGENTS.md has said for weeks that agent worktrees belong on
+# /Volumes/SmarterWork/agent-work. This script said otherwise, and this script
+# is what agents actually run: its default put every tree it made under
+# $HOME/Documents/.agent-trees. On 2026-09-29 the Mac carried 659 registered
+# worktrees, 490 of them on the boot disk, which reached 100% of its container
+# with 116 MiB left. Nothing announced itself as "disk full": npm ci died with
+# ENOSPC inside a pre-push gate, vitest failed on temp files, and a merge
+# resolved into a tree that could not be written. Agents spent hours on it.
+#
+# So the default follows the law: the SSD when it is mounted and writable, the
+# old path only as a fallback for a machine that has no SSD attached, and
+# AGENT_WORKTREE_ROOT still overrides both.
+SSD_TREES="/Volumes/SmarterWork/agent-work"
+if [ -n "${AGENT_WORKTREE_ROOT:-}" ]; then
+  TREES="$AGENT_WORKTREE_ROOT"
+elif [ -d "$SSD_TREES" ] && [ -w "$SSD_TREES" ]; then
+  TREES="$SSD_TREES/$REPO"
+else
+  echo "note: $SSD_TREES is not mounted or not writable; falling back to the boot disk." >&2
+  TREES="$HOME/Documents/.agent-trees/$REPO"
+fi
 
 SAFE_AGENT=$(printf '%s' "$AGENT" | tr -c 'A-Za-z0-9._-' '-')
 BRANCH="agent/${SAFE_AGENT}/$(printf '%s' "$SLUG" | sed 's#^agent/[^/]*/##')"
@@ -498,6 +520,28 @@ bash "$ROOT/scripts/check-node-modules.sh" --check 2>&1 | sed "s/^/# /" >&2 || t
 # 2026-08-23 and nothing noticed. An agent claiming a workspace is the most
 # frequent moment anybody looks at this machine, so the scan happens here.
 bash "$ROOT/scripts/check-unpushed-work.sh" --quiet 2>&1 | sed "s/^/# /" >&2 || true
+
+# The freshness scan is the same argument one guard over, and until 2026-09-21
+# it was the one with no reader at all. `.husky/pre-push` was its ONLY caller
+# anywhere in this repo - no workflow references it - and
+# `scripts/guard-shared-clone.sh` forbids pushing from ~/Documents/club-arena.
+# So the single tree every Cowork agent is pointed at, and the tree an agent
+# LOADS `CLAUDE.md` and `.claude/skills/**` out of, was the one tree the check
+# never ran in. On 2026-09-21 it was found 258 commits and four days behind,
+# serving the SUPERSEDED September 16 owner instruction: every agent that read
+# it was told it was a read-only helper waiting in a numbered release queue,
+# which the September 17 instruction on origin/main had already revoked.
+#
+# The jam was not the 2026-09-12 one. No commit sat on local main - HEAD was a
+# clean ancestor of origin/main. 1218 tracked files were dirty, so
+# `git merge --ff-only` refused with "Your local changes would be overwritten",
+# and the estate runs it as `pull -q --ff-only` into a log nobody reads.
+#
+# Same placement and same reason as the scan above: an agent claiming a
+# workspace is the most frequent moment anybody looks at this machine. ADVISORY
+# and never blocking - CLAUDE.md 10.87 rule 1 is explicit that a freshness
+# guard which can wedge every push is worse than the staleness it reports.
+bash "$ROOT/scripts/check-checkout-freshness.sh" --quiet 2>&1 | sed "s/^/# /" >&2 || true
 
 provision_all_package_roots
 verify_all_native_deps
