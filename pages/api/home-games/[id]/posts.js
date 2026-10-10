@@ -7,6 +7,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/apiErrorHandler';
+import { getUserScopedClient } from '../../../../src/lib/home-games/rpcBridge';
 
 let _supabase = null;
 function getSupabase() {
@@ -19,6 +20,8 @@ function getSupabase() {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  res.setHeader('Vary', 'Authorization');
   try {
     // Rate-limit ALL methods, not just writes. GET was uncapped before and
     // could be hit in a loop to DoS the feed pull path.
@@ -77,11 +80,20 @@ export default async function handler(req, res) {
       }
 
       if (req.method === 'GET') {
+        // Membership is not proof that an inactive group remains readable.
+        const groupRead = await getSupabase().from('commander_home_groups')
+          .select('is_active').eq('id', id).maybeSingle();
+        if (groupRead.error) throw groupRead.error;
+        if (groupRead.data?.is_active !== true) {
+          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Home game unavailable' } });
+        }
         const safeP = (v) => Array.isArray(v) ? v[0] : v;
-        const limit = Math.min(parseInt(safeP(req.query.limit)) || 20, 100);
+        const limit = Math.max(1, Math.min(parseInt(safeP(req.query.limit)) || 20, 100));
         const offset = Math.min(Math.max(parseInt(safeP(req.query.offset)) || 0, 0), 10000);
 
-        const { data, error, count } = await getSupabase()
+        // The native member feed must retain caller RLS; a service-role
+        // select would expose moderated posts through this direct origin.
+        const { data, error, count } = await getUserScopedClient(token)
           .from('commander_home_posts')
           .select(`
             *,
@@ -89,8 +101,10 @@ export default async function handler(req, res) {
           `, { count: 'exact' })
           .eq('group_id', id)
           .eq('is_published', true)
+          .or('is_hidden.is.null,is_hidden.eq.false')
           .order('is_pinned', { ascending: false })
           .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
           .range(offset, offset + limit - 1);
 
         if (error) throw error;
