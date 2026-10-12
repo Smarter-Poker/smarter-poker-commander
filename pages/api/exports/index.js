@@ -4,6 +4,7 @@
  * GET /api/commander/exports - List export jobs
  * POST /api/commander/exports - Create export job
  */
+import { PLAYER_STATS_COLUMNS } from '../../../src/lib/commander/rewardPointsRetirement';
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { withRateLimit } from '../../../src/lib/commander/rateLimit';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
@@ -213,7 +214,7 @@ async function processExport(exportId) {
       case 'players':
         query = getSupabase()
           .from('commander_player_stats')
-          .select('*, profiles:player_id(display_name, email)')
+          .select(`${PLAYER_STATS_COLUMNS}, profiles:player_id(display_name, email)`)
           .eq('venue_id', job.venue_id);
         break;
 

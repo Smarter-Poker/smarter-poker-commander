@@ -28,7 +28,6 @@ const STATUS_COLORS = {
 
 const QUAL_TYPES = [
   { value: 'cash_hours', label: 'Cash Game Hours' },
-  { value: 'tournament_points', label: 'Tournament Points' },
   { value: 'custom', label: 'Custom Rules' },
   { value: 'open', label: 'Open (No Qualification)' },
 ];
@@ -77,7 +76,7 @@ export default function LeaguesAndFreerollsManagement() {
   const [qualifications, setQualifications] = useState({});
   const [freerollSubmitting, setFreerollSubmitting] = useState(false);
   const [showAddPlayer, setShowAddPlayer] = useState(null);
-  const [addPlayerForm, setAddPlayerForm] = useState({ player_name: '', hours_logged: '', points_earned: '', custom_value: '', manually_added: true });
+  const [addPlayerForm, setAddPlayerForm] = useState({ player_name: '', hours_logged: '', custom_value: '', manually_added: true });
   const [syncingFreeroll, setSyncingFreeroll] = useState(null);
   const [freerollFilter, setFreerollFilter] = useState(null); // 'active' | 'qualified' | 'upcoming' | null
   const [freerollForm, setFreerollForm] = useState({
@@ -263,7 +262,6 @@ export default function LeaguesAndFreerollsManagement() {
       const body = {
         player_name: addPlayerForm.player_name.trim(),
         hours_logged: addPlayerForm.hours_logged ? parseFloat(addPlayerForm.hours_logged) : 0,
-        points_earned: addPlayerForm.points_earned ? parseInt(addPlayerForm.points_earned) : 0,
         custom_value: addPlayerForm.custom_value || null,
         manually_added: true,
         is_qualified: addPlayerForm.manually_added };
@@ -277,7 +275,7 @@ export default function LeaguesAndFreerollsManagement() {
       if (json.success) {
         showToast('success', 'Player Added');
         setShowAddPlayer(null);
-        setAddPlayerForm({ player_name: '', hours_logged: '', points_earned: '', custom_value: '', manually_added: true });
+        setAddPlayerForm({ player_name: '', hours_logged: '', custom_value: '', manually_added: true });
         fetchQualifications(freerollId);
         broadcastChange('settings'); // notify other tabs
       } else {
@@ -610,8 +608,7 @@ export default function LeaguesAndFreerollsManagement() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs text-[#64748B] font-semibold block mb-1">
-                            {freerollForm.qualification_type === 'cash_hours' ? 'Hours Required' :
-                              freerollForm.qualification_type === 'tournament_points' ? 'Points Required' : 'Threshold'}
+                            {freerollForm.qualification_type === 'cash_hours' ? 'Hours Required' : 'Threshold'}
                           </label>
                           <input type="number" value={freerollForm.qualification_threshold}
                             onChange={e => setFreerollForm({ ...freerollForm, qualification_threshold: e.target.value })}
@@ -711,7 +708,8 @@ export default function LeaguesAndFreerollsManagement() {
                       const isExpanded = freerollExpandedId === fr.id;
                       const sc = STATUS_COLORS[fr.status] || STATUS_COLORS.upcoming;
                       const frQuals = qualifications[fr.id] || [];
-                      const qualLabel = QUAL_TYPES.find(t => t.value === fr.qualification_type)?.label || fr.qualification_type;
+                      const qualificationRetired = fr.qualification_type === 'tournament_points';
+                      const qualLabel = QUAL_TYPES.find(t => t.value === fr.qualification_type)?.label || 'Archived Qualification';
 
                       return (
                         <div key={fr.id} className="cmd-panel overflow-hidden">
@@ -747,9 +745,8 @@ export default function LeaguesAndFreerollsManagement() {
                                 <div className="bg-[#0D192E] rounded-lg p-3 text-center">
                                   <p className="text-[10px] text-[#64748B] font-semibold uppercase">Threshold</p>
                                   <p className="text-sm font-bold text-white">
-                                    {fr.qualification_type === 'open' ? 'Open' :
+                                    {qualificationRetired ? 'Retired' : fr.qualification_type === 'open' ? 'Open' :
                                       fr.qualification_type === 'cash_hours' ? `${fr.qualification_threshold || 0}h` :
-                                        fr.qualification_type === 'tournament_points' ? `${fr.qualification_threshold || 0} Pts` :
                                           fr.qualification_threshold || 'Custom'}
                                   </p>
                                 </div>
@@ -771,6 +768,8 @@ export default function LeaguesAndFreerollsManagement() {
                                 </div>
                               )}
 
+                              {qualificationRetired && <p className="mt-3 text-sm text-[#94A3B8]">This Qualification Method Is Retired. Historical Records Remain Available.</p>}
+
                               {/* Qualifications table */}
                               <div className="mt-4">
                                 <div className="flex items-center justify-between mb-2">
@@ -778,7 +777,7 @@ export default function LeaguesAndFreerollsManagement() {
                                     Player Qualifications ({frQuals.length})
                                   </p>
                                   <div className="flex items-center gap-2">
-                                    {(fr.qualification_type === 'cash_hours' || fr.qualification_type === 'tournament_points') && (
+                                    {(fr.qualification_type === 'cash_hours') && (
                                       <button
                                         onClick={() => handleSyncQualifications(fr.id)}
                                         disabled={syncingFreeroll === fr.id}
@@ -787,7 +786,7 @@ export default function LeaguesAndFreerollsManagement() {
                                         {syncingFreeroll === fr.id ? 'Syncing...' : 'Sync Qualifications'}
                                       </button>
                                     )}
-                                    <button onClick={() => setShowAddPlayer(showAddPlayer === fr.id ? null : fr.id)}
+                                    <button disabled={qualificationRetired} onClick={() => setShowAddPlayer(showAddPlayer === fr.id ? null : fr.id)}
                                       className="flex items-center gap-1 px-3 py-1.5 bg-[#1877F2]/10 text-[#1877F2] text-xs font-semibold rounded-lg hover:bg-[#1877F2]/20 transition-colors">
                                       <UserPlus className="w-3.5 h-3.5" /> Add Player
                                     </button>
@@ -806,12 +805,6 @@ export default function LeaguesAndFreerollsManagement() {
                                         <input type="number" step="0.5" value={addPlayerForm.hours_logged}
                                           onChange={e => setAddPlayerForm({ ...addPlayerForm, hours_logged: e.target.value })}
                                           placeholder="Hours Logged"
-                                          className="px-3 py-2 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white text-sm placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
-                                      )}
-                                      {(fr.qualification_type === 'tournament_points' || fr.qualification_type === 'custom') && (
-                                        <input type="number" value={addPlayerForm.points_earned}
-                                          onChange={e => setAddPlayerForm({ ...addPlayerForm, points_earned: e.target.value })}
-                                          placeholder="Points Earned"
                                           className="px-3 py-2 bg-[#0D192E] border border-[#1E3A5F] rounded-lg text-white text-sm placeholder-[#4A5E78] focus:border-[#1877F2] focus:outline-none" />
                                       )}
                                     </div>
@@ -842,9 +835,7 @@ export default function LeaguesAndFreerollsManagement() {
                                 {frQuals.length > 0 ? (
                                   <div className="space-y-1">
                                     {frQuals.map((q, i) => {
-                                      const progressValue = fr.qualification_type === 'cash_hours' ? (q.hours_logged || 0)
-                                        : fr.qualification_type === 'tournament_points' ? (q.points_earned || 0)
-                                          : (q.hours_logged || q.points_earned || 0);
+                                      const progressValue = q.hours_logged || 0;
                                       const progress = fr.qualification_threshold > 0
                                         ? Math.min(100, (progressValue / fr.qualification_threshold) * 100)
                                         : (q.is_qualified ? 100 : 0);
@@ -865,7 +856,7 @@ export default function LeaguesAndFreerollsManagement() {
                                               {q.player_name || 'Unknown Player'}
                                               {q.manually_added && <span className="ml-1 text-[10px] text-[#1877F2]">(Manual)</span>}
                                             </p>
-                                            {fr.qualification_threshold > 0 && (
+                                            {!qualificationRetired && fr.qualification_threshold > 0 && (
                                               <div className="mt-1 flex items-center gap-2">
                                                 <div className="flex-1 h-1.5 bg-[#1E3A5F] rounded-full overflow-hidden">
                                                   <div className="h-full rounded-full transition-all duration-500"
@@ -877,10 +868,8 @@ export default function LeaguesAndFreerollsManagement() {
                                                 <span className="text-[10px] text-[#64748B] font-mono whitespace-nowrap">
                                                   {fr.qualification_type === 'cash_hours'
                                                     ? `${q.hours_logged || 0}/${fr.qualification_threshold}h`
-                                                    : fr.qualification_type === 'tournament_points'
-                                                      ? `${q.points_earned || 0}/${fr.qualification_threshold} Pts`
-                                                      : fr.qualification_type === 'custom'
-                                                        ? (q.custom_value || `${q.hours_logged || q.points_earned || 0}/${fr.qualification_threshold}`)
+                                                    : fr.qualification_type === 'custom'
+                                                        ? (q.custom_value || `${q.hours_logged || 0}/${fr.qualification_threshold}`)
                                                         : `${q.hours_logged || 0}/${fr.qualification_threshold}`
                                                   }
                                                 </span>
@@ -908,7 +897,7 @@ export default function LeaguesAndFreerollsManagement() {
                                   </div>
                                 ) : (
                                   <div className="p-4 text-center text-[#64748B] text-sm bg-[#0D192E] rounded-lg">
-                                    {(fr.qualification_type === 'cash_hours' || fr.qualification_type === 'tournament_points')
+                                    {(fr.qualification_type === 'cash_hours')
                                       ? 'No Players Tracked Yet, Tap "Sync Qualifications" To Auto-Pull From Player Sessions'
                                       : 'No Players Tracked Yet, Use "Add Player" To Start Tracking Qualification'}
                                   </div>

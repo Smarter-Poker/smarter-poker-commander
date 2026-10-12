@@ -3,6 +3,7 @@
  * Reference: IMPLEMENTATION_PHASES.md - Phase 5
  * GET /api/commander/analytics/players - Get player stats for venue
  */
+import { PLAYER_STATS_COLUMNS } from '../../../src/lib/commander/rewardPointsRetirement';
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
@@ -42,7 +43,6 @@ export default async function handler(req, res) {
 
       const {
         venue_id,
-        loyalty_tier,
         sort_by = 'total_hours',
         sort_order = 'desc',
         search,
@@ -72,17 +72,13 @@ export default async function handler(req, res) {
       let query = getSupabase()
         .from('commander_player_stats')
         .select(`
-          *,
+          ${PLAYER_STATS_COLUMNS},
           profiles:player_id (id, display_name, avatar_url, email)
         `, { count: 'exact' })
         .eq('venue_id', venue_id);
 
-      if (loyalty_tier) {
-        query = query.eq('loyalty_tier', loyalty_tier);
-      }
-
       // Sort options
-      const validSortFields = ['total_hours', 'total_visits', 'last_visit', 'total_buyin', 'loyalty_points'];
+      const validSortFields = ['total_hours', 'total_visits', 'last_visit', 'total_buyin'];
       const sortField = validSortFields.includes(sort_by) ? sort_by : 'total_hours';
       query = query.order(sortField, { ascending: sort_order === 'asc' });
 
@@ -102,24 +98,9 @@ export default async function handler(req, res) {
         );
       }
 
-      // Calculate tier breakdown
-      const tierBreakdown = {
-        bronze: 0,
-        silver: 0,
-        gold: 0,
-        platinum: 0,
-        diamond: 0
-      };
-      data.forEach(p => {
-        if (p.loyalty_tier && tierBreakdown[p.loyalty_tier] !== undefined) {
-          tierBreakdown[p.loyalty_tier]++;
-        }
-      });
-
       return res.status(200).json({
         players: filteredData,
         total: count,
-        tier_breakdown: tierBreakdown,
         limit: parseInt(limit),
         offset: parseInt(offset)
       });

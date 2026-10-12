@@ -3,6 +3,7 @@
  * GET  /api/commander/freerolls - List freerolls for a venue
  * POST /api/commander/freerolls - Create a new freeroll
  */
+import { FREEROLL_QUALIFICATION_TYPES, POINTS_REWARDS_RETIRED } from '../../../src/lib/commander/rewardPointsRetirement';
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
@@ -142,6 +143,13 @@ async function createFreeroll(req, res, guard) {
         qualification_rules_text, scheduled_date, prize_pool, prize_description,
         max_qualifiers, status
     } = req.body;
+
+    if (qualification_type === 'tournament_points') {
+        return res.status(400).json({ success: false, error: POINTS_REWARDS_RETIRED });
+    }
+    if (qualification_type && !FREEROLL_QUALIFICATION_TYPES.includes(qualification_type)) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_QUALIFICATION_TYPE', message: 'Invalid Qualification Type' } });
+    }
 
     if (!name) {
         return res.status(400).json({
