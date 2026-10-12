@@ -4,6 +4,7 @@
  * POST   /api/commander/freerolls/[id]/qualifications - Add / update a player
  * DELETE /api/commander/freerolls/[id]/qualifications - Remove a player (pass ?player_id=)
  */
+import { POINTS_REWARDS_RETIRED, usesRetiredRewardPoints, QUALIFICATION_COLUMNS } from '../../../../src/lib/commander/rewardPointsRetirement';
 import { createClient } from '../../../../src/lib/supabaseServerClient';
 // 2026-07-25 audit fix: verifyStaffSession/getUser imported so GET reads are
 // scoped - staff see the full list, players (Bearer) see only their own row.
@@ -98,11 +99,10 @@ async function listQualifications(req, res, freerollId) {
 
         let query = getSupabase()
             .from('commander_freeroll_qualifications')
-            .select('*')
+            .select(QUALIFICATION_COLUMNS)
             .eq('freeroll_id', freerollId)
             .order('is_qualified', { ascending: false })
-            .order('hours_logged', { ascending: false })
-            .order('points_earned', { ascending: false })
+            .order('hours_logged', { ascending: false });
 
         if (playerScope) query = query.eq('player_id', playerScope);
 
@@ -138,20 +138,26 @@ async function upsertQualification(req, res, freerollId) {
 
     try {
         // First check the freeroll to auto-qualify based on threshold
-        const { data: freeroll } = await getSupabase()
+        const { data: freeroll, error: freerollError } = await getSupabase()
             .from('commander_freerolls')
             .select('qualification_type, qualification_threshold')
             .eq('id', freerollId)
             .maybeSingle();
+
+        if (freerollError) throw freerollError;
+        if (!freeroll) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Freeroll Not Found' } });
+        }
+
+        if (usesRetiredRewardPoints(freeroll?.qualification_type, points_earned)) {
+            return res.status(400).json({ success: false, error: POINTS_REWARDS_RETIRED });
+        }
 
         let autoQualified = is_qualified || false;
         const threshold = freeroll?.qualification_threshold || 0;
 
         if (freeroll && threshold > 0) {
             if (freeroll.qualification_type === 'cash_hours' && (hours_logged || 0) >= threshold) {
-                autoQualified = true;
-            }
-            if (freeroll.qualification_type === 'tournament_points' && (points_earned || 0) >= threshold) {
                 autoQualified = true;
             }
         }
@@ -163,7 +169,6 @@ async function upsertQualification(req, res, freerollId) {
             player_id: player_id || null,
             player_name: player_name || null,
             hours_logged: hours_logged ?? 0,
-            points_earned: points_earned ?? 0,
             custom_value: custom_value || null,
             is_qualified: autoQualified,
             qualified_at: autoQualified ? new Date().toISOString() : null,
@@ -182,7 +187,7 @@ async function upsertQualification(req, res, freerollId) {
                     onConflict: 'freeroll_id,player_id',
                     ignoreDuplicates: false,
                 })
-                .select()
+                .select(QUALIFICATION_COLUMNS)
                 .maybeSingle();
             qual = result.data;
             error = result.error;
@@ -191,7 +196,7 @@ async function upsertQualification(req, res, freerollId) {
             const result = await getSupabase()
                 .from('commander_freeroll_qualifications')
                 .insert(payload)
-                .select()
+                .select(QUALIFICATION_COLUMNS)
                 .maybeSingle();
             qual = result.data;
             error = result.error;
