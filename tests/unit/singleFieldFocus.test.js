@@ -15,6 +15,10 @@ function fixture() {
             contains: target => target === element || children.some(child => child.contains(target)),
             querySelectorAll: () => children.flatMap(child => [...(child.matches() ? [child] : []), ...child.querySelectorAll()]),
         };
+        for (const side of ['Right', 'Bottom', 'Left']) {
+            element.style[`border${side}Width`] = border ? '1px' : '0px';
+            element.style[`border${side}Style`] = 'solid';
+        }
         parent?.children.push(element);
         return element;
     };
@@ -32,6 +36,23 @@ test('a pill search uses its existing painted well while a standalone field owns
     const plain = f.node({ parent: f.document.body, field: true, border: true });
     assert.equal(fieldFocusOwner(search), well);
     assert.equal(fieldFocusOwner(plain), plain);
+});
+
+test('a divider inside a painted search well is not a second field frame', () => {
+    const f = fixture();
+    const well = f.node({ parent: f.document.body, width: 280, border: true, rounded: true });
+    const search = f.node({ parent: well, field: true });
+    search.style.borderLeftWidth = '1px';
+    search.style.borderLeftStyle = 'solid';
+    assert.equal(fieldFocusOwner(search), well);
+});
+
+test('compact image-painted search wells own the edge around their transparent input', () => {
+    const f = fixture();
+    const well = f.node({ parent: f.document.body, width: 280, height: 50 });
+    well.style.backgroundImage = 'url(painted-search-well.png)';
+    const search = f.node({ parent: well, field: true });
+    assert.equal(fieldFocusOwner(search), well);
 });
 
 test('multi-field forms and large panels never become a giant focus frame', () => {
@@ -70,10 +91,10 @@ test('an already focused field gets the same treatment after hydration', () => {
 });
 
 test('global app wiring opts in after installation and keeps one inset edge without layout shifts', () => {
-    const css = readFileSync(new URL('../../styles/single-field-focus.css', import.meta.url), 'utf8');
-    const app = readFileSync(new URL('../../pages/_app.js', import.meta.url), 'utf8');
+    const css = readFileSync('styles/single-field-focus.css', 'utf8');
+    const app = readFileSync('pages/_app.js', 'utf8');
     assert.match(app, /useEffect\(\(\) => installSingleFieldFocus\(document\), \[\]\)/);
-    assert.match(css, /html\[data-sp-single-field-focus\] body/);
+    assert.match(css, /html:root\[data-sp-single-field-focus\] body/);
     assert.match(css, /outline-offset: -2px/);
     assert.match(css, /box-shadow: none !important/);
     assert.doesNotMatch(css, /border-width:|padding:|height:/);
