@@ -4,6 +4,8 @@
  * Was entirely missing, which caused ALL Tailwind classes to produce no output.
  */
 import '../styles/globals.css';
+import '../styles/single-field-focus.css';
+import { installSingleFieldFocus } from '../src/lib/singleFieldFocus.mjs';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import StandaloneGlobalHeader from '../src/components/commander/shared/StandaloneGlobalHeader';
@@ -42,6 +44,7 @@ const COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT = new Set([
 ]);
 
 export default function CommanderApp({ Component, pageProps }) {
+  useEffect(() => installSingleFieldFocus(document), []);
   const router = useRouter();
   const needsAppHeader = COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT.has(router.pathname);
 
