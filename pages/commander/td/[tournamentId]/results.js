@@ -41,6 +41,7 @@ import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/pa
 // Same helper the server uses, so this screen and the filed tax event can
 // never disagree about who needs a form.
 import { assessW2G, entryTotalInvested, W2G_NET_THRESHOLD } from '../../../../src/lib/commander/taxEvents';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -541,13 +542,15 @@ export default function TDResults() {
             <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] pb-24">
 
                 {/* Header */}
-                <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 sticky top-0 z-30">
-                    <div className="flex items-center justify-between gap-2 max-w-2xl mx-auto">
-                        <div className="min-w-0">
-                            <h1 className="text-lg font-bold text-white truncate">Final Results</h1>
-                            <p className="text-xs text-[#B0B3B8] truncate">{tournament?.name || 'Tournament'}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                <PageBar
+                    title="Final Results"
+                    summary="The Finishing Order And Prizes For This Tournament. Check Every Place, Then Print The Results Or Export Them. Finalizing Here Also Awards Season Leaderboard Points."
+                    status={tournament?.name || 'Tournament'}
+                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    innerClassName="max-w-2xl mx-auto"
+                    sticky
+                >
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                             <button onClick={printResults} disabled={busy || loading || standings.length === 0}
                                 className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                                 <Printer className="w-4 h-4" /> Print
@@ -557,8 +560,7 @@ export default function TDResults() {
                                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export
                             </button>
                         </div>
-                    </div>
-                </div>
+                </PageBar>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">

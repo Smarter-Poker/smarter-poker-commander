@@ -20,6 +20,7 @@ import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync'
 // somebody has to walk to. Same template as the queued job, so the two are
 // byte-identical.
 import { buildBuyinReceiptHtml, printHtml } from '../../../../src/lib/commander/receiptTemplates';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 export default function TDRegisterPlayer() {
     const router = useRouter();
@@ -384,15 +385,12 @@ export default function TDRegisterPlayer() {
             <div style={{ minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), -apple-system, sans-serif", padding: '16px' }}>
 
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(24,119,242,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {reentryName ? <RotateCcw size={20} color="#1877F2" /> : <UserPlus size={20} color="#1877F2" />}
-                    </div>
-                    <div>
-                        <h1 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>{reentryName ? 'Re-Entry' : 'Add Player'}</h1>
-                        <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>{tournament?.name || 'Tournament'}</p>
-                    </div>
-                </div>
+                <PageBar
+                    title={reentryName ? 'Re-Entry' : 'Add Player'}
+                    summary="Register A Player Into This Tournament. Search For The Player, Take The Buy In, And The Seat Draw Gives Them A Table And Seat. A Re-Entry Starts From The Player's Earlier Entry."
+                    status={tournament?.name || 'Tournament'}
+                    style={{ marginBottom: 12 }}
+                />
 
                 {/* Re-Entry banner */}
                 {reentryName && (

@@ -11,6 +11,7 @@ import CommanderLayout from '../../../src/components/commander/shared/CommanderL
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 export default function DailySummaryReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-daily-summary'); }, []);
@@ -116,9 +117,7 @@ td:last-child{text-align:right;font-weight:bold}
       <SEOHead title="Commander - Daily Summary" description="Shift And Daily Summary Report With Cashier Breakdown." noindex={true} />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
         <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">Shift / Daily Summary</h1>
-          </div>
+          <h1 className="sr-only">Shift / Daily Summary</h1>
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
             className="bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg px-3 py-2 text-sm text-[#E4E6EB]" />
           {cashierData && (
@@ -127,6 +126,11 @@ td:last-child{text-align:right;font-weight:bold}
               <Printer className="w-4 h-4" /> Print
             </button>
           )}
+          <PageHelp
+            title="Shift / Daily Summary"
+            summary="The Day's Takings And Activity In One Report: Net Revenue, Transactions, Players And Tournaments Run, Then Sales By Category, Voids And Refunds, And Cash Versus Card. Pick A Date, Then Print The Shift Report."
+            className="ml-auto"
+          />
         </div>
 
         {loading ? (

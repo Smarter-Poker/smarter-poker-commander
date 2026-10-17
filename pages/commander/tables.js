@@ -16,6 +16,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const STATUS_COLORS = {
   available: { bg: 'rgba(49,162,76,0.15)', border: '#31A24C', text: '#31A24C', label: 'Available' },
@@ -382,18 +383,19 @@ const res = await commanderFetch('/api/commander/tables', {
         <div className="cmd-page" style={{ minHeight: '100vh', background: '#18191A', fontFamily: 'Inter, sans-serif' }}>
 
           {/* Header */}
-          <header style={{ position: 'sticky', top: 0, zIndex: 50, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #3A3B3C', background: '#242526' }}>
-            <div>
-              <h1 style={{ color: '#fff', fontWeight: 700, fontSize: '18px' }}>Tables and Floor</h1>
-              <p style={{ color: '#B0B3B8', fontSize: '13px' }}>{venue?.name} - {tables.length} Tables ({activeTables.length} active)</p>
-            </div>
+          <PageBar
+            title="Tables And Floor"
+            summary="Every Table In The Room With Its Game, Seats And Status. Tap A Table To Seat Players, Change The Game Or Close It. Add Table Creates A New One."
+            status={`${venue?.name ? `${venue.name} - ` : ''}${tables.length} Tables (${activeTables.length} Active)`}
+            style={{ position: 'sticky', top: 0, zIndex: 50, padding: '6px 16px', borderBottom: '1px solid #3A3B3C', background: '#242526' }}
+          >
             <button
               onClick={() => setShowAddModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#1877F2', color: '#fff', fontWeight: 600, fontSize: '14px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', minHeight: 44, background: '#1877F2', color: '#fff', fontWeight: 600, fontSize: '14px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
             >
               <Plus size={16} /> Add Table
             </button>
-          </header>
+          </PageBar>
 
           <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px 16px' }}>
 

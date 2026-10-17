@@ -22,6 +22,7 @@ import {
   Package, Play, Calendar, ArrowRightLeft, DoorOpen, Ban, Settings
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../../src/components/commander/shared/PageHelp';
 
 const STATUS_CONFIG = {
   scheduled: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', border: 'border-[#B0B3B8]/30', label: 'Scheduled' },
@@ -403,11 +404,12 @@ export default function TDControlCenter() {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-20 font-['Inter']">
 
         {/* ===== TOURNAMENT HEADER ===== */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-white truncate">{tournament.name}</h1>
-              <div className="flex items-center gap-2 mt-1">
+        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5" data-page-bar="">
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="sr-only">{tournament.name}</h1>
+            <div className="flex-1 min-w-0" role="status">
+              <p className="text-sm font-semibold text-white truncate" aria-hidden="true">{tournament.name}</p>
+              <div className="flex items-center flex-wrap gap-2 mt-1">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusConf.bg} ${statusConf.text}`}>
                   {statusConf.label}
                 </span>
@@ -456,9 +458,13 @@ export default function TDControlCenter() {
                 className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
                 <Monitor className="w-5 h-5 text-[#B0B3B8]" />
               </button>
-              <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
+              <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]" aria-label="Refresh">
                 <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
               </button>
+              <PageHelp
+                title="Tournament Director"
+                summary="The Director Console For This Tournament. The Pills Show Status, Event Day, Hand For Hand, Break And Whether The Screen Is Live. The Icons Toggle Hand For Hand, Broadcast An Announcement, Open The TV Clock In A New Window And Refresh. Below Are The Clock, Floor Stats And Shortcuts To Every Director Tool."
+              />
             </div>
           </div>
         </div>

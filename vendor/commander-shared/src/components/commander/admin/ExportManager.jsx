@@ -161,10 +161,9 @@ export default function ExportManager({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-white">Data Exports</h2>
-          <p className="text-sm text-[#4A5E78]">Export Your Data For Analysis Or Reporting</p>
-        </div>
+        {/* 2026-10-17 (Dan: "REMOVE ALL DESCRIPTIONS"): the sentence under
+            this heading is gone; the section heading and its action stay. */}
+        <h2 className="text-lg font-semibold text-white">Data Exports</h2>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="cmd-btn cmd-btn-primary flex items-center gap-2 px-4 py-2 text-sm"

@@ -10,6 +10,7 @@ import { FileText, DollarSign, AlertTriangle, CheckCircle2, Loader2, Printer, Ch
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 export default function TaxCompliance() {
   useEffect(() => { busEmit.sessionStart('commander-reports-tax-compliance'); }, []);
@@ -237,16 +238,15 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
       />
       <div style={{ minHeight: '100vh', background: '#F0F2F5', fontFamily: 'Inter, system-ui, sans-serif' }}>
         {/* Header */}
-        <div style={{ background: '#1877F2', color: 'white', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => router.push('/commander/reports')} style={{ background: 'white', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+        <PageBar
+          title="Tax Compliance / W-2G"
+          summary="Tournament Wins Reporting And Withholding. Tournament Wins Of 5,000 Or More Are Listed Here. Generate A W-2G For Each One, And It Opens Ready To Print."
+          style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px' }}
+        >
+          <button onClick={() => router.push('/commander/reports')} aria-label="Back To Reports" style={{ background: 'white', border: 'none', borderRadius: 8, width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
             <ArrowLeft size={20} color="#1877F2" />
           </button>
-          <FileText size={22} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>Tax Compliance / W-2G</div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>Tournament Wins Reporting And Withholding</div>
-          </div>
-        </div>
+        </PageBar>
 
         {/* Toast */}
         {toast && (

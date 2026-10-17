@@ -17,6 +17,7 @@ import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync'
 import { busEmit } from '../../../../src/engine/EventBus';
 import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../../src/components/commander/shared/PageHelp';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -711,16 +712,14 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.back()}
-              className="p-1.5 rounded-lg transition-colors" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}>
+        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
+          <h1 className="sr-only">Tournament Settings</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => router.back()} aria-label="Back"
+              className="w-11 h-11 flex items-center justify-center rounded-lg transition-colors flex-shrink-0" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}>
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
-            <div>
-              <h1 className="text-lg font-bold text-white">Tournament Settings</h1>
-              <p className="text-xs text-[#B0B3B8]">{name}</p>
-            </div>
+            <p className="text-xs font-semibold text-[#B0B3B8] truncate" role="status">{name}</p>
           </div>
           <button onClick={saveSettings} disabled={saving || saveBlocked}
             title={saveBlocked
@@ -728,7 +727,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 ? 'Fix The Blind Structure Errors First'
                 : 'Acknowledge The Blind Structure Warnings First')
               : 'Save'}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 ${saved ? 'bg-[#31A24C] text-white' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'
+            className={`ml-auto px-4 min-h-[44px] rounded-lg text-sm font-semibold flex items-center gap-2 ${saved ? 'bg-[#31A24C] text-white' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'
               } disabled:opacity-50`}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
               saved ? <Check className="w-4 h-4" /> :
@@ -736,6 +735,10 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   <Save className="w-4 h-4" />}
             {saved ? 'Saved' : 'Save'}
           </button>
+          <PageHelp
+            title="Tournament Settings"
+            summary="Edit This Tournament In Three Tabs: Blind Structure For The Levels, Configuration For Buy In, Stacks And Format, And Payouts For The Prize Split. Save Stays Locked Until Every Blind Structure Error Is Fixed And Every Warning Acknowledged."
+          />
         </div>
 
         {/* Tabs */}

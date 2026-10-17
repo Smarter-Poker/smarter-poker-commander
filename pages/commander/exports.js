@@ -13,6 +13,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const EXPORT_TYPES = [
   { value: 'players', label: 'Player Data', icon: Users, desc: 'Member Profiles, Stats, Visit History', color: '#1877F2' },
@@ -29,6 +30,25 @@ const STATUS_STYLES = {
   completed: { bg: 'bg-[#31A24C]/15', text: 'text-[#31A24C]', label: 'Ready' },
   failed: { bg: 'bg-[#EF4444]/15', text: 'text-[#EF4444]', label: 'Failed' }
 };
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const EXPORT_STEPS = [
+  {
+    title: 'Create Export',
+    body: 'Pick What To Export, Then Choose CSV Or JSON And An Optional Date Range.',
+    target: '[data-tour="exp-create"]',
+  },
+  {
+    title: 'Hendon Mob Export',
+    body: 'Export Completed Tournament Results In Hendon Mob Format, One Tournament At A Time.',
+    target: '[data-tour="exp-hendon"]',
+  },
+  {
+    title: 'Recent Exports',
+    body: 'Every Export You Create Is Listed Here, Ready To Download Again.',
+    target: '[data-tour="exp-recent"]',
+  },
+];
 
 export default function ExportsHub() {
   useEffect(() => { busEmit.sessionStart('commander-exports'); }, []);
@@ -136,12 +156,14 @@ const res = await commanderFetch('/api/commander/exports', {
         noindex={true}
       />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-xs text-[#B0B3B8]">Download Venue Data As CSV Or JSON</p>
-          </div>
-          <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
-        </div>
+        <PageBar
+          title="Data Exports"
+          summary="Download Venue Data As CSV Or JSON."
+          steps={EXPORT_STEPS}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+        </PageBar>
 
         {message && (
           <div className={`mx-4 mt-3 px-4 py-2.5 rounded-xl text-sm font-medium ${message.type === 'success' ? 'bg-[#31A24C]/15 text-[#31A24C]' : 'bg-[#EF4444]/15 text-[#EF4444]'
@@ -153,7 +175,7 @@ const res = await commanderFetch('/api/commander/exports', {
         ) : (
           <div className="px-4 py-4 space-y-4">
             {/* Export Types */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4" data-tour="exp-create">
               <h3 className="text-sm font-bold text-white mb-3">Create Export</h3>
               <div className="grid grid-cols-2 gap-2">
                 {EXPORT_TYPES.map(et => (
@@ -171,9 +193,8 @@ const res = await commanderFetch('/api/commander/exports', {
 
             {/* Hendon Mob */}
             {tournaments.length > 0 && (
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
-                <h3 className="text-sm font-bold text-white mb-2">Hendon Mob Export</h3>
-                <p className="text-xs text-[#B0B3B8] mb-3">Export Completed Tournament Results In Hendon Mob Format</p>
+              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4" data-tour="exp-hendon">
+                <h3 className="text-sm font-bold text-white mb-3">Hendon Mob Export</h3>
                 <div className="space-y-2">
                   {tournaments.slice(0, 5).map(t => (
                     <div key={t.id} className="flex items-center justify-between px-3 py-2 bg-[#3A3B3C]/30 rounded-lg">
@@ -195,7 +216,7 @@ const res = await commanderFetch('/api/commander/exports', {
             )}
 
             {/* Recent Exports */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl overflow-hidden">
+            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl overflow-hidden" data-tour="exp-recent">
               <div className="px-4 py-3 border-b border-[#3A3B3C]">
                 <h3 className="text-sm font-bold text-white">Recent Exports</h3>
               </div>

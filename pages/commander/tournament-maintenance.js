@@ -11,6 +11,20 @@ import { Calendar, ChevronLeft, ChevronRight, Edit2, Loader2, Clock, DollarSign,
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const MAINT_STEPS = [
+    {
+        title: 'The Calendar',
+        body: 'Every Scheduled Tournament Shows On Its Day. Use The Arrows To Move Between Months.',
+        target: '[data-tour="tm-calendar"]',
+    },
+    {
+        title: 'Make A Correction',
+        body: 'Tap A Day To See Its Tournaments, Then Open One To Fix Its Time, Buy In Or Structure.',
+    },
+];
 
 export default function TournamentMaintenance() {
   useEffect(() => { busEmit.sessionStart('commander-tournament-maintenance'); }, []);
@@ -93,19 +107,14 @@ export default function TournamentMaintenance() {
             <div className="cmd-page">
                 <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
 
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                            <Calendar className="w-5 h-5 text-[#1877F2]" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-white">Tournament Maintenance</h1>
-                            <p className="text-sm text-[#64748B]">View Schedule And Make Corrections To Tournaments</p>
-                        </div>
-                    </div>
+                    <PageBar
+                        title="Tournament Maintenance"
+                        summary="View The Schedule And Make Corrections To Tournaments."
+                        steps={MAINT_STEPS}
+                    />
 
                     {/* Calendar */}
-                    <div className="cmd-panel p-4">
+                    <div className="cmd-panel p-4" data-tour="tm-calendar">
                         {/* Month Navigation */}
                         <div className="flex items-center justify-between mb-4">
                             <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-[#132240] text-[#64748B] hover:text-white transition-colors">

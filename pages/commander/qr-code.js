@@ -10,6 +10,25 @@ import { QrCode, Download, Maximize2 } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
+import PageBar from '../../src/components/commander/shared/PageBar';
+
+/* Page Help tour (Dan, 2026-10-17): the Tips list that used to sit under
+   the code, one step each. */
+const QR_STEPS = [
+  {
+    title: 'Download Or Fullscreen',
+    body: 'Download Saves The Code To Print. Fullscreen Shows It Large For A Tablet Or TV; Tap Anywhere To Exit.',
+    target: '[data-tour="qr-actions"]',
+  },
+  {
+    title: 'Where To Put It',
+    body: 'Display It On A Tablet Near The Entrance, Or Print And Post It At The Check-In Desk.',
+  },
+  {
+    title: 'Players Sign In',
+    body: 'Players Need To Be Logged In To Check In When They Scan.',
+  },
+];
 
 export default function VenueQRCodePage() {
   useEffect(() => { busEmit.sessionStart('commander-qr-code'); }, []);
@@ -116,16 +135,14 @@ export default function VenueQRCodePage() {
 
         <div className="cmd-page">
           {/* Header */}
-          <header className="cmd-header-bar">
-            <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="font-bold text-white">Check-In QR Code</h1>
-                  <p className="text-sm text-[#B0B3B8]">{venue?.name}</p>
-                </div>
-              </div>
-            </div>
-          </header>
+          <PageBar
+            title="Check-In QR Code"
+            summary="Display This QR Code For Players To Scan And Check In. Download It To Print, Or Use Fullscreen On A Tablet Or TV."
+            steps={QR_STEPS}
+            status={venue?.name}
+            className="cmd-header-bar px-4 py-1.5"
+            innerClassName="max-w-2xl mx-auto"
+          />
 
           <main className="max-w-2xl mx-auto px-4 py-8">
             {/* QR Code Display */}
@@ -134,12 +151,9 @@ export default function VenueQRCodePage() {
                 <QrCode className="w-10 h-10 text-[#1877F2]" />
               </div>
 
-              <h2 className="text-xl font-bold text-white mb-2">
+              <h2 className="text-xl font-bold text-white mb-6">
                 Player Check-In
               </h2>
-              <p className="text-[#B0B3B8] mb-6">
-                Display this QR code for players to scan and check in
-              </p>
 
               {/* QR Code Image - keep white background for QR readability */}
               <div className="bg-white rounded-xl p-6 mb-6 inline-block">
@@ -161,7 +175,7 @@ export default function VenueQRCodePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-3 justify-center" data-tour="qr-actions">
                 <button
                   onClick={handleDownload}
                   className="cmd-btn cmd-btn-secondary flex items-center gap-2 px-6 py-3"
@@ -179,16 +193,7 @@ export default function VenueQRCodePage() {
               </div>
             </div>
 
-            {/* Tips */}
-            <div className="mt-6 bg-[#1877F2]/5 rounded-xl p-4">
-              <h3 className="font-medium text-[#1877F2] mb-2">Tips</h3>
-              <ul className="text-sm text-[#B0B3B8] space-y-1">
-                <li>Display On A Tablet Near The Entrance</li>
-                <li>Print And Post At The Check-In Desk</li>
-                <li>Use Fullscreen Mode For TV Displays</li>
-                <li>Players Need To Be Logged In To Check In</li>
-              </ul>
-            </div>
+            {/* The Tips list moved behind the "?" (Dan, 2026-10-17). */}
           </main>
         </div>
         <style>{`

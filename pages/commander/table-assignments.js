@@ -23,12 +23,31 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const MODE_COLORS = {
   inactive: { bg: '#3A3B3C', border: '#4A4B4C', text: '#B0B3B8', label: 'Inactive', icon: Power },
   cash: { bg: '#31A24C', border: '#28883F', text: '#fff', label: 'Cash Game', icon: DollarSign },
   tournament: { bg: '#F59E0B', border: '#D97706', text: '#fff', label: 'Tournament', icon: Trophy }
 };
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const ASSIGN_STEPS = [
+  {
+    title: 'Mode Summary',
+    body: 'See How Many Tables Run Cash, Tournaments Or Sit Idle. Tap A Count To Filter The Grid, Tap Again To Clear.',
+    target: '[data-tour="ta-summary"]',
+  },
+  {
+    title: 'Your Tables',
+    body: 'Each Card Shows The Table Mode, Game And Seated Players.',
+    target: '[data-tour="ta-grid"]',
+  },
+  {
+    title: 'Assign A Table',
+    body: 'Tap Assign On A Table To Switch It To A Cash Game Or Tie It To A Tournament. You Are Warned First If Players Are Seated.',
+  },
+];
 
 export default function TableAssignments() {
   const { requestConfirm, ConfirmDialog } = useConfirmAction();
@@ -180,16 +199,17 @@ return {
       />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
-        {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">Table Assignments</h1>
-            <p className="text-xs text-[#B0B3B8]">Assign Tables To Cash Games Or Tournaments</p>
-          </div>
-          <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
+        {/* Header: refresh on the left, page help top right */}
+        <PageBar
+          title="Table Assignments"
+          summary="Assign Tables To Cash Games Or Tournaments."
+          steps={ASSIGN_STEPS}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* Success/Error toast */}
         {success && (
@@ -206,7 +226,7 @@ return {
         )}
 
         {/* Summary bar */}
-        <div className="px-4 py-3 flex gap-2">
+        <div className="px-4 py-3 flex gap-2" data-tour="ta-summary">
           <div className="flex-1 bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl px-3 py-2 text-center cursor-pointer"
             onClick={() => setFilterMode(filterMode === 'cash' ? 'all' : 'cash')}>
             <p className="text-lg font-bold text-[#31A24C]">{activeCash}</p>
@@ -240,7 +260,7 @@ return {
         )}
 
         {/* Table Grid */}
-        <div className="px-4 pb-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div data-tour="ta-grid" className="px-4 pb-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {filteredTables.map(table => {
             const mode = table.mode || 'inactive';
             const mc = MODE_COLORS[mode] || MODE_COLORS.inactive;

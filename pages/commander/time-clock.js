@@ -12,6 +12,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 export default function TimeClock() {
     const router = useRouter();
@@ -161,19 +162,13 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                 <SEOHead title="Commander - Time Clock" description="Staff Clock In/Out" noindex={true} />
 
                 <div className="cmd-page">
-                    <header className="cmd-header-bar">
-                        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-[#10B981]/10 rounded-full flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-[#10B981]" />
-                                </div>
-                                <div>
-                                    <h1 className="font-bold text-white">Time Clock</h1>
-                                    <p className="text-sm text-[#B0B3B8]">{staff.venue_name || 'Venue'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
+                    <PageBar
+                        title="Time Clock"
+                        summary="Staff Clock In And Clock Out By Scanning Their QR Code. The Cards Show Who Is On Shift, Total Hours And Entries, And The Shift Log Below Lists Each Time Entry."
+                        status={staff.venue_name || 'Venue'}
+                        className="cmd-header-bar px-4 py-1.5"
+                        innerClassName="max-w-2xl mx-auto"
+                    />
 
                     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
                         {/* Summary Cards */}

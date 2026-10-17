@@ -15,6 +15,7 @@ import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 export default function ChurnPrediction() {
   useEffect(() => { busEmit.sessionStart('commander-churn-prediction'); }, []);
@@ -79,13 +80,11 @@ export default function ChurnPrediction() {
         noindex={true}
       />
       <div style={{ minHeight: '100vh', background: '#F0F2F5', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        <div style={{ background: '#1877F2', color: 'white', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Brain size={22} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>Player Churn Prediction</div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>AI Analysis Of At-Risk Players</div>
-          </div>
-        </div>
+        <PageBar
+          title="Player Churn Prediction"
+          summary="AI Analysis Of At-Risk Players. Each Player Gets A Risk Level From Their Recent Visit Pattern, So You Can Reach Out Before They Stop Coming In."
+          style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px' }}
+        />
 
         <div style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
           {/* Summary */}

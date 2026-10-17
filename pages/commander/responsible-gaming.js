@@ -16,6 +16,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import useDebounce from '../../src/hooks/useDebounce';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 export default function ResponsibleGaming() {
   useEffect(() => { busEmit.sessionStart('commander-responsible-gaming'); }, []);
@@ -113,13 +114,13 @@ export default function ResponsibleGaming() {
           noindex={true}
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-            <div className="flex-1">
-              <h1 className="text-lg font-bold text-white">Responsible Gaming</h1>
-              <p className="text-xs text-[#B0B3B8]">Player Protection & Compliance</p>
-            </div>
-            <button onClick={fetchMembers} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
-          </div>
+          <PageBar
+            title="Responsible Gaming"
+            summary="Player Protection And Compliance. Check A Player's Exclusion Status Before Seating; Self-Excluded Players Must Not Be Allowed To Play."
+            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          >
+            <button onClick={fetchMembers} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+          </PageBar>
 
           <div className="px-4 py-4 space-y-4">
             {/* Info banner */}
