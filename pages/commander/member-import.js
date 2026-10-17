@@ -15,6 +15,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const REQUIRED_FIELDS = ['first_name', 'last_name'];
 const OPTIONAL_FIELDS = ['phone', 'email', 'member_number', 'membership_tier', 'notes', 'address', 'city', 'state', 'zip'];
@@ -168,12 +169,12 @@ const res = await commanderFetch('/api/commander/members', {
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
           {/* Header */}
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-            <div className="flex-1">
-              <h1 className="text-lg font-bold text-white">Import Members</h1>
-              <p className="text-xs text-[#B0B3B8]">Step {step} Of 5</p>
-            </div>
-          </div>
+          <PageBar
+            title="Import Members"
+            summary="Bring Your Existing Member List Into Commander In Five Steps: Upload A CSV File, Match Its Columns To Member Fields, Review The Preview, Import, Then Check The Results."
+            status={`Step ${step} Of 5`}
+            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          />
 
           <div className="p-4 max-w-lg mx-auto space-y-4">
 

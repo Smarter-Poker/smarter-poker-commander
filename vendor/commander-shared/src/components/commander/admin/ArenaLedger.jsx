@@ -16,7 +16,21 @@ const ACTION_MAP = {
   hand_complete: { icon: Shield, color: '#F59E0B', label: 'Hand Complete' }
 };
 
-export default function ArenaLedger({ clubId }) {
+/**
+ * ArenaLedger - the live audit stream for a club's tables.
+ *
+ * 2026-10-17 (Dan: "PAGES DON'T NEED TITLES LIKE THIS... REMOVE ALL
+ * DESCRIPTIONS"): the big shouted ledger title and its sentence are gone.
+ * The consuming page owns the (visually hidden) page title and passes its
+ * "?" help button as `help`, which this component pins to the top right of
+ * its controls row. This package cannot import the consumer's PageHelp, so
+ * the help is a node the page hands in.
+ *
+ * Props:
+ *   clubId - venue id whose ledger is streamed
+ *   help   - optional node (the page's "?" button) shown top right
+ */
+export default function ArenaLedger({ clubId, help = null }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('ALL');
@@ -151,22 +165,14 @@ export default function ArenaLedger({ clubId }) {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-            <Shield className="text-[#22D3EE]" size={28} />
-            LIVE ARENA LEDGER
-          </h2>
-          <p className="text-[#9CA3AF] text-sm mt-1">Immutable absolute accounting record for table interactions</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
+      {/* Controls, with the page's "?" help pinned top right */}
+      <div className="flex items-start justify-between gap-3 mb-6" data-ledger-controls="">
+        <div className="flex flex-1 flex-wrap items-center gap-3 min-w-0">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5E78]" />
             <input
               type="text"
-              placeholder="Search table or user..."
+              placeholder="Search Table Or User..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-[#0f172a] border border-[#1e293b] text-white text-sm rounded-lg pl-9 pr-4 py-2 focus:ring-1 focus:ring-[#22D3EE] focus:border-[#22D3EE] outline-none w-full md:w-64 transition-all"
@@ -183,6 +189,7 @@ export default function ArenaLedger({ clubId }) {
             <option value="CHAT">Chat Logs</option>
           </select>
         </div>
+        {help ? <div className="flex-none">{help}</div> : null}
       </div>
 
       {/* Ledger Stream UI */}

@@ -22,6 +22,7 @@ import useWakeLock from '../../../src/hooks/useWakeLock';
 import { busEmit } from '../../../src/engine/EventBus';
 import { getToken, getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 const TIER_COLORS = { standard: '#B0B3B8', gold: '#F59E0B', platinum: '#94A3B8', vip: '#A855F7' };
 
@@ -787,10 +788,11 @@ export default function DealerTablet() {
       `}</style>
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex flex-col">
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <div>
-            <h1 className="text-xl font-bold text-white">Table {tableNumber}</h1>
+        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
+          <div className="min-w-0" role="status">
+            <h1 className="sr-only">Table {tableNumber}</h1>
             <p className="text-xs text-[#B0B3B8]">
+              <span className="font-bold text-white">T{tableNumber}</span>{' · '}
               {tournamentMode
                 ? <><span className="text-[#F59E0B] font-semibold">{tournamentMode.name}</span> - {seatedPlayers.length}/{maxSeats}</>
                 : table?.mode === 'cash'
@@ -816,7 +818,11 @@ export default function DealerTablet() {
               <Hash className="w-4 h-4 text-[#B0B3B8]" />
               <span className="text-sm font-mono font-bold text-white">{handCount}</span>
             </div>
-            <button onClick={fetchTable} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <button onClick={fetchTable} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <PageHelp
+              title={`Table ${tableNumber}`}
+              summary="The Dealer Screen For This Table. The Line At The Top Shows The Game, Stakes And Seats Filled, Or The Tournament And Players Left. The Counter Is The Hand Number. Seat And Bust Players From The Seats Below, And Lock The Screen Between Hands."
+            />
           </div>
         </div>
 

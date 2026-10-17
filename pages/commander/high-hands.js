@@ -13,6 +13,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const HAND_RANKS = [
   'Royal Flush', 'Straight Flush', 'Four of a Kind', 'Full House',
@@ -138,15 +139,17 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
           noindex={true}
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-xs text-[#B0B3B8]">{todayHands.length} Today</p>
-            </div>
-            <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
-            <button onClick={() => setShowForm(true)} className="px-3 py-2 rounded-lg bg-[#1877F2] text-white text-sm font-medium flex items-center gap-1.5 active:bg-[#1565D8]">
+          <PageBar
+            title="High Hands"
+            summary="Today's High Hands. The Current Leader Is Shown At The Top. Record A High Hand As It Happens, Verify It, And See The History Below."
+            status={`${todayHands.length} Today`}
+            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          >
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <button onClick={() => setShowForm(true)} className="px-3 min-h-[44px] rounded-lg bg-[#1877F2] text-white text-sm font-medium flex items-center gap-1.5 active:bg-[#1565D8]">
               <Plus className="w-4 h-4" /> Record
             </button>
-          </div>
+          </PageBar>
 
           {message && (
             <div className={`mx-4 mt-3 px-4 py-2.5 rounded-xl text-sm font-medium ${message.type === 'success' ? 'bg-[#31A24C]/15 text-[#31A24C]' : 'bg-[#EF4444]/15 text-[#EF4444]'

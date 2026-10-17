@@ -15,6 +15,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 // Break-aware level label: current_level is an ARRAY INDEX into blind_structure,
 // which interleaves break rows. Count only non-break rows for the display number.
@@ -42,6 +43,25 @@ const STATUS_COLORS = {
     registering: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', label: 'Registration' },
     hand_for_hand: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', label: 'Hand For Hand' },
     scheduled: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', label: 'Scheduled' } };
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const TD_STEPS = [
+    {
+        title: 'Current Or Upcoming',
+        body: 'Switch Between Tournaments On The Floor Right Now And The Ones Still To Start.',
+        target: '[data-tour="td-tabs"]',
+    },
+    {
+        title: 'Your Tournaments',
+        body: 'Each Card Shows The Status, Start Time, Entries And Current Level. Live Events Are Marked Live.',
+        target: '[data-tour="td-list"]',
+    },
+    {
+        title: 'Run The Event',
+        body: 'TD Controls Opens The Director Screen, Register Adds Players, Launch Clock Opens The TV Clock, And Settings Edits The Structure.',
+        target: '[data-tour="td-actions"]',
+    },
+];
 
 export default function TournamentDirector() {
     const router = useRouter();
@@ -107,18 +127,13 @@ export default function TournamentDirector() {
             <SEOHead title="Commander - Tournament Director" description="Club Commander Poker Room Management Tool." noindex={true} />
             <div className="cmd-page">
                 <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                            <Trophy className="w-5 h-5 text-[#1877F2]" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-white">Tournament Director</h1>
-                            <p className="text-sm text-[#B0B3B8]">Manage Live Tournaments, Controls, Clock Display, And Settings</p>
-                        </div>
-                    </div>
-
-                    {/* Current / Upcoming Tabs */}
-                    <div className="flex gap-2">
+                    {/* Current / Upcoming Tabs, with the page help top right */}
+                    <PageBar
+                        title="Tournament Director"
+                        summary="Manage Live Tournaments, Controls, Clock Display, And Settings."
+                        steps={TD_STEPS}
+                    >
+                    <div className="flex flex-1 gap-2" data-tour="td-tabs">
                         <button onClick={() => setTab('current')}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors ${tab === 'current'
                                 ? 'bg-[#1877F2] text-white'
@@ -134,6 +149,7 @@ export default function TournamentDirector() {
                             Upcoming ({upcomingTournaments.length})
                         </button>
                     </div>
+                    </PageBar>
 
                     {loading ? (
                         <div className="py-20 text-center">
@@ -151,7 +167,7 @@ export default function TournamentDirector() {
                             </button>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-4" data-tour="td-list">
                             {displayList.map(t => {
                                 const sc = STATUS_COLORS[t.status] || STATUS_COLORS.scheduled;
                                 const isLive = ['running', 'break', 'final_table'].includes(t.status);
@@ -203,7 +219,7 @@ export default function TournamentDirector() {
                                             2x2 rather than a 4-across row: four
                                             across drops every target under 44px
                                             at 375px. */}
-                                        <div className="border-t border-[#3A3B3C] grid grid-cols-2 divide-x divide-y divide-[#3A3B3C]">
+                                        <div className="border-t border-[#3A3B3C] grid grid-cols-2 divide-x divide-y divide-[#3A3B3C]" data-tour="td-actions">
                                             <button
                                                 onClick={() => router.push(`/commander/td/${t.id}`)}
                                                 className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"

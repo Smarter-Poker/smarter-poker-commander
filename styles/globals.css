@@ -129,3 +129,12 @@ body {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ── Page Help tutorial focus (Dan, 2026-10-17: "WE NEED TO SIMPLY PAGES") ──
+   The part of the page the current tutorial step is talking about. Set and
+   cleared by src/components/commander/shared/PageHelp.jsx. */
+[data-tutorial-focus] {
+  outline: 2px solid #1877F2 !important;
+  outline-offset: 4px;
+  scroll-margin: 96px 0 240px;
+}

@@ -11,6 +11,7 @@ import CommanderLayout from '../../../src/components/commander/shared/CommanderL
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 export default function TournamentResultsReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-tournament-results'); }, []);
@@ -60,9 +61,11 @@ const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId
           noindex={true}
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-            <h1 className="text-lg font-bold text-white">Tournament Results</h1>
-          </div>
+          <PageBar
+            title="Tournament Results"
+            summary="Every Completed Tournament With Its Entries, Prize Pool And Winners, Newest First. Tap A Tournament To See The Full Finishing Order."
+            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          />
 
           {loading ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>

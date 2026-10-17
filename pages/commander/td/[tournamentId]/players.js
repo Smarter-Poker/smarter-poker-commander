@@ -14,6 +14,7 @@ import { Trophy, LayoutGrid, Users, Monitor, Search, X, Loader2, ChevronDown, Ar
 import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { buildActionReceiptsHtml, printHtml, printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -566,14 +567,12 @@ export default function TDPlayers() {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-20 font-['Inter']">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3">
-          <h1 className="text-lg font-bold text-white">Players</h1>
-          <p className="text-xs text-[#B0B3B8]">
-            {allPlayers.filter(p => p.status === 'active').length} Active
-            {baggedCount > 0 ? `, ${baggedCount} Bagged` : ''}
-            , {allPlayers.length} Total
-          </p>
-        </div>
+        <PageBar
+          title="Players"
+          summary="Everyone Entered In This Tournament With Their Table, Seat, Chips And Status. Search By Name Or Filter By Status, Then Tap A Player To Move Them, Assign A Seat, Update Chips, Rebuy, Add On, Eliminate Or Re-Enter."
+          status={`${allPlayers.filter(p => p.status === 'active').length} Active${baggedCount > 0 ? `, ${baggedCount} Bagged` : ''}, ${allPlayers.length} Total`}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        />
 
         {/* Search */}
         <div className="px-4 py-3">

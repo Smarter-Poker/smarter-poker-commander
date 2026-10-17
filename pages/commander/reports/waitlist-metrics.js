@@ -10,6 +10,7 @@ import { Users, Phone, Loader2, RefreshCw, AlertTriangle, CheckCircle2, ArrowLef
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 const RANGES = [
   { value: 'today', label: 'Today' },
@@ -54,11 +55,15 @@ const json = await commanderFetchJSON(`/api/commander/reports/waitlist-metrics?v
         noindex={true}
       />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-          <button onClick={() => router.push('/commander/reports')} className="p-2 rounded-lg flex-shrink-0" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
-          <div className="flex-1"><h1 className="text-lg font-bold text-white">Waitlist Metrics</h1><p className="text-xs text-[#B0B3B8]">{RANGES.find(r => r.value === range)?.label}</p></div>
-          <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
-        </div>
+        <PageBar
+          title="Waitlist Metrics"
+          summary="How Long Players Wait To Be Seated: Average, Median And Longest Wait, And How Many Waitlist Entries Get Seated, For The Selected Range. Pick A Range Below To Change The Period."
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={() => router.push('/commander/reports')} aria-label="Back To Reports" className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
+          <span className="text-xs font-semibold text-[#B0B3B8] flex-1" role="status">{RANGES.find(r => r.value === range)?.label}</span>
+          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+        </PageBar>
 
         <div className="px-4 py-3 flex gap-2">
           {RANGES.map(r => (

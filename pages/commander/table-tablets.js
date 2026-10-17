@@ -18,6 +18,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const STATUS_BADGE = {
     in_use: { bg: '#31A24C', label: 'Active' },
@@ -1395,17 +1396,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px' }}>
 
                     {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                        <div style={{ width: 40, height: 40, background: 'rgba(24,119,242,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Monitor size={20} color="#1877F2" />
-                        </div>
-                        <div>
-                            <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Table Tablets</h1>
-                            <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>
-                                {tables.length} tables - {activeTables.length} active • Tap to expand
-                            </p>
-                        </div>
-                    </div>
+                    <PageBar
+                        title="Table Tablets"
+                        summary="The Dealer Tablet For Every Table. Tap A Table To Expand Its Controls. Tablet Assignment Gives Each Table A Unique URL: Open It In The Tablet Browser And That Table Shows Fullscreen. Tablets Register Themselves And Show As Online While The Page Is Open."
+                        status={`${tables.length} Tables - ${activeTables.length} Active`}
+                        style={{ marginBottom: 16 }}
+                    />
 
                     {/* ── Tablet Assignment Panel ────────── */}
                     <div style={{ background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14, marginBottom: 16, overflow: 'hidden' }}>
@@ -1418,19 +1414,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <Link2 size={16} color="#1877F2" />
                                 <span style={{ fontSize: 14, fontWeight: 700 }}>Tablet Assignment</span>
-                                <span style={{ fontSize: 11, color: '#8A8D91', fontWeight: 500 }}>
-                                    Copy a URL → open on tablet → done
-                                </span>
                             </div>
                             {showAssignPanel ? <ChevronUp size={16} color="#B0B3B8" /> : <ChevronDown size={16} color="#B0B3B8" />}
                         </button>
                         {showAssignPanel && (
                             <div style={{ padding: '0 16px 16px', borderTop: '1px solid #3A3B3C' }}>
-                                <p style={{ fontSize: 12, color: '#8A8D91', margin: '12px 0 12px', lineHeight: 1.5 }}>
-                                    Each table gets a unique URL. Open this URL in the tablet browser and it will auto-display that table fullscreen.
-                                    Tablets auto-register and show as online when the page is active.
-                                </p>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+                                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
                                     {tables.map(table => {
                                         const tNum = table.table_number || table.number;
                                         const status = displayStatus[tNum];

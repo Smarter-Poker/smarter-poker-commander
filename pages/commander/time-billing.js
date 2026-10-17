@@ -16,6 +16,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 function formatDuration(startTime) {
   if (!startTime) return '0:00';
@@ -442,15 +443,19 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
         {/* Sub-header with stats and actions */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-lg font-bold text-white leading-none">{formatMoney(totalActive)} <span className="text-xs text-[#B0B3B8] font-normal">due</span></p>
-            <p className="text-xs text-[#B0B3B8] mt-0.5">{activeSessions.length} active · {formatMoney(totalCollected)} collected</p>
+        <PageBar
+          title="Time Billing"
+          summary="Charge Players By The Hour. Start A Session When A Player Sits, End It When They Leave, And Collect What Is Due. The Bar Shows What Is Due Now, Active Sessions And What Has Been Collected."
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <div className="flex-1" role="status">
+            <p className="text-lg font-bold text-white leading-none">{formatMoney(totalActive)} <span className="text-xs text-[#B0B3B8] font-normal">Due</span></p>
+            <p className="text-xs text-[#B0B3B8] mt-0.5">{activeSessions.length} Active · {formatMoney(totalCollected)} Collected</p>
           </div>
-          <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
+          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* Session management: start, filter, active/completed list */}
         <div className="px-4 py-3 space-y-3">

@@ -10,6 +10,7 @@ import { BarChart3, Users, DollarSign, Clock, TrendingUp, Loader2, RefreshCw, Tr
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 export default function AnalyticsDailyReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-analytics-daily'); }, []);
@@ -115,21 +116,20 @@ const endDate = new Date().toISOString().split('T')[0];
         noindex={true}
       />
       <div style={{ minHeight: '100vh', background: '#F0F2F5', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        {/* Header */}
-        <div style={{ background: '#1877F2', color: 'white', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => router.push('/commander/reports')} style={{ background: 'white', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+        {/* Header: back and refresh on the left, page help top right */}
+        <PageBar
+          title="Analytics Daily"
+          summary="Aggregated Daily Metrics, Auto-Runs At 4 AM. Pick A Range To See Sessions, Players, Table Hours, Revenue And Waitlist Conversion. Refresh Runs The Analytics Now."
+          style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px' }}
+        >
+          <button onClick={() => router.push('/commander/reports')} aria-label="Back To Reports" style={{ background: 'white', border: 'none', borderRadius: 8, width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
             <ArrowLeft size={20} color="#1877F2" />
           </button>
-          <BarChart3 size={22} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>Analytics Daily</div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>Aggregated Daily Metrics (Auto-Runs At 4 AM)</div>
-          </div>
           <button onClick={handleManualRefresh} disabled={refreshing}
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8, padding: '6px 12px', color: 'white', cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+            style={{ background: '#1877F2', border: 'none', borderRadius: 8, padding: '0 12px', minHeight: 44, color: 'white', cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
             <RefreshCw size={14} className={refreshing ? 'spin' : ''} /> Refresh
           </button>
-        </div>
+        </PageBar>
 
         {toast && (
           <div style={{ margin: 12, padding: '10px 14px', borderRadius: 8, background: toast.type === 'success' ? '#DEF7EC' : '#FEE2E2', color: toast.type === 'success' ? '#03543F' : '#991B1B', fontSize: 14, fontWeight: 600 }}>

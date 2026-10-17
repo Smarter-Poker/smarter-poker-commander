@@ -20,6 +20,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import useDebounce from '../../src/hooks/useDebounce';
 import { getToken, getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth'
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 // ─── Comp Categories ─────────────────────────────────────────
 const COMP_CATEGORIES = [
@@ -697,17 +698,18 @@ export default function CompSystem() {
           )}
 
           {/* ═══ Header ═══ */}
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-bold text-white">Comp System</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[#31A24C]/20 text-[#31A24C] font-medium">
-                ${autoCompRate}/hr Rake-Back
-              </span>
-            </div>
-            <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
+          <PageBar
+            title="Comp System"
+            summary="Player Comps Earned From Play. The Pill Shows The Hourly Rake-Back Rate. Dashboard Shows Balances And Totals, Issue Comp Spends A Player's Comp Balance, Comp Log Lists Every Comp, And Rates Sets How Fast Comps Are Earned."
+            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          >
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[#31A24C]/20 text-[#31A24C] font-medium">
+              ${autoCompRate}/hr Rake-Back
+            </span>
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh">
               <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
             </button>
-          </div>
+          </PageBar>
 
           {/* ═══ Tabs ═══ */}
           <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 flex gap-1 overflow-x-auto">

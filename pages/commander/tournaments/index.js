@@ -14,6 +14,7 @@ import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 /* ─── Status Config ─────────────────────────────────────────── */
 const STATUS_CONFIG = {
@@ -226,16 +227,9 @@ export default function CommanderTournamentsPage() {
       <div style={S.page}>
 
         {/* ── Top Action Bar ── */}
-        <div style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1.5px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Trophy size={18} style={{ color: '#F59E0B' }} />
-            </div>
-            <div>
-              <h1 style={{ fontSize: 17, fontWeight: 800, color: '#E4E6EB', margin: 0 }}>Tournaments</h1>
-              <p style={{ fontSize: 11, color: '#6A6B6D', margin: 0 }}>{venue?.name || 'Club Commander'}</p>
-            </div>
-          </div>
+        <div data-page-bar="" style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px', gap: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1 className="sr-only">Tournaments</h1>
+          <p role="status" style={{ fontSize: 13, fontWeight: 600, color: '#B0B3B8', margin: 0, minWidth: 0 }}>{venue?.name || 'Club Commander'}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => fetchTournaments(true)}
@@ -251,6 +245,10 @@ export default function CommanderTournamentsPage() {
             >
               <Plus size={15} /> Create
             </button>
+            <PageHelp
+              title="Tournaments"
+              summary="Every Tournament At Your Venue: Live, Upcoming And Finished. Create Builds A New One, The Tournament Director Shortcut Runs Live Events, And Tapping A Tournament Opens Its Details."
+            />
           </div>
         </div>
 

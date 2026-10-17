@@ -19,6 +19,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const TIER_COLORS = { daily: '#3B82F6', weekly: '#F59E0B', monthly: '#10B981', yearly: '#A855F7' };
 const TIER_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
@@ -142,17 +143,13 @@ export default function MembersPage() {
                 ) : (
                     <div className="min-h-screen bg-[#18191A]">
                         {/* Header */}
-                        <header className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-30">
-                            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div>
-                                        <h1 className="font-bold text-white flex items-center gap-2">
-                                            <Users className="w-5 h-5 text-[#1877F2]" /> Members
-                                        </h1>
-                                        <p className="text-xs text-[#B0B3B8]">{total} Total Members</p>
-                                    </div>
-                                </div>
-
+                        <PageBar
+                            title="Members"
+                            summary="Your Club's Member Directory. Search By Name, Number, Phone Or Email, Filter By Tier Or Status, And Tap A Member For Their Profile, Balances And History. Scan Reads An ID To Find Or Add A Member."
+                            status={`${total} Total Members`}
+                            className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-30 px-4 py-1.5"
+                            innerClassName="max-w-6xl mx-auto"
+                        >
                                 <div className="flex items-center gap-2">
                                     <button onClick={() => setShowScanModal(true)}
                                         className="flex items-center gap-2 px-4 py-2 bg-[#3A3B3C] hover:bg-[#4E4F50] text-[#E4E6EB] rounded-lg text-sm font-medium transition-colors">
@@ -163,8 +160,7 @@ export default function MembersPage() {
                                         <UserPlus className="w-4 h-4" /> Add Member
                                     </button>
                                 </div>
-                            </div>
-                        </header>
+                        </PageBar>
 
                         {/* Search & Filters */}
                         <div className="max-w-6xl mx-auto px-4 py-4">

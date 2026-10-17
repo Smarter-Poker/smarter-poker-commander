@@ -14,6 +14,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 export default function SystemInfoPage() {
   useEffect(() => { busEmit.sessionStart('commander-system-info'); }, []);
@@ -61,20 +62,18 @@ const json = await commanderFetchJSON('/api/commander/system-info');
                 noindex={true}
             />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-        <header className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-50">
-          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-<div>
-                <h1 className="font-bold text-white text-lg">System Information</h1>
-                <p className="text-sm text-[#B0B3B8]">{venueName}</p>
-              </div>
-            </div>
-            <button onClick={() => fetchInfo(true)} disabled={refreshing}
-              className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-              <RefreshCw className={`w-5 h-5 text-[#B0B3B8] ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </header>
+        <PageBar
+          title="System Information"
+          summary="Version, Platform And Health Details For Your Commander Setup. Share This Page With Support When Something Is Not Working. Refresh Reloads The Latest Details."
+          status={venueName}
+          className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-50 px-4 py-1.5"
+          innerClassName="max-w-3xl mx-auto"
+        >
+          <button onClick={() => fetchInfo(true)} disabled={refreshing} aria-label="Refresh"
+            className="w-11 h-11 flex items-center justify-center hover:bg-[#3A3B3C] rounded-lg ml-auto">
+            <RefreshCw className={`w-5 h-5 text-[#B0B3B8] ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </PageBar>
 
         <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {loading ? (

@@ -15,6 +15,7 @@ import { getToken, getStaffSession } from '../../../src/lib/commander/clientAuth
 import { busEmit } from '../../../src/engine/EventBus';
 import { broadcastChange } from '../../../src/lib/commander/useCommanderSync';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 const STATUS_CONFIG = {
   new: { label: 'New', color: 'bg-blue-500', textColor: 'text-blue-400' },
@@ -136,7 +137,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
               <Link href="/commander/admin" className="text-[#B0B3B8] hover:text-white">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
-              <h1 className="text-xl font-bold text-white">Lead Management</h1>
+              <h1 className="sr-only">Lead Management</h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="relative w-64">
@@ -149,6 +150,10 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                   className="cmd-input w-full pl-10 h-9 text-sm"
                 />
               </div>
+              <PageHelp
+                title="Lead Management"
+                summary="Sales Leads From Demo Requests. The Totals Show Leads By Stage, From New Through Demos Scheduled To Signed. Search By Name, Club Or Email, And Tap A Lead To Update Its Status And Notes."
+              />
             </div>
           </div>
         </header>

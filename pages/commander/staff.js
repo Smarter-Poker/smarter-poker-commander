@@ -13,6 +13,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const ID_TYPES = [
   { value: 'drivers_license', label: "Driver's License" },
@@ -340,18 +341,22 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
 
       <div className="cmd-page">
         {/* Action Bar */}
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <p className="text-sm text-[#B0B3B8]">{venue?.name}</p>
+        <PageBar
+          title="Staff Management"
+          summary="Everyone Who Works At Your Venue, With Their Role, PIN And Status. Tap Show To Reveal A PIN. Owners And Managers Can Add Staff, Edit Roles And Set Staff Inactive."
+          status={venue?.name}
+          className="max-w-4xl mx-auto px-4 py-1.5"
+        >
           {canManageStaff && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 cmd-btn cmd-btn-primary"
+              className="flex items-center gap-2 px-4 py-2 cmd-btn cmd-btn-primary ml-auto"
             >
               <Plus className="w-4 h-4" />
               Add Staff
             </button>
           )}
-        </div>
+        </PageBar>
 
         {/* Main Content */}
         <main className="max-w-4xl mx-auto px-4 py-6">

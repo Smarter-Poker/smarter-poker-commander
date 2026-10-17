@@ -20,6 +20,7 @@ const SkeletonDark = dynamic(() => import('../../../src/components/ui/SkeletonDa
 import { busEmit } from '../../../src/engine/EventBus';
 import { getVenueId, getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 function formatCountdown(minutes) {
   if (!minutes && minutes !== 0) return '--:--';
@@ -162,15 +163,13 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/commander/tables')} className="p-2 rounded-lg flex-shrink-0" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
-            <div>
-              <h1 className="text-lg font-bold text-white">Table {tableNum}</h1>
-              <p className="text-xs text-[#B0B3B8]">
-                {table.game_type || 'Cash'} {table.stakes || ''} · {sessions.length}/{maxSeats} seats
-              </p>
-            </div>
+        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-center justify-between gap-2" data-page-bar="">
+          <h1 className="sr-only">Table {tableNum}</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => router.push('/commander/tables')} aria-label="Back To Tables" className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
+            <p className="text-xs font-semibold text-[#B0B3B8] min-w-0" role="status">
+              T{tableNum} · {table.game_type || 'Cash'} {table.stakes || ''} · {sessions.length}/{maxSeats} Seats
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {/* 2026-08-20: keyed off 'active'/'open', neither of which is a
@@ -187,9 +186,13 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
                       : table.status === 'maintenance' ? 'Maintenance'
                         : table.status
               }</span>
-            <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]">
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
               <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
             </button>
+            <PageHelp
+              title={`Table ${tableNum}`}
+              summary="A Live View Of This Table: Its Game, Stakes, Status And Every Seat. Each Seated Player Shows Their Time Remaining, Turning Amber Then Red As It Runs Out. Tap A Seat To Manage That Player."
+            />
           </div>
         </div>
 

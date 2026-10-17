@@ -15,9 +15,28 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { validateBlindStructure } from '../../src/lib/commander/structureValidation';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const ICON_MAP = {
     Trophy, Zap, Crown, Target, RefreshCw, Rocket, Crosshair };
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const TEMPLATE_STEPS = [
+    {
+        title: 'Clock And Shot Clock',
+        body: 'Pick The Clock Display Preset New Tournaments Use, And Turn The Dealer Shot Clock On Or Off.',
+    },
+    {
+        title: 'Templates',
+        body: 'Each Card Is A Ready Made Structure. View The Levels First, Or Create The Tournament In One Tap.',
+        target: '[data-tour="tt-templates"]',
+    },
+    {
+        title: 'Quick Actions',
+        body: 'Jump Straight To The Tournament Manager, Clock Setup And Other Tournament Tools.',
+        target: '[data-tour="tt-quick"]',
+    },
+];
 
 export default function TournamentSettingsPage() {
 
@@ -188,13 +207,11 @@ export default function TournamentSettingsPage() {
                         </div>
                     )}
 
-                    {/* Section Header */}
-                    <div>
-                        <h1 className="text-xl font-bold text-white">Tournament Templates</h1>
-                        <p className="text-sm text-[#64748B] mt-1">
-                            Choose A Pre-Built Template To Instantly Create A Tournament With Expert Blind Structures, Or View The Structure Details First.
-                        </p>
-                    </div>
+                    <PageBar
+                        title="Tournament Templates"
+                        summary="Choose A Pre-Built Template To Instantly Create A Tournament With Expert Blind Structures, Or View The Structure Details First."
+                        steps={TEMPLATE_STEPS}
+                    />
 
                     {/* Clock Display Preset Selector */}
                     {clockPresets.length > 0 && (
@@ -266,7 +283,7 @@ export default function TournamentSettingsPage() {
                     </div>
 
                     {/* Template Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="tt-templates">
                         {TOURNAMENT_TEMPLATES.map((template) => {
                             const IconComponent = ICON_MAP[template.icon] || Trophy;
                             const isExpanded = viewingStructure === template.id;
@@ -375,7 +392,7 @@ export default function TournamentSettingsPage() {
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="space-y-3">
+                    <div className="space-y-3" data-tour="tt-quick">
                         <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <button

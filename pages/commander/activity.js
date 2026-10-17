@@ -21,6 +21,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const EVENT_TYPES = {
   check_in: { icon: UserCheck, color: '#31A24C', label: 'Check In' },
@@ -161,17 +162,15 @@ export default function ActivityFeed() {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-lg font-bold text-white">Activity Feed</h1>
-              <p className="text-xs text-[#B0B3B8]">Real-Time Room Events</p>
-            </div>
-          </div>
-          <button onClick={fetchEvents} className="p-2 rounded-lg active:bg-[#3A3B3C]">
+        <PageBar
+          title="Activity Feed"
+          summary="Real-Time Room Events. Filter By Type, Newest First, Updating Live."
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={fetchEvents} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* Filters */}
         <div className="px-4 py-3 flex gap-2 overflow-x-auto">

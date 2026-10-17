@@ -11,6 +11,7 @@ import CommanderLayout from '../../../src/components/commander/shared/CommanderL
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 const RANGES = [
   { value: 'today', label: 'Today' },
@@ -59,13 +60,14 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
           noindex={true}
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-            <div className="flex-1">
-              <h1 className="text-lg font-bold text-white">Revenue Report</h1>
-              <p className="text-xs text-[#B0B3B8]">{RANGES.find(r => r.value === range)?.label}</p>
-            </div>
-            <button onClick={fetchData} className="p-2 rounded-lg active:bg-[#3A3B3C]"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
-          </div>
+          <PageBar
+            title="Revenue Report"
+            summary="Total Revenue For The Selected Range, Broken Down By Source. Pick A Range Below To Change The Period."
+            status={RANGES.find(r => r.value === range)?.label}
+            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          >
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+          </PageBar>
 
           <div className="px-4 py-3 flex gap-2">
             {RANGES.map(r => (

@@ -25,6 +25,7 @@ import { broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const BOARD_TYPES = [
     { value: 'custom', label: 'Custom Points', icon: '', desc: 'Manually Assign Points To Players' },
@@ -42,6 +43,24 @@ const PERIOD_TYPES = [
     { value: 'quarterly', label: 'Quarterly' },
     { value: 'yearly', label: 'Annual' },
     { value: 'custom', label: 'Custom Dates' },
+];
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const BUILDER_STEPS = [
+    {
+        title: 'Create Or Preview',
+        body: 'Create Board Starts A New Leaderboard. Preview Display Opens The TV Screen In A New Tab.',
+        target: '[data-tour="lb-actions"]',
+    },
+    {
+        title: 'Your Boards',
+        body: 'Tap A Board To Expand It, Add Players And Scores, Or Switch It Active So It Shows On The TV.',
+    },
+    {
+        title: 'How Boards Score',
+        body: 'Custom Boards Take Manual Scores. Hours And Sessions Boards Can Auto Calculate From Session History.',
+        target: '[data-tour="lb-info"]',
+    },
 ];
 
 export default function LeaderboardBuilder() {
@@ -239,13 +258,14 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                     </div>
                 )}
 
-                {/* HEADER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <div>
-                        <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>Leaderboard Builder</h1>
-                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>Create And Manage Custom Leaderboards For The TV Display</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                {/* HEADER: actions on the left, page help top right */}
+                <PageBar
+                    title="Leaderboard Builder"
+                    summary="Create And Manage Custom Leaderboards For The TV Display."
+                    steps={BUILDER_STEPS}
+                    style={{ marginBottom: '24px' }}
+                >
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }} data-tour="lb-actions">
                         <button onClick={() => setShowCreate(!showCreate)} style={{ ...s.btn, background: '#1877F2', color: 'white' }}>
                             {showCreate ? '✕ Cancel' : '+ Create Board'}
                         </button>
@@ -253,7 +273,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                             Preview Display
                         </a>
                     </div>
-                </div>
+                </PageBar>
 
                 {/* CREATE FORM */}
                 {showCreate && (
@@ -436,7 +456,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                 )}
 
                 {/* INFO SECTION */}
-                <div style={{ ...s.card, marginTop: '24px', background: 'rgba(24,119,242,0.05)', border: '2px solid rgba(24,119,242,0.25)' }}>
+                <div data-tour="lb-info" style={{ ...s.card, marginTop: '24px', background: 'rgba(24,119,242,0.05)', border: '2px solid rgba(24,119,242,0.25)' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>How Leaderboards Work</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
                         <div>

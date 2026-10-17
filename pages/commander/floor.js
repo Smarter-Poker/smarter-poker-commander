@@ -18,6 +18,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 const STATUS_CONFIG = {
   in_use: { color: '#31A24C', glow: '0 0 12px rgba(49,162,76,0.5)', label: 'Active' },
@@ -283,15 +284,12 @@ return { };
       <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#E4E6EB', fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column' }}>
 
         {/* Top bar */}
-        <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#18191A', borderBottom: '1px solid #2A2B2D', flexShrink: 0 }}>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Activity size={16} color="#31A24C" /> Floor Map
-            </h1>
-            <p style={{ fontSize: 11, color: '#6A6B6D', margin: 0 }}>
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tables.length} Tables
-            </p>
-          </div>
+        <div data-page-bar="" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, background: '#18191A', borderBottom: '1px solid #2A2B2D', flexShrink: 0 }}>
+          <h1 className="sr-only">Floor Map</h1>
+          <p role="status" style={{ fontSize: 12, color: '#B0B3B8', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Activity size={14} color="#31A24C" aria-hidden="true" />
+            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tables.length} Tables
+          </p>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {/* Zoom controls */}
             <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={btnStyle}>
@@ -324,9 +322,13 @@ return { };
               <span style={{ fontSize: 11, color: '#31A24C', fontWeight: 600 }}>✓ Saved</span>
             )}
 
-            <button onClick={fetchAll} style={btnStyle}>
+            <button onClick={fetchAll} style={btnStyle} aria-label="Refresh">
               <RefreshCw size={14} color="#B0B3B8" />
             </button>
+            <PageHelp
+              title="Floor Map"
+              summary="A Live Map Of The Room Laid Out Like The Real Floor. Each Table Shows Its Game, Seats Filled And Status, With Room Totals In The Strip Below. Unlock The Padlock To Drag Tables Into Place, Then Save."
+            />
           </div>
         </div>
 

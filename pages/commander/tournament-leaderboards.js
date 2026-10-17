@@ -27,6 +27,7 @@ import {
     Trophy, Plus, Loader2, ChevronDown, Check, Power, Medal
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const DEFAULT_STRUCTURE = [
     { position: 1, points: 100 },
@@ -214,35 +215,29 @@ export default function TournamentLeaderboards() {
             <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] pb-16">
 
                 {/* Header */}
-                <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3">
-                    <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                            <h1 className="text-lg font-bold text-white">Tournament Leaderboards</h1>
-                            <p className="text-xs text-[#B0B3B8]">Season Points From Tournament Finishes</p>
-                        </div>
-                        <button onClick={() => setShowCreate(v => !v)}
-                            className="h-11 px-4 rounded-xl bg-[#1877F2] text-white text-sm font-semibold flex items-center gap-2 active:opacity-90 flex-shrink-0">
-                            <Plus className="w-4 h-4" /> {showCreate ? 'Close' : 'New Season'}
-                        </button>
-                    </div>
-                </div>
+                <PageBar
+                    title="Tournament Leaderboards"
+                    summary="Season Points From Tournament Finishes. Points Are Awarded Automatically When A Tournament Is Finalized From The Director's Final Results Screen. A Finish Scores Into The Season Attached To That Tournament, Or Into This Venue's Active Season When None Is Attached. Keep Exactly One Season Active At A Time."
+                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    innerClassName="max-w-3xl mx-auto"
+                >
+                    <button onClick={() => setShowCreate(v => !v)}
+                        className="h-11 px-4 rounded-xl bg-[#1877F2] text-white text-sm font-semibold flex items-center gap-2 active:opacity-90 flex-shrink-0">
+                        <Plus className="w-4 h-4" /> {showCreate ? 'Close' : 'New Season'}
+                    </button>
+                </PageBar>
 
                 <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
 
-                    {/* How this works */}
-                    <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl p-4">
-                        <p className="text-xs text-[#B0B3B8] leading-relaxed">
-                            Points Are Awarded Automatically When A Tournament Is Finalized From The
-                            Director's Final Results Screen. A Finish Scores Into The Season Attached To
-                            That Tournament, Or Into This Venue's Active Season When None Is Attached.
-                            Keep Exactly One Season Active At A Time.
-                        </p>
-                        {activeCount === 0 && !loading && (
-                            <p className="text-xs text-[#F59E0B] font-medium mt-2">
+                    {/* The "how this works" paragraph moved behind the "?"
+                        (Dan, 2026-10-17). The live warning stays. */}
+                    {activeCount === 0 && !loading && (
+                        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-3">
+                            <p className="text-xs text-[#F59E0B] font-medium">
                                 No Active Season. Create One So Finishes Start Scoring.
                             </p>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Create form */}
                     {showCreate && (
