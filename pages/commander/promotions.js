@@ -18,6 +18,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 const PROMO_TYPES = [
   { value: 'high_hand', label: 'High Hand', icon: Trophy, color: '#F59E0B' },
@@ -284,6 +285,23 @@ function CurrentHighHandBanner({ highHand }) {
 }
 
 /* PromoCard removed - replaced by PromotionCard component */
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const PROMO_STEPS = [
+  {
+    title: 'Four Tabs',
+    body: 'Promotions, High Hands, Promo Codes And Analytics. The Button Beside The Count Changes With The Tab.',
+    target: '[data-tour="promo-tabs"]',
+  },
+  {
+    title: 'Create A Promotion',
+    body: 'Wizard Walks You Through A New Promo Step By Step. New Promo Opens The Full Form.',
+  },
+  {
+    title: 'High Hands',
+    body: 'Record A High Hand As It Happens So It Shows On The Board And Pays Out Correctly.',
+  },
+];
 
 export default function PromotionsPage() {
   const router = useRouter();
@@ -785,20 +803,17 @@ try {
             position: 'sticky', top: 0, zIndex: 40,
             background: '#242526', borderBottom: '1px solid #3A3B3C' }}>
             <div style={{
-              maxWidth: 960, margin: '0 auto', padding: '14px 20px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h1 style={{ fontSize: 20, fontWeight: 800, color: '#E4E6EB', margin: 0 }}>
-                  Promotions
-                </h1>
-                <p style={{ fontSize: 13, color: '#8A8D91', margin: '2px 0 0' }}>
+              maxWidth: 960, margin: '0 auto', padding: '6px 20px',
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+              <h1 className="sr-only">Promotions</h1>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, minHeight: 44 }}>
+                <span role="status" style={{ fontSize: 13, color: '#8A8D91', fontWeight: 600 }}>
                   {activeTab === 'promotions'
                     ? `${promotions.length} Promotion${promotions.length !== 1 ? 's' : ''}`
                     : activeTab === 'high-hands'
                       ? `${highHands.length} High Hand${highHands.length !== 1 ? 's' : ''} Today`
                       : `${promoCodes.length} Promo Code${promoCodes.length !== 1 ? 's' : ''}`}
-                </p>
-              </div>
+                </span>
               {activeTab === 'promotions' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
@@ -857,10 +872,16 @@ try {
                   Load 25 Pre-Made
                 </button>
               )}
+              </div>
+              <PageHelp
+                title="Promotions"
+                summary="Run The Room's Promotions, High Hands, Promo Codes And Promo Analytics From One Place. Use The Tabs Below To Switch."
+                steps={PROMO_STEPS}
+              />
             </div>
 
             {/* ── Tab Bar ── */}
-            <div style={{
+            <div data-tour="promo-tabs" style={{
               maxWidth: 960, margin: '0 auto', padding: '0 20px',
               display: 'flex', gap: 0, borderTop: '1px solid #3A3B3C' }}>
               {[

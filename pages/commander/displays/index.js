@@ -13,13 +13,36 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 
-import { Monitor, Tv, ExternalLink, Copy, CheckCircle2, Clock, Users, Trophy, Megaphone, Loader2, Wifi, Timer } from 'lucide-react';
+import { Monitor, Tv, ExternalLink, Copy, CheckCircle2, Clock, Users, Trophy, Megaphone, Loader2, Timer } from 'lucide-react';
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
 import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
+
+/* Page Help tour (Dan, 2026-10-17): the setup instructions that used to sit
+   at the top of the page, one step each. */
+const DISPLAY_STEPS = [
+  {
+    title: 'Pick A Display',
+    body: 'Each Card Is A Screen: Waitlist, Tournament Clocks, Room Boards, Leaderboards And More. Copy Its URL, Or Use Open Display And Preview.',
+    target: '[data-tour="dsp-first"]',
+  },
+  {
+    title: 'Wireless HDMI Setup',
+    body: 'Connect The HDMI Transmitter To A Laptop, Tablet Or Chromecast, And The HDMI Receiver To The TV.',
+  },
+  {
+    title: 'Open The Display',
+    body: 'Open The Display URL In Chrome On The Source Device, Then Click Anywhere To Go Fullscreen.',
+  },
+  {
+    title: 'Hands Free',
+    body: 'Displays Refresh On Their Own. No Interaction Is Needed Once They Are Up.',
+  },
+];
 
 export default function DisplayManagement() {
   useEffect(() => { busEmit.sessionStart('commander-displays-index'); }, []);
@@ -83,32 +106,17 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             />
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
-        {/* Subtitle */}
-        <div className="px-4 py-2">
-          <p className="text-xs text-[#B0B3B8]">Configure TV Displays For Wireless HDMI</p>
-        </div>
-
-        {/* Setup Instructions */}
-        <div className="px-4 py-4">
-          <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <Wifi className="w-5 h-5 text-[#1877F2] mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-[#1877F2] mb-1">Wireless HDMI Setup</h3>
-                <ol className="text-xs text-[#B0B3B8] space-y-1">
-                  <li>1. Connect HDMI Transmitter To A Laptop/tablet/Chromecast</li>
-                  <li>2. Connect HDMI Receiver To The TV</li>
-                  <li>3. Open The Display URL In Chrome On The Source Device</li>
-                  <li>4. Click Anywhere To Go Fullscreen</li>
-                  <li>5. Display Auto-refreshes - No Interaction Needed</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* The subtitle and the Wireless HDMI setup list moved behind the "?"
+            (Dan, 2026-10-17). */}
+        <PageBar
+          title="Display Management"
+          summary="Configure TV Displays For Wireless HDMI. Every Card Below Is A Screen You Can Put On A TV."
+          steps={DISPLAY_STEPS}
+          className="px-4 pt-2 pb-1"
+        />
 
         {/* Waitlist Display */}
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3" data-tour="dsp-first">
           <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
             Waitlist Display
           </h2>

@@ -19,6 +19,7 @@ import { useCommanderSync, broadcastChange } from '../../../src/lib/commander/us
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 export default function MemberProfile() {
 
@@ -158,9 +159,12 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
           <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
             {/* Header */}
-            <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-              <div className="flex-1">
-                <h1 className="text-lg font-bold text-white">{m.first_name} {m.last_name}</h1>
+            <PageBar
+              title={`${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Member'}
+              summary="This Member's Profile: Membership Tier And Status, Contact Details, Hours Played, Comp And Points Balances, And Recent Visits."
+              className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            >
+                <p className="text-sm font-semibold text-white" aria-hidden="true">{m.first_name} {m.last_name}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: `${tierColor}20`, color: tierColor }}>
                     {(m.membership_tier || 'standard').toUpperCase()}
@@ -169,8 +173,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                     {m.membership_status || 'active'}
                   </span>
                 </div>
-              </div>
-            </div>
+            </PageBar>
 
             {/* Member card */}
             <div className="p-4">

@@ -13,6 +13,7 @@ import {
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 export default function PlayerActivityReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-player-activity'); }, []);
@@ -97,7 +98,7 @@ const headers = { };
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button onClick={() => router.push('/commander/reports')} className="p-2 rounded-lg flex-shrink-0" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
-              <h1 className="text-lg font-bold text-white">Player Activity</h1>
+              <h1 className="sr-only">Player Activity</h1>
             </div>
             <div className="flex items-center gap-2">
               {['7d', '30d', '90d', '1y'].map(r => (
@@ -105,6 +106,10 @@ const headers = { };
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateRange === r ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] hover:bg-[#4A4B4C]'
                     }`}>{r}</button>
               ))}
+              <PageHelp
+                title="Player Activity"
+                summary="How Your Players Are Playing Over The Chosen Range: Total Members, Active Players, Regulars With Five Or More Visits, New Players And Average Session Length. Pick 7 Days, 30 Days, 90 Days Or A Year."
+              />
             </div>
           </div>
         </header>

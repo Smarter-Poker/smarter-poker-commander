@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -259,10 +260,14 @@ export default function TDReports() {
             <SEOHead title="TD Reports" />
             <div className="min-h-screen bg-[#18191A] pb-24">
                 {/* Header */}
-                <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 sticky top-0 z-30">
-                    <div className="flex items-center justify-between max-w-2xl mx-auto">
-                        <h1 className="text-lg font-bold text-white">Reports</h1>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                <PageBar
+                    title="Reports"
+                    summary="Reports For This Tournament In Four Tabs: Registration, Cashier, Activity And Drawer. Drawer Reconciles The Money Taken Against What Should Be There. Print The Drawer Report Or Download Any Tab As CSV."
+                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    innerClassName="max-w-2xl mx-auto"
+                    sticky
+                >
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                             {tab === 'reconciliation' && (
                                 <button onClick={printReconciliation} disabled={busy || loading || !reportData?.variance}
                                     className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
@@ -274,8 +279,7 @@ export default function TDReports() {
                                 <Download className="w-4 h-4" /> CSV
                             </button>
                         </div>
-                    </div>
-                </div>
+                </PageBar>
 
                 <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
                     {/* Final Results.

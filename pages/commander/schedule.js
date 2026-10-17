@@ -20,6 +20,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { titleCase } from '../../src/lib/commander/formatters';
+import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -439,14 +440,11 @@ return { 'Content-Type': 'application/json' };
         )}
 
         {/* Header Bar */}
-        <div style={{ background: '#242526', borderBottom: '2px solid #3A3B3C', padding: '12px 16px' }}>
+        <div data-page-bar="" style={{ background: '#242526', borderBottom: '2px solid #3A3B3C', padding: '6px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1200, margin: '0 auto' }}>
+            <h1 className="sr-only">Staff Schedule</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Calendar size={20} color="#1877F2" />
-              <h1 style={{ fontSize: 18, fontWeight: 800, color: 'white', margin: 0 }}>Staff Schedule</h1>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button onClick={fetchData} style={{ padding: 8, borderRadius: 8, background: 'transparent', border: '1px solid #3A3B3C', cursor: 'pointer' }} title="Refresh">
+              <button onClick={fetchData} aria-label="Refresh" style={{ width: 44, height: 44, borderRadius: 8, background: 'transparent', border: '1px solid #3A3B3C', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh">
                 <RefreshCw size={16} color="#B0B3B8" />
               </button>
               <button
@@ -457,6 +455,10 @@ return { 'Content-Type': 'application/json' };
                 <span>Send Schedule</span>
               </button>
             </div>
+            <PageHelp
+              title="Staff Schedule"
+              summary="The Week's Shifts For Every Staff Member. Use The Arrows To Change Week, Today To Jump Back, Tap A Day To Add Or Edit A Shift, And Send Schedule To Text Everyone Their Shifts."
+            />
           </div>
         </div>
 

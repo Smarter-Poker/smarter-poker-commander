@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
   { key: 'control', icon: Trophy, label: 'Control', path: '' },
@@ -168,17 +169,16 @@ export default function TDDealers() {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-24 font-['Inter']">
 
         {/* ===== HEADER ===== */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-white truncate">Dealer Rotation</h1>
-            <p className="text-xs text-[#B0B3B8]">
-              {manned.toLocaleString()} Of {tables.length.toLocaleString()} Table{tables.length === 1 ? '' : 's'} Manned, Push Every {limit.toLocaleString()} Minutes
-            </p>
-          </div>
-          <button onClick={() => fetchDealers()} className="p-2 rounded-lg active:bg-[#3A3B3C]" title="Refresh">
+        <PageBar
+          title="Dealer Rotation"
+          summary="Which Dealer Is On Which Table And For How Long. Dealers Push On The Interval Shown And Overdue Tables Are Flagged. Push Every Dealer Up One Table In One Tap. While The Clock Is On Break, Pushing Waits Until You Confirm."
+          status={`${manned.toLocaleString()} Of ${tables.length.toLocaleString()} Table${tables.length === 1 ? '' : 's'} Manned, Push Every ${limit.toLocaleString()} Minutes`}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={() => fetchDealers()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" title="Refresh" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* ===== BREAK BANNER ===== */}
         {data.alerts?.on_break && (

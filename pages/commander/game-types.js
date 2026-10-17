@@ -13,6 +13,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const PRESET_GAMES = [
   { name: 'No Limit Hold\'em', short_code: 'NLH', max_players: 9, color: '#1877F2' },
@@ -172,22 +173,20 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
           {/* Header */}
-          <header className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-50">
-            <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="font-bold text-white text-lg">Game Types</h1>
-                  <p className="text-sm text-[#B0B3B8]">{venueName} - {gameTypes.filter(g => g.is_active).length} Active</p>
-                </div>
-              </div>
-              {canManage && (
-                <button onClick={() => { resetForm(); setShowForm(true); }}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white rounded-xl text-sm font-medium hover:bg-[#1877F2]/80">
-                  <Plus className="w-4 h-4" /> Add Game
-                </button>
-              )}
-            </div>
-          </header>
+          <PageBar
+            title="Game Types"
+            summary="The Games Your Room Spreads: Variant, Stakes, Buy In Range And Whether Each Is Active. Active Games Appear On The Waitlist And Tables. Managers Can Add, Edit Or Retire A Game."
+            status={`${venueName ? `${venueName} - ` : ''}${gameTypes.filter(g => g.is_active).length} Active`}
+            className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-50 px-4 py-1.5"
+            innerClassName="max-w-4xl mx-auto"
+          >
+            {canManage && (
+              <button onClick={() => { resetForm(); setShowForm(true); }}
+                className="flex items-center gap-2 px-4 min-h-[44px] bg-[#1877F2] text-white rounded-xl text-sm font-medium hover:bg-[#1877F2]/80">
+                <Plus className="w-4 h-4" /> Add Game
+              </button>
+            )}
+          </PageBar>
 
           <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
             {/* Alerts */}

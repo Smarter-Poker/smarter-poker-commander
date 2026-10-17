@@ -32,6 +32,7 @@ import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { buildJobHtml, printHtml } from '../../src/lib/commander/receiptTemplates';
 import { busEmit } from '../../src/engine/EventBus';
+import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 /* ─── Realtime client (never constructed during SSG) ─────────── */
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
@@ -735,12 +736,15 @@ export default function PrintStation() {
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
 
           {/* Header */}
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <Printer className="w-5 h-5 text-[#1877F2]" />
-                {station.name ? station.name : 'Print Station'}
-              </h1>
+          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-start gap-3" data-page-bar="">
+            <h1 className="sr-only">{station.name ? station.name : 'Print Station'}</h1>
+            <div className="flex-1 min-w-0 min-h-[44px] flex flex-col justify-center" role="status">
+              {station.name && (
+                <p className="text-sm font-semibold text-white flex items-center gap-2" aria-hidden="true">
+                  <Printer className="w-4 h-4 text-[#1877F2]" />
+                  {station.name}
+                </p>
+              )}
               <p className="text-xs text-[#B0B3B8]">
                 {queued.length.toLocaleString()} Job{queued.length === 1 ? '' : 's'} Waiting
                 {' '}&middot;{' '}{totalCards.toLocaleString()} Card{totalCards === 1 ? '' : 's'}
@@ -761,6 +765,10 @@ export default function PrintStation() {
             >
               <RefreshCw className={`w-5 h-5 text-[#B0B3B8] ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+            <PageHelp
+              title="Print Station"
+              summary="Prints Player Cards Sent From The Floor. Keep This Page Open On The Computer Next To The Printer; New Jobs Print On Their Own And The Count Shows What Is Still Waiting. If Popups Are Blocked, Allow Them And Resume; Nothing Is Lost."
+            />
           </div>
 
           <div className="p-4 space-y-3">

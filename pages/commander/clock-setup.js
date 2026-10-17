@@ -13,6 +13,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const DEFAULT_THEME = {
     background: '#0D192E',
@@ -63,6 +64,47 @@ const STARTER_THEMES = [
     { name: 'Crimson Red', theme: { background: '#2a0a0a', text: '#ffffff', accent: '#EF4444', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
     { name: 'Gold Elite', theme: { background: '#1a1508', text: '#ffffff', accent: '#F59E0B', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
     { name: 'Stealth Black', theme: { background: '#0a0a0a', text: '#ffffff', accent: '#64748B', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
+];
+
+/* Page Help tours (Dan, 2026-10-17: the header words moved behind the "?"). */
+const LIST_STEPS = [
+    {
+        title: 'New Preset',
+        body: 'Start A Blank Clock Theme You Can Name, Color And Save.',
+        target: '[data-tour="cs-new"]',
+    },
+    {
+        title: 'Your Presets',
+        body: 'Each Saved Theme Shows Its Colors. Tap One To Edit It. Tournaments Pick A Preset For Their TV Clock.',
+        target: '[data-tour="cs-list"]',
+    },
+    {
+        title: 'Quick Add From Template',
+        body: 'Add A Ready Made Theme In One Tap, Then Adjust It.',
+        target: '[data-tour="cs-templates"]',
+    },
+];
+const EDITOR_STEPS = [
+    {
+        title: 'Live Preview',
+        body: 'See The Clock Exactly As The TV Will Show It While You Change Settings.',
+        target: '[data-tour="cs-preview"]',
+    },
+    {
+        title: 'Theme Colors',
+        body: 'Pick The Background, Text And Accent Colors, Or Use A Quick Theme.',
+        target: '[data-tour="cs-colors"]',
+    },
+    {
+        title: 'Display Options',
+        body: 'Choose What The Clock Shows, Then Set Screen Cycling, Sounds And Chip Denominations Below.',
+        target: '[data-tour="cs-options"]',
+    },
+    {
+        title: 'Save',
+        body: 'Give The Preset A Name And Tap Save. Cancel Leaves Without Changes.',
+        target: '[data-tour="cs-save"]',
+    },
 ];
 
 export default function ClockSetup() {
@@ -201,24 +243,20 @@ export default function ClockSetup() {
                 <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', fontFamily: "var(--font-inter), sans-serif" }}>
                     <div style={{ maxWidth: 800, margin: '0 auto', padding: '20px 16px' }}>
 
-                        {/* Editor Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 40, height: 40, background: 'rgba(24,119,242,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Palette size={20} color="#1877F2" />
-                                </div>
-                                <div>
-                                    <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{editing === 'new' ? 'New Clock Preset' : 'Edit Preset'}</h1>
-                                    <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>Configure Display Theme And Options</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
+                        {/* Editor Header: Cancel / Save on the left, page help top right */}
+                        <PageBar
+                            title={editing === 'new' ? 'New Clock Preset' : 'Edit Preset'}
+                            summary="Configure The Display Theme And Options For This Clock Preset."
+                            steps={EDITOR_STEPS}
+                            style={{ marginBottom: 20 }}
+                        >
+                            <div style={{ display: 'flex', gap: 8 }} data-tour="cs-save">
                                 <button onClick={() => setEditing(null)} style={btnSecondary}>Cancel</button>
                                 <button onClick={handleSave} disabled={saving || !formName.trim()} style={{ ...btnPrimary, opacity: saving || !formName.trim() ? 0.5 : 1 }}>
                                     {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save</>}
                                 </button>
                             </div>
-                        </div>
+                        </PageBar>
 
                         {/* Name */}
                         <div style={panelStyle}>
@@ -237,7 +275,7 @@ export default function ClockSetup() {
                         </div>
 
                         {/* Live Preview */}
-                        <div style={{ ...panelStyle, overflow: 'hidden' }}>
+                        <div style={{ ...panelStyle, overflow: 'hidden' }} data-tour="cs-preview">
                             <p style={{ fontSize: 11, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Live Preview</p>
                             <div style={{
                                 background: formDisplay.background_image_url ? `url(${formDisplay.background_image_url}) center/cover` : formTheme.background,
@@ -262,7 +300,7 @@ export default function ClockSetup() {
                         </div>
 
                         {/* Theme Colors */}
-                        <div style={panelStyle}>
+                        <div style={panelStyle} data-tour="cs-colors">
                             <p style={sectionTitle}>Theme Colors</p>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                 {[
@@ -301,7 +339,7 @@ export default function ClockSetup() {
                         </div>
 
                         {/* Display Options */}
-                        <div style={panelStyle}>
+                        <div style={panelStyle} data-tour="cs-options">
                             <p style={sectionTitle}>Display Options</p>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                 {[
@@ -384,7 +422,7 @@ export default function ClockSetup() {
                         </div>
 
                         {/* Chip Denominations */}
-                        <div style={panelStyle}>
+                        <div style={panelStyle} data-tour="cs-chips">
                             <p style={sectionTitle}>Chip Denominations</p>
                             <p style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>Configure Chip Values And Colors Shown On The Clock Display. Obsolete Chips Auto-Dim Based On Current Blinds.</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -475,23 +513,20 @@ export default function ClockSetup() {
             <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', fontFamily: "var(--font-inter), sans-serif" }}>
                 <div style={{ maxWidth: 700, margin: '0 auto', padding: '20px 16px' }}>
 
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ width: 40, height: 40, background: 'rgba(24,119,242,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Palette size={20} color="#1877F2" />
-                            </div>
-                            <div>
-                                <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Clock Presets</h1>
-                                <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>Named Themes For Tournament Clock Displays</p>
-                            </div>
-                        </div>
-                        <button onClick={() => startNew()} style={btnPrimary}>
+                    {/* Header: New Preset on the left, page help top right */}
+                    <PageBar
+                        title="Clock Presets"
+                        summary="Named Themes For Tournament Clock Displays."
+                        steps={LIST_STEPS}
+                        style={{ marginBottom: 20 }}
+                    >
+                        <button onClick={() => startNew()} style={btnPrimary} data-tour="cs-new">
                             <Plus size={16} /> New Preset
                         </button>
-                    </div>
+                    </PageBar>
 
                     {/* Preset List */}
+                    <div data-tour="cs-list">
                     {loading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
                             <Loader2 size={24} className="animate-spin" color="#1877F2" />
@@ -552,7 +587,7 @@ export default function ClockSetup() {
                             ))}
 
                             {/* Add from template */}
-                            <div style={{ marginTop: 8 }}>
+                            <div style={{ marginTop: 8 }} data-tour="cs-templates">
                                 <p style={{ fontSize: 10, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Quick Add From Template</p>
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                     {STARTER_THEMES.map(st => (
@@ -564,6 +599,7 @@ export default function ClockSetup() {
                             </div>
                         </div>
                     )}
+                    </div>
                 </div>
             </div>
         

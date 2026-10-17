@@ -18,6 +18,7 @@ import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
 import { useConfirmAction } from "../../../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
   { key: 'control', icon: Trophy, label: 'Control', path: '' },
@@ -595,20 +596,19 @@ export default function TDTablesMap() {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-20 font-['Inter']">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-white">Table Map</h1>
-              {/* Realtime health, so the floor knows whether this map is live
-                  or riding the fallback poll. */}
-              <ConnectionPill conn={conn} />
-            </div>
-            <p className="text-xs text-[#B0B3B8]">{tables.length} Tables Active, {floor?.stats?.players_remaining || 0} Players</p>
-          </div>
-          <button onClick={fetchFloor} className="p-2 rounded-lg active:bg-[#3A3B3C]">
+        <PageBar
+          title="Table Map"
+          summary="Every Table In Play With Its Seated Players. Run The Seat Draw, Get A Balance Suggestion And Apply It, And Tap A Table To See Its Players. An Alert Appears When A Table Should Break. The Pill Shows Whether The Map Is Live."
+          status={`${tables.length} Tables Active, ${floor?.stats?.players_remaining || 0} Players`}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          {/* Realtime health, so the floor knows whether this map is live
+              or riding the fallback poll. */}
+          <ConnectionPill conn={conn} />
+          <button onClick={fetchFloor} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* Auto-Break Alert */}
         {autoBreak?.should_break && (

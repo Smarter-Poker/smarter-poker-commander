@@ -22,6 +22,7 @@ import {
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
 import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
   { key: 'control', icon: Trophy, label: 'Control', path: '' },
@@ -524,17 +525,16 @@ ${raceOrder.map((r, i) => `<tr>
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-24 font-['Inter']">
 
         {/* ===== HEADER ===== */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-white truncate">Color Up Helper</h1>
-            <p className="text-xs text-[#B0B3B8]">
-              {players.length} Player{players.length === 1 ? '' : 's'} Live, Floor Helper Only
-            </p>
-          </div>
-          <button onClick={() => fetchFloor()} className="p-2 rounded-lg active:bg-[#3A3B3C]" title="Refresh">
+        <PageBar
+          title="Color Up Helper"
+          summary="Works Out A Chip Race For The Floor. Enter The Denomination Being Raced Off; It Colors Up Into The Next Denomination In Play. Enter Each Player's Count Of The Old Chips To See What Each Player Receives And The Race Order. It Is A Floor Helper Only: It Changes No Chip Counts, So Update Counts On The Chip Counts Screen."
+          status={`${players.length} Player${players.length === 1 ? '' : 's'} Live`}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={() => fetchFloor()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" title="Refresh" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* ===== RACE SETUP ===== */}
         <div className="px-4 pt-3 space-y-3">

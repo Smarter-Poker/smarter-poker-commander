@@ -16,6 +16,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 const GAME_LABELS = { nlh: 'NLH', plo: 'PLO', plo5: 'PLO5', NLH: 'NLH', PLO: 'PLO', mixed: 'Mixed', limit: 'Limit', stud: 'Stud', razz: 'Razz', other: 'Other' };
 
@@ -134,25 +135,21 @@ export default function MustMoveManager() {
         {/* Header */}
         <div style={{
           background: '#242526', borderBottom: '1px solid #3A3B3C',
-          padding: '16px 20px',
-          display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ArrowRightLeft size={20} color="#F59E0B" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: '#E4E6EB', margin: 0 }}>Must-Move Games</h1>
-            <p style={{ fontSize: 12, color: '#8A8D91', margin: 0 }}>
-              {data?.total_active || 0} Active Games · {groups.length} Must-Move Group{groups.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <button onClick={() => fetchData()} style={{
-            padding: 8, borderRadius: 8, background: '#3A3B3C', border: '1px solid #4E4F50',
-            cursor: 'pointer', color: '#B0B3B8' }}>
+          padding: '6px 20px',
+          display: 'flex', alignItems: 'center', gap: 12 }} data-page-bar="">
+          <h1 className="sr-only">Must-Move Games</h1>
+          <p role="status" style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#B0B3B8', margin: 0 }}>
+            {data?.total_active || 0} Active Games · {groups.length} Must-Move Group{groups.length !== 1 ? 's' : ''}
+          </p>
+          <button onClick={() => fetchData()} aria-label="Refresh" style={{
+            width: 44, height: 44, borderRadius: 8, background: '#3A3B3C', border: '1px solid #4E4F50',
+            cursor: 'pointer', color: '#B0B3B8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <RefreshCw size={16} />
           </button>
+          <PageHelp
+            title="Must-Move Games"
+            summary="Must-Move Games Feed A Main Game. When A Seat Opens In The Main Game, The Longest Waiting Must-Move Player Moves Up. Each Group Below Shows A Main Game And The Games Feeding It."
+          />
         </div>
 
         {/* Message Toast */}

@@ -15,6 +15,7 @@ import { getToken } from '../../../src/lib/commander/clientAuth';
 import { busEmit } from '../../../src/engine/EventBus';
 // 2026-07-25 audit fix: commanderFetch needed for the Add Pilot POST
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 // Success criteria from IMPLEMENTATION_PHASES.md Step 6.6
 const SUCCESS_CRITERIA = {
@@ -236,14 +237,11 @@ export default function PilotVenuesPage() {
         {/* Header */}
         <header className="cmd-header-bar sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 className="sr-only">Pilot Venues</h1>
             <div className="flex items-center gap-4">
-              <Link href="/commander/admin" className="text-[#B0B3B8] hover:text-white">
+              <Link href="/commander/admin" className="text-[#B0B3B8] hover:text-white" aria-label="Back To Admin">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
-              <div>
-                <h1 className="text-xl font-bold text-white">Pilot Venues</h1>
-                <p className="text-sm text-[#B0B3B8]">Phase 6 - Pilot Expansion</p>
-              </div>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -260,6 +258,10 @@ export default function PilotVenuesPage() {
                 <Plus className="w-4 h-4" />
                 Add Pilot
               </button>
+              <PageHelp
+                title="Pilot Venues"
+                summary="Phase 6 Pilot Expansion. Track Each Pilot Venue Against The Success Criteria: Uptime, Tickets Per Week, Staff Satisfaction And Player Adoption. Add A Pilot To Start Tracking It."
+              />
             </div>
           </div>
         </header>

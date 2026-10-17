@@ -16,6 +16,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 export default function ShiftHandoff() {
   const router = useRouter();
@@ -154,20 +155,17 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
       />
       <div className="min-h-screen bg-[#18191A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1877F2]/15 flex items-center justify-center">
-            <ArrowRightLeft size={20} className="text-[#1877F2]" />
-          </div>
-          <div className="flex-1">
-            <div className="text-white font-bold text-base">Shift Handoff</div>
-            <div className="text-[#B0B3B8] text-xs">Pass Floor Context To Incoming Shift</div>
-          </div>
+        <PageBar
+          title="Shift Handoff"
+          summary="Pass Floor Context To The Incoming Shift. Write Up What The Next Shift Needs To Know, Or Read And Acknowledge A Handoff Left For You."
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
           {pendingHandoffs.length > 0 && (
             <div className="bg-[#EF4444] text-white rounded-full px-3 py-0.5 text-xs font-bold animate-pulse">
               {pendingHandoffs.length} Pending
             </div>
           )}
-        </div>
+        </PageBar>
 
         {/* Toast */}
         {toast && (

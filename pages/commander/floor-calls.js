@@ -22,6 +22,7 @@ import { Check, Clock, Loader2, RefreshCw, Bell, Plus, X, Volume2, VolumeX, User
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
 import { getToken, getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -277,15 +278,15 @@ export default function FloorCalls() {
       <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
 
         {/* ── Header ───────────────────────────────── */}
-        <div style={{ background: '#18191A', borderBottom: '1px solid #2A2B2D', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Bell size={18} color={pendingCount > 0 ? '#EF4444' : '#B0B3B8'} />
-              Floor Calls
-              {pendingCount > 0 && (
-                <span style={{ fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', borderRadius: 12, padding: '2px 8px', minWidth: 22, textAlign: 'center' }}>{pendingCount}</span>
-              )}
-            </h1>
+        <div data-page-bar="" style={{ background: '#18191A', borderBottom: '1px solid #2A2B2D', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div role="status">
+            <h1 className="sr-only">Floor Calls</h1>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#B0B3B8', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Bell size={18} color={pendingCount > 0 ? '#EF4444' : '#B0B3B8'} aria-hidden="true" />
+              {pendingCount > 0 ? (
+                <span style={{ fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', borderRadius: 12, padding: '2px 8px', minWidth: 22, textAlign: 'center' }}>{pendingCount} Pending</span>
+              ) : 'No Pending Calls'}
+            </p>
             {urgentCount > 0 && (
               <p style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, margin: '2px 0 0', animation: 'pulse-text 1.5s ease-in-out infinite' }}>
                 {urgentCount} URGENT {urgentCount === 1 ? 'Call' : 'Calls'} Waiting
@@ -296,9 +297,13 @@ export default function FloorCalls() {
             <button onClick={() => setSoundOn(!soundOn)} style={iconBtnStyle} title={soundOn ? 'Mute Alerts' : 'Unmute Alerts'}>
               {soundOn ? <Volume2 size={16} color="#31A24C" /> : <VolumeX size={16} color="#6B7280" />}
             </button>
-            <button onClick={fetchCalls} style={iconBtnStyle}>
+            <button onClick={fetchCalls} style={iconBtnStyle} aria-label="Refresh">
               <RefreshCw size={16} color="#B0B3B8" />
             </button>
+            <PageHelp
+              title="Floor Calls"
+              summary="Requests From Tables For A Floor Person: Rulings, Seat Changes, Chips And Service. New Calls Arrive Live With A Sound Alert You Can Mute. Acknowledge A Call When You Go, Then Resolve It. History Keeps Every Resolved Call."
+            />
           </div>
         </div>
 

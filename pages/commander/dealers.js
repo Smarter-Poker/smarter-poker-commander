@@ -13,6 +13,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import useDebounce from '../../src/hooks/useDebounce';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const GAME_CERTIFICATIONS = [
   { value: 'nlhe', label: 'No Limit Hold\'em' },
@@ -506,20 +507,22 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
     <CommanderLayout title="Dealer Management" backHref="/commander/dashboard?card=floor">
       <div className="cmd-page">
         {/* Action Bar + Tabs */}
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <p className="text-sm text-[#B0B3B8]">
-            {activeDealers.length} Active, {availableDealers.length} Available
-          </p>
+        <PageBar
+          title="Dealer Management"
+          summary="Your Dealer Roster And Rotation. The Line Shows Who Is Dealing And Who Is Available. The Dealers Tab Manages The Roster And Add Dealer; The Rotations Tab Sets Up And Confirms Table Rotations."
+          status={`${activeDealers.length} Active, ${availableDealers.length} Available`}
+          className="max-w-4xl mx-auto px-4 py-1.5"
+        >
           {activeTab === 'dealers' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 cmd-btn cmd-btn-primary"
+              className="flex items-center gap-2 px-4 py-2 cmd-btn cmd-btn-primary ml-auto"
             >
               <Plus className="w-4 h-4" />
               Add Dealer
             </button>
           )}
-        </div>
+        </PageBar>
 
         {/* Tabs */}
         <div className="max-w-4xl mx-auto px-4 flex gap-1 border-b border-[#3A3B3C]">

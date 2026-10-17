@@ -26,6 +26,7 @@ import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/pa
 // ordinal() lives in a dependency-free shared module; four screens had each
 // defined their own private copy.
 import { ordinal } from '../../../../src/lib/commander/ordinal';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -282,23 +283,19 @@ export default function TDPayouts() {
             <SEOHead title="TD Payouts" />
             <div className="min-h-screen bg-[#18191A] pb-24">
                 {/* Header */}
-                <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 sticky top-0 z-30">
-                    <div className="flex items-center justify-between max-w-2xl mx-auto">
-                        <div>
-                            <h1 className="text-lg font-bold text-white">Payout Calculator</h1>
-                            <p className="text-xs text-[#B0B3B8]">
-                                {tournamentStatus === 'completed'
-                                    ? 'Save Records The Final Result'
-                                    : 'Auto-Calculate Or Override For Deals'}
-                            </p>
-                        </div>
+                <PageBar
+                    title="Payout Calculator"
+                    summary="Work Out The Prize Split For This Tournament. Payouts Auto-Calculate From The Prize Pool And Places Paid, Or Override Any Place For A Deal. Once The Tournament Is Completed, Finalize Saves The Final Result."
+                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    innerClassName="max-w-2xl mx-auto"
+                    sticky
+                >
                         <button onClick={handleSave} disabled={saving}
                             className="px-4 py-2 rounded-xl bg-[#31A24C] text-white text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             {tournamentStatus === 'completed' ? 'Finalize' : 'Save'}
                         </button>
-                    </div>
-                </div>
+                </PageBar>
 
                 <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
                     {/* Prize Pool Summary */}

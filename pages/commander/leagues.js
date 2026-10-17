@@ -15,6 +15,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 /* ───────── Status colors ───────── */
 const STATUS_COLORS = {
@@ -38,6 +39,29 @@ const QUAL_PERIODS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'season', label: 'Season' },
   { value: 'custom', label: 'Custom' },
+];
+
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const LEAGUE_STEPS = [
+  {
+    title: 'Leagues Or Free Rolls',
+    body: 'Switch Between Season Leagues And Freeroll Events With Their Qualification Rules.',
+    target: '[data-tour="lg-tabs"]',
+  },
+  {
+    title: 'Create One',
+    body: 'Start A New League Or Free Roll. Free Rolls Qualify Players By Cash Game Hours, Tournament Finishes Or Custom Rules.',
+    target: '[data-tour="lg-create"]',
+  },
+  {
+    title: 'Quick Filters',
+    body: 'On The Free Rolls Tab, Tap Active, Qualified Or Upcoming To Filter The List. Tap Again To Clear.',
+    target: '[data-tour="lg-stats"]',
+  },
+  {
+    title: 'Standings And Qualifiers',
+    body: 'Tap Any League Or Free Roll To Expand It And See Standings, Rules And Qualified Players.',
+  },
 ];
 
 export default function LeaguesAndFreerollsManagement() {
@@ -333,21 +357,13 @@ export default function LeaguesAndFreerollsManagement() {
       <div className="cmd-page">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-[#1877F2]" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Leagues & Free Rolls</h1>
-                <p className="text-sm text-[#64748B]">Manage Leagues, Seasons, And Freeroll Qualification</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Tab Switcher */}
-          <div className="flex gap-1 p-1 bg-[#0D192E] rounded-xl">
+          {/* Tab Switcher, with the page help top right */}
+          <PageBar
+            title="Leagues & Free Rolls"
+            summary="Manage Leagues, Seasons, And Freeroll Qualification."
+            steps={LEAGUE_STEPS}
+          >
+          <div className="flex flex-1 gap-1 p-1 bg-[#0D192E] rounded-xl" data-tour="lg-tabs">
             <button
               onClick={() => setActiveTab('leagues')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'leagues'
@@ -367,6 +383,7 @@ export default function LeaguesAndFreerollsManagement() {
               <Gift className="w-4 h-4" /> Free Rolls
             </button>
           </div>
+          </PageBar>
 
           {/* Toast */}
           {toast && (
@@ -385,7 +402,7 @@ export default function LeaguesAndFreerollsManagement() {
             <>
               {/* Create button */}
               <div className="flex justify-end">
-                <button onClick={() => setShowCreateLeague(!showCreateLeague)}
+                <button onClick={() => setShowCreateLeague(!showCreateLeague)} data-tour="lg-create"
                   className="flex items-center gap-2 px-4 py-2 cmd-btn cmd-btn-primary font-medium rounded-lg">
                   <Plus className="w-4 h-4" /> New League
                 </button>
@@ -531,7 +548,7 @@ export default function LeaguesAndFreerollsManagement() {
           {activeTab === 'freerolls' && (
             <>
               {/* Stats Row - clickable filters */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3" data-tour="lg-stats">
                 <button onClick={() => setFreerollFilter(freerollFilter === 'active' ? null : 'active')}
                   className={`cmd-panel p-3 text-center transition-all cursor-pointer hover:bg-[#132240] ${freerollFilter === 'active' ? 'ring-2 ring-[#1877F2] bg-[#1877F2]/5' : ''}`}>
                   <Gift className="w-5 h-5 text-[#1877F2] mx-auto mb-1" />
@@ -562,7 +579,7 @@ export default function LeaguesAndFreerollsManagement() {
 
               {/* Create button */}
               <div className="flex justify-end">
-                <button onClick={() => setShowCreateFreeroll(!showCreateFreeroll)}
+                <button onClick={() => setShowCreateFreeroll(!showCreateFreeroll)} data-tour="lg-create"
                   className="flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white font-semibold rounded-lg hover:bg-[#1565D0] transition-colors">
                   <Plus className="w-4 h-4" /> New Free Roll
                 </button>

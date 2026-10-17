@@ -19,6 +19,7 @@ import {
   Loader2, RefreshCw, Save, Check, AlertTriangle, Coins, Layers, ChevronRight
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../../src/components/commander/shared/PageBar';
 
 const NAV_ITEMS = [
   { key: 'control', icon: Trophy, label: 'Control', path: '' },
@@ -283,18 +284,16 @@ export default function TDChipCounts() {
       <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-24 font-['Inter']">
 
         {/* ===== HEADER ===== */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-white truncate">Chip Counts</h1>
-            <p className="text-xs text-[#B0B3B8]">
-              {allPlayers.length} Player{allPlayers.length === 1 ? '' : 's'} Across {tables.length} Table{tables.length === 1 ? '' : 's'}
-              {changedCount > 0 ? `, ${changedCount} Unsaved` : ''}
-            </p>
-          </div>
-          <button onClick={() => fetchFloor()} className="p-2 rounded-lg active:bg-[#3A3B3C]" title="Refresh">
+        <PageBar
+          title="Chip Counts"
+          summary="Enter Each Player's Chip Count, Table By Table. The Panel Below Checks That The Chips Counted Match The Chips In Play. Changes Are Held Until You Save."
+          status={`${allPlayers.length} Player${allPlayers.length === 1 ? '' : 's'} Across ${tables.length} Table${tables.length === 1 ? '' : 's'}${changedCount > 0 ? `, ${changedCount} Unsaved` : ''}`}
+          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+        >
+          <button onClick={() => fetchFloor()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" title="Refresh" aria-label="Refresh">
             <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
           </button>
-        </div>
+        </PageBar>
 
         {/* ===== CHIPS ACCOUNTED FOR ===== */}
         <div className="px-4 pt-3">

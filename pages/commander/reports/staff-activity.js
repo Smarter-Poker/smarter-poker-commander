@@ -11,6 +11,7 @@ import AuditLogViewer from '../../../src/components/commander/admin/AuditLogView
 import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import PageBar from '../../../src/components/commander/shared/PageBar';
 
 export default function StaffActivity() {
   useEffect(() => { busEmit.sessionStart('commander-reports-staff-activity'); }, []);
@@ -81,9 +82,11 @@ const params = new URLSearchParams();
         />
         <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
           <div className="bg-[#242526] border-b border-[#3A3B3C]">
-            <div className="px-4 py-3 flex items-center justify-between">
-              <h1 className="text-lg font-bold text-white">Staff Operations</h1>
-            </div>
+            <PageBar
+              title="Staff Operations"
+              summary="What Your Staff Have Done. Incidents And Floor Calls Lists The Floor's Recent Work, And Audit Trail Records Every Sensitive Action With Who Did It And When."
+              className="px-4 py-1.5"
+            />
             <div className="flex px-4 gap-4 pb-0">
               <button
                 onClick={() => setActiveTab('incidents')}

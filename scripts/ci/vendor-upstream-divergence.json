@@ -1,11 +1,6 @@
 {
   "$comment": "Every vendor/commander-shared/src file allowed to differ from Smarter-Poker/commander-shared main. Read scripts/check-vendor-upstream-sync.mjs. This list may only SHRINK: removing an entry means the file is identical again. Adding one is a reviewed decision - say why and which direction the fix goes.",
   "allowed": {
-    "components/commander/admin/ArenaLedger.jsx": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
     "components/commander/members/MemberCard.jsx": {
       "kind": "differs",
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",

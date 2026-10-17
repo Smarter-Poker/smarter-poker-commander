@@ -13,6 +13,7 @@ import useDebounce from '../../src/hooks/useDebounce';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import PageBar from '../../src/components/commander/shared/PageBar';
 
 const INCIDENT_TYPES = [
   { value: 'dispute', label: 'Player Dispute', emoji: '' },
@@ -346,6 +347,29 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
   );
 }
 
+/* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
+const INCIDENT_STEPS = [
+  {
+    title: 'Report An Incident',
+    body: 'Log A Dispute, Rule Violation Or Safety Issue With The Table, Players Involved And Severity.',
+    target: '[data-tour="inc-report"]',
+  },
+  {
+    title: 'At A Glance',
+    body: 'Open, High Or Critical, And Resolved Counts Update As Incidents Are Logged And Closed.',
+    target: '[data-tour="inc-stats"]',
+  },
+  {
+    title: 'Search And Filter',
+    body: 'Search By Player, Table Or Detail, And Switch Between All, Open And Done.',
+    target: '[data-tour="inc-search"]',
+  },
+  {
+    title: 'Resolve',
+    body: 'Tap An Incident To Read It, Add Notes And Mark It Resolved.',
+  },
+];
+
 export default function IncidentsPage() {
   const router = useRouter();
 
@@ -489,25 +513,23 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
       <SEOHead title="Commander - Incidents" description="Incident Management." noindex={true} />
       <div style={{ minHeight: '100vh', background: '#18191A', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
-        {/* Header */}
-        <div style={{ background: '#242526', borderBottom: '2px solid #3A3B3C', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#EF444415', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AlertTriangle size={20} color="#EF4444" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>Incident Log</div>
-            <div style={{ color: '#B0B3B8', fontSize: 12 }}>Track Disputes, Violations, And Safety Issues</div>
-          </div>
-          <button onClick={() => setShowCreateModal(true)}
-            style={{ background: '#EF4444', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+        {/* Header: Report on the left, page help top right */}
+        <PageBar
+          title="Incident Log"
+          summary="Track Disputes, Violations, And Safety Issues."
+          steps={INCIDENT_STEPS}
+          style={{ background: '#242526', borderBottom: '2px solid #3A3B3C', padding: '6px 16px' }}
+        >
+          <button onClick={() => setShowCreateModal(true)} data-tour="inc-report"
+            style={{ background: '#EF4444', color: 'white', border: 'none', borderRadius: 10, padding: '0 16px', minHeight: 44, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
             <Plus size={16} /> Report
           </button>
-        </div>
+        </PageBar>
 
         <div style={{ padding: 16, maxWidth: 640, margin: '0 auto' }}>
 
           {/* Stats Dashboard */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
+          <div data-tour="inc-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
             <div style={{ background: '#242526', borderRadius: 10, padding: 12, textAlign: 'center', border: openCount > 0 ? '1px solid #EF444430' : '1px solid #3A3B3C' }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: openCount > 0 ? '#EF4444' : '#65676B' }}>{openCount}</div>
               <div style={{ fontSize: 10, color: '#B0B3B8', fontWeight: 600 }}>Open</div>
@@ -523,7 +545,7 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
           </div>
 
           {/* Search + Filter */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          <div data-tour="inc-search" style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
               <Search size={16} color="#65676B" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input type="text" value={searchQuery}
