@@ -4,8 +4,12 @@
  * Accepts Bearer token in Authorization header (same pattern as other Commander APIs)
  * Returns { hasAccess: true/false, staff: {...} } 
  */
-const { createClient } = require('../../src/lib/supabaseServerClient');
-const { applyRateLimit, LIMITS } = require('../../src/lib/apiRateLimit');
+// 2026-10-19: these two were `require()`s of ES modules. The bundle handed back
+// a namespace without the named exports, so `LIMITS.read` threw on the first
+// line of every request and this route answered 500 to everyone - logged out
+// or not - instead of an access answer.
+import { createClient } from '../../src/lib/supabaseServerClient';
+import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
 
 let _supabase = null;
@@ -29,15 +33,18 @@ export default async function handler(req, res) {
       try {
           // Get user from Bearer token (same pattern as other Commander APIs)
           const authHeader = req.headers.authorization;
-          if (!authHeader) {
-              return res.status(200).json({ hasAccess: false });
+          // No session is "not signed in" (401), not a server fault and not a
+          // definitive "no access". Callers already treat any non-OK status as
+          // no access.
+          if (!authHeader || !authHeader.startsWith('Bearer ')) {
+              return res.status(401).json({ hasAccess: false, error: 'Authentication required' });
           }
           const token = authHeader.replace('Bearer ', '');
           const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
           const user = authData?.user;
 
           if (authError || !user) {
-              return res.status(200).json({ hasAccess: false });
+              return res.status(401).json({ hasAccess: false, error: 'Invalid or expired session' });
           }
 
           // Check 1: commander_staff table (staff members: owner, manager, floor, etc.)
