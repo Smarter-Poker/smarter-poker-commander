@@ -140,6 +140,31 @@ describe('proxied pages load their own assets (pin 4)', () => {
   });
 });
 
+describe('the SSO landing redeems the hashed magic-link token as a token hash (pin 5b)', () => {
+  // 2026-10-19: sso-exchange returns the HASHED token from generateLink's
+  // action_link. Sent as { email, token } Supabase treats it as the 6-digit
+  // email code and answers 403 otp_expired, so every hop ended on "Sign-In
+  // Failed" while the API probe stayed green.
+  it('auth/sso.js calls verifyOtp with token_hash and never with an email + token pair', () => {
+    const src = code(read(SSO));
+    const call = src.slice(src.indexOf('verifyOtp('), src.indexOf('verifyOtp(') + 200);
+    expect(call).toMatch(/token_hash:\s*data\.token/);
+    expect(call).not.toMatch(/\bemail:/);
+    expect(call).not.toMatch(/\btoken:\s*data\.token/);
+  });
+
+  it('sso-exchange still hands back the action_link token, the value token_hash expects', () => {
+    const src = code(read('pages/api/auth/sso-exchange.js'));
+    expect(src).toMatch(/searchParams\.get\('token'\)/);
+  });
+
+  it('the production probe redeems the exchanged token the same way the page does', () => {
+    const src = code(read('src/lib/probe/loginBridgeProbe.mjs'));
+    expect(src).toMatch(/\/auth\/v1\/verify/);
+    expect(src).toMatch(/token_hash:\s*ex\.json\.token/);
+  });
+});
+
 describe('the SSO button is never dead (pin 5)', () => {
   it('Continue As Smarter.Poker always has a handler and can bridge cross-origin', () => {
     const src = code(read(LOGIN));

@@ -253,6 +253,24 @@ export async function runLoginBridgeProbe(opts = {}) {
     });
     record(leg, 'sso-exchange returns a magic-link OTP payload', ex.status === 200 && !!ex.json?.token && !!ex.json?.email, `status=${ex.status}`);
 
+    // Redeem it exactly as /auth/sso does (verifyOtp({ token_hash, type })).
+    // Until 2026-10-19 this leg stopped at "a payload came back", so it stayed
+    // green while every browser hop died on the redemption: the page sent the
+    // hashed token as an email code and Supabase answered 403 otp_expired.
+    if (ex.status === 200 && ex.json?.token) {
+      const redeem = await http(`${SUPABASE_URL}/auth/v1/verify`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', apikey: SUPABASE_ANON },
+        body: JSON.stringify({ token_hash: ex.json.token, type: ex.json.type || 'magiclink' }),
+      });
+      record(
+        leg,
+        'the exchanged magic link redeems to a session for this user (what /auth/sso does)',
+        redeem.status === 200 && !!redeem.json?.access_token && redeem.json?.user?.id === userId,
+        `status=${redeem.status}${redeem.json?.error_code || redeem.json?.code ? ` code=${redeem.json.error_code || redeem.json.code}` : ''}`
+      );
+    }
+
     const replay = await http(`${CMD}/api/auth/sso-exchange`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token, uid }),
     });

@@ -86,14 +86,23 @@ export default function SSOPage() {
           return;
         }
 
-        // Verify the OTP (magic-link type) to get a real Supabase session
+        // Redeem the magic link for a real Supabase session.
+        //
+        // [2026-10-19] data.token is the HASHED token taken from generateLink's
+        // action_link (sso-exchange), so it must be sent as `token_hash`. It
+        // was sent as `{ email, token }`, which tells Supabase it is the
+        // 6-digit email code; Supabase hashes it again, matches nothing and
+        // answers 403 otp_expired "Token has expired or is invalid". Every
+        // "Continue As Smarter.Poker" hop ended on "Sign-In Failed" this way,
+        // and the browser probe failed on exactly that 403 on every run since
+        // the hop test was added on 2026-09-04.
         const { data: sessionData, error: otpError } = await supabase.auth.verifyOtp({
-          email: data.email,
-          token: data.token,
+          token_hash: data.token,
           type: data.type || 'magiclink',
         });
 
         if (otpError || !sessionData?.session) {
+          reportLoginFailure('sso', otpError || 'magic link redeemed no session', { status: otpError?.status });
           setError('Failed to restore session. Please sign in manually.');
           setStatus('error');
           return;
