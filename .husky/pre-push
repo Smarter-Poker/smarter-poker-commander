@@ -15,3 +15,6 @@ policy_precheck_result() {
 trap policy_precheck_result EXIT
 node "$ROOT/docs/agent-policy/agent-policy.mjs" check || exit 1
 node --test "$ROOT/docs/agent-policy/agent-policy.test.mjs" || exit 1
+
+node --test "$ROOT/tests/explicit-table-access.test.mjs"
+node "$ROOT/scripts/ci/check-explicit-table-access.mjs"

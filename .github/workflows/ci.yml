@@ -19,6 +19,8 @@ jobs:
       driftlog: ${{ steps.drift.outputs.log }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -26,6 +28,13 @@ jobs:
         run: |
           node docs/agent-policy/agent-policy.mjs check
           node --test docs/agent-policy/agent-policy.test.mjs
+
+      - name: Explicit table access boundaries
+        env:
+          TABLE_ACCESS_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          node --test tests/explicit-table-access.test.mjs
+          node scripts/ci/check-explicit-table-access.mjs
 
       - name: Build cost controls
         run: node --test tests/vercel-build-queue.test.mjs
