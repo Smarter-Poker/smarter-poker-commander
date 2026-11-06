@@ -20,11 +20,12 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const cleanEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT = path.resolve(HERE, '../scripts/vercel-should-build.sh');
 
@@ -33,10 +34,10 @@ const SCRIPT = path.resolve(HERE, '../scripts/vercel-should-build.sh');
  * `git diff HEAD~1 HEAD` resolves exactly as it does on Vercel.
  * @returns 0 when the build is SKIPPED, 1 when it PROCEEDS.
  */
-function runGate({ env = {}, changedFile = 'pages/index.js', earlierAppChange = false, missingGit = false } = {}) {
+function runGate({ env = {}, changedFile = 'pages/index.js', earlierAppChange = false, missingGit = false, symlink = false } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'should-build-'));
   const git = (...args) =>
-    execFileSync('git', args, { cwd: dir, stdio: 'pipe', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+    execFileSync('git', args, { cwd: dir, stdio: 'pipe', env: { ...cleanEnv, GIT_CONFIG_GLOBAL: '/dev/null' } });
   try {
     git('init', '-q');
     git('config', 'user.email', 't@t.t');
@@ -53,7 +54,8 @@ function runGate({ env = {}, changedFile = 'pages/index.js', earlierAppChange = 
 
     const target = path.join(dir, changedFile);
     mkdirSync(path.dirname(target), { recursive: true });
-    writeFileSync(target, 'change');
+    if (symlink) symlinkSync(path.join(dir, 'seed.txt'), target);
+    else writeFileSync(target, 'change');
     git('add', '-A');
     git('commit', '-qm', 'change');
 
@@ -62,7 +64,7 @@ function runGate({ env = {}, changedFile = 'pages/index.js', earlierAppChange = 
       execFileSync('bash', [SCRIPT], {
         cwd: dir,
         stdio: 'pipe',
-        env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', VERCEL_GIT_PREVIOUS_SHA: previous, ...env },
+        env: { ...cleanEnv, GIT_CONFIG_GLOBAL: '/dev/null', VERCEL_GIT_PREVIOUS_SHA: previous, ...env },
       });
       return 0;
     } catch (err) {
@@ -181,7 +183,7 @@ test('a baseline beyond the provider shallow clone is fetched once and compared'
   const source = path.join(dir, 'source');
   const clone = path.join(dir, 'clone');
   mkdirSync(source);
-  const git = (...args) => execFileSync('git', args, { cwd: source, stdio: 'pipe', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+  const git = (...args) => execFileSync('git', args, { cwd: source, stdio: 'pipe', env: { ...cleanEnv, GIT_CONFIG_GLOBAL: '/dev/null' } });
   try {
     git('init', '-q'); git('config', 'user.email', 'test@example.invalid'); git('config', 'user.name', 'Build gate test');
     writeFileSync(path.join(source, 'README.md'), 'baseline');
@@ -202,4 +204,14 @@ test('a baseline beyond the provider shallow clone is fetched once and compared'
     rmSync(path.join(source, 'app.js')); git('commit', '-qam', 'delete app');
     assert.throws(() => execFileSync('bash', [SCRIPT], { cwd: source, stdio: 'pipe', env: { ...process.env, ...PRODUCTION, VERCEL_GIT_PREVIOUS_SHA: deployed } }), error => error.status === 1);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('reviewed regular Node-only tools skip a production rebuild, including the entire backlog',()=>{
+  for (const file of ['.husky/pre-push','scripts/ci/execution-preview.mjs','vendor/commander-shared/src/lib/agentExecution.mjs','scripts/vercel-should-build.mjs','scripts/vercel-should-build.sh']) {
+    assert.equal(runGate({env:PRODUCTION,changedFile:file}),0,file);
+    assert.equal(runGate({env:PRODUCTION,changedFile:file,earlierAppChange:true}),1,file);
+    assert.equal(runGate({env:PRODUCTION,changedFile:file,symlink:true}),1,file);
+  }
+  for (const file of ['scripts/ci/unknown-tool.mjs','vendor/commander-shared/src/lib/runtime.mjs','next.config.js','pages/index.js'])
+    assert.equal(runGate({env:PRODUCTION,changedFile:file}),1,file);
 });

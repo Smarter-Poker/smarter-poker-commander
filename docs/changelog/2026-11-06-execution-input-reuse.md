@@ -1,0 +1,7 @@
+# Execution input reuse
+
+The directly invoked preview now consumes the protected shared check inventory and evidence decision implementation. It records actual owners, commands, invariants, dependencies, runtime/environment, observed-duration availability and distinct CI/production authority. Unknown dependencies preserve coverage. Required gates remain selected. Overlap is reported for review; it never retires a gate automatically or invents a universal accounting audit.
+
+The existing Vercel ignore command now recognizes exact reviewed Node-only agent tools, including their shared source module. These files have no application consumer. The full diff from the last successful production deployment still controls the decision, so an earlier unpublished application change cannot hide behind a tool-only commit. Neighbouring scripts or vendor modules, missing history and explicit redeployment of the same revision still build. Symlink/unsupported mode evidence refuses this new optimization. Existing provider source integration and CI application checks remain authoritative.
+
+The ignored-build command itself is installed and executed by Vercel before any application build. A source-only merge can retain the current runtime; verify the provider's actual ignore result and protected source rather than forcing a dummy app change to move its health SHA. No alternate publisher or watcher is introduced.
