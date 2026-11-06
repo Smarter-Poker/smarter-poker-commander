@@ -6,6 +6,8 @@ if ! command -v node >/dev/null 2>&1 && [ -x /opt/homebrew/bin/node ]; then
   PATH="$PATH:/opt/homebrew/bin"; export PATH
 fi
 POLICY_PRECHECK_STARTED=$(date +%s)
+POLICY_PRECHECK_RECEIPT=$(git rev-parse --git-path agent-policy-preflight.json)
+rm -f -- "$POLICY_PRECHECK_RECEIPT"
 policy_precheck_result() {
   policy_exit=$?
   trap - EXIT
@@ -13,6 +15,11 @@ policy_precheck_result() {
   exit "$policy_exit"
 }
 trap policy_precheck_result EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+node "$ROOT/scripts/ci/execution-preview.mjs" || exit 1
+node --test "$ROOT/tests/agent-execution-preview.test.mjs" || exit 1
 node "$ROOT/docs/agent-policy/agent-policy.mjs" check || exit 1
 node --test "$ROOT/docs/agent-policy/agent-policy.test.mjs" || exit 1
 

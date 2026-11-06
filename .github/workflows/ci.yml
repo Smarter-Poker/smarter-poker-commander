@@ -26,6 +26,8 @@ jobs:
           node-version: '20'
       - name: Agent policy integrity and delivery scenarios
         run: |
+          node scripts/ci/execution-preview.mjs
+          node --test tests/agent-execution-preview.test.mjs
           node docs/agent-policy/agent-policy.mjs check
           node --test docs/agent-policy/agent-policy.test.mjs
 
