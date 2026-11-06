@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, renameSync, appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { inspectCandidate, classifyDelivery } from '../../docs/agent-policy/agent-policy.mjs';
-import { inputFingerprint } from '../../vendor/commander-shared/src/lib/agentExecution.mjs';
+import { inputFingerprint, executionInventory, previewExecution } from '../../vendor/commander-shared/src/lib/agentExecution.mjs';
 const root = process.cwd();
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
 const git = (...args) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8', timeout: 30000 }).trim();
@@ -18,8 +18,21 @@ if (process.argv.includes('--working-tree') && candidate.paths) {
     candidate.source = 'working-tree-advisory-only';
   } catch { candidate = { delivery: { components: ['unclassified'] }, paths: null, status: 'unknown' }; }
 }
+const owningWorkflow = '.github/workflows/ci.yml';
+const check = (id, command, inputs, risks, invariant, owner = owningWorkflow) => ({id, command, inputs, risks, invariant, owner,
+  runtime: 'Configured local Node / hosted Node20', environment: 'Owning repository check', always: false,
+  durationSeconds: null, replaces: null});
+const inventory = executionInventory([
+  check('policy', ['node','docs/agent-policy/agent-policy.mjs','check'], ['docs/agent-policy/','AGENTS.md','CLAUDE.md','PUBLISHING.md','AGENT-PLAYBOOK.md'], ['documentation','verification'], 'Current operating policy matches maintained source'),
+  check('vendor', ['node','scripts/check-vendor-drift.mjs'], ['vendor/','scripts/check-vendor-drift.mjs','package.json','package-lock.json'], ['verification','security'], 'Shared consumer imports and exports remain valid'),
+  check('ci-build', ['npm','run','build'], ['src/','pages/','public/','vendor/','package.json','package-lock.json','next.config.js','tsconfig.json'], ['client','verification'], 'Application compiles under locked inputs'),
+  check('tooling', ['node','--test','tests/agent-execution-preview.test.mjs'], ['scripts/ci/execution-preview.mjs','tests/agent-execution-preview.test.mjs','.husky/pre-push','vendor/commander-shared/src/lib/agentExecution.mjs'], ['tooling','verification'], 'Preview and interrupted receipts preserve actual gate authority'),
+  check('production-build', ['npm','run','build'], ['src/','pages/','public/','vendor/','package.json','package-lock.json','next.config.js','tsconfig.json','vercel.json','scripts/vercel-should-build.mjs'], ['client'], 'Application compiles under locked inputs', 'vercel.json existing Git source integration'),
+]);
+const dependencyPreview = previewExecution(inventory, {paths: candidate.paths || [], complete: Array.isArray(candidate.paths),
+  required:['policy','vendor','ci-build']});
 const plan = {
-  version: 1, mode: 'shadow', candidate,
+  version: 1, mode: 'shadow', candidate, inventory, dependencyPreview,
   adapterFingerprint: inputFingerprint(root, {
     inputs: ['.husky/pre-push', 'scripts/ci/execution-preview.mjs',
       'docs/agent-policy/agent-policy.mjs', 'vendor/commander-shared/src/lib/agentExecution.mjs'],

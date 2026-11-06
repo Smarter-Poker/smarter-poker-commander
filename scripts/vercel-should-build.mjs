@@ -34,9 +34,25 @@ try {
   const changed = git('diff', '--name-only', '--no-renames', '-z', previous, head, '--')
     .split('\0').filter(Boolean);
   const documentation = /^(docs\/|references\/|__tests__\/|playwright\/|e2e\/|tests\/|\.github\/)|^(README|CHANGELOG|CONTRIBUTING|AGENTS|AGENT-PLAYBOOK|PUBLISHING|CLAUDE)\.md$/;
-  const appFile = changed.find(file => !documentation.test(file));
+  // Exact Node-only delivery tools have no app import/export consumer. Keep
+  // neighbouring scripts/vendor paths conservative and the full deployed backlog.
+  const tools = new Set(['.husky/pre-push','scripts/ci/execution-preview.mjs',
+    'vendor/commander-shared/src/lib/agentExecution.mjs',
+    'scripts/vercel-should-build.mjs','scripts/vercel-should-build.sh']);
+  const toolChanges = changed.filter(file => tools.has(file));
+  if (toolChanges.length) {
+    const raw = git('diff','--raw','--no-abbrev','--no-renames','-z',previous,head,'--',...toolChanges);
+    const parts = raw.split('\0');
+    if (parts.pop() !== '' || parts.length !== toolChanges.length * 2) throw Error('Incomplete tool mode evidence');
+    for (let i=0;i<parts.length;i+=2) {
+      const mode = /^:(\d{6}) (\d{6}) [0-9a-f]{40} [0-9a-f]{40} [AMD]$/.exec(parts[i]);
+      if (!mode || ![mode[1],mode[2]].every(value=>['000000','100644','100755'].includes(value)) || !tools.has(parts[i+1]))
+        throw Error('Unknown or nonregular tooling input');
+    }
+  }
+  const appFile = changed.find(file => !documentation.test(file) && !tools.has(file));
   if (appFile) finish(true, `application input changed: ${JSON.stringify(appFile)}`);
-  finish(false, `${changed.length} documentation/test changes since ${previous.slice(0, 12)}`);
+  finish(false, `${changed.length} documentation/test/tool changes since ${previous.slice(0, 12)}`);
 } catch {
   finish(true, 'Git history unavailable; preserving the application release');
 }

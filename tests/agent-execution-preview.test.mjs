@@ -32,6 +32,10 @@ test('consumer preview records the actual candidate without executing publicatio
     assert.equal(plan.candidate.head, head);
     assert.deepEqual(plan.candidate.delivery.components, ['client']);
     assert.equal(plan.mode, 'shadow');
+    assert.equal(plan.inventory.checks.length, 5);
+    assert.equal(plan.dependencyPreview.checks.find(c=>c.id==='ci-build').selected,true);
+    assert.ok(plan.dependencyPreview.overlap.some(row=>row.checks.includes('production-build')));
+    assert.equal(plan.dependencyPreview.estimatedSeconds,null);
     assert.match(plan.adapterFingerprint, /^[0-9a-f]{64}$/);
     assert.equal(git('rev-parse', 'HEAD'), head);
     mkdirSync(join(fixture, 'supabase'));
@@ -45,6 +49,7 @@ test('consumer preview records the actual candidate without executing publicatio
     });
     const unknown = JSON.parse(readFileSync(join(fixture, '.git/agent-execution-plan.json')));
     assert.equal(unknown.candidate.status, 'unknown');
+    assert.equal(unknown.dependencyPreview.checks.every(c=>c.selected),true);
     assert.deepEqual(unknown.candidate.delivery.components, ['unclassified']);
   } finally { rmSync(fixture, { recursive: true, force: true }); }
 });
