@@ -25,3 +25,41 @@ node --test "$ROOT/docs/agent-policy/agent-policy.test.mjs" || exit 1
 
 node --test "$ROOT/tests/explicit-table-access.test.mjs"
 node "$ROOT/scripts/ci/check-explicit-table-access.mjs"
+
+# Vercel deploy config & lockfile parity (zero external deps; runs on every push
+# including config-only pushes modifying vercel.json/package.json/package-lock.json/tsconfig.json).
+PUSH_BASE=$(git merge-base HEAD refs/remotes/origin/main 2>/dev/null || true)
+CHANGED_FILES=""
+CONTENT_FILES=""
+if [ -n "$PUSH_BASE" ]; then
+  CHANGED_FILES=$(git diff --name-only "$PUSH_BASE" HEAD 2>/dev/null || true)
+  CONTENT_FILES=$(git diff --name-only --diff-filter=ACMR "$PUSH_BASE" HEAD 2>/dev/null || true)
+fi
+DEPLOY_CONFIG_FILES=$(printf '%s\n' "$CHANGED_FILES" | grep -E '^(vercel|package|package-lock|tsconfig|jsconfig)\.json$|^config/.*\.json$' || true)
+JS_TS_FILES=$(printf '%s\n' "$CHANGED_FILES" | grep -E '\.(js|jsx|mjs|cjs|ts|tsx)$' || true)
+
+if [ -n "$DEPLOY_CONFIG_FILES" ]; then
+  for cfg in $(printf '%s\n' "$CONTENT_FILES" | grep -E '^(vercel|package|package-lock|tsconfig|jsconfig)\.json$|^config/.*\.json$' || true); do
+    [ -f "$ROOT/$cfg" ] || continue
+    if ! node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$ROOT/$cfg" >/dev/null 2>&1; then
+      echo "PUSH BLOCKED: $cfg is not valid JSON." >&2
+      exit 1
+    fi
+  done
+fi
+node --test "$ROOT/tests/vercel-json-is-deployable.law.test.mjs" || exit 1
+
+# AST syntax, duplicate-binding, case-exact local/@/* import, export parity,
+# Next.js route/page invariants, config JSON, and simulated merge-tree gate.
+if [ -n "$JS_TS_FILES" ] || [ -z "$PUSH_BASE" ]; then
+  node -e "require.resolve('typescript', { paths: [process.argv[1]] })" "$ROOT" >/dev/null 2>&1 || {
+    echo "PUSH BLOCKED: install locked private dependencies; typescript is unavailable for AST gate." >&2
+    exit 1
+  }
+  node "$ROOT/scripts/ci/check-module-parse-and-bindings.mjs" --repo "$ROOT" --merge-against refs/remotes/origin/main || exit 1
+  if printf '%s\n' "$CHANGED_FILES" | grep -qE '^(scripts/ci/check-module-parse-and-bindings\.mjs|tests/module-parse-and-bindings\.law\.test\.mjs)$'; then
+    node --test "$ROOT/tests/module-parse-and-bindings.law.test.mjs" || exit 1
+  fi
+elif [ -n "$DEPLOY_CONFIG_FILES" ]; then
+  node "$ROOT/scripts/ci/check-module-parse-and-bindings.mjs" --repo "$ROOT" --changed-since "$PUSH_BASE" --merge-against refs/remotes/origin/main || exit 1
+fi

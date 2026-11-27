@@ -41,6 +41,9 @@ jobs:
       - name: Build cost controls
         run: node --test tests/vercel-build-queue.test.mjs
 
+      - name: Vercel config & lockfile deployability law
+        run: node --test tests/vercel-json-is-deployable.law.test.mjs
+
       # Vendor drift guard — ported from World Hub build-safety-gate CHECK 14.
       # Runs BEFORE npm install (dependency-free static analysis). Guards the
       # two vendoring-drift classes behind the Aug 2026 prod incidents:
@@ -92,6 +95,10 @@ jobs:
         run: node scripts/check-vendor-upstream-sync.mjs
       - name: Install
         run: npm install --legacy-peer-deps
+      - name: Module parse, bindings, exports, routes & merge-tree parity
+        run: |
+          node scripts/ci/check-module-parse-and-bindings.mjs --merge-against "origin/${{ github.base_ref || 'main' }}"
+          node --test tests/module-parse-and-bindings.law.test.mjs
       # BLOCKING. `next lint` was advisory and red for months (deleted 2026-09-04),
       # which is how `completeLogin is not defined` sat in pages/commander/login.js
       # while every production login failed with that exact ReferenceError
