@@ -4,6 +4,10 @@ import { supabase } from '../../../lib/supabase';
 import { commanderSignOut } from '../../../lib/commanderLogout';
 import { useHeaderPortrait } from '../../../lib/commander/headerPortrait';
 
+// Commander-only WebP header artwork must resolve to commander.smarter.poker
+// in production even when this page is proxied through smarter.poker/commander/*.
+const ASSET_PREFIX = process.env.NEXT_PUBLIC_COMMANDER_ASSET_PREFIX || '';
+
 const MENU_ITEMS = [
   ['Dashboard', '/commander/dashboard'],
   ['Waitlist Desk', '/commander/waitlist/desk'],
@@ -63,12 +67,17 @@ export default function StandaloneGlobalHeader() {
           line-height: 0;
           isolation: isolate;
         }
-        .standalone-approved-header__picture { display: contents; }
-        .standalone-approved-header__art {
+        .standalone-approved-header__picture {
           display: block;
           width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-          height: auto;
           margin-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+          aspect-ratio: 1648 / 168;
+          overflow: hidden;
+        }
+        .standalone-approved-header__art {
+          display: block;
+          width: 100%;
+          height: 100%;
           aspect-ratio: 1648 / 168;
           object-fit: contain;
           object-position: center;
@@ -217,8 +226,8 @@ export default function StandaloneGlobalHeader() {
         {/* 2026-11-28: the same approved artwork as WebP (41 KB at 1648w, 16 KB at 824w,
             against 302 KB of PNG); the PNG stays as the fallback source. */}
         <picture className="standalone-approved-header__picture">
-          <source type="image/webp" srcSet="/images/global-header/global-header-824.webp 824w, /images/global-header/global-header-desktop.webp 1648w" sizes="100vw" />
-          <img src="/images/global-header/global-header-desktop.png" alt="" width="1648" height="168" className="standalone-approved-header__art" aria-hidden="true" fetchpriority="high" decoding="sync" />
+          <source type="image/webp" srcSet={`${ASSET_PREFIX}/images/global-header/global-header-824.webp 824w, ${ASSET_PREFIX}/images/global-header/global-header-desktop.webp 1648w`} sizes="100vw" />
+          <img src={`${ASSET_PREFIX}/images/global-header/global-header-desktop.png`} alt="" width="1648" height="168" className="standalone-approved-header__art" aria-hidden="true" fetchpriority="high" decoding="sync" />
         </picture>
         <div className="standalone-approved-header__controls">
           <button type="button" className="standalone-approved-header__button standalone-approved-header__menu" onClick={() => setMenuOpen(true)} aria-label="Open Menu" />
