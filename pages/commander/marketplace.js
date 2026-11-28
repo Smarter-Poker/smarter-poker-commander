@@ -14,10 +14,14 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import useDebounce from '../../src/hooks/useDebounce';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { diffDaysKeys } from '../../src/lib/commander/businessDate';
+import { useBusinessToday } from '../../src/hooks/useVenueTimeZone';
 
 const GAME_TYPES = ['nlhe', 'plo', 'plo8', 'mixed', 'stud', 'razz', 'omaha'];
 
 function RentEquipmentModal({ isOpen, onClose, equipment, venueId, onSuccess }) {
+  // Earliest pickable date: today at the venue (null until mounted).
+  const today = useBusinessToday();
   const [formData, setFormData] = useState({
     start_date: '',
     end_date: '',
@@ -28,7 +32,7 @@ function RentEquipmentModal({ isOpen, onClose, equipment, venueId, onSuccess }) 
 
   // Calculate days
   const days = formData.start_date && formData.end_date
-    ? Math.max(1, Math.ceil((new Date(formData.end_date) - new Date(formData.start_date)) / (1000 * 60 * 60 * 24)) + 1)
+    ? Math.max(1, diffDaysKeys(formData.start_date, formData.end_date) + 1)
     : 1;
 
   async function handleSubmit() {
@@ -104,7 +108,7 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
                   type="date"
                   value={formData.start_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={today || undefined}
                   className="cmd-input w-full"
                 />
               </div>
@@ -115,7 +119,7 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
                   type="date"
                   value={formData.end_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                  min={formData.start_date || new Date().toISOString().split('T')[0]}
+                  min={formData.start_date || today || undefined}
                   className="cmd-input w-full"
                 />
               </div>
@@ -163,6 +167,7 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
 }
 
 function BookDealerModal({ isOpen, onClose, dealer, venueId, onSuccess }) {
+  const today = useBusinessToday();
   const [formData, setFormData] = useState({
     date: '',
     start_time: '18:00',
@@ -248,7 +253,7 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={today || undefined}
                   className="cmd-input w-full"
                 />
               </div>

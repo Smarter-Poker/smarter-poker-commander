@@ -8,6 +8,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { addDaysToKey, businessDateKey, businessDayRange, isDateKey } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -91,9 +93,11 @@ async function getDailyAnalytics(req, res) {
       query = query.gte('date', start_date).lte('date', end_date)
     } else {
       // Default to last N days
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - parseInt(days));
-      query = query.gte('date', startDate.toISOString().split('T')[0])
+      // `date` is a venue business date (DATE column): step back from the
+      // venue's today, not the UTC one.
+      const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
+      const today = businessDateKey(new Date(), timeZone);
+      query = query.gte('date', addDaysToKey(today, -(parseInt(days, 10) || 0)))
     }
 
     const { data, error } = await query;
@@ -172,29 +176,33 @@ async function calculateDailyAnalytics(req, res) {
       return res.status(403).json({ error: 'Analytics access requires manager or owner role' });
     }
 
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
+    const targetDate = isDateKey(date) ? date : businessDateKey(new Date(), timeZone);
+    // The venue's business day as real instants (a bare `${date}T00:00:00`
+    // is read as UTC midnight by Postgres, six hours off in Central).
+    const day = businessDayRange(targetDate, timeZone);
 
     // Calculate analytics from sessions
     const { data: sessions } = await getSupabase()
       .from('commander_player_sessions')
       .select('*')
       .eq('venue_id', venue_id)
-      .gte('check_in_at', `${targetDate}T00:00:00`)
-      .lt('check_in_at', `${targetDate}T23:59:59`)
+      .gte('check_in_at', day.start)
+      .lt('check_in_at', day.end)
 
     const { data: tournaments } = await getSupabase()
       .from('commander_tournaments')
       .select('*')
       .eq('venue_id', venue_id)
-      .gte('scheduled_start', `${targetDate}T00:00:00`)
-      .lt('scheduled_start', `${targetDate}T23:59:59`)
+      .gte('scheduled_start', day.start)
+      .lt('scheduled_start', day.end)
 
     const { data: awards } = await getSupabase()
       .from('commander_promotion_awards')
       .select('*')
       .eq('venue_id', venue_id)
-      .gte('created_at', `${targetDate}T00:00:00`)
-      .lt('created_at', `${targetDate}T23:59:59`)
+      .gte('created_at', day.start)
+      .lt('created_at', day.end)
 
     // Calculate metrics
     const uniquePlayers = new Set(sessions?.map(s => s.player_id).filter(Boolean))

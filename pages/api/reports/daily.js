@@ -6,6 +6,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDateKey, businessDayRange, isDateKey, zonedParts } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -44,9 +46,14 @@ export default async function handler(req, res) {
       return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
     }
 
-    const reportDate = date || new Date().toISOString().split('T')[0];
-    const startOfDay = `${reportDate}T00:00:00.000Z`;
-    const endOfDay = `${reportDate}T23:59:59.999Z`;
+    // The report covers one VENUE business day: local midnight to local
+    // midnight. It was the UTC day, so a Central room's 6 PM - midnight (its
+    // busiest hours) counted toward the next day's report.
+    const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
+    const reportDate = isDateKey(date) ? date : businessDateKey(new Date(), timeZone);
+    const day = businessDayRange(reportDate, timeZone);
+    const startOfDay = day.start;
+    const endOfDay = new Date(new Date(day.end).getTime() - 1).toISOString();
 
     try {
       // Fetch games that were active on this date
@@ -119,7 +126,8 @@ export default async function handler(req, res) {
         hourlyData[i] = { players: 0, tables: 0 };
       }
       sessions.forEach(s => {
-        const hour = new Date(s.check_in_at).getHours();
+        // Hour of day at the venue (getHours() was the server's UTC hour).
+        const hour = zonedParts(new Date(s.check_in_at), timeZone)?.hour ?? 0;
         hourlyData[hour].players++;
       });
 

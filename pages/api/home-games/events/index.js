@@ -8,6 +8,7 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardUser } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/apiErrorHandler';
+import { addDaysToKey, businessDateKey, venueTimeZone } from '../../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -83,7 +84,7 @@ async function listEvents(req, res) {
       .from('commander_home_games')
       .select(`
         *,
-        commander_home_groups (id, name),
+        commander_home_groups (id, name, timezone, state),
         profiles:host_id (id, display_name, avatar_url),
         commander_home_rsvps (id, user_id, response)
       `)
@@ -98,16 +99,22 @@ async function listEvents(req, res) {
     }
 
     if (upcoming === 'true') {
-      query = query.gte('scheduled_date', new Date().toISOString().split('T')[0]);
+      // Coarse SQL bound (a day of slack either side of every US zone), then
+      // the exact per-game cut below, in the game's own calendar.
+      query = query.gte('scheduled_date', addDaysToKey(businessDateKey(new Date(), 'UTC'), -1));
     }
 
     if (host_id) {
       query = query.eq('host_id', host_id);
     }
 
-    const { data, error } = await query.limit(50);
+    let { data, error } = await query.limit(50);
 
     if (error) throw error;
+
+    if (upcoming === 'true') {
+      data = (data || []).filter(event => isUpcomingHomeGame(event));
+    }
 
     // Add user's RSVP status
     data?.forEach(event => {
@@ -224,7 +231,7 @@ async function createEvent(req, res) {
       })
       .select(`
         *,
-        commander_home_groups (id, name),
+        commander_home_groups (id, name, timezone, state),
         profiles:host_id (id, display_name, avatar_url)
       `)
       .maybeSingle();
@@ -247,4 +254,18 @@ async function createEvent(req, res) {
     console.warn('Create event error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
+}
+
+/**
+ * A game is upcoming while its scheduled_date has not passed in ITS OWN zone
+ * (game timezone, else group timezone, else group state, else Central).
+ */
+function isUpcomingHomeGame(event) {
+  if (!event?.scheduled_date) return true;
+  const group = event.commander_home_groups || {};
+  const today = businessDateKey(new Date(), venueTimeZone({
+    timezone: event.timezone || group.timezone,
+    state: group.state,
+  }));
+  return String(event.scheduled_date).slice(0, 10) >= today;
 }

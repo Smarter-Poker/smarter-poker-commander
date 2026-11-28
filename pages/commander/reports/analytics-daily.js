@@ -12,8 +12,11 @@ import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import { addDaysToKey, browserTimeZone, businessDateKey, formatDateKey } from '../../../src/lib/commander/businessDate';
+import useVenueTimeZone from '../../../src/hooks/useVenueTimeZone';
 
 export default function AnalyticsDailyReport() {
+  const venueTimeZone = useVenueTimeZone();
   useEffect(() => { busEmit.sessionStart('commander-reports-analytics-daily'); }, []);
   const router = useRouter();
   const [staff, setStaff] = useState(null);
@@ -46,13 +49,14 @@ export default function AnalyticsDailyReport() {
 
     if (staff?.venue_id) fetchAnalytics();
     return () => _c.abort();
-  }, [staff, range]);
+  }, [staff, range, venueTimeZone]);
 
   const fetchAnalytics = async(signal) => {
     setLoading(true);
     try {
-const endDate = new Date().toISOString().split('T')[0];
-      const startDate = new Date(Date.now() - range * 86400000).toISOString().split('T')[0];
+// The window ends on the venue's business date, not the UTC one.
+      const endDate = businessDateKey(new Date(), venueTimeZone || browserTimeZone());
+      const startDate = addDaysToKey(endDate, -range);
       const json = await commanderFetchJSON(`/api/commander/analytics/daily?venue_id=${staff.venue_id}&start_date=${startDate}&end_date=${endDate}&days=${range}`, {});
       if (json.analytics) {
         setData(Array.isArray(json.analytics) ? json.analytics : [json.analytics]);
@@ -189,7 +193,7 @@ const endDate = new Date().toISOString().split('T')[0];
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {[...data].sort((a, b) => a.date > b.date ? 1 : -1).slice(-14).map(d => {
                     const pct = ((d.total_sessions || 0) / maxSessions) * 100;
-                    const dateLabel = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const dateLabel = formatDateKey(d.date, { month: 'short', day: 'numeric' });
                     return (
                       <div key={d.date} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ fontSize: 11, color: '#65676B', minWidth: 50, textAlign: 'right' }}>{dateLabel}</div>
@@ -212,7 +216,7 @@ const endDate = new Date().toISOString().split('T')[0];
                   {[...data].sort((a, b) => a.date > b.date ? 1 : -1).slice(-14).map(d => {
                     const rev = parseFloat(d.time_revenue || 0) + parseFloat(d.tournament_fees || 0);
                     const pct = (rev / maxRevenue) * 100;
-                    const dateLabel = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const dateLabel = formatDateKey(d.date, { month: 'short', day: 'numeric' });
                     return (
                       <>
                         <div key={d.date} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -246,7 +250,7 @@ const endDate = new Date().toISOString().split('T')[0];
                       {[...data].sort((a, b) => a.date > b.date ? -1 : 1).map(d => (
                         <tr key={d.date} style={{ borderBottom: '2px solid #F0F2F5' }}>
                           <td style={{ padding: '8px 6px', fontWeight: 600, color: '#1C2526', whiteSpace: 'nowrap' }}>
-                            {new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {formatDateKey(d.date, { weekday: 'short', month: 'short', day: 'numeric' })}
                           </td>
                           <td style={{ padding: '8px 6px', textAlign: 'right' }}>{d.total_sessions || 0}</td>
                           <td style={{ padding: '8px 6px', textAlign: 'right' }}>{d.unique_players || 0}</td>

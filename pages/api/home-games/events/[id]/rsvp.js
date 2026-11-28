@@ -19,6 +19,7 @@ import {
   MANAGER_RSVP_SELECT,
   toManagerRsvpDto,
 } from '../../../../../src/lib/home-games/rsvpBoundary';
+import { businessDateKey, venueTimeZone } from '../../../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -191,7 +192,7 @@ async function submitRsvp(req, res, eventId) {
     // Get event
     const { data: event, error: eventError } = await getSupabase()
       .from('commander_home_games')
-      .select('group_id, host_id, max_players, allow_guests, guest_limit, status, scheduled_date, start_time, rsvps_closed, rsvp_closes_at, cancelled_at')
+      .select('group_id, host_id, max_players, allow_guests, guest_limit, status, scheduled_date, start_time, timezone, rsvps_closed, rsvp_closes_at, cancelled_at')
       .eq('id', eventId)
       .maybeSingle();
 
@@ -217,22 +218,10 @@ async function submitRsvp(req, res, eventId) {
     if (event.rsvp_closes_at && new Date(event.rsvp_closes_at).getTime() <= Date.now()) {
       return res.status(400).json({ error: 'RSVPs are closed for this event' });
     }
-    // Belt-and-suspenders: even if status wasn't flipped by the status cron,
-    // reject RSVPs to past-date events. scheduled_date is a DATE column; we
-    // compare against today in UTC. Edge case: if a cron hasn't run, a host
-    // could still accept RSVPs for games that already happened, which would
-    // pollute flake-strike logic and review-eligibility checks.
-    if (event.scheduled_date) {
-      const todayUTC = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-      if (String(event.scheduled_date) < todayUTC) {
-        return res.status(400).json({ error: 'This event has already happened' });
-      }
-    }
-
     const [groupResult, membershipResult] = await Promise.all([
       getSupabase()
         .from('commander_home_groups')
-        .select('id, owner_id, is_active')
+        .select('id, owner_id, is_active, timezone, state')
         .eq('id', event.group_id)
         .maybeSingle(),
       getSupabase()
@@ -249,6 +238,20 @@ async function submitRsvp(req, res, eventId) {
     }
     if (groupResult.data.is_active === false) {
       return res.status(409).json({ error: 'This group is not accepting RSVPs' });
+    }
+    // Belt-and-suspenders: even if status wasn't flipped by the status cron,
+    // reject RSVPs to past-date events. scheduled_date is a DATE column in the
+    // game's own local calendar, so it is compared with today WHERE THE GAME
+    // IS (event timezone, else the group's, else its state's). Comparing with
+    // the UTC date refused RSVPs to tonight's game from 6 PM Central on.
+    if (event.scheduled_date) {
+      const gameToday = businessDateKey(new Date(), venueTimeZone({
+        timezone: event.timezone || groupResult.data.timezone,
+        state: groupResult.data.state,
+      }));
+      if (String(event.scheduled_date).slice(0, 10) < gameToday) {
+        return res.status(400).json({ error: 'This event has already happened' });
+      }
     }
 
     const access = resolveGroupMembershipAccess({

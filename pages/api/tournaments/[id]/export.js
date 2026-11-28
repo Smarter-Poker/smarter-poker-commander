@@ -30,6 +30,7 @@ import { buildHendonMobCSV, buildHendonMobJSON } from '../../exports/hendon-mob'
 import { entryBountyWinnings, entryBountyValue, hasBounties } from '../../../../src/lib/commander/tournamentBounty';
 import { assessEntryW2G, entryTotalInvested } from '../../../../src/lib/commander/taxEvents';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
+import { businessDateKey, venueTimeZone } from '../../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -184,7 +185,7 @@ export default async function handler(req, res) {
 async function loadEventRows(tournamentId) {
   const { data: tournament } = await getSupabase()
     .from('commander_tournaments')
-    .select('*, poker_venues:venue_id (id, name, city, state, country, address, zip)')
+    .select('*, poker_venues:venue_id (id, name, city, state, country, address, zip, timezone)')
     .eq('id', tournamentId)
     .maybeSingle();
 
@@ -246,15 +247,20 @@ async function loadTaxEvents(tournament, entries) {
 
   const raw = tournament.ended_at || tournament.actual_start || tournament.scheduled_start;
   const d = raw ? new Date(raw) : null;
-  const day = d && !Number.isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : null;
-  if (!day) return [];
+  if (!d || Number.isNaN(d.getTime())) return [];
+  // Events are dated on the venue-local day since 2026-11-28 and on the UTC
+  // day before it; match either so older events are still found.
+  const days = [...new Set([
+    businessDateKey(d, venueTimeZone(tournament.poker_venues)),
+    businessDateKey(d, 'UTC'),
+  ])];
 
   try {
     const { data } = await getSupabase()
       .from('commander_tax_events')
       .select(COLUMNS)
       .eq('venue_id', tournament.venue_id)
-      .eq('event_date', day)
+      .in('event_date', days)
       .in('player_id', playerIds)
       .limit(500);
     return data || [];

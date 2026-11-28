@@ -11,6 +11,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { yearOfKey } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -230,7 +231,9 @@ async function generateW2G(req, res, staff) {
       // SSN data is not stored or echoed by this API.
       winner_name: playerName,
       // Meta
-      tax_year: new Date(event.event_date).getFullYear(),
+      // event_date is a DATE: its year, read from the string (a Date reading
+      // depends on the server zone and is the previous year on Jan 1 in the US).
+      tax_year: yearOfKey(event.event_date),
       generated_at: new Date().toISOString()
     };
 

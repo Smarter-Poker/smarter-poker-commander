@@ -8,6 +8,8 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { guardStaff, verifyStaffSession } from '../../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../../src/lib/apiErrorHandler';
+import { businessDayRange } from '../../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -134,7 +136,7 @@ async function addOrUpdateEntry(req, res, leaderboardId) {
     // Get leaderboard
     const { data: leaderboard } = await getSupabase()
       .from('commander_leaderboards')
-      .select('id, venue_id, leaderboard_type, status')
+      .select('id, venue_id, leaderboard_type, status, start_date, end_date')
       .eq('id', leaderboardId)
       .maybeSingle();
 
@@ -219,14 +221,21 @@ async function calculateAllEntries(req, res, leaderboard) {
       });
     }
 
-    // Get sessions within the leaderboard period
-    const { data: sessions } = await getSupabase()
+    // Get sessions within the leaderboard period: from the venue's midnight
+    // on start_date to its midnight after end_date. The bounds were UTC, and
+    // start_date / end_date were not even selected above, so both read
+    // "undefinedT00:00:00" and the query failed (sessions came back empty).
+    const boardTimeZone = await fetchVenueTimeZone(getSupabase(), leaderboard.venue_id);
+    const periodStart = businessDayRange(String(leaderboard.start_date || '').slice(0, 10), boardTimeZone)?.start;
+    const periodEnd = businessDayRange(String(leaderboard.end_date || '').slice(0, 10), boardTimeZone)?.end;
+    let sessionsQuery = getSupabase()
       .from('commander_player_sessions')
       .select('player_id, total_time_minutes, status')
       .eq('venue_id', leaderboard.venue_id)
-      .eq('status', 'completed')
-      .gte('check_in_at', `${leaderboard.start_date}T00:00:00`)
-      .lte('check_in_at', `${leaderboard.end_date}T23:59:59`)
+      .eq('status', 'completed');
+    if (periodStart) sessionsQuery = sessionsQuery.gte('check_in_at', periodStart);
+    if (periodEnd) sessionsQuery = sessionsQuery.lt('check_in_at', periodEnd);
+    const { data: sessions } = await sessionsQuery
           .limit(100)
 
     // Aggregate by player

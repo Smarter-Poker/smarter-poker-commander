@@ -7,6 +7,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardWriteStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDateKey, venueTimeZone } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
           image_url,
           terms_conditions,
           venue_id,
-          poker_venues:venue_id (id, name, city, state)
+          poker_venues:venue_id (id, name, city, state, timezone)
         `)
         .eq('venue_id', venue_id)
         .eq('status', 'active')
@@ -88,8 +89,13 @@ export default async function handler(req, res) {
 
       // Filter by date range - only show promotions currently within their date window
       const active = (promotions || []).filter(p => {
-        if (p.start_date && new Date(p.start_date) > new Date(now)) return false;
-        if (p.end_date && new Date(p.end_date) < new Date(now)) return false;
+        // start_date / end_date are DATE columns in the venue's calendar. As
+        // instants they were UTC midnight, so a promotion ending today
+        // vanished at 6 PM Central the evening BEFORE. Compare calendar days
+        // at the venue: live from start_date through all of end_date.
+        const today = businessDateKey(new Date(now), venueTimeZone(p.poker_venues));
+        if (p.start_date && String(p.start_date).slice(0, 10) > today) return false;
+        if (p.end_date && String(p.end_date).slice(0, 10) < today) return false;
         return true;
       });
 

@@ -26,6 +26,8 @@ import SEOHead from '../../src/components/seo/SEOHead';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import { browserTimeZone, businessDateKey, endOfMonthKey } from '../../src/lib/commander/businessDate';
+import useVenueTimeZone from '../../src/hooks/useVenueTimeZone';
 
 const BOARD_TYPES = [
     { value: 'custom', label: 'Custom Points', icon: '', desc: 'Manually Assign Points To Players' },
@@ -64,6 +66,7 @@ const BUILDER_STEPS = [
 ];
 
 export default function LeaderboardBuilder() {
+    const venueTimeZone = useVenueTimeZone();
     useEffect(() => { busEmit.sessionStart('commander-leaderboard-builder'); }, []);
     const [boards, setBoards] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -133,8 +136,9 @@ export default function LeaderboardBuilder() {
     const handleCreate = async () => {
         if (!newBoard.name.trim()) { flash('error', 'Board Name Required'); return; }
         try {
-const today = new Date();
-            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+// Default period: today through the end of this month, at the venue.
+            const today = businessDateKey(new Date(), venueTimeZone || browserTimeZone());
+            const endOfMonth = endOfMonthKey(today);
 
             const res = await commanderFetch('/api/commander/leaderboards', {
                 method: 'POST',
@@ -145,8 +149,8 @@ const today = new Date();
                     description: newBoard.description || null,
                     leaderboard_type: newBoard.leaderboard_type,
                     period_type: newBoard.period_type,
-                    start_date: newBoard.start_date || today.toISOString().split('T')[0],
-                    end_date: newBoard.end_date || endOfMonth.toISOString().split('T')[0],
+                    start_date: newBoard.start_date || today,
+                    end_date: newBoard.end_date || endOfMonth,
                     prizes: newBoard.prizes ? [{ description: newBoard.prizes }] : [],
                     rules_description: newBoard.rules_description || null,
                     status: newBoard.status }) });

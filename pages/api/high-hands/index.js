@@ -8,6 +8,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayRange, businessDayStartISO } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 
 let _supabase = null;
@@ -82,8 +84,11 @@ async function listHighHands(req, res, staff) {
       query = query.eq('promotion_id', promotion_id);
     }
 
+    const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
     if (date) {
-      query = query.gte('created_at', `${date}T00:00:00`).lt('created_at', `${date}T23:59:59`);
+      // The venue's business day as instants, not UTC midnight to 23:59:59.
+      const day = businessDayRange(String(date), timeZone);
+      if (day) query = query.gte('created_at', day.start).lt('created_at', day.end);
     }
 
     const { data, error, count } = await query;
@@ -93,12 +98,12 @@ async function listHighHands(req, res, staff) {
     // Get current high hand (highest rank today). hand_rank is TEXT holding a
     // numeric score, so ordering it in SQL sorts lexicographically ("10" < "2").
     // Fetch today's verified hands and pick the max by numeric value in JS.
-    const today = new Date().toISOString().split('T')[0];
+    const todayStart = businessDayStartISO(new Date(), timeZone);
     const { data: verifiedToday } = await getSupabase()
       .from('commander_high_hands')
       .select('*')
       .eq('venue_id', venue_id)
-      .gte('created_at', `${today}T00:00:00`)
+      .gte('created_at', todayStart)
       .not('verified_at', 'is', null);
     const currentHigh = (verifiedToday || []).reduce(
       (best, h) => ((Number(h.hand_rank) || 0) > (Number(best?.hand_rank) || 0) ? h : best),

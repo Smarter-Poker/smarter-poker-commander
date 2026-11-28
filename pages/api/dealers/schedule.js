@@ -7,6 +7,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { requireStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayRange, isDateKey } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -76,8 +78,9 @@ async function handleList(req, res) {
     }
 
     if (date) {
-      query = query.gte('started_at', `${date}T00:00:00`)
-        .lt('started_at', `${date}T23:59:59`);
+      // The venue's business day as instants (a bare date-time is UTC).
+      const day = businessDayRange(String(date), await fetchVenueTimeZone(getSupabase(), venue_id));
+      if (day) query = query.gte('started_at', day.start).lt('started_at', day.end);
     }
 
     if (active_only === 'true') {

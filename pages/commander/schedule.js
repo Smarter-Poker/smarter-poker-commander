@@ -22,29 +22,36 @@ import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { titleCase } from '../../src/lib/commander/formatters';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { addDaysToKey, browserTimeZone, businessDateKey, formatDateKey, startOfWeekKey } from '../../src/lib/commander/businessDate';
+import { useBusinessToday } from '../../src/hooks/useVenueTimeZone';
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function getWeekStart(date) {
-  const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
-  d.setDate(d.getDate() - day); // rewind to Sunday
-  return d.toISOString().split('T')[0];
+// Weeks are pure date-key arithmetic in the venue's calendar (2026-11-28).
+// They went through local Dates and toISOString(), so from 6 PM Central the
+// "today" highlight and Sunday-of-this-week were already tomorrow's.
+function getWeekStart(todayKey) {
+  return startOfWeekKey(todayKey, 0); // Sunday on or before today
 }
 
-function getWeekDays(weekStart) {
+/** Today at the venue, or (before the zone is known) on this device. */
+function todayKeyOr(todayKey) {
+  return todayKey || businessDateKey(new Date(), browserTimeZone());
+}
+
+function getWeekDays(weekStart, todayKey) {
+  if (!weekStart) return [];
   const days = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart + 'T12:00:00');
-    d.setDate(d.getDate() + i);
+    const key = addDaysToKey(weekStart, i);
     days.push({
-      date: d.toISOString().split('T')[0],
-      label: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      dayNum: d.getDate(),
-      month: d.toLocaleDateString('en-US', { month: 'short' }),
-      isToday: d.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]
+      date: key,
+      label: formatDateKey(key, { weekday: 'short' }),
+      dayNum: Number(key.slice(8, 10)),
+      month: formatDateKey(key, { month: 'short' }),
+      isToday: key === todayKey
     });
   }
   return days;
@@ -173,13 +180,11 @@ const STAFF_SHIFT_IDX = {
   'demo-s1': 0, 'demo-s2': 1, 'demo-s3': 2,
   'demo-m1': 0 };
 
-function generateMockShifts() {
+function generateMockShifts(todayKey) {
   const shifts = [];
-  const today = new Date();
-  // Generate 6 months: 3 months back + 3 months forward (26 weeks)
-  const startDate = new Date(today);
-  startDate.setMonth(startDate.getMonth() - 3);
-  startDate.setDate(startDate.getDate() - startDate.getDay()); // align to Sunday
+  // Generate 6 months: 3 months back + 3 months forward (26 weeks), from the
+  // Sunday on or before thirteen weeks ago.
+  const startKey = startOfWeekKey(addDaysToKey(todayKeyOr(todayKey), -91), 0);
 
   for (let week = 0; week < 26; week++) {
     for (const person of MOCK_STAFF) {
@@ -189,9 +194,7 @@ function generateMockShifts() {
       const shift = patterns[shiftIdx % patterns.length];
 
       for (const dayOfWeek of workDays) {
-        const shiftDate = new Date(startDate);
-        shiftDate.setDate(shiftDate.getDate() + (week * 7) + dayOfWeek);
-        const dateStr = shiftDate.toISOString().split('T')[0];
+        const dateStr = addDaysToKey(startKey, (week * 7) + dayOfWeek);
 
         shifts.push({
           id: `mock-${person.id}-${dateStr}`,
@@ -215,7 +218,13 @@ function generateMockShifts() {
 export default function StaffSchedule() {
   const router = useRouter();
   useEffect(() => { busEmit.sessionStart('commander-schedule'); }, []);
-  const [weekStart, setWeekStart] = useState(getWeekStart(new Date()));
+  // Null on the server and the first client render (hydration law); set to
+  // this week at the venue once the business date is known.
+  const today = useBusinessToday();
+  const [weekStart, setWeekStart] = useState(null);
+  useEffect(() => {
+    if (today) setWeekStart(prev => prev || getWeekStart(today));
+  }, [today]);
   const [shifts, setShifts] = useState([]);
   const [allStaff, setAllStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -247,11 +256,12 @@ return { 'Content-Type': 'application/json' };
 
   // Fetch shifts + staff
   const fetchData = useCallback(async () => {
+    if (!weekStart) return;
     const venueId = getVenueId();
     if (!venueId) {
       // No venue - use mock data
       setAllStaff(MOCK_STAFF);
-      setShifts(generateMockShifts());
+      setShifts(generateMockShifts(today));
       setUsingMockData(true);
       setLoading(false);
       return;
@@ -273,7 +283,7 @@ return { 'Content-Type': 'application/json' };
       // even when they have zero shifts for the selected week
       if (activeStaff.length === 0) {
         setAllStaff(MOCK_STAFF);
-        setShifts(generateMockShifts());
+        setShifts(generateMockShifts(today));
         setUsingMockData(true);
       } else {
         setAllStaff(activeStaff);
@@ -284,11 +294,11 @@ return { 'Content-Type': 'application/json' };
       console.warn('[Schedule] fetch error:', err);
       // Fallback to mock data on error
       setAllStaff(MOCK_STAFF);
-      setShifts(generateMockShifts());
+      setShifts(generateMockShifts(today));
       setUsingMockData(true);
     }
     finally { setLoading(false); }
-  }, [weekStart]);
+  }, [weekStart, today]);
 
   useEffect(() => { const _c = new AbortController(); fetchData(_c.signal); return () => _c.abort(); }, [fetchData]);
 
@@ -307,13 +317,12 @@ return { 'Content-Type': 'application/json' };
 
   // Navigation
   const changeWeek = (delta) => {
-    const d = new Date(weekStart + 'T12:00:00');
-    d.setDate(d.getDate() + (delta * 7));
-    setWeekStart(d.toISOString().split('T')[0]);
+    if (!weekStart) return;
+    setWeekStart(addDaysToKey(weekStart, delta * 7));
   };
 
   const goToday = () => {
-    setWeekStart(getWeekStart(new Date()));
+    setWeekStart(getWeekStart(todayKeyOr(today)));
   };
 
   // Create shift
@@ -408,8 +417,10 @@ return { 'Content-Type': 'application/json' };
   };
 
   // Computed - filter shifts for current week
-  const weekDays = getWeekDays(weekStart);
-  const weekLabel = `${weekDays[0].month} ${weekDays[0].dayNum} – ${weekDays[6].month} ${weekDays[6].dayNum}`;
+  const weekDays = getWeekDays(weekStart, today);
+  const weekLabel = weekDays.length
+    ? `${weekDays[0].month} ${weekDays[0].dayNum} – ${weekDays[6].month} ${weekDays[6].dayNum}`
+    : '';
   const weekDates = new Set(weekDays.map(d => d.date));
   const weekShifts = shifts.filter(s => weekDates.has(s.shift_date));
 

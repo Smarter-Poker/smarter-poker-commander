@@ -9,6 +9,8 @@ import { guardStaff } from '../../../src/lib/commander/auth';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayStartISO } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -206,7 +208,8 @@ export default async function handler(req, res) {
 
         if (limits) {
           // Check if player has exceeded daily sessions (simple check)
-          const today = new Date().toISOString().split('T')[0];
+          // Today = the venue's business day from its local midnight (not UTC).
+          const today = businessDayStartISO(new Date(), await fetchVenueTimeZone(getSupabase(), venue_id));
           const { count: todaySessions } = await getSupabase()
             .from('commander_player_sessions')
             .select('id', { count: 'exact' })

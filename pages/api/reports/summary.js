@@ -7,6 +7,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
 import { verifyStaffSession } from '../../../src/lib/commander/auth';
+import { businessDayRange, isDateKey, reportRangeStartISO } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -18,17 +20,16 @@ function getSupabase() {
     return _supabase;
 }
 
-function getDateRange(range) {
+/**
+ * Report window. 'today' starts at the venue's business-day midnight (it was
+ * the server's midnight: UTC on Vercel). `date` (YYYY-MM-DD) with 'today'
+ * reports that whole venue day: the Daily Summary page sends it, and it used
+ * to be ignored, so every past day showed today's numbers.
+ */
+function getDateRange(range, timeZone, date) {
   const now = new Date();
-  const start = new Date();
-  switch (range) {
-    case 'today': start.setHours(0, 0, 0, 0); break;
-    case 'week': start.setDate(now.getDate() - 7); break;
-    case 'month': start.setMonth(now.getMonth() - 1); break;
-    case 'quarter': start.setMonth(now.getMonth() - 3); break;
-    default: start.setHours(0, 0, 0, 0);
-  }
-  return { start: start.toISOString(), end: now.toISOString() };
+  if (range === 'today' && isDateKey(date)) return businessDayRange(date, timeZone);
+  return { start: reportRangeStartISO(range, timeZone, now), end: now.toISOString() };
 }
 
 export default async function handler(req, res) {
@@ -45,8 +46,7 @@ export default async function handler(req, res) {
       const user = authData?.user;
       if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
 
-      const { range = 'today' } = req.query;
-      const { start, end } = getDateRange(range);
+      const { range = 'today', date } = req.query;
 
       // MULTI-CLUB FIX (2026-08-20): resolve the ACTIVE venue from the
       // HMAC-verified staff session first — it pins the venue the user
@@ -85,6 +85,7 @@ export default async function handler(req, res) {
       }
       if (!staffVenueId) return res.status(403).json({ success: false, error: 'Staff access required' });
       const staff = { venue_id: staffVenueId };
+      const { start, end } = getDateRange(range, await fetchVenueTimeZone(getSupabase(), staffVenueId), date);
 
       // Tournament stats
       const { data: tournaments } = await getSupabase()

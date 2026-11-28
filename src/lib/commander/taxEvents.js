@@ -42,6 +42,9 @@
  * import it to warn a floor before the player leaves the building.
  */
 
+import { DEFAULT_TIME_ZONE, businessDateKey } from './businessDate';
+import { fetchVenueTimeZone } from './venueTimeZone';
+
 /** Reportable when NET is strictly greater than this. */
 export const W2G_NET_THRESHOLD = 5000;
 
@@ -153,12 +156,26 @@ export function assessEntryW2G(tournament, entry, grossPayoutOverride) {
   });
 }
 
-/** The calendar date a tournament's tax events fall on. */
-export function taxEventDate(tournament) {
+/**
+ * The calendar date a tournament's tax events fall on: the VENUE-LOCAL date
+ * of the event (2026-11-28). It used to be the UTC date, so an event that
+ * ended after 6 PM Central was dated the next day. Rows already written keep
+ * the date they were written with; nothing is backfilled.
+ */
+export function taxEventDate(tournament, timeZone = DEFAULT_TIME_ZONE) {
   const raw = tournament?.ended_at || tournament?.actual_start || tournament?.scheduled_start;
   const d = raw ? new Date(raw) : new Date();
-  if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
-  return d.toISOString().slice(0, 10);
+  if (Number.isNaN(d.getTime())) return businessDateKey(new Date(), timeZone);
+  return businessDateKey(d, timeZone);
+}
+
+/**
+ * The UTC calendar date of the same instant: the date events recorded
+ * before 2026-11-28 carry. Used only so the dedupe below still recognises
+ * an event recorded under the old rule.
+ */
+function legacyUtcEventDate(tournament) {
+  return taxEventDate(tournament, 'UTC');
 }
 
 function isMissingColumnError(error) {
@@ -189,7 +206,7 @@ function isMissingColumnError(error) {
  * @returns {Promise<{recorded:boolean, reason:string, assessment:object, event:object|null}>}
  */
 export async function recordTournamentTaxEvent(supabase, {
-  tournament, tournamentId, entry, grossPayout, playerId, venueId
+  tournament, tournamentId, entry, grossPayout, playerId, venueId, timeZone
 }) {
   const assessment = assessEntryW2G(tournament, entry, grossPayout);
 
@@ -200,7 +217,9 @@ export async function recordTournamentTaxEvent(supabase, {
   const resolvedVenueId = venueId ?? tournament?.venue_id ?? null;
   const resolvedPlayerId = playerId ?? entry?.player_id ?? null;
   const resolvedTournamentId = tournamentId ?? tournament?.id ?? null;
-  const eventDate = taxEventDate(tournament);
+  const eventTimeZone = timeZone || await fetchVenueTimeZone(supabase, resolvedVenueId);
+  const eventDate = taxEventDate(tournament, eventTimeZone);
+  const dedupeDates = [...new Set([eventDate, legacyUtcEventDate(tournament)])];
 
   const row = {
     venue_id: resolvedVenueId,
@@ -246,7 +265,7 @@ export async function recordTournamentTaxEvent(supabase, {
         .from('commander_tax_events')
         .select('id')
         .eq('event_type', 'tournament_win')
-        .eq('event_date', eventDate)
+        .in('event_date', dedupeDates)
         .eq('gross_amount', assessment.gross);
       q = resolvedVenueId != null ? q.eq('venue_id', resolvedVenueId) : q.is('venue_id', null);
       q = resolvedPlayerId ? q.eq('player_id', resolvedPlayerId) : q.is('player_id', null);

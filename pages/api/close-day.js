@@ -7,6 +7,8 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { businessDateKey } from '../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -67,11 +69,15 @@ async function closeDay(req, res, staff) {
     // PIN terminals carry the commander_staff row id, owner logins the user id.
     const staffId = (staff && typeof staff === 'object' && staff.id) ? staff.id : null;
 
+    // The close belongs to the venue's business day, not the UTC date (which
+    // is already tomorrow from 6 PM Central). Existing rows are not touched.
+    const timeZone = await fetchVenueTimeZone(getSupabase(), venueId);
+
     const { data: close, error } = await getSupabase()
       .from('commander_day_closes')
       .upsert({
         venue_id: venueId,
-        close_date: new Date().toISOString().split('T')[0],
+        close_date: businessDateKey(new Date(), timeZone),
         closed_by: staffId,
         closed_by_name: closed_by_name || (staff && staff.display_name) || null,
         report_snapshot: report_snapshot || {},

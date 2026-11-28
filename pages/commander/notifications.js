@@ -13,6 +13,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import { toDateTimeLocalValue } from '../../src/lib/commander/businessDate';
 
 const TYPE_CONFIG = {
   seat_available: { icon: Users, color: '#31A24C', label: 'Seat Available' },
@@ -184,8 +185,11 @@ export default function NotificationCenter() {
       message: a.message || '',
       priority: a.priority || 'normal',
       type: a.type || a.message_type || 'general',
-      expires_at: a.expires_at ? new Date(a.expires_at).toISOString().slice(0, 16) : '',
-      starts_at: a.starts_at ? new Date(a.starts_at).toISOString().slice(0, 16) : '' });
+      // datetime-local shows device-local time (the save path parses it back as
+      // local); slicing the UTC ISO string shifted every edited time by the
+      // zone offset, six hours in Central, on each save.
+      expires_at: toDateTimeLocalValue(a.expires_at),
+      starts_at: toDateTimeLocalValue(a.starts_at) });
     setEditingAnnouncement(a);
     setShowTemplates(false);
     setShowCreateForm(true);

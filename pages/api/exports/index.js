@@ -10,6 +10,8 @@ import { withRateLimit } from '../../../src/lib/commander/rateLimit';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { guardWriteStaff } from '../../../src/lib/commander/auth';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayRange, isDateKey } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -209,6 +211,15 @@ async function processExport(exportId) {
     let data = [];
     let query;
 
+    // Timestamp bounds for date_from / date_to: whole VENUE business days.
+    // `date_to + 'T23:59:59'` and a bare date_from were UTC, so a Central
+    // room's evening fell outside its own export and into the next day's.
+    const tz = await fetchVenueTimeZone(getSupabase(), job.venue_id);
+    const fromTs = isDateKey(job.date_from) ? businessDayRange(job.date_from, tz).start : job.date_from;
+    const toTs = isDateKey(job.date_to)
+      ? new Date(new Date(businessDayRange(job.date_to, tz).end).getTime() - 1).toISOString()
+      : job.date_to; // already a timestamp: use it as given
+
     // Build query based on export type
     switch (job.export_type) {
       case 'players':
@@ -225,8 +236,8 @@ async function processExport(exportId) {
           .eq('venue_id', job.venue_id)
           .eq('status', 'completed');
         // 2026-07-25 audit fix: column is check_in_at (check_in_time does not exist).
-        if (job.date_from) query = query.gte('check_in_at', job.date_from);
-        if (job.date_to) query = query.lte('check_in_at', job.date_to + 'T23:59:59');
+        if (job.date_from) query = query.gte('check_in_at', fromTs);
+        if (job.date_to) query = query.lte('check_in_at', toTs);
         break;
 
       case 'tournaments':
@@ -234,8 +245,8 @@ async function processExport(exportId) {
           .from('commander_tournaments')
           .select('*, commander_tournament_entries(*)')
           .eq('venue_id', job.venue_id);
-        if (job.date_from) query = query.gte('scheduled_start', job.date_from);
-        if (job.date_to) query = query.lte('scheduled_start', job.date_to + 'T23:59:59');
+        if (job.date_from) query = query.gte('scheduled_start', fromTs);
+        if (job.date_to) query = query.lte('scheduled_start', toTs);
         break;
 
       case 'analytics':
@@ -252,8 +263,8 @@ async function processExport(exportId) {
           .from('commander_member_comp_log')
           .select('*, commander_members:member_id(first_name, last_name)')
           .eq('venue_id', job.venue_id);
-        if (job.date_from) query = query.gte('created_at', job.date_from);
-        if (job.date_to) query = query.lte('created_at', job.date_to + 'T23:59:59');
+        if (job.date_from) query = query.gte('created_at', fromTs);
+        if (job.date_to) query = query.lte('created_at', toTs);
         break;
 
       case 'audit_logs':
@@ -261,8 +272,8 @@ async function processExport(exportId) {
           .from('commander_audit_logs')
           .select('*')
           .eq('venue_id', job.venue_id);
-        if (job.date_from) query = query.gte('created_at', job.date_from);
-        if (job.date_to) query = query.lte('created_at', job.date_to + 'T23:59:59');
+        if (job.date_from) query = query.gte('created_at', fromTs);
+        if (job.date_to) query = query.lte('created_at', toTs);
         break;
 
       default:

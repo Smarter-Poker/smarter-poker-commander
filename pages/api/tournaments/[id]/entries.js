@@ -14,6 +14,8 @@ import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 import { claimOpenSeat, promoteNextAlternate } from '../../../../src/lib/commander/tournamentSeating';
 import { seatConflictResponse, isUniqueViolation, conflictError } from '../../../../src/lib/commander/dbErrors';
 import { denyCrossVenue, isSameVenue } from '../../../../src/lib/commander/venueScope';
+import { businessDayStartISO } from '../../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -261,7 +263,10 @@ async function registerPlayer(req, res, tournamentId, auth = {}) {
       }
       const dailyLimit = limitsResult.data?.daily_limit;
       if (dailyLimit) {
-        const today = new Date().toISOString().split('T')[0];
+        // Responsible gaming: "today" is the venue's business day from its local
+        // midnight. The UTC date dropped everything spent before 6 PM Central
+        // from the total after 6 PM, so the daily limit could be exceeded.
+        const today = businessDayStartISO(new Date(), await fetchVenueTimeZone(getSupabase(), tournament.venue_id));
         const { data: todayEntries } = await getSupabase()
           .from('commander_tournament_entries')
           .select('total_invested')

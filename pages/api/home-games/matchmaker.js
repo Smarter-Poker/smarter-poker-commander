@@ -10,6 +10,7 @@ import { getAIClient } from '../../../src/lib/grokClient';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
 
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
+import { addDaysToKey, businessDateKey, venueTimeZone } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -193,18 +194,22 @@ async function fetchAvailableGroups({ city, state, game_type }) {
 }
 
 async function fetchUpcomingGames({ city, state, game_type }) {
-  const today = new Date().toISOString().split('T')[0];
-  const twoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Coarse SQL window with a day of slack; each game is then cut against
+  // today in its own zone below (the UTC date hid tonight's games after 6 PM
+  // Central).
+  const utcToday = businessDateKey(new Date(), 'UTC');
+  const today = addDaysToKey(utcToday, -1);
+  const twoWeeks = addDaysToKey(utcToday, 14);
 
   let query = getSupabase()
     .from('commander_home_games')
     .select(`
       id, title, game_type, stakes,
       buyin_min, buyin_max,
-      scheduled_date, start_time,
+      scheduled_date, start_time, timezone,
       max_players, rsvp_yes, status,
       commander_home_groups!inner (
-        id, name, city, state, is_private
+        id, name, city, state, timezone, is_private
       )
     `)
     .in('status', ['scheduled', 'confirmed'])
@@ -223,6 +228,14 @@ async function fetchUpcomingGames({ city, state, game_type }) {
 
   // Filter by location (group's city/state) and only public groups
   let games = (data || []).filter(g => !g.commander_home_groups?.is_private);
+  games = games.filter(g => {
+    const group = g.commander_home_groups || {};
+    const gameToday = businessDateKey(new Date(), venueTimeZone({
+      timezone: g.timezone || group.timezone,
+      state: group.state,
+    }));
+    return String(g.scheduled_date).slice(0, 10) >= gameToday;
+  });
 
   if (city) {
     games = games.filter(g =>

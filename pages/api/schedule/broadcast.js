@@ -7,6 +7,7 @@ import { verifyManagerSession, guardWriteStaff } from '../../../src/lib/commande
 import twilio from 'twilio';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { addDaysToKey, formatDateKey } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -66,10 +67,13 @@ export default async function handler(req, res) {
 
       try {
           // Fetch shifts for the week
-          const start = new Date(week_start + 'T00:00:00');
-          const end = new Date(start);
-          end.setDate(end.getDate() + 7);
-          const endStr = end.toISOString().split('T')[0];
+          // Pure calendar arithmetic on the week's date key: a local-midnight Date
+          // read back through toISOString() is the previous day on any runtime
+          // east of UTC.
+          const endStr = addDaysToKey(week_start, 7);
+          if (!endStr) {
+              return res.status(400).json({ success: false, error: { message: 'week_start must be YYYY-MM-DD' } });
+          }
 
           // Parallel fetch: shifts, staff, and venue name are all independent
           const [shiftsResult, staffResult, venueResult] = await Promise.all([
@@ -118,12 +122,8 @@ export default async function handler(req, res) {
               shiftsByStaff[shift.staff_id].push(shift);
           }
 
-          const weekLabel = new Date(week_start + 'T12:00:00').toLocaleDateString('en-US', {
-              month: 'short', day: 'numeric'
-          });
-          const weekEndLabel = new Date(end.getTime() - 86400000).toLocaleDateString('en-US', {
-              month: 'short', day: 'numeric'
-          });
+          const weekLabel = formatDateKey(week_start, { month: 'short', day: 'numeric' });
+          const weekEndLabel = formatDateKey(addDaysToKey(week_start, 6), { month: 'short', day: 'numeric' });
 
           const results = { sent: 0, failed: 0, skipped: 0 };
 

@@ -12,6 +12,7 @@ import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import { yearOfKey } from '../../../src/lib/commander/businessDate';
 
 export default function TaxCompliance() {
   useEffect(() => { busEmit.sessionStart('commander-reports-tax-compliance'); }, []);
@@ -223,7 +224,9 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
       payer_address: '',
       winner_name: evt.player_name || 'Unknown',
       winner_ssn_last4: evt.player_ssn_last4 || '',
-      tax_year: new Date(evt.event_date).getFullYear()
+      // event_date is a DATE: read its year from the string. As a Date it was
+      // UTC midnight, so a January 1 event printed the PREVIOUS tax year.
+      tax_year: yearOfKey(evt.event_date)
     };
     printW2G(w2g);
   };

@@ -8,6 +8,8 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { businessDateKey } from '../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -102,6 +104,10 @@ async function createHandoff(req, res, staff) {
       };
     });
 
+    // shift_date is the venue's business date (the UTC date is tomorrow from
+    // 6 PM Central, which is when evening handoffs happen).
+    const handoffTimeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
+
     const { data: handoff, error } = await getSupabase()
       .from('commander_shift_handoffs')
       .insert({
@@ -109,7 +115,7 @@ async function createHandoff(req, res, staff) {
         outgoing_staff_id: userId || '00000000-0000-0000-0000-000000000000',
         outgoing_staff_name: staff_name,
         incoming_staff_name: incoming_staff_name || null,
-        shift_date: new Date().toISOString().split('T')[0],
+        shift_date: businessDateKey(new Date(), handoffTimeZone),
         open_tables_count: tables.length,
         active_players_count: totalPlayers,
         waitlist_count: waitlist.length,

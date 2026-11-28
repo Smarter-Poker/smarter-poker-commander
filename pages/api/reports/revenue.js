@@ -6,6 +6,8 @@
 import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayRange, isDateKey, reportRangeStartISO } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -17,19 +19,21 @@ function getSupabase() {
     return _supabase;
 }
 
-function getDateRange(range, customStart, customEnd) {
+/**
+ * Report window. 'today' starts at the venue's business-day midnight (it was
+ * the server's midnight: UTC on Vercel). A custom start/end given as a date
+ * key covers those whole venue days.
+ */
+function getDateRange(range, customStart, customEnd, timeZone) {
   const now = new Date();
-  const end = customEnd ? new Date(customEnd) : now;
-  const start = new Date();
-  switch (range) {
-    case 'today': start.setHours(0, 0, 0, 0); break;
-    case 'week': start.setDate(now.getDate() - 7); break;
-    case 'month': start.setMonth(now.getMonth() - 1); break;
-    case 'quarter': start.setMonth(now.getMonth() - 3); break;
-    case 'custom': return { start: new Date(customStart).toISOString(), end: end.toISOString() };
-    default: start.setHours(0, 0, 0, 0);
+  if (range === 'custom') {
+    const start = isDateKey(customStart) ? businessDayRange(customStart, timeZone).start : new Date(customStart).toISOString();
+    const end = isDateKey(customEnd) ? businessDayRange(customEnd, timeZone).end
+      : (customEnd ? new Date(customEnd) : now).toISOString();
+    return { start, end };
   }
-  return { start: start.toISOString(), end: end.toISOString() };
+  const end = customEnd ? (isDateKey(customEnd) ? businessDayRange(customEnd, timeZone).end : new Date(customEnd).toISOString()) : now.toISOString();
+  return { start: reportRangeStartISO(range, timeZone, now), end };
 }
 
 export default async function handler(req, res) {
@@ -74,7 +78,7 @@ export default async function handler(req, res) {
       }
       if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
 
-      const { start, end } = getDateRange(range, customStart, customEnd);
+      const { start, end } = getDateRange(range, customStart, customEnd, await fetchVenueTimeZone(getSupabase(), venue_id));
 
       // 1. Time billing revenue
       // 2026-07-25 audit fix: commander_table_sessions has no amount_charged /

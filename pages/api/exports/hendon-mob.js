@@ -12,6 +12,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { withRateLimit } from '../../../src/lib/commander/rateLimit';
 import { logAction, AuditActions } from '../../../src/lib/commander/audit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDateKey, venueTimeZone } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -54,7 +55,7 @@ async function handler(req, res) {
       .from('commander_tournaments')
       .select(`
         *,
-        poker_venues:venue_id (id, name, city, state, country)
+        poker_venues:venue_id (id, name, city, state, country, timezone)
       `)
       .eq('id', tournament_id)
       .maybeSingle();
@@ -144,7 +145,7 @@ export function buildHendonMobCSV(tournament, entries) {
   // Tournament details section
   lines.push('[TOURNAMENT]');
   lines.push(`Name,${escapeCSV(tournament.name)}`);
-  lines.push(`Date,${formatDate(tournament.scheduled_start)}`);
+  lines.push(`Date,${formatDate(tournament.scheduled_start, venueTimeZone(tournament.poker_venues))}`);
   lines.push(`Venue,${escapeCSV(venue?.name || 'Unknown')}`);
   lines.push(`City,${escapeCSV(venue?.city || '')}`);
   lines.push(`State,${escapeCSV(venue?.state || '')}`);
@@ -230,7 +231,7 @@ export function buildHendonMobJSON(tournament, entries) {
     generated_at: new Date().toISOString(),
     tournament: {
       name: tournament.name,
-      date: formatDate(tournament.scheduled_start),
+      date: formatDate(tournament.scheduled_start, venueTimeZone(tournament.poker_venues)),
       venue: {
         name: venue?.name || 'Unknown',
         city: venue?.city || '',
@@ -280,10 +281,10 @@ function escapeCSV(value) {
   return str;
 }
 
-function formatDate(dateStr) {
+/** The event's date at the venue, YYYY-MM-DD (it was the UTC date). */
+function formatDate(dateStr, timeZone) {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  return businessDateKey(new Date(dateStr), timeZone) || '';
 }
 
 export default withRateLimit(handler, 'export');
