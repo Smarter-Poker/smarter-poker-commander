@@ -16,6 +16,7 @@ import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import { apiData, asArray } from '../../../src/lib/commander/apiShape';
 
 /* ─── Status Config ─────────────────────────────────────────── */
 const STATUS_CONFIG = {
@@ -180,7 +181,7 @@ export default function CommanderTournamentsPage() {
       const params = new URLSearchParams({ venue_id: venueId, limit: '200' });
       if (filter !== 'all') params.set('status', filter);
       const data = await commanderFetchJSON(`/api/commander/tournaments?${params}`);
-      if (data.success) setTournaments(data.data.tournaments || []);
+      if (data.success) setTournaments(asArray(apiData(data).tournaments));
     } catch (err) { console.warn('Fetch tournaments:', err); }
     finally { setLoading(false); setRefreshing(false); }
   }, [venueId, filter]);

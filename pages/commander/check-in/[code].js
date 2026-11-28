@@ -20,6 +20,7 @@ import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
 // 2026-07-25 audit fix: commanderFetch removed - its 401 redirect sent players to staff login
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 import useClientNow from '../../../src/hooks/useClientNow';
+import { apiData } from '../../../src/lib/commander/apiShape';
 
 function formatCountdown(seconds) {
   if (seconds === null || seconds === undefined || seconds < 0) return '--:--';
@@ -72,11 +73,11 @@ export default function PlayerCheckIn() {
         return;
       }
 
-      setMember(json.data.member);
-      setMembershipActive(json.data.membership_active);
-      setTimeBalance(json.data.time_balance_minutes || 0);
+      setMember(apiData(json).member);
+      setMembershipActive(apiData(json).membership_active);
+      setTimeBalance(apiData(json).time_balance_minutes || 0);
       // already_seated now carries table/seat/time directly (no staff sessions call)
-      setActiveSession(json.data.already_seated || null);
+      setActiveSession(apiData(json).already_seated || null);
     } catch (err) {
       setError('Failed To Load Member Data');
     } finally {

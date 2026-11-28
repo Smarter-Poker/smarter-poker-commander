@@ -13,6 +13,8 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData, apiError, apiFailed, asArray, asNumber } from '../../src/lib/commander/apiShape';
+import LoadError from '../../src/components/commander/shared/LoadError';
 
 const VIBE_COLORS = {
   'Action Game': { bg: '#FEF2F2', text: '#991B1B', border: '#EF4444', emoji: '🔥' },
@@ -31,6 +33,7 @@ export default function TableVibes() {
   const [vibes, setVibes] = useState([]);
   const [totalRatings, setTotalRatings] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [days, setDays] = useState(30);
 
   
@@ -39,11 +42,13 @@ export default function TableVibes() {
     setLoading(true);
     try {
 const json = await commanderFetchJSON(`/api/commander/table-ratings?venue_id=${staff.venue_id}&days=${days}`, {});
+      if (apiFailed(null, json)) { setLoadError(apiError(null, json, 'Table Vibes')); return; }
+      setLoadError('');
       if (json.success) {
-        setVibes(json.data.vibes);
-        setTotalRatings(json.data.total_ratings);
+        setVibes(asArray(apiData(json).vibes));
+        setTotalRatings(asNumber(apiData(json).total_ratings));
       }
-    } catch (err) { console.warn(err); }
+    } catch (err) { setLoadError('Could Not Load Table Vibes'); console.warn(err); }
     finally { setLoading(false); }
   };
 
@@ -100,6 +105,8 @@ useEffect(() => {    const _c = new AbortController();
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
+          ) : loadError ? (
+            <LoadError message={loadError} onRetry={() => fetchVibes()} />
           ) : vibes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               No Table Ratings Yet - Players Rate Tables After Sessions

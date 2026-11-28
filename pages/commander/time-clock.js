@@ -13,6 +13,8 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import { apiData, apiError, apiFailed, asArray, asObject } from '../../src/lib/commander/apiShape';
+import LoadError from '../../src/components/commander/shared/LoadError';
 
 export default function TimeClock() {
     const router = useRouter();
@@ -25,6 +27,7 @@ export default function TimeClock() {
     const [scanResult, setScanResult] = useState(null); // { action, staff_name, ... }
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
     const [manualQR, setManualQR] = useState('');
     const videoRef = useRef(null);
     const streamRef = useRef(null);
@@ -47,11 +50,13 @@ export default function TimeClock() {
 const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`, { ...(signal ? { signal } : {}) });
             if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const data = await res.json();
-            if (data.success) {
-                setEntries(data.data.entries || []);
-                setSummary(data.data.summary || {});
+            if (apiFailed(res, data)) { setLoadError(apiError(res, data, 'Time Clock Entries')); return; }
+      setLoadError('');
+      if (data.success) {
+                setEntries(asArray(apiData(data).entries));
+                setSummary({ total_entries: 0, on_shift: 0, total_hours: 0, ...asObject(apiData(data).summary) });
             }
-        } catch (err) {
+        } catch (err) { setLoadError('Could Not Load Time Clock Entries');
             console.warn('Fetch entries error:', err);
         } finally {
             setLoading(false);
@@ -299,7 +304,9 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
 
                             {loading ? (
                                 <div className="p-8 text-center text-[#BDD0E2] animate-pulse">Loading...</div>
-                            ) : entries.length === 0 ? (
+                            ) : loadError ? (
+            <LoadError message={loadError} onRetry={() => fetchEntries()} />
+          ) : entries.length === 0 ? (
                                 <div className="p-8 text-center">
                                     <Clock className="w-10 h-10 text-[#7F97B0] mx-auto mb-2" />
                                     <p className="text-[#BDD0E2] text-sm">No Clock Entries Today</p>

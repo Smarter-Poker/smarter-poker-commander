@@ -15,6 +15,7 @@ import SEOHead from '../../src/components/seo/SEOHead';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 const PLAN_ORDER = ['daily', 'weekly', 'monthly', 'yearly'];
 const PLAN_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
@@ -70,7 +71,7 @@ export default function MembershipPlansPage() {
     try {
 const data = await commanderFetchJSON(`/api/commander/membership-plans?venue_id=${venueId}&include_inactive=true`);
       if (data.success) {
-        const p = data.data.plans || [];
+        const p = asArray(apiData(data).plans);
         p.sort((a, b) => PLAN_ORDER.indexOf(a.tier) - PLAN_ORDER.indexOf(b.tier));
         setPlans(p);
       }

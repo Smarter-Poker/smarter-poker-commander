@@ -16,6 +16,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -128,7 +129,7 @@ export default function TDClock() {
       const json = await res.json();
       if (json.success) {
         setFloor(json.data);
-        const cs = json.data.clock?.clock_state;
+        const cs = apiData(json).clock?.clock_state;
         if (cs?.remaining_seconds !== undefined) setClockSeconds(cs.remaining_seconds);
       }
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
@@ -216,7 +217,7 @@ export default function TDClock() {
         if (json.success) {
           // Auto-print break receipts if the level advance triggered an auto-break
           if (json.data?.auto_break?.executed) {
-            printAutoBreakReceipts(json.data.auto_break);
+            printAutoBreakReceipts(apiData(json).auto_break);
           }
           await fetchFloor();
           broadcastChange('tournaments');

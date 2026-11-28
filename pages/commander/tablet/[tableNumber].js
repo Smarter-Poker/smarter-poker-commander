@@ -23,6 +23,7 @@ import { getVenueId } from '../../../src/lib/commander/clientAuth';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import useClientNow from '../../../src/hooks/useClientNow';
 import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../../src/components/commander/shared/ClubArenaTable';
+import { apiData, asArray } from '../../../src/lib/commander/apiShape';
 
 // Seat badges scale with the seat box; 1100px is its width on a 1280px screen.
 const sp = seatScale(1100);
@@ -124,9 +125,9 @@ export default function TabletDisplay() {
             const json = await res.json();
             if (json.success) {
                 setData(json.data);
-                if (json.data.venue_name) setVenueName(json.data.venue_name);
-                if (json.data.promotions) setPromotions(json.data.promotions);
-                if (json.data.announcements) setAnnouncements(json.data.announcements);
+                if (apiData(json).venue_name) setVenueName(apiData(json).venue_name);
+                if (apiData(json).promotions) setPromotions(asArray(apiData(json).promotions));
+                if (apiData(json).announcements) setAnnouncements(asArray(apiData(json).announcements));
                 lastFetchAt.current = Date.now();
                 setError(null);
             } else {

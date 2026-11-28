@@ -16,6 +16,20 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import LoadError from '../../src/components/commander/shared/LoadError';
+import { apiData, apiFailed, apiError, asArray, asObject, isPlainObject } from '../../src/lib/commander/apiShape';
+
+/** One shape for the system-info answer, whatever the server sent. */
+function normaliseInfo(json) {
+  const d = apiData(json);
+  return {
+    ...d,
+    counts: asObject(d.counts),
+    health: asObject(d.health),
+    recent_log: asArray(d.recent_log),
+    venue: isPlainObject(d.venue) ? d.venue : null,
+  };
+}
 
 export default function SystemInfoPage() {
   useEffect(() => { busEmit.sessionStart('commander-system-info'); }, []);
@@ -25,6 +39,7 @@ export default function SystemInfoPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [staff, setStaff] = useState(null);
   const [venueName, setVenueName] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const stored = getStaffSession();
@@ -41,8 +56,18 @@ export default function SystemInfoPage() {
     if (showRefresh) setRefreshing(true);
     try {
 const json = await commanderFetchJSON('/api/commander/system-info');
-      if (json.success) setInfo(json.data);
-    } catch (err) { console.warn(err); }
+      if (apiFailed(null, json) || !isPlainObject(json.data)) {
+        setInfo(null);
+        setLoadError(apiError(null, json, 'System Information'));
+      } else {
+        setInfo(normaliseInfo(json));
+        setLoadError('');
+      }
+    } catch (err) {
+      console.warn(err);
+      setInfo(null);
+      setLoadError(`Could Not Load System Information${err?.message ? `: ${err.message}` : ''}`);
+    }
     finally { setLoading(false); setRefreshing(false); }
   }
 
@@ -80,7 +105,7 @@ const json = await commanderFetchJSON('/api/commander/system-info');
           {loading ? (
             <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#86DAFF] mx-auto" /></div>
           ) : !info ? (
-            <div className="py-16 text-center text-[#BDD0E2]">Failed To Load System Information</div>
+            <LoadError message={loadError || 'Could Not Load System Information'} onRetry={() => { setLoading(true); fetchInfo(); }} />
           ) : (
             <>
               {/* Version & Platform */}

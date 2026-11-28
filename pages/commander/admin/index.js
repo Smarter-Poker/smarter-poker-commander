@@ -17,6 +17,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { broadcastChange } from '../../../src/lib/commander/useCommanderSync';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../../src/components/commander/shared/ConfirmModal";
+import { apiData, asArray } from '../../../src/lib/commander/apiShape';
 
 // API Keys Modal
 function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
@@ -508,8 +509,8 @@ export default function AdminDashboard() {
       const venuesData = await venuesRes.json();
       // 2026-07-25 audit fix: the API nests under data - read data.venues/data.summary
       if (venuesData.success && venuesData.data?.venues) {
-        setVenues(venuesData.data.venues);
-        setSummary(venuesData.data.summary || {});
+        setVenues(apiData(venuesData).venues);
+        setSummary(apiData(venuesData).summary || {});
       }
 
       // Load exports
@@ -547,8 +548,8 @@ export default function AdminDashboard() {
 
       });
       if (body.success && body.data) {
-        setAuditLogs(body.data.logs || []);
-        setAuditTotal(body.data.total || 0);
+        setAuditLogs(asArray(apiData(body).logs));
+        setAuditTotal(apiData(body).total || 0);
       }
     } catch (err) {
       setIsLoading(false);

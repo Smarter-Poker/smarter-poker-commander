@@ -13,6 +13,8 @@ import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import { yearOfKey } from '../../../src/lib/commander/businessDate';
+import { apiData, apiError, apiFailed, asArray, asObject, readJson } from '../../../src/lib/commander/apiShape';
+import LoadError from '../../../src/components/commander/shared/LoadError';
 
 export default function TaxCompliance() {
   useEffect(() => { busEmit.sessionStart('commander-reports-tax-compliance'); }, []);
@@ -26,6 +28,7 @@ export default function TaxCompliance() {
   const [expandedId, setExpandedId] = useState(null);
   const [generating, setGenerating] = useState(null);
   const [toast, setToast] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   // ── Toast auto-dismiss ──
   useEffect(() => {
@@ -60,13 +63,20 @@ let url = `/api/commander/tax/w2g?venue_id=${staff.venue_id}&year=${year}`;
       if (filter === 'generated') url += '&w2g_generated=true';
       // commanderFetch attaches the x-staff-session header guardStaff requires
       const res = await commanderFetch(url, {});
-      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) {
-        setEvents(json.data.events);
-        setSummary(json.data.summary);
+      const json = await readJson(res);
+      if (apiFailed(res, json)) {
+        setEvents([]);
+        setSummary(null);
+        setLoadError(apiError(res, json, 'Taxable Events'));
+        return;
       }
-    } catch (err) { console.warn(err); }
+      setEvents(asArray(apiData(json).events));
+      setSummary(asObject(apiData(json).summary));
+      setLoadError('');
+    } catch (err) {
+      console.warn(err);
+      setLoadError('Could Not Load Taxable Events');
+    }
     finally { setLoading(false); }
   };
 
@@ -83,7 +93,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
       if (json.success) {
         setToast({ type: 'success', msg: 'W-2G Generated Successfully' });
         // Print the W-2G
-        printW2G(json.data.w2g);
+        printW2G(apiData(json).w2g);
         fetchEvents();
       } else {
         setToast({ type: 'error', msg: json.error?.message || 'Failed To Generate' });
@@ -303,6 +313,8 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
           {/* Events List */}
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
+          ) : loadError ? (
+            <LoadError message={loadError} onRetry={() => fetchEvents()} />
           ) : events.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               No Taxable Events For {year}

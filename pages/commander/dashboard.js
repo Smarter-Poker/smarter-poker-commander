@@ -28,6 +28,7 @@ import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 /* ─────────────────────────────────────────────────
    CARD DEFINITIONS - each card has sub-features
@@ -240,8 +241,8 @@ const venueId = staff?.venue_id;
       commanderFetch(`/api/commander/settings?venue_id=${venueId}`)
         .then(r => r.json())
         .then(data => {
-          if (data?.data?.hard_stop_enabled && data.data.hard_stop_time) {
-            const [h, m] = data.data.hard_stop_time.split(':').map(Number);
+          if (data?.data?.hard_stop_enabled && apiData(data).hard_stop_time) {
+            const [h, m] = apiData(data).hard_stop_time.split(':').map(Number);
             const now = new Date();
             const stopDate = new Date(now);
             stopDate.setHours(h, m, 0, 0);
@@ -250,7 +251,7 @@ const venueId = staff?.venue_id;
             const diff = Math.round((stopDate - now) / 60000);
             setHardStop({
               enabled: true,
-              time: data.data.hard_stop_time,
+              time: apiData(data).hard_stop_time,
               minutesLeft: diff,
               timeFormatted: stopDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
             });
@@ -259,7 +260,7 @@ const venueId = staff?.venue_id;
           }
           // Bootstrap security gate state for CommanderLayout
           if (data?.data?.security_gate_enabled !== undefined) {
-            localStorage.setItem('commander_security_gate', data.data.security_gate_enabled === false ? 'off' : 'on');
+            localStorage.setItem('commander_security_gate', apiData(data).security_gate_enabled === false ? 'off' : 'on');
           }
         })
         .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e))

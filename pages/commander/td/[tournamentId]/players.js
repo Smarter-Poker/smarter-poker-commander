@@ -15,6 +15,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import { buildActionReceiptsHtml, printHtml, printSeatChangeCards } from '../../../../src/lib/commander/receiptTemplates';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const NAV_ITEMS = [
   { key: 'control', path: '' }, { key: 'tables', path: '/tables' },
@@ -365,16 +366,16 @@ export default function TDPlayers() {
           success = true;
           // Auto-print receipts if the elimination triggered an auto table break
           if (res.data?.auto_break?.executed) {
-            printAutoBreakReceipts(res.data.auto_break);
+            printAutoBreakReceipts(apiData(res).auto_break);
           }
           // An alternate may have been auto-seated into the freed seat
           if (res.data?.promoted_alternate) {
-            const pa = res.data.promoted_alternate;
+            const pa = apiData(res).promoted_alternate;
             setToast({ type: 'success', text: `Alternate ${pa.player_name || 'Player'} Seated At Table ${pa.table_number}, Seat ${pa.seat_number}` });
           } else if (res.data?.bounty?.awarded) {
             // Tell the TD exactly what the cage owes on this knockout, and in
             // a PKO what the eliminator's own head is now worth.
-            const b = res.data.bounty;
+            const b = apiData(res).bounty;
             setToast({
               type: 'success',
               text: b.mode === 'pko'
@@ -384,7 +385,7 @@ export default function TDPlayers() {
           } else if (res.data?.wonSeat) {
             setToast({
               type: 'success',
-              text: `${player.player_name || 'Player'} Won A Seat Worth $${Number(res.data.payoutAmount || 0).toLocaleString()}.`
+              text: `${player.player_name || 'Player'} Won A Seat Worth $${Number(apiData(res).payoutAmount || 0).toLocaleString()}.`
             });
           }
         } else {
@@ -413,7 +414,7 @@ export default function TDPlayers() {
           if (res.data?.outside_addon_window) {
             setToast({
               type: 'warning',
-              text: res.data.addon_window_note || 'Add-On Sold Outside The Scheduled Add-On Break.'
+              text: apiData(res).addon_window_note || 'Add-On Sold Outside The Scheduled Add-On Break.'
             });
           }
         } else {

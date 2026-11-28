@@ -21,6 +21,8 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData, apiError, apiFailed, asArray } from '../../src/lib/commander/apiShape';
+import LoadError from '../../src/components/commander/shared/LoadError';
 
 const TIER_COLORS = { daily: '#3B82F6', weekly: '#22D3EE', monthly: '#10B981', yearly: '#5AA9FF' };
 const TIER_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
@@ -85,13 +87,13 @@ export default function MembersPage() {
 
     useEffect(() => {
         if (membersData?.success) {
-            setMembers(membersData.data.members || []);
-            const fetchedTotal = membersData.data.total || 0;
+            setMembers(asArray(apiData(membersData).members));
+            const fetchedTotal = apiData(membersData).total || 0;
             setTotal(fetchedTotal);
             // ═══ CRITICAL: Refresh selectedMember with fresh data from API ═══
             setSelectedMember(prev => {
                 if (!prev) return null;
-                const fresh = (membersData.data.members || []).find(m => m.id === prev.id);
+                const fresh = asArray(apiData(membersData).members).find(m => m.id === prev.id);
                 return fresh || prev;
             });
 
@@ -209,6 +211,8 @@ export default function MembersPage() {
                         <div className="max-w-6xl mx-auto px-4 pb-8">
                             {loading ? (
                                 <div className="text-center py-16"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin mx-auto mb-2" /><p className="text-sm text-[#BDD0E2]">Loading Members...</p></div>
+                            ) : membersData !== undefined && apiFailed(null, membersData) ? (
+                                <LoadError message={apiError(null, membersData, 'Members')} onRetry={() => fetchMembers()} />
                             ) : members.length === 0 ? (
                                 <div className="text-center py-16 bg-[#0A1829] rounded-xl border border-[#445E77]">
                                     <Users className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />

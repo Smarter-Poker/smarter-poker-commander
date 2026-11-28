@@ -138,8 +138,8 @@ describe('every read and write of a saved colour goes through the normaliser', (
     expect(readers.sort()).toEqual(['pages/commander/displays/waitlist.js', 'pages/commander/waitlist/desk.js']);
     for (const f of readers) {
       const src = read(f);
-      expect(src, f).toMatch(/normalizeSdColors\(json\.data\.desk_customization, DESK_COLOR_KEYS\)/);
-      expect(src, f).not.toMatch(/\.\.\.json\.data\.desk_customization\b/);
+      expect(src, f).toMatch(/normalizeSdColors\((?:json\.data\.|apiData\(json\)\.)desk_customization, DESK_COLOR_KEYS\)/);
+      expect(src, f).not.toMatch(/\.\.\.(?:json\.data\.|apiData\(json\)\.)desk_customization\b/);
     }
   });
 

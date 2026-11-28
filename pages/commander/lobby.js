@@ -22,6 +22,7 @@ import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import useClientNow, { formatClientTime } from '../../src/hooks/useClientNow';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 /**
  * Live occupied-seat count for one commander_tables row.
@@ -79,7 +80,7 @@ const headers = { };
 
       // Tables: data may be {tables: []} or array directly
       const tablesArr = Array.isArray(tablesRes.data) ? tablesRes.data
-        : Array.isArray(tablesRes.data?.tables) ? tablesRes.data.tables : [];
+        : Array.isArray(tablesRes.data?.tables) ? apiData(tablesRes).tables : [];
       setTables(tablesArr);
 
       // Group waitlists by game type
@@ -93,7 +94,7 @@ const headers = { };
 
       // Tournaments API nests under data.tournaments - handle both shapes
       const tournamentsArr = Array.isArray(tournamentsRes.data) ? tournamentsRes.data
-        : Array.isArray(tournamentsRes.data?.tournaments) ? tournamentsRes.data.tournaments : [];
+        : Array.isArray(tournamentsRes.data?.tournaments) ? apiData(tournamentsRes).tournaments : [];
       setTournaments(tournamentsArr.filter(t =>
         ['scheduled', 'registering', 'registration', 'running', 'break', 'final_table'].includes(t.status)
       ).slice(0, 4));
