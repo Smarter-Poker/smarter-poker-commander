@@ -29,7 +29,11 @@ import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/sdPalette';
 import SdSwatchPicker from '../../../src/components/commander/shared/SdSwatchPicker';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
-import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../../src/components/commander/shared/ClubArenaTable';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../../src/components/commander/shared/ClubArenaTable';
+
+// Seat Player badges scale with the seat box; ~658px is its width in the
+// 700px modal on a desktop.
+const sp = seatScale(658);
 
 // formatPhone, titleCase imported from '@/lib/commander/formatters'
 // lighten, darken imported from '@/lib/commander/colorUtils'
@@ -1067,26 +1071,26 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
 
                         {/* Oval Poker Table */}
                         <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '60%', overflow: 'hidden' })}>
-                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-20%' }}>
+                        <div className={SEAT_BOX_CLASS} style={{ ...SEAT_BOX_STYLE, position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-20%' }}>
                           {/* Club Arena table skin (felt + rail) */}
                           <ClubArenaTableFelt />
 
                           {/* Center Info */}
-                          <div style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
+                          <div className="ca-seat-center" style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
+                            <div style={{ fontSize: sp(12, 9), fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
                               Table {table.table_number}
                             </div>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            <div style={{ fontSize: sp(18, 12), fontWeight: 800, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
                               {tStakes} {tGame}
                             </div>
-                            <div style={{ fontSize: 12, color: '#4CAF50', marginTop: 6, fontWeight: 700 }}>
+                            <div style={{ fontSize: sp(12, 9), color: '#4CAF50', marginTop: 6, fontWeight: 700 }}>
                               Tap An Open Seat To Assign
                             </div>
                           </div>
 
                           {/* Dealer */}
-                          <div style={{ position: 'absolute', top: dealerPos.top, left: dealerPos.left, transform: 'translate(-50%, -50%)', textAlign: 'center', width: 70, zIndex: 3 }}>
-                            <div style={clubArenaDealerPuckStyle(44, { margin: '0 auto 2px' })}>D</div>
+                          <div className={seatClass(50, 'ca-seat--dealer')} style={{ position: 'absolute', top: dealerPos.top, left: dealerPos.left, transform: 'translate(-50%, -50%)', textAlign: 'center', width: sp(70, 30), zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div className="ca-seat__avatar" style={clubArenaDealerPuckStyle(sp(44, 20), { margin: '0 auto 2px' })}>D</div>
                           </div>
 
                           {/* Player Seats */}
@@ -1099,29 +1103,29 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                             const isLeftSide = leftPct < 25;
                             const isRightSide = leftPct > 75;
                             const badgeTransform = isLeftSide
-                              ? 'translate(-14px, -50%)'
+                              ? `translate(calc(-1 * ${sp(14)}), -50%)`
                               : isRightSide
-                                ? 'translate(calc(-100% + 14px), -50%)'
+                                ? `translate(calc(-100% + ${sp(14)}), -50%)`
                                 : 'translate(-50%, -50%)';
                             const badgeDirection = isRightSide ? 'row-reverse' : 'row';
 
                             if (isOccupied) {
                               return (
-                                <div key={seat.number} style={{
+                                <div key={seat.number} className={seatClass(leftPct)} style={{
                                   position: 'absolute', top: pos.top, left: pos.left,
                                   transform: badgeTransform, zIndex: 2,
-                                  display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: 6,
-                                  background: 'rgba(36,37,38,0.9)', borderRadius: 12,
-                                  padding: '4px 10px 4px 4px',
+                                  display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: sp(6, 2),
+                                  background: 'rgba(36,37,38,0.9)', borderRadius: sp(12, 6),
+                                  padding: `${sp(4, 2)} ${sp(10, 4)} ${sp(4, 2)} ${sp(4, 2)}`,
                                   border: '2px solid rgba(25, 129, 236,0.5)',
-                                  backdropFilter: 'blur(6px)', minWidth: 60 }}>
-                                  <div style={{
-                                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                                  backdropFilter: 'blur(6px)', minWidth: sp(60, 30) }}>
+                                  <div className="ca-seat__avatar" style={{
+                                    width: sp(44, 20), height: sp(44, 20), borderRadius: '50%', flexShrink: 0,
                                     background: 'linear-gradient(135deg, #1981EC, #1565c0)',
                                     border: '2px solid rgba(25, 129, 236,0.6)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 18, fontWeight: 800, color: '#fff' }}>{initial}</div>
-                                  <div style={{ fontSize: 11, fontWeight: 600, color: '#F2F7FF', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    fontSize: sp(18, 9), fontWeight: 800, color: '#fff' }}>{initial}</div>
+                                  <div className="ca-seat__name" style={{ fontSize: sp(11, 9), fontWeight: 600, color: '#F2F7FF', maxWidth: sp(70, 30), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {firstName}
                                   </div>
                                 </div>
@@ -1130,25 +1134,25 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
 
                             // Open seat - clickable to assign player
                             return (
-                              <button key={seat.number} onClick={() => handleSeat(seatModal, table.table_number, seat.number)} style={{
+                              <button key={seat.number} className={seatClass(leftPct)} onClick={() => handleSeat(seatModal, table.table_number, seat.number)} style={{
                                 position: 'absolute', top: pos.top, left: pos.left,
                                 transform: badgeTransform, zIndex: 2,
-                                display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: 6,
-                                background: 'rgba(36,37,38,0.7)', borderRadius: 12,
-                                padding: '4px 10px 4px 4px',
+                                display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: sp(6, 2),
+                                background: 'rgba(36,37,38,0.7)', borderRadius: sp(12, 6),
+                                padding: `${sp(4, 2)} ${sp(10, 4)} ${sp(4, 2)} ${sp(4, 2)}`,
                                 border: '2px solid rgba(76,175,80,0.5)',
-                                backdropFilter: 'blur(6px)', minWidth: 60,
+                                backdropFilter: 'blur(6px)', minWidth: sp(60, 30),
                                 cursor: 'pointer', transition: 'all 0.2s' }}
                                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(76,175,80,0.2)'; e.currentTarget.style.borderColor = '#4CAF50'; e.currentTarget.style.boxShadow = '0 0 12px rgba(76,175,80,0.5)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(36,37,38,0.7)'; e.currentTarget.style.borderColor = 'rgba(76,175,80,0.5)'; e.currentTarget.style.boxShadow = 'none'; }}
                               >
-                                <div style={{
-                                  width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                                <div className="ca-seat__avatar" style={{
+                                  width: sp(44, 20), height: sp(44, 20), borderRadius: '50%', flexShrink: 0,
                                   background: 'rgba(76,175,80,0.15)',
                                   border: '2px solid rgba(76,175,80,0.4)',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: 16, fontWeight: 800, color: '#4CAF50' }}>{seat.number}</div>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: '#4CAF50', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                  fontSize: sp(16, 8), fontWeight: 800, color: '#4CAF50' }}>{seat.number}</div>
+                                <div className="ca-seat__name" style={{ fontSize: sp(10, 8), fontWeight: 700, color: '#4CAF50', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                   Open
                                 </div>
                               </button>

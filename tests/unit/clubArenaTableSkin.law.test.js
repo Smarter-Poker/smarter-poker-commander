@@ -8,7 +8,12 @@
  *  1. nothing in source, styles or public references the gold table again,
  *     and the file itself is gone;
  *  2. every table view renders the shared Club Arena felt, room and puck;
- *  3. the Club Arena assets exist and are real WebP images.
+ *  3. the Club Arena assets exist and are real WebP images;
+ *  4. seat badges scale with the table: every seat, dealer and avatar/name/
+ *     meta element is sized through seatScale() (clamp of the seat box), never
+ *     a fixed pixel number, the seat box is a size container, and the compact
+ *     phone layout exists (2026-11-28: on 375-430px phones nine fixed 180px
+ *     badges piled on top of each other).
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
@@ -80,4 +85,46 @@ describe('Club Arena table skin', () => {
     expect(head.subarray(8, 12).toString('ascii')).toBe('WEBP');
     expect(statSync(abs).size).toBeLessThan(200 * 1024);
   });
+
+  describe('seat badges scale with the table', () => {
+    const SIZE_KEYS = /\b(width|height|fontSize|minWidth|maxWidth|gap|borderRadius):\s*\d/;
+    const FIXED_PADDING = /\bpadding:\s*'\d/;
+
+    it.each(TABLE_VIEWS)('%s sizes no seat badge in fixed pixels', (file) => {
+      const src = read(file);
+      expect(src).toMatch(/const sp = seatScale\((\d+|isFullscreen \? \d+ : \d+)\)/);
+      expect(src).toMatch(/className=\{SEAT_BOX_CLASS\} style=\{\{ \.\.\.SEAT_BOX_STYLE/);
+      expect(src).not.toMatch(/translate\(-\d+px/);
+      expect(src).not.toMatch(/calc\(-100% \+ \d+px\)/);
+
+      const markers = [...src.matchAll(/className=(\{seatClass\([^)]*\)\}|"ca-seat__(avatar|card|text|name|meta)")/g)];
+      expect(markers.length).toBeGreaterThanOrEqual(6);
+      const offenders = [];
+      for (const m of markers) {
+        const rest = src.slice(m.index);
+        const end = rest.search(/\}\}>|\)\}>/);
+        const block = rest.slice(0, end === -1 ? 400 : end);
+        if (SIZE_KEYS.test(block) || FIXED_PADDING.test(block)) {
+          offenders.push(block.split('\n')[0].trim().slice(0, 120));
+        }
+      }
+      expect(offenders).toEqual([]);
+      // Dealer pucks take a scaled size.
+      for (const call of src.matchAll(/clubArenaDealerPuckStyle\(([^,)]+)/g)) {
+        expect(call[1]).toMatch(/^(sp\(|avatarSize)/);
+      }
+    });
+
+    it('the skin module scales by the seat box and has the compact phone layout', () => {
+      const src = read(SKIN);
+      expect(src).toMatch(/export function seatScale\(ref\)/);
+      expect(src).toContain('cqw, ${px}px)');
+      expect(src).toContain("containerType: 'inline-size'");
+      expect(src).toMatch(/@container \(max-width: \$\{SEAT_COMPACT_MAX_PX\}px\)/);
+      expect(src).toMatch(/\.ca-seat__meta\{display:none!important\}/);
+      expect(src).toMatch(/\.ca-seat__name\{[^}]*text-overflow|\.ca-seat__name,\.ca-seat__meta\{overflow:hidden;text-overflow:ellipsis/);
+      expect(src).toMatch(/<InlineStyle css=\{SEAT_CSS\}/);
+    });
+  });
 });
+

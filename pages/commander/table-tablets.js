@@ -20,7 +20,7 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
-import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../src/components/commander/shared/ClubArenaTable';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../src/components/commander/shared/ClubArenaTable';
 
 const STATUS_BADGE = {
     in_use: { bg: '#31A24C', label: 'Active' },
@@ -1151,36 +1151,41 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
         }
         const occupiedCount = seatArr.filter(s => s.taken).length;
 
-        const avatarSize = isFullscreen ? 64 : 52;
-        const fontSize = isFullscreen ? 14 : 13;
-        const nameMaxWidth = isFullscreen ? 140 : 110;
+        // Seat badges scale with the seat box. Fullscreen reaches full size at
+        // 1100px. The two-column grid gives each table ~590px on a 1280px
+        // desktop, where the old full-size badges overlapped (Sam x Chris,
+        // dealer x seat 1), so the grid reaches full size only at 760px.
+        const sp = seatScale(isFullscreen ? 1100 : 760);
+        const avatarSize = sp(isFullscreen ? 64 : 52, 20);
+        const fontSize = sp(isFullscreen ? 14 : 13, 9);
+        const nameMaxWidth = sp(isFullscreen ? 140 : 110, 40);
 
         return (
-            <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: isFullscreen ? '52%' : '60%', overflow: isFullscreen ? 'visible' : 'hidden', borderRadius: isFullscreen ? 0 : 12 })}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: isFullscreen ? '-20%' : '-16%' }}>
+            <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: isFullscreen ? '52%' : '64%', overflow: isFullscreen ? 'visible' : 'hidden', borderRadius: isFullscreen ? 0 : 12 })}>
+                <div className={SEAT_BOX_CLASS} style={{ ...SEAT_BOX_STYLE, position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: isFullscreen ? '-20%' : '-16%' }}>
                     {/* Club Arena table skin (felt + rail) */}
                     <ClubArenaTableFelt />
 
                     {/* Game info in center */}
-                    <div style={{
+                    <div className="ca-seat-center" style={{
                         position: 'absolute', top: '48%', left: '50%',
                         transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
-                        <div style={{ fontSize: isFullscreen ? 16 : 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
+                        <div style={{ fontSize: sp(isFullscreen ? 16 : 13, 9), fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
                             {venueName || ''}{venueName ? ' · ' : ''}TABLE {tNum}
                         </div>
                         {isTournamentTable(table) && (table.tournament?.name || table._tournamentData?.name) && (
-                            <div style={{ fontSize: isFullscreen ? 16 : 12, fontWeight: 900, color: '#22D3EE', letterSpacing: 0.5, marginBottom: 4, textShadow: '0 0 12px rgba(34, 211, 238,0.3)' }}>
+                            <div style={{ fontSize: sp(isFullscreen ? 16 : 12, 9), fontWeight: 900, color: '#22D3EE', letterSpacing: 0.5, marginBottom: 4, textShadow: '0 0 12px rgba(34, 211, 238,0.3)' }}>
                                 {table.tournament?.name || table._tournamentData?.name}
                             </div>
                         )}
-                        <div style={{ fontSize: isFullscreen ? 22 : 18, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>
+                        <div style={{ fontSize: sp(isFullscreen ? 22 : 18, 12), fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>
                             {isTournamentTable(table) && !game?.game_type && !table.game_type ? 'Tournament' : getFullGameName(game?.game_type || table.game_type)}
                         </div>
-                        <div style={{ fontSize: isFullscreen ? 20 : 16, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: 700 }}>
+                        <div style={{ fontSize: sp(isFullscreen ? 20 : 16, 10), color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: 700 }}>
                             {formatStakes(game?.stakes || table.stakes)}
                         </div>
                         {table.table_purpose && (
-                            <div style={{ fontSize: isFullscreen ? 11 : 9, fontWeight: 800, marginTop: 6, padding: '2px 10px', borderRadius: 4, display: 'inline-block', letterSpacing: 1.5, textTransform: 'uppercase', background: isTournamentTable(table) ? 'rgba(34, 211, 238,0.25)' : table.table_purpose === 'must_move' ? 'rgba(34, 211, 238,0.3)' : 'rgba(25, 129, 236,0.25)', color: isTournamentTable(table) ? '#22D3EE' : table.table_purpose === 'must_move' ? '#22D3EE' : '#1981EC', border: `1px solid ${isTournamentTable(table) ? 'rgba(34, 211, 238,0.5)' : table.table_purpose === 'must_move' ? 'rgba(34, 211, 238,0.5)' : 'rgba(25, 129, 236,0.4)'}` }}>
+                            <div style={{ fontSize: sp(isFullscreen ? 11 : 9, 8), fontWeight: 800, marginTop: 6, padding: '2px 10px', borderRadius: 4, display: 'inline-block', letterSpacing: 1.5, textTransform: 'uppercase', background: isTournamentTable(table) ? 'rgba(34, 211, 238,0.25)' : table.table_purpose === 'must_move' ? 'rgba(34, 211, 238,0.3)' : 'rgba(25, 129, 236,0.25)', color: isTournamentTable(table) ? '#22D3EE' : table.table_purpose === 'must_move' ? '#22D3EE' : '#1981EC', border: `1px solid ${isTournamentTable(table) ? 'rgba(34, 211, 238,0.5)' : table.table_purpose === 'must_move' ? 'rgba(34, 211, 238,0.5)' : 'rgba(25, 129, 236,0.4)'}` }}>
                                 {isTournamentTable(table) ? 'Tournament' : table.table_purpose === 'must_move' ? 'Must Move' : 'Main Game'}
                             </div>
                         )}
@@ -1191,36 +1196,37 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         const dealerName = dealerMap[tNum] || game?.dealer_name || 'No Dealer';
                         return (
                             <div
+                                className={seatClass(50, 'ca-seat--dealer')}
                                 onClick={isFullscreen ? (e) => { e.stopPropagation(); haptic(); openDealerScan(tNum); } : undefined}
                                 style={{
                                     position: 'absolute', top: dealerPos.top, left: dealerPos.left,
                                     transform: 'translate(-50%, -50%)', zIndex: 3,
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp(4, 1),
                                     cursor: isFullscreen ? 'pointer' : 'default' }}>
                                 {/* Dealer card */}
-                                <div style={{
-                                    display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8,
+                                <div className="ca-seat__card" style={{
+                                    display: 'flex', flexDirection: 'row', alignItems: 'center', gap: sp(8, 3),
                                     background: 'rgba(36,37,38,0.9)',
-                                    borderRadius: 12,
-                                    padding: '5px 10px 5px 5px',
+                                    borderRadius: sp(12, 6),
+                                    padding: `${sp(5, 2)} ${sp(10, 4)} ${sp(5, 2)} ${sp(5, 2)}`,
                                     border: `2px solid ${isFullscreen ? 'rgba(25, 129, 236,0.8)' : 'rgba(25, 129, 236,0.6)'}`,
                                     backdropFilter: 'blur(6px)',
-                                    minWidth: isFullscreen ? 80 : 70 }}>
+                                    minWidth: sp(isFullscreen ? 80 : 70, 30) }}>
                                     {/* D avatar circle */}
-                                    <div style={clubArenaDealerPuckStyle(avatarSize)}>
+                                    <div className="ca-seat__avatar" style={clubArenaDealerPuckStyle(avatarSize)}>
                                         D
                                     </div>
                                     {/* Name + DEALER label */}
-                                    <div style={{ overflow: 'hidden' }}>
-                                        <div style={{
+                                    <div className="ca-seat__text" style={{ overflow: 'hidden' }}>
+                                        <div className="ca-seat__name" style={{
                                             fontSize, fontWeight: 600, lineHeight: 1.2,
                                             color: '#F2F7FF',
                                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                             maxWidth: nameMaxWidth }}>
                                             {dealerName}
                                         </div>
-                                        <div style={{ fontSize: isFullscreen ? 11 : 10, fontWeight: 700, color: '#1981EC', lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                            {isFullscreen ? 'Tap to Scan' : 'Dealer'}
+                                        <div className="ca-seat__meta" style={{ fontSize: sp(isFullscreen ? 11 : 10, 8), fontWeight: 700, color: '#1981EC', lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                            {isFullscreen ? 'Tap To Scan' : 'Dealer'}
                                         </div>
                                     </div>
                                 </div>
@@ -1241,9 +1247,9 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         const isLeftSide = leftPct < 25;
                         const isRightSide = leftPct > 75;
                         const badgeTransform = isLeftSide
-                            ? 'translate(-17px, -50%)'
+                            ? `translate(calc(-1 * ${sp(17)}), -50%)`
                             : isRightSide
-                                ? 'translate(calc(-100% + 17px), -50%)'
+                                ? `translate(calc(-100% + ${sp(17)}), -50%)`
                                 : 'translate(-50%, -50%)';
                         const badgeDirection = isRightSide ? 'row-reverse' : 'row';
 
@@ -1253,13 +1259,14 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         if (isOccupied && seat.taken) {
                             if (seat.taken.time_remaining != null) {
                                 const rem = isPausedOrBreak ? Math.max(0, seat.taken.time_remaining) : adjustTime(seat.taken.time_remaining);
-                                timerText = rem <= 0 ? 'EXPIRED' : (isPausedOrBreak ? `⏸ ${formatTime(rem)}` : formatTime(rem));
+                                timerText = rem <= 0 ? 'EXPIRED' : (isPausedOrBreak ? `Paused ${formatTime(rem)}` : formatTime(rem));
                                 timerColor = isPausedOrBreak ? '#9FB3C8' : getTimerColor(rem);
                             }
                         }
 
                         return (
                             <div key={seat.number}
+                                className={seatClass(leftPct)}
                                 onClick={isFullscreen ? () => {
                                     haptic('light');
                                     if (movingPlayer && !isOccupied) {
@@ -1299,17 +1306,17 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     position: 'absolute', top: pos.top, left: pos.left,
                                     transform: badgeTransform, zIndex: 2,
                                     cursor: isFullscreen ? 'pointer' : 'default',
-                                    display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: 8,
+                                    display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: sp(8, 3),
                                     background: 'rgba(36,37,38,0.9)',
-                                    borderRadius: 12,
-                                    padding: '5px 10px 5px 5px',
+                                    borderRadius: sp(12, 6),
+                                    padding: `${sp(5, 2)} ${sp(10, 4)} ${sp(5, 2)} ${sp(5, 2)}`,
                                     border: `2px solid ${isOccupied
                                         ? (memberActive ? 'rgba(49,162,76,0.7)' : seat.taken?.membership_status ? 'rgba(239,68,68,0.5)' : 'rgba(25, 129, 236,0.5)')
                                         : 'rgba(62,64,66,0.6)'}`,
                                     backdropFilter: 'blur(6px)',
-                                    minWidth: isFullscreen ? 80 : 70 }}>
+                                    minWidth: sp(isFullscreen ? 80 : 70, 30) }}>
                                 {/* Avatar circle */}
-                                <div style={{
+                                <div className="ca-seat__avatar" style={{
                                     width: avatarSize, height: avatarSize, borderRadius: '50%', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     background: isOccupied
@@ -1320,20 +1327,20 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         : 'rgba(62,64,66,0.5)'}`,
                                     overflow: 'hidden' }}>
                                     {isOccupied ? (
-                                        <span style={{ fontSize: isFullscreen ? 24 : 20, fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
+                                        <span style={{ fontSize: sp(isFullscreen ? 24 : 20, 9), fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
                                     ) : (
-                                        <span style={{ fontSize: isFullscreen ? 18 : 16, fontWeight: 600, color: movingPlayer && isFullscreen ? '#22c55e' : '#BDD0E2' }}>{seat.number}</span>
+                                        <span style={{ fontSize: sp(isFullscreen ? 18 : 16, 8), fontWeight: 600, color: movingPlayer && isFullscreen ? '#22c55e' : '#BDD0E2' }}>{seat.number}</span>
                                     )}
                                     {/* Missed Blinds Sticker - overlays top-right of avatar */}
                                     {isOccupied && (seat.taken?.missed_blinds || 0) > 0 && (
                                         <div style={{
                                             position: 'absolute', top: -4, right: -4,
-                                            width: isFullscreen ? 22 : 18, height: isFullscreen ? 22 : 18,
+                                            width: sp(isFullscreen ? 22 : 18, 10), height: sp(isFullscreen ? 22 : 18, 10),
                                             borderRadius: '50%',
                                             background: (seat.taken.missed_blinds >= 2) ? '#EF4444' : '#F97316',
                                             border: '2px solid #0A1829',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: isFullscreen ? 10 : 8, fontWeight: 900, color: '#fff',
+                                            fontSize: sp(isFullscreen ? 10 : 8, 6), fontWeight: 900, color: '#fff',
                                             boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
                                             zIndex: 3 }}>
                                             {seat.taken.missed_blinds}
@@ -1341,34 +1348,34 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     )}
                                 </div>
                                 {/* Name + Timer */}
-                                <div style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
-                                    <div style={{
+                                <div className="ca-seat__text" style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
+                                    <div className="ca-seat__name" style={{
                                         fontSize, fontWeight: 600, lineHeight: 1.2,
                                         color: isOccupied ? '#F2F7FF' : (movingPlayer && isFullscreen ? '#22c55e' : '#BDD0E2'),
                                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                         maxWidth: nameMaxWidth, position: 'relative' }}>
-                                        {isOccupied ? fullName : (movingPlayer && isFullscreen ? 'Move here' : (isFullscreen ? 'Open' : 'Open'))}
+                                        {isOccupied ? fullName : (movingPlayer && isFullscreen ? 'Move Here' : 'Open')}
 
                                     </div>
                                     {/* Session Status (Paused / Meal Break) */}
                                     {isOccupied && seat.taken?.session_status && seat.taken.session_status !== 'active' && (
-                                        <div style={{ fontSize: isFullscreen ? 11 : 10, fontWeight: 700, color: seat.taken.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
-                                            {seat.taken.session_status === 'paused' ? '⏸️ PAUSED' : '🍽️ MEAL BREAK'}
+                                        <div className="ca-seat__meta" style={{ fontSize: sp(isFullscreen ? 11 : 10, 8), fontWeight: 700, color: seat.taken.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
+                                            {seat.taken.session_status === 'paused' ? 'Paused' : 'Meal Break'}
                                         </div>
                                     )}
                                     {!isOccupied && isFullscreen && (
-                                        <div style={{ fontSize: 10, color: movingPlayer ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.25)' }}>{movingPlayer ? 'Tap to confirm' : 'Tap to seat'}</div>
+                                        <div className="ca-seat__meta" style={{ fontSize: sp(10, 8), color: movingPlayer ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.25)' }}>{movingPlayer ? 'Tap To Confirm' : 'Tap To Seat'}</div>
                                     )}
                                     {timerText && (
-                                        <div style={{
-                                            fontSize: isFullscreen ? 13 : 12, fontWeight: 700, color: timerColor,
+                                        <div className="ca-seat__meta" style={{
+                                            fontSize: sp(isFullscreen ? 13 : 12, 8), fontWeight: 700, color: timerColor,
                                             fontFamily: 'monospace', lineHeight: 1.2 }}>
                                             {timerText}
                                         </div>
                                     )}
                                     {isOccupied && seat.taken?.time_balance_minutes > 0 && (
-                                        <div style={{ fontSize: isFullscreen ? 11 : 10, color: '#1981EC', fontWeight: 600 }}>
-                                            {Math.floor(seat.taken.time_balance_minutes / 60)}h bal
+                                        <div className="ca-seat__meta" style={{ fontSize: sp(isFullscreen ? 11 : 10, 8), color: '#1981EC', fontWeight: 600 }}>
+                                            {Math.floor(seat.taken.time_balance_minutes / 60)}h Balance
                                         </div>
                                     )}
                                 </div>
@@ -1487,7 +1494,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     <h2 style={{ fontSize: 15, fontWeight: 700, color: '#22D3EE', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <Trophy size={20} /> Tournament Tables ({activeTournamentTables.length})
                                     </h2>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 8, marginBottom: 16 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(400px, 100%), 1fr))', gap: 8, marginBottom: 16 }}>
                                         {activeTournamentTables.map(table => {
                                             const tNum = table.table_number || table.number;
                                             const maxSeats = table.max_seats || 9;
@@ -1544,7 +1551,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#BDD0E2', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <Timer size={14} /> Active Cash Tables ({activeCashTables.length})
                                     </h2>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 12, marginBottom: 24 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(400px, 100%), 1fr))', gap: 12, marginBottom: 24 }}>
                                         {activeCashTables.map(table => {
                                             const tNum = table.table_number || table.number;
                                             const maxSeats = table.max_seats || 9;
