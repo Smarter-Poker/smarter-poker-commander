@@ -25,7 +25,15 @@ function files(dir) {
   return out;
 }
 
-function badEffectReturns(src) {
+/** Comments blanked (same length, newlines kept) so line numbers survive. */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, (c, pre) => pre + ' '.repeat(c.length - pre.length));
+}
+
+function badEffectReturns(raw) {
+  const src = stripComments(raw);
   const bad = [];
   const re = /useEffect\(\s*(?:async\s*)?\(\)\s*=>\s*\{/g;
   let m;
