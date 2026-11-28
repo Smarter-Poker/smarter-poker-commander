@@ -76,23 +76,19 @@ test.describe('login page (signed out)', () => {
     expect(refErrors).toEqual([]);
   });
 
-  test('"Continue As Smarter.Poker" is live and bridges to the hub when nothing is signed in', async ({ page, baseURL }) => {
-    await page.goto('/commander/login');
-    const btn = page.getByRole('button', { name: /continue as/i });
-    await expect(btn).toBeVisible({ timeout: 15_000 });
-    await expect(btn).toBeEnabled();
-
+  test('signed out on the commander origin, the page bridges through the hub by itself (no loop)', async ({ page, baseURL }) => {
     const isHubOrigin = new URL(baseURL!).origin === new URL(HUB).origin;
-    await btn.click();
+    await page.goto('/commander/login');
     if (!isHubOrigin) {
-      // Signed out on the commander origin => must hop to the hub bridge...
+      // 2026-11-27: no local session => the page takes the hub hop itself...
       await page.waitForURL((u) => u.origin === new URL(HUB).origin && u.searchParams.get('bridge') === '1', { timeout: 20_000 });
-      // ...which, with no hub session either, renders the form (no loop, no spinner).
-      await expect(page.getByRole('button', { name: /continue as/i })).toBeVisible({ timeout: 20_000 });
-      expect(page.url()).toContain('bridge=1');
-    } else {
-      await expect(page.getByText(/not signed in to smarter\.poker/i)).toBeVisible({ timeout: 15_000 });
     }
+    // ...and with no hub session either, the form is shown (no loop, no spinner).
+    const btn = page.getByRole('button', { name: /continue as/i });
+    await expect(btn).toBeVisible({ timeout: 20_000 });
+    await expect(btn).toBeEnabled();
+    await btn.click();
+    await expect(page.getByText(/not signed in to smarter\.poker/i)).toBeVisible({ timeout: 15_000 });
   });
 
   test('a stale SSO link fails loudly, not with a spinner', async ({ page }) => {
@@ -104,7 +100,14 @@ test.describe('login page (signed out)', () => {
   test('?expired=1 without a session shows the form with a clear message', async ({ page }) => {
     const refErrors = collectReferenceErrors(page);
     await page.goto('/commander/login?expired=1');
-    await expect(page.getByText(/session has expired/i)).toBeVisible({ timeout: 20_000 });
+    if (new URL(page.url()).origin !== new URL(HUB).origin) {
+      // No local session: the hub hop runs first (2026-11-27); signed out
+      // there too, the form is what remains.
+      await page.waitForURL((u) => u.origin === new URL(HUB).origin && u.searchParams.get('bridge') === '1', { timeout: 20_000 });
+      await expect(page.getByRole('button', { name: /continue as/i })).toBeVisible({ timeout: 20_000 });
+    } else {
+      await expect(page.getByText(/session has expired/i)).toBeVisible({ timeout: 20_000 });
+    }
     expect(refErrors).toEqual([]);
   });
 
@@ -176,7 +179,7 @@ test.describe('signed-in flow', () => {
     expect(page.url()).not.toContain('/commander/login');
   });
 
-  test('signed in on the hub, "Continue As Smarter.Poker" reaches the commander dashboard with no password', async ({ page, baseURL }) => {
+  test('signed in on the hub, opening the commander origin reaches the dashboard with no password and no click', async ({ page, baseURL }) => {
     const refErrors = collectReferenceErrors(page);
     const commanderOrigin = new URL(baseURL!).origin;
     test.skip(commanderOrigin === new URL(HUB).origin, 'the hop only exists between two origins');
@@ -189,29 +192,16 @@ test.describe('signed-in flow', () => {
       localStorage.removeItem('commander_staff');
     }, session);
 
-    // 2. Arrive on the commander origin with nothing, the way a bookmark does.
-    await page.goto('/commander/login');
-    // LOCATOR CORRECTED 2026-09-06. This asked for the accessible name
-    // /continue with sso/i, which is the button's `title` attribute - a
-    // TOOLTIP. Playwright falls back to `title` for the accessible name only
-    // when an element has no text content, and this button has always had
-    // some: `{ssoLoading ? 'Signing In...' : 'Continue As ' + (ssoEmail ||
-    // 'Smarter.Poker')}`, in every revision of pages/commander/login.js back
-    // to the first. So the locator never matched, this test failed on all
-    // three browsers on every run from the day it landed (2026-09-04, #108),
-    // and the six sibling assertions in this same file were already using the
-    // right name. The button the user actually reads is what we look for.
-    await expect(page.getByRole('button', { name: /continue as/i })).toBeVisible({ timeout: 15_000 });
-    const hasSessionHere = await page.evaluate(() => !!localStorage.getItem('smarter-poker-auth'));
-    expect(hasSessionHere, 'the commander origin must start signed out for this to be the hop').toBe(false);
-
-    // 3. Press the button. Hub bridge (?bridge=1) -> one-time SSO token ->
-    //    /auth/sso on the commander origin -> dashboard. No form, no password.
+    // 2. Arrive on the commander origin with nothing, the way a bookmark or
+    //    the hub card's fallback does. Since 2026-11-27 the login page takes
+    //    the hub hop itself: hub bridge (?bridge=1) -> one-time SSO token ->
+    //    /auth/sso on the commander origin -> dashboard. No form, no click,
+    //    no password.
     let typedPassword = false;
     page.on('request', (req) => {
       if (req.method() === 'POST' && /grant_type=password/.test(req.url())) typedPassword = true;
     });
-    await page.getByRole('button', { name: /continue as/i }).click();
+    await page.goto('/commander/login');
     await page.waitForURL((u) => u.origin === commanderOrigin && /\/commander\/dashboard/.test(u.pathname), { timeout: 45_000 });
 
     expect(typedPassword, 'the hop must never fall back to a password grant').toBe(false);

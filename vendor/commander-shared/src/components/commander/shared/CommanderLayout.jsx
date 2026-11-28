@@ -22,6 +22,7 @@ import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../../lib/comm
 import { canRoleAccessRoute, isSensitiveRoute } from '../../../lib/commander/auth';
 import useClubBranding from '../../../lib/commander/useClubBranding';
 import { supabase } from '../../../lib/supabase';
+import { useHeaderPortrait } from '../../../lib/commander/headerPortrait';
 import CommanderEffectsProvider from './CommanderEffectsProvider';
 import PushNotificationProvider from './PushNotificationProvider';
 import useBusBridge from '../../../lib/commander/useBusBridge';
@@ -70,49 +71,9 @@ export default function CommanderLayout({ children, title }) {
 
 
   const [staff, setStaff] = useState(null);
-  const [profileAvatar, setProfileAvatar] = useState('/default-avatar.png');
-
-  useEffect(() => {
-    const refreshProfileAvatar = (event) => {
-      try {
-        const cachedHeader = JSON.parse(localStorage.getItem('sp-cached-header-user') || '{}');
-        const cachedAuth = JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}');
-        const nextAvatar =
-          event?.detail?.avatar_url ||
-          staff?.avatar_url ||
-          staff?.avatar ||
-          cachedHeader?.avatar_url ||
-          cachedHeader?.avatar ||
-          cachedAuth?.user?.user_metadata?.avatar_url ||
-          '/default-avatar.png';
-        setProfileAvatar(nextAvatar);
-      } catch (_) {
-        setProfileAvatar('/default-avatar.png');
-      }
-    };
-    const handleStorage = (event) => {
-      if (event.key === 'sp-cached-header-user' || event.key === 'smarter-poker-auth') {
-        refreshProfileAvatar();
-      }
-    };
-
-    let avatarChannel = null;
-    try {
-      avatarChannel = new BroadcastChannel('smarter_poker_avatar_sync');
-      avatarChannel.onmessage = refreshProfileAvatar;
-    } catch (_) {
-      // BroadcastChannel is optional; storage + same-tab events remain active.
-    }
-
-    refreshProfileAvatar();
-    window.addEventListener('profile-updated', refreshProfileAvatar);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('profile-updated', refreshProfileAvatar);
-      window.removeEventListener('storage', handleStorage);
-      try { avatarChannel?.close(); } catch (_) { /* noop */ }
-    };
-  }, [staff]);
+  // Same profile row and rule as the hub header (2026-11-27) - see
+  // lib/commander/headerPortrait.js for why the storage guesses were wrong.
+  const profileAvatar = useHeaderPortrait(supabase);
 
   // Multi-club account switcher. Declared AFTER `staff` on purpose: this
   // effect reads staff?.user_id in its dependency array, which is evaluated
@@ -1086,13 +1047,32 @@ export default function CommanderLayout({ children, title }) {
         .cmd-approved-header__menu { left: 1.7%; width: 7%; }
         .cmd-approved-header__back { left: 8%; width: 12%; }
         .cmd-approved-header__hub { left: 19.1%; width: 12.9%; }
+        /* 2026-11-27 (Dan: "the header and profile pic aren't the same as how
+           they are for every other global header"): same artwork as the hub
+           (images/global-header/global-header-desktop.png, byte-identical), so
+           the same geometry as World Hub UniversalHeader - an opaque black disc
+           centred on the baked ornament (r 56 of 1648x168) masks the ring, and
+           the photo's only frame is the 0.5px hairline on the slot (hub
+           GLOBAL_HEADER_PROFILE_FRAME_LAW.md). The old 7.5% box with a 58% x .78
+           slot painted an oval photo inside the visible chrome ring. */
+        .cmd-approved-header .cmd-approved-header__button { min-height: 0; }
         .cmd-approved-header__profile {
-          left: 66.5%;
-          width: 7.5%;
+          top: 14.58%;
+          left: 66.98%;
+          width: 6.8%;
+          height: auto;
+          aspect-ratio: 1;
           position: absolute !important;
+          box-sizing: border-box;
           overflow: hidden;
           contain: layout paint;
           isolation: isolate;
+          border: 0;
+          border-radius: 50%;
+          background: #000;
+        }
+        .cmd-approved-header__profile:focus-visible {
+          background: radial-gradient(closest-side, rgba(54, 186, 255, 0.32), rgba(54, 186, 255, 0) 78%), #000;
         }
         .cmd-approved-header__wallet { left: 73.2%; width: 7.1%; }
         .cmd-approved-header__vip { left: 79.9%; width: 6.5%; }
@@ -1104,13 +1084,17 @@ export default function CommanderLayout({ children, title }) {
           left: 50% !important;
           z-index: 1;
           display: block;
-          width: 58%;
+          width: 72%;
           height: auto;
-          aspect-ratio: .78;
+          aspect-ratio: 1;
           transform: translate(-50%, -50%) !important;
           overflow: hidden;
+          box-sizing: border-box;
+          border: 0.5px solid rgba(0, 0, 0, 0.94);
           border-radius: 50%;
-          background: #020305;
+          background: transparent;
+          max-width: 100%;
+          max-height: 100%;
           pointer-events: none;
         }
         .cmd-approved-header__avatar-slot > .cmd-approved-header__avatar {
@@ -1122,8 +1106,9 @@ export default function CommanderLayout({ children, title }) {
           max-width: none !important;
           aspect-ratio: auto !important;
           transform: none !important;
-          border-radius: inherit !important;
-          background: #020305;
+          border: 0 !important;
+          border-radius: 50% !important;
+          background: transparent !important;
           object-fit: cover !important;
           object-position: center !important;
           opacity: 1 !important;

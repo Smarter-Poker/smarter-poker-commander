@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../../lib/supabase';
 import { commanderSignOut } from '../../../lib/commanderLogout';
+import { useHeaderPortrait } from '../../../lib/commander/headerPortrait';
 
 const MENU_ITEMS = [
   ['Dashboard', '/commander/dashboard'],
@@ -16,7 +17,9 @@ const MENU_ITEMS = [
 export default function StandaloneGlobalHeader() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [profileAvatar, setProfileAvatar] = useState('/default-avatar.png');
+  // Same profile row and rule as the hub header (2026-11-27) - see
+  // lib/commander/headerPortrait.js for why the storage guesses were wrong.
+  const profileAvatar = useHeaderPortrait(supabase);
   const signingOutRef = useRef(false);
 
   /**
@@ -39,48 +42,6 @@ export default function StandaloneGlobalHeader() {
     await commanderSignOut(supabase);
   };
 
-  useEffect(() => {
-    const refreshProfileAvatar = (event) => {
-      try {
-        const staff = JSON.parse(localStorage.getItem('commander_staff') || '{}');
-        const cachedHeader = JSON.parse(localStorage.getItem('sp-cached-header-user') || '{}');
-        const cachedAuth = JSON.parse(localStorage.getItem('smarter-poker-auth') || '{}');
-        const nextAvatar =
-          event?.detail?.avatar_url ||
-          staff?.avatar_url ||
-          staff?.avatar ||
-          cachedHeader?.avatar_url ||
-          cachedHeader?.avatar ||
-          cachedAuth?.user?.user_metadata?.avatar_url ||
-          '/default-avatar.png';
-        setProfileAvatar(nextAvatar);
-      } catch (_) {
-        setProfileAvatar('/default-avatar.png');
-      }
-    };
-    const handleStorage = (event) => {
-      if (['commander_staff', 'sp-cached-header-user', 'smarter-poker-auth'].includes(event.key)) {
-        refreshProfileAvatar();
-      }
-    };
-
-    let avatarChannel = null;
-    try {
-      avatarChannel = new BroadcastChannel('smarter_poker_avatar_sync');
-      avatarChannel.onmessage = refreshProfileAvatar;
-    } catch (_) {
-      // BroadcastChannel is optional; storage + same-tab events remain active.
-    }
-
-    refreshProfileAvatar();
-    window.addEventListener('profile-updated', refreshProfileAvatar);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('profile-updated', refreshProfileAvatar);
-      window.removeEventListener('storage', handleStorage);
-      try { avatarChannel?.close(); } catch (_) { /* noop */ }
-    };
-  }, []);
 
   const go = (path) => {
     setMenuOpen(false);
@@ -142,13 +103,32 @@ export default function StandaloneGlobalHeader() {
         .standalone-approved-header__menu { left: 1.7%; width: 7%; }
         .standalone-approved-header__back { left: 8%; width: 12%; }
         .standalone-approved-header__hub { left: 19.1%; width: 12.9%; }
+        /* 2026-11-27 (Dan: "the header and profile pic aren't the same as how
+           they are for every other global header"): same artwork as the hub
+           (images/global-header/global-header-desktop.png, byte-identical), so
+           the same geometry as World Hub UniversalHeader - an opaque black disc
+           centred on the baked ornament (r 56 of 1648x168) masks the ring, and
+           the photo's only frame is the 0.5px hairline on the slot (hub
+           GLOBAL_HEADER_PROFILE_FRAME_LAW.md). The old 7.5% box with a 58% x .78
+           slot painted an oval photo inside the visible chrome ring. */
+        .standalone-approved-header .standalone-approved-header__button { min-height: 0; }
         .standalone-approved-header__profile {
-          left: 66.5%;
-          width: 7.5%;
+          top: 14.58%;
+          left: 66.98%;
+          width: 6.8%;
+          height: auto;
+          aspect-ratio: 1;
           position: absolute !important;
+          box-sizing: border-box;
           overflow: hidden;
           contain: layout paint;
           isolation: isolate;
+          border: 0;
+          border-radius: 50%;
+          background: #000;
+        }
+        .standalone-approved-header__profile:focus-visible {
+          background: radial-gradient(closest-side, rgba(54, 186, 255, 0.32), rgba(54, 186, 255, 0) 78%), #000;
         }
         .standalone-approved-header__wallet { left: 73.2%; width: 7.1%; }
         .standalone-approved-header__vip { left: 79.9%; width: 6.5%; }
@@ -160,13 +140,17 @@ export default function StandaloneGlobalHeader() {
           left: 50% !important;
           z-index: 1;
           display: block;
-          width: 58%;
+          width: 72%;
           height: auto;
-          aspect-ratio: .78;
+          aspect-ratio: 1;
           transform: translate(-50%, -50%) !important;
           overflow: hidden;
+          box-sizing: border-box;
+          border: 0.5px solid rgba(0, 0, 0, 0.94);
           border-radius: 50%;
-          background: #020305;
+          background: transparent;
+          max-width: 100%;
+          max-height: 100%;
           pointer-events: none;
         }
         .standalone-approved-header__avatar-slot > .standalone-approved-header__avatar {
@@ -178,8 +162,9 @@ export default function StandaloneGlobalHeader() {
           max-width: none !important;
           aspect-ratio: auto !important;
           transform: none !important;
-          border-radius: inherit !important;
-          background: #020305;
+          border: 0 !important;
+          border-radius: 50% !important;
+          background: transparent !important;
           object-fit: cover !important;
           object-position: center !important;
           opacity: 1 !important;
