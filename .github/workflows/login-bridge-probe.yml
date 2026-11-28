@@ -34,6 +34,11 @@ on:
       - 'next.config.js'
       - 'middleware.ts'
       - 'scripts/probe-login-bridge.mjs'
+      # The signed-in staff header census (e2e job) re-runs when its spec,
+      # the header registry or this workflow changes.
+      - 'tests/e2e/staff-headers.spec.ts'
+      - 'src/components/commander/shared/pageHeaders.js'
+      - '.github/workflows/login-bridge-probe.yml'
 
 permissions:
   contents: read
@@ -126,7 +131,8 @@ jobs:
     # "Install Chromium" failed on every run from 2026-11-13 and this browser leg
     # never executed. Move to ubuntu-26.04 together with a Playwright upgrade.
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 15 -> 40 (2026-11-28): the job now also opens every staff page signed in.
+    timeout-minutes: 40
     needs: probe
     if: always()
     steps:
@@ -161,6 +167,36 @@ jobs:
           PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PROBE_EMAIL }}
           PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
         run: npx playwright test tests/e2e/login-bridge.spec.ts --reporter=line
+      # 2026-11-28: signed-in live proof of the #SmarterDesign headers. Signs in
+      # as the probe account and opens every staff route in
+      # src/components/commander/shared/pageHeaders.js that is neither PIN-gated
+      # nor a redirect, asserting one [data-page-image-header] and exactly one
+      # [data-page-help], with a screenshot of each page. Runs even when the
+      # bridge spec above failed, so one red leg never hides the other.
+      - name: "Playwright - every staff page shows its #SmarterDesign header (signed in)"
+        id: staff_headers
+        if: ${{ !cancelled() }}
+        env:
+          CI: '1'
+          PLAYWRIGHT_BASE_URL: https://commander.smarter.poker
+          PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PROBE_EMAIL }}
+          PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+        run: |
+          if [ -z "$PLAYWRIGHT_TEST_EMAIL" ] || [ -z "$PLAYWRIGHT_TEST_PASSWORD" ]; then
+            echo "::notice title=Staff header census skipped::PROBE_EMAIL / PROBE_PASSWORD are not set on this repository, so the signed-in staff header pass did not run."
+            echo "### Staff header census: SKIPPED (PROBE_EMAIL / PROBE_PASSWORD not set)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          npx playwright test tests/e2e/staff-headers.spec.ts --project=chromium --reporter=line
+          echo "### Staff header census: PASSED ($(ls test-results/staff-headers | wc -l) pages, screenshots in the staff-header-screenshots artifact)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload staff page screenshots
+        if: ${{ !cancelled() && steps.staff_headers.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: staff-header-screenshots
+          path: test-results/staff-headers/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
