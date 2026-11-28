@@ -121,7 +121,11 @@ jobs:
 
   e2e:
     name: Handshake works in a real browser
-    runs-on: ubuntu-latest
+    # Pinned 2026-11-27: GitHub moved ubuntu-latest to Ubuntu 26.04 (rolled out
+    # Oct 19 - Nov 19). Playwright 1.50-1.60 has no browser builds for 26.04, so
+    # "Install Chromium" failed on every run from 2026-11-13 and this browser leg
+    # never executed. Move to ubuntu-26.04 together with a Playwright upgrade.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: probe
     if: always()
