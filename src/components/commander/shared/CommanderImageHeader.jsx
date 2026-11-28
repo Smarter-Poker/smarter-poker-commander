@@ -23,6 +23,9 @@ import { HEADER_SCENE_640 } from './headerSceneVariants';
 
 // The scene is 57-58% of the header, which is at most the viewport wide.
 const SCENE_SIZES = '(max-width: 640px) 58vw, 57vw';
+// Commander-only 640px header scene copies must resolve to commander.smarter.poker
+// in production even when this page is proxied through smarter.poker/commander/*.
+const ASSET_PREFIX = process.env.NEXT_PUBLIC_COMMANDER_ASSET_PREFIX || '';
 
 export default function CommanderImageHeader({ title: layoutTitle }) {
   const router = useRouter();
@@ -32,7 +35,7 @@ export default function CommanderImageHeader({ title: layoutTitle }) {
 
   const dynamicTitle = entry.useLayoutTitle ? cleanLayoutTitle(layoutTitle) : '';
   const title = dynamicTitle || entry.title;
-  const asset = `/images/smarterdesign/headers/${entry.art}`;
+  const asset = `${ASSET_PREFIX}/images/smarterdesign/headers/${entry.art}`;
   const help = (host && host.registered) || {};
   const sceneWidth = HEADER_SCENE_640[entry.art];
   const sceneSrcSet = sceneWidth ? `${asset}-scene-640.webp 640w, ${asset}-scene.webp ${sceneWidth}w` : undefined;

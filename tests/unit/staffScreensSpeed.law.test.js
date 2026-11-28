@@ -53,12 +53,22 @@ describe('staff screens speed', () => {
     expect(read('pages/commander/dashboard.js')).toContain("from '../../src/lib/commander/roleAccess'");
   });
 
-  it('the global header art is WebP with the PNG as fallback, in both owners', () => {
+  it('the global header art is WebP with the PNG as fallback, proxied-origin safe, and WebKit aspect-ratio locked in both owners', () => {
+    const nextCfg = read('next.config.js');
+    expect(nextCfg).toMatch(/NEXT_PUBLIC_COMMANDER_ASSET_PREFIX:\s*COMMANDER_ASSET_PREFIX/);
+    expect(nextCfg).toMatch(/VERCEL_ENV\s*===\s*'production'\s*\?\s*'https:\/\/commander\.smarter\.poker'\s*:\s*''/);
     for (const [file, cls] of [[`${VENDOR}/components/commander/shared/CommanderLayout.jsx`, 'cmd'], ['src/components/commander/shared/StandaloneGlobalHeader.jsx', 'standalone']]) {
       const src = read(file);
-      expect(src).toMatch(new RegExp(`<picture className="${cls}-approved-header__picture">\\s*<source type="image/webp" srcSet="/images/global-header/global-header-824\\.webp 824w, /images/global-header/global-header-desktop\\.webp 1648w" sizes="100vw" />\\s*<img src="/images/global-header/global-header-desktop\\.png"`));
-      expect(src).toContain(`.${cls}-approved-header__picture { display: contents; }`);
+      expect(src).toMatch(/const ASSET_PREFIX = process\.env\.NEXT_PUBLIC_COMMANDER_ASSET_PREFIX \|\| '';/);
+      expect(src).toMatch(new RegExp(`<picture className="${cls}-approved-header__picture">\\s*<source type="image/webp" srcSet=\\{\`\\$\\{ASSET_PREFIX\\}/images/global-header/global-header-824\\.webp 824w, \\$\\{ASSET_PREFIX\\}/images/global-header/global-header-desktop\\.webp 1648w\`\\} sizes="100vw" />\\s*<img src=\\{\`\\$\\{ASSET_PREFIX\\}/images/global-header/global-header-desktop\\.png\`\\}`));
+      // Never use display: contents on <picture>: if the image ever fails to
+      // load in WebKit, a broken replaced element ignores aspect-ratio and
+      // inflates the sticky header to a 1:1 square that intercepts clicks.
+      expect(src).not.toContain(`.${cls}-approved-header__picture { display: contents; }`);
+      expect(src).toMatch(new RegExp(`\\.${cls}-approved-header__picture \\{[^}]*display: block;[^}]*aspect-ratio: 1648 / 168;`));
     }
+    expect(read('src/components/commander/shared/CommanderImageHeader.jsx')).toMatch(/const ASSET_PREFIX = process\.env\.NEXT_PUBLIC_COMMANDER_ASSET_PREFIX \|\| '';/);
+    expect(read('src/components/commander/shared/CommanderImageHeader.jsx')).toContain('`${ASSET_PREFIX}/images/smarterdesign/headers/${entry.art}`');
     for (const f of ['global-header-desktop.webp', 'global-header-824.webp', 'global-header-desktop.png']) {
       expect(existsSync(join(ROOT, 'public/images/global-header', f)), f).toBe(true);
     }

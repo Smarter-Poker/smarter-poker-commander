@@ -1,3 +1,6 @@
+const COMMANDER_ASSET_PREFIX =
+  process.env.VERCEL_ENV === 'production' ? 'https://commander.smarter.poker' : '';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -20,7 +23,18 @@ const nextConfig = {
   // production makes the proxied pages run. Previews keep relative assets so
   // their chunk hashes stay self-consistent with their own build.
   // (2026-09-03)
-  assetPrefix: process.env.VERCEL_ENV === 'production' ? 'https://commander.smarter.poker' : undefined,
+  //
+  // 2026-11-28: Next's `assetPrefix` only rewrites `/_next/*`, not raw
+  // `/images/*` paths in JSX. Commander-only WebP header assets (such as
+  // `/images/global-header/global-header-*.webp` and `*-scene-640.webp`) 404'd
+  // when a page was proxied via `https://smarter.poker/commander/*`, breaking
+  // the header image on all browsers and causing WebKit to inflate `<header>`
+  // into a 1:1 square that intercepted clicks on `/commander/login?bridge=1`.
+  // Expose the same production origin prefix to client components via `env`.
+  assetPrefix: COMMANDER_ASSET_PREFIX || undefined,
+  env: {
+    NEXT_PUBLIC_COMMANDER_ASSET_PREFIX: COMMANDER_ASSET_PREFIX,
+  },
 
   // ─── Serverless Bundle Slimming ────────────────────────────────────────────────────
   // 'standalone' output makes Next trace actual require()s and copies ONLY
