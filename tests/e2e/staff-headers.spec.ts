@@ -36,8 +36,11 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { PAGE_HEADERS } from '../../src/components/commander/shared/pageHeaders.js';
 import nextConfig from '../../next.config.js';
+import { assertProbeSecrets } from './probeSession';
 
 const ROOT = join(__dirname, '..', '..');
+// On the canonical repository a missing secret fails the run (probeSession.ts).
+if (process.env.STAFF_HEADERS_FAKE_SESSION !== '1') assertProbeSecrets('staff-headers.spec.ts');
 const EMAIL = process.env.PLAYWRIGHT_TEST_EMAIL;
 const PASSWORD = process.env.PLAYWRIGHT_TEST_PASSWORD;
 const FAKE = process.env.STAFF_HEADERS_FAKE_SESSION === '1';
