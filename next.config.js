@@ -134,6 +134,36 @@ const nextConfig = {
         destination: 'https://smarter.poker/hub/:path*',
         permanent: false,
       },
+      // ── Retired staff screens (retired 2026-08-20, pages deleted 2026-11-28) ─
+      // Each was consolidated into a newer screen and kept alive as a client
+      // redirect page so floor-tablet bookmarks never 404 mid-event. The page
+      // files are gone; the bookmarks are honoured here instead, as a server
+      // redirect that never renders a page. Temporary (307) on purpose, so the
+      // targets stay free to move. The query string passes through. The
+      // retirement notes (what replaced what, what was ported first) live in
+      // docs/changelog/2026-11-28-retired-routes-config-redirects.md and the
+      // git history of the deleted files. tests/unit/retiredRoutes.law.test.js
+      // pins these four and that the old page files stay deleted.
+      {
+        source: '/commander/tournament-clocks',
+        destination: '/commander/displays',
+        permanent: false,
+      },
+      {
+        source: '/commander/tournament-registration',
+        destination: '/commander/tournament-controls',
+        permanent: false,
+      },
+      {
+        source: '/commander/tournaments/:id/break-manager',
+        destination: '/commander/td/:id/tables',
+        permanent: false,
+      },
+      {
+        source: '/commander/tournaments/:id',
+        destination: '/commander/td/:id',
+        permanent: false,
+      },
     ];
   },
 };

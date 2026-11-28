@@ -32,7 +32,7 @@ const pageRoute = (file) => {
   return route || '/';
 };
 
-test('all 113 Commander routes own the shared layout or the app-root global header', () => {
+test('all 109 Commander routes own the shared layout or the app-root global header', () => {
   const pages = walk(join(root, 'pages/commander'));
   const fallbackRoutes = new Set(
     [...appRoot.matchAll(/^  '([^']+)',$/gm)].map((match) => match[1])
@@ -42,7 +42,7 @@ test('all 113 Commander routes own the shared layout or the app-root global head
     .map(pageRoute)
     .filter((route) => !fallbackRoutes.has(route));
 
-  assert.equal(pages.length, 113);
+  assert.equal(pages.length, 109);
   assert.deepEqual(uncovered, []);
 });
 
