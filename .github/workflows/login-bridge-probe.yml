@@ -52,7 +52,12 @@ jobs:
   probe:
     name: Handshake is working in production
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 10 -> 30 (2026-11-28): the push-only wait below is bounded at 10-25 min
+    # (60 tries x up to 25 s) and is MEANT to run out when Vercel skips the
+    # build (docs/tests/workflow-only merges), then probe what is live. With a
+    # 10-minute job limit the job was cancelled inside the wait instead, so
+    # the probe never ran and the run ended "cancelled" (run 46126200298).
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -131,8 +136,9 @@ jobs:
     # "Install Chromium" failed on every run from 2026-11-13 and this browser leg
     # never executed. Move to ubuntu-26.04 together with a Playwright upgrade.
     runs-on: ubuntu-24.04
-    # 15 -> 40 (2026-11-28): the job now also opens every staff page signed in.
-    timeout-minutes: 40
+    # 15 -> 50 (2026-11-28): the job now also opens every staff page signed in,
+    # after the same bounded deploy wait (up to 25 min) as the probe job.
+    timeout-minutes: 50
     needs: probe
     if: always()
     steps:
