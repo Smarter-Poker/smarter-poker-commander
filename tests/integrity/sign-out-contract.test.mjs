@@ -49,7 +49,7 @@ test('both drawers offer a Sign Out', () => {
     'CommanderLayout must keep its Sign Out row');
   assert.match(STANDALONE, /Sign Out/,
     'StandaloneGlobalHeader must offer Sign Out. It is the only header on the ' +
-      '29 routes in COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT; without it an ' +
+      '25 routes in COMMANDER_ROUTES_WITHOUT_SHARED_LAYOUT; without it an ' +
       'operator on the waitlist desk or kiosk cannot sign out at all.');
 });
 
