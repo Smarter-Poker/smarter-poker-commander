@@ -22,6 +22,7 @@ import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import useClientNow from '../../../src/hooks/useClientNow';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../../src/components/commander/shared/ClubArenaTable';
 
 /* ─── Supabase client for Realtime (no auth needed for display) ── */
 /* GUARD: createClient must NOT run during SSG - localStorage doesn't exist on server */
@@ -396,15 +397,10 @@ export default function TabletDisplay() {
                 {/* ── Table Visual (full height) ─────────── */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 24px', overflow: 'hidden' }}>
                     <div style={{ width: '100%', maxWidth: 1100, position: 'relative' }}>
-                        <div style={{ position: 'relative', width: '100%', paddingBottom: '52%', overflow: 'hidden' }}>
+                        <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '58%', overflow: 'hidden', borderRadius: 16 })}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-20%' }}>
-                                {/* Poker table image */}
-                                <img
-                                    src="/images/poker-table-black-gold.png"
-                                    alt="Poker Table"
-                                    style={{
-                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                        objectFit: 'contain', pointerEvents: 'none', zIndex: 0 }} />
+                                {/* Club Arena table skin (felt + rail) */}
+                                <ClubArenaTableFelt />
 
                                 {/* Center info */}
                                 <div style={{
@@ -451,19 +447,17 @@ export default function TabletDisplay() {
                                 <div style={{
                                     position: 'absolute', top: dealerPos.top, left: dealerPos.left,
                                     transform: 'translate(-50%, -50%)', textAlign: 'center', width: 100, zIndex: 3 }}>
-                                    <div style={{
-                                        width: 76, height: 76, borderRadius: '50%', margin: '0 auto 6px',
-                                        background: dealer ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)' : 'rgba(62,64,66,0.5)',
-                                        border: '3px solid #F2F7FF',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: '0 2px 16px rgba(0,0,0,0.6), 0 0 20px rgba(25, 129, 236,0.3)',
-                                        overflow: 'hidden' }}>
-                                        {dealer?.photo_url ? (
+                                    {dealer?.photo_url ? (
+                                        <div style={{
+                                            width: 76, height: 76, borderRadius: '50%', margin: '0 auto 6px',
+                                            border: '3px solid #F2F7FF',
+                                            boxShadow: '0 2px 16px rgba(0,0,0,0.6), 0 0 20px rgba(25, 129, 236,0.3)',
+                                            overflow: 'hidden' }}>
                                             <img src={dealer.photo_url} alt={dealer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <span style={{ fontSize: 34, fontWeight: 900, color: '#fff' }}>D</span>
-                                        )}
-                                    </div>
+                                        </div>
+                                    ) : (
+                                        <div style={clubArenaDealerPuckStyle(64, { margin: '0 auto 6px', opacity: dealer ? 1 : 0.6 })}>D</div>
+                                    )}
                                     <div style={{ fontSize: 13, fontWeight: 700, color: dealer ? '#1981EC' : '#6B7280', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {dealer?.name || 'No Dealer'}
                                     </div>

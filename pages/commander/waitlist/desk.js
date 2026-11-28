@@ -12,7 +12,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { busEmit } from '../../../src/engine/EventBus';
 import { useRouter } from 'next/router';
-import Image from 'next/image';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import Pagination from '../../../src/components/commander/shared/Pagination';
 
@@ -30,6 +29,7 @@ import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/sdPalette';
 import SdSwatchPicker from '../../../src/components/commander/shared/SdSwatchPicker';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../../src/components/commander/shared/ClubArenaTable';
 
 // formatPhone, titleCase imported from '@/lib/commander/formatters'
 // lighten, darken imported from '@/lib/commander/colorUtils'
@@ -1059,15 +1059,17 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                             {isMain && <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.25)', marginRight: 6 }}>MAIN</span>}
                             {isFeeder && <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', marginRight: 6 }}>FEEDER</span>}
                             <div style={{ fontSize: 11, marginTop: 4, opacity: 0.85 }}>
-                              {occupiedCount}/{maxSeats} seated
-                              {openCount > 0 && <span style={{ color: '#86efac', marginLeft: 4 }}>({openCount} open)</span>}
+                              {occupiedCount}/{maxSeats} Seated
+                              {openCount > 0 && <span style={{ color: '#86efac', marginLeft: 4 }}>({openCount} Open)</span>}
                             </div>
                           </div>
                         </div>
 
                         {/* Oval Poker Table */}
-                        <div style={{ position: 'relative', width: '100%', aspectRatio: '5 / 3' }}>
-                          <Image src="/images/poker-table-black-gold.png" alt="Poker Table" width={640} height={640} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', zIndex: 0 }} />
+                        <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '60%', overflow: 'hidden' })}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-20%' }}>
+                          {/* Club Arena table skin (felt + rail) */}
+                          <ClubArenaTableFelt />
 
                           {/* Center Info */}
                           <div style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
@@ -1078,13 +1080,13 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                               {tStakes} {tGame}
                             </div>
                             <div style={{ fontSize: 12, color: '#4CAF50', marginTop: 6, fontWeight: 700 }}>
-                              TAP OPEN SEAT TO ASSIGN
+                              Tap An Open Seat To Assign
                             </div>
                           </div>
 
                           {/* Dealer */}
                           <div style={{ position: 'absolute', top: dealerPos.top, left: dealerPos.left, transform: 'translate(-50%, -50%)', textAlign: 'center', width: 70, zIndex: 3 }}>
-                            <div style={{ width: 50, height: 50, borderRadius: '50%', margin: '0 auto 2px', background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)', border: '2px solid #F2F7FF', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.6)', fontSize: 22, fontWeight: 900, color: '#fff' }}>D</div>
+                            <div style={clubArenaDealerPuckStyle(44, { margin: '0 auto 2px' })}>D</div>
                           </div>
 
                           {/* Player Seats */}
@@ -1152,6 +1154,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                               </button>
                             );
                           })}
+                        </div>
                         </div>
                       </div>
                     );

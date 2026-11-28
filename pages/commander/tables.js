@@ -7,7 +7,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { busEmit } from '../../src/engine/EventBus';
 import { useRouter } from 'next/router';
-import Image from 'next/image';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { Plus, Trash2, Table2, Users, Loader2, Play, Square, X } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
@@ -18,6 +17,7 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../src/components/commander/shared/ClubArenaTable';
 
 const STATUS_COLORS = {
   available: { bg: 'rgba(49,162,76,0.15)', border: '#31A24C', text: '#31A24C', label: 'Available' },
@@ -495,18 +495,16 @@ const res = await commanderFetch('/api/commander/tables', {
                                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />
                                       {game.status === 'running' ? 'RUNNING' : game.status?.toUpperCase() || 'ACTIVE'}
                                     </span>
-                                    <span style={{ fontSize: 13, fontWeight: 600 }}>{occupiedCount}/{maxSeats} seated</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600 }}>{occupiedCount}/{maxSeats} Seated</span>
                                   </div>
                                 </div>
                               </div>
 
                               {/* ── Oval Table Visualization (cropped viewport) ── */}
-                              <div style={{ position: 'relative', width: '100%', paddingBottom: '64%', overflow: 'hidden' }}>
+                              <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '64%', overflow: 'hidden' })}>
                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-18%' }}>
-                                  {/* Table image */}
-                                  <Image src="/images/poker-table-black-gold.png" alt="Poker Table" width={640} height={640} style={{
-                                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                    objectFit: 'contain', pointerEvents: 'none', zIndex: 0 }} />
+                                  {/* Club Arena table skin (felt + rail) */}
+                                  <ClubArenaTableFelt />
 
                                   {/* Game info in center */}
                                   <div style={{
@@ -527,13 +525,7 @@ const res = await commanderFetch('/api/commander/tables', {
                                   <div style={{
                                     position: 'absolute', top: dealerPos.top, left: dealerPos.left,
                                     transform: 'translate(-50%, -50%)', textAlign: 'center', width: 80, zIndex: 3 }}>
-                                    <div style={{
-                                      width: 64, height: 64, borderRadius: '50%', margin: '0 auto 4px',
-                                      background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)',
-                                      border: '3px solid #F2F7FF',
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      boxShadow: '0 2px 12px rgba(0,0,0,0.6), 0 0 16px rgba(25, 129, 236,0.4)',
-                                      fontSize: 28, fontWeight: 900, color: '#fff' }}>D</div>
+                                    <div style={clubArenaDealerPuckStyle(56, { margin: '0 auto 4px' })}>D</div>
                                     <div style={{ fontSize: 11, fontWeight: 700, color: '#1981EC', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {dealerMap[tNum] || game.dealer_name || 'No Dealer'}
                                     </div>
