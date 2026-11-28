@@ -30,6 +30,7 @@
  * the same oval (93% wide, centred), so every view's seat ring - an ellipse of
  * rx 47 / ry 22 around the centre - still stands on the rail.
  */
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import InlineStyle from './InlineStyle';
 import feltImage from '../../../../public/images/club-arena-table/ocean-blue-felt-landscape.webp';
 import roomImage from '../../../../public/images/club-arena-table/ocean-abyss-room.webp';
@@ -111,11 +112,29 @@ export function clubArenaDealerPuckStyle(size, extra) {
 export const SEAT_BOX_CLASS = 'ca-seat-box';
 export const SEAT_BOX_STYLE = { containerType: 'inline-size' };
 
+/*
+   OLD BROWSERS (2026-11-28). Container queries and container units arrived in
+   Safari 16 and Chrome 105. An older venue tablet drops every declaration that
+   names `cqw` and ignores `@container`, so the badges fell back to unstyled
+   sizes and, on a phone-sized box, overlapped. The share of the box is
+   therefore written `calc(N * var(--ca-u, 1cqw))`:
+     - a modern browser never sets --ca-u, so the fallback `1cqw` is used and
+       the computed size is exactly the container-unit size it was;
+     - an old browser keeps the declaration (a var() is only checked when it
+       is used) and ClubArenaTableFelt measures the seat box with a
+       ResizeObserver and writes --ca-u = 1% of its width in px, plus
+       data-ca-compact under SEAT_COMPACT_MAX_PX, which switches on a copy of
+       the compact rules written in var(--ca-u) instead of cqw.
+   The fallback only runs where seatBoxNeedsFallback() is true.
+*/
+export const SEAT_UNIT_VAR = '--ca-u';
+const unit = (n) => `calc(${n} * var(${SEAT_UNIT_VAR}, 1cqw))`;
+
 /** px -> clamp(min, share of the seat box, px). */
 export function seatScale(ref) {
   return (px, min) => {
     const floor = min ?? Math.max(6, Math.round(px * 0.45));
-    return `clamp(${floor}px, ${((px / ref) * 100).toFixed(3)}cqw, ${px}px)`;
+    return `clamp(${floor}px, ${unit(((px / ref) * 100).toFixed(3))}, ${px}px)`;
   };
 }
 
@@ -127,11 +146,8 @@ export function seatClass(leftPct, extra) {
 
 export const SEAT_COMPACT_MAX_PX = 520;
 
-const SEAT_CSS = `
-.ca-seat-box{container-type:inline-size}
-.ca-seat__name,.ca-seat__meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ca-seat__text{min-width:0;overflow:hidden}
-@container (max-width: ${SEAT_COMPACT_MAX_PX}px){
+/* The compact phone layout, written once in container units. */
+const SEAT_COMPACT_RULES = `
 .ca-seat{flex-direction:column!important;align-items:center!important;gap:1px!important;padding:2px 3px!important;min-width:0!important;width:auto!important;max-width:16cqw!important;border-radius:8px!important;transform:translate(-50%,-50%)!important}
 .ca-seat__card{flex-direction:column!important;align-items:center!important;gap:1px!important;padding:2px 3px!important;min-width:0!important;max-width:16cqw!important;border-radius:8px!important}
 .ca-seat--left{transform:translate(-30%,-50%)!important}
@@ -144,18 +160,98 @@ const SEAT_CSS = `
 .ca-seat__name{font-size:clamp(8px,2.5cqw,10px)!important;max-width:15cqw!important;line-height:1.1!important}
 .ca-seat__meta{display:none!important}
 .ca-seat-center{transform:translate(-50%,-50%) scale(0.7)!important}
-}
 `;
+
+/**
+ * The same rules for a browser without container units: every rule scoped to
+ * a seat box the fallback marked data-ca-compact, every `Ncqw` rewritten as
+ * N% of the measured box (--ca-u). Inert where the attribute is never set.
+ */
+export function compactFallbackCss(rules = SEAT_COMPACT_RULES) {
+  return rules
+    .replace(/(\d+(?:\.\d+)?)cqw/g, (_, n) => `calc(${n} * var(${SEAT_UNIT_VAR}))`)
+    .replace(/(^|\})\s*([^{}]+)\{/g, (_, close, sel) => `${close}\n${sel.split(',').map((x) => `.${SEAT_BOX_CLASS}[data-ca-compact] ${x.trim()}`).join(',')}{`)
+    .trim();
+}
+
+const SEAT_CSS = `
+.ca-seat-box{container-type:inline-size}
+.ca-seat__name,.ca-seat__meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca-seat__text{min-width:0;overflow:hidden}
+@container (max-width: ${SEAT_COMPACT_MAX_PX}px){${SEAT_COMPACT_RULES}}
+${compactFallbackCss()}
+`;
+
+/**
+ * True where `css` (window.CSS) lacks container units or size containers
+ * (Safari < 16, Chrome < 105), or cannot say.
+ */
+export function cssLacksContainerUnits(css) {
+  if (!css || typeof css.supports !== 'function') return true;
+  try {
+    return !(css.supports('width: 1cqw') && css.supports('container-type: inline-size'));
+  } catch {
+    return true;
+  }
+}
+
+/** The fallback runs in such a browser, never during server rendering. */
+export function seatBoxNeedsFallback() {
+  return typeof window !== 'undefined' && cssLacksContainerUnits(window.CSS);
+}
+
+/**
+ * Writes the fallback onto one seat box: --ca-u (1% of its width, px) and
+ * data-ca-compact when it is SEAT_COMPACT_MAX_PX or narrower. Where
+ * aspect-ratio is missing too (Safari < 15) the square box gets its height.
+ */
+export function applySeatBoxFallback(box, width, css) {
+  if (!box || !(width > 0)) return;
+  box.style.setProperty(SEAT_UNIT_VAR, `${(width / 100).toFixed(3)}px`);
+  if (width <= SEAT_COMPACT_MAX_PX) box.setAttribute('data-ca-compact', '');
+  else box.removeAttribute('data-ca-compact');
+  let ratio = true;
+  try { ratio = !!(css && css.supports && css.supports('aspect-ratio: 1 / 1')); } catch { ratio = false; }
+  if (!ratio) box.style.height = `${width}px`;
+}
+
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+/** Measures the enclosing seat box on browsers without container units. */
+function useSeatBoxFallback(ref) {
+  useIsoLayoutEffect(() => {
+    if (!seatBoxNeedsFallback()) return undefined;
+    const box = ref.current && ref.current.closest ? ref.current.closest(`.${SEAT_BOX_CLASS}`) : null;
+    if (!box) return undefined;
+    const css = window.CSS;
+    const measure = () => applySeatBoxFallback(box, box.getBoundingClientRect().width, css);
+    measure();
+    if (typeof window.ResizeObserver === 'function') {
+      const ro = new window.ResizeObserver(measure);
+      ro.observe(box);
+      return () => ro.disconnect();
+    }
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+    };
+  }, [ref]);
+}
 
 /**
  * The felt, drawn into the square seat box every view uses. Decorative: it
  * never takes a pointer event, so seat clicks and drags reach the seats.
  */
 export default function ClubArenaTableFelt({ zIndex = 0 }) {
+  const ref = useRef(null);
+  useSeatBoxFallback(ref);
   return (
     <>
     <InlineStyle css={SEAT_CSS} data-club-arena-seat-css="" />
     <img
+      ref={ref}
       src={CLUB_ARENA_FELT_SRC}
       alt=""
       aria-hidden="true"
