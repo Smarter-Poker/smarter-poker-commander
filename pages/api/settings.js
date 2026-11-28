@@ -7,6 +7,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardStaff, guardManager } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { normalizeSdColors, DESK_COLOR_KEYS } from '../../src/lib/commander/sdPalette';
 
 let _supabase = null;
 function getSupabase() {
@@ -60,6 +61,10 @@ export default async function handler(req, res) {
         const filtered = {};
         for (const key of allowedFields) {
           if (updates[key] !== undefined) filtered[key] = updates[key];
+        }
+        // #SMARTERDESIGN: a desk theme is stored in approved colours only.
+        if (filtered.desk_customization && typeof filtered.desk_customization === 'object') {
+          filtered.desk_customization = normalizeSdColors(filtered.desk_customization, DESK_COLOR_KEYS);
         }
 
         const { data, error } = await getSupabase()

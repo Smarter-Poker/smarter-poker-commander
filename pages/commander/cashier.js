@@ -20,6 +20,7 @@ import useDebounce from '../../src/hooks/useDebounce';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 500, 1000];
 // Fallback time options - overridden by owner settings from Time Billing page
@@ -278,7 +279,7 @@ const headers = { };
       return {
         tier: plan.tier,
         label: plan.name || plan.tier.charAt(0).toUpperCase() + plan.tier.slice(1),
-        color: plan.color || '#1981EC',
+        color: normalizeSdColor(plan.color, '#1981EC'),
         duration: durationMap[plan.tier] || 30,
         price: plan[priceField] || 0,
         planId: plan.id };
