@@ -43,6 +43,33 @@ function isHubOrigin() {
   try { return window.location.origin === new URL(HUB_ORIGIN).origin; } catch { return false; }
 }
 
+// 2026-11-27 root cause (Dan: "its making you log in again when you click to
+// open it"): localStorage is origin-scoped, so commander.smarter.poker only
+// holds a platform session after a bridge. When that local copy is missing
+// (first visit, cleared storage, Safari ITP eviction, an expired refresh
+// token) this page used to show the password form and wait for a click on
+// "Continue As Smarter.Poker". It now takes that hop itself, once: it goes to
+// the hub origin, which still has the platform session, and comes straight
+// back signed in through /auth/sso. The tab-scoped marker below is the loop
+// breaker - if we are back within AUTO_BRIDGE_WINDOW_MS the hop already ran
+// and failed (or the hub has no session), so the form is shown instead.
+const AUTO_BRIDGE_KEY = 'commander_auto_bridge_ts';
+const AUTO_BRIDGE_WINDOW_MS = 2 * 60 * 1000;
+
+function autoBridgeThroughHub() {
+  if (typeof window === 'undefined' || isHubOrigin()) return false;
+  try {
+    const last = Number(sessionStorage.getItem(AUTO_BRIDGE_KEY) || 0);
+    if (Date.now() - last < AUTO_BRIDGE_WINDOW_MS) return false;
+    sessionStorage.setItem(AUTO_BRIDGE_KEY, String(Date.now()));
+  } catch {
+    // No sessionStorage means no loop breaker - never auto-redirect blind.
+    return false;
+  }
+  window.location.replace(`${HUB_ORIGIN}/commander/login?bridge=1`);
+  return true;
+}
+
 export default function CommanderLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -194,6 +221,8 @@ export default function CommanderLogin() {
             const ok = await completeLogin(session.user, session.access_token).catch(() => false);
             if (ok) return; // redirecting to dashboard with a fresh session
           }
+          // No platform session on THIS origin: the hub may still hold one.
+          if (!session?.user && autoBridgeThroughHub()) { stopTimers(); return; }
           stopTimers();
           // completeLogin sets its own, more specific error when it fails -
           // only show the generic expiry message when we could not even try
@@ -257,6 +286,10 @@ export default function CommanderLogin() {
         // Refresh failed - keep commander_remember and staff email for pre-fill
         localStorage.removeItem('commander_venue');
         localStorage.removeItem('commander_subscription');
+
+        // Nothing on this origin: pick the platform session up from the hub
+        // before ever asking for a password.
+        if (autoBridgeThroughHub()) { stopTimers(); return; }
       } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
 
       stopTimers();

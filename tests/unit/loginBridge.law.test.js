@@ -407,6 +407,21 @@ describe('the self-heal uses a fresh token and the right user (pin 13)', () => {
     expect(src).not.toMatch(/if \(isStaffSessionHealthy\(\)\) \{/);
   });
 
+  it('with no local session the commander origin bridges through the hub by itself, once (2026-11-27)', () => {
+    // Dan: "its making you log in again when you click to open it". The form
+    // waited for a click on Continue while the hub still held the session.
+    const src = code(read(LOGIN));
+    const fn = src.slice(src.indexOf('function autoBridgeThroughHub'), src.indexOf('export default function'));
+    expect(fn, 'never auto-hop from the hub origin itself').toMatch(/isHubOrigin\(\)\) return false/);
+    expect(fn, 'tab-scoped loop breaker').toMatch(/sessionStorage\.getItem\(AUTO_BRIDGE_KEY\)/);
+    expect(fn).toMatch(/sessionStorage\.setItem\(AUTO_BRIDGE_KEY/);
+    expect(fn).toMatch(/\/commander\/login\?bridge=1/);
+    // Both "nothing here" exits call it: the plain path after refresh fails and ?expired=1.
+    expect((src.match(/autoBridgeThroughHub\(\)/g) || []).length).toBeGreaterThanOrEqual(2);
+    // An explicit Sign Out returns before the silent paths, so it can never bridge back in.
+    expect(src.indexOf("commander_explicit_logout")).toBeLessThan(src.lastIndexOf('autoBridgeThroughHub()'));
+  });
+
   it('the hub bridge always sends a token the SDK just refreshed', () => {
     const src = code(read(LOGIN));
     const fn = src.slice(src.indexOf('const bridgeToCommanderOrigin'), src.indexOf('// Auto-restore session'));

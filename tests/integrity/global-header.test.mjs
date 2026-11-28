@@ -53,10 +53,17 @@ test('both Commander owners use the approved row, a live avatar, and eight wired
     assert.match(source, /profileAvatar/);
     assert.match(source, /approved-header__avatar-slot/);
     assert.match(source, /contain: layout paint/);
-    assert.match(source, /width: 58%/);
-    assert.match(source, /aspect-ratio: \.78/);
-    assert.match(source, /profile-updated/);
-    assert.match(source, /smarter_poker_avatar_sync/);
+    // 2026-11-27: the hub's disc + 0.5px hairline geometry (same artwork file),
+    // and the photo from the profiles row via the shared hook, which owns the
+    // profile-updated / smarter_poker_avatar_sync listeners.
+    assert.match(source, /top: 14\.58%/);
+    assert.match(source, /left: 66\.98%/);
+    assert.match(source, /width: 6\.8%/);
+    assert.match(source, /width: 72%/);
+    assert.match(source, /border: 0\.5px solid rgba\(0, 0, 0, 0\.94\)/);
+    assert.doesNotMatch(source, /aspect-ratio: \.78/);
+    assert.match(source, /useHeaderPortrait\(supabase\)/);
+    assert.doesNotMatch(source, /user_metadata\?\.avatar_url/);
     for (const label of [
       'Open Menu',
       'Go back',
