@@ -85,6 +85,11 @@ describe('player page census and business-date check', () => {
     expect(spec).toMatch(/retries: 0/);
   });
 
+  it('every failed assertion reaches one annotation, readable without log access', () => {
+    expect(read('tests/e2e/player-pages.spec.ts')).toMatch(/\[player-pages\] FAILURES \(/);
+    expect(playerStep).toMatch(/::error title=Player page census failures::/);
+  });
+
   it('the business-date spec compares the server answer with Intl in the venue zone', () => {
     const spec = read('tests/e2e/business-date.spec.ts');
     expect(spec).toMatch(/\/api\/reports\/daily\?venue_id=/);

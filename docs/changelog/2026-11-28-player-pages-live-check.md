@@ -67,3 +67,12 @@ check), after the staff census:
 - e2e job timeout 50 -> 80 minutes.
 
 Law: `tests/unit/playerPagesCensus.law.test.js`.
+
+## Follow-up: failures are readable without log access
+
+The first live run (run 46168336724, 11:26 AM Central) visited 31 of 37
+player routes and failed, but Actions logs need authentication, so the
+failing pages were not visible from outside. The spec now prints one
+`[player-pages] FAILURES (n): ...` line naming every failed assertion with
+its received value, and the step raises it as one `::error` annotation and
+adds it to the step summary.
