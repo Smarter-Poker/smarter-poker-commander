@@ -38,6 +38,13 @@ on:
       # the header registry or this workflow changes.
       - 'tests/e2e/staff-headers.spec.ts'
       - 'src/components/commander/shared/pageHeaders.js'
+      # The player page census and the business-date check (same job).
+      - 'tests/e2e/player-pages.spec.ts'
+      - 'tests/e2e/business-date.spec.ts'
+      - 'tests/e2e/probeSession.ts'
+      - 'vendor/commander-shared/src/lib/commander/businessDate.js'
+      - 'src/lib/commander/venueTimeZone.js'
+      - 'pages/api/reports/daily.js'
       - '.github/workflows/login-bridge-probe.yml'
 
 permissions:
@@ -138,7 +145,9 @@ jobs:
     runs-on: ubuntu-24.04
     # 15 -> 50 (2026-11-28): the job now also opens every staff page signed in,
     # after the same bounded deploy wait (up to 25 min) as the probe job.
-    timeout-minutes: 50
+    # 50 -> 80 (2026-11-28): plus every World Hub player page at two widths
+    # (30 min cap) and the business-date read.
+    timeout-minutes: 80
     needs: probe
     if: always()
     steps:
@@ -187,8 +196,16 @@ jobs:
           PLAYWRIGHT_BASE_URL: https://commander.smarter.poker
           PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PROBE_EMAIL }}
           PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+          # true on the canonical repository only: there a missing secret is a
+          # failure (the signed-in check silently stopped), on a fork a notice.
+          PROBE_SECRETS_REQUIRED: ${{ github.repository == 'Smarter-Poker/smarter-poker-commander' }}
         run: |
           if [ -z "$PLAYWRIGHT_TEST_EMAIL" ] || [ -z "$PLAYWRIGHT_TEST_PASSWORD" ]; then
+            if [ "$PROBE_SECRETS_REQUIRED" = "true" ]; then
+              echo "::error title=Staff header census cannot run::PROBE_EMAIL / PROBE_PASSWORD are missing on the canonical repository."
+              echo "### Staff header census: FAILED (PROBE_EMAIL / PROBE_PASSWORD missing)" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
             echo "::notice title=Staff header census skipped::PROBE_EMAIL / PROBE_PASSWORD are not set on this repository, so the signed-in staff header pass did not run."
             echo "### Staff header census: SKIPPED (PROBE_EMAIL / PROBE_PASSWORD not set)" >> "$GITHUB_STEP_SUMMARY"
             exit 0
@@ -203,6 +220,83 @@ jobs:
           path: test-results/staff-headers/
           if-no-files-found: ignore
           retention-days: 14
+      # 2026-11-28: the World Hub player pages (pages/hub/commander/**, read
+      # from the hub source checked out here, so a new page is covered on the
+      # next run) signed in as the probe at 393px and 1280px, and the venue
+      # business date read back from production. Both run even when an
+      # earlier leg failed, and neither retries.
+      # Playwright empties test-results/ at the start of every run, so each
+      # census uploads its screenshots before the next spec starts.
+      - name: Check out the World Hub player page list
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+        with:
+          repository: Smarter-Poker/Smarter-Poker-World-Hub
+          ref: main
+          path: world-hub
+          sparse-checkout: pages/hub/commander
+          sparse-checkout-cone-mode: true
+          fetch-depth: 1
+      - name: "Playwright - every World Hub player page shows its headers (signed in)"
+        id: player_pages
+        if: ${{ !cancelled() }}
+        env:
+          CI: '1'
+          PLAYWRIGHT_BASE_URL: https://commander.smarter.poker
+          PLAYWRIGHT_HUB_ORIGIN: https://smarter.poker
+          HUB_COMMANDER_PAGES_DIR: ${{ github.workspace }}/world-hub/pages/hub/commander
+          PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PROBE_EMAIL }}
+          PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+          PROBE_SECRETS_REQUIRED: ${{ github.repository == 'Smarter-Poker/smarter-poker-commander' }}
+        run: |
+          if [ -z "$PLAYWRIGHT_TEST_EMAIL" ] || [ -z "$PLAYWRIGHT_TEST_PASSWORD" ]; then
+            if [ "$PROBE_SECRETS_REQUIRED" = "true" ]; then
+              echo "::error title=Player page census cannot run::PROBE_EMAIL / PROBE_PASSWORD are missing on the canonical repository."
+              echo "### Player page census: FAILED (PROBE_EMAIL / PROBE_PASSWORD missing)" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            echo "::notice title=Player page census skipped::PROBE_EMAIL / PROBE_PASSWORD are not set on this repository, so the signed-in player page pass did not run."
+            echo "### Player page census: SKIPPED (PROBE_EMAIL / PROBE_PASSWORD not set)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          npx playwright test tests/e2e/player-pages.spec.ts --project=chromium --retries=0 --reporter=line 2>&1 | tee player-pages.log
+          status=${PIPESTATUS[0]}
+          line=$(grep -o '\[player-pages\] visited.*' player-pages.log | tail -1)
+          if [ -n "$line" ]; then echo "::notice title=Player page census::${line}"; fi
+          if [ "$status" -ne 0 ]; then echo "### Player page census: FAILED. ${line}" >> "$GITHUB_STEP_SUMMARY"; exit "$status"; fi
+          echo "### Player page census: PASSED. ${line} ($(ls test-results/player-pages | wc -l) screenshots in the player-page-screenshots artifact)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload player page screenshots
+        if: ${{ !cancelled() && steps.player_pages.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-page-screenshots
+          path: test-results/player-pages/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Playwright - the business date is the venue-local date (signed in, read-only)
+        id: business_date
+        if: ${{ !cancelled() }}
+        env:
+          CI: '1'
+          PLAYWRIGHT_BASE_URL: https://commander.smarter.poker
+          PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PROBE_EMAIL }}
+          PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+          PROBE_SECRETS_REQUIRED: ${{ github.repository == 'Smarter-Poker/smarter-poker-commander' }}
+        run: |
+          if [ -z "$PLAYWRIGHT_TEST_EMAIL" ] || [ -z "$PLAYWRIGHT_TEST_PASSWORD" ]; then
+            if [ "$PROBE_SECRETS_REQUIRED" = "true" ]; then
+              echo "::error title=Business date check cannot run::PROBE_EMAIL / PROBE_PASSWORD are missing on the canonical repository."
+              exit 1
+            fi
+            echo "::notice title=Business date check skipped::PROBE_EMAIL / PROBE_PASSWORD are not set on this repository."
+            exit 0
+          fi
+          npx playwright test tests/e2e/business-date.spec.ts --project=chromium --retries=0 --reporter=line 2>&1 | tee business-date.log
+          status=${PIPESTATUS[0]}
+          line=$(grep -o '\[business-date\].*' business-date.log | tail -1)
+          if [ -n "$line" ]; then echo "::notice title=Business date::${line}"; fi
+          if [ "$status" -ne 0 ]; then echo "### Business date: FAILED. ${line}" >> "$GITHUB_STEP_SUMMARY"; exit "$status"; fi
+          echo "### Business date: PASSED. ${line}" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
