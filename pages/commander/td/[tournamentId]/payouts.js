@@ -27,6 +27,7 @@ import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/pa
 // defined their own private copy.
 import { ordinal } from '../../../../src/lib/commander/ordinal';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import { apiData, asArray } from '../../../../src/lib/commander/apiShape';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -100,22 +101,22 @@ export default function TDPayouts() {
             ]);
             if (clockJson?.success) setTournamentStatus(clockJson.data?.tournament?.status || null);
             if (entriesJson?.success) {
-                setEntries(Array.isArray(entriesJson.data?.entries) ? entriesJson.data.entries : []);
+                setEntries(Array.isArray(entriesJson.data?.entries) ? apiData(entriesJson).entries : []);
             }
             if (json.success) {
                 setCalcData(json.data);
                 // Adopt the tournament's own setting the first time through.
                 if (denomination === null && json.data?.denomination != null) {
-                    setDenomination(Number(json.data.denomination) || 1);
+                    setDenomination(Number(apiData(json).denomination) || 1);
                 }
                 // Initialize overrides from calculated amounts
                 const initial = {};
-                (json.data.calculated_payouts || []).forEach(p => {
+                (asArray(apiData(json).calculated_payouts)).forEach(p => {
                     initial[p.position] = p.amount;
                 });
                 // If final_payouts exist, use those instead
-                if (json.data.final_payouts) {
-                    json.data.final_payouts.forEach(p => {
+                if (apiData(json).final_payouts) {
+                    apiData(json).final_payouts.forEach(p => {
                         initial[p.position] = p.amount;
                     });
                 }
@@ -722,7 +723,7 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
                 // shook hands on and nothing said so. Name it, and hold the
                 // toast open long enough to be read.
                 const adj = Array.isArray(json.data?.rounding_adjustments)
-                    ? json.data.rounding_adjustments
+                    ? apiData(json).rounding_adjustments
                     : [];
                 if (adj.length > 0) {
                     const denom = json.data?.denomination || 1;

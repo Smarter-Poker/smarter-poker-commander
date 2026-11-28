@@ -42,6 +42,7 @@ import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/c
 import { createClient } from '@supabase/supabase-js';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
+import { apiData, asArray } from '../../../src/lib/commander/apiShape';
 
 /* ─── Supabase client for Realtime (no auth needed for display) ── */
 /* GUARD: createClient must NOT run during SSG - localStorage doesn't exist on server */
@@ -336,10 +337,10 @@ export default function PlayerTableDisplay() {
       const venueParam = table?.venue_id ? `&venue_id=${table.venue_id}` : '';
       const json = await commanderFetchJSON(`/api/commander/dealer/tablet-data?table=${tableNumber}${venueParam}`);
       if (json.success) {
-        setPlayers(json.data.players || []);
-        setTable(json.data.table || null);
-        setDealer(json.data.dealer || null);
-        if (json.data.venue_type) setVenueType(json.data.venue_type);
+        setPlayers(asArray(apiData(json).players));
+        setTable(apiData(json).table || null);
+        setDealer(apiData(json).dealer || null);
+        if (apiData(json).venue_type) setVenueType(apiData(json).venue_type);
       }
     } catch (err) { console.warn(err); }
   }, [tableNumber, table?.venue_id]);
@@ -467,8 +468,8 @@ export default function PlayerTableDisplay() {
       const json = await res.json();
 
       if (json.success) {
-        setDealer(json.data.dealer);
-        setScanStatus({ type: 'success', message: `${json.data.dealer.name} Is Now Dealing` });
+        setDealer(apiData(json).dealer);
+        setScanStatus({ type: 'success', message: `${apiData(json).dealer.name} Is Now Dealing` });
         broadcastChange('dealers');
         broadcastChange('tables');
       } else {

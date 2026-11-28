@@ -19,6 +19,7 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import useClientNow from '../../src/hooks/useClientNow';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 function formatDuration(startTime) {
   if (!startTime) return '0:00';
@@ -135,9 +136,9 @@ const headers = { };
 const json = await commanderFetchJSON('/api/commander/settings', {});
         if (json.success && json.data) {
           setPricing(prev => ({
-            time_billing_rate: json.data.time_billing_rate ?? prev.time_billing_rate,
-            auto_comp_rate: json.data.auto_comp_rate ?? prev.auto_comp_rate,
-            bulk_time_packages: json.data.bulk_time_packages ?? prev.bulk_time_packages
+            time_billing_rate: apiData(json).time_billing_rate ?? prev.time_billing_rate,
+            auto_comp_rate: apiData(json).auto_comp_rate ?? prev.auto_comp_rate,
+            bulk_time_packages: apiData(json).bulk_time_packages ?? prev.bulk_time_packages
           }));
         }
       } catch { /* non-fatal */ }
@@ -148,7 +149,7 @@ const json = await commanderFetchJSON('/api/commander/settings', {});
       try {
 const venueId = getVenueId();
         const json = await commanderFetchJSON(`/api/commander/membership-plans?venue_id=${venueId}&include_inactive=true`, {});
-        if (json.success) setMemberPlans(json.data.plans || []);
+        if (json.success) setMemberPlans(asArray(apiData(json).plans));
       } catch { /* non-fatal */ }
     };
     loadMemberPlans();
@@ -216,16 +217,16 @@ const res = await commanderFetch('/api/commander/settings', {
         setPinVerifying(false);
         return;
       }
-      setVerifiedStaff(pinJson.data.staff);
+      setVerifiedStaff(apiData(pinJson).staff);
       // Cache PIN for 5 minutes
       setPinCacheExpiry(Date.now() + 5 * 60 * 1000);
       setPinStep(false); // Close PIN modal
 
       // Execute the pending action
       if (pendingAction?.type === 'payment') {
-        await doRecordPayment(pinJson.data.staff);
+        await doRecordPayment(apiData(pinJson).staff);
       } else if (pendingAction?.type === 'stop') {
-        await doStopSession(pendingAction.session?.id, pinJson.data.staff);
+        await doStopSession(pendingAction.session?.id, apiData(pinJson).staff);
       }
       setPendingAction(null); // Clear pending action
     } catch (err) {

@@ -22,6 +22,7 @@ import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync'
 import { buildBuyinReceiptHtml, printHtml } from '../../../../src/lib/commander/receiptTemplates';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../../../src/components/commander/shared/InlineStyle';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 export default function TDRegisterPlayer() {
     const router = useRouter();
@@ -82,9 +83,9 @@ export default function TDRegisterPlayer() {
             if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             if (json.success) {
-                setTournament(json.data.tournament);
-                if (reentry && json.data.entries) {
-                    const prior = json.data.entries.find(e => e.entry_id === reentry);
+                setTournament(apiData(json).tournament);
+                if (reentry && apiData(json).entries) {
+                    const prior = apiData(json).entries.find(e => e.entry_id === reentry);
                     if (prior) {
                         setReentryName(prior.player_name);
                         setReentryOf(prior.entry_id);

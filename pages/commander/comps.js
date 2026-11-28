@@ -21,6 +21,7 @@ import useDebounce from '../../src/hooks/useDebounce';
 import { getToken, getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth'
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 // ─── Comp Categories ─────────────────────────────────────────
 const COMP_CATEGORIES = [
@@ -131,7 +132,7 @@ export default function CompSystem() {
       .then(r => r.json())
       .then(data => {
         if (data?.data?.auto_comp_rate !== undefined) {
-          setAutoCompRate(data.data.auto_comp_rate);
+          setAutoCompRate(apiData(data).auto_comp_rate);
         }
       })
       .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
@@ -143,7 +144,7 @@ export default function CompSystem() {
         .then(r => r.json())
         .then(data => {
           if (data?.success && data.data?.plans) {
-            setMembershipPlans(data.data.plans);
+            setMembershipPlans(asArray(apiData(data).plans));
           }
         })
         .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
@@ -153,7 +154,7 @@ export default function CompSystem() {
         .then(r => r.json())
         .then(data => {
           if (data?.success && Array.isArray(data.data?.rates)) {
-            setCompRates(data.data.rates);
+            setCompRates(asArray(apiData(data).rates));
           }
         })
         .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
@@ -354,7 +355,7 @@ export default function CompSystem() {
           amount: isMembership ? receiptData.durationLabel : selectedCategory === 'free_time' ? `${(() => { const m = parseInt(timeMinutes || 0); const h = Math.floor(m / 60); const mins = m % 60; return h > 0 ? `${h}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`; })()} ($${receiptData.amount.toFixed(2)})` : `$${receiptData.amount.toFixed(2)}`,
           detail: `${catLabel} > ${receiptData.memberName}`,
           balance: isMembership && json.data?.membership_expires
-            ? `Active Through ${new Date(json.data.membership_expires).toLocaleDateString()}`
+            ? `Active Through ${new Date(apiData(json).membership_expires).toLocaleDateString()}`
             : `Comp Balance: $${(json.data?.new_balance || 0).toFixed(2)}`
         });
 
@@ -479,12 +480,12 @@ export default function CompSystem() {
     }).then(r => { if (!r.ok) throw new Error('fail'); return r; })
       .then(function (r) { return r.json(); })
       .then(function (pinData) {
-        if (!pinData.success || !pinData.data || !pinData.data.valid) {
+        if (!pinData.success || !pinData.data || !apiData(pinData).valid) {
           setVoidPinError(pinData.error && pinData.error.message ? pinData.error.message : 'Invalid PIN');
           setVoidLoading(false);
           return;
         }
-        var staff = pinData.data.staff;
+        var staff = apiData(pinData).staff;
         // ── ROLE CHECK: Only owner, manager, dualrate can void comps ──
         var voidRoles = ['owner', 'manager', 'dualrate'];
         if (!staff || !staff.role || voidRoles.indexOf(staff.role) === -1) {
@@ -516,7 +517,7 @@ export default function CompSystem() {
                 title: voidPinModal.actionLabel + ' Processed',
                 amount: '$' + Math.abs(entry.amount || 0).toFixed(2),
                 detail: (entry.member_name || 'Member') + ' - Comp Reversed',
-                balance: 'New Balance: $' + (json.data && json.data.new_balance !== undefined ? json.data.new_balance.toFixed(2) : '0.00')
+                balance: 'New Balance: $' + (json.data && apiData(json).new_balance !== undefined ? apiData(json).new_balance.toFixed(2) : '0.00')
               });
               broadcastChange('members');
               fetchData();

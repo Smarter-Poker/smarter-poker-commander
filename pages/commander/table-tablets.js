@@ -21,6 +21,7 @@ import { useConfirmAction } from "../../src/components/commander/shared/ConfirmM
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../src/components/commander/shared/ClubArenaTable';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 const STATUS_BADGE = {
     in_use: { bg: '#31A24C', label: 'Active' },
@@ -384,7 +385,7 @@ export default function TableTabletsPage() {
                 body: JSON.stringify({ pin_code: pinValue, venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success && json.data?.staff) {
-                const role = json.data.staff.role;
+                const role = apiData(json).staff.role;
                 if (role === 'owner' || role === 'manager') {
                     // Unlock!
                     setLockedTable(null);
@@ -413,7 +414,7 @@ const headers = { };
             const json = await commanderFetchJSON(`/api/commander/tables?venue_id=${venueId}`, { headers, signal });
             if (json.success) {
                 let tablesArr = Array.isArray(json.data) ? json.data
-                    : Array.isArray(json.data?.tables) ? json.data.tables : [];
+                    : Array.isArray(json.data?.tables) ? apiData(json).tables : [];
 
                 // For active tables, fetch sessions to get time_remaining for countdown clocks
                 const activeTbls = tablesArr.filter(t => t.status === 'in_use');
@@ -455,11 +456,11 @@ const headers = { };
                             if (!fRes.ok) throw new Error(`Request Failed (${fRes.status})`);
                             const fJson = await fRes.json();
                             if (fJson.success && fJson.data?.tables) {
-                                fJson.data.tables.forEach(ft => {
+                                apiData(fJson).tables.forEach(ft => {
                                     tournamentEntriesByTable[ft.table_number] = {
                                         tournament_id: tid,
-                                        tournament: fJson.data.tournament,
-                                        stats: fJson.data.stats,
+                                        tournament: apiData(fJson).tournament,
+                                        stats: apiData(fJson).stats,
                                         players: ft.players || [] };
                                 });
                             }
@@ -554,7 +555,7 @@ const headers = { };
 const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=${venueId}`, { });
             if (json.success && json.data) {
                 const map = {};
-                json.data.forEach(d => {
+                asArray(json.data).forEach(d => {
                     const tNum = d.device_id?.match(/table-(\d+)/)?.[1];
                     if (tNum) map[parseInt(tNum)] = { is_online: d.is_online, last_heartbeat: d.last_heartbeat };
                 });
@@ -833,7 +834,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `${json.data.player_name} Removed · ${json.data.unused_minutes_returned}m Returned` });
+                setToast({ type: 'success', text: `${apiData(json).player_name} Removed · ${apiData(json).unused_minutes_returned}m Returned` });
                 setShowPlayerMenu(null);
                 broadcastChange('tables');
                 fetchAll();
@@ -1041,7 +1042,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 body: JSON.stringify({ qr_code: qrData, table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `${json.data.player_name} Seated At S${seatNumber}` });
+                setToast({ type: 'success', text: `${apiData(json).player_name} Seated At S${seatNumber}` });
                 broadcastChange('tables'); // <== NEW FIX: Realtime sync across the floor
                 fetchAll();
             } else {
@@ -1285,7 +1286,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                             } else if (!isTournMove) {
                                                 const json = await callSessionAction(movingPlayer.tableNumber, movingPlayer.seat.number, 'move', { target_seat: seat.number });
                                                 if (json.success) {
-                                                    setToast({ type: 'success', text: `${json.data.player_name} Moved S${json.data.from_seat} → S${json.data.to_seat}` });
+                                                    setToast({ type: 'success', text: `${apiData(json).player_name} Moved S${apiData(json).from_seat} → S${apiData(json).to_seat}` });
                                                     broadcastChange('tables');
                                                     fetchAll();
                                                 } else {
@@ -2039,12 +2040,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap An Empty Seat To Move ' + pName }); } },
                                     { label: 'Remove Player', icon: React.createElement(XCircle, { size: iconSize }), color: '#EF4444', action: () => removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number) },
                                     ...(showPlayerMenu.taken?.session_status === 'paused' || showPlayerMenu.taken?.session_status === 'meal_break'
-                                        ? [{ label: 'Resume Timer', icon: React.createElement(Clock, { size: iconSize }), color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'resume'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' resumed' }); } else { setToast({ type: 'error', text: json.error || 'Resume Failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
-                                        : [{ label: 'Pause Timer', icon: React.createElement(Timer, { size: iconSize }), color: '#22D3EE', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'pause'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' paused' }); } else { setToast({ type: 'error', text: json.error || 'Pause Failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
+                                        ? [{ label: 'Resume Timer', icon: React.createElement(Clock, { size: iconSize }), color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'resume'); if (json.success) { setToast({ type: 'success', text: apiData(json).player_name + ' resumed' }); } else { setToast({ type: 'error', text: json.error || 'Resume Failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
+                                        : [{ label: 'Pause Timer', icon: React.createElement(Timer, { size: iconSize }), color: '#22D3EE', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'pause'); if (json.success) { setToast({ type: 'success', text: apiData(json).player_name + ' paused' }); } else { setToast({ type: 'error', text: json.error || 'Pause Failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
                                     ),
-                                    { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = json.data.missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: json.data.player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed Blind #' + count + ' for ' + json.data.player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
-                                    { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#5AA9FF', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + json.data.player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
-                                    { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes To Add For ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (json.data.player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed To Add Time' }); } setShowPlayerMenu(null); fetchAll(); } },
+                                    { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = apiData(json).missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: apiData(json).player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed Blind #' + count + ' for ' + apiData(json).player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
+                                    { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#5AA9FF', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + apiData(json).player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
+                                    { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes To Add For ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (apiData(json).player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed To Add Time' }); } setShowPlayerMenu(null); fetchAll(); } },
                                 ];
                                 return actions.map((btn, i) => (
                                     React.createElement('button', {

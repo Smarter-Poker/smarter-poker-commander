@@ -20,6 +20,7 @@ import { titleCase } from '../../../src/lib/commander/formatters';
 import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/sdPalette';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import { apiData } from '../../../src/lib/commander/apiShape';
 
 // titleCase imported from '@/lib/commander/formatters'
 
@@ -66,7 +67,7 @@ const opts = signal ? { signal }
       const json = await commanderFetchJSON('/api/commander/settings', opts);
       if (json.success && json.data?.desk_customization) {
         // Saved colours are read through normalizeSdColor (#SMARTERDESIGN).
-        setCustom(prev => ({ ...prev, ...normalizeSdColors(json.data.desk_customization, DESK_COLOR_KEYS) }));
+        setCustom(prev => ({ ...prev, ...normalizeSdColors(apiData(json).desk_customization, DESK_COLOR_KEYS) }));
       }
     } catch (err) { if (err.name !== 'AbortError') { /* non-fatal */ } }
   }, []);

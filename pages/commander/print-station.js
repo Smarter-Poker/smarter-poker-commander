@@ -34,6 +34,7 @@ import { buildJobHtml, printHtml } from '../../src/lib/commander/receiptTemplate
 import { busEmit } from '../../src/engine/EventBus';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
 import useClientNow from '../../src/hooks/useClientNow';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 /* ─── Realtime client (never constructed during SSG) ─────────── */
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
@@ -299,11 +300,11 @@ export default function PrintStation() {
       const everythingJson = everythingRes ? await everythingRes.json().catch(() => null) : null;
 
       if (everythingJson?.success) {
-        setAllQueued(Array.isArray(everythingJson.data?.jobs) ? everythingJson.data.jobs : []);
+        setAllQueued(Array.isArray(everythingJson.data?.jobs) ? apiData(everythingJson).jobs : []);
       }
 
       if (queuedJson?.success) {
-        const jobs = Array.isArray(queuedJson.data?.jobs) ? queuedJson.data.jobs : [];
+        const jobs = Array.isArray(queuedJson.data?.jobs) ? apiData(queuedJson).jobs : [];
         setQueued(jobs);
         // With no filter the station queue IS the venue queue, so the All Jobs
         // tab reuses it rather than costing a second request.
@@ -330,7 +331,7 @@ export default function PrintStation() {
       }
 
       if (allJson?.success) {
-        const jobs = Array.isArray(allJson.data?.jobs) ? allJson.data.jobs : [];
+        const jobs = Array.isArray(allJson.data?.jobs) ? apiData(allJson).jobs : [];
         setRecent(jobs.filter(j => j.status !== 'queued'));
       }
     } catch (err) {
@@ -415,7 +416,7 @@ export default function PrintStation() {
     try {
       const res = await commanderFetch(`/api/commander/print-jobs/${job.id}`, {});
       const json = await res.json().catch(() => null);
-      if (json?.success && json.data?.job) return json.data.job;
+      if (json?.success && json.data?.job) return apiData(json).job;
     } catch (err) {
       console.warn('[print-station] receipt fetch failed:', err?.message || err);
     }

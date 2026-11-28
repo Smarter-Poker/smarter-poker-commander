@@ -19,6 +19,19 @@ import {
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import LoadError from '../../../../src/components/commander/shared/LoadError';
+import { apiError, apiFailed, asArray, asObject, isPlainObject } from '../../../../src/lib/commander/apiShape';
+
+const REPORT_ARRAYS = ['entries', 'cashiers', 'activities', 'discrepancies', 'unpaid_itm', 'w2g_candidates'];
+const REPORT_OBJECTS = ['summary', 'tournament', 'counts', 'variance', 'expected_in', 'actual_in', 'expected_out', 'actual_out', 'derivation'];
+
+/** One shape for every report tab, whatever the server sent. */
+function normaliseReport(d) {
+    const out = { ...d };
+    for (const k of REPORT_ARRAYS) out[k] = asArray(d[k]);
+    for (const k of REPORT_OBJECTS) if (k in d) out[k] = asObject(d[k]);
+    return out;
+}
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -82,6 +95,7 @@ export default function TDReports() {
     const [tab, setTab] = useState('registration');
     const [loading, setLoading] = useState(true);
     const [reportData, setReportData] = useState(null);
+    const [loadError, setLoadError] = useState('');
     const [busy, setBusy] = useState(false);
     const [toast, setToast] = useState(null);
 
@@ -105,10 +119,17 @@ export default function TDReports() {
             // Clear stale data rather than leaving the previous tab's payload
             // on screen when a fetch fails: a cage sheet showing the wrong
             // tournament's money is worse than an empty one.
-            setReportData(json?.success ? json.data : null);
+            if (apiFailed(null, json) || !isPlainObject(json.data)) {
+                setReportData(null);
+                setLoadError(apiError(null, json, 'This Report'));
+            } else {
+                setReportData(normaliseReport(json.data));
+                setLoadError('');
+            }
         } catch (err) {
             console.warn('Fetch report error:', err);
             setReportData(null);
+            setLoadError(`Could Not Load This Report${err?.message ? `: ${err.message}` : ''}`);
         } finally {
             setLoading(false);
         }
@@ -319,6 +340,8 @@ export default function TDReports() {
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                         </div>
+                    ) : loadError && tab !== 'reconciliation' ? (
+                        <LoadError message={loadError} onRetry={() => fetchReport(tab)} />
                     ) : (
                         <>
                             {/* Registration Report */}
@@ -450,9 +473,7 @@ export default function TDReports() {
                                 <ReconciliationSection data={reportData} />
                             )}
                             {tab === 'reconciliation' && !reportData && (
-                                <div className="bg-[#0A1829] rounded-xl border border-[#445E77] px-4 py-8 text-center text-[#BDD0E2] text-sm">
-                                    The Cash Drawer Could Not Be Reconciled For This Tournament.
-                                </div>
+                                <LoadError message={loadError ? `The Cash Drawer Could Not Be Reconciled For This Tournament. ${loadError}` : 'The Cash Drawer Could Not Be Reconciled For This Tournament.'} onRetry={() => fetchReport(tab)} />
                             )}
                         </>
                     )}

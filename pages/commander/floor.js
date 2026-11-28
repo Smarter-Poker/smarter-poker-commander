@@ -21,6 +21,7 @@ import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import useClientNow, { formatClientTime } from '../../src/hooks/useClientNow';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 const STATUS_CONFIG = {
   in_use: { color: '#31A24C', glow: '0 0 12px rgba(49,162,76,0.5)', label: 'Active' },
@@ -108,7 +109,7 @@ return { };
       let rawTables = Array.isArray(tablesRes.data) ? tablesRes.data : (tablesRes.data?.tables || []);
 
       // Merge game data
-      const gamesArr = Array.isArray(gamesRes.data?.games) ? gamesRes.data.games
+      const gamesArr = Array.isArray(gamesRes.data?.games) ? apiData(gamesRes).games
         : Array.isArray(gamesRes.data) ? gamesRes.data : [];
       const activeGames = gamesArr.filter(g => g.status === 'running' || g.status === 'waiting');
 

@@ -17,6 +17,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
+import LoadError from '../../../../src/components/commander/shared/LoadError';
+import { apiError, apiFailed, asArray, asObject, isPlainObject, readJson } from '../../../../src/lib/commander/apiShape';
+
+/** One shape for this screen's answer, whatever the server sent (2026-11-28). */
+function normalise(d) {
+  if (!isPlainObject(d)) return null;
+  const alerts = asObject(d.alerts);
+  return {
+    ...d,
+    tables: asArray(d.tables),
+    available_dealers: asArray(d.available_dealers),
+    on_break_dealers: asArray(d.on_break_dealers),
+    alerts: { ...alerts, over_limit: asArray(alerts.over_limit), on_break: asArray(alerts.on_break) },
+  };
+}
 import { busEmit } from '../../../../src/engine/EventBus';
 import {
   Trophy, Users, DollarSign, LayoutGrid, Monitor, FileText,
@@ -65,16 +80,16 @@ export default function TDDealers() {
         `/api/commander/tournaments/${tournamentId}/dealers`,
         { ...(signal ? { signal } : {}) }
       );
-      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) {
-        setData(json.data);
+      const json = await readJson(res);
+      const next = apiFailed(res, json) ? null : normalise(json.data);
+      if (next) {
+        setData(next);
         setError(null);
       } else {
-        setError(json.error?.message || 'Failed To Load Dealer Rotation');
+        setError(apiFailed(res, json) ? apiError(res, json, 'Dealer Rotation') : 'Tournament Not Found');
       }
     } catch (err) {
-      if (err.name !== 'AbortError') setError('Failed To Load Dealer Rotation');
+      if (err.name !== 'AbortError') setError('Could Not Load Dealer Rotation');
     } finally {
       setLoading(false);
     }
@@ -130,26 +145,30 @@ export default function TDDealers() {
     router.push(path ? `${base}${path}` : base);
   };
 
+  // Loading and error states render inside the layout, so the global header
+  // and the page image header stay (2026-11-28).
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
-      </div>
+      <CommanderLayout title="Commander - Dealer Rotation" backHref={`/commander/td/${tournamentId}`}>
+        <div className="min-h-[50vh] bg-[#040D18] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
+        </div>
+      </CommanderLayout>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
-        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
-          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
-          <button onClick={() => navigateTo('')}
-            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
-            Back To Control Center
-          </button>
+      <CommanderLayout title="Commander - Dealer Rotation" backHref={`/commander/td/${tournamentId}`}>
+        <div className="bg-[#040D18] p-4">
+          <LoadError message={error || 'Tournament Not Found'} onRetry={() => { setLoading(true); fetchDealers(); }}>
+            <button onClick={() => navigateTo('')}
+              className="min-h-[44px] px-6 py-3 bg-[#132A42] text-[#F2F7FF] rounded-lg text-base font-medium">
+              Back To Control Center
+            </button>
+          </LoadError>
         </div>
-      </div>
+      </CommanderLayout>
     );
   }
 

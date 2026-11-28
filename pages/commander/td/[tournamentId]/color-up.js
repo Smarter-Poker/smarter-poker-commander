@@ -12,6 +12,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import SEOHead from '../../../../src/components/seo/SEOHead';
 import CommanderLayout from '../../../../src/components/commander/shared/CommanderLayout';
+import LoadError from '../../../../src/components/commander/shared/LoadError';
+import { apiError, apiFailed, asArray, asObject, isPlainObject, readJson } from '../../../../src/lib/commander/apiShape';
+
+/** One shape for this screen's answer, whatever the server sent (2026-11-28). */
+function normalise(d) {
+  if (!isPlainObject(d)) return null;
+  return { ...d, tournament: asObject(d.tournament), stats: asObject(d.stats), tables: asArray(d.tables) };
+}
 import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { busEmit } from '../../../../src/engine/EventBus';
 import {
@@ -88,16 +96,16 @@ export default function TDColorUp() {
         `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,tables`,
         { ...(signal ? { signal } : {}) }
       );
-      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) {
-        setFloor(json.data);
+      const json = await readJson(res);
+      const next = apiFailed(res, json) ? null : normalise(json.data);
+      if (next) {
+        setFloor(next);
         setError(null);
       } else {
-        setError(json.error || 'Failed To Load Tournament Data');
+        setError(apiFailed(res, json) ? apiError(res, json, 'Tournament Data') : 'Tournament Not Found');
       }
     } catch (err) {
-      if (err.name !== 'AbortError') setError('Failed To Load Tournament Data');
+      if (err.name !== 'AbortError') setError('Could Not Load Tournament Data');
     } finally {
       setLoading(false);
     }
@@ -491,26 +499,30 @@ ${raceOrder.map((r, i) => `<tr>
     router.push(path ? `${base}${path}` : base);
   };
 
+  // Loading and error states render inside the layout, so the global header
+  // and the page image header stay (2026-11-28).
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
-      </div>
+      <CommanderLayout title="Commander - Color Up" backHref={`/commander/td/${tournamentId}`}>
+        <div className="min-h-[50vh] bg-[#040D18] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
+        </div>
+      </CommanderLayout>
     );
   }
 
   if (error || !floor) {
     return (
-      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
-        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
-          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
-          <button onClick={() => navigateTo('')}
-            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
-            Back To Control Center
-          </button>
+      <CommanderLayout title="Commander - Color Up" backHref={`/commander/td/${tournamentId}`}>
+        <div className="bg-[#040D18] p-4">
+          <LoadError message={error || 'Tournament Not Found'} onRetry={() => { setLoading(true); fetchFloor(); }}>
+            <button onClick={() => navigateTo('')}
+              className="min-h-[44px] px-6 py-3 bg-[#132A42] text-[#F2F7FF] rounded-lg text-base font-medium">
+              Back To Control Center
+            </button>
+          </LoadError>
         </div>
-      </div>
+      </CommanderLayout>
     );
   }
 

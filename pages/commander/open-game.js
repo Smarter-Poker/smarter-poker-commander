@@ -16,6 +16,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 const GAME_TYPES = [
   { type: 'NLH', name: "No Limit Hold'em", color: '#1981EC' },
@@ -66,7 +67,7 @@ const venueId = getVenueId();
 const json = await commanderFetchJSON(`/api/commander/tables?venue_id=${venueId}`, {});
       if (json.success) {
         const tablesArr = Array.isArray(json.data) ? json.data
-          : Array.isArray(json.data?.tables) ? json.data.tables : [];
+          : Array.isArray(json.data?.tables) ? apiData(json).tables : [];
         setTables(tablesArr.filter(t => t.status === 'available' || !t.status));
       }
     } catch (err) { console.warn(err); }

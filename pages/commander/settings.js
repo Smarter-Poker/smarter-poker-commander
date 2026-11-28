@@ -12,6 +12,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 export default function CommanderSettingsPage() {
   const router = useRouter();
@@ -84,23 +85,23 @@ export default function CommanderSettingsPage() {
           if (data?.data) {
             setSettings(prev => ({
               ...prev,
-              auto_refresh_interval: data.data.auto_refresh_interval ?? prev.auto_refresh_interval,
-              show_player_names_on_display: data.data.show_player_names_on_display ?? prev.show_player_names_on_display,
-              sms_notifications_enabled: data.data.sms_notifications_enabled ?? prev.sms_notifications_enabled,
-              push_notifications_enabled: data.data.push_notifications_enabled ?? prev.push_notifications_enabled,
-              max_waitlist_size: data.data.max_waitlist_size ?? prev.max_waitlist_size,
-              call_timeout_minutes: data.data.call_timeout_minutes ?? prev.call_timeout_minutes,
-              default_wait_time_per_player: data.data.default_wait_time_per_player ?? prev.default_wait_time_per_player,
-              venue_type: data.data.venue_type ?? prev.venue_type,
-              time_billing_rate: data.data.time_billing_rate ?? prev.time_billing_rate,
-              auto_comp_rate: data.data.auto_comp_rate ?? prev.auto_comp_rate,
-              bulk_time_packages: data.data.bulk_time_packages ?? prev.bulk_time_packages,
-              security_gate_enabled: data.data.security_gate_enabled ?? true }));
+              auto_refresh_interval: apiData(data).auto_refresh_interval ?? prev.auto_refresh_interval,
+              show_player_names_on_display: apiData(data).show_player_names_on_display ?? prev.show_player_names_on_display,
+              sms_notifications_enabled: apiData(data).sms_notifications_enabled ?? prev.sms_notifications_enabled,
+              push_notifications_enabled: apiData(data).push_notifications_enabled ?? prev.push_notifications_enabled,
+              max_waitlist_size: apiData(data).max_waitlist_size ?? prev.max_waitlist_size,
+              call_timeout_minutes: apiData(data).call_timeout_minutes ?? prev.call_timeout_minutes,
+              default_wait_time_per_player: apiData(data).default_wait_time_per_player ?? prev.default_wait_time_per_player,
+              venue_type: apiData(data).venue_type ?? prev.venue_type,
+              time_billing_rate: apiData(data).time_billing_rate ?? prev.time_billing_rate,
+              auto_comp_rate: apiData(data).auto_comp_rate ?? prev.auto_comp_rate,
+              bulk_time_packages: apiData(data).bulk_time_packages ?? prev.bulk_time_packages,
+              security_gate_enabled: apiData(data).security_gate_enabled ?? true }));
             // Persist security gate state to localStorage for CommanderLayout
-            localStorage.setItem('commander_security_gate', data.data.security_gate_enabled === false ? 'off' : 'on');
+            localStorage.setItem('commander_security_gate', apiData(data).security_gate_enabled === false ? 'off' : 'on');
             // Load logo URL
-            if (data.data.club_logo_url !== undefined) {
-              setLogoUrl(data.data.club_logo_url || null);
+            if (apiData(data).club_logo_url !== undefined) {
+              setLogoUrl(apiData(data).club_logo_url || null);
             }
           }
         })
@@ -120,20 +121,20 @@ export default function CommanderSettingsPage() {
         if (data?.data) {
           setSettings(prev => ({
             ...prev,
-            auto_refresh_interval: data.data.auto_refresh_interval ?? prev.auto_refresh_interval,
-            show_player_names_on_display: data.data.show_player_names_on_display ?? prev.show_player_names_on_display,
-            sms_notifications_enabled: data.data.sms_notifications_enabled ?? prev.sms_notifications_enabled,
-            push_notifications_enabled: data.data.push_notifications_enabled ?? prev.push_notifications_enabled,
-            max_waitlist_size: data.data.max_waitlist_size ?? prev.max_waitlist_size,
-            call_timeout_minutes: data.data.call_timeout_minutes ?? prev.call_timeout_minutes,
-            default_wait_time_per_player: data.data.default_wait_time_per_player ?? prev.default_wait_time_per_player,
-            venue_type: data.data.venue_type ?? prev.venue_type,
-            time_billing_rate: data.data.time_billing_rate ?? prev.time_billing_rate,
-            auto_comp_rate: data.data.auto_comp_rate ?? prev.auto_comp_rate,
-            bulk_time_packages: data.data.bulk_time_packages ?? prev.bulk_time_packages,
-            security_gate_enabled: data.data.security_gate_enabled ?? true }));
-          localStorage.setItem('commander_security_gate', data.data.security_gate_enabled === false ? 'off' : 'on');
-          if (data.data.club_logo_url !== undefined) setLogoUrl(data.data.club_logo_url || null);
+            auto_refresh_interval: apiData(data).auto_refresh_interval ?? prev.auto_refresh_interval,
+            show_player_names_on_display: apiData(data).show_player_names_on_display ?? prev.show_player_names_on_display,
+            sms_notifications_enabled: apiData(data).sms_notifications_enabled ?? prev.sms_notifications_enabled,
+            push_notifications_enabled: apiData(data).push_notifications_enabled ?? prev.push_notifications_enabled,
+            max_waitlist_size: apiData(data).max_waitlist_size ?? prev.max_waitlist_size,
+            call_timeout_minutes: apiData(data).call_timeout_minutes ?? prev.call_timeout_minutes,
+            default_wait_time_per_player: apiData(data).default_wait_time_per_player ?? prev.default_wait_time_per_player,
+            venue_type: apiData(data).venue_type ?? prev.venue_type,
+            time_billing_rate: apiData(data).time_billing_rate ?? prev.time_billing_rate,
+            auto_comp_rate: apiData(data).auto_comp_rate ?? prev.auto_comp_rate,
+            bulk_time_packages: apiData(data).bulk_time_packages ?? prev.bulk_time_packages,
+            security_gate_enabled: apiData(data).security_gate_enabled ?? true }));
+          localStorage.setItem('commander_security_gate', apiData(data).security_gate_enabled === false ? 'off' : 'on');
+          if (apiData(data).club_logo_url !== undefined) setLogoUrl(apiData(data).club_logo_url || null);
         }
       })
       .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
@@ -429,7 +430,7 @@ export default function CommanderSettingsPage() {
                               if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                               const json = await res.json();
                               if (json.success) {
-                                setLogoUrl(json.data.club_logo_url);
+                                setLogoUrl(apiData(json).club_logo_url);
                                 localStorage.removeItem('commander_branding');
                                 broadcastChange('settings');
                                 setSuccess('Logo Uploaded Successfully!');

@@ -15,6 +15,7 @@ import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 const ID_TYPES = [
   { value: 'drivers_license', label: "Driver's License" },
@@ -109,7 +110,7 @@ const res = await commanderFetch(`/api/commander/staff/venue/${venueId}`, { ...(
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       if (data.success) {
-        setStaffList(data.data.staff || []);
+        setStaffList(asArray(apiData(data).staff));
       }
     } catch (err) {
       console.warn('Failed to fetch staff:', err);
@@ -314,7 +315,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
       if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
-        setLinkCodeData({ staffId, token: data.data.token, url: data.data.claim_url });
+        setLinkCodeData({ staffId, token: apiData(data).token, url: apiData(data).claim_url });
       } else {
         setToast({ type: 'error', text: data.error || 'Failed To Generate Code' });
       }

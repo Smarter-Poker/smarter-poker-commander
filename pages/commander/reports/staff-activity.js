@@ -13,6 +13,7 @@ import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import { apiData, asArray } from '../../../src/lib/commander/apiShape';
 
 export default function StaffActivity() {
   useEffect(() => { busEmit.sessionStart('commander-reports-staff-activity'); }, []);
@@ -50,7 +51,7 @@ const params = new URLSearchParams();
 
       const data = await commanderFetchJSON(`/api/commander/admin/audit-logs?${params}`, {});
       if (data.success && data.data) {
-        setAuditLogs(data.data.logs || []);
+        setAuditLogs(asArray(apiData(data).logs));
       }
     } catch (err) {
       console.warn('Audit logs fetch error:', err);

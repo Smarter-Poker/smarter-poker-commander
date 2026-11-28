@@ -19,6 +19,7 @@ import { printSeatChangeCards } from '../../../../src/lib/commander/receiptTempl
 import { getStaffData } from '../../../../src/lib/commander/clientAuth';
 import { useConfirmAction } from "../../../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const NAV_ITEMS = [
   { key: 'control', icon: Trophy, label: 'Control', path: '' },
@@ -394,7 +395,7 @@ export default function TDTablesMap() {
         setToast({ type: 'error', text: json?.error?.message || 'Could Not Read Seat Conflicts.' });
         return;
       }
-      const all = Array.isArray(json.data?.conflicts) ? json.data.conflicts : [];
+      const all = Array.isArray(json.data?.conflicts) ? apiData(json).conflicts : [];
       const conflicts = scope === 'one'
         ? all.filter(c => c.table_number === target.table_number && c.seat_number === target.seat_number)
         : all;
@@ -442,7 +443,7 @@ export default function TDTablesMap() {
           }
           (json?.data?.resolved || []).forEach(r => resolved.push(r));
           (json?.data?.failed || []).forEach(f => failed.push(f));
-          if (json?.data?.print_job_id) printJobId = json.data.print_job_id;
+          if (json?.data?.print_job_id) printJobId = apiData(json).print_job_id;
         }
       } else {
         const { ok, status, json } = await postSeatConflict({ action: 'resolve_all' });
@@ -452,7 +453,7 @@ export default function TDTablesMap() {
         }
         (json?.data?.resolved || []).forEach(r => resolved.push(r));
         (json?.data?.failed || []).forEach(f => failed.push(f));
-        if (json?.data?.print_job_id) printJobId = json.data.print_job_id;
+        if (json?.data?.print_job_id) printJobId = apiData(json).print_job_id;
       }
 
       // The server already queued the cards for /commander/print-station.
@@ -509,11 +510,11 @@ export default function TDTablesMap() {
           // Auto-print receipts if elimination triggered an auto table break
           if (elimJson.success) {
             if (elimJson.data?.auto_break?.executed) {
-              printAutoBreakReceipts(elimJson.data.auto_break);
+              printAutoBreakReceipts(apiData(elimJson).auto_break);
             }
             // An alternate may have been auto-seated into the freed seat
             if (elimJson.data?.promoted_alternate) {
-              const pa = elimJson.data.promoted_alternate;
+              const pa = apiData(elimJson).promoted_alternate;
               setToast({ type: 'success', text: `Alternate ${pa.player_name || 'Player'} Seated At Table ${pa.table_number}, Seat ${pa.seat_number}` });
             }
           } else {
@@ -645,9 +646,9 @@ export default function TDTablesMap() {
                   });
                   if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                   const json = await res.json();
-                  if (json.success && json.data.receipts) {
+                  if (json.success && apiData(json).receipts) {
                     // Print SEAT CHANGE CARDs via shared helper
-                    printAutoBreakReceipts({ receipts: json.data.receipts });
+                    printAutoBreakReceipts({ receipts: apiData(json).receipts });
                     setAutoBreak(null);
                     await fetchFloor();
                     broadcastChange('tournaments');
@@ -1017,7 +1018,7 @@ export default function TDTablesMap() {
 
                           // Step 3: Print Potawatomi SEAT CHANGE CARDs
                           if (json.success && json.data?.receipts?.length) {
-                            printAutoBreakReceipts({ receipts: json.data.receipts });
+                            printAutoBreakReceipts({ receipts: apiData(json).receipts });
                           } else if (!json.success) {
                             setToast({ type: 'error', text: `Break Failed: ${json.error || 'Unknown Error'}` });
                           }

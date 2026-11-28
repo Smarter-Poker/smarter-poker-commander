@@ -20,6 +20,7 @@ import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth'
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import useClientNow, { formatClientDate } from '../../src/hooks/useClientNow';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 export default function CloseDay() {
   // Today's date is read in the browser only (SSR and first render must match).
@@ -84,7 +85,7 @@ const headers = { };
 
       // Tables: data may be {tables: []} or array directly
       const tablesArr = Array.isArray(tablesRes.data) ? tablesRes.data
-        : Array.isArray(tablesRes.data?.tables) ? tablesRes.data.tables : [];
+        : Array.isArray(tablesRes.data?.tables) ? apiData(tablesRes).tables : [];
       setTables(tablesArr);
       // Waitlist
       const waitlistArr = Array.isArray(waitlistRes.data) ? waitlistRes.data : [];
@@ -172,7 +173,7 @@ const venueId = getVenueId();
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success && json.data?.valid && json.data?.staff) {
-        const staff = json.data.staff;
+        const staff = apiData(json).staff;
         // Persist the close BEFORE celebrating - confetti fires only on a real save.
         const saveRes = await commanderFetch('/api/commander/close-day', {
           method: 'POST',
@@ -194,7 +195,7 @@ const venueId = getVenueId();
         if (!saveRes.ok || !saveJson.success) {
           throw new Error(saveJson?.error?.message || `Save Failed (${saveRes.status})`);
         }
-        if (saveJson.data?.close) setLastClose(saveJson.data.close);
+        if (saveJson.data?.close) setLastClose(apiData(saveJson).close);
         // Saved - advance to the confirmation step and celebrate.
         setStep(4);
         busEmit.sessionEnd('commander-close-day');

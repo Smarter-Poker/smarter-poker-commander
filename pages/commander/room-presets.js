@@ -19,6 +19,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession, getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
+import { apiData } from '../../src/lib/commander/apiShape';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -86,9 +87,9 @@ export default function DailyPresetsPage() {
         .then(r => r.json())
         .then(data => {
           if (data?.data) {
-            setHardStopEnabled(data.data.hard_stop_enabled || false);
-            setHardStopTime(data.data.hard_stop_time || '23:00');
-            setAutoCompRate(parseFloat(data.data.auto_comp_rate) || 0);
+            setHardStopEnabled(apiData(data).hard_stop_enabled || false);
+            setHardStopTime(apiData(data).hard_stop_time || '23:00');
+            setAutoCompRate(parseFloat(apiData(data).auto_comp_rate) || 0);
           }
         })
         .catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
@@ -186,9 +187,9 @@ const res = await commanderFetch('/api/commander/settings', {
         const json = await res.json();
         if (json.success) {
           const results = [];
-          if (json.data.games_opened > 0) results.push(`${json.data.games_opened} Games Opened`);
-          if (json.data.promotions_activated > 0) results.push(`${json.data.promotions_activated} Promotions Activated`);
-          if (json.data.tournaments_created > 0) results.push(`${json.data.tournaments_created} Tournaments Created`);
+          if (apiData(json).games_opened > 0) results.push(`${apiData(json).games_opened} Games Opened`);
+          if (apiData(json).promotions_activated > 0) results.push(`${apiData(json).promotions_activated} Promotions Activated`);
+          if (apiData(json).tournaments_created > 0) results.push(`${apiData(json).tournaments_created} Tournaments Created`);
           setSuccess(`"${preset.name}" Launched, ${results.join(', ') || 'Preset Applied'}`);
           setTimeout(() => setSuccess(null), 5000);
           fetchData();

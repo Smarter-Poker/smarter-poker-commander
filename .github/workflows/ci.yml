@@ -146,6 +146,20 @@ jobs:
             echo "::error::next start did not answer /api/health in 30s"; cat /tmp/next-start.log; exit 1
           fi
           node scripts/probe-login-bridge.mjs
+      # 2026-11-28: no staff page white-screens on a bad API answer. The same
+      # `next start` build (still running from the step above) opens every
+      # route in the header registry with every /api answer replaced by an
+      # empty array, an empty object, data: null, an error body, a 500 and a
+      # 401; each page must draw its image header (or the PIN gate, or send a
+      # 401 to sign-in) with no uncaught error. Uses the runner's Google Chrome:
+      # Playwright ships no browser build for the current ubuntu-latest.
+      - name: Every staff page survives a bad API answer
+        env:
+          COMMANDER_ORIGIN: http://127.0.0.1:3199
+        run: |
+          CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$CHROME_PATH" ]; then echo "::error::no Chrome on the runner for the API resilience check"; exit 1; fi
+          CHROME_PATH="$CHROME_PATH" node scripts/check-api-resilience.mjs
 
   # Auto-file (or refresh) a GitHub Issue when CI fails on main — ported from
   # World Hub's Build Safety Gate. Private-repo Actions results are otherwise

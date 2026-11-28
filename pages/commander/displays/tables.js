@@ -25,6 +25,7 @@ import SEOHead from '../../../src/components/seo/SEOHead';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
+import { apiData } from '../../../src/lib/commander/apiShape';
 
 /* ─── Helpers ────────────────────────────────────────────── */
 
@@ -149,7 +150,7 @@ const headers = { };
       const json = await commanderFetchJSON(`/api/commander/tables?venue_id=${venueId}`, { headers });
       if (json.success) {
         let tablesArr = Array.isArray(json.data) ? json.data
-          : Array.isArray(json.data?.tables) ? json.data.tables : [];
+          : Array.isArray(json.data?.tables) ? apiData(json).tables : [];
 
         // Fetch sessions for tables with active games to get seat + timer data
         const activeTbls = tablesArr.filter(t => t.status === 'in_use');
@@ -255,7 +256,7 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success && json.data?.staff) {
-        const role = json.data.staff.role;
+        const role = apiData(json).staff.role;
         if (role === 'owner' || role === 'manager') {
           setLockedTableNum(null);
           setShowPinModal(false);
@@ -354,7 +355,7 @@ const headers = { 'Content-Type': 'application/json' };
         if (!seatRes.ok) throw new Error('Request Failed');
         const seatJson = await seatRes.json();
         if (seatJson.success) {
-          setToast({ type: 'success', text: `✓ ${seatJson.data.player_name} seated at S${seatNumber}` });
+          setToast({ type: 'success', text: `✓ ${apiData(seatJson).player_name} seated at S${seatNumber}` });
           fetchData();
           broadcastChange('tables');
         } else {
@@ -394,7 +395,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setToast({ type: 'success', text: `${json.data.player_name} Removed · ${json.data.unused_minutes_returned}m Returned` });
+        setToast({ type: 'success', text: `${apiData(json).player_name} Removed · ${apiData(json).unused_minutes_returned}m Returned` });
         setShowPlayerMenu(null);
         fetchData();
         broadcastChange('tables');
@@ -415,7 +416,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
     if (!movingPlayer) return;
     const json = await callSessionAction(movingPlayer.seat, 'move', { target_seat: targetSeatNumber });
     if (json.success) {
-      setToast({ type: 'success', text: `✓ ${json.data.player_name} moved S${json.data.from_seat} → S${json.data.to_seat}` });
+      setToast({ type: 'success', text: `✓ ${apiData(json).player_name} moved S${apiData(json).from_seat} → S${apiData(json).to_seat}` });
       fetchData();
     } else {
       setToast({ type: 'error', text: json.error || 'Move Failed' });
@@ -426,7 +427,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
   const addMealBreak = async (seat) => {
     const json = await callSessionAction(seat, 'meal_break');
     if (json.success) {
-      setToast({ type: 'success', text: `30-Min Meal Break Started For ${json.data.player_name}` });
+      setToast({ type: 'success', text: `30-Min Meal Break Started For ${apiData(json).player_name}` });
     } else {
       setToast({ type: 'error', text: json.error || 'Failed To Set Meal Break' });
     }
@@ -437,13 +438,13 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
   const markMissedBlinds = async (seat) => {
     const json = await callSessionAction(seat, 'missed_blinds');
     if (json.success) {
-      const count = json.data.missed_blinds_count;
+      const count = apiData(json).missed_blinds_count;
       if (count >= 3) {
         // Auto-remove player after 3rd missed blind
-        setToast({ type: 'error', text: `${json.data.player_name} Removed - 3 Missed Blinds` });
+        setToast({ type: 'error', text: `${apiData(json).player_name} Removed - 3 Missed Blinds` });
         await removePlayer(seat);
       } else {
-        setToast({ type: 'success', text: `Missed Blind #${count} For ${json.data.player_name}` });
+        setToast({ type: 'success', text: `Missed Blind #${count} For ${apiData(json).player_name}` });
       }
       fetchData();
     } else {
@@ -455,7 +456,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
   const pausePlayer = async (seat) => {
     const json = await callSessionAction(seat, 'pause');
     if (json.success) {
-      setToast({ type: 'success', text: `Timer Paused For ${json.data.player_name}` });
+      setToast({ type: 'success', text: `Timer Paused For ${apiData(json).player_name}` });
     } else {
       setToast({ type: 'error', text: json.error || 'Failed To Pause' });
     }
@@ -796,7 +797,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                     { label: 'Move Player', color: '#1981EC', action: () => startMovePlayer(showPlayerMenu) },
                     { label: 'Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
                     ...(showPlayerMenu.player?.session_status === 'paused' || showPlayerMenu.player?.session_status === 'meal_break'
-                      ? [{ label: 'Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `${json.data.player_name} Resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume Failed' }); } setShowPlayerMenu(null); fetchData(); } }]
+                      ? [{ label: 'Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `${apiData(json).player_name} Resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume Failed' }); } setShowPlayerMenu(null); fetchData(); } }]
                       : [{ label: 'Pause Timer', color: '#22D3EE', action: () => pausePlayer(showPlayerMenu) }]
                     ),
                     { label: 'Missed Blinds', color: '#F97316', action: () => markMissedBlinds(showPlayerMenu) },

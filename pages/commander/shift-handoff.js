@@ -18,6 +18,8 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
 import useClientNow, { formatClientDateTime } from '../../src/hooks/useClientNow';
+import { apiData, apiError, apiFailed, asArray } from '../../src/lib/commander/apiShape';
+import LoadError from '../../src/components/commander/shared/LoadError';
 
 export default function ShiftHandoff() {
   // The handoff timestamp is read in the browser only (SSR and first render must match).
@@ -28,6 +30,7 @@ export default function ShiftHandoff() {
   const [mode, setMode] = useState('menu'); // menu | create | history
   const [handoffs, setHandoffs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -66,8 +69,10 @@ export default function ShiftHandoff() {
 const res = await commanderFetch(`/api/commander/shift-handoff?venue_id=${staff.venue_id}&limit=30`, { ...(signal instanceof AbortSignal ? { signal } : {}) });
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
-      if (json.success) setHandoffs(json.data.handoffs);
-    } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
+      if (apiFailed(res, json)) { setLoadError(apiError(res, json, 'Shift Handoffs')); return; }
+      setLoadError('');
+      if (json.success) setHandoffs(asArray(apiData(json).handoffs));
+    } catch (err) { setLoadError('Could Not Load Shift Handoffs'); if (err.name !== 'AbortError') console.warn(err); }
     finally { setLoading(false); }
   };
 
@@ -311,7 +316,9 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
             <div className="flex flex-col gap-3">
               {loading ? (
                 <div className="text-center py-12"><Loader2 size={28} className="text-[#86DAFF] animate-spin mx-auto" /></div>
-              ) : handoffs.length === 0 ? (
+              ) : loadError ? (
+            <LoadError message={loadError} onRetry={() => fetchHandoffs()} />
+          ) : handoffs.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText size={32} className="text-[#7F97B0] mx-auto mb-2" />
                   <p className="text-[#65676B]">No Handoffs Recorded Yet</p>

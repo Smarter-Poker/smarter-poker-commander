@@ -24,6 +24,7 @@ import PageHelp from '../../src/components/commander/shared/PageHelp';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import { addDaysToKey, browserTimeZone, businessDateKey, formatDateKey, startOfWeekKey } from '../../src/lib/commander/businessDate';
 import { useBusinessToday } from '../../src/hooks/useVenueTimeZone';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -401,7 +402,7 @@ return { 'Content-Type': 'application/json' };
       const result = await res.json();
       if (result.success) {
         setBroadcastResult(result.data);
-        showToast(`Schedule Sent To ${result.data.sent} Staff`, 'success');
+        showToast(`Schedule Sent To ${apiData(result).sent} Staff`, 'success');
       } else {
         showToast(result.error?.message || 'Broadcast Failed', 'error');
       }

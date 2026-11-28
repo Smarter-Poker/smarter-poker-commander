@@ -17,6 +17,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 const GAME_LABELS = { nlh: 'NLH', plo: 'PLO', plo5: 'PLO5', NLH: 'NLH', PLO: 'PLO', mixed: 'Mixed', limit: 'Limit', stud: 'Stud', razz: 'Razz', other: 'Other' };
 
@@ -107,7 +108,7 @@ export default function MustMoveManager() {
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setMessage({ type: 'success', text: json.data.message });
+        setMessage({ type: 'success', text: apiData(json).message });
         fetchData();
         broadcastChange('games');
       } else {

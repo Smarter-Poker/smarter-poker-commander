@@ -18,6 +18,7 @@ import { useConfirmAction } from "../../src/components/commander/shared/ConfirmM
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../src/components/commander/shared/ClubArenaTable';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 // Seat badges scale with the seat box; 1050px is its width on a 1280px desktop.
 const sp = seatScale(1050);
@@ -134,7 +135,7 @@ const headers = { };
       const tablesData = await tablesRes.json();
       if (tablesData.success) {
         tablesArr = Array.isArray(tablesData.data) ? tablesData.data
-          : Array.isArray(tablesData.data?.tables) ? tablesData.data.tables
+          : Array.isArray(tablesData.data?.tables) ? apiData(tablesData).tables
             : [];
         setTables(tablesArr);
       }
@@ -146,7 +147,7 @@ const headers = { };
       if (!gamesRes.ok) throw new Error(`Games Fetch Failed (${gamesRes.status})`);
       const gamesData = await gamesRes.json();
       if (gamesData.success) {
-        const gamesArr = Array.isArray(gamesData.data?.games) ? gamesData.data.games
+        const gamesArr = Array.isArray(gamesData.data?.games) ? apiData(gamesData).games
           : Array.isArray(gamesData.data) ? gamesData.data
             : [];
         setGames(gamesArr);

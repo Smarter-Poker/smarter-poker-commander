@@ -24,6 +24,7 @@ import { getStaffSession, getStaffData } from '../../src/lib/commander/clientAut
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 const MODE_COLORS = {
   inactive: { bg: '#2A4560', border: '#3A5873', text: '#BDD0E2', label: 'Inactive', icon: Power },
@@ -82,8 +83,8 @@ return {
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setTables(json.data.tables || []);
-        setTournaments(json.data.tournaments || []);
+        setTables(asArray(apiData(json).tables));
+        setTournaments(asArray(apiData(json).tournaments));
       } else {
         const errMsg = typeof json.error === 'object' ? json.error.message : (json.error || 'Failed To Load Tables');
         setError(errMsg);

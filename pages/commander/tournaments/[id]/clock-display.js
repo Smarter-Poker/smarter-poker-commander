@@ -29,6 +29,7 @@ import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { normalizeClockPreset } from '../../../../src/lib/commander/sdPalette';
 import InlineStyle from '../../../../src/components/commander/shared/InlineStyle';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -218,9 +219,9 @@ const json = await commanderFetchJSON('/api/commander/clock-presets', { });
       const json = await res.json();
       if (json.success) {
         setData(json.data);
-        if (json.data.tournament?.venue_id) setVenueId(json.data.tournament.venue_id);
+        if (apiData(json).tournament?.venue_id) setVenueId(apiData(json).tournament.venue_id);
 
-        const cs = json.data.clock?.clock_state;
+        const cs = apiData(json).clock?.clock_state;
         if (cs?.remaining_seconds !== undefined && cs.remaining_seconds > 0) {
           // Only update local seconds if the clock is NOT running, OR if the server value is way off (manually adjusted by TD)
           setSeconds(prev => {
@@ -231,8 +232,8 @@ const json = await commanderFetchJSON('/api/commander/clock-presets', { });
         } else if (cs?.remaining_seconds === 0 || cs?.remaining_seconds === undefined) {
           // Wait for next level to fetch
           if (cs?.status !== 'running') {
-            const blindStructure = parseBlinds(json.data.tournament?.blind_structure);
-            const currentLvl = json.data.clock?.current_level || 0;
+            const blindStructure = parseBlinds(apiData(json).tournament?.blind_structure);
+            const currentLvl = apiData(json).clock?.current_level || 0;
             const levelData = blindStructure[currentLvl];
             const levelMinutes = levelData ? (levelData.duration ?? levelData.duration_minutes ?? 0) : 0;
             if (levelMinutes > 0) {
@@ -243,19 +244,19 @@ const json = await commanderFetchJSON('/api/commander/clock-presets', { });
         isRunningRef.current = cs?.status === 'running';
 
         // Sound alerts - detect level change
-        const currentLevel = json.data.clock?.current_level;
+        const currentLevel = apiData(json).clock?.current_level;
         const displayOpts = preset?.display_options || {};
         if (prevLevelRef.current !== null && currentLevel !== prevLevelRef.current) {
           if (displayOpts.sound_level_change) playAlert('level');
         }
-        if (json.data.alerts?.on_break && displayOpts.sound_break) playAlert('break');
-        if (json.data.alerts?.final_table && displayOpts.sound_final_table) playAlert('final');
+        if (apiData(json).alerts?.on_break && displayOpts.sound_break) playAlert('break');
+        if (apiData(json).alerts?.final_table && displayOpts.sound_final_table) playAlert('final');
         prevLevelRef.current = currentLevel;
 
         // Load preset if tournament has clock_preset_id
         // 2026-08-04 audit fix: the preset id is stored in settings.clock_preset_id
         // (floor-view has no top-level clock_preset_id) - read both locations.
-        const presetId = json.data.tournament?.clock_preset_id || json.data.tournament?.settings?.clock_preset_id;
+        const presetId = apiData(json).tournament?.clock_preset_id || apiData(json).tournament?.settings?.clock_preset_id;
         if (!preset && presetId) {
           fetchPreset(presetId);
         }
@@ -384,7 +385,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
         const json2 = await res2.json();
         if (json2.success) {
           setData(json2.data);
-          const cs = json2.data.clock?.clock_state;
+          const cs = apiData(json2).clock?.clock_state;
           // Don't override seconds if the caller already set a fresh local value
           // (e.g. final-level reset) - the server re-read might return 0 briefly
           if (!skipSecondsOverride && cs?.remaining_seconds !== undefined && cs.remaining_seconds > 0) {

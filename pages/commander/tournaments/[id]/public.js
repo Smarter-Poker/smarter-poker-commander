@@ -23,6 +23,7 @@ import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import { busEmit, eventBus, EventType } from '../../../../src/engine/EventBus';
 import useTrainingBus from '../../../../src/hooks/useTrainingBus';
 import { getAuthToken, getAuthData } from '../../../../src/lib/getAuthToken';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -98,7 +99,7 @@ export default function TournamentPublic() {
       ]);
 
       // Tournament API returns { success, data: { tournament } }
-      if (tRes.data?.tournament) setTournament(tRes.data.tournament);
+      if (tRes.data?.tournament) setTournament(apiData(tRes).tournament);
       else if (tRes.data) setTournament(tRes.data);
       else if (tRes.success) setTournament(tRes);
 

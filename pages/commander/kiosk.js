@@ -18,6 +18,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { formatPhone, titleCase } from '../../src/lib/commander/formatters';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 // formatPhone, titleCase imported from '@/lib/commander/formatters'
 
@@ -151,7 +152,7 @@ export default function MembershipKiosk() {
         // Extract unique game_type + stakes combos from current waitlist
         const seen = new Set();
         const games = [];
-        json.data.forEach(e => {
+        asArray(json.data).forEach(e => {
           const key = `${e.game_type}|${e.stakes}`;
           if (!seen.has(key)) {
             seen.add(key);
@@ -188,7 +189,7 @@ export default function MembershipKiosk() {
       const json = await res.json();
       if (json.success && json.data) {
         const q = query.toLowerCase();
-        const matches = json.data.filter(entry => {
+        const matches = asArray(json.data).filter(entry => {
           const nameMatch = entry.player_name?.toLowerCase().includes(q);
           const phoneMatch = entry.player_phone?.replace(/\D/g, '').includes(q.replace(/\D/g, ''));
           return nameMatch || phoneMatch;
@@ -253,7 +254,7 @@ export default function MembershipKiosk() {
         setSubmitting(false);
         return;
       }
-      const member = json.data.member;
+      const member = apiData(json).member;
 
       // Also check in to waitlist if they have matching entries
       try {
@@ -326,7 +327,7 @@ export default function MembershipKiosk() {
       const json = await res.json();
       if (json.success && json.data) {
         const qLower = q.toLowerCase();
-        const matches = json.data.filter(entry =>
+        const matches = asArray(json.data).filter(entry =>
           entry.player_name?.toLowerCase().includes(qLower) &&
           entry.status !== 'seated' && !entry.checked_in_at
         );
@@ -381,7 +382,7 @@ export default function MembershipKiosk() {
         headers: { 'x-staff-session': staffHeader }
       });
       if (json.success && json.data) {
-        const matches = json.data.filter(entry => {
+        const matches = asArray(json.data).filter(entry => {
           const entryPhone = (entry.player_phone || '').replace(/\D/g, '');
           return entryPhone && entryPhone.slice(-10) === q.slice(-10) &&
             entry.status !== 'seated' && !entry.checked_in_at;
@@ -442,7 +443,7 @@ export default function MembershipKiosk() {
         setSubmitting(false);
         return;
       }
-      const member = json.data.member;
+      const member = apiData(json).member;
       const memberName = member.name || `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Player';
       setJoinName(memberName);
       setJoinPhone(member.phone || '');

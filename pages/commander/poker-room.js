@@ -18,6 +18,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import { apiData } from '../../src/lib/commander/apiShape';
 
 export default function PokerRoomFunctions() {
 
@@ -57,8 +58,8 @@ const headers = { };
       const vJson = await vRes.json();
       let vid = venueId;
       if (vJson.success && vJson.data) {
-        setRoomOpen(vJson.data.room_open || false);
-        vid = vJson.data.venue_id || vid;
+        setRoomOpen(apiData(vJson).room_open || false);
+        vid = apiData(vJson).venue_id || vid;
         if (vid) setVenueId(vid);
       }
 
@@ -73,7 +74,7 @@ const headers = { };
           let tList = tabRes.data?.tables || (Array.isArray(tabRes.data) ? tabRes.data : []);
 
           // Merge game data onto tables (same pattern as floor.js)
-          const gamesArr = Array.isArray(gamesRes.data?.games) ? gamesRes.data.games
+          const gamesArr = Array.isArray(gamesRes.data?.games) ? apiData(gamesRes).games
             : Array.isArray(gamesRes.data) ? gamesRes.data : [];
           const activeGames = gamesArr.filter(g => g.status === 'running' || g.status === 'waiting');
 

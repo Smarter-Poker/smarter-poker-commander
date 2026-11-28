@@ -23,6 +23,30 @@ import {
 } from 'lucide-react';
 import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../../src/components/commander/shared/PageHelp';
+import LoadError from '../../../../src/components/commander/shared/LoadError';
+import { apiError, apiFailed, asArray, asObject, isPlainObject, readJson } from '../../../../src/lib/commander/apiShape';
+
+/**
+ * One shape for the floor view, whatever the server sent (2026-11-28: an
+ * answer without `stats` white-screened the Control Center). Null when there
+ * is no tournament in it.
+ */
+function normaliseFloor(d) {
+  if (!isPlainObject(d) || !isPlainObject(d.tournament)) return null;
+  const stats = asObject(d.stats);
+  const alerts = asObject(d.alerts);
+  return {
+    ...d,
+    tournament: d.tournament,
+    clock: asObject(d.clock),
+    stats: { ...stats, player_stacks: asArray(stats.player_stacks) },
+    alerts: { ...alerts, seat_conflicts: asArray(alerts.seat_conflicts) },
+    tables: asArray(d.tables),
+    alternates: asArray(d.alternates),
+    entries: asArray(d.entries),
+    eliminated: asArray(d.eliminated),
+  };
+}
 
 const STATUS_CONFIG = {
   scheduled: { bg: 'bg-[#BDD0E2]/10', text: 'text-[#BDD0E2]', border: 'border-[#BDD0E2]/30', label: 'Scheduled' },
@@ -108,16 +132,16 @@ export default function TDControlCenter() {
     if (!tournamentId) return;
     try {
       const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
-      const json = await res.json();
-      if (json.success) {
-        setFloor(json.data);
+      const json = await readJson(res);
+      const next = apiFailed(res, json) ? null : normaliseFloor(json.data);
+      if (next) {
+        setFloor(next);
         setError(null);
       } else {
-        setError(json.error);
+        setError(apiFailed(res, json) ? apiError(res, json, 'Tournament Data') : 'Tournament Not Found');
       }
     } catch (err) {
-      if (err.name !== 'AbortError') setError('Failed To Load Tournament Data');
+      if (err.name !== 'AbortError') setError('Could Not Load Tournament Data');
     } finally {
       setLoading(false);
     }
@@ -366,31 +390,35 @@ export default function TDControlCenter() {
     router.push(`/commander/td/${tournamentId}/${screen}`);
   };
 
+  // Loading and error states render inside the layout, so the global header
+  // and the page image header stay (2026-11-28).
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
-      </div>
+      <CommanderLayout title="Commander - Control Center" backHref="/commander/tournament-controls">
+        <div className="min-h-[50vh] bg-[#040D18] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
+        </div>
+      </CommanderLayout>
     );
   }
 
   if (error || !floor) {
     return (
-      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
-        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
-          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
-          <button onClick={() => router.push('/commander/tournaments')}
-            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
-            Back To Tournaments
-          </button>
+      <CommanderLayout title="Commander - Control Center" backHref="/commander/tournament-controls">
+        <div className="bg-[#040D18] p-4">
+          <LoadError message={error || 'Tournament Not Found'} onRetry={() => { setLoading(true); fetchFloor(); }}>
+            <button onClick={() => router.push('/commander/tournaments')}
+              className="min-h-[44px] px-6 py-3 bg-[#132A42] text-[#F2F7FF] rounded-lg text-base font-medium">
+              Back To Tournaments
+            </button>
+          </LoadError>
         </div>
-      </div>
+      </CommanderLayout>
     );
   }
 
   const { tournament, clock, stats, alerts, tables, alternates } = floor;
-  const chipLeader = (stats.player_stacks || []).reduce((top, p) => (!top || p.chips > top.chips) ? p : top, null);
+  const chipLeader = stats.player_stacks.reduce((top, p) => (!top || p.chips > top.chips) ? p : top, null);
   const statusConf = STATUS_CONFIG[tournament.status] || STATUS_CONFIG.scheduled;
 
   return (

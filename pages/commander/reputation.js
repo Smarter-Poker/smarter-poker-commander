@@ -13,6 +13,7 @@ import { broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 const RATING_LABELS = {
   reliability: { label: 'Reliability', desc: 'Shows Up, Stays Committed' },
@@ -68,7 +69,7 @@ export default function PlayerReputation() {
     setLoading(true);
     try {
 const json = await commanderFetchJSON(`/api/commander/reputation?venue_id=${staff.venue_id}`, {});
-      if (json.success) setScores(json.data.scores || []);
+      if (json.success) setScores(asArray(apiData(json).scores));
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   };
@@ -77,7 +78,7 @@ const json = await commanderFetchJSON(`/api/commander/reputation?venue_id=${staf
     try {
 const json = await commanderFetchJSON(`/api/commander/reputation?player_id=${playerId}`, {});
       if (json.success) {
-        setExpandedReviews(prev => ({ ...prev, [playerId]: json.data.recent_reviews || [] }));
+        setExpandedReviews(prev => ({ ...prev, [playerId]: asArray(apiData(json).recent_reviews) }));
       }
     } catch (err) { console.warn(err); }
   setLoading(false);

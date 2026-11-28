@@ -17,6 +17,8 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { apiData, apiError, apiFailed, asArray, asObject } from '../../src/lib/commander/apiShape';
+import LoadError from '../../src/components/commander/shared/LoadError';
 
 export default function ChurnPrediction() {
   useEffect(() => { busEmit.sessionStart('commander-churn-prediction'); }, []);
@@ -25,6 +27,7 @@ export default function ChurnPrediction() {
   const [predictions, setPredictions] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [filter, setFilter] = useState('all'); // all | high | medium
   const [expandedId, setExpandedId] = useState(null);
 
@@ -50,11 +53,13 @@ export default function ChurnPrediction() {
     setLoading(true);
     try {
       const json = await commanderFetchJSON(`/api/commander/ai/churn-prediction?venue_id=${staff.venue_id}&limit=100`, signal ? { signal } : {});
+      if (apiFailed(null, json)) { setLoadError(apiError(null, json, 'Churn Predictions')); return; }
+      setLoadError('');
       if (json.success) {
-        setPredictions(json.data.predictions);
-        setSummary(json.data.summary);
+        setPredictions(asArray(apiData(json).predictions));
+        setSummary(asObject(apiData(json).summary));
       }
-    } catch (err) { console.warn(err); }
+    } catch (err) { setLoadError('Could Not Load Churn Predictions'); console.warn(err); }
     finally { setLoading(false); }
   };
 
@@ -122,6 +127,8 @@ export default function ChurnPrediction() {
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
+          ) : loadError ? (
+            <LoadError message={loadError} onRetry={() => fetchPredictions()} />
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               {filter === 'all' ? 'No Player Data To Analyze. Need At Least 2 Sessions Per Player' : `No ${filter} Risk Players`}

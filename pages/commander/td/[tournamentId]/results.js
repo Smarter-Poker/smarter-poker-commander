@@ -42,6 +42,7 @@ import { isEntryPaid, entryPayoutStatus } from '../../../../src/lib/commander/pa
 // never disagree about who needs a form.
 import { assessW2G, entryTotalInvested, W2G_NET_THRESHOLD } from '../../../../src/lib/commander/taxEvents';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const NAV_ITEMS = [
     { key: 'control', label: 'Control', path: '' },
@@ -144,7 +145,7 @@ export default function TDResults() {
             ]);
             if (tJson?.success) setTournament(tJson.data?.tournament || tJson.data || null);
             if (pJson?.success) setPayoutData(pJson.data || null);
-            if (eJson?.success) setEntries(Array.isArray(eJson.data?.entries) ? eJson.data.entries : []);
+            if (eJson?.success) setEntries(Array.isArray(eJson.data?.entries) ? apiData(eJson).entries : []);
         } catch (err) {
             console.warn('Fetch results error:', err);
         } finally {

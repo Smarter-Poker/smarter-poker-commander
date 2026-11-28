@@ -12,6 +12,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
+import { apiData } from '../../../src/lib/commander/apiShape';
 
 export default function TournamentResultsReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-tournament-results'); }, []);
@@ -43,7 +44,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments?status=complet
 const json = await commanderFetchJSON(`/api/commander/tournaments/${tournamentId}/entries?status=all`, {});
       if (json.success) {
         // Entries API nests under data.entries - data itself is an object
-        const entries = Array.isArray(json.data?.entries) ? json.data.entries
+        const entries = Array.isArray(json.data?.entries) ? apiData(json).entries
           : (Array.isArray(json.data) ? json.data : []);
         setTournaments(prev => prev.map(t =>
           t.id === tournamentId ? { ...t, entries } : t

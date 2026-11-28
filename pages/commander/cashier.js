@@ -24,6 +24,7 @@ import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 import { browserTimeZone, businessDateKey } from '../../src/lib/commander/businessDate';
 import useVenueTimeZone from '../../src/hooks/useVenueTimeZone';
+import { apiData, asArray } from '../../src/lib/commander/apiShape';
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 500, 1000];
 // Fallback time options - overridden by owner settings from Time Billing page
@@ -158,7 +159,7 @@ const headers = { };
         // Fire async refresh for the selected player
         commanderFetch(`/api/commander/members/${prev.id}`, {}).then(r => r.json()).then(json => {
           if (json.success && json.data?.member) {
-            const m = json.data.member;
+            const m = apiData(json).member;
             setSelectedPlayer(p => p?.id === m.id ? {
               ...p,
               time_balance_minutes: m.time_balance_minutes || 0,
@@ -239,8 +240,8 @@ const headers = { };
         if (!settingsRes.ok) throw new Error(`Settings Fetch Failed (${settingsRes.status})`);
         const settingsJson = await settingsRes.json();
         if (settingsJson.success && settingsJson.data) {
-          setTimeBillingRate(settingsJson.data.time_billing_rate || 0);
-          setBulkTimePackages(settingsJson.data.bulk_time_packages || []);
+          setTimeBillingRate(apiData(settingsJson).time_billing_rate || 0);
+          setBulkTimePackages(asArray(apiData(settingsJson).bulk_time_packages));
         }
 
         // Membership plans - FIX A: track load failure so we never sell at $0
@@ -248,7 +249,7 @@ const headers = { };
         if (!plansRes.ok) { setPricingUnavailable(true); throw new Error(`Plans Fetch Failed (${plansRes.status})`); }
         const plansJson = await plansRes.json();
         if (plansJson.success && plansJson.data?.plans) {
-          setMembershipPlans(plansJson.data.plans.filter(p => p.is_active !== false));
+          setMembershipPlans(apiData(plansJson).plans.filter(p => p.is_active !== false));
           setPricingUnavailable(false);
         } else {
           setPricingUnavailable(true);
@@ -349,7 +350,7 @@ const headers = { };
       if (scanRes.ok) {
         const scanJson = await scanRes.json();
         if (scanJson.success && scanJson.data?.member) {
-          selectMember(scanJson.data.member);
+          selectMember(apiData(scanJson).member);
           return;
         }
       }
@@ -478,7 +479,7 @@ const headers = { };
         setPinVerifying(false);
         return;
       }
-      const staff = pinJson.data.staff;
+      const staff = apiData(pinJson).staff;
       setVerifiedStaff(staff);
       setPinCacheExpiry(Date.now() + 5 * 60 * 1000);
       setPinStep(false);

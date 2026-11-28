@@ -30,6 +30,7 @@ import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/s
 import SdSwatchPicker from '../../../src/components/commander/shared/SdSwatchPicker';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../../src/components/commander/shared/ClubArenaTable';
+import { apiData } from '../../../src/lib/commander/apiShape';
 
 // Seat Player badges scale with the seat box; ~658px is its width in the
 // 700px modal on a desktop.
@@ -112,7 +113,7 @@ const json = await commanderFetchJSON('/api/commander/settings', { signal: contr
         if (json.success && json.data?.desk_customization) {
           // Saved colours are read through normalizeSdColor (#SMARTERDESIGN):
           // a banned hue saved before the swatch picker renders in-palette.
-          setCustom(prev => ({ ...prev, ...normalizeSdColors(json.data.desk_customization, DESK_COLOR_KEYS) }));
+          setCustom(prev => ({ ...prev, ...normalizeSdColors(apiData(json).desk_customization, DESK_COLOR_KEYS) }));
         }
       } catch (e) { if (e.name !== 'AbortError') console.warn(e); }
     })();
@@ -906,7 +907,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                                   if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                                   const json = await res.json();
                                   if (json.success) {
-                                    setSmsStatus({ type: 'sent', text: json.data.message });
+                                    setSmsStatus({ type: 'sent', text: apiData(json).message });
                                     setTimeout(() => setSmsStatus(null), 4000);
                                     await fetchData();
                                     broadcastChange('games');

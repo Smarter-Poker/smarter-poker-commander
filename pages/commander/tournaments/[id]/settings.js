@@ -18,6 +18,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../../src/components/commander/shared/PageHelp';
+import { apiData } from '../../../../src/lib/commander/apiShape';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -320,7 +321,7 @@ export default function TournamentSettings() {
 const json = await commanderFetchJSON(`/api/commander/tournaments/${id}`, {});
         if (json.success) {
           // 2026-07-25 audit fix: API payload is { data: { tournament } }
-          const t = json.data.tournament;
+          const t = apiData(json).tournament;
           setTournament(t);
           setName(t.name || '');
           setTournamentType(t.tournament_type || 'freezeout');

@@ -24,6 +24,7 @@ import { getToken, getStaffSession, getVenueId } from '../../../src/lib/commande
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import { apiData } from '../../../src/lib/commander/apiShape';
 
 const TIER_COLORS = { standard: '#BDD0E2', gold: '#22D3EE', platinum: '#A9BDD1', vip: '#5AA9FF' };
 
@@ -137,7 +138,7 @@ export default function DealerTablet() {
         if (!dealerRes.ok) throw new Error(`Dealer Fetch Failed (${dealerRes.status})`);
         const dealerJson = await dealerRes.json();
         if (dealerJson.success && dealerJson.data?.dealer) {
-          setCurrentDealer(dealerJson.data.dealer);
+          setCurrentDealer(apiData(dealerJson).dealer);
         } else {
           setCurrentDealer(null);
         }
@@ -360,7 +361,7 @@ export default function DealerTablet() {
       if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setCurrentDealer(json.data.dealer);
+        setCurrentDealer(apiData(json).dealer);
         setScannerOpen(false);
         setDealerScanMode(false);
         broadcastChange('dealers');
