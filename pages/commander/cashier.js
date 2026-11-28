@@ -22,6 +22,8 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { browserTimeZone, businessDateKey } from '../../src/lib/commander/businessDate';
+import useVenueTimeZone from '../../src/hooks/useVenueTimeZone';
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 500, 1000];
 // Fallback time options - overridden by owner settings from Time Billing page
@@ -43,6 +45,7 @@ const DEFAULT_MEMBERSHIP_TIERS = [
 
 export default function Cashier() {
   const router = useRouter();
+  const venueTimeZone = useVenueTimeZone();
 
   // ── EventBus: Commander session telemetry ──
   const { requestConfirm, ConfirmDialog } = useConfirmAction();
@@ -139,7 +142,8 @@ export default function Cashier() {
     try {
 const headers = { };
 
-      const today = new Date().toISOString().split('T')[0];
+      // The drawer's day is the venue's business day (UTC is tomorrow from 6 PM Central).
+      const today = businessDateKey(new Date(), venueTimeZone || browserTimeZone());
       const txRes = await commanderFetch(`/api/commander/cashier?venue_id=${venueId}&date=${today}&limit=50`, { headers });
       if (!txRes.ok) throw new Error(`Transactions fetch failed (${txRes.status})`);
       const txJson = await txRes.json();
@@ -169,7 +173,7 @@ const headers = { };
       });
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
-  }, [venueId]);
+  }, [venueId, venueTimeZone]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

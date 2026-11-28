@@ -18,6 +18,7 @@ import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/c
 import { useConfirmAction } from "../../../src/components/commander/shared/ConfirmModal";
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import useClientNow, { formatClientTime, formatClientDate } from '../../../src/hooks/useClientNow';
+import { toDateTimeLocalValue } from '../../../src/lib/commander/businessDate';
 
 
 
@@ -197,8 +198,11 @@ export default function AnnouncementsDisplay() {
     setFormData({
       title: a.title || '', message: a.message || '', priority: a.priority || 'normal',
       type: a.type || a.message_type || 'general',
-      expires_at: a.expires_at ? new Date(a.expires_at).toISOString().slice(0, 16) : '',
-      starts_at: a.starts_at ? new Date(a.starts_at).toISOString().slice(0, 16) : '' });
+      // datetime-local shows device-local time (the save path parses it back as
+      // local); slicing the UTC ISO string shifted every edited time by the
+      // zone offset, six hours in Central, on each save.
+      expires_at: toDateTimeLocalValue(a.expires_at),
+      starts_at: toDateTimeLocalValue(a.starts_at) });
     setEditingAnnouncement(a);
     setShowTemplates(false);
     setShowForm(true);

@@ -9,6 +9,8 @@ import { guardStaff } from '../../src/lib/commander/auth';
 import { logAction } from '../../src/lib/commander/audit';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { businessDateKey, businessDayRange, isDateKey } from '../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -64,11 +66,12 @@ async function handleGet(req, res, staff) {
     if (type) query = query.eq('type', type);
     if (player_name) query = query.eq('player_name', player_name);
     if (date) {
-      const start = new Date(date);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(date);
-      end.setHours(23, 59, 59, 999);
-      query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
+      // `date` is a venue business day: local midnight to local midnight.
+      // setHours() on the server meant UTC on Vercel, so the evening drawer
+      // (from 6 PM Central) fell into the next day's totals.
+      const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
+      const day = businessDayRange(isDateKey(String(date)) ? String(date) : businessDateKey(new Date(date), timeZone), timeZone);
+      if (day) query = query.gte('created_at', day.start).lt('created_at', day.end);
     }
 
     const { data, error } = await query;

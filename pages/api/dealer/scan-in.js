@@ -19,6 +19,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
 import { guardStaff } from '../../../src/lib/commander/auth';
+import { businessDateKey } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -181,7 +183,9 @@ export default async function handler(req, res) {
               .eq('dealer_id', dealerId)
               .is('ended_at', null);
 
-          // Create new rotation assignment
+          // Create new rotation assignment. rotation_date is the venue's
+          // business date (the UTC date is tomorrow from 6 PM Central).
+          const rotationTimeZone = await fetchVenueTimeZone(getSupabase(), venueId);
           const { data: rotation, error: rotationError } = await getSupabase()
               .from('commander_dealer_rotations')
               .insert({
@@ -189,7 +193,7 @@ export default async function handler(req, res) {
                   dealer_id: dealerId,
                   dealer_name: dealerName,
                   table_number: tableNum,
-                  rotation_date: new Date().toISOString().split('T')[0],
+                  rotation_date: businessDateKey(new Date(), rotationTimeZone),
                   started_at: new Date().toISOString()
               })
               .select()

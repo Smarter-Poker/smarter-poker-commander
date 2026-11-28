@@ -15,6 +15,8 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { businessDateKey } from '../../src/lib/commander/businessDate';
+import { useBusinessDate } from '../../src/hooks/useVenueTimeZone';
 
 const HAND_RANKS = [
   'Royal Flush', 'Straight Flush', 'Four of a Kind', 'Full House',
@@ -29,6 +31,8 @@ const RANK_SCORES = {
 
 export default function HighHands() {
   const router = useRouter();
+  // Null until mounted (hydration law), then the venue's zone and date.
+  const { timeZone: venueTimeZone, today } = useBusinessDate();
   const { requestConfirm, ConfirmDialog } = useConfirmAction();
 
   useEffect(() => { busEmit.sessionStart('commander-high-hands'); }, []);
@@ -128,8 +132,11 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
     if (message) { const t = setTimeout(() => setMessage(null), 3000); return () => clearTimeout(t); }
   }, [message]);
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayHands = highHands.filter(h => h.created_at?.startsWith(today));
+  // A hand is today's when it was recorded on the venue's business day. The
+  // UTC prefix of created_at moved every evening hand to "tomorrow".
+  const todayHands = today
+    ? highHands.filter(h => h.created_at && businessDateKey(new Date(h.created_at), venueTimeZone) === today)
+    : [];
 
   return (
     <CommanderLayout title="High Hands" backHref="/commander/dashboard?card=displays">

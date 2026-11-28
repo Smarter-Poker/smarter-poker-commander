@@ -122,6 +122,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import { formatDateKey } from '../../src/lib/commander/businessDate';
 
 function StatCard({ title, value, change, icon: Icon, color = '#1981EC' }) {
   const hasChange = change !== undefined && change !== null;
@@ -333,7 +334,7 @@ const headers = { };
         hoursChange: calcChange(totalPlayHours, prevPlayHours),
         buyinsChange: calcChange(totalBuyin, prevBuyin),
         dailyData: [...currentPeriod].reverse().slice(-7).map(d => ({
-          label: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
+          label: formatDateKey(d.date, { weekday: 'short' }), // DATE column: no zone shift
           value: d.total_sessions || 0
         })),
         topPlayers: players.map(p => ({

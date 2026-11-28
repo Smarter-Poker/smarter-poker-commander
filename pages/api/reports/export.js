@@ -6,6 +6,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { requireStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayRange, venueTimeZone } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
       // Get venue info
       const { data: venue } = await getSupabase()
         .from('poker_venues')
-        .select('id, name')
+        .select('id, name, timezone, state')
         .eq('id', venue_id)
         .maybeSingle();
 
@@ -69,8 +70,13 @@ export default async function handler(req, res) {
         });
       }
 
-      const startOfDay = `${date}T00:00:00`;
-      const endOfDay = `${date}T23:59:59`;
+      // The venue's business day as instants (bare `${date}T00:00:00` is UTC).
+      const day = businessDayRange(String(date), venueTimeZone(venue));
+      if (!day) {
+        return res.status(400).json({ success: false, error: { code: 'BAD_DATE', message: 'date must be YYYY-MM-DD' } });
+      }
+      const startOfDay = day.start;
+      const endOfDay = new Date(new Date(day.end).getTime() - 1).toISOString();
 
       // Fetch games for the day
       // 2026-07-28 audit fix: commander_games has closed_at, not ended_at.

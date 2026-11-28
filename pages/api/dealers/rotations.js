@@ -7,6 +7,8 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardWriteStaff, guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDayStartISO } from '../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -77,7 +79,9 @@ async function getRotations(req, res) {
   // the default active-only response other callers rely on.
   const includeEnded = ['1', 'true'].includes(String(req.query.include_ended))
     || ['1', 'true'].includes(String(req.query.history));
-  const todayStart = `${new Date().toISOString().split('T')[0]}T00:00:00`;
+  // "Today" is the venue's business day; its start as a real instant (a bare
+  // `YYYY-MM-DDT00:00:00` is UTC midnight, 6 PM the evening before in Central).
+  const todayStart = businessDayStartISO(new Date(), await fetchVenueTimeZone(getSupabase(), venue_id));
 
   try {
     // Get active dealer assignments - only dealer_id FK exists in rotations table

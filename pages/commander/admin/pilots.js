@@ -16,6 +16,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 // 2026-07-25 audit fix: commanderFetch needed for the Add Pilot POST
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
+import { formatDateKey, parseDateKey } from '../../../src/lib/commander/businessDate';
 
 // Success criteria from IMPLEMENTATION_PHASES.md Step 6.6
 const SUCCESS_CRITERIA = {
@@ -469,9 +470,9 @@ export default function PilotVenuesPage() {
                     {/* Start Date */}
                     <div className="flex items-center gap-2 mt-3 text-sm text-[#BDD0E2]">
                       <Calendar className="w-4 h-4" />
-                      Started {new Date(pilot.pilot_start_date).toLocaleDateString()}
+                      Started {formatDateKey(pilot.pilot_start_date, { month: 'numeric', day: 'numeric', year: 'numeric' })}
                       <span className="text-[#7F97B0]">|</span>
-                      Week {Math.ceil((Date.now() - new Date(pilot.pilot_start_date).getTime()) / (7 * 24 * 60 * 60 * 1000))}
+                      Week {Math.ceil((Date.now() - (parseDateKey(pilot.pilot_start_date)?.getTime() ?? Date.now())) / (7 * 24 * 60 * 60 * 1000))}
                     </div>
                   </div>
                 ))}
@@ -549,7 +550,8 @@ export default function PilotVenuesPage() {
 function PilotDetailModal({ pilot, onClose }) {
   if (!pilot) return null;
 
-  const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '-');
+  // pilot_start_date / pilot_end_date are DATEs: print their own day.
+  const fmtDate = (d) => (d ? formatDateKey(d, { month: 'numeric', day: 'numeric', year: 'numeric' }) : '-');
   const fmtNum = (v, suffix, digits) =>
     v === null || v === undefined || v === '' || Number.isNaN(Number(v))
       ? 'Pending'

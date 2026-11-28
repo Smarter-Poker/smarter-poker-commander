@@ -12,16 +12,24 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
+import { formatDateKey } from '../../../src/lib/commander/businessDate';
+import { useBusinessToday } from '../../../src/hooks/useVenueTimeZone';
 
 export default function DailySummaryReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-daily-summary'); }, []);
   const router = useRouter();
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  // The report day defaults to today AT THE VENUE, set after mount so the
+  // server and the first client render agree (hydration law). It was the UTC
+  // date: from 6 PM Central the page opened on a day that had not started.
+  const today = useBusinessToday();
+  const [date, setDate] = useState('');
+  useEffect(() => { if (today) setDate(prev => prev || today); }, [today]);
   const [data, setData] = useState(null);
   const [cashierData, setCashierData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!date) return;
     const fetchAll = async () => {
       setLoading(true);
       try {
@@ -85,7 +93,7 @@ td:last-child{text-align:right;font-weight:bold}
 .total{border-top:2px solid #000;font-weight:bold;font-size:13px}
 .void{color:#e00}
 @media print{body{padding:0}}</style></head><body>
-<h1>Shift Report - ${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h1>
+<h1>Shift Report - ${formatDateKey(date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h1>
 <h2>Revenue Summary</h2>
 <table>
 <tr><td>Gross Revenue</td><td>$${cashierData.totalRevenue.toLocaleString()}</td></tr>

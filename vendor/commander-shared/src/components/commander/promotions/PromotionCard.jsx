@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Gift, Clock, Calendar, DollarSign, Users, Trophy, Star, Edit3, Award, Copy, Timer } from 'lucide-react';
+import { formatDateKey, isDateKey, parseDateKey } from '../../../lib/commander/businessDate';
 
 const PROMOTION_TYPE_LABELS = {
   high_hand: 'High Hand',
@@ -68,7 +69,9 @@ function titleCase(str) {
 /** Compute effective status: auto-detect "expired" if end_date is past */
 function getEffectiveStatus(promotion) {
   if (promotion.end_date) {
-    const end = new Date(promotion.end_date);
+    // end_date is a DATE: the promotion runs to the end of that calendar day.
+    // new Date('YYYY-MM-DD') is UTC midnight, the evening BEFORE in US zones.
+    const end = parseDateKey(promotion.end_date) || new Date(promotion.end_date);
     end.setHours(23, 59, 59, 999);
     if (end < new Date() && (promotion.status === 'active' || promotion.is_active)) {
       return 'expired';
@@ -86,7 +89,9 @@ function getTimeRemaining(promotion) {
   const now = new Date();
   // Check end_date
   if (promotion.end_date) {
-    const end = new Date(promotion.end_date);
+    // end_date is a DATE: the promotion runs to the end of that calendar day.
+    // new Date('YYYY-MM-DD') is UTC midnight, the evening BEFORE in US zones.
+    const end = parseDateKey(promotion.end_date) || new Date(promotion.end_date);
     end.setHours(23, 59, 59, 999);
     const diff = end - now;
     if (diff <= 0) return null;
@@ -126,6 +131,8 @@ export default function PromotionCard({
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
+    // Date-only values print as their own calendar day in every zone.
+    if (isDateKey(String(dateStr).slice(0, 10))) return formatDateKey(dateStr, { month: 'short', day: 'numeric' });
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'

@@ -8,6 +8,7 @@ import { guardManager } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
 import { lookupOutcome, sendLookupFailure } from '../../../src/lib/commander/publicLookup';
+import { businessDayStartISO, venueTimeZone } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -81,8 +82,11 @@ async function handleGet(req, res, venueId) {
     // reads that are thrown away; that is rare, and cheaper than making every
     // real venue wait for the slowest chain.
     const supabase = getSupabase();
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    // "Today" begins at the VENUE's midnight. Its zone is on the venue row,
+    // which is read in this same batch, so the query takes a coarse bound a
+    // day early and the exact cut happens below (it was the server's
+    // midnight: UTC on Vercel, 6 PM the previous evening in Central).
+    const coarseStart = new Date(Date.now() - 36 * 60 * 60 * 1000);
 
     const [venueRead, gamesRead, waitlistRead, settingsRead, tournamentsRead, promotionsRead] = await Promise.all([
       supabase
@@ -117,7 +121,7 @@ async function handleGet(req, res, venueId) {
         .select('id, name, description, tournament_type, variant, buyin_amount, buyin_fee, starting_chips, scheduled_start, registration_opens, late_registration_levels, guaranteed_pool, max_entries, current_entries, players_remaining, status')
         .eq('venue_id', venueId)
         .in('status', ['scheduled', 'registration', 'running'])
-        .gte('scheduled_start', startOfToday.toISOString())
+        .gte('scheduled_start', coarseStart.toISOString())
         .order('scheduled_start', { ascending: true })
         .limit(50),
       // Active promotions (sanitized public fields only).
@@ -142,7 +146,9 @@ async function handleGet(req, res, venueId) {
     const currentGames = gamesRead.data;
     const waitlists = waitlistRead.data;
     const settings = settingsRead.data;
-    const todaysTournaments = tournamentsRead.data;
+    const venueDayStart = Date.parse(businessDayStartISO(new Date(), venueTimeZone(venue)));
+    const todaysTournaments = (tournamentsRead.data || [])
+      .filter(t => !t.scheduled_start || Date.parse(t.scheduled_start) >= venueDayStart);
     const activePromotions = promotionsRead.data;
 
     // Group waitlists by game type and stakes

@@ -8,6 +8,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { businessDateKey, venueTimeZone } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -102,7 +103,7 @@ async function listPromotions(req, res, staff) {
       .from('commander_promotions')
       .select(`
         *,
-        poker_venues:venue_id (id, name, city, state)
+        poker_venues:venue_id (id, name, city, state, timezone)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -124,8 +125,12 @@ async function listPromotions(req, res, staff) {
     if (error) throw error;
 
     // Auto-expire: batch-update any active promos past their end_date
-    const now = new Date().toISOString().split('T')[0];
-    const expiredIds = (data || []).filter(p => p.status === 'active' && p.end_date && p.end_date < now).map(p => p.id);
+    // end_date is the venue's calendar date: expire only once it has passed AT
+    // THE VENUE (the UTC date expired promotions from 6 PM Central the day
+    // before their last day).
+    const now = new Date();
+    const expiredIds = (data || []).filter(p => p.status === 'active' && p.end_date
+      && String(p.end_date).slice(0, 10) < businessDateKey(now, venueTimeZone(p.poker_venues))).map(p => p.id);
     if (expiredIds.length > 0) {
       await getSupabase().from('commander_promotions')
         .update({ status: 'expired', updated_at: new Date().toISOString() })

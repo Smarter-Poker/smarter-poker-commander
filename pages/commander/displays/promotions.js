@@ -18,6 +18,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 import useClientNow, { formatClientTime, formatClientDate } from '../../../src/hooks/useClientNow';
+import { parseDateKey } from '../../../src/lib/commander/businessDate';
 
 const PROMO_TYPE_STYLES = {
   high_hand: { bg: 'from-cyan-900/40 to-cyan-700/20', accent: '#22D3EE', label: 'HIGH HAND' },
@@ -152,7 +153,11 @@ export default function PromotionsDisplay() {
   // Countdown remaining
   const getDaysRemaining = (promo) => {
     if (!promo?.end_date) return null;
-    const end = new Date(promo.end_date);
+    // end_date is a calendar date: the promotion runs to the end of that day
+    // on this screen's clock. new Date('YYYY-MM-DD') was UTC midnight, the
+    // evening BEFORE in US zones, so the countdown ended a day early.
+    const end = parseDateKey(promo.end_date);
+    if (!end) return null;
     end.setHours(23, 59, 59, 999);
     const diff = end - now;
     if (diff <= 0) return null;

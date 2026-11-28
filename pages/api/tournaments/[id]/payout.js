@@ -15,6 +15,8 @@ import { reportApiError } from '../../../../src/lib/apiErrorHandler';
 import { recordTournamentTaxEvent } from '../../../../src/lib/commander/taxEvents';
 import { denyCrossVenue } from '../../../../src/lib/commander/venueScope';
 import { isUniqueViolation } from '../../../../src/lib/commander/dbErrors';
+import { businessDateKey } from '../../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -1175,12 +1177,16 @@ async function handleBulkPayouts(req, res, tournamentId, staff) {
 // room that later creates a season can see who has been playing.
 const DEFAULT_FINISH_POINTS = { 1: 100, 2: 70, 3: 50, 4: 40, 5: 30, 6: 25, 7: 20, 8: 15, 9: 10 };
 
-/** The calendar date a tournament counts against for season windows. */
-function tournamentDate(tournament) {
+/**
+ * The calendar date a tournament counts against for season windows: the
+ * venue-local date of its start (2026-11-28; it was the UTC date, so a 7 PM
+ * Central start on a season's last day scored into the next season).
+ */
+function tournamentDate(tournament, timeZone) {
   const raw = tournament?.actual_start || tournament?.scheduled_start;
   const d = raw ? new Date(raw) : new Date();
-  if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
-  return d.toISOString().slice(0, 10);
+  if (Number.isNaN(d.getTime())) return businessDateKey(new Date(), timeZone);
+  return businessDateKey(d, timeZone);
 }
 
 /**
@@ -1211,7 +1217,7 @@ async function resolveLeaderboard(tournament) {
   }
 
   if (tournament?.venue_id != null) {
-    const onDate = tournamentDate(tournament);
+    const onDate = tournamentDate(tournament, await fetchVenueTimeZone(getSupabase(), tournament.venue_id));
     const { data } = await getSupabase()
       .from('commander_tournament_leaderboards')
       .select(columns)

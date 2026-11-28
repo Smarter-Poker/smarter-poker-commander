@@ -7,6 +7,8 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { guardStaff } from '../../src/lib/commander/auth';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { businessDateKey, businessDayRange, isDateKey } from '../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -55,12 +57,15 @@ async function handleGet(req, res) {
         const { venue_id, date } = req.query;
         if (!venue_id) return res.status(400).json({ success: false, error: 'venue_id required' });
 
-        // Default to today
-        const targetDate = date ? new Date(date) : new Date();
-        const start = new Date(targetDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(targetDate);
-        end.setHours(23, 59, 59, 999);
+        // Default to today at the venue. The day runs local midnight to local
+        // midnight (setHours() on the server was UTC on Vercel).
+        const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
+        const dayKey = isDateKey(String(date || '')) ? String(date)
+          : businessDateKey(date ? new Date(date) : new Date(), timeZone);
+        const range = businessDayRange(dayKey, timeZone);
+        if (!range) return res.status(400).json({ success: false, error: 'date must be YYYY-MM-DD' });
+        const start = new Date(range.start);
+        const end = new Date(new Date(range.end).getTime() - 1);
 
         const { data, error } = await getSupabase()
             .from('commander_time_clock')

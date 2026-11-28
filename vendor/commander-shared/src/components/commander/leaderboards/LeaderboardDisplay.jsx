@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { Trophy, Medal, Calendar, Users, Award, ChevronRight } from 'lucide-react';
+import { formatDateKey, isDateKey } from '../../../lib/commander/businessDate';
 
 const RANK_STYLES = {
   1: { bg: '#E0F2FE', text: '#92400E', icon: '#22D3EE' },
@@ -23,6 +24,11 @@ function LeaderboardDisplay({
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
+    // start_date / end_date are DATEs: print their own calendar day (as a
+    // Date they were UTC midnight, the previous evening in US zones).
+    if (isDateKey(String(dateStr).slice(0, 10))) {
+      return formatDateKey(dateStr, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

@@ -19,6 +19,7 @@ import {
   estimateDuration
 } from '../tournaments/tournamentTemplates';
 import { broadcastChange } from '../../../lib/commander/useCommanderSync';
+import { toDateTimeLocalValue } from '../../../lib/commander/businessDate';
 
 const ICON_MAP = { Trophy, Zap, Crown, Target, RefreshCw, Rocket, Crosshair };
 
@@ -108,7 +109,9 @@ function CreateTournamentModal({ isOpen, onClose, onSubmit, venueId }) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(19, 0, 0, 0);
-    setScheduledStart(tomorrow.toISOString().slice(0, 16));
+    // datetime-local wants LOCAL wall time; the UTC ISO slice showed 1:00 AM
+    // the day after (in Central) instead of tomorrow 7:00 PM.
+    setScheduledStart(toDateTimeLocalValue(tomorrow));
   }, []);
 
   function applyTemplate(template) {

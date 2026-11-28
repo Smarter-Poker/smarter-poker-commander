@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import { endOfYearKey, formatDateKey, isDateKey } from '../../src/lib/commander/businessDate';
+import { useBusinessToday } from '../../src/hooks/useVenueTimeZone';
 
 const DEFAULT_STRUCTURE = [
     { position: 1, points: 100 },
@@ -42,17 +44,14 @@ const DEFAULT_STRUCTURE = [
     { position: 10, points: 15 }
 ];
 
-function todayISO() {
-    return new Date().toISOString().slice(0, 10);
-}
-
-function yearEndISO() {
-    const d = new Date();
-    return new Date(d.getFullYear(), 11, 31).toISOString().slice(0, 10);
-}
 
 function formatDate(ts) {
     if (!ts) return '--';
+    // season_start / season_end are DATEs: print their own calendar day (as a
+    // Date they were UTC midnight, the previous evening in US zones).
+    if (isDateKey(String(ts).slice(0, 10)) && String(ts).length <= 10) {
+        return formatDateKey(ts, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
     const d = new Date(ts);
     if (Number.isNaN(d.getTime())) return '--';
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -70,12 +69,24 @@ export default function TournamentLeaderboards() {
 
     const [form, setForm] = useState({
         name: '',
-        season_start: todayISO(),
-        season_end: yearEndISO(),
+        // Filled with today / Dec 31 at the venue after mount (hydration law;
+        // both were UTC dates, so after 6 PM Central the season began tomorrow).
+        season_start: '',
+        season_end: '',
         point_for_entry: '1',
         structure: DEFAULT_STRUCTURE.map(s => ({ ...s })),
         is_active: true
     });
+
+    const today = useBusinessToday();
+    useEffect(() => {
+        if (!today) return;
+        setForm(f => ({
+            ...f,
+            season_start: f.season_start || today,
+            season_end: f.season_end || endOfYearKey(today),
+        }));
+    }, [today]);
 
     useEffect(() => {
         if (!toast) return;

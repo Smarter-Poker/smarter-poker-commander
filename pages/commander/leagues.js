@@ -16,6 +16,7 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import { formatDateKey } from '../../src/lib/commander/businessDate';
 
 /* ───────── Status colors ───────── */
 const STATUS_COLORS = {
@@ -502,13 +503,13 @@ export default function LeaguesAndFreerollsManagement() {
                               <div className="bg-[#0D192E] rounded-lg p-3 text-center">
                                 <p className="text-[10px] text-[#9FB3C8] font-semibold uppercase">Start</p>
                                 <p className="text-sm font-bold text-white">
-                                  {league.season_start ? new Date(league.season_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'}
+                                  {league.season_start ? formatDateKey(league.season_start, { month: 'short', day: 'numeric' }) : 'TBD'}
                                 </p>
                               </div>
                               <div className="bg-[#0D192E] rounded-lg p-3 text-center">
                                 <p className="text-[10px] text-[#9FB3C8] font-semibold uppercase">End</p>
                                 <p className="text-sm font-bold text-white">
-                                  {league.season_end ? new Date(league.season_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'}
+                                  {league.season_end ? formatDateKey(league.season_end, { month: 'short', day: 'numeric' }) : 'TBD'}
                                 </p>
                               </div>
                             </div>

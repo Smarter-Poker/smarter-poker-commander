@@ -6,6 +6,7 @@ import { createClient } from '../../../src/lib/supabaseServerClient';
 import { verifyStaffSession, verifyManagerSession } from '../../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../../src/lib/apiRateLimit';
 import { reportApiError } from '../../../src/lib/apiErrorHandler';
+import { addDaysToKey } from '../../../src/lib/commander/businessDate';
 
 let _supabase = null;
 function getSupabase() {
@@ -57,10 +58,13 @@ async function handleGet(req, res) {
     }
 
     try {
-        const start = new Date(week_start + 'T00:00:00');
-        const end = new Date(start);
-        end.setDate(end.getDate() + 7);
-        const endStr = end.toISOString().split('T')[0];
+        // Pure calendar arithmetic on the week's date key: a local-midnight Date
+        // read back through toISOString() is the previous day on any runtime
+        // east of UTC.
+        const endStr = addDaysToKey(week_start, 7);
+        if (!endStr) {
+            return res.status(400).json({ success: false, error: { message: 'week_start must be YYYY-MM-DD' } });
+        }
 
         const { data, error } = await getSupabase()
             .from('commander_staff_shifts')

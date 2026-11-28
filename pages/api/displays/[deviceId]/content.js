@@ -7,6 +7,8 @@ import { createClient } from '../../../../src/lib/supabaseServerClient';
 import { applyRateLimit, LIMITS } from '../../../../src/lib/apiRateLimit';
 import { parseBlindStructure } from '../../../../src/lib/parseBlindStructure';
 import { reportApiError } from '../../../../src/lib/apiErrorHandler';
+import { businessDayStartISO } from '../../../../src/lib/commander/businessDate';
+import { fetchVenueTimeZone } from '../../../../src/lib/commander/venueTimeZone';
 
 let _supabase = null;
 function getSupabase() {
@@ -219,7 +221,8 @@ async function getPromotionsContent(venueId) {
 }
 
 async function getHighHandContent(venueId) {
-  const today = new Date().toISOString().split('T')[0];
+  // Today is the venue's business day, from its local midnight.
+  const today = businessDayStartISO(new Date(), await fetchVenueTimeZone(getSupabase(), venueId));
 
   // Get today's high hands. Live schema (information_schema verified):
   // commander_high_hands has hand_rank, cards and board_cards - there is no

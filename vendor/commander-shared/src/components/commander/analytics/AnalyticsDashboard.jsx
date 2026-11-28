@@ -8,6 +8,7 @@ import {
   Users, Clock, DollarSign, TrendingUp, TrendingDown,
   Calendar, Trophy, Gift, Activity, ChevronDown
 } from 'lucide-react';
+import { formatDateKey } from '../../../lib/commander/businessDate';
 
 const PERIOD_OPTIONS = [
   { value: 7, label: 'Last 7 Days' },
@@ -306,7 +307,7 @@ function AnalyticsDashboard({
                 {analytics.slice(0, 7).map((day) => (
                   <tr key={day.date} className="text-sm">
                     <td className="px-4 py-3 text-gray-300">
-                      {new Date(day.date).toLocaleDateString('en-US', {
+                      {formatDateKey(day.date, {
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric'
