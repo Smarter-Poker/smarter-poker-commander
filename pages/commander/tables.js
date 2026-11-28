@@ -17,7 +17,10 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
-import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../src/components/commander/shared/ClubArenaTable';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../src/components/commander/shared/ClubArenaTable';
+
+// Seat badges scale with the seat box; 1050px is its width on a 1280px desktop.
+const sp = seatScale(1050);
 
 const STATUS_COLORS = {
   available: { bg: 'rgba(49,162,76,0.15)', border: '#31A24C', text: '#31A24C', label: 'Available' },
@@ -502,31 +505,32 @@ const res = await commanderFetch('/api/commander/tables', {
 
                               {/* ── Oval Table Visualization (cropped viewport) ── */}
                               <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '64%', overflow: 'hidden' })}>
-                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-18%' }}>
+                                <div className={SEAT_BOX_CLASS} style={{ ...SEAT_BOX_STYLE, position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-18%' }}>
                                   {/* Club Arena table skin (felt + rail) */}
                                   <ClubArenaTableFelt />
 
                                   {/* Game info in center */}
-                                  <div style={{
+                                  <div className="ca-seat-center" style={{
                                     position: 'absolute', top: '48%', left: '50%',
                                     transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
+                                    <div style={{ fontSize: sp(13, 9), fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
                                       {venue?.name || 'Table'} #{tNum}
                                     </div>
-                                    <div style={{ fontSize: 20, fontWeight: 800, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                    <div style={{ fontSize: sp(20, 12), fontWeight: 800, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
                                       {(game.game_type || table.game_type || '').toUpperCase()}
                                     </div>
-                                    <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontWeight: 700 }}>
+                                    <div style={{ fontSize: sp(16, 10), color: 'rgba(255,255,255,0.6)', marginTop: 2, fontWeight: 700 }}>
                                       {game.stakes || table.stakes || ''}
                                     </div>
                                   </div>
 
                                   {/* Dealer */}
-                                  <div style={{
+                                  <div className={seatClass(50, 'ca-seat--dealer')} style={{
                                     position: 'absolute', top: dealerPos.top, left: dealerPos.left,
-                                    transform: 'translate(-50%, -50%)', textAlign: 'center', width: 80, zIndex: 3 }}>
-                                    <div style={clubArenaDealerPuckStyle(56, { margin: '0 auto 4px' })}>D</div>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1981EC', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    transform: 'translate(-50%, -50%)', textAlign: 'center', width: sp(80, 40), zIndex: 3,
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div className="ca-seat__avatar" style={clubArenaDealerPuckStyle(sp(56, 22), { margin: '0 auto 4px' })}>D</div>
+                                    <div className="ca-seat__name" style={{ fontSize: sp(11, 8), fontWeight: 700, color: '#1981EC', maxWidth: sp(100, 40), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {dealerMap[tNum] || game.dealer_name || 'No Dealer'}
                                     </div>
                                   </div>
@@ -542,9 +546,9 @@ const res = await commanderFetch('/api/commander/tables', {
                                     const isLeftSide = leftPct < 25;
                                     const isRightSide = leftPct > 75;
                                     const badgeTransform = isLeftSide
-                                      ? 'translate(-17px, -50%)'
+                                      ? `translate(calc(-1 * ${sp(17)}), -50%)`
                                       : isRightSide
-                                        ? 'translate(calc(-100% + 17px), -50%)'
+                                        ? `translate(calc(-100% + ${sp(17)}), -50%)`
                                         : 'translate(-50%, -50%)';
                                     const badgeDirection = isRightSide ? 'row-reverse' : 'row';
 
@@ -568,19 +572,19 @@ const res = await commanderFetch('/api/commander/tables', {
                                     }
 
                                     return (
-                                      <div key={seat.number} style={{
+                                      <div key={seat.number} className={seatClass(leftPct)} style={{
                                         position: 'absolute', top: pos.top, left: pos.left,
                                         transform: badgeTransform, zIndex: 2,
-                                        display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: 8,
+                                        display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: sp(8, 3),
                                         background: 'rgba(36,37,38,0.9)',
-                                        borderRadius: 12,
-                                        padding: '5px 10px 5px 5px',
+                                        borderRadius: sp(12, 6),
+                                        padding: `${sp(5, 2)} ${sp(10, 4)} ${sp(5, 2)} ${sp(5, 2)}`,
                                         border: `2px solid ${isOccupied ? 'rgba(25, 129, 236,0.5)' : 'rgba(255,255,255,0.08)'}`,
                                         backdropFilter: 'blur(6px)',
-                                        minWidth: 70 }}>
+                                        minWidth: sp(70, 30) }}>
                                         {/* Avatar circle */}
-                                        <div style={{
-                                          width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
+                                        <div className="ca-seat__avatar" style={{
+                                          width: sp(52, 20), height: sp(52, 20), borderRadius: '50%', flexShrink: 0,
                                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                                           background: isOccupied
                                             ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)'
@@ -588,23 +592,23 @@ const res = await commanderFetch('/api/commander/tables', {
                                           border: `2px solid ${isOccupied ? '#1981EC' : 'rgba(62,64,66,0.5)'}`,
                                           overflow: 'hidden' }}>
                                           {isOccupied ? (
-                                            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
+                                            <span style={{ fontSize: sp(20, 9), fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
                                           ) : (
-                                            <span style={{ fontSize: 16, fontWeight: 600, color: '#BDD0E2' }}>{seat.number}</span>
+                                            <span style={{ fontSize: sp(16, 8), fontWeight: 600, color: '#BDD0E2' }}>{seat.number}</span>
                                           )}
                                         </div>
                                         {/* Name + Timer */}
-                                        <div style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
-                                          <div style={{
-                                            fontSize: 13, fontWeight: 600, lineHeight: 1.2,
+                                        <div className="ca-seat__text" style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
+                                          <div className="ca-seat__name" style={{
+                                            fontSize: sp(13, 9), fontWeight: 600, lineHeight: 1.2,
                                             color: isOccupied ? '#F2F7FF' : '#BDD0E2',
                                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                            maxWidth: 110 }}>
+                                            maxWidth: sp(110, 40) }}>
                                             {isOccupied ? fullName : 'Open'}
                                           </div>
                                           {timerText && (
-                                            <div style={{
-                                              fontSize: 12, fontWeight: 700, color: timerColor,
+                                            <div className="ca-seat__meta" style={{
+                                              fontSize: sp(12, 8), fontWeight: 700, color: timerColor,
                                               fontFamily: 'monospace', lineHeight: 1.2 }}>
                                               {timerText}
                                             </div>

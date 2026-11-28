@@ -12,7 +12,10 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Lock, Unlock, Users, Armchair, ScanLine, Camera } from 'lucide-react';
-import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../../src/components/commander/shared/ClubArenaTable';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle, seatScale, seatClass, SEAT_BOX_CLASS, SEAT_BOX_STYLE } from '../../../src/components/commander/shared/ClubArenaTable';
+
+// Seat badges scale with the seat box; 1100px is its width on a 1280px screen.
+const sp = seatScale(1100);
 
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
 import DealerTicker from '../../../src/components/commander/shared/DealerTicker';
@@ -601,32 +604,32 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               </div>
             ) : (
               <div style={{ width: '100%', maxWidth: 1100, position: 'relative' }}>
-                <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '52%', overflow: 'hidden', borderRadius: 16 })}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-24%' }}>
+                <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '56%', overflow: 'hidden', borderRadius: 16 })}>
+                  <div className={SEAT_BOX_CLASS} style={{ ...SEAT_BOX_STYLE, position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-22%' }}>
                     {/* Club Arena table skin (felt + rail) */}
                     <ClubArenaTableFelt />
 
                     {/* ── Center Info: Club Name + Game + Table ── */}
-                    <div style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
+                    <div className="ca-seat-center" style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
                       <div style={{
-                        fontSize: 28, fontWeight: 900, color: 'rgba(34, 211, 238,0.85)',
+                        fontSize: sp(28, 13), fontWeight: 900, color: 'rgba(34, 211, 238,0.85)',
                         textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8,
                         textShadow: '0 2px 12px rgba(34, 211, 238,0.3)' }}>
                         {venueName || 'Poker Room'}
                       </div>
                       <div style={{
-                        fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+                        fontSize: sp(18, 10), fontWeight: 700, color: 'rgba(255,255,255,0.5)',
                         letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>
                         Table {lockedTableNum}
                       </div>
-                      <div style={{ fontSize: 36, fontWeight: 900, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      <div style={{ fontSize: sp(36, 15), fontWeight: 900, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 1 }}>
                         {isTournament ? (game?.tournament_name || 'TOURNAMENT') : gameType}
                       </div>
-                      <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: 700 }}>
+                      <div style={{ fontSize: sp(22, 11), color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: 700 }}>
                         {isTournament ? (game?.buy_in ? `$${game.buy_in} Buy-In` : '') : stakes}
                       </div>
                       {!isActive && (
-                        <div style={{ fontSize: 14, color: '#1981EC', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                        <div style={{ fontSize: sp(14, 9), color: '#1981EC', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
                           Table Open
                         </div>
                       )}
@@ -634,22 +637,23 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
                     {/* ── Dealer Badge (same card style as players, clickable → scanner) ── */}
                     <div
+                      className={seatClass(50, 'ca-seat--dealer')}
                       onClick={() => openScanner('dealer')}
                       style={{
                         position: 'absolute', top: dealerPos.top, left: dealerPos.left,
                         transform: 'translate(-50%, -50%)', zIndex: 3, cursor: 'pointer',
-                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10,
-                        background: 'rgba(25, 129, 236,0.15)', borderRadius: 14, padding: '6px 12px 6px 6px',
-                        border: '2px solid rgba(25, 129, 236,0.6)', backdropFilter: 'blur(8px)', minWidth: 90,
+                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: sp(10, 3),
+                        background: 'rgba(25, 129, 236,0.15)', borderRadius: sp(14, 6), padding: `${sp(6, 2)} ${sp(12, 4)} ${sp(6, 2)} ${sp(6, 2)}`,
+                        border: '2px solid rgba(25, 129, 236,0.6)', backdropFilter: 'blur(8px)', minWidth: sp(90, 30),
                         transition: 'border-color 0.2s, box-shadow 0.2s',
                         boxShadow: '0 2px 16px rgba(0,0,0,0.4), 0 0 12px rgba(25, 129, 236,0.15)' }}
                     >
-                      <div style={clubArenaDealerPuckStyle(56)}>D</div>
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: '#F2F7FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                      <div className="ca-seat__avatar" style={clubArenaDealerPuckStyle(sp(56, 22))}>D</div>
+                      <div className="ca-seat__text" style={{ overflow: 'hidden' }}>
+                        <div className="ca-seat__name" style={{ fontSize: sp(15, 9), fontWeight: 600, lineHeight: 1.2, color: '#F2F7FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: sp(140, 40) }}>
                           {dealerName}
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(25, 129, 236,0.6)' }}>Tap To Scan</div>
+                        <div className="ca-seat__meta" style={{ fontSize: sp(10, 8), color: 'rgba(25, 129, 236,0.6)' }}>Tap To Scan</div>
                       </div>
                     </div>
 
@@ -662,7 +666,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                       const leftPct = parseFloat(pos.left);
                       const isLeftSide = leftPct < 25;
                       const isRightSide = leftPct > 75;
-                      const badgeTransform = isLeftSide ? 'translate(-17px, -50%)' : isRightSide ? 'translate(calc(-100% + 17px), -50%)' : 'translate(-50%, -50%)';
+                      const badgeTransform = isLeftSide ? `translate(calc(-1 * ${sp(17)}), -50%)` : isRightSide ? `translate(calc(-100% + ${sp(17)}), -50%)` : 'translate(-50%, -50%)';
                       const badgeDirection = isRightSide ? 'row-reverse' : 'row';
 
                       let timerText = null, timerColor = null;
@@ -679,6 +683,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
                       return (
                         <div key={seat.number}
+                          className={seatClass(leftPct)}
                           onClick={() => {
                             if (movingPlayer && !isOccupied) { completeMove(seat.number); return; }
                             if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied - pick an empty seat' }); return; }
@@ -688,58 +693,58 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                           style={{
                             position: 'absolute', top: pos.top, left: pos.left,
                             transform: badgeTransform, zIndex: 2, cursor: 'pointer',
-                            display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: 10,
+                            display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: sp(10, 3),
                             background: isExpired ? 'rgba(239,68,68,0.15)' : 'rgba(36,37,38,0.92)',
-                            borderRadius: 14, padding: '6px 12px 6px 6px',
-                            border: `2px solid ${borderColor}`, backdropFilter: 'blur(8px)', minWidth: 90,
+                            borderRadius: sp(14, 6), padding: `${sp(6, 2)} ${sp(12, 4)} ${sp(6, 2)} ${sp(6, 2)}`,
+                            border: `2px solid ${borderColor}`, backdropFilter: 'blur(8px)', minWidth: sp(90, 30),
                             transition: 'border-color 0.2s, box-shadow 0.2s' }}
                         >
-                          <div style={{
-                            width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
+                          <div className="ca-seat__avatar" style={{
+                            width: sp(60, 20), height: sp(60, 20), borderRadius: '50%', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: isOccupied ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)' : 'rgba(255,255,255,0.06)',
                             border: `2px solid ${borderColor}`,
                             position: 'relative' }}>
                             {isOccupied ? (
-                              <span style={{ fontSize: 26, fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
+                              <span style={{ fontSize: sp(26, 9), fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
                             ) : (
-                              <span style={{ fontSize: 20, fontWeight: 600, color: '#6B7280' }}>{seat.number}</span>
+                              <span style={{ fontSize: sp(20, 8), fontWeight: 600, color: '#6B7280' }}>{seat.number}</span>
                             )}
                             {/* Missed Blinds Sticker - overlays top-right of avatar */}
                             {isOccupied && (seat.player?.missed_blinds || 0) > 0 && (
                               <div style={{
                                 position: 'absolute', top: -4, right: -4,
-                                width: 22, height: 22, borderRadius: '50%',
+                                width: sp(22, 10), height: sp(22, 10), borderRadius: '50%',
                                 background: (seat.player.missed_blinds >= 2) ? '#EF4444' : '#F97316',
                                 border: '2px solid #040D18',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 10, fontWeight: 900, color: '#fff',
+                                fontSize: sp(10, 6), fontWeight: 900, color: '#fff',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
                                 zIndex: 3, overflow: 'visible' }}>
                                 {seat.player.missed_blinds}
                               </div>
                             )}
                           </div>
-                          <div style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
-                            <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: isOccupied ? '#F2F7FF' : (movingPlayer ? '#22c55e' : '#6B7280'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
-                              {isOccupied ? fullName : (movingPlayer ? 'Move here' : 'Open')}
+                          <div className="ca-seat__text" style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
+                            <div className="ca-seat__name" style={{ fontSize: sp(15, 9), fontWeight: 600, lineHeight: 1.2, color: isOccupied ? '#F2F7FF' : (movingPlayer ? '#22c55e' : '#6B7280'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: sp(140, 40) }}>
+                              {isOccupied ? fullName : (movingPlayer ? 'Move Here' : 'Open')}
                             </div>
                             {/* Session Status Overlay (Paused / Meal Break) */}
                             {isOccupied && seat.player?.session_status && seat.player.session_status !== 'active' && (
-                              <div style={{ fontSize: 10, fontWeight: 700, color: seat.player.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
+                              <div className="ca-seat__meta" style={{ fontSize: sp(10, 8), fontWeight: 700, color: seat.player.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
                                 {seat.player.session_status === 'paused' ? 'Paused' : 'Meal Break'}
                               </div>
                             )}
                             {!isOccupied && (
-                              <div style={{ fontSize: 10, color: movingPlayer ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.25)' }}>{movingPlayer ? 'Tap to confirm' : 'Tap to seat'}</div>
+                              <div className="ca-seat__meta" style={{ fontSize: sp(10, 8), color: movingPlayer ? 'rgba(34,197,94,0.6)' : 'rgba(255,255,255,0.25)' }}>{movingPlayer ? 'Tap To Confirm' : 'Tap To Seat'}</div>
                             )}
                             {timerText && (
-                              <div style={{ fontSize: 14, fontWeight: 700, color: timerColor, fontFamily: 'monospace', lineHeight: 1.3 }}>
+                              <div className="ca-seat__meta" style={{ fontSize: sp(14, 8), fontWeight: 700, color: timerColor, fontFamily: 'monospace', lineHeight: 1.3 }}>
                                 {timerText}
                               </div>
                             )}
                             {isOccupied && seat.player?.membership_tier && (
-                              <div style={{ fontSize: 11, color: '#5AA9FF', fontWeight: 600 }}>{seat.player.membership_tier}</div>
+                              <div className="ca-seat__meta" style={{ fontSize: sp(11, 8), color: '#5AA9FF', fontWeight: 600 }}>{seat.player.membership_tier}</div>
                             )}
                           </div>
                         </div>

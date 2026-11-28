@@ -30,6 +30,7 @@
  * the same oval (93% wide, centred), so every view's seat ring - an ellipse of
  * rx 47 / ry 22 around the centre - still stands on the rail.
  */
+import InlineStyle from './InlineStyle';
 import feltImage from '../../../../public/images/club-arena-table/ocean-blue-felt-landscape.webp';
 import roomImage from '../../../../public/images/club-arena-table/ocean-abyss-room.webp';
 
@@ -75,7 +76,7 @@ export function clubArenaDealerPuckStyle(size, extra) {
     background: 'linear-gradient(145deg, #ffffff 0%, #e8e8e8 50%, #d0d0d0 100%)',
     color: '#111',
     fontWeight: 900,
-    fontSize: Math.round(size * 0.44),
+    fontSize: typeof size === 'number' ? Math.round(size * 0.44) : `calc(${size} * 0.44)`,
     letterSpacing: '-0.02em',
     textShadow: '0 1px 0 rgba(255,255,255,0.5)',
     border: '1.5px solid rgba(0,0,0,0.15)',
@@ -85,12 +86,75 @@ export function clubArenaDealerPuckStyle(size, extra) {
   };
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEATS SCALE WITH THE TABLE, NOT WITH THE SCREEN (2026-11-28)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Every view used to size its seat badges in fixed pixels (52px avatars,
+   13px names, 110px name boxes) while the table itself shrank with the
+   screen. On a 375-430px phone the seat box is ~330px wide and nine 180px
+   badges piled on top of each other.
+
+   The square seat box is now a CSS size container (SEAT_BOX_STYLE /
+   SEAT_BOX_CLASS) and every badge dimension is `seatScale(ref)(px)`:
+   clamp(min, px/ref of the box, px). `ref` is the box width the view has on
+   a 1280px desktop, so at 1280 every badge is exactly the size it was and
+   below that it shrinks with the table. Under 520px of box width the badges
+   switch to a compact stack (avatar over a short ellipsised name, secondary
+   text such as timers and "Tap To Seat" hidden), sized so no two seats of a
+   2-10 seat ring overlap. Classes: ca-seat (+ --left / --right / --dealer),
+   ca-seat__card (an inner card when the positioned element is a wrapper),
+   ca-seat__avatar, ca-seat__text, ca-seat__name, ca-seat__meta.
+*/
+
+export const SEAT_BOX_CLASS = 'ca-seat-box';
+export const SEAT_BOX_STYLE = { containerType: 'inline-size' };
+
+/** px -> clamp(min, share of the seat box, px). */
+export function seatScale(ref) {
+  return (px, min) => {
+    const floor = min ?? Math.max(6, Math.round(px * 0.45));
+    return `clamp(${floor}px, ${((px / ref) * 100).toFixed(3)}cqw, ${px}px)`;
+  };
+}
+
+/** Class list for a seat badge positioned at `leftPct` across the ring. */
+export function seatClass(leftPct, extra) {
+  const side = leftPct < 25 ? ' ca-seat--left' : leftPct > 75 ? ' ca-seat--right' : '';
+  return `ca-seat${side}${extra ? ` ${extra}` : ''}`;
+}
+
+export const SEAT_COMPACT_MAX_PX = 520;
+
+const SEAT_CSS = `
+.ca-seat-box{container-type:inline-size}
+.ca-seat__name,.ca-seat__meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca-seat__text{min-width:0;overflow:hidden}
+@container (max-width: ${SEAT_COMPACT_MAX_PX}px){
+.ca-seat{flex-direction:column!important;align-items:center!important;gap:1px!important;padding:2px 3px!important;min-width:0!important;width:auto!important;max-width:16cqw!important;border-radius:8px!important;transform:translate(-50%,-50%)!important}
+.ca-seat__card{flex-direction:column!important;align-items:center!important;gap:1px!important;padding:2px 3px!important;min-width:0!important;max-width:16cqw!important;border-radius:8px!important}
+.ca-seat--left{transform:translate(-30%,-50%)!important}
+.ca-seat--right{transform:translate(-70%,-50%)!important}
+.ca-seat--dealer{transform:translate(-50%,-70%)!important}
+.ca-seat>div:not(.ca-seat__avatar):not(.ca-seat__text){max-width:15cqw}
+.ca-seat__avatar{width:7.5cqw!important;height:7.5cqw!important;min-width:0!important;min-height:0!important;font-size:3.2cqw!important;border-width:1.5px!important;margin:0!important}
+.ca-seat__avatar span{font-size:3.2cqw!important}
+.ca-seat__text{max-width:15cqw!important;text-align:center!important}
+.ca-seat__name{font-size:clamp(8px,2.5cqw,10px)!important;max-width:15cqw!important;line-height:1.1!important}
+.ca-seat__meta{display:none!important}
+.ca-seat-center{transform:translate(-50%,-50%) scale(0.7)!important}
+}
+`;
+
 /**
  * The felt, drawn into the square seat box every view uses. Decorative: it
  * never takes a pointer event, so seat clicks and drags reach the seats.
  */
 export default function ClubArenaTableFelt({ zIndex = 0 }) {
   return (
+    <>
+    <InlineStyle css={SEAT_CSS} data-club-arena-seat-css="" />
     <img
       src={CLUB_ARENA_FELT_SRC}
       alt=""
@@ -111,5 +175,6 @@ export default function ClubArenaTableFelt({ zIndex = 0 }) {
         filter: 'drop-shadow(0 18px 30px rgba(0,0,0,0.55))',
       }}
     />
+    </>
   );
 }
