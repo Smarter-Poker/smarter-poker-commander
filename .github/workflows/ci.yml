@@ -123,6 +123,13 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy
           SUPABASE_SERVICE_ROLE_KEY: dummy
           SUPABASE_JWT_SECRET: dummy
+      # 2026-11-28: First Load JS of the busiest staff screens (tables, waitlist
+      # desk, cashier, dashboard, login) may not grow more than 5% past the
+      # budgets in scripts/ci/first-load-budget.json, and no client chunk may
+      # carry the crypto-browserify polyfill (125 kB that a client import of
+      # lib/commander/auth.js put on every CommanderLayout page).
+      - name: First load budget (staff screens)
+        run: node scripts/check-first-load-budget.mjs
       # 2026-09-04: the login-bridge probe runs against THIS commit before it
       # can merge. `next start` the build just made (no secrets at all), then
       # the structural leg in local mode: the login chunk's free

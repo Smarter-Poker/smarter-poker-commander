@@ -25,7 +25,7 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Constants + pure helpers still come from the shared package (no behavior).
+// Constants + pure helpers come from the shared package's client-safe module.
 export {
   COMP_ROLES,
   DEFAULT_PERMISSIONS,
@@ -34,7 +34,7 @@ export {
   ROLE_ROUTE_ACCESS,
   canRoleAccessRoute,
   getEffectivePermissions,
-} from '@smarter-poker/commander-shared/lib/commander/auth';
+} from '@smarter-poker/commander-shared/lib/commander/roleAccess';
 
 let _admin;
 function getAdminClient() {

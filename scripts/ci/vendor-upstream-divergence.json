@@ -38,7 +38,7 @@
     },
     "components/commander/shared/CommanderLayout.jsx": {
       "kind": "differs",
-      "reason": "upstream carries the #ClubButtons surface the hub uses; vendor does not ship club-buttons/. Direction: reconcile by vendoring club-buttons, then UPSTREAM -> vendor.",
+      "reason": "upstream carries the #ClubButtons surface the hub uses; vendor does not ship club-buttons/. Vendor-only since 2026-11-28: the global header art is a <picture> with WebP sources (public/images/global-header/*.webp exist only in Commander; the hub has no WebP copy, so upstream keeps the plain PNG). Direction: reconcile by vendoring club-buttons, then UPSTREAM -> vendor, keeping the WebP <picture>.",
       "since": "2026-09-04"
     },
     "components/commander/shared/ConfirmModal.jsx": {

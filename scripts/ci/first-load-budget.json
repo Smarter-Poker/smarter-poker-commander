@@ -1,0 +1,10 @@
+{
+  "_comment": "First Load JS (kB, gzip, as `next build` prints it) of the busiest staff screens after the 2026-11-28 speed change (docs/changelog/2026-11-28-staff-screens-speed.md). scripts/check-first-load-budget.mjs fails CI above budget + 5%. Lower a number when a route gets smaller; raise one only with the reason in a changelog.",
+  "budgets": {
+    "/commander/tables": 196.3,
+    "/commander/waitlist/desk": 190.0,
+    "/commander/cashier": 203.7,
+    "/commander/dashboard": 195.2,
+    "/commander/login": 164.8
+  }
+}

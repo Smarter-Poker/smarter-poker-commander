@@ -59,7 +59,7 @@ describe('staff header census', () => {
     expect(spec).toMatch(/nextConfig\.redirects\(\)/);
     expect(spec).toMatch(/toBeGreaterThan\(40\)/);
     // SENSITIVE_ROUTES really is where the spec looks for it.
-    expect(read('vendor/commander-shared/src/lib/commander/auth.js')).toMatch(/export const SENSITIVE_ROUTES = \[/);
+    expect(read('vendor/commander-shared/src/lib/commander/roleAccess.js')).toMatch(/export const SENSITIVE_ROUTES = \[/);
   });
 });
 
