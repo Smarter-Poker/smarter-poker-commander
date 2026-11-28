@@ -118,7 +118,8 @@ describe('Club Arena table skin', () => {
     it('the skin module scales by the seat box and has the compact phone layout', () => {
       const src = read(SKIN);
       expect(src).toMatch(/export function seatScale\(ref\)/);
-      expect(src).toContain('cqw, ${px}px)');
+      expect(src).toContain('${unit(((px / ref) * 100).toFixed(3))}, ${px}px)');
+      expect(src).toContain('var(${SEAT_UNIT_VAR}, 1cqw)');
       expect(src).toContain("containerType: 'inline-size'");
       expect(src).toMatch(/@container \(max-width: \$\{SEAT_COMPACT_MAX_PX\}px\)/);
       expect(src).toMatch(/\.ca-seat__meta\{display:none!important\}/);
