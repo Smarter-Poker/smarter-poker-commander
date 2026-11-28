@@ -20,6 +20,7 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../src/components/commander/shared/ClubArenaTable';
 
 const STATUS_BADGE = {
     in_use: { bg: '#31A24C', label: 'Active' },
@@ -1155,15 +1156,10 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
         const nameMaxWidth = isFullscreen ? 140 : 110;
 
         return (
-            <div style={{ position: 'relative', width: '100%', paddingBottom: isFullscreen ? '52%' : '60%', overflow: isFullscreen ? 'visible' : 'hidden', background: `radial-gradient(ellipse 85% 65% at 50% 42%, #0d1210 0%, #151a1d 40%, ${isFullscreen ? '#1a1f22' : '#1a1a2e'} 90%)`, borderRadius: isFullscreen ? 0 : 12 }}>
+            <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: isFullscreen ? '52%' : '60%', overflow: isFullscreen ? 'visible' : 'hidden', borderRadius: isFullscreen ? 0 : 12 })}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: isFullscreen ? '-20%' : '-16%' }}>
-                    {/* Poker table image */}
-                    <img
-                        src="/images/poker-table-black-gold.png"
-                        alt="Poker Table"
-                        style={{
-                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                            objectFit: 'contain', pointerEvents: 'none', zIndex: 0 }} loading="lazy" />
+                    {/* Club Arena table skin (felt + rail) */}
+                    <ClubArenaTableFelt />
 
                     {/* Game info in center */}
                     <div style={{
@@ -1211,13 +1207,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     backdropFilter: 'blur(6px)',
                                     minWidth: isFullscreen ? 80 : 70 }}>
                                     {/* D avatar circle */}
-                                    <div style={{
-                                        width: avatarSize, height: avatarSize, borderRadius: '50%', flexShrink: 0,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)',
-                                        border: '2px solid #1981EC',
-                                        boxShadow: '0 2px 12px rgba(0,0,0,0.6), 0 0 16px rgba(25, 129, 236,0.4)',
-                                        fontSize: isFullscreen ? 28 : 24, fontWeight: 900, color: '#fff' }}>
+                                    <div style={clubArenaDealerPuckStyle(avatarSize)}>
                                         D
                                     </div>
                                     {/* Name + DEALER label */}

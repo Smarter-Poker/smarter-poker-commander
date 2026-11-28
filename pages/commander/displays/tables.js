@@ -11,7 +11,8 @@
  * Lock state persists in localStorage across refreshes.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
+import { Lock, Unlock, Users, Armchair, ScanLine, Camera } from 'lucide-react';
+import ClubArenaTableFelt, { clubArenaRoomStyle, clubArenaDealerPuckStyle } from '../../../src/components/commander/shared/ClubArenaTable';
 
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
 import DealerTicker from '../../../src/components/commander/shared/DealerTicker';
@@ -422,7 +423,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
   const addMealBreak = async (seat) => {
     const json = await callSessionAction(seat, 'meal_break');
     if (json.success) {
-      setToast({ type: 'success', text: `🍽️ 30-min meal break started for ${json.data.player_name}` });
+      setToast({ type: 'success', text: `30-Min Meal Break Started For ${json.data.player_name}` });
     } else {
       setToast({ type: 'error', text: json.error || 'Failed to set meal break' });
     }
@@ -436,7 +437,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
       const count = json.data.missed_blinds_count;
       if (count >= 3) {
         // Auto-remove player after 3rd missed blind
-        setToast({ type: 'error', text: `🚫 ${json.data.player_name} removed - 3 missed blinds` });
+        setToast({ type: 'error', text: `${json.data.player_name} Removed - 3 Missed Blinds` });
         await removePlayer(seat);
       } else {
         setToast({ type: 'success', text: `Missed blind #${count} for ${json.data.player_name}` });
@@ -451,7 +452,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
   const pausePlayer = async (seat) => {
     const json = await callSessionAction(seat, 'pause');
     if (json.success) {
-      setToast({ type: 'success', text: `⏸️ Timer paused for ${json.data.player_name}` });
+      setToast({ type: 'success', text: `Timer Paused For ${json.data.player_name}` });
     } else {
       setToast({ type: 'error', text: json.error || 'Failed to pause' });
     }
@@ -547,7 +548,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               padding: '6px 14px', borderRadius: 20, background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)', fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
               display: 'flex', alignItems: 'center', gap: 6 }}>
-              👥 {occupiedCount}/{maxSeats}
+              <Users size={16} aria-hidden="true" /> {occupiedCount}/{maxSeats}
             </div>
             <div style={{
               fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
@@ -560,7 +561,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
                 color: '#EF4444', fontSize: 18, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >🔓</button>
+            aria-label="Unlock Display"><Unlock size={18} aria-hidden="true" /></button>
           </div>
 
           {/* ── Toast Notification ── */}
@@ -582,7 +583,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
               background: 'rgba(25, 129, 236,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-              🪑 Moving {movingPlayer.player_name} - tap an empty seat
+              <Armchair size={16} aria-hidden="true" /> Moving {movingPlayer.player_name} - Tap An Empty Seat
               <button onClick={() => { setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
                 style={{
                   padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)',
@@ -595,14 +596,15 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 24px', overflow: 'hidden' }}>
             {!table ? (
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>🔒</div>
+                <div style={{ marginBottom: 16, opacity: 0.3, display: 'flex', justifyContent: 'center' }}><Lock size={48} color="#F2F7FF" aria-hidden="true" /></div>
                 <p style={{ fontSize: 20, color: '#9FB3C8', fontWeight: 600 }}>Table {lockedTableNum} - Loading...</p>
               </div>
             ) : (
               <div style={{ width: '100%', maxWidth: 1100, position: 'relative' }}>
-                <div style={{ position: 'relative', width: '100%', paddingBottom: '52%', overflow: 'hidden' }}>
+                <div style={clubArenaRoomStyle({ position: 'relative', width: '100%', paddingBottom: '52%', overflow: 'hidden', borderRadius: 16 })}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '1 / 1', marginTop: '-24%' }}>
-                    <Image src="/images/poker-table-black-gold.png" alt="Poker Table" width={640} height={640} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', zIndex: 0 }} />
+                    {/* Club Arena table skin (felt + rail) */}
+                    <ClubArenaTableFelt />
 
                     {/* ── Center Info: Club Name + Game + Table ── */}
                     <div style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
@@ -642,17 +644,12 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                         transition: 'border-color 0.2s, box-shadow 0.2s',
                         boxShadow: '0 2px 16px rgba(0,0,0,0.4), 0 0 12px rgba(25, 129, 236,0.15)' }}
                     >
-                      <div style={{
-                        width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)',
-                        border: '2px solid rgba(25, 129, 236,0.6)', overflow: 'hidden',
-                        fontSize: 26, fontWeight: 800, color: '#fff' }}>D</div>
+                      <div style={clubArenaDealerPuckStyle(56)}>D</div>
                       <div style={{ overflow: 'hidden' }}>
                         <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: '#F2F7FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
                           {dealerName}
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(25, 129, 236,0.6)' }}>Tap to scan</div>
+                        <div style={{ fontSize: 10, color: 'rgba(25, 129, 236,0.6)' }}>Tap To Scan</div>
                       </div>
                     </div>
 
@@ -672,7 +669,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                       const isPausedOrBreak = seat.player?.session_status === 'paused' || seat.player?.session_status === 'meal_break';
                       if (isOccupied && seat.player?.time_remaining != null) {
                         const rem = isPausedOrBreak ? Math.max(0, seat.player.time_remaining) : adjustTime(seat.player.time_remaining);
-                        timerText = rem <= 0 ? 'EXPIRED' : (isPausedOrBreak ? `⏸ ${formatTime(rem)}` : formatTime(rem));
+                        timerText = rem <= 0 ? 'EXPIRED' : (isPausedOrBreak ? `Paused ${formatTime(rem)}` : formatTime(rem));
                         timerColor = isPausedOrBreak ? '#9FB3C8' : getTimerColor(rem);
                       }
                       const isExpired = seat.player?.is_expired;
@@ -730,7 +727,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                             {/* Session Status Overlay (Paused / Meal Break) */}
                             {isOccupied && seat.player?.session_status && seat.player.session_status !== 'active' && (
                               <div style={{ fontSize: 10, fontWeight: 700, color: seat.player.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
-                                {seat.player.session_status === 'paused' ? '⏸️ PAUSED' : '🍽️ MEAL BREAK'}
+                                {seat.player.session_status === 'paused' ? 'Paused' : 'Meal Break'}
                               </div>
                             )}
                             {!isOccupied && (
@@ -759,7 +756,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
           {/* Footer */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', margin: 0 }}>🔒 Locked to Table {lockedTableNum} - Manager PIN required to unlock</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', margin: 0 }}>Locked To Table {lockedTableNum} - Manager PIN Required To Unlock</p>
             <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: 11, letterSpacing: 1, margin: 0 }}>Powered By Smarter.Poker</p>
           </div>
 
@@ -791,14 +788,14 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
-                    { label: '🪑 Move Player', color: '#1981EC', action: () => startMovePlayer(showPlayerMenu) },
-                    { label: '✗ Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
+                    { label: 'Move Player', color: '#1981EC', action: () => startMovePlayer(showPlayerMenu) },
+                    { label: 'Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
                     ...(showPlayerMenu.player?.session_status === 'paused' || showPlayerMenu.player?.session_status === 'meal_break'
-                      ? [{ label: '▶️ Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `▶️ ${json.data.player_name} resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchData(); } }]
-                      : [{ label: '⏸️ Pause Timer', color: '#22D3EE', action: () => pausePlayer(showPlayerMenu) }]
+                      ? [{ label: 'Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `${json.data.player_name} Resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchData(); } }]
+                      : [{ label: 'Pause Timer', color: '#22D3EE', action: () => pausePlayer(showPlayerMenu) }]
                     ),
                     { label: 'Missed Blinds', color: '#F97316', action: () => markMissedBlinds(showPlayerMenu) },
-                    { label: '🍽️ 30-Min Meal Break', color: '#5AA9FF', action: () => addMealBreak(showPlayerMenu) },
+                    { label: '30-Min Meal Break', color: '#5AA9FF', action: () => addMealBreak(showPlayerMenu) },
                   ].map((btn, i) => (
                     <button key={i} onClick={btn.action} disabled={playerActionLoading}
                       style={{
@@ -827,8 +824,8 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 95,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>
-                  {showScanner.type === 'dealer' ? '🃏' : '📸'}
+                <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: '#F2F7FF' }}>
+                  {showScanner.type === 'dealer' ? <ScanLine size={36} aria-hidden="true" /> : <Camera size={36} aria-hidden="true" />}
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>
                   {showScanner.type === 'dealer' ? 'Scan Dealer QR Code' : `Scan Player for Seat ${showScanner.seatNumber}`}
@@ -873,7 +870,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 background: '#0A1829', borderRadius: 20, padding: '32px 28px', width: '90%', maxWidth: 360,
                 border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
+                  <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><Lock size={40} color="#F2F7FF" aria-hidden="true" /></div>
                   <h3 style={{ fontSize: 18, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>Manager Unlock</h3>
                   <p style={{ fontSize: 13, color: '#9FB3C8', marginTop: 6 }}>Enter owner or manager PIN</p>
                 </div>
@@ -921,7 +918,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                     cursor: pinValue.length === 4 ? 'pointer' : 'default',
                     opacity: pinLoading ? 0.6 : 1 }}
                 >
-                  {pinLoading ? 'Verifying...' : '🔓 Unlock Display'}
+                  {pinLoading ? 'Verifying...' : 'Unlock Display'}
                 </button>
               </div>
             </div>
@@ -1022,7 +1019,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                     {/* Dealer */}
                     {dealer && (
                       <p className="text-[10px] text-[#86DAFF] font-semibold truncate max-w-full mt-0.5">
-                        🎲 {dealer}
+                        Dealer: {dealer}
                       </p>
                     )}
 
@@ -1048,7 +1045,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
                     {/* Lock hint on hover */}
                     <div className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
-                      <span className="text-white text-sm font-bold bg-black/60 px-4 py-2 rounded-xl">🔒 Tap to Lock</span>
+                      <span className="text-white text-sm font-bold bg-black/60 px-4 py-2 rounded-xl">Tap To Lock</span>
                     </div>
                   </div>
                 );
