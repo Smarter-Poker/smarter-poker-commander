@@ -62,3 +62,17 @@ describe('staff header census', () => {
     expect(read('vendor/commander-shared/src/lib/commander/auth.js')).toMatch(/export const SENSITIVE_ROUTES = \[/);
   });
 });
+
+describe('the probe job outlives its own bounded deploy wait', () => {
+  it('timeout-minutes covers 60 tries x (10 s sleep + 15 s curl) plus the probe', () => {
+    const wf = read('.github/workflows/login-bridge-probe.yml');
+    const probe = wf.slice(wf.indexOf('\n  probe:'), wf.indexOf('\n  e2e:'));
+    const limit = Number(probe.match(/timeout-minutes: (\d+)/)[1]);
+    expect(probe).toMatch(/for i in \$\(seq 1 60\)/);
+    expect(probe).toMatch(/curl -s --max-time 15/);
+    expect(probe).toMatch(/sleep 10/);
+    expect(limit * 60).toBeGreaterThan(60 * (10 + 15) + 120);
+    const e2e = wf.slice(wf.indexOf('\n  e2e:'));
+    expect(Number(e2e.match(/timeout-minutes: (\d+)/)[1]) * 60).toBeGreaterThan(60 * 25 + 20 * 60);
+  });
+});
