@@ -12,6 +12,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const RATING_LABELS = {
   reliability: { label: 'Reliability', desc: 'Shows up, stays committed' },
@@ -267,8 +268,8 @@ const res = await commanderFetch('/api/commander/reputation', {
           )}
         </div>
       </div>
-      <style>{`
-.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <InlineStyle css={`
+.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`} />
     
       {/* TOAST */}
       {toast && (

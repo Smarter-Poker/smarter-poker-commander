@@ -20,6 +20,8 @@ import { createClient } from '@supabase/supabase-js';
 import { busEmit } from '../../../src/engine/EventBus';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow from '../../../src/hooks/useClientNow';
 
 /* ─── Supabase client for Realtime (no auth needed for display) ── */
 /* GUARD: createClient must NOT run during SSG - localStorage doesn't exist on server */
@@ -92,7 +94,7 @@ export default function TabletDisplay() {
     const [venueName, setVenueName] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [now, setNow] = useState(Date.now());
+    const [now, setNow] = useClientNow({ asNumber: true });
     const lastFetchAt = useRef(Date.now());
     // Tournament clock (only fetched when this table is a tournament table)
     const [clockData, setClockData] = useState(null);
@@ -336,7 +338,7 @@ export default function TabletDisplay() {
                 <div style={{ width: 48, height: 48, border: '4px solid #1981EC', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 <div style={{ color: '#9FB3C8', fontSize: 16.5, fontWeight: 600 }}>Loading Table {tableNumber}...</div>
             </div>
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <InlineStyle css={`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`} />
         </div>
     );
 
@@ -598,7 +600,7 @@ export default function TabletDisplay() {
                 )}
             </div>
 
-            <style>{`
+            <InlineStyle css={`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { overflow: hidden; background: #0A0A0A; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -609,7 +611,7 @@ export default function TabletDisplay() {
         }
         @keyframes ticker-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         ::-webkit-scrollbar { display: none; }
-      `}</style>
+      `} />
         </>
     );
 }

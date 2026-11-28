@@ -7,6 +7,7 @@ import { broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const QUICK_MESSAGES = [
   { label: 'Game Starting', message: 'New Game Starting! Check In At The Desk.' },
@@ -254,8 +255,8 @@ const res = await commanderFetch('/api/commander/notifications/send', {
             )}
           </main>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

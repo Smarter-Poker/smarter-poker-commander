@@ -15,6 +15,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 /* ─── Status Config ─────────────────────────────────────────── */
 const STATUS_CONFIG = {
@@ -488,10 +489,10 @@ export default function CommanderTournamentsPage() {
         </div>
       </div>
 
-      <style>{`
+      <InlineStyle css={`
         @keyframes spin  { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.45; } }
-      `}</style>
+      `} />
 
       <CreateTournamentModal
         isOpen={showCreateModal}

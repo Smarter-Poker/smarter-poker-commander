@@ -18,6 +18,8 @@ import DealerTicker from '../../../src/components/commander/shared/DealerTicker'
 import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { getStaffSession, getStaffData } from '../../../src/lib/commander/clientAuth';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
 
 function formatClockTime(seconds) {
   if (!seconds || seconds <= 0) return '0:00';
@@ -35,7 +37,7 @@ export default function CombinedDisplay() {
   const [waitlists, setWaitlists] = useState([]);
   const [tables, setTables] = useState([]);
   const [promotions, setPromotions] = useState([]);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [clockSeconds, setClockSeconds] = useState(null);
   const wakeLockRef = useRef(null);
 
@@ -134,10 +136,10 @@ return { 'x-staff-session': staff };
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <style>{`
+      <InlineStyle css={`
         @keyframes pulse-called { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .called { animation: pulse-called 1.5s ease-in-out infinite; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="h-screen bg-black text-white font-['Inter'] select-none overflow-hidden flex flex-col">
@@ -146,7 +148,7 @@ return { 'x-staff-session': staff };
         <div className="bg-[#0C55C0] px-4 py-2 flex items-center justify-between flex-shrink-0">
           <span className="text-sm font-bold tracking-wider">SMARTER.POKER</span>
           <span className="text-lg font-mono font-bold tabular-nums">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+            {formatClientTime(now, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
           </span>
         </div>
 

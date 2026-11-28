@@ -11,6 +11,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 export default function AnalyticsDailyReport() {
   useEffect(() => { busEmit.sessionStart('commander-reports-analytics-daily'); }, []);
@@ -265,8 +266,8 @@ const endDate = new Date().toISOString().split('T')[0];
           )}
         </div>
       </div>
-      <style>{`
-.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <InlineStyle css={`
+.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`} />
     </>
   );
 }

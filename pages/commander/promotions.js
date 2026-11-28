@@ -19,6 +19,7 @@ import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageHelp from '../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const PROMO_TYPES = [
   { value: 'high_hand', label: 'High Hand', icon: Trophy, color: '#22D3EE' },
@@ -1638,8 +1639,8 @@ const res = await commanderFetch(`/api/commander/promotions/${id}`, { method: 'D
             </div>
           </div>
         )}
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     
       {/* TOAST */}

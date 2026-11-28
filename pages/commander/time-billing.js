@@ -17,6 +17,8 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import useClientNow from '../../src/hooks/useClientNow';
 
 function formatDuration(startTime) {
   if (!startTime) return '0:00';
@@ -48,7 +50,7 @@ export default function TimeBilling() {
   const [startForm, setStartForm] = useState({ player_name: '', table_number: '', seat_number: '' });
   const [starting, setStarting] = useState(false);
 
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useClientNow({ asNumber: true });
   const [filter, setFilter] = useState('active');
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingDirty, setPricingDirty] = useState(false);
@@ -723,8 +725,8 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
         </div>
 
       </div>
-      <style>{`
-`}</style>
+      <InlineStyle css={`
+`} />
 
       {/* PAYMENT MODAL */}
       {payModal && (

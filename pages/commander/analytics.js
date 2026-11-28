@@ -121,6 +121,7 @@ import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 function StatCard({ title, value, change, icon: Icon, color = '#1981EC' }) {
   const hasChange = change !== undefined && change !== null;
@@ -515,8 +516,8 @@ const headers = { };
             )}
           </main>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

@@ -14,6 +14,7 @@ import { broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const EXPORT_TYPES = [
   { value: 'players', label: 'Player Data', icon: Users, desc: 'Member Profiles, Stats, Visit History', color: '#1981EC' },
@@ -293,8 +294,8 @@ const res = await commanderFetch('/api/commander/exports', {
           </div>
         )}
       </div>
-      <style>{`
-`}</style>
+      <InlineStyle css={`
+`} />
     </CommanderLayout>
   );
 }

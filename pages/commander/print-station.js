@@ -33,6 +33,7 @@ import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { buildJobHtml, printHtml } from '../../src/lib/commander/receiptTemplates';
 import { busEmit } from '../../src/engine/EventBus';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
+import useClientNow from '../../src/hooks/useClientNow';
 
 /* ─── Realtime client (never constructed during SSG) ─────────── */
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
@@ -170,7 +171,7 @@ export default function PrintStation() {
   const [popupBlocked, setPopupBlocked] = useState(false);
   const [flash, setFlash] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [nowTick, setNowTick] = useState(Date.now());
+  const [nowTick, setNowTick] = useClientNow({ asNumber: true });
 
   // Jobs already handed to the auto-printer. Without this, a job that is still
   // mid-print when the next poll lands would be claimed and printed twice.

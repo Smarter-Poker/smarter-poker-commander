@@ -14,6 +14,8 @@ import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import useWakeLock from '../../../../src/hooks/useWakeLock';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { getToken } from '../../../../src/lib/commander/clientAuth';
+import InlineStyle from '../../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../../../src/hooks/useClientNow';
 
 export default function SeatingDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-tournaments-id-seating-display'); }, []);
@@ -21,7 +23,7 @@ export default function SeatingDisplay() {
   const { id } = router.query;
   const [tournament, setTournament] = useState(null);
   const [entries, setEntries] = useState([]);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   useWakeLock();
 
   const fetchData = useCallback(async () => {
@@ -84,10 +86,10 @@ export default function SeatingDisplay() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <style>{`
+      <InlineStyle css={`
         * { cursor: none !important; }
         body { overflow: hidden; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="h-screen bg-black text-white font-['Inter'] select-none flex flex-col">
@@ -99,7 +101,7 @@ export default function SeatingDisplay() {
             <p className="text-sm opacity-80">{active.length} Players, {tableNumbers.filter(t => t !== 'Unassigned').length} Tables</p>
           </div>
           <p className="text-3xl font-mono font-bold tabular-nums">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}
           </p>
         </div>
 

@@ -13,12 +13,14 @@ import DealerTicker from '../../../src/components/commander/shared/DealerTicker'
 import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { getStaffSession, getStaffData } from '../../../src/lib/commander/clientAuth';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
 
 export default function DealerRotationDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-displays-dealers'); }, []);
   const [dealers, setDealers] = useState([]);
   const [rotations, setRotations] = useState([]);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const wakeLockRef = useRef(null);
 
   const venueIdRef = useRef(null);
@@ -96,10 +98,10 @@ return { 'x-staff-session': staff };
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <style>{`
+      <InlineStyle css={`
         @keyframes pulse-break { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .break-pulse { animation: pulse-break 2s ease-in-out infinite; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="min-h-screen bg-black text-white font-['Inter'] select-none overflow-hidden flex flex-col">
@@ -114,7 +116,7 @@ return { 'x-staff-session': staff };
           </div>
           <div className="text-right text-black">
             <p className="text-4xl font-mono font-bold tabular-nums">
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+              {formatClientTime(now, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
             </p>
             {minutesUntil !== null && (
               <p className="text-sm opacity-70">Next rotation in {minutesUntil} min</p>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
 import { busEmit } from '../../src/engine/EventBus';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 export default function DownloadsPage() {
   useEffect(() => { busEmit.sessionStart('commander-downloads'); }, []);
@@ -223,8 +224,8 @@ export default function DownloadsPage() {
           </div>
 
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </div>
     </CommanderLayout>
   );

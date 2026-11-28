@@ -1024,7 +1024,6 @@ const res = await commanderFetch('/api/commander/settings', {
             </div>
           </main>
         </div>
-        <style>{``}</style>
       </>
     
       <ConfirmDialog />

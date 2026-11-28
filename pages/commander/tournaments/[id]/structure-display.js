@@ -14,6 +14,8 @@ import useTournamentRealtime from '../../../../src/hooks/useTournamentRealtime';
 import useWakeLock from '../../../../src/hooks/useWakeLock';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { getToken } from '../../../../src/lib/commander/clientAuth';
+import InlineStyle from '../../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../../../src/hooks/useClientNow';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -27,7 +29,7 @@ export default function StructureDisplay() {
   const { id } = router.query;
   const [tournament, setTournament] = useState(null);
   const [clockData, setClockData] = useState(null);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   useWakeLock();
   const currentRef = useRef(null);
 
@@ -93,12 +95,12 @@ export default function StructureDisplay() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <style>{`
+      <InlineStyle css={`
         * { cursor: none !important; }
         body { overflow: hidden; }
         @keyframes pulse-current { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         .current-level { animation: pulse-current 2s ease-in-out infinite; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="h-screen bg-black text-white font-['Inter'] select-none flex flex-col">
@@ -112,7 +114,7 @@ export default function StructureDisplay() {
             </p>
           </div>
           <p className="text-3xl font-mono font-bold tabular-nums">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}
           </p>
         </div>
 

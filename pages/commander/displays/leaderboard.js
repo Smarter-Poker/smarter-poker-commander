@@ -31,6 +31,8 @@ import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { getToken, getStaffSession, getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
 
 const MEDAL = ['#22D3EE', '#C0C0C0', '#CD7F32'];
 const MEDAL_E = ['1st', '2nd', '3rd'];
@@ -39,7 +41,7 @@ export default function LeaderboardDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-displays-leaderboard'); }, []);
   const [boards, setBoards] = useState([]);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [venueName, setVenueName] = useState('');
   const [totalMembers, setTotalMembers] = useState(0);
   useWakeLock();
@@ -211,7 +213,7 @@ export default function LeaderboardDisplay() {
       if (todayIn.length > 0) {
         built.push({
           id: 'today', icon: '', title: "Today's Check-Ins",
-          subtitle: `${todayIn.length} player${todayIn.length !== 1 ? 's' : ''} today | ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`,
+          subtitle: `${todayIn.length} player${todayIn.length !== 1 ? 's' : ''} today | ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`,
           scoreHeader: 'CHECKED IN', source: 'auto',
           entries: todayIn.map((m, i) => ({
             rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
@@ -261,14 +263,14 @@ export default function LeaderboardDisplay() {
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <style>{`
+      <InlineStyle css={`
         @keyframes slideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes crownPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
         @keyframes barGrow { from { width: 0; } }
         .lb-row { animation: slideIn 0.35s ease-out forwards; opacity: 0; }
         .crown { animation: crownPulse 2.5s ease-in-out infinite; display: inline-block; }
         .bar-fill { animation: barGrow 0.6s ease-out forwards; }
-      `}</style>
+      `} />
 
       <div onClick={goFS} className="bg-black text-white font-['Inter'] select-none flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
         {/* HEADER */}
@@ -282,7 +284,7 @@ export default function LeaderboardDisplay() {
             <p className="text-sm text-white/70 mt-0.5 truncate">{board?.subtitle}</p>
           </div>
           <div className="text-right flex-shrink-0 ml-4">
-            <p className="text-3xl font-mono font-bold tabular-nums">{now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
+            <p className="text-3xl font-mono font-bold tabular-nums">{formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}</p>
             {boards.length > 1 && (
               <div className="flex gap-2 justify-end mt-1.5">
                 {boards.map((b, i) => (

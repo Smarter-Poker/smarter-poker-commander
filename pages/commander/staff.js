@@ -14,6 +14,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const ID_TYPES = [
   { value: 'drivers_license', label: "Driver's License" },
@@ -540,8 +541,8 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
           }}
         />
       )}
-      <style>{`
-`}</style>
+      <InlineStyle css={`
+`} />
     
       {/* TOAST */}
       {toast && (

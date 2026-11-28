@@ -17,6 +17,7 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const STATUS_COLORS = {
   available: { bg: 'rgba(49,162,76,0.15)', border: '#31A24C', text: '#31A24C', label: 'Available' },
@@ -936,9 +937,9 @@ const res = await commanderFetch('/api/commander/tables', {
           />
         )}
 
-        <style>{`
+        <InlineStyle css={`
           @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        `}</style>
+        `} />
       </>
     
       {/* TOAST */}

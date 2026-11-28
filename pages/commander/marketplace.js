@@ -13,6 +13,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import useDebounce from '../../src/hooks/useDebounce';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const GAME_TYPES = ['nlhe', 'plo', 'plo8', 'mixed', 'stud', 'razz', 'omaha'];
 
@@ -641,8 +642,8 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
           venueId={venueId}
           onSuccess={() => broadcastChange('marketplace')}
         />
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

@@ -18,8 +18,12 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientDate } from '../../src/hooks/useClientNow';
 
 export default function CloseDay() {
+  // Today's date is read in the browser only (SSR and first render must match).
+  const [now] = useClientNow();
   const router = useRouter();
 
   useEffect(() => { busEmit.sessionStart('commander-close-day'); }, []);
@@ -219,7 +223,7 @@ const venueId = getVenueId();
 
         {/* Progress dots */}
         <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-3 flex items-center justify-between">
-          <p className="text-xs text-[#BDD0E2]">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <p className="text-xs text-[#BDD0E2]">{formatClientDate(now, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
           <div className="flex gap-1.5">
             {[1, 2, 3, 4].map(s => (
               <div key={s} className={`w-2.5 h-2.5 rounded-full ${s <= step ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`} />
@@ -376,7 +380,7 @@ const venueId = getVenueId();
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Day Closed</h2>
               <p className="text-[#BDD0E2] mb-8">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} Has Been Closed Successfully.
+                {formatClientDate(now, { weekday: 'long', month: 'long', day: 'numeric' })} Has Been Closed Successfully.
               </p>
 
               <div className="space-y-3">
@@ -393,8 +397,8 @@ const venueId = getVenueId();
           )}
         </div>
       </div>
-      <style>{`
-`}</style>
+      <InlineStyle css={`
+`} />
     
       {/* TOAST */}
       {toast && (

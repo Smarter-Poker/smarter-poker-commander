@@ -16,6 +16,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const REQUIRED_FIELDS = ['first_name', 'last_name'];
 const OPTIONAL_FIELDS = ['phone', 'email', 'member_number', 'membership_tier', 'notes', 'address', 'city', 'state', 'zip'];
@@ -324,8 +325,8 @@ const res = await commanderFetch('/api/commander/members', {
             )}
           </div>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

@@ -29,6 +29,7 @@ import { formatPhone, titleCase } from '../../../src/lib/commander/formatters';
 import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/sdPalette';
 import SdSwatchPicker from '../../../src/components/commander/shared/SdSwatchPicker';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 // formatPhone, titleCase imported from '@/lib/commander/formatters'
 // lighten, darken imported from '@/lib/commander/colorUtils'
@@ -1291,12 +1292,12 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
         </div>
       )}
 
-      <style>{`
+      <InlineStyle css={`
         @keyframes tickerScroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-      `}</style>
+      `} />
     </>
   );
 }

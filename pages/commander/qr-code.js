@@ -11,6 +11,7 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 /* Page Help tour (Dan, 2026-10-17): the Tips list that used to sit under
    the code, one step each. */
@@ -196,8 +197,8 @@ export default function VenueQRCodePage() {
             {/* The Tips list moved behind the "?" (Dan, 2026-10-17). */}
           </main>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

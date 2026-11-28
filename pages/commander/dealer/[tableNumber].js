@@ -23,6 +23,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getToken, getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 const TIER_COLORS = { standard: '#BDD0E2', gold: '#22D3EE', platinum: '#A9BDD1', vip: '#5AA9FF' };
 
@@ -782,10 +783,10 @@ export default function DealerTablet() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <style>{`
+      <InlineStyle css={`
         @keyframes pulse-warn { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .time-warn { animation: pulse-warn 1.5s ease-in-out infinite; }
-      `}</style>
+      `} />
       <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] flex flex-col">
         {/* Header */}
         <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
