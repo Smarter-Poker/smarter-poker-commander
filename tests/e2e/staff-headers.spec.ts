@@ -53,9 +53,9 @@ const ONLY = process.env.STAFF_HEADERS_ROUTES ? new RegExp(process.env.STAFF_HEA
 
 /** SENSITIVE_ROUTES, read from the module that enforces it. */
 function sensitiveRoutes(): string[] {
-  const src = readFileSync(join(ROOT, 'vendor/commander-shared/src/lib/commander/auth.js'), 'utf8');
+  const src = readFileSync(join(ROOT, 'vendor/commander-shared/src/lib/commander/roleAccess.js'), 'utf8');
   const block = src.match(/export const SENSITIVE_ROUTES = \[([\s\S]*?)\];/);
-  if (!block) throw new Error('SENSITIVE_ROUTES not found in the shared auth module');
+  if (!block) throw new Error('SENSITIVE_ROUTES not found in the shared role access module');
   const list = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   if (list.length === 0) throw new Error('SENSITIVE_ROUTES parsed empty');
   return list;

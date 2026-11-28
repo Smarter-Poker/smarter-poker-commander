@@ -461,11 +461,17 @@ export default function CommanderLogin() {
           className="relative w-full h-full z-10"
         >
           {/* Stretch the image to fill the screen exactly as requested, no black bars, no blur */}
-          <img
-            src="/images/commander/login-bg-v2.jpg"
-            className="absolute inset-0 w-full h-full object-fill pointer-events-none"
-            alt="Login Background"
-          />
+          {/* 2026-11-28: the same art as WebP (45 KB against 253 KB of JPEG, the
+              page's largest paint); the JPEG stays as the fallback source. */}
+          <picture>
+            <source type="image/webp" srcSet="/images/commander/login-bg-v2.webp" />
+            <img
+              src="/images/commander/login-bg-v2.jpg"
+              className="absolute inset-0 w-full h-full object-fill pointer-events-none"
+              alt="Login Background"
+              fetchpriority="high"
+            />
+          </picture>
 
           {/* 1. SSO Bridge Button overlay / Recent Login */}
           <button
