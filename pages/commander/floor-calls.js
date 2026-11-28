@@ -288,7 +288,7 @@ export default function FloorCalls() {
               ) : 'No Pending Calls'}
             </p>
             {urgentCount > 0 && (
-              <p style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, margin: '2px 0 0', animation: 'pulse-text 1.5s ease-in-out infinite' }}>
+              <p style={{ fontSize: 12, color: '#EF4444', fontWeight: 600, margin: '2px 0 0', animation: 'pulse-text 1.5s ease-in-out infinite' }}>
                 {urgentCount} URGENT {urgentCount === 1 ? 'Call' : 'Calls'} Waiting
               </p>
             )}
@@ -332,7 +332,7 @@ export default function FloorCalls() {
             ].map(f => (
               <button key={f.key} onClick={() => setReasonFilter(f.key)}
                 style={{
-                  padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                   background: reasonFilter === f.key ? '#1981EC' : '#0A1829',
                   color: reasonFilter === f.key ? '#fff' : '#BDD0E2',
                   border: `1px solid ${reasonFilter === f.key ? '#1981EC' : '#2A4560'}`,
@@ -380,7 +380,7 @@ export default function FloorCalls() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>Table {call.table_number}</span>
                               <span style={{
-                                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                                fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
                                 background: pCfg.bg, color: pCfg.color, border: `1px solid ${pCfg.border}` }}>{pCfg.label}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -401,20 +401,20 @@ export default function FloorCalls() {
                             </span>
                           </div>
                           {call.description && (
-                            <p style={{ fontSize: 12, color: '#9FB3C8', margin: '0 0 6px', lineHeight: 1.4 }}>{call.description}</p>
+                            <p style={{ fontSize: 13, color: '#9FB3C8', margin: '0 0 6px', lineHeight: 1.4 }}>{call.description}</p>
                           )}
 
                           {/* Status + caller */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <StatusIcon size={12} color={sCfg.color} />
-                              <span style={{ fontSize: 11, color: sCfg.color, fontWeight: 600 }}>{sCfg.label}</span>
+                              <span style={{ fontSize: 12, color: sCfg.color, fontWeight: 600 }}>{sCfg.label}</span>
                             </div>
                             {call.called_by && (
-                              <span style={{ fontSize: 10, color: '#6B7280' }}>By {call.called_by}</span>
+                              <span style={{ fontSize: 12, color: '#6B7280' }}>By {call.called_by}</span>
                             )}
                             {call.responded_by && (
-                              <span style={{ fontSize: 10, color: '#1981EC' }}>→ {call.responded_by}</span>
+                              <span style={{ fontSize: 12, color: '#1981EC' }}>→ {call.responded_by}</span>
                             )}
                           </div>
                         </div>
@@ -491,19 +491,19 @@ export default function FloorCalls() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ fontSize: 14, fontWeight: 700, color: '#F2F7FF' }}>Table {call.table_number}</span>
                               <ReasonIcon size={12} color={rCfg.color} />
-                              <span style={{ fontSize: 11, color: rCfg.color }}>{rCfg.label}</span>
+                              <span style={{ fontSize: 12, color: rCfg.color }}>{rCfg.label}</span>
                             </div>
                             {call.resolution && (
-                              <p style={{ fontSize: 11, color: '#6B7280', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{call.resolution}</p>
+                              <p style={{ fontSize: 13, color: '#6B7280', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{call.resolution}</p>
                             )}
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             {responseSeconds(call) > 0 && (
-                              <span style={{ fontSize: 11, fontWeight: 600, color: '#1981EC', display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#1981EC', display: 'flex', alignItems: 'center', gap: 3 }}>
                                 <Timer size={10} /> {formatDuration(responseSeconds(call))}
                               </span>
                             )}
-                            <span style={{ fontSize: 10, color: '#6B7280' }}>{timeAgo(call.responded_at || call.created_at)}</span>
+                            <span style={{ fontSize: 12, color: '#6B7280' }}>{timeAgo(call.responded_at || call.created_at)}</span>
                           </div>
                         </div>
                       );
@@ -549,7 +549,7 @@ export default function FloorCalls() {
                   return (
                     <button key={key} onClick={() => setNewReason(key)}
                       style={{
-                        padding: '10px 6px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+                        padding: '10px 6px', borderRadius: 10, fontSize: 12, fontWeight: 600,
                         background: newReason === key ? `${cfg.color}20` : '#0A1829',
                         color: newReason === key ? cfg.color : '#9FB3C8',
                         border: `1px solid ${newReason === key ? `${cfg.color}50` : '#2A4560'}`,
@@ -615,7 +615,7 @@ export default function FloorCalls() {
                 {['Ruling Made', 'Chips Delivered', 'Player Warned', 'Issue Resolved', 'Dealer Relieved'].map(q => (
                   <button key={q} onClick={() => setResolveNote(q)}
                     style={{
-                      padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                      padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                       background: resolveNote === q ? '#31A24C' : '#0A1829',
                       color: resolveNote === q ? '#fff' : '#BDD0E2',
                       border: `1px solid ${resolveNote === q ? '#31A24C' : '#2A4560'}`,
@@ -677,7 +677,7 @@ function StatCard({ label, value, color }) {
       background: '#1A1B1D', border: '1px solid #2A2B2D', borderRadius: 12,
       padding: '10px 16px', minWidth: 120, flexShrink: 0 }}>
       <div style={{ fontSize: 20, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 10, color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 12, color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -706,7 +706,7 @@ const modalStyle = {
   padding: '20px 20px 28px', border: '1px solid #2A2B2D' };
 
 const labelStyle = {
-  display: 'block', fontSize: 11, fontWeight: 600, color: '#9FB3C8',
+  display: 'block', fontSize: 12, fontWeight: 600, color: '#9FB3C8',
   textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 };
 
 const inputStyle = {
