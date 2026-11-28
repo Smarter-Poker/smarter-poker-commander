@@ -97,10 +97,12 @@ test.describe('login page (signed out)', () => {
     await expect(page.getByRole('link', { name: /sign in manually/i })).toBeVisible();
   });
 
-  test('?expired=1 without a session shows the form with a clear message', async ({ page }) => {
+  test('?expired=1 without a session shows the form with a clear message', async ({ page, baseURL }) => {
     const refErrors = collectReferenceErrors(page);
     await page.goto('/commander/login?expired=1');
-    if (new URL(page.url()).origin !== new URL(HUB).origin) {
+    // Decide by the origin under test, not page.url(): the hop can already
+    // have happened by the time goto() resolves.
+    if (new URL(baseURL!).origin !== new URL(HUB).origin) {
       // No local session: the hub hop runs first (2026-11-27); signed out
       // there too, the form is what remains.
       await page.waitForURL((u) => u.origin === new URL(HUB).origin && u.searchParams.get('bridge') === '1', { timeout: 20_000 });
