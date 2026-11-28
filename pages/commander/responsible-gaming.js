@@ -17,6 +17,7 @@ import useDebounce from '../../src/hooks/useDebounce';
 import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 export default function ResponsibleGaming() {
   useEffect(() => { busEmit.sessionStart('commander-responsible-gaming'); }, []);
@@ -223,8 +224,8 @@ export default function ResponsibleGaming() {
             </div>
           </div>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

@@ -19,6 +19,7 @@ import { Shield, Timer, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useCommanderSync } from '../../../src/lib/commander/useCommanderSync';
 // 2026-07-25 audit fix: commanderFetch removed - its 401 redirect sent players to staff login
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
+import useClientNow from '../../../src/hooks/useClientNow';
 
 function formatCountdown(seconds) {
   if (seconds === null || seconds === undefined || seconds < 0) return '--:--';
@@ -49,7 +50,7 @@ export default function PlayerCheckIn() {
   const [membershipActive, setMembershipActive] = useState(false);
   const [timeBalance, setTimeBalance] = useState(0);
   const [activeSession, setActiveSession] = useState(null);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
 
   
   // fetchMember declared first - must precede useEffect/useCommanderSync that reference it

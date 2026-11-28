@@ -456,7 +456,6 @@ return {
           </div>
         )}
       </div>
-      <style>{``}</style>
     
       <ConfirmDialog />
     </CommanderLayout>

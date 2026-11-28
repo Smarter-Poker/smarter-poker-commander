@@ -19,6 +19,8 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../src/hooks/useClientNow';
 
 const STATUS_CONFIG = {
   in_use: { color: '#31A24C', glow: '0 0 12px rgba(49,162,76,0.5)', label: 'Active' },
@@ -50,7 +52,7 @@ export default function FloorMap() {
   const [saved, setSaved] = useState(false);
   const [venueId, setVenueId] = useState(null);
   const [venueName, setVenueName] = useState('');
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [selectedTable, setSelectedTable] = useState(null);
   const [zoom, setZoom] = useState(1);
 
@@ -288,7 +290,7 @@ return { };
           <h1 className="sr-only">Floor Map</h1>
           <p role="status" style={{ fontSize: 12, color: '#BDD0E2', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Activity size={14} color="#31A24C" aria-hidden="true" />
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tables.length} Tables
+            {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })} · {tables.length} Tables
           </p>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {/* Zoom controls */}
@@ -575,9 +577,9 @@ return { };
         )}
       </div>
 
-      <style>{`
+      <InlineStyle css={`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
+      `} />
     
       {/* TOAST */}
       {toast && (

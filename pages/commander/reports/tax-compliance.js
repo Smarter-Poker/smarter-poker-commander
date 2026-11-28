@@ -11,6 +11,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 export default function TaxCompliance() {
   useEffect(() => { busEmit.sessionStart('commander-reports-tax-compliance'); }, []);
@@ -384,8 +385,8 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
           )}
         </div>
       </div>
-      <style>{`
-.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <InlineStyle css={`
+.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`} />
     </>
   );
 }

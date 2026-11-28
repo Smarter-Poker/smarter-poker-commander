@@ -40,6 +40,8 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import { createClient } from '@supabase/supabase-js';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
 
 /* ─── Supabase client for Realtime (no auth needed for display) ── */
 /* GUARD: createClient must NOT run during SSG - localStorage doesn't exist on server */
@@ -315,7 +317,7 @@ export default function PlayerTableDisplay() {
   const { tableNumber } = router.query;
   const [players, setPlayers] = useState([]);
   const [table, setTable] = useState(null);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [dealer, setDealer] = useState(null);
   const [venueType, setVenueType] = useState('texas');
   const [showScanner, setShowScanner] = useState(false);
@@ -582,7 +584,7 @@ export default function PlayerTableDisplay() {
 
       <Script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" strategy="beforeInteractive" />
 
-      <style>{`
+      <InlineStyle css={`
         body { overflow: hidden; }
         @keyframes pulse-expired { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .expired-pulse { animation: pulse-expired 1s ease-in-out infinite; }
@@ -591,7 +593,7 @@ export default function PlayerTableDisplay() {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes seat-glow { 0%, 100% { border-color: rgba(34,211,238,0.15); } 50% { border-color: rgba(34,211,238,0.4); } }
         .empty-seat-pulse { animation: seat-glow 3s ease-in-out infinite; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="h-screen bg-[#0A0A0A] text-white font-['Inter'] select-none overflow-hidden flex flex-col">
@@ -610,7 +612,7 @@ export default function PlayerTableDisplay() {
             )}
           </div>
           <p className="text-2xl font-mono font-bold tabular-nums">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+            {formatClientTime(now, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
           </p>
         </div>
 

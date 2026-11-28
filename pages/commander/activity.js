@@ -22,6 +22,7 @@ import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import useClientNow from '../../src/hooks/useClientNow';
 
 const EVENT_TYPES = {
   check_in: { icon: UserCheck, color: '#31A24C', label: 'Check In' },
@@ -57,7 +58,7 @@ export default function ActivityFeed() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
 
   const fetchEvents = useCallback(async () => {
     try {

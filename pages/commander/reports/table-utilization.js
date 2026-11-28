@@ -11,6 +11,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 const RANGES = [
   { value: 'today', label: 'Today' },
@@ -160,8 +161,8 @@ const json = await commanderFetchJSON(`/api/commander/reports/table-utilization?
           </div>
         )}
       </div>
-      <style>{`
-`}</style>
+      <InlineStyle css={`
+`} />
     </>
   );
 }

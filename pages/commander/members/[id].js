@@ -20,6 +20,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 export default function MemberProfile() {
 
@@ -383,8 +384,8 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
             </div>
           </div>
         )}
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     
       {/* TOAST */}

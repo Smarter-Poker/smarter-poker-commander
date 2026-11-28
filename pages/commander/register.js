@@ -14,6 +14,7 @@ import {
   displayTierPeriod,
   displayTierTrialTagline,
 } from '../../src/lib/commander/tierConfig';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 // Wizard tier cards. `price` is the canonical number for when pricing
 // goes live; `displayTierPrice(tier)` / `displayTierPeriod(tier)` are
@@ -1798,7 +1799,7 @@ const CalibrationPanel = () => {
   return (
     <div className="min-h-screen bg-[#040D18]">
       <Head><title>{headerTitle}</title></Head>
-      <style>{`
+      <InlineStyle css={`
         @keyframes slideUpFade {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
@@ -1806,7 +1807,7 @@ const CalibrationPanel = () => {
         .animate-step {
           animation: slideUpFade 0.3s ease-out forwards;
         }
-      `}</style>
+      `} />
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Logo */}

@@ -21,6 +21,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getVenueId, getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 function formatCountdown(minutes) {
   if (!minutes && minutes !== 0) return '--:--';
@@ -293,8 +294,8 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
           <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full border border-dashed border-[#445E77]" /> Empty</span>
         </div>
       </div>
-      <style>{`
-`}</style>
+      <InlineStyle css={`
+`} />
     
       {/* TOAST */}
       {toast && (

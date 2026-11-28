@@ -534,11 +534,11 @@ export default function CommanderLayout({ children, title }) {
   // ── PIN GATE VERIFICATION ──
   const handlePinSubmit = async () => {
     if (pinLockout) {
-      setPinError('Too many attempts - wait 30 seconds');
+      setPinError('Too Many Attempts - Wait 30 Seconds');
       return;
     }
     if (!pinInput || pinInput.length < 4) {
-      setPinError('Enter at least 4 digits');
+      setPinError('Enter At Least 4 Digits');
       return;
     }
     // Get venue_id from staff session or localStorage fallback
@@ -550,7 +550,7 @@ export default function CommanderLayout({ children, title }) {
       } catch (e) { console.warn('[App] Handled exception:', e); }
     }
     if (!venueId) {
-      setPinError('No venue session - please log in first');
+      setPinError('No Venue Session - Please Log In First');
       return;
     }
     setPinLoading(true);
@@ -568,10 +568,10 @@ export default function CommanderLayout({ children, title }) {
         setPinAttempts(nextAttempts);
         if (nextAttempts >= 5) {
           setPinLockout(true);
-          setPinError('Too many failed attempts - locked for 30 seconds');
+          setPinError('Too Many Failed Attempts - Locked For 30 Seconds');
           setTimeout(() => { setPinLockout(false); setPinAttempts(0); setPinError(''); }, 30000);
         } else {
-          setPinError(data.error || `Invalid PIN (${5 - nextAttempts} attempts remaining)`);
+          setPinError(data.error || `Invalid PIN (${5 - nextAttempts} Attempts Remaining)`);
         }
         setPinLoading(false);
         return;
@@ -587,10 +587,10 @@ export default function CommanderLayout({ children, title }) {
         setGateGranted(true);
         setPinInput('');
       } else {
-        setPinError(`Access denied - ${verifiedRole} role does not have permission for this page`);
+        setPinError(`Access Denied - The ${verifiedRole} Role Does Not Have Permission For This Page`);
       }
     } catch (e) {
-      setPinError('Verification failed - try again');
+      setPinError('Verification Failed - Try Again');
     } finally {
       setPinLoading(false);
     }
@@ -1425,10 +1425,10 @@ export default function CommanderLayout({ children, title }) {
               <div className="cmd-pin-gate-icon">
                 <Lock size={32} color="#fff" />
               </div>
-              <h2 className="cmd-pin-gate-title">ACCESS RESTRICTED</h2>
+              <h2 className="cmd-pin-gate-title">Access Restricted</h2>
               <p className="cmd-pin-gate-subtitle">
-                This page requires elevated permissions.<br />
-                Enter an authorized PIN to continue.
+                This Page Requires Elevated Permissions.<br />
+                Enter An Authorized PIN To Continue.
               </p>
               <input
                 type="password"

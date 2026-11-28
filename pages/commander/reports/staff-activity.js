@@ -12,6 +12,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import { getStaffSession } from '../../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import PageBar from '../../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
 
 export default function StaffActivity() {
   useEffect(() => { busEmit.sessionStart('commander-reports-staff-activity'); }, []);
@@ -149,8 +150,8 @@ const params = new URLSearchParams();
             )}
           </div>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     </CommanderLayout>
   );

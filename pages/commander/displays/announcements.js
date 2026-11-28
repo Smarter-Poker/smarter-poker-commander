@@ -16,6 +16,8 @@ import SEOHead from '../../../src/components/seo/SEOHead';
 import { getVenueId } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../../src/components/commander/shared/ConfirmModal";
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime, formatClientDate } from '../../../src/hooks/useClientNow';
 
 
 
@@ -62,7 +64,7 @@ export default function AnnouncementsDisplay() {
   const [announcements, setAnnouncements] = useState([]);
   const [allAnnouncements, setAllAnnouncements] = useState([]);
   const [roomOpen, setRoomOpen] = useState(true);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [currentPage, setCurrentPage] = useState(0);
   const wakeLockRef = useRef(null);
 
@@ -265,14 +267,14 @@ export default function AnnouncementsDisplay() {
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <style>{`
+      <InlineStyle css={`
         @keyframes pulse-urgent { 0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(239,68,68,0.3); } 50% { opacity: 0.85; box-shadow: 0 0 40px rgba(239,68,68,0.5); } }
         .urgent-pulse { animation: pulse-urgent 2s ease-in-out infinite; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .announcement-card { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         .mgmt-panel { animation: slideIn 0.3s ease-out; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         style={{
@@ -305,10 +307,10 @@ export default function AnnouncementsDisplay() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', margin: 0, fontVariantNumeric: 'tabular-nums', color: '#F2F7FF' }}>
-                {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+                {formatClientTime(now, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
               </p>
               <p style={{ fontSize: 12, color: '#BDD0E2', margin: 0 }}>
-                {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                {formatClientDate(now, { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
             </div>
             {/* ─── MANAGE BUTTON ─── */}

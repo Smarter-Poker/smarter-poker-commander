@@ -24,6 +24,8 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import useClientNow from '../../src/hooks/useClientNow';
 
 const PUSH_THRESHOLD = 30; // minutes before highlighting for rotation
 const PUSH_WARNING = 25;   // minutes before showing amber warning
@@ -48,7 +50,7 @@ export default function DealerRotation() {
   const [rotations, setRotations] = useState([]);
   const [history, setHistory] = useState([]); // ended rotations for today
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [pushTarget, setPushTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState(null); // dealerId being acted on
   const [showHistory, setShowHistory] = useState(false);
@@ -209,7 +211,7 @@ export default function DealerRotation() {
     <CommanderLayout title="Dealer Rotation" backHref="/commander/dashboard?card=floor">
       <SEOHead title="Commander - Dealer Rotation" description="Club Commander Dealer Rotation Manager" noindex={true} />
 
-      <style>{`
+      <InlineStyle css={`
         .dr-page { min-height: 100vh; background: #0a0a0a; color: #F2F7FF; font-family: 'Inter', sans-serif; }
         .dr-stats { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #222; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         .dr-stats-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
@@ -283,7 +285,7 @@ export default function DealerRotation() {
 
         @keyframes dr-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .dr-pulse { animation: dr-pulse 2s ease-in-out infinite; }
-      `}</style>
+      `} />
 
       <div className="dr-page">
 

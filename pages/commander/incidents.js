@@ -60,7 +60,7 @@ function IncidentCard({ incident, onClick }) {
             border: `1px solid ${sev.color}30`,
             padding: '2px 8px',
             borderRadius: 6,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: 0.5 }}>
             {incident.severity?.toUpperCase()}
@@ -70,7 +70,7 @@ function IncidentCard({ incident, onClick }) {
             color: '#BDD0E2',
             padding: '2px 8px',
             borderRadius: 6,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 600 }}>
             {typeInfo.label}
           </span>
@@ -81,7 +81,7 @@ function IncidentCard({ incident, onClick }) {
             color: '#31A24C',
             padding: '2px 8px',
             borderRadius: 6,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             display: 'flex', alignItems: 'center', gap: 3 }}>
             <Check size={12} /> Resolved
@@ -92,7 +92,7 @@ function IncidentCard({ incident, onClick }) {
             color: '#EF4444',
             padding: '2px 8px',
             borderRadius: 6,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             animation: incident.severity === 'critical' ? 'pulse 2s infinite' : 'none' }}>
             ● Open
@@ -287,22 +287,22 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
           {/* Info grid */}
           <div style={{ background: '#040D18', borderRadius: 10, padding: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>When</div>
+              <div style={{ fontSize: 12, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>When</div>
               <div style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>{new Date(incident.created_at).toLocaleString()}</div>
             </div>
             {incident.table_number && (
               <div>
-                <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Table</div>
+                <div style={{ fontSize: 12, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Table</div>
                 <div style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>Table {incident.table_number}</div>
               </div>
             )}
             <div>
-              <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Reported By</div>
+              <div style={{ fontSize: 12, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Reported By</div>
               <div style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>{incident.reported_by_name || 'Staff Member'}</div>
             </div>
             {incident.players_involved?.length > 0 && (
               <div>
-                <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Players</div>
+                <div style={{ fontSize: 12, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Players</div>
                 <div style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>{incident.players_involved.join(', ')}</div>
               </div>
             )}
@@ -310,16 +310,16 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
 
           {/* Description */}
           <div>
-            <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Description</div>
+            <div style={{ fontSize: 12, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Description</div>
             <div style={{ fontSize: 14, color: '#F2F7FF', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{incident.description}</div>
           </div>
 
           {/* Resolution */}
           {incident.resolved ? (
             <div style={{ background: '#31A24C10', border: '1px solid #31A24C20', borderRadius: 10, padding: 14 }}>
-              <div style={{ fontSize: 10, color: '#31A24C', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Resolution</div>
+              <div style={{ fontSize: 12, color: '#31A24C', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Resolution</div>
               <div style={{ fontSize: 14, color: '#F2F7FF', lineHeight: 1.5 }}>{incident.resolution}</div>
-              <div style={{ fontSize: 11, color: '#65676B', marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: '#65676B', marginTop: 8 }}>
                 Resolved {new Date(incident.resolved_at).toLocaleString()}
               </div>
             </div>
@@ -532,15 +532,15 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
           <div data-tour="inc-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
             <div style={{ background: '#0A1829', borderRadius: 10, padding: 12, textAlign: 'center', border: openCount > 0 ? '1px solid #EF444430' : '1px solid #2A4560' }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: openCount > 0 ? '#EF4444' : '#65676B' }}>{openCount}</div>
-              <div style={{ fontSize: 10, color: '#BDD0E2', fontWeight: 600 }}>Open</div>
+              <div style={{ fontSize: 12, color: '#BDD0E2', fontWeight: 600 }}>Open</div>
             </div>
             <div style={{ background: '#0A1829', borderRadius: 10, padding: 12, textAlign: 'center', border: criticalCount > 0 ? '1px solid #3B82F630' : '1px solid #2A4560' }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: criticalCount > 0 ? '#3B82F6' : '#65676B' }}>{criticalCount}</div>
-              <div style={{ fontSize: 10, color: '#BDD0E2', fontWeight: 600 }}>High / Critical</div>
+              <div style={{ fontSize: 12, color: '#BDD0E2', fontWeight: 600 }}>High / Critical</div>
             </div>
             <div style={{ background: '#0A1829', borderRadius: 10, padding: 12, textAlign: 'center', border: '1px solid #2A4560' }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: resolvedCount > 0 ? '#31A24C' : '#65676B' }}>{resolvedCount}</div>
-              <div style={{ fontSize: 10, color: '#BDD0E2', fontWeight: 600 }}>Resolved</div>
+              <div style={{ fontSize: 12, color: '#BDD0E2', fontWeight: 600 }}>Resolved</div>
             </div>
           </div>
 

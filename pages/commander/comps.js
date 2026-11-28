@@ -741,13 +741,13 @@ export default function CompSystem() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-white">Auto Rake-Back Rate</p>
-                      <p className="text-xs text-[#BDD0E2]">Players Earn Comps Per Hour Of Play</p>
+                      <p className="text-[13px] text-[#BDD0E2]">Players Earn Comps Per Hour Of Play</p>
                     </div>
                   </div>
                   <div className="text-3xl font-bold text-[#31A24C] text-center py-2">
                     ${autoCompRate.toFixed(2)}<span className="text-base text-[#BDD0E2] font-normal">/hour</span>
                   </div>
-                  <p className="text-xs text-[#93A9C0] text-center">Configured In Settings</p>
+                  <p className="text-[13px] text-[#93A9C0] text-center">Configured In Settings</p>
                 </div>
 
                 <div>
@@ -798,11 +798,11 @@ export default function CompSystem() {
                       }
                     </p>
                     {lastAwardData?.newExpires && (
-                      <p className="text-xs text-[#5AA9FF] mt-1">Membership Active Through {new Date(lastAwardData.newExpires).toLocaleDateString()}</p>
+                      <p className="text-[13px] text-[#5AA9FF] mt-1">Membership Active Through {new Date(lastAwardData.newExpires).toLocaleDateString()}</p>
                     )}
-                    <p className="text-xs text-[#31A24C] mt-1">PIN Verified And Documented</p>
+                    <p className="text-[13px] text-[#31A24C] mt-1">PIN Verified And Documented</p>
                     {lastAwardData && (
-                      <p className="text-xs text-[#BDD0E2] mt-1">Authorized By: {lastAwardData.authorizedBy}</p>
+                      <p className="text-[13px] text-[#BDD0E2] mt-1">Authorized By: {lastAwardData.authorizedBy}</p>
                     )}
                     {lastAwardData && (
                       <button onClick={() => printCompReceipt(lastAwardData)}
@@ -859,12 +859,12 @@ export default function CompSystem() {
                         <p className="text-lg font-bold text-white">
                           {selectedMember.first_name} {selectedMember.last_name}
                           {selectedMember._is_staff && (
-                            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#22D3EE]/20 text-[#22D3EE] font-semibold align-middle">
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#22D3EE]/20 text-[#22D3EE] font-semibold align-middle">
                               {(selectedMember._staff_role || 'STAFF').toUpperCase()}
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-[#BDD0E2]">
+                        <p className="text-[13px] text-[#BDD0E2]">
                           Balance: <span className="text-[#31A24C] font-bold">${(selectedMember.comp_balance || 0).toFixed(2)}</span>
                         </p>
                       </div>
@@ -886,7 +886,7 @@ export default function CompSystem() {
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium text-white">{cat.label}</p>
-                                  <p className="text-[10px] text-[#93A9C0]">{cat.desc}</p>
+                                  <p className="text-[13px] text-[#93A9C0]">{cat.desc}</p>
                                 </div>
                               </button>
                             );
@@ -938,7 +938,7 @@ export default function CompSystem() {
                                 <div className="w-full px-4 py-3 bg-[#2D2E2F] border border-[#5A7590] rounded-xl text-center">
                                   <span className="text-2xl font-bold text-[#31A24C]">${membershipCost || '0.00'}</span>
                                 </div>
-                                <p className="text-[10px] text-[#93A9C0] mt-1 flex items-center justify-center gap-1">
+                                <p className="text-xs text-[#93A9C0] mt-1 flex items-center justify-center gap-1">
                                   <Shield className="w-3 h-3 text-[#22D3EE]" /> Locked, Pulled From Membership Plan Pricing
                                 </p>
                               </div>
@@ -1016,7 +1016,7 @@ export default function CompSystem() {
                               ? `Issue ${(() => { const m = parseInt(timeMinutes || 0); const h = Math.floor(m / 60); const mins = m % 60; return h > 0 ? `${h}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`; })()} ($${compAmount || '0'}) - Requires PIN`
                               : `Issue $${compAmount || '0'} - Requires PIN`}
                         </button>
-                        <p className="text-[10px] text-[#93A9C0] text-center">
+                        <p className="text-[13px] text-[#93A9C0] text-center">
                           All Comps Require Staff PIN Verification And Are Fully Documented
                         </p>
                       </>
@@ -1067,16 +1067,16 @@ export default function CompSystem() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-medium truncate ${isVoided ? 'text-[#93A9C0] line-through' : 'text-white'}`}>{t.member_name || 'Member'}</p>
-                            <p className="text-[10px] text-[#93A9C0] truncate">
+                            <p className="text-xs text-[#93A9C0] truncate">
                               {isVoidEntry ? <span className="text-[#EF4444] font-semibold">VOID - </span> : null}
                               {t.reason || cat.label}
                               {t.authorized_pin && <span className="text-[#31A24C] ml-1">[PIN]</span>}
                             </p>
                             {t.authorized_by && (
-                              <p className="text-[10px] text-[#8FA6BE]">By: {t.authorized_by}</p>
+                              <p className="text-xs text-[#8FA6BE]">By: {t.authorized_by}</p>
                             )}
                             {isVoided && !isVoidEntry && (
-                              <p className="text-[10px] text-[#EF4444] font-semibold">VOIDED</p>
+                              <p className="text-xs text-[#EF4444] font-semibold">VOIDED</p>
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
@@ -1086,7 +1086,7 @@ export default function CompSystem() {
                                   {(t.reason || '').replace(/^Free Membership [\u2014-]\s*/, '').split(/\s[\u2014-]\s/)[0] || 'Membership'}
                                 </p>
                                 {(t.amount || 0) > 0 && (
-                                  <p className={`text-[10px] font-medium ${isVoided ? 'text-[#93A9C0] line-through' : 'text-[#31A24C]'}`}>${(t.amount || 0).toFixed(2)}</p>
+                                  <p className={`text-[13px] font-medium ${isVoided ? 'text-[#93A9C0] line-through' : 'text-[#31A24C]'}`}>${(t.amount || 0).toFixed(2)}</p>
                                 )}
                               </>
                             ) : (
@@ -1094,12 +1094,12 @@ export default function CompSystem() {
                                 {isVoidEntry ? '−' : (t.amount || 0) > 0 ? '+' : ''}${Math.abs(t.amount || 0).toFixed(2)}
                               </p>
                             )}
-                            <p className="text-[10px] text-[#93A9C0]">
+                            <p className="text-xs text-[#93A9C0]">
                               {t.created_at ? new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
                             </p>
                             {!isVoided && !isVoidEntry && (
                               <button onClick={() => voidCompEntry(t)}
-                                className={`mt-1 text-[10px] px-2 py-0.5 rounded font-medium ${minutesAgo <= 15 ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#22D3EE]/10 text-[#22D3EE]'}`}>
+                                className={`mt-1 text-xs px-2 py-0.5 rounded font-medium ${minutesAgo <= 15 ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#22D3EE]/10 text-[#22D3EE]'}`}>
                                 {voidLabel}
                               </button>
                             )}
@@ -1122,13 +1122,13 @@ export default function CompSystem() {
                     </div>
                     <div>
                       <p className="text-base font-bold text-white">Auto Rake-Back</p>
-                      <p className="text-xs text-[#BDD0E2]">Comps Earned Automatically Per Hour Of Play</p>
+                      <p className="text-[13px] text-[#BDD0E2]">Comps Earned Automatically Per Hour Of Play</p>
                     </div>
                   </div>
                   <div className="text-4xl font-bold text-[#31A24C] text-center py-3">
                     ${autoCompRate.toFixed(2)}<span className="text-lg text-[#BDD0E2] font-normal">/hour</span>
                   </div>
-                  <p className="text-xs text-[#93A9C0] text-center mb-3">Applied To All Seated Players. Configure In Settings.</p>
+                  <p className="text-[13px] text-[#93A9C0] text-center mb-3">Applied To All Seated Players. Configure In Settings.</p>
                   <button onClick={() => router.push('/commander/settings')}
                     className="w-full py-2.5 rounded-xl bg-[#132A42] text-white text-sm font-medium active:bg-[#1B3753]">
                     Edit Rate In Settings
@@ -1144,7 +1144,7 @@ export default function CompSystem() {
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-white truncate">{r.name}</p>
                             {Array.isArray(r.game_types) && r.game_types.length > 0 && (
-                              <p className="text-[10px] text-[#93A9C0] truncate">{r.game_types.join(', ')}</p>
+                              <p className="text-xs text-[#93A9C0] truncate">{r.game_types.join(', ')}</p>
                             )}
                           </div>
                           <span className="text-base font-bold text-[#86DAFF] whitespace-nowrap">${Number(r.comp_value || 0).toFixed(2)}{r.unit_label ? `/${r.unit_label}` : '/hr'}</span>
@@ -1153,7 +1153,7 @@ export default function CompSystem() {
                     </div>
                   ) : (
                     <div className="px-4 py-6 bg-[#0A1829] border border-[#445E77] rounded-xl text-center">
-                      <p className="text-xs text-[#93A9C0]">No Custom Comp Rates Configured. The Auto Rake-Back Rate Of ${autoCompRate.toFixed(2)}/hr Applies To All Seated Players.</p>
+                      <p className="text-[13px] text-[#93A9C0]">No Custom Comp Rates Configured. The Auto Rake-Back Rate Of ${autoCompRate.toFixed(2)}/hr Applies To All Seated Players.</p>
                     </div>
                   )}
                 </div>
@@ -1170,14 +1170,14 @@ export default function CompSystem() {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-white">{cat.label}</p>
-                            <p className="text-[10px] text-[#93A9C0]">{cat.desc}</p>
+                            <p className="text-[13px] text-[#93A9C0]">{cat.desc}</p>
                           </div>
                           <Shield className="w-3 h-3 text-[#22D3EE]" />
                         </div>
                       );
                     })}
                   </div>
-                  <p className="text-[10px] text-[#93A9C0] text-center mt-2 flex items-center justify-center gap-1">
+                  <p className="text-[13px] text-[#93A9C0] text-center mt-2 flex items-center justify-center gap-1">
                     <Shield className="w-3 h-3 text-[#22D3EE]" /> All Manual Comps Require Staff PIN Verification
                   </p>
                 </div>

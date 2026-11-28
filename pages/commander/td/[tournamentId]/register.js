@@ -21,6 +21,7 @@ import { broadcastChange } from '../../../../src/lib/commander/useCommanderSync'
 // byte-identical.
 import { buildBuyinReceiptHtml, printHtml } from '../../../../src/lib/commander/receiptTemplates';
 import PageBar from '../../../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../../../src/components/commander/shared/InlineStyle';
 
 export default function TDRegisterPlayer() {
     const router = useRouter();
@@ -679,11 +680,11 @@ export default function TDRegisterPlayer() {
                 </button>
             </div>
 
-            <style>{`
+            <InlineStyle css={`
         @keyframes spin { to { transform: rotate(360deg); } }
         input::placeholder { color: #666; }
         input:focus { border-color: #1981EC !important; }
-      `}</style>
+      `} />
         </CommanderLayout>
     );
 }
