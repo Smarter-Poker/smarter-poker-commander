@@ -6,8 +6,7 @@
  */
 import { useState, useEffect } from 'react';
 import SEOHead from '../../../src/components/seo/SEOHead';
-import Link from 'next/link';
-import { ChevronLeft, ChevronDown, AlertTriangle, Wifi, Smartphone, Server, Bell, Shield, Clock, Search, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronDown, AlertTriangle, Wifi, Smartphone, Server, Bell, Shield, Clock, Search, CheckCircle, XCircle } from 'lucide-react';
 import CommanderLayout from '../../../src/components/commander/shared/CommanderLayout';
 import { busEmit } from '../../../src/engine/EventBus';
 
@@ -500,7 +499,7 @@ export default function TroubleshootingPage() {
   };
 
   return (
-    <>
+    <CommanderLayout title="Troubleshooting Guide" backHref="/commander/dashboard?card=reports">
       <SEOHead
                 title="Commander - Troubleshooting"
                 description="Club Commander Poker Room Management Tool."
@@ -511,16 +510,7 @@ export default function TroubleshootingPage() {
         {/* Header */}
         <header className="cmd-header-bar sticky top-0 z-20">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/commander/dashboard" className="text-[#BDD0E2] hover:text-white">
-                <ChevronLeft className="w-5 h-5" />
-              </Link>
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-[#22D3EE]" />
-                <h1 className="text-xl font-bold text-white">Troubleshooting Guide</h1>
-              </div>
-            </div>
-            <div className="relative w-64">
+            <div className="relative w-64 ml-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDD0E2]" />
               <input
                 type="text"
@@ -604,11 +594,9 @@ export default function TroubleshootingPage() {
                     {(() => {
                       const Icon = currentSection.icon;
                       return (
-                        <CommanderLayout title="Troubleshooting Guide" backHref="/commander/dashboard?card=reports">
                         <div className="w-10 h-10 bg-[#22D3EE]/10 rounded-lg flex items-center justify-center">
                           <Icon className="w-5 h-5 text-[#22D3EE]" />
                         </div>
-                        </CommanderLayout>
                       );
                     })()}
                     <h2 className="text-2xl font-bold text-white">{currentSection.title}</h2>
@@ -648,7 +636,7 @@ export default function TroubleshootingPage() {
           </div>
         </div>
       </div>
-    </>
+    </CommanderLayout>
   );
 }
 

@@ -6,7 +6,6 @@
  */
 import { useState, useEffect } from 'react';
 import SEOHead from '../../../src/components/seo/SEOHead';
-import Link from 'next/link';
 import {
   ChevronLeft,
   ChevronRight,
@@ -363,7 +362,7 @@ export default function StaffGuidePage() {
     : GUIDE_SECTIONS;
 
   return (
-    <>
+    <CommanderLayout title="Staff Training Guide" backHref="/commander/dashboard?card=reports">
       <SEOHead
                 title="Commander - Staff Guide"
                 description="Club Commander Poker Room Management Tool."
@@ -374,13 +373,7 @@ export default function StaffGuidePage() {
         {/* Header */}
         <header className="cmd-header-bar sticky top-0 z-20">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/commander/dashboard" className="text-[#BDD0E2] hover:text-white">
-                <ChevronLeft className="w-5 h-5" />
-              </Link>
-              <h1 className="text-xl font-bold text-white">Staff Training Guide</h1>
-            </div>
-            <div className="relative w-64">
+            <div className="relative w-64 ml-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDD0E2]" />
               <input
                 type="text"
@@ -433,11 +426,9 @@ export default function StaffGuidePage() {
                     {(() => {
                       const Icon = currentSection.icon;
                       return (
-                        <CommanderLayout title="Staff Training Guide" backHref="/commander/dashboard?card=reports">
                         <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center">
                           <Icon className="w-5 h-5 text-[#86DAFF]" />
                         </div>
-                        </CommanderLayout>
                       );
                     })()}
                     <h2 className="text-2xl font-bold text-white">{currentSection.title}</h2>
@@ -508,6 +499,6 @@ export default function StaffGuidePage() {
           </div>
         </div>
       </div>
-    </>
+    </CommanderLayout>
   );
 }

@@ -75,6 +75,48 @@ describe('#SMARTERDESIGN image headers', () => {
     }
   });
 
+  // 2026-11-28: the registry went from 28 pairs over 85 pages (57 reuses,
+  // whole sections on one scene) to 82 distinct pairs, each chosen by
+  // looking at the art. The cap only ever comes down.
+  const MAX_ART_REUSE = 3;
+
+  it(`art is reused at most ${MAX_ART_REUSE} times, and only by the same job or section`, () => {
+    const byArt = new Map();
+    for (const [r, entry] of Object.entries(PAGE_HEADERS)) {
+      if (!byArt.has(entry.art)) byArt.set(entry.art, []);
+      byArt.get(entry.art).push([r, entry]);
+    }
+    const reuse = Object.keys(PAGE_HEADERS).length - byArt.size;
+    expect(reuse, `page header art reused ${reuse} times (cap ${MAX_ART_REUSE})`).toBeLessThanOrEqual(MAX_ART_REUSE);
+    for (const [art, pages] of byArt) {
+      if (pages.length < 2) continue;
+      const sameTitle = new Set(pages.map(([, e]) => e.title)).size === 1;
+      const sameSection = new Set(pages.map(([r]) => r.split('/')[2])).size === 1;
+      expect(sameTitle || sameSection, `${art} is shared across sections: ${pages.map(([r]) => r).join(', ')}`).toBe(true);
+    }
+  });
+
+  it('every header image in the library is used by a page', () => {
+    const dir = join(ROOT, 'public/images/smarterdesign/headers');
+    const used = new Set(Object.values(PAGE_HEADERS).map((e) => e.art));
+    const dashboard = read('pages/commander/dashboard.js');
+    const orphans = readdirSync(dir)
+      .filter((f) => /-(seal|scene)\.webp$/.test(f))
+      .filter((f) => !used.has(f.replace(/-(seal|scene)\.webp$/, '')) && !dashboard.includes(`headers/${f}`));
+    expect(orphans, 'header art nobody shows').toEqual([]);
+  });
+
+  // 2026-11-28: the three guide pages wrapped CommanderLayout around the
+  // 40px section icon inside the article, so the whole layout and its image
+  // header rendered in a 300px column beside the heading, one letter per line.
+  it('the documentation guides wrap the whole page in CommanderLayout, once', () => {
+    for (const f of ['staff-guide', 'manager-guide', 'troubleshooting']) {
+      const src = read(`pages/commander/docs/${f}.js`);
+      expect(src.match(/<CommanderLayout\b/g), f).toHaveLength(1);
+      expect(src, f).toMatch(/\n  return \(\n    <CommanderLayout /);
+    }
+  });
+
   it('the vault belongs to Cashier and to nobody else', () => {
     const vault = Object.entries(PAGE_HEADERS).filter(([, e]) => e.art === 'cashier').map(([r]) => r);
     expect(vault).toEqual(['/commander/cashier']);

@@ -73,7 +73,7 @@ const CARDS = [
     id: 'floor',
     title: 'Tables & Floor',
     subtitle: 'Tables, Dealers, Floor Ops',
-    seal: '/images/smarterdesign/headers/casino_table-seal.webp',
+    seal: '/images/smarterdesign/headers/pnm-live-seal.webp',
     features: [
       { label: 'Tables & Floor', href: '/commander/tables', Icon: LayoutGrid },
       { label: 'Table Assignments', href: '/commander/table-assignments', Icon: Shuffle },
@@ -88,7 +88,7 @@ const CARDS = [
     id: 'staff',
     title: 'Staff & Operations',
     subtitle: 'Employees, Schedule, Config',
-    seal: '/images/smarterdesign/headers/staking-profile-seal.webp',
+    seal: '/images/smarterdesign/headers/pnm-more-seal.webp',
     features: [
       { label: 'Cashier', href: '/commander/cashier', Icon: Landmark },
       { label: 'Employee Maintenance', href: '/commander/staff', Icon: Users },
@@ -104,7 +104,7 @@ const CARDS = [
     id: 'displays',
     title: 'Promotions & Displays',
     subtitle: 'TV Screens, Streaming, Alerts',
-    seal: '/images/smarterdesign/headers/sports-seal.webp',
+    seal: '/images/smarterdesign/headers/training-scenario-demo-seal.webp',
     features: [
       { label: 'TV Displays', href: '/commander/displays', Icon: Tv },
       { label: 'Comps', href: '/commander/comps', Icon: Gift },
