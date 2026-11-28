@@ -21,12 +21,12 @@ import { useConfirmAction } from "../../src/components/commander/shared/ConfirmM
 import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 const PROMO_TYPES = [
-  { value: 'high_hand', label: 'High Hand', icon: Trophy, color: '#F59E0B' },
+  { value: 'high_hand', label: 'High Hand', icon: Trophy, color: '#22D3EE' },
   { value: 'bad_beat', label: 'Bad Beat Jackpot', icon: Zap, color: '#EF4444' },
   { value: 'splash_pot', label: 'Splash Pot', icon: DollarSign, color: '#31A24C' },
-  { value: 'hourly_drawing', label: 'Hourly Drawing', icon: Clock, color: '#1877F2' },
-  { value: 'bonus', label: 'Player Bonus', icon: Gift, color: '#1877F2' },
-  { value: 'tournament', label: 'Tournament Promo', icon: Target, color: '#EC4899' }
+  { value: 'hourly_drawing', label: 'Hourly Drawing', icon: Clock, color: '#1981EC' },
+  { value: 'bonus', label: 'Player Bonus', icon: Gift, color: '#1981EC' },
+  { value: 'tournament', label: 'Tournament Promo', icon: Target, color: '#38BDF8' }
 ];
 
 const HAND_RANKS = [
@@ -104,10 +104,10 @@ const res = await commanderFetch('/api/commander/high-hands', {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-lg max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h3 className="text-lg font-semibold text-white">Record High Hand</h3>
-          <button onClick={onClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={onClose} className="p-2 hover:bg-[#132A42] rounded-lg">
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -161,7 +161,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
             <div>
               <label className="block text-sm font-medium text-white mb-2">Prize Amount</label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#B0B3B8]" />
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#BDD0E2]" />
                 <input
                   type="number"
                   value={formData.prize_amount}
@@ -172,25 +172,25 @@ const res = await commanderFetch('/api/commander/high-hands', {
             </div>
           </div>
 
-          <label className="flex items-center gap-3 p-3 bg-[#3A3B3C] rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-[#132A42] rounded-lg cursor-pointer">
             <input
               type="checkbox"
               checked={formData.auto_verify}
               onChange={(e) => setFormData(prev => ({ ...prev, auto_verify: e.target.checked }))}
-              className="w-5 h-5 text-[#1877F2] border-[#3A3B3C] rounded focus:ring-[#1877F2]"
+              className="w-5 h-5 text-[#86DAFF] border-[#445E77] rounded focus:ring-[#1981EC]"
             />
             <div>
               <p className="font-medium text-white">Auto-Verify This Hand</p>
-              <p className="text-sm text-[#B0B3B8]">Mark As Verified By {staff?.display_name || 'You'}</p>
+              <p className="text-sm text-[#BDD0E2]">Mark As Verified By {staff?.display_name || 'You'}</p>
             </div>
           </label>
         </div>
 
-        <div className="p-4 border-t border-[#3A3B3C]">
+        <div className="p-4 border-t border-[#445E77]">
           <button
             onClick={handleSubmit}
             disabled={!formData.player_name.trim() || !formData.hand_description.trim() || submitting}
-            className="w-full h-12 bg-[#F59E0B] text-white font-semibold rounded-lg hover:bg-[#D97706] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-[#22D3EE] text-white font-semibold rounded-lg hover:bg-[#0EA5C6] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trophy className="w-5 h-5" />}
             Record High Hand
@@ -208,14 +208,14 @@ function HighHandCard({ highHand, onVerify }) {
     <div className="cmd-panel p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-[#F59E0B]" />
+          <div className="w-10 h-10 rounded-lg bg-[#22D3EE]/10 flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-[#22D3EE]" />
           </div>
           <div>
             <h3 className="font-semibold text-white">
               {highHand.profiles?.display_name || highHand.player_name || 'Unknown Player'}
             </h3>
-            <p className="text-sm text-[#B0B3B8]">{highHand.hand_description}</p>
+            <p className="text-sm text-[#BDD0E2]">{highHand.hand_description}</p>
           </div>
         </div>
         {highHand.verified_at ? (
@@ -233,7 +233,7 @@ function HighHandCard({ highHand, onVerify }) {
         )}
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-[#B0B3B8]">
+      <div className="flex items-center gap-4 text-sm text-[#BDD0E2]">
         <span className="flex items-center gap-1">
           <Award className="w-4 h-4" />
           {rankLabel}
@@ -261,7 +261,7 @@ function CurrentHighHandBanner({ highHand }) {
   const rankLabel = HAND_RANKS.find(r => r.value === highHand.hand_rank)?.label || 'Unknown';
 
   return (
-    <div className="bg-gradient-to-r from-[#F59E0B] to-[#D97706] rounded-xl p-4 text-white">
+    <div className="bg-gradient-to-r from-[#22D3EE] to-[#0EA5C6] rounded-xl p-4 text-white">
       <div className="flex items-center gap-2 mb-2">
         <Trophy className="w-5 h-5" />
         <span className="font-semibold">Current High Hand</span>
@@ -783,7 +783,7 @@ try {
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -797,17 +797,17 @@ try {
           noindex={true}
         />
 
-        <div style={{ minHeight: '100vh', background: '#18191A', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ minHeight: '100vh', background: '#040D18', fontFamily: 'Inter, sans-serif' }}>
           {/* ── Premium Header ── */}
           <header style={{
             position: 'sticky', top: 0, zIndex: 40,
-            background: '#242526', borderBottom: '1px solid #3A3B3C' }}>
+            background: '#0A1829', borderBottom: '1px solid #2A4560' }}>
             <div style={{
               maxWidth: 960, margin: '0 auto', padding: '6px 20px',
               display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
               <h1 className="sr-only">Promotions</h1>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, minHeight: 44 }}>
-                <span role="status" style={{ fontSize: 13, color: '#8A8D91', fontWeight: 600 }}>
+                <span role="status" style={{ fontSize: 13, color: '#9FB3C8', fontWeight: 600 }}>
                   {activeTab === 'promotions'
                     ? `${promotions.length} Promotion${promotions.length !== 1 ? 's' : ''}`
                     : activeTab === 'high-hands'
@@ -821,8 +821,8 @@ try {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
                       padding: '8px 16px', borderRadius: 8,
-                      background: 'rgba(24,119,242,0.1)', color: '#1877F2',
-                      border: '1px solid rgba(24,119,242,0.3)',
+                      background: 'rgba(25, 129, 236,0.1)', color: '#1981EC',
+                      border: '1px solid rgba(25, 129, 236,0.3)',
                       fontSize: 13, fontWeight: 600, cursor: 'pointer',
                       transition: 'background 0.15s' }}
                   >
@@ -834,7 +834,7 @@ try {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
                       padding: '8px 16px', borderRadius: 8,
-                      background: '#1877F2', color: '#fff',
+                      background: '#1981EC', color: '#fff',
                       border: 'none',
                       fontSize: 13, fontWeight: 600, cursor: 'pointer',
                       transition: 'background 0.15s' }}
@@ -849,7 +849,7 @@ try {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '8px 16px', borderRadius: 8,
-                    background: '#F59E0B', color: '#fff',
+                    background: '#22D3EE', color: '#fff',
                     border: 'none',
                     fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                 >
@@ -883,12 +883,12 @@ try {
             {/* ── Tab Bar ── */}
             <div data-tour="promo-tabs" style={{
               maxWidth: 960, margin: '0 auto', padding: '0 20px',
-              display: 'flex', gap: 0, borderTop: '1px solid #3A3B3C' }}>
+              display: 'flex', gap: 0, borderTop: '1px solid #2A4560' }}>
               {[
-                { key: 'promotions', label: 'Promotions', icon: Gift, color: '#1877F2' },
-                { key: 'high-hands', label: 'High Hands', icon: Trophy, color: '#F59E0B' },
+                { key: 'promotions', label: 'Promotions', icon: Gift, color: '#1981EC' },
+                { key: 'high-hands', label: 'High Hands', icon: Trophy, color: '#22D3EE' },
                 { key: 'promo-codes', label: 'Promo Codes', icon: Target, color: '#31A24C' },
-                { key: 'analytics', label: 'Analytics', icon: BarChart3, color: '#8B5CF6' },
+                { key: 'analytics', label: 'Analytics', icon: BarChart3, color: '#5AA9FF' },
               ].map(tab => {
                 const isActive = activeTab === tab.key;
                 const TabIcon = tab.icon;
@@ -901,7 +901,7 @@ try {
                       background: 'transparent',
                       display: 'flex', alignItems: 'center', gap: 6,
                       fontSize: 13, fontWeight: isActive ? 700 : 500,
-                      color: isActive ? tab.color : '#8A8D91',
+                      color: isActive ? tab.color : '#9FB3C8',
                       borderBottom: `2px solid ${isActive ? tab.color : 'transparent'}`,
                       transition: 'color 0.15s, border-color 0.15s' }}
                   >
@@ -929,9 +929,9 @@ try {
                         style={{
                           padding: '7px 18px', borderRadius: 8,
                           fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                          background: isActive ? '#1877F2' : '#3A3B3C',
-                          color: isActive ? '#fff' : '#B0B3B8',
-                          border: isActive ? '1px solid #1877F2' : '1px solid #4E4F50',
+                          background: isActive ? '#1981EC' : '#2A4560',
+                          color: isActive ? '#fff' : '#BDD0E2',
+                          border: isActive ? '1px solid #1981EC' : '1px solid #3A5873',
                           transition: 'all 0.15s' }}
                       >
                         {f}
@@ -947,9 +947,9 @@ try {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,
                       padding: '6px 12px', borderRadius: 8,
-                      background: selectedIds.size > 0 ? 'rgba(24,119,242,0.1)' : '#3A3B3C',
-                      color: selectedIds.size > 0 ? '#1877F2' : '#8A8D91',
-                      border: `1px solid ${selectedIds.size > 0 ? 'rgba(24,119,242,0.3)' : '#4E4F50'}`,
+                      background: selectedIds.size > 0 ? 'rgba(25, 129, 236,0.1)' : '#2A4560',
+                      color: selectedIds.size > 0 ? '#1981EC' : '#9FB3C8',
+                      border: `1px solid ${selectedIds.size > 0 ? 'rgba(25, 129, 236,0.3)' : '#3A5873'}`,
                       fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                   >
                     {selectedIds.size > 0 ? <CheckSquare size={14} /> : <Square size={14} />}
@@ -965,7 +965,7 @@ try {
                       </button>
                       <button
                         onClick={() => bulkToggle(false)}
-                        style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(245,158,11,0.1)', color: '#FBBF24', border: '1px solid rgba(245,158,11,0.3)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                        style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(34, 211, 238,0.1)', color: '#22D3EE', border: '1px solid rgba(34, 211, 238,0.3)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                       >
                         Deactivate All
                       </button>
@@ -978,7 +978,7 @@ try {
                       </button>
                       <button
                         onClick={clearSelection}
-                        style={{ padding: '6px 12px', borderRadius: 8, background: '#3A3B3C', color: '#B0B3B8', border: '1px solid #4E4F50', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                        style={{ padding: '6px 12px', borderRadius: 8, background: '#2A4560', color: '#BDD0E2', border: '1px solid #3A5873', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                       >
                         Cancel
                       </button>
@@ -988,14 +988,14 @@ try {
 
                 {loading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-                    <Loader2 size={32} color="#1877F2" className="animate-spin" />
+                    <Loader2 size={32} color="#1981EC" className="animate-spin" />
                   </div>
                 ) : filteredPromos.length === 0 ? (
                   <div style={{
-                    background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14,
+                    background: '#0A1829', border: '1px solid #2A4560', borderRadius: 14,
                     padding: '48px 24px', textAlign: 'center' }}>
-                    <Gift size={48} color="#3A3B3C" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ color: '#B0B3B8', fontSize: 15, fontWeight: 500, marginBottom: 8 }}>
+                    <Gift size={48} color="#2A4560" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ color: '#BDD0E2', fontSize: 15, fontWeight: 500, marginBottom: 8 }}>
                       {filter !== 'all' ? `No ${filter} Promotions Found` : 'No Promotions Yet'}
                     </p>
                     {filter !== 'all' ? (
@@ -1003,7 +1003,7 @@ try {
                         onClick={() => setFilter('all')}
                         style={{
                           padding: '8px 20px', borderRadius: 8,
-                          background: '#3A3B3C', color: '#E4E6EB',
+                          background: '#2A4560', color: '#F2F7FF',
                           border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                           marginRight: 8 }}
                       >
@@ -1014,7 +1014,7 @@ try {
                       onClick={() => setShowCreateModal(true)}
                       style={{
                         padding: '8px 20px', borderRadius: 8,
-                        background: '#1877F2', color: '#fff',
+                        background: '#1981EC', color: '#fff',
                         border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                     >
                       Create Promotion
@@ -1028,7 +1028,7 @@ try {
                     {filteredPromos.map((promo) => (
                       <div
                         key={promo.id}
-                        style={{ position: 'relative', opacity: draggedId === promo.id ? 0.4 : 1, border: dragOverId === promo.id ? '2px dashed #1877F2' : '2px solid transparent', borderRadius: 14, transition: 'all 0.15s' }}
+                        style={{ position: 'relative', opacity: draggedId === promo.id ? 0.4 : 1, border: dragOverId === promo.id ? '2px dashed #1981EC' : '2px solid transparent', borderRadius: 14, transition: 'all 0.15s' }}
                         draggable
                         onDragStart={(e) => { setDraggedId(promo.id); e.dataTransfer.effectAllowed = 'move'; }}
                         onDragOver={(e) => { e.preventDefault(); setDragOverId(promo.id); }}
@@ -1037,7 +1037,7 @@ try {
                         onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
                       >
                         {/* Drag Handle */}
-                        <div style={{ position: 'absolute', top: 10, left: 8, zIndex: 10, cursor: 'grab', color: '#4E4F50', opacity: 0.5 }}>
+                        <div style={{ position: 'absolute', top: 10, left: 8, zIndex: 10, cursor: 'grab', color: '#3A5873', opacity: 0.5 }}>
                           <GripVertical size={18} />
                         </div>
                         {selectedIds.size > 0 && (
@@ -1045,8 +1045,8 @@ try {
                             onClick={() => toggleSelect(promo.id)}
                             style={{
                               position: 'absolute', top: 8, right: 8, zIndex: 10,
-                              background: selectedIds.has(promo.id) ? '#1877F2' : '#3A3B3C',
-                              border: '2px solid ' + (selectedIds.has(promo.id) ? '#1877F2' : '#4E4F50'),
+                              background: selectedIds.has(promo.id) ? '#1981EC' : '#2A4560',
+                              border: '2px solid ' + (selectedIds.has(promo.id) ? '#1981EC' : '#3A5873'),
                               borderRadius: 6, width: 24, height: 24,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               cursor: 'pointer', transition: 'all 0.15s' }}
@@ -1102,21 +1102,21 @@ const res = await commanderFetch('/api/commander/high-hands', {
 
                 {loading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-                    <Loader2 size={32} color="#F59E0B" className="animate-spin" />
+                    <Loader2 size={32} color="#22D3EE" className="animate-spin" />
                   </div>
                 ) : highHands.length === 0 ? (
                   <div style={{
-                    background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14,
+                    background: '#0A1829', border: '1px solid #2A4560', borderRadius: 14,
                     padding: '48px 24px', textAlign: 'center', marginTop: 16 }}>
-                    <Trophy size={48} color="#3A3B3C" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ color: '#B0B3B8', fontSize: 15, fontWeight: 500, marginBottom: 16 }}>
+                    <Trophy size={48} color="#2A4560" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ color: '#BDD0E2', fontSize: 15, fontWeight: 500, marginBottom: 16 }}>
                       No High Hands Recorded Today
                     </p>
                     <button
                       onClick={() => setShowHighHandModal(true)}
                       style={{
                         padding: '10px 24px', borderRadius: 8,
-                        background: '#F59E0B', color: '#fff',
+                        background: '#22D3EE', color: '#fff',
                         border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                     >
                       Record High Hand
@@ -1124,7 +1124,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#E4E6EB', margin: 0 }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>
                       Recent High Hands
                     </h3>
                     {highHands.map((hh) => (
@@ -1146,13 +1146,13 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   </div>
                 ) : promoCodes.length === 0 ? (
                   <div style={{
-                    background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14,
+                    background: '#0A1829', border: '1px solid #2A4560', borderRadius: 14,
                     padding: '48px 24px', textAlign: 'center' }}>
-                    <Target size={48} color="#3A3B3C" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ color: '#B0B3B8', fontSize: 15, fontWeight: 500, marginBottom: 6 }}>
+                    <Target size={48} color="#2A4560" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ color: '#BDD0E2', fontSize: 15, fontWeight: 500, marginBottom: 6 }}>
                       No Promo Codes Yet
                     </p>
-                    <p style={{ color: '#8A8D91', fontSize: 13, marginBottom: 16 }}>
+                    <p style={{ color: '#9FB3C8', fontSize: 13, marginBottom: 16 }}>
                       Click &quot;Load 25 Pre-Made&quot; Above To Add Ready-To-Use Promo Codes
                     </p>
                     <button
@@ -1172,7 +1172,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                 ) : (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                      <p style={{ fontSize: 13, color: '#8A8D91', margin: 0 }}>
+                      <p style={{ fontSize: 13, color: '#9FB3C8', margin: 0 }}>
                         {promoCodes.length} Promo Codes · {promoCodes.filter(c => c.is_active).length} Active
                       </p>
                     </div>
@@ -1182,7 +1182,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                       gap: 14 }}>
                       {promoCodes.map(code => (
                         <div key={code.id} style={{
-                          background: '#242526', border: '1px solid #3A3B3C', borderRadius: 12,
+                          background: '#0A1829', border: '1px solid #2A4560', borderRadius: 12,
                           padding: 16, transition: 'border-color 0.15s' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1194,9 +1194,9 @@ const res = await commanderFetch('/api/commander/high-hands', {
                               <span style={{
                                 fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
                                 padding: '3px 8px', borderRadius: 20,
-                                background: code.is_active ? 'rgba(49,162,76,0.12)' : '#3A3B3C',
-                                color: code.is_active ? '#4ADE80' : '#8A8D91',
-                                border: `1px solid ${code.is_active ? 'rgba(49,162,76,0.3)' : '#4E4F50'}`,
+                                background: code.is_active ? 'rgba(49,162,76,0.12)' : '#2A4560',
+                                color: code.is_active ? '#4ADE80' : '#9FB3C8',
+                                border: `1px solid ${code.is_active ? 'rgba(49,162,76,0.3)' : '#3A5873'}`,
                                 textTransform: 'uppercase' }}>
                                 {code.is_active ? 'Active' : 'Inactive'}
                               </span>
@@ -1205,30 +1205,30 @@ const res = await commanderFetch('/api/commander/high-hands', {
                               onClick={() => togglePromoCode(code)}
                               style={{
                                 background: 'none', border: 'none', padding: 2, cursor: 'pointer',
-                                color: code.is_active ? '#31A24C' : '#3A3B3C' }}
+                                color: code.is_active ? '#31A24C' : '#2A4560' }}
                             >
                               {code.is_active ? <ToggleRight size={26} /> : <ToggleLeft size={26} />}
                             </button>
                           </div>
-                          <p style={{ fontSize: 13, color: '#E4E6EB', marginBottom: 6, lineHeight: 1.4 }}>{code.description}</p>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#8A8D91' }}>
+                          <p style={{ fontSize: 13, color: '#F2F7FF', marginBottom: 6, lineHeight: 1.4 }}>{code.description}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#9FB3C8' }}>
                             <span>Type: {(code.reward_type || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
                             <span>Value: {code.reward_value}</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#8A8D91', marginTop: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#9FB3C8', marginTop: 4 }}>
                             <span>Uses: {code.promo_code_redemptions?.[0]?.count || code.times_used || 0}{code.max_uses ? ` / ${code.max_uses}` : ' / ∞'}</span>
                             {code.expires_at && <span>Exp: {new Date(code.expires_at).toLocaleDateString()}</span>}
                           </div>
-                          <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid #3A3B3C' }}>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid #2A4560' }}>
                             <button
                               onClick={() => openEditPromoCode(code)}
                               style={{
                                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                                 padding: '8px 12px', borderRadius: 8,
-                                background: 'transparent', color: '#1877F2',
+                                background: 'transparent', color: '#1981EC',
                                 border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                                 transition: 'background 0.15s' }}
-                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(24,119,242,0.08)'}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(25, 129, 236,0.08)'}
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
                               <Edit size={13} />
@@ -1260,31 +1260,31 @@ const res = await commanderFetch('/api/commander/high-hands', {
             {/* ── Analytics Tab ── */}
             {activeTab === 'analytics' && (
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#E4E6EB', marginBottom: 20 }}>Promotions Analytics</h2>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#F2F7FF', marginBottom: 20 }}>Promotions Analytics</h2>
 
                 {analytics ? (
                   <>
                     {/* Summary Cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 16 }}>
                       {[
-                        { label: 'Total Promotions', value: analytics.total, color: '#1877F2', icon: Gift },
+                        { label: 'Total Promotions', value: analytics.total, color: '#1981EC', icon: Gift },
                         { label: 'Active Now', value: analytics.activeCount, color: '#4ADE80', icon: CheckCircle },
-                        { label: 'Total Awarded', value: analytics.totalAwarded, color: '#F59E0B', icon: Award },
-                        { label: 'Total Value', value: `$${analytics.totalValue.toLocaleString()}`, color: '#8B5CF6', icon: DollarSign },
+                        { label: 'Total Awarded', value: analytics.totalAwarded, color: '#22D3EE', icon: Award },
+                        { label: 'Total Value', value: `$${analytics.totalValue.toLocaleString()}`, color: '#5AA9FF', icon: DollarSign },
                         { label: 'Avg Per Award', value: analytics.avgPerAward > 0 ? `$${analytics.avgPerAward.toLocaleString()}` : '-', color: '#22D3EE', icon: BarChart3 },
                       ].map((card, i) => {
                         const CardIcon = card.icon;
                         return (
                           <div key={i} style={{
-                            background: '#242526', border: '1px solid #3A3B3C', borderRadius: 12,
+                            background: '#0A1829', border: '1px solid #2A4560', borderRadius: 12,
                             padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <div style={{ width: 32, height: 32, borderRadius: 8, background: `${card.color}15`, border: `1px solid ${card.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <CardIcon size={16} color={card.color} />
                               </div>
-                              <span style={{ fontSize: 12, color: '#8A8D91', fontWeight: 500 }}>{card.label}</span>
+                              <span style={{ fontSize: 12, color: '#9FB3C8', fontWeight: 500 }}>{card.label}</span>
                             </div>
-                            <span style={{ fontSize: 24, fontWeight: 800, color: '#E4E6EB' }}>{card.value}</span>
+                            <span style={{ fontSize: 24, fontWeight: 800, color: '#F2F7FF' }}>{card.value}</span>
                           </div>
                         );
                       })}
@@ -1296,37 +1296,37 @@ const res = await commanderFetch('/api/commander/high-hands', {
                         { label: 'Draft', value: analytics.draftCount, color: '#9CA3AF' },
                         { label: 'Active', value: analytics.activeCount, color: '#4ADE80' },
                         { label: 'Expired', value: analytics.expiredCount, color: '#F87171' },
-                        { label: 'Paused', value: analytics.pausedCount, color: '#FBBF24' },
+                        { label: 'Paused', value: analytics.pausedCount, color: '#22D3EE' },
                       ].map((s, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 20, background: '#242526', border: '1px solid #3A3B3C' }}>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 20, background: '#0A1829', border: '1px solid #2A4560' }}>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
-                          <span style={{ fontSize: 12, color: '#B0B3B8', fontWeight: 500 }}>{s.label}: <strong style={{ color: '#E4E6EB' }}>{s.value}</strong></span>
+                          <span style={{ fontSize: 12, color: '#BDD0E2', fontWeight: 500 }}>{s.label}: <strong style={{ color: '#F2F7FF' }}>{s.value}</strong></span>
                         </div>
                       ))}
                     </div>
 
                     {/* Per-Type Breakdown */}
-                    <div style={{ background: '#242526', border: '1px solid #3A3B3C', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px 18px', borderBottom: '1px solid #3A3B3C' }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#E4E6EB', margin: 0 }}>By Promotion Type</h3>
+                    <div style={{ background: '#0A1829', border: '1px solid #2A4560', borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', borderBottom: '1px solid #2A4560' }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>By Promotion Type</h3>
                       </div>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid #3A3B3C' }}>
-                            <th style={{ textAlign: 'left', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#8A8D91' }}>Type</th>
-                            <th style={{ textAlign: 'center', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#8A8D91' }}>Count</th>
-                            <th style={{ textAlign: 'center', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#8A8D91' }}>Awarded</th>
-                            <th style={{ textAlign: 'right', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#8A8D91' }}>Total Value</th>
+                          <tr style={{ borderBottom: '1px solid #2A4560' }}>
+                            <th style={{ textAlign: 'left', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#9FB3C8' }}>Type</th>
+                            <th style={{ textAlign: 'center', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#9FB3C8' }}>Count</th>
+                            <th style={{ textAlign: 'center', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#9FB3C8' }}>Awarded</th>
+                            <th style={{ textAlign: 'right', padding: '10px 18px', fontSize: 12, fontWeight: 600, color: '#9FB3C8' }}>Total Value</th>
                           </tr>
                         </thead>
                         <tbody>
                           {Object.entries(analytics.byType || {}).map(([type, data]) => (
                             <tr key={type} style={{ borderBottom: '1px solid rgba(58,59,60,0.5)' }}>
-                              <td style={{ padding: '10px 18px', fontSize: 13, color: '#E4E6EB', fontWeight: 600 }}>
+                              <td style={{ padding: '10px 18px', fontSize: 13, color: '#F2F7FF', fontWeight: 600 }}>
                                 {type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                               </td>
-                              <td style={{ padding: '10px 18px', fontSize: 13, color: '#B0B3B8', textAlign: 'center' }}>{data.count}</td>
-                              <td style={{ padding: '10px 18px', fontSize: 13, color: '#B0B3B8', textAlign: 'center' }}>{data.awarded}</td>
+                              <td style={{ padding: '10px 18px', fontSize: 13, color: '#BDD0E2', textAlign: 'center' }}>{data.count}</td>
+                              <td style={{ padding: '10px 18px', fontSize: 13, color: '#BDD0E2', textAlign: 'center' }}>{data.awarded}</td>
                               <td style={{ padding: '10px 18px', fontSize: 13, color: '#4ADE80', fontWeight: 600, textAlign: 'right' }}>${data.value.toLocaleString()}</td>
                             </tr>
                           ))}
@@ -1335,7 +1335,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                     </div>
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '60px 0', color: '#8A8D91' }}>
+                  <div style={{ textAlign: 'center', padding: '60px 0', color: '#9FB3C8' }}>
                     <BarChart3 size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                     <p>No Promotion Data Available</p>
                   </div>
@@ -1351,20 +1351,20 @@ const res = await commanderFetch('/api/commander/high-hands', {
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex',
             alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
             <div style={{
-              background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14,
+              background: '#0A1829', border: '1px solid #2A4560', borderRadius: 14,
               width: '100%', maxWidth: 440, padding: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#E4E6EB' }}>Edit Promo Code</h3>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#F2F7FF' }}>Edit Promo Code</h3>
                 <button
                   onClick={() => setEditingPromoCode(null)}
-                  style={{ background: 'none', border: 'none', color: '#8A8D91', cursor: 'pointer', padding: 4 }}
+                  style={{ background: 'none', border: 'none', color: '#9FB3C8', cursor: 'pointer', padding: 4 }}
                 >
                   <X size={20} />
                 </button>
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Code Name
                 </label>
                 <input
@@ -1372,7 +1372,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   onChange={e => setEditCodeForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
                   style={{
                     width: '100%', padding: '10px 14px', borderRadius: 8,
-                    background: '#18191A', border: '1px solid #3A3B3C', color: '#E4E6EB',
+                    background: '#040D18', border: '1px solid #2A4560', color: '#F2F7FF',
                     fontSize: 15, fontFamily: 'monospace', fontWeight: 700,
                     outline: 'none' }}
                   placeholder="E.g. WELCOME50"
@@ -1380,7 +1380,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Description
                 </label>
                 <input
@@ -1388,14 +1388,14 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   onChange={e => setEditCodeForm(f => ({ ...f, description: e.target.value }))}
                   style={{
                     width: '100%', padding: '10px 14px', borderRadius: 8,
-                    background: '#18191A', border: '1px solid #3A3B3C', color: '#E4E6EB',
+                    background: '#040D18', border: '1px solid #2A4560', color: '#F2F7FF',
                     fontSize: 14, outline: 'none' }}
                   placeholder="Promotion Description"
                 />
               </div>
 
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Max Uses <span style={{ fontWeight: 400, textTransform: 'none' }}>(Leave Blank For Unlimited)</span>
                 </label>
                 <input
@@ -1404,7 +1404,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   onChange={e => setEditCodeForm(f => ({ ...f, max_uses: e.target.value }))}
                   style={{
                     width: '100%', padding: '10px 14px', borderRadius: 8,
-                    background: '#18191A', border: '1px solid #3A3B3C', color: '#E4E6EB',
+                    background: '#040D18', border: '1px solid #2A4560', color: '#F2F7FF',
                     fontSize: 15, outline: 'none' }}
                   placeholder="∞ Unlimited"
                   min="0"
@@ -1416,7 +1416,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   onClick={() => setEditingPromoCode(null)}
                   style={{
                     flex: 1, padding: '10px 16px', borderRadius: 8,
-                    background: '#3A3B3C', color: '#E4E6EB', border: 'none',
+                    background: '#2A4560', color: '#F2F7FF', border: 'none',
                     fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
                 >
                   Cancel
@@ -1425,7 +1425,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   onClick={savePromoCode}
                   style={{
                     flex: 1, padding: '10px 16px', borderRadius: 8,
-                    background: '#1877F2', color: '#fff', border: 'none',
+                    background: '#1981EC', color: '#fff', border: 'none',
                     fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
                 >
                   <Check size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
@@ -1444,9 +1444,9 @@ const res = await commanderFetch('/api/commander/high-hands', {
                   <h3 className="text-lg font-semibold text-white">Promotion Wizard</h3>
                   <button
                     onClick={() => { setUseWizard(false); setShowCreateModal(false); }}
-                    className="p-2 hover:bg-[#3A3B3C] rounded-lg"
+                    className="p-2 hover:bg-[#132A42] rounded-lg"
                   >
-                    <X className="w-5 h-5 text-[#B0B3B8]" />
+                    <X className="w-5 h-5 text-[#BDD0E2]" />
                   </button>
                 </div>
                 <PromotionBuilder
@@ -1569,40 +1569,40 @@ const res = await commanderFetch(`/api/commander/promotions/${id}`, { method: 'D
         {showAwardsModal && selectedPromoForAwards && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="cmd-panel cmd-corner-lights w-full max-w-lg max-h-[90vh] flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+              <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Awards</h3>
-                  <p className="text-sm text-[#B0B3B8]">{selectedPromoForAwards.name}</p>
+                  <p className="text-sm text-[#BDD0E2]">{selectedPromoForAwards.name}</p>
                 </div>
                 <button
                   onClick={() => { setShowAwardsModal(false); setSelectedPromoForAwards(null); setPromoAwards([]); }}
-                  className="p-2 hover:bg-[#3A3B3C] rounded-lg"
+                  className="p-2 hover:bg-[#132A42] rounded-lg"
                 >
-                  <X className="w-5 h-5 text-[#B0B3B8]" />
+                  <X className="w-5 h-5 text-[#BDD0E2]" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
                 {awardsLoading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#1877F2]" />
+                    <Loader2 className="w-6 h-6 animate-spin text-[#86DAFF]" />
                   </div>
                 ) : promoAwards.length === 0 ? (
                   <div className="text-center py-8">
-                    <Award className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                    <p className="text-[#B0B3B8]">No Awards Recorded Yet</p>
+                    <Award className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                    <p className="text-[#BDD0E2]">No Awards Recorded Yet</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {promoAwards.map((award) => (
-                      <div key={award.id} className="p-3 bg-[#3A3B3C] rounded-lg">
+                      <div key={award.id} className="p-3 bg-[#132A42] rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-[#1877F2]/10 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-[#0C55C0]/10 flex items-center justify-center">
                               {award.profiles?.avatar_url ? (
                                 <img src={award.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                               ) : (
-                                <User className="w-4 h-4 text-[#1877F2]" />
+                                <User className="w-4 h-4 text-[#86DAFF]" />
                               )}
                             </div>
                             <span className="font-medium text-white text-sm">
@@ -1612,13 +1612,13 @@ const res = await commanderFetch(`/api/commander/promotions/${id}`, { method: 'D
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${award.status === 'approved'
                             ? 'bg-[#31A24C]/10 text-[#31A24C]'
                             : award.status === 'pending'
-                              ? 'bg-[#F59E0B]/10 text-[#F59E0B]'
-                              : 'bg-[#3A3B3C]/10 text-[#B0B3B8]'
+                              ? 'bg-[#22D3EE]/10 text-[#22D3EE]'
+                              : 'bg-[#132A42]/10 text-[#BDD0E2]'
                             }`}>
                             {award.status}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-[#B0B3B8]">
+                        <div className="flex items-center gap-4 text-sm text-[#BDD0E2]">
                           <span className="flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
                             ${award.prize_value?.toLocaleString() || 0}

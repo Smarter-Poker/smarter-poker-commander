@@ -203,8 +203,8 @@ const venueId = getVenueId();
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
     </div>
   );
 
@@ -215,14 +215,14 @@ const venueId = getVenueId();
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Progress dots */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
-          <p className="text-xs text-[#B0B3B8]">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-3 flex items-center justify-between">
+          <p className="text-xs text-[#BDD0E2]">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
           <div className="flex gap-1.5">
             {[1, 2, 3, 4].map(s => (
-              <div key={s} className={`w-2.5 h-2.5 rounded-full ${s <= step ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`} />
+              <div key={s} className={`w-2.5 h-2.5 rounded-full ${s <= step ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`} />
             ))}
           </div>
         </div>
@@ -254,14 +254,14 @@ const venueId = getVenueId();
               </div>
 
               {!allClear && (
-                <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4">
+                <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-5 h-5 text-[#F59E0B]" />
-                    <p className="text-sm font-semibold text-[#F59E0B]">Items Need Attention</p>
+                    <AlertTriangle className="w-5 h-5 text-[#22D3EE]" />
+                    <p className="text-sm font-semibold text-[#22D3EE]">Items Need Attention</p>
                   </div>
-                  <p className="text-xs text-[#B0B3B8] mb-3">Close All Open Tables And End Active Sessions Before Closing The Day.</p>
+                  <p className="text-xs text-[#BDD0E2] mb-3">Close All Open Tables And End Active Sessions Before Closing The Day.</p>
                   <button onClick={forceCloseAll} disabled={closing}
-                    className="w-full py-3 rounded-xl bg-[#F59E0B] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50">
+                    className="w-full py-3 rounded-xl bg-[#22D3EE] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#0EA5C6] disabled:opacity-50">
                     {closing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                     Force Close All
                   </button>
@@ -270,7 +270,7 @@ const venueId = getVenueId();
 
               <button onClick={() => setStep(2)}
                 disabled={!allClear}
-                className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8] disabled:opacity-30">
+                className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8] disabled:opacity-30">
                 Next: Day Summary <ChevronRight className="w-5 h-5" />
               </button>
             </>
@@ -282,7 +282,7 @@ const venueId = getVenueId();
               <h2 className="text-xl font-bold text-white">Day Summary</h2>
 
               {lastClose && (
-                <p className="text-xs text-[#B0B3B8]">
+                <p className="text-xs text-[#BDD0E2]">
                   Last Closed {new Date(lastClose.created_at).toLocaleString()}{lastClose.closed_by_name ? ` By ${lastClose.closed_by_name}` : ''}, Re-Closing Will Update That Record.
                 </p>
               )}
@@ -291,10 +291,10 @@ const venueId = getVenueId();
                   fields; revenue/comp tiles render only when backed by real data
                   (dropped the Incidents tile - no endpoint feeds it). */}
               <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Sessions Today" value={dayStats.total_sessions || 0} color="#1877F2" />
+                <StatCard label="Sessions Today" value={dayStats.total_sessions || 0} color="#1981EC" />
                 <StatCard label="Unique Players" value={dayStats.unique_players || 0} color="#31A24C" />
-                <StatCard label="Player Hours" value={`${dayStats.total_hours || 0}h`} color="#F59E0B" />
-                <StatCard label="Peak Tables" value={dayStats.peak_tables || openTables.length || 0} color="#A855F7" />
+                <StatCard label="Player Hours" value={`${dayStats.total_hours || 0}h`} color="#22D3EE" />
+                <StatCard label="Peak Tables" value={dayStats.peak_tables || openTables.length || 0} color="#5AA9FF" />
               </div>
 
               {(dayStats.time_revenue != null || dayStats.tournament_revenue != null || dayStats.comps_awarded != null) && (
@@ -303,7 +303,7 @@ const venueId = getVenueId();
                     <StatCard label="Time Revenue" value={`$${dayStats.time_revenue.toLocaleString()}`} color="#31A24C" />
                   )}
                   {dayStats.tournament_revenue != null && (
-                    <StatCard label="Tournament Fees" value={`$${dayStats.tournament_revenue.toLocaleString()}`} color="#F59E0B" />
+                    <StatCard label="Tournament Fees" value={`$${dayStats.tournament_revenue.toLocaleString()}`} color="#22D3EE" />
                   )}
                   {dayStats.comps_awarded != null && (
                     <StatCard label="Comps Awarded" value={`$${dayStats.comps_awarded.toFixed(0)}`} color="#EF4444" />
@@ -313,14 +313,14 @@ const venueId = getVenueId();
 
               {/* Notes */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Shift Notes (Optional)</label>
+                <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Shift Notes (Optional)</label>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)}
                   rows={3} placeholder="Any Notes About The Shift..."
-                  className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2] resize-none" />
+                  className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC] resize-none" />
               </div>
 
               <button onClick={() => setStep(3)}
-                className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8]">
+                className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8]">
                 Next: Manager Sign-Off <ChevronRight className="w-5 h-5" />
               </button>
             </>
@@ -330,12 +330,12 @@ const venueId = getVenueId();
           {step === 3 && (
             <>
               <h2 className="text-xl font-bold text-white text-center">Manager Sign-Off</h2>
-              <p className="text-sm text-[#B0B3B8] text-center">Enter Your 4-Digit PIN To Confirm Close</p>
+              <p className="text-sm text-[#BDD0E2] text-center">Enter Your 4-Digit PIN To Confirm Close</p>
 
               <div className="flex justify-center gap-3 my-6">
                 {[0, 1, 2, 3].map(i => (
                   <div key={i}
-                    className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-bold ${pin.length > i ? 'border-[#1877F2] bg-[#1877F2]/10 text-white' : 'border-[#3A3B3C] bg-[#242526] text-[#3A3B3C]'
+                    className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-bold ${pin.length > i ? 'border-[#1981EC] bg-[#0C55C0]/10 text-white' : 'border-[#445E77] bg-[#0A1829] text-[#7F97B0]'
                       }`}>
                     {pin[i] ? '*' : ''}
                   </div>
@@ -352,7 +352,7 @@ const venueId = getVenueId();
                         if (key === 'del') setPin(pin.slice(0, -1));
                         else if (pin.length < 4) setPin(pin + key);
                       }}
-                      className="py-4 rounded-xl bg-[#3A3B3C] text-white text-xl font-semibold active:bg-[#4A4B4C]">
+                      className="py-4 rounded-xl bg-[#132A42] text-white text-xl font-semibold active:bg-[#1B3753]">
                       {key === 'del' ? 'Del' : key}
                     </button>
                   );
@@ -375,17 +375,17 @@ const venueId = getVenueId();
                 <CheckCircle2 className="w-12 h-12 text-[#31A24C]" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Day Closed</h2>
-              <p className="text-[#B0B3B8] mb-8">
+              <p className="text-[#BDD0E2] mb-8">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} Has Been Closed Successfully.
               </p>
 
               <div className="space-y-3">
                 <button onClick={() => router.push('/commander/reports/daily-summary')}
-                  className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8]">
+                  className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8]">
                   <FileText className="w-5 h-5" /> View Daily Report
                 </button>
                 <button onClick={() => router.back()}
-                  className="w-full py-4 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-lg font-semibold active:bg-[#4A4B4C]">
+                  className="w-full py-4 rounded-xl bg-[#132A42] text-[#F2F7FF] text-lg font-semibold active:bg-[#1B3753]">
                   Go Back
                 </button>
               </div>
@@ -428,7 +428,7 @@ function CheckItem({ label, detail, ok }) {
         : <XCircle className="w-6 h-6 text-[#EF4444] flex-shrink-0" />}
       <div>
         <p className={`text-sm font-medium ${ok ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>{label}</p>
-        <p className="text-xs text-[#B0B3B8]">{detail}</p>
+        <p className="text-xs text-[#BDD0E2]">{detail}</p>
       </div>
     </div>
   );
@@ -436,9 +436,9 @@ function CheckItem({ label, detail, ok }) {
 
 function StatCard({ label, value, color }) {
   return (
-    <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
+    <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
       <p className="text-xl font-bold" style={{ color }}>{value}</p>
-      <p className="text-[10px] text-[#B0B3B8]">{label}</p>
+      <p className="text-[10px] text-[#BDD0E2]">{label}</p>
     </div>
   );
 }

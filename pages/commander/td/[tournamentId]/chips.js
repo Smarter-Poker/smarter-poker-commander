@@ -242,20 +242,20 @@ export default function TDChipCounts() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
       </div>
     );
   }
 
   if (error || !floor) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
-        <div className="bg-[#242526] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" />
-          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament Not Found'}</p>
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
+        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
+          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
           <button onClick={() => navigateTo('')}
-            className="px-6 py-3 bg-[#1877F2] text-white rounded-lg text-base font-medium">
+            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
             Back To Control Center
           </button>
         </div>
@@ -268,7 +268,7 @@ export default function TDChipCounts() {
     : tables.filter(t => t.table_number === selectedTable);
 
   const varianceColor = accounting.variance === null
-    ? '#B0B3B8'
+    ? '#BDD0E2'
     : accounting.variance === 0
       ? '#31A24C'
       : '#EF4444';
@@ -281,55 +281,55 @@ export default function TDChipCounts() {
         noindex={true}
       />
 
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-24 font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] pb-24 font-['Inter']">
 
         {/* ===== HEADER ===== */}
         <PageBar
           title="Chip Counts"
           summary="Enter Each Player's Chip Count, Table By Table. The Panel Below Checks That The Chips Counted Match The Chips In Play. Changes Are Held Until You Save."
           status={`${allPlayers.length} Player${allPlayers.length === 1 ? '' : 's'} Across ${tables.length} Table${tables.length === 1 ? '' : 's'}${changedCount > 0 ? `, ${changedCount} Unsaved` : ''}`}
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
-          <button onClick={() => fetchFloor()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" title="Refresh" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={() => fetchFloor()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" title="Refresh" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
         {/* ===== CHIPS ACCOUNTED FOR ===== */}
         <div className="px-4 pt-3">
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Coins className="w-4 h-4 text-[#F59E0B]" />
-              <span className="text-xs text-[#B0B3B8] uppercase tracking-wider font-semibold">
+              <Coins className="w-4 h-4 text-[#22D3EE]" />
+              <span className="text-xs text-[#BDD0E2] uppercase tracking-wider font-semibold">
                 Chips Accounted For
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="text-center">
                 <p className="text-base font-bold text-white">{accounting.entered.toLocaleString()}</p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider mt-0.5">Entered</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider mt-0.5">Entered</p>
               </div>
               <div className="text-center">
                 <p className="text-base font-bold text-white">{accounting.recorded.toLocaleString()}</p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider mt-0.5">Recorded</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider mt-0.5">Recorded</p>
               </div>
               <div className="text-center">
                 <p className="text-base font-bold text-white">
                   {accounting.expected === null ? '--' : accounting.expected.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider mt-0.5">Expected</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider mt-0.5">Expected</p>
               </div>
             </div>
             {accounting.variance !== null && (
-              <div className="mt-3 pt-3 border-t border-[#3A3B3C] flex items-center justify-between">
-                <span className="text-xs text-[#B0B3B8]">Variance Vs Expected</span>
+              <div className="mt-3 pt-3 border-t border-[#445E77] flex items-center justify-between">
+                <span className="text-xs text-[#BDD0E2]">Variance Vs Expected</span>
                 <span className="text-sm font-bold" style={{ color: varianceColor }}>
                   {accounting.variance > 0 ? '+' : ''}{accounting.variance.toLocaleString()}
                 </span>
               </div>
             )}
             {accounting.expected === null && (
-              <p className="mt-3 pt-3 border-t border-[#3A3B3C] text-xs text-[#B0B3B8]">
+              <p className="mt-3 pt-3 border-t border-[#445E77] text-xs text-[#BDD0E2]">
                 Expected Total Needs A Starting Stack On The Tournament Setup.
               </p>
             )}
@@ -339,17 +339,17 @@ export default function TDChipCounts() {
         {/* ===== COLOR UP LINK ===== */}
         <div className="px-4 pt-3">
           <button onClick={() => navigateTo('/color-up')}
-            className="w-full bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 flex items-center justify-between active:bg-[#3A3B3C] transition-colors">
+            className="w-full bg-[#0A1829] border border-[#445E77] rounded-xl p-3 flex items-center justify-between active:bg-[#132A42] transition-colors">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
-                <Layers className="w-4 h-4 text-[#F59E0B]" />
+              <div className="w-9 h-9 rounded-full bg-[#22D3EE]/20 flex items-center justify-center">
+                <Layers className="w-4 h-4 text-[#22D3EE]" />
               </div>
               <div className="flex flex-col items-start">
                 <span className="text-white font-semibold text-sm">Color Up Helper</span>
-                <span className="text-[#B0B3B8] text-xs">Race Off A Denomination</span>
+                <span className="text-[#BDD0E2] text-xs">Race Off A Denomination</span>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
+            <ChevronRight className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -359,8 +359,8 @@ export default function TDChipCounts() {
             <button
               onClick={() => setSelectedTable('all')}
               className={`flex-shrink-0 px-4 h-11 rounded-xl text-sm font-semibold border active:scale-[0.98] transition-transform ${selectedTable === 'all'
-                ? 'bg-[#1877F2] border-[#1877F2] text-white'
-                : 'bg-[#242526] border-[#3A3B3C] text-[#B0B3B8]'
+                ? 'bg-[#0C55C0] border-[#1981EC] text-white'
+                : 'bg-[#0A1829] border-[#445E77] text-[#BDD0E2]'
                 }`}
             >
               All Tables
@@ -370,8 +370,8 @@ export default function TDChipCounts() {
                 key={t.table_number}
                 onClick={() => setSelectedTable(t.table_number)}
                 className={`flex-shrink-0 px-4 h-11 rounded-xl text-sm font-semibold border active:scale-[0.98] transition-transform ${selectedTable === t.table_number
-                  ? 'bg-[#1877F2] border-[#1877F2] text-white'
-                  : 'bg-[#242526] border-[#3A3B3C] text-[#B0B3B8]'
+                  ? 'bg-[#0C55C0] border-[#1981EC] text-white'
+                  : 'bg-[#0A1829] border-[#445E77] text-[#BDD0E2]'
                   }`}
               >
                 Table {t.table_number}
@@ -394,41 +394,41 @@ export default function TDChipCounts() {
             const isSaving = savingTable === table.table_number;
 
             return (
-              <div key={table.table_number} className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div key={table.table_number} className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#445E77] flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-bold text-white">Table {table.table_number}</h2>
-                    <p className="text-xs text-[#B0B3B8]">
+                    <p className="text-xs text-[#BDD0E2]">
                       {players.length} Seated, {tableTotal.toLocaleString()} Chips
                     </p>
                   </div>
                   {tableChanged > 0 && (
-                    <span className="px-2 py-1 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] text-xs font-semibold">
+                    <span className="px-2 py-1 rounded-lg bg-[#22D3EE]/10 text-[#22D3EE] text-xs font-semibold">
                       {tableChanged} Changed
                     </span>
                   )}
                 </div>
 
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                   {players.map(player => {
                     const state = rowState[player.entry_id];
                     const changed = isChanged(player);
                     const invalid = inputValue(player) !== '' && parsedValue(player) === null;
                     return (
                       <div key={player.entry_id} className="px-4 py-3 flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-full bg-[#1877F2]/20 text-[#1877F2] flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <span className="w-9 h-9 rounded-full bg-[#0C55C0]/20 text-[#86DAFF] flex items-center justify-center text-sm font-bold flex-shrink-0">
                           {player.seat_number ?? '-'}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#E4E6EB] truncate">{player.player_name}</p>
-                          <p className="text-[11px] text-[#B0B3B8]">
+                          <p className="text-sm font-medium text-[#F2F7FF] truncate">{player.player_name}</p>
+                          <p className="text-[11px] text-[#BDD0E2]">
                             Seat {player.seat_number ?? '-'}, Now {(player.current_chips || 0).toLocaleString()}
                             {state === 'saved' ? ', Saved' : ''}
                             {state === 'failed' ? ', Failed' : ''}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {state === 'saving' && <Loader2 className="w-4 h-4 text-[#1877F2] animate-spin" />}
+                          {state === 'saving' && <Loader2 className="w-4 h-4 text-[#86DAFF] animate-spin" />}
                           {state === 'saved' && <Check className="w-4 h-4 text-[#31A24C]" />}
                           {state === 'failed' && <AlertTriangle className="w-4 h-4 text-[#EF4444]" />}
                           <input
@@ -439,13 +439,13 @@ export default function TDChipCounts() {
                             onChange={e => handleInput(player.entry_id, e.target.value)}
                             onFocus={e => e.target.select()}
                             aria-label={`Chip Count For ${player.player_name}`}
-                            className={`w-28 h-14 rounded-xl bg-[#3A3B3C] border px-3 text-right text-xl font-bold text-white focus:outline-none ${invalid
+                            className={`w-28 h-14 rounded-xl bg-[#132A42] border px-3 text-right text-xl font-bold text-white focus:outline-none ${invalid
                               ? 'border-[#EF4444]'
                               : state === 'failed'
                                 ? 'border-[#EF4444]'
                                 : changed
-                                  ? 'border-[#F59E0B]'
-                                  : 'border-[#4A4B4C] focus:border-[#1877F2]'
+                                  ? 'border-[#22D3EE]'
+                                  : 'border-[#5A7590] focus:border-[#1981EC]'
                               }`}
                           />
                         </div>
@@ -453,15 +453,15 @@ export default function TDChipCounts() {
                     );
                   })}
                   {players.length === 0 && (
-                    <div className="px-4 py-6 text-center text-sm text-[#B0B3B8]">No Players Seated</div>
+                    <div className="px-4 py-6 text-center text-sm text-[#BDD0E2]">No Players Seated</div>
                   )}
                 </div>
 
-                <div className="p-4 border-t border-[#3A3B3C]">
+                <div className="p-4 border-t border-[#445E77]">
                   <button
                     onClick={() => handleSaveTable(table)}
                     disabled={isSaving || tableChanged === 0}
-                    className="w-full h-12 rounded-xl bg-[#1877F2] text-white text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40"
+                    className="w-full h-12 rounded-xl bg-[#0C55C0] text-white text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40"
                   >
                     {isSaving
                       ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving Table {table.table_number}...</>
@@ -475,20 +475,20 @@ export default function TDChipCounts() {
 
           {visibleTables.length === 0 && (
             <div className="text-center py-16">
-              <Coins className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-              <p className="text-[#B0B3B8]">No Active Tables</p>
+              <Coins className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+              <p className="text-[#BDD0E2]">No Active Tables</p>
             </div>
           )}
         </div>
 
         {/* ===== BOTTOM NAV BAR ===== */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
           <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
               return (
                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg text-[#B0B3B8] active:text-[#E4E6EB]">
+                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg text-[#BDD0E2] active:text-[#F2F7FF]">
                   <Icon className="w-5 h-5" />
                   <span className="text-[10px] font-medium">{item.label}</span>
                 </button>

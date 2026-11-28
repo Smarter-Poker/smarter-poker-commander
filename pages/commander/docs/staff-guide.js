@@ -375,13 +375,13 @@ export default function StaffGuidePage() {
         <header className="cmd-header-bar sticky top-0 z-20">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/commander/dashboard" className="text-[#B0B3B8] hover:text-white">
+              <Link href="/commander/dashboard" className="text-[#BDD0E2] hover:text-white">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
               <h1 className="text-xl font-bold text-white">Staff Training Guide</h1>
             </div>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B0B3B8]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDD0E2]" />
               <input
                 type="text"
                 placeholder="Search Guide..."
@@ -411,8 +411,8 @@ export default function StaffGuidePage() {
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                             activeSection === section.id
-                              ? 'bg-[#1877F2]/10 text-[#1877F2]'
-                              : 'text-[#B0B3B8] hover:text-white hover:bg-[#374151]'
+                              ? 'bg-[#0C55C0]/10 text-[#86DAFF]'
+                              : 'text-[#BDD0E2] hover:text-white hover:bg-[#374151]'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
@@ -434,8 +434,8 @@ export default function StaffGuidePage() {
                       const Icon = currentSection.icon;
                       return (
                         <CommanderLayout title="Staff Training Guide" backHref="/commander/dashboard?card=reports">
-                        <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-[#1877F2]" />
+                        <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-[#86DAFF]" />
                         </div>
                         </CommanderLayout>
                       );
@@ -451,18 +451,18 @@ export default function StaffGuidePage() {
                         <ol className="space-y-3 mb-4">
                           {item.steps.map((step, stepIdx) => (
                             <li key={stepIdx} className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-6 h-6 bg-[#3A3B3C] rounded-full flex items-center justify-center text-xs text-white font-medium">
+                              <span className="flex-shrink-0 w-6 h-6 bg-[#132A42] rounded-full flex items-center justify-center text-xs text-white font-medium">
                                 {stepIdx + 1}
                               </span>
-                              <span className="text-[#94A3B8] pt-0.5">{step}</span>
+                              <span className="text-[#A9BDD1] pt-0.5">{step}</span>
                             </li>
                           ))}
                         </ol>
 
                         {item.note && (
-                          <div className="flex items-start gap-2 p-3 bg-[#1877F2]/5 border border-[#1877F2]/20 rounded-lg">
-                            <AlertCircle className="w-5 h-5 text-[#1877F2] flex-shrink-0 mt-0.5" />
-                            <p className="text-sm text-[#1877F2]">{item.note}</p>
+                          <div className="flex items-start gap-2 p-3 bg-[#0C55C0]/5 border border-[#1981EC]/20 rounded-lg">
+                            <AlertCircle className="w-5 h-5 text-[#86DAFF] flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-[#86DAFF]">{item.note}</p>
                           </div>
                         )}
 
@@ -481,7 +481,7 @@ export default function StaffGuidePage() {
                     {currentIndex > 0 ? (
                       <button
                         onClick={() => setActiveSection(GUIDE_SECTIONS[currentIndex - 1].id)}
-                        className="flex items-center gap-2 text-[#B0B3B8] hover:text-white transition-colors"
+                        className="flex items-center gap-2 text-[#BDD0E2] hover:text-white transition-colors"
                       >
                         <ChevronLeft className="w-4 h-4" />
                         <span>{GUIDE_SECTIONS[currentIndex - 1].title}</span>
@@ -493,7 +493,7 @@ export default function StaffGuidePage() {
                     {currentIndex < GUIDE_SECTIONS.length - 1 ? (
                       <button
                         onClick={() => setActiveSection(GUIDE_SECTIONS[currentIndex + 1].id)}
-                        className="flex items-center gap-2 text-[#1877F2] hover:text-white transition-colors"
+                        className="flex items-center gap-2 text-[#86DAFF] hover:text-white transition-colors"
                       >
                         <span>{GUIDE_SECTIONS[currentIndex + 1].title}</span>
                         <ChevronRight className="w-4 h-4" />

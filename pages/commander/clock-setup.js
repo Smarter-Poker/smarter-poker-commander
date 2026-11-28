@@ -18,7 +18,7 @@ import PageBar from '../../src/components/commander/shared/PageBar';
 const DEFAULT_THEME = {
     background: '#0D192E',
     text: '#ffffff',
-    accent: '#1877F2',
+    accent: '#1981EC',
     blinds: '#ffffff',
     headerBg: 'rgba(0,0,0,0.3)' };
 
@@ -26,10 +26,10 @@ const DEFAULT_DISPLAY_OPTIONS = {
     chip_denominations: [
         { value: 25, color: '#2E7D32', label: '25' },
         { value: 100, color: '#1A1A1A', label: '100' },
-        { value: 500, color: '#6B2D8B', label: '500' },
-        { value: 1000, color: '#DAA520', label: '1,000' },
+        { value: 500, color: '#1E4A80', label: '500' },
+        { value: 1000, color: '#5FB8E0', label: '1,000' },
         { value: 5000, color: '#E65100', label: '5,000' },
-        { value: 25000, color: '#880E4F', label: '25,000' },
+        { value: 25000, color: '#0E3A5F', label: '25,000' },
     ],
     sound_pack: 'classic',
     show_prize_pool: true,
@@ -58,12 +58,12 @@ const SOUND_PACKS = [
 ];
 
 const STARTER_THEMES = [
-    { name: 'Midnight Blue', theme: { background: '#0D192E', text: '#ffffff', accent: '#1877F2', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Midnight Blue', theme: { background: '#0D192E', text: '#ffffff', accent: '#1981EC', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
     { name: 'Classic Green', theme: { background: '#0a3d0a', text: '#ffffff', accent: '#31A24C', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Royal Purple', theme: { background: '#1a0a2e', text: '#ffffff', accent: '#8B5CF6', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Royal Purple', theme: { background: '#1a0a2e', text: '#ffffff', accent: '#5AA9FF', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
     { name: 'Crimson Red', theme: { background: '#2a0a0a', text: '#ffffff', accent: '#EF4444', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Gold Elite', theme: { background: '#1a1508', text: '#ffffff', accent: '#F59E0B', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Stealth Black', theme: { background: '#0a0a0a', text: '#ffffff', accent: '#64748B', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Gold Elite', theme: { background: '#1a1508', text: '#ffffff', accent: '#22D3EE', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Stealth Black', theme: { background: '#0a0a0a', text: '#ffffff', accent: '#9FB3C8', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
 ];
 
 /* Page Help tours (Dan, 2026-10-17: the header words moved behind the "?"). */
@@ -231,7 +231,7 @@ export default function ClockSetup() {
 
     if (!staff) {
         return <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
         </div>;
     }
 
@@ -269,14 +269,14 @@ export default function ClockSetup() {
                                 style={inputStyle}
                             />
                             <label style={{ ...labelStyle, marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <input type="checkbox" checked={formDefault} onChange={e => setFormDefault(e.target.checked)} style={{ accentColor: '#1877F2' }} />
+                                <input type="checkbox" checked={formDefault} onChange={e => setFormDefault(e.target.checked)} style={{ accentColor: '#1981EC' }} />
                                 Set As Default Preset
                             </label>
                         </div>
 
                         {/* Live Preview */}
                         <div style={{ ...panelStyle, overflow: 'hidden' }} data-tour="cs-preview">
-                            <p style={{ fontSize: 11, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Live Preview</p>
+                            <p style={{ fontSize: 11, color: '#9FB3C8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Live Preview</p>
                             <div style={{
                                 background: formDisplay.background_image_url ? `url(${formDisplay.background_image_url}) center/cover` : formTheme.background,
                                 borderRadius: 12, padding: 24, textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -317,7 +317,7 @@ export default function ClockSetup() {
                                         />
                                         <div>
                                             <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: '#fff' }}>{label}</p>
-                                            <p style={{ fontSize: 10, color: '#64748B', fontFamily: 'monospace', margin: 0 }}>{formTheme[key]}</p>
+                                            <p style={{ fontSize: 10, color: '#9FB3C8', fontFamily: 'monospace', margin: 0 }}>{formTheme[key]}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -354,10 +354,10 @@ export default function ClockSetup() {
                                 ].map(({ key, label }) => (
                                     <label key={key} style={{
                                         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
-                                        background: formDisplay[key] ? 'rgba(24,119,242,0.1)' : 'rgba(255,255,255,0.03)',
-                                        border: `1px solid ${formDisplay[key] ? 'rgba(24,119,242,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                                        background: formDisplay[key] ? 'rgba(25, 129, 236,0.1)' : 'rgba(255,255,255,0.03)',
+                                        border: `1px solid ${formDisplay[key] ? 'rgba(25, 129, 236,0.3)' : 'rgba(255,255,255,0.08)'}`,
                                         cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        <input type="checkbox" checked={formDisplay[key]} onChange={e => setFormDisplay({ ...formDisplay, [key]: e.target.checked })} style={{ accentColor: '#1877F2' }} />
+                                        <input type="checkbox" checked={formDisplay[key]} onChange={e => setFormDisplay({ ...formDisplay, [key]: e.target.checked })} style={{ accentColor: '#1981EC' }} />
                                         <span style={{ fontSize: 12, fontWeight: 500 }}>{label}</span>
                                     </label>
                                 ))}
@@ -368,18 +368,18 @@ export default function ClockSetup() {
                         <div style={panelStyle}>
                             <p style={sectionTitle}>Screen Cycling</p>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                <input type="checkbox" checked={formDisplay.screen_cycle_enabled} onChange={e => setFormDisplay({ ...formDisplay, screen_cycle_enabled: e.target.checked })} style={{ accentColor: '#1877F2' }} />
+                                <input type="checkbox" checked={formDisplay.screen_cycle_enabled} onChange={e => setFormDisplay({ ...formDisplay, screen_cycle_enabled: e.target.checked })} style={{ accentColor: '#1981EC' }} />
                                 <span style={{ fontSize: 13, fontWeight: 500 }}>Auto-Rotate Between Display Screens</span>
                             </label>
                             {formDisplay.screen_cycle_enabled && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <label style={{ fontSize: 12, color: '#64748B' }}>Cycle Every</label>
+                                    <label style={{ fontSize: 12, color: '#9FB3C8' }}>Cycle Every</label>
                                     <input
                                         type="number" min="5" max="120" value={formDisplay.screen_cycle_interval}
                                         onChange={e => setFormDisplay({ ...formDisplay, screen_cycle_interval: parseInt(e.target.value) || 15 })}
                                         style={{ ...inputStyle, width: 80 }}
                                     />
-                                    <label style={{ fontSize: 12, color: '#64748B' }}>Seconds</label>
+                                    <label style={{ fontSize: 12, color: '#9FB3C8' }}>Seconds</label>
                                 </div>
                             )}
                         </div>
@@ -406,8 +406,8 @@ export default function ClockSetup() {
                                     { key: 'sound_final_table', label: 'Final Table Alert' },
                                 ].map(({ key, label }) => (
                                     <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                                        <input type="checkbox" checked={formDisplay[key]} onChange={e => setFormDisplay({ ...formDisplay, [key]: e.target.checked })} style={{ accentColor: '#1877F2' }} />
-                                        {formDisplay[key] ? <Volume2 size={14} color="#1877F2" /> : <VolumeX size={14} color="#64748B" />}
+                                        <input type="checkbox" checked={formDisplay[key]} onChange={e => setFormDisplay({ ...formDisplay, [key]: e.target.checked })} style={{ accentColor: '#1981EC' }} />
+                                        {formDisplay[key] ? <Volume2 size={14} color="#1981EC" /> : <VolumeX size={14} color="#9FB3C8" />}
                                         {label}
                                     </label>
                                 ))}
@@ -415,8 +415,8 @@ export default function ClockSetup() {
 
                             <p style={{ ...sectionTitle, marginTop: 16 }}>Display Protection</p>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                                <input type="checkbox" checked={formDisplay.burn_in_prevention} onChange={e => setFormDisplay({ ...formDisplay, burn_in_prevention: e.target.checked })} style={{ accentColor: '#1877F2' }} />
-                                <MonitorPlay size={14} color={formDisplay.burn_in_prevention ? '#1877F2' : '#64748B'} />
+                                <input type="checkbox" checked={formDisplay.burn_in_prevention} onChange={e => setFormDisplay({ ...formDisplay, burn_in_prevention: e.target.checked })} style={{ accentColor: '#1981EC' }} />
+                                <MonitorPlay size={14} color={formDisplay.burn_in_prevention ? '#1981EC' : '#9FB3C8'} />
                                 Burn-In Prevention (Subtle Pixel Shift For OLED/Plasma TVs)
                             </label>
                         </div>
@@ -424,7 +424,7 @@ export default function ClockSetup() {
                         {/* Chip Denominations */}
                         <div style={panelStyle} data-tour="cs-chips">
                             <p style={sectionTitle}>Chip Denominations</p>
-                            <p style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>Configure Chip Values And Colors Shown On The Clock Display. Obsolete Chips Auto-Dim Based On Current Blinds.</p>
+                            <p style={{ fontSize: 11, color: '#9FB3C8', marginBottom: 10 }}>Configure Chip Values And Colors Shown On The Clock Display. Obsolete Chips Auto-Dim Based On Current Blinds.</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations).map((chip, idx) => (
                                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -448,7 +448,7 @@ export default function ClockSetup() {
                                             style={{ ...inputStyle, width: 100, padding: '6px 8px', fontSize: 13 }}
                                             placeholder="Value"
                                         />
-                                        <span style={{ fontSize: 12, color: '#94A3B8', flex: 1 }}>{chip.label}</span>
+                                        <span style={{ fontSize: 12, color: '#A9BDD1', flex: 1 }}>{chip.label}</span>
                                         <button
                                             onClick={() => {
                                                 const updated = [...(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations)];
@@ -493,7 +493,7 @@ export default function ClockSetup() {
                                         loading="lazy"
                                         decoding="async"
                                     />
-                                    <span style={{ fontSize: 11, color: '#64748B' }}>Logo Preview</span>
+                                    <span style={{ fontSize: 11, color: '#9FB3C8' }}>Logo Preview</span>
                                 </div>
                             )}
                             <label style={{ ...labelStyle, marginTop: 12 }}>Background Image URL</label>
@@ -529,13 +529,13 @@ export default function ClockSetup() {
                     <div data-tour="cs-list">
                     {loading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                            <Loader2 size={24} className="animate-spin" color="#1877F2" />
+                            <Loader2 size={24} className="animate-spin" color="#1981EC" />
                         </div>
                     ) : presets.length === 0 ? (
                         <div style={{ ...panelStyle, textAlign: 'center', padding: 40 }}>
-                            <Palette size={40} color="#4A5E78" style={{ margin: '0 auto 12px' }} />
-                            <p style={{ color: '#64748B', marginBottom: 4 }}>No Clock Presets Yet</p>
-                            <p style={{ color: '#4A5E78', fontSize: 12, marginBottom: 16 }}>Create One Or Start From A Template Below</p>
+                            <Palette size={40} color="#445E77" style={{ margin: '0 auto 12px' }} />
+                            <p style={{ color: '#9FB3C8', marginBottom: 4 }}>No Clock Presets Yet</p>
+                            <p style={{ color: '#445E77', fontSize: 12, marginBottom: 16 }}>Create One Or Start From A Template Below</p>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                                 {STARTER_THEMES.map(st => (
                                     <button key={st.name} onClick={() => startNew(st)} style={{
@@ -551,24 +551,24 @@ export default function ClockSetup() {
                                     ...panelStyle, padding: 0, overflow: 'hidden',
                                     display: 'flex', alignItems: 'stretch' }}>
                                     {/* Color swatch */}
-                                    <div style={{ width: 6, background: preset.theme?.accent || '#1877F2', flexShrink: 0 }} />
+                                    <div style={{ width: 6, background: preset.theme?.accent || '#1981EC', flexShrink: 0 }} />
                                     <div style={{ flex: 1, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
                                         {/* Preview dot */}
                                         <div style={{
                                             width: 44, height: 44, borderRadius: 10, flexShrink: 0,
                                             background: preset.theme?.background || '#0D192E',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            border: `2px solid ${preset.theme?.accent || '#1877F2'}30` }}>
+                                            border: `2px solid ${preset.theme?.accent || '#1981EC'}30` }}>
                                             <span style={{ fontSize: 16, fontWeight: 800, fontFamily: 'monospace', color: preset.theme?.text || '#fff' }}>12</span>
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                                 <p style={{ fontSize: 15, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.name}</p>
                                                 {preset.is_default && (
-                                                    <span style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' }}>Default</span>
+                                                    <span style={{ fontSize: 9, fontWeight: 700, color: '#22D3EE', background: 'rgba(34, 211, 238,0.1)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' }}>Default</span>
                                                 )}
                                             </div>
-                                            <p style={{ fontSize: 11, color: '#64748B', margin: 0 }}>
+                                            <p style={{ fontSize: 11, color: '#9FB3C8', margin: 0 }}>
                                                 {[
                                                     preset.display_options?.show_icm && 'ICM',
                                                     preset.display_options?.show_payouts && 'Payouts',
@@ -588,7 +588,7 @@ export default function ClockSetup() {
 
                             {/* Add from template */}
                             <div style={{ marginTop: 8 }} data-tour="cs-templates">
-                                <p style={{ fontSize: 10, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Quick Add From Template</p>
+                                <p style={{ fontSize: 10, color: '#9FB3C8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Quick Add From Template</p>
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                     {STARTER_THEMES.map(st => (
                                         <button key={st.name} onClick={() => startNew(st)} style={{
@@ -632,21 +632,21 @@ export default function ClockSetup() {
 const panelStyle = {
     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 12, padding: 16, marginBottom: 12 };
-const labelStyle = { fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 4, display: 'block' };
-const sectionTitle = { fontSize: 11, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, marginTop: 0 };
+const labelStyle = { fontSize: 12, fontWeight: 600, color: '#A9BDD1', marginBottom: 4, display: 'block' };
+const sectionTitle = { fontSize: 11, color: '#9FB3C8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, marginTop: 0 };
 const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: 8, border: '2px solid #1E3A5F',
     background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: 14, fontFamily: "var(--font-inter), sans-serif",
     outline: 'none', boxSizing: 'border-box' };
 const btnPrimary = {
     display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8,
-    border: 'none', background: '#1877F2', color: '#fff', fontSize: 13, fontWeight: 600,
+    border: 'none', background: '#1981EC', color: '#fff', fontSize: 13, fontWeight: 600,
     cursor: 'pointer', fontFamily: "var(--font-inter), sans-serif" };
 const btnSecondary = {
     display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8,
-    border: '2px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#94A3B8',
+    border: '2px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#A9BDD1',
     fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "var(--font-inter), sans-serif" };
 const iconBtn = {
     padding: 6, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
-    background: 'transparent', color: '#94A3B8', cursor: 'pointer',
+    background: 'transparent', color: '#A9BDD1', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center' };

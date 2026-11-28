@@ -44,7 +44,7 @@ export default function ArenaLedgerPage() {
         description="Immutable Live Audit Trail"
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
         <h1 className="sr-only">{LEDGER_TITLE}</h1>
         {clubId ? (
           <ArenaLedger
@@ -52,7 +52,7 @@ export default function ArenaLedgerPage() {
             help={<PageHelp title={LEDGER_TITLE} summary={LEDGER_SUMMARY} steps={LEDGER_STEPS} />}
           />
         ) : (
-          <div className="flex items-center justify-center p-20 text-[#64748B]">
+          <div className="flex items-center justify-center p-20 text-[#9FB3C8]">
             Loading Venue Data...
           </div>
         )}

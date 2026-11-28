@@ -18,14 +18,14 @@ import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 /* ─── Status Config ─────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  scheduled: { color: '#B0B3B8', bg: 'rgba(176,179,184,0.12)', label: 'Scheduled' },
-  registration: { color: '#1877F2', bg: 'rgba(24,119,242,0.12)', label: 'Registration' },
-  registering: { color: '#1877F2', bg: 'rgba(24,119,242,0.12)', label: 'Registration' },
+  scheduled: { color: '#BDD0E2', bg: 'rgba(176,179,184,0.12)', label: 'Scheduled' },
+  registration: { color: '#1981EC', bg: 'rgba(25, 129, 236,0.12)', label: 'Registration' },
+  registering: { color: '#1981EC', bg: 'rgba(25, 129, 236,0.12)', label: 'Registration' },
   running: { color: '#31A24C', bg: 'rgba(49,162,76,0.12)', label: 'Running' },
-  paused: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: 'Paused' },
-  break: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: 'On Break' },
-  final_table: { color: '#1877F2', bg: 'rgba(24,119,242,0.12)', label: 'Final Table' },
-  completed: { color: '#B0B3B8', bg: 'rgba(176,179,184,0.10)', label: 'Completed' },
+  paused: { color: '#22D3EE', bg: 'rgba(34, 211, 238,0.12)', label: 'Paused' },
+  break: { color: '#22D3EE', bg: 'rgba(34, 211, 238,0.12)', label: 'On Break' },
+  final_table: { color: '#1981EC', bg: 'rgba(25, 129, 236,0.12)', label: 'Final Table' },
+  completed: { color: '#BDD0E2', bg: 'rgba(176,179,184,0.10)', label: 'Completed' },
   cancelled: { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', label: 'Cancelled' } };
 
 const FILTER_OPTIONS = [
@@ -65,11 +65,11 @@ function levelLabel(t) {
 
 /* ─── Inline styles ─────────────────────────────────────────── */
 const S = {
-  page: { minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), sans-serif" },
+  page: { minHeight: '100vh', background: '#040D18', color: '#F2F7FF', fontFamily: "var(--font-inter), sans-serif" },
   panel: {
-    background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14,
+    background: '#0A1829', border: '1px solid #2A4560', borderRadius: 14,
     transition: 'border-color 0.18s' },
-  label: { fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1 } };
+  label: { fontSize: 11, fontWeight: 700, color: '#BDD0E2', textTransform: 'uppercase', letterSpacing: 1 } };
 
 /* ─── Page ──────────────────────────────────────────────────── */
 export default function CommanderTournamentsPage() {
@@ -216,7 +216,7 @@ export default function CommanderTournamentsPage() {
   if (!staff || loading) {
     return (
       <div style={{ ...S.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={36} style={{ color: '#1877F2', animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={36} style={{ color: '#1981EC', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
@@ -227,21 +227,21 @@ export default function CommanderTournamentsPage() {
       <div style={S.page}>
 
         {/* ── Top Action Bar ── */}
-        <div data-page-bar="" style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px', gap: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div data-page-bar="" style={{ background: '#0A1829', borderBottom: '1px solid #2A4560', padding: '6px 16px', gap: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 className="sr-only">Tournaments</h1>
-          <p role="status" style={{ fontSize: 13, fontWeight: 600, color: '#B0B3B8', margin: 0, minWidth: 0 }}>{venue?.name || 'Club Commander'}</p>
+          <p role="status" style={{ fontSize: 13, fontWeight: 600, color: '#BDD0E2', margin: 0, minWidth: 0 }}>{venue?.name || 'Club Commander'}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => fetchTournaments(true)}
               disabled={refreshing}
-              style={{ width: 36, height: 36, borderRadius: 10, background: '#3A3B3C', border: 'none', color: '#B0B3B8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: 36, height: 36, borderRadius: 10, background: '#2A4560', border: 'none', color: '#BDD0E2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Refresh"
             >
               <RefreshCw size={16} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              style={{ padding: '8px 18px', borderRadius: 10, background: '#1877F2', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              style={{ padding: '8px 18px', borderRadius: 10, background: '#1981EC', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
             >
               <Plus size={15} /> Create
             </button>
@@ -261,15 +261,15 @@ export default function CommanderTournamentsPage() {
               ...S.panel,
               width: '100%', padding: '14px 18px', cursor: 'pointer', textAlign: 'left',
               display: 'flex', alignItems: 'center', gap: 14,
-              borderColor: 'rgba(245,158,11,0.3)',
-              background: 'linear-gradient(135deg, rgba(245,158,11,0.07) 0%, #242526 60%)' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.55)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; }}
+              borderColor: 'rgba(34, 211, 238,0.3)',
+              background: 'linear-gradient(135deg, rgba(34, 211, 238,0.07) 0%, #0A1829 60%)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(34, 211, 238,0.55)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(34, 211, 238,0.3)'; }}
           >
             {/* Icon */}
             <div style={{
               width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-              background: 'rgba(245,158,11,0.12)', border: '1.5px solid rgba(245,158,11,0.35)',
+              background: 'rgba(34, 211, 238,0.12)', border: '1.5px solid rgba(34, 211, 238,0.35)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img
                 src="/images/commander/icons/tn-controls.png"
@@ -278,19 +278,19 @@ export default function CommanderTournamentsPage() {
                 onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
               />
               <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                <Sliders size={24} style={{ color: '#F59E0B' }} />
+                <Sliders size={24} style={{ color: '#22D3EE' }} />
               </div>
             </div>
 
             {/* Text */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#E4E6EB', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: 0.5 }}>Tournament Director</p>
-              <p style={{ fontSize: 12, color: '#8A8D91', margin: 0 }}>Clock · Structure · Payouts · Players · Tables</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#F2F7FF', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: 0.5 }}>Tournament Director</p>
+              <p style={{ fontSize: 12, color: '#9FB3C8', margin: 0 }}>Clock · Structure · Payouts · Players · Tables</p>
             </div>
 
             {/* CTA chip */}
             <div style={{
-              padding: '7px 14px', borderRadius: 10, background: '#F59E0B',
+              padding: '7px 14px', borderRadius: 10, background: '#22D3EE',
               color: '#000', fontSize: 12, fontWeight: 800, flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 5, letterSpacing: 0.3 }}>
               <Sliders size={13} /> Launch TD
@@ -301,8 +301,8 @@ export default function CommanderTournamentsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
             {[
               { label: 'Active', count: activeTournaments.length, color: '#31A24C', icon: Play, filterKey: 'active' },
-              { label: 'Upcoming', count: upcomingTournaments.length, color: '#1877F2', icon: Calendar, filterKey: 'upcoming' },
-              { label: 'Completed', count: completedTournaments.length, color: '#F59E0B', icon: Trophy, filterKey: 'completed' },
+              { label: 'Upcoming', count: upcomingTournaments.length, color: '#1981EC', icon: Calendar, filterKey: 'upcoming' },
+              { label: 'Completed', count: completedTournaments.length, color: '#22D3EE', icon: Trophy, filterKey: 'completed' },
             ].map(({ label, count, color, icon: Icon, filterKey }) => (
               <button
                 key={filterKey}
@@ -310,19 +310,19 @@ export default function CommanderTournamentsPage() {
                 style={{
                   ...S.panel,
                   padding: '14px 10px', textAlign: 'center', cursor: 'pointer', border: 'none',
-                  borderLeft: filter === filterKey ? `3px solid ${color}` : '1px solid #3A3B3C',
-                  background: filter === filterKey ? `rgba(${color === '#31A24C' ? '49,162,76' : color === '#1877F2' ? '24,119,242' : '245,158,11'},0.08)` : '#242526' }}
+                  borderLeft: filter === filterKey ? `3px solid ${color}` : '1px solid #2A4560',
+                  background: filter === filterKey ? `rgba(${color === '#31A24C' ? '49,162,76' : color === '#1981EC' ? '24,119,242' : '245,158,11'},0.08)` : '#0A1829' }}
               >
                 <Icon size={20} style={{ color, marginBottom: 4, display: 'block', margin: '0 auto 6px' }} />
-                <p style={{ fontSize: 24, fontWeight: 800, color: '#E4E6EB', margin: '0 0 2px' }}>{count}</p>
-                <p style={{ fontSize: 11, color: '#8A8D91', margin: 0 }}>{label}</p>
+                <p style={{ fontSize: 24, fontWeight: 800, color: '#F2F7FF', margin: '0 0 2px' }}>{count}</p>
+                <p style={{ fontSize: 11, color: '#9FB3C8', margin: 0 }}>{label}</p>
               </button>
             ))}
           </div>
 
           {/* ── Filter Pills ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-            <Filter size={14} style={{ color: '#6A6B6D', flexShrink: 0 }} />
+            <Filter size={14} style={{ color: '#93A9C0', flexShrink: 0 }} />
             {FILTER_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -330,8 +330,8 @@ export default function CommanderTournamentsPage() {
                 style={{
                   padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
-                  background: filter === opt.value ? '#1877F2' : '#3A3B3C',
-                  color: filter === opt.value ? '#fff' : '#B0B3B8',
+                  background: filter === opt.value ? '#1981EC' : '#2A4560',
+                  color: filter === opt.value ? '#fff' : '#BDD0E2',
                   transition: 'background 0.15s' }}
               >
                 {opt.label}
@@ -342,18 +342,18 @@ export default function CommanderTournamentsPage() {
           {/* ── Tournament List ── */}
           {tournaments.length === 0 ? (
             <div style={{ ...S.panel, padding: '48px 24px', textAlign: 'center' }}>
-              <Trophy size={48} style={{ color: '#3A3B3C', margin: '0 auto 16px', display: 'block' }} />
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: '#E4E6EB', margin: '0 0 8px' }}>
+              <Trophy size={48} style={{ color: '#2A4560', margin: '0 auto 16px', display: 'block' }} />
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: '#F2F7FF', margin: '0 0 8px' }}>
                 {filter === 'all' || filter === 'current_future' ? 'No Tournaments Yet' : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Tournaments`}
               </h2>
-              <p style={{ fontSize: 13, color: '#8A8D91', margin: '0 0 20px' }}>
+              <p style={{ fontSize: 13, color: '#9FB3C8', margin: '0 0 20px' }}>
                 {filter === 'all' || filter === 'current_future'
                   ? 'Create Your First Tournament To Get Started'
                   : 'Try A Different Filter Or Create A New Tournament'}
               </p>
               <button
                 onClick={() => setShowCreate(true)}
-                style={{ padding: '10px 24px', borderRadius: 10, background: '#1877F2', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                style={{ padding: '10px 24px', borderRadius: 10, background: '#1981EC', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
                 <Plus size={15} /> Create Tournament
               </button>
@@ -377,22 +377,22 @@ export default function CommanderTournamentsPage() {
                     style={{
                       ...S.panel,
                       width: '100%', padding: '16px 18px', textAlign: 'left', cursor: 'pointer',
-                      borderLeft: isActive ? '3px solid #31A24C' : '1px solid #3A3B3C' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#1877F2'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#31A24C' : '#3A3B3C'; }}
+                      borderLeft: isActive ? '3px solid #31A24C' : '1px solid #2A4560' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#1981EC'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#31A24C' : '#2A4560'; }}
                   >
                     {/* Header row */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: '#E4E6EB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: '#F2F7FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {t.name}
                           </span>
                           <span style={{ flexShrink: 0, padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, background: st.bg, color: st.color }}>
                             {st.label}
                           </span>
                         </div>
-                        <p style={{ fontSize: 12, color: '#8A8D91', margin: 0 }}>
+                        <p style={{ fontSize: 12, color: '#9FB3C8', margin: 0 }}>
                           {t.tournament_type ? t.tournament_type.charAt(0).toUpperCase() + t.tournament_type.slice(1) : 'NLH'}
                           {t.buyin_amount ? ` · $${t.buyin_amount}` : ''}
                           {t.buyin_fee ? `+$${t.buyin_fee}` : ''}
@@ -411,11 +411,11 @@ export default function CommanderTournamentsPage() {
                           onClick={e => { e.stopPropagation(); router.push(`/commander/td/${t.id}`); }}
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); router.push(`/commander/td/${t.id}`); } }}
                           style={{
-                            width: 34, height: 34, borderRadius: 9, background: 'rgba(245,158,11,0.14)',
+                            width: 34, height: 34, borderRadius: 9, background: 'rgba(34, 211, 238,0.14)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer', flexShrink: 0 }}
                         >
-                          <Sliders size={15} style={{ color: '#F59E0B' }} />
+                          <Sliders size={15} style={{ color: '#22D3EE' }} />
                         </span>
                         <span
                           role="button"
@@ -425,29 +425,29 @@ export default function CommanderTournamentsPage() {
                           onClick={e => { e.stopPropagation(); openCloneModal(t); }}
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openCloneModal(t); } }}
                           style={{
-                            width: 34, height: 34, borderRadius: 9, background: '#3A3B3C',
+                            width: 34, height: 34, borderRadius: 9, background: '#2A4560',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer', flexShrink: 0 }}
                         >
-                          <Copy size={15} style={{ color: '#B0B3B8' }} />
+                          <Copy size={15} style={{ color: '#BDD0E2' }} />
                         </span>
-                        <ChevronRight size={18} style={{ color: '#3A3B3C', flexShrink: 0 }} />
+                        <ChevronRight size={18} style={{ color: '#2A4560', flexShrink: 0 }} />
                       </div>
                     </div>
 
                     {/* Stats grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                       {[
-                        { icon: Calendar, label: isToday(t.scheduled_start) ? 'Today' : formatDate(t.scheduled_start), sub: formatTime(t.scheduled_start), color: '#B0B3B8' },
-                        { icon: Users, label: `${t.current_entries || 0}${t.max_entries ? `/${t.max_entries}` : ''}`, sub: 'Entries', color: '#1877F2' }, // 2026-07-25 audit fix: current_entries
+                        { icon: Calendar, label: isToday(t.scheduled_start) ? 'Today' : formatDate(t.scheduled_start), sub: formatTime(t.scheduled_start), color: '#BDD0E2' },
+                        { icon: Users, label: `${t.current_entries || 0}${t.max_entries ? `/${t.max_entries}` : ''}`, sub: 'Entries', color: '#1981EC' }, // 2026-07-25 audit fix: current_entries
                         { icon: DollarSign, label: `$${(prize || 0).toLocaleString()}`, sub: 'Prize Pool', color: '#31A24C' },
-                        { icon: Clock, label: t.starting_chips ? `${(t.starting_chips / 1000).toFixed(0)}K` : '--', sub: 'Chips', color: '#B0B3B8' },
+                        { icon: Clock, label: t.starting_chips ? `${(t.starting_chips / 1000).toFixed(0)}K` : '--', sub: 'Chips', color: '#BDD0E2' },
                       ].map(({ icon: Icon, label, sub, color }, idx) => (
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Icon size={14} style={{ color: '#6A6B6D', flexShrink: 0 }} />
+                          <Icon size={14} style={{ color: '#93A9C0', flexShrink: 0 }} />
                           <div>
                             <p style={{ fontSize: 12, fontWeight: 700, color, margin: 0 }}>{label}</p>
-                            <p style={{ fontSize: 10, color: '#6A6B6D', margin: 0 }}>{sub}</p>
+                            <p style={{ fontSize: 10, color: '#93A9C0', margin: 0 }}>{sub}</p>
                           </div>
                         </div>
                       ))}
@@ -455,10 +455,10 @@ export default function CommanderTournamentsPage() {
 
                     {/* Active live bar */}
                     {isActive && (
-                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #3A3B3C', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #2A4560', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{levelLabel(t)}</span>
-                          <span style={{ fontSize: 12, color: '#8A8D91' }}>{t.players_remaining || t.current_entries || 0} Remaining</span>{/* 2026-07-25 audit fix: current_entries */}
+                          <span style={{ fontSize: 12, color: '#9FB3C8' }}>{levelLabel(t)}</span>
+                          <span style={{ fontSize: 12, color: '#9FB3C8' }}>{t.players_remaining || t.current_entries || 0} Remaining</span>{/* 2026-07-25 audit fix: current_entries */}
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#31A24C', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#31A24C', display: 'inline-block', boxShadow: '0 0 6px #31A24C', animation: 'pulse 1.5s infinite' }} />
@@ -469,8 +469,8 @@ export default function CommanderTournamentsPage() {
 
                     {/* Guaranteed overlay */}
                     {(t.guaranteed_pool > 0 && prize < t.guaranteed_pool) && (
-                      <div style={{ marginTop: 8, padding: '4px 10px', background: 'rgba(245,158,11,0.1)', borderRadius: 6, display: 'inline-block' }}>
-                        <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 700 }}>${t.guaranteed_pool.toLocaleString()} GTD</span>
+                      <div style={{ marginTop: 8, padding: '4px 10px', background: 'rgba(34, 211, 238,0.1)', borderRadius: 6, display: 'inline-block' }}>
+                        <span style={{ fontSize: 11, color: '#22D3EE', fontWeight: 700 }}>${t.guaranteed_pool.toLocaleString()} GTD</span>
                       </div>
                     )}
                   </button>
@@ -523,17 +523,17 @@ export default function CommanderTournamentsPage() {
           <div style={{ ...S.panel, width: '100%', maxWidth: 420, padding: 20 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(24,119,242,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Copy size={17} style={{ color: '#1877F2' }} />
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(25, 129, 236,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Copy size={17} style={{ color: '#1981EC' }} />
                 </div>
-                <h2 style={{ fontSize: 16, fontWeight: 800, color: '#E4E6EB', margin: 0 }}>Clone Tournament</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: '#F2F7FF', margin: 0 }}>Clone Tournament</h2>
               </div>
               <button onClick={() => !cloning && setCloneModal(null)}
-                style={{ width: 34, height: 34, borderRadius: 9, background: '#3A3B3C', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={16} style={{ color: '#B0B3B8' }} />
+                style={{ width: 34, height: 34, borderRadius: 9, background: '#2A4560', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={16} style={{ color: '#BDD0E2' }} />
               </button>
             </div>
-            <p style={{ fontSize: 12, color: '#8A8D91', margin: '0 0 16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ fontSize: 12, color: '#9FB3C8', margin: '0 0 16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               Copies The Full Setup Of {cloneModal.name || 'This Tournament'}
             </p>
 
@@ -543,8 +543,8 @@ export default function CommanderTournamentsPage() {
               value={cloneStart}
               onChange={e => setCloneStart(e.target.value)}
               style={{
-                width: '100%', boxSizing: 'border-box', background: '#3A3B3C', border: '1px solid #4A4B4C',
-                borderRadius: 10, padding: '12px 14px', color: '#E4E6EB', fontSize: 14,
+                width: '100%', boxSizing: 'border-box', background: '#2A4560', border: '1px solid #3A5873',
+                borderRadius: 10, padding: '12px 14px', color: '#F2F7FF', fontSize: 14,
                 fontFamily: 'inherit', marginBottom: 14, colorScheme: 'dark' }}
             />
 
@@ -555,8 +555,8 @@ export default function CommanderTournamentsPage() {
               onChange={e => setCloneName(e.target.value)}
               placeholder={cloneModal.name || 'Same As Original'}
               style={{
-                width: '100%', boxSizing: 'border-box', background: '#3A3B3C', border: '1px solid #4A4B4C',
-                borderRadius: 10, padding: '12px 14px', color: '#E4E6EB', fontSize: 14,
+                width: '100%', boxSizing: 'border-box', background: '#2A4560', border: '1px solid #3A5873',
+                borderRadius: 10, padding: '12px 14px', color: '#F2F7FF', fontSize: 14,
                 fontFamily: 'inherit', marginBottom: 14 }}
             />
 
@@ -565,8 +565,8 @@ export default function CommanderTournamentsPage() {
               value={cloneCount}
               onChange={e => setCloneCount(Number(e.target.value) || 1)}
               style={{
-                width: '100%', boxSizing: 'border-box', background: '#3A3B3C', border: '1px solid #4A4B4C',
-                borderRadius: 10, padding: '12px 14px', color: '#E4E6EB', fontSize: 14,
+                width: '100%', boxSizing: 'border-box', background: '#2A4560', border: '1px solid #3A5873',
+                borderRadius: 10, padding: '12px 14px', color: '#F2F7FF', fontSize: 14,
                 fontFamily: 'inherit', marginBottom: 18 }}
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map(c => (
@@ -576,11 +576,11 @@ export default function CommanderTournamentsPage() {
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setCloneModal(null)} disabled={cloning}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#3A3B3C', border: 'none', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#2A4560', border: 'none', color: '#F2F7FF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                 Cancel
               </button>
               <button onClick={submitClone} disabled={cloning || !cloneStart}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#1877F2', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: cloning || !cloneStart ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#1981EC', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: cloning || !cloneStart ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 {cloning ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Copy size={15} />}
                 {cloning ? 'Cloning...' : cloneCount > 1 ? `Create ${cloneCount} Events` : 'Clone'}
               </button>

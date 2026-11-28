@@ -85,18 +85,18 @@ export default function TournamentMaintenance() {
     const selectedTournaments = selectedDate ? getTournamentsForDate(selectedDate) : [];
 
     const STATUS_COLORS = {
-        scheduled: 'bg-[#1877F2]/10 text-[#1877F2]',
+        scheduled: 'bg-[#0C55C0]/10 text-[#86DAFF]',
         registration: 'bg-[#22D3EE]/10 text-[#22D3EE]',
         running: 'bg-[#31A24C]/10 text-[#31A24C]',
-        completed: 'bg-[#64748B]/10 text-[#64748B]',
+        completed: 'bg-[#9FB3C8]/10 text-[#9FB3C8]',
         cancelled: 'bg-[#EF4444]/10 text-[#EF4444]',
-        paused: 'bg-[#F59E0B]/10 text-[#F59E0B]',
-        final_table: 'bg-[#8B5CF6]/10 text-[#8B5CF6]' };
+        paused: 'bg-[#22D3EE]/10 text-[#22D3EE]',
+        final_table: 'bg-[#5AA9FF]/10 text-[#5AA9FF]' };
 
     if (!staff) {
         return (
             <div className="cmd-page flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
             </div>
         );
     }
@@ -117,11 +117,11 @@ export default function TournamentMaintenance() {
                     <div className="cmd-panel p-4" data-tour="tm-calendar">
                         {/* Month Navigation */}
                         <div className="flex items-center justify-between mb-4">
-                            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-[#132240] text-[#64748B] hover:text-white transition-colors">
+                            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-[#132240] text-[#9FB3C8] hover:text-white transition-colors">
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
                             <h2 className="text-lg font-bold text-white">{monthName}</h2>
-                            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-[#132240] text-[#64748B] hover:text-white transition-colors">
+                            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-[#132240] text-[#9FB3C8] hover:text-white transition-colors">
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
@@ -129,7 +129,7 @@ export default function TournamentMaintenance() {
                         {/* Day Headers */}
                         <div className="grid grid-cols-7 gap-1 mb-1">
                             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                                <div key={d} className="text-center text-[10px] font-semibold text-[#64748B] uppercase py-1">{d}</div>
+                                <div key={d} className="text-center text-[10px] font-semibold text-[#9FB3C8] uppercase py-1">{d}</div>
                             ))}
                         </div>
 
@@ -147,28 +147,28 @@ export default function TournamentMaintenance() {
                                 const isSelected = selectedDate === day;
 
                                 const STATUS_DOT = {
-                                    scheduled: 'text-[#1877F2]',
+                                    scheduled: 'text-[#86DAFF]',
                                     registration: 'text-[#22D3EE]',
                                     running: 'text-[#31A24C]',
-                                    completed: 'text-[#64748B]',
+                                    completed: 'text-[#9FB3C8]',
                                     cancelled: 'text-[#EF4444]',
-                                    paused: 'text-[#F59E0B]',
-                                    final_table: 'text-[#8B5CF6]' };
+                                    paused: 'text-[#22D3EE]',
+                                    final_table: 'text-[#5AA9FF]' };
 
                                 return (
                                     <button
                                         key={day}
                                         onClick={() => setSelectedDate(isSelected ? null : day)}
-                                        className={`min-h-[72px] rounded-lg flex flex-col items-start p-1.5 transition-all relative text-left ${isSelected ? 'bg-[#1877F2] text-white ring-2 ring-[#1877F2]/50'
-                                            : isToday ? 'bg-[#1877F2]/10 text-white border border-[#1877F2]/30'
-                                                : 'text-[#94A3B8] hover:bg-[#132240]'
+                                        className={`min-h-[72px] rounded-lg flex flex-col items-start p-1.5 transition-all relative text-left ${isSelected ? 'bg-[#0C55C0] text-white ring-2 ring-[#1981EC]/50'
+                                            : isToday ? 'bg-[#0C55C0]/10 text-white border border-[#1981EC]/30'
+                                                : 'text-[#A9BDD1] hover:bg-[#132240]'
                                             }`}
                                     >
                                         <span className="text-xs font-semibold">{day}</span>
                                         {dayTournaments.length > 0 && (
                                             <div className="mt-0.5 w-full space-y-px overflow-hidden flex-1">
                                                 {dayTournaments.slice(0, 3).map((t, j) => {
-                                                    const dotColor = isSelected ? 'text-white/70' : (STATUS_DOT[t.status] || 'text-[#1877F2]');
+                                                    const dotColor = isSelected ? 'text-white/70' : (STATUS_DOT[t.status] || 'text-[#86DAFF]');
                                                     // Abbreviate: take first ~8 chars of name
                                                     const shortName = t.name.length > 10 ? t.name.slice(0, 9) + '…' : t.name;
                                                     return (
@@ -178,7 +178,7 @@ export default function TournamentMaintenance() {
                                                     );
                                                 })}
                                                 {dayTournaments.length > 3 && (
-                                                    <div className={`text-[7px] leading-[10px] font-semibold ${isSelected ? 'text-white/60' : 'text-[#64748B]'}`}>
+                                                    <div className={`text-[7px] leading-[10px] font-semibold ${isSelected ? 'text-white/60' : 'text-[#9FB3C8]'}`}>
                                                         +{dayTournaments.length - 3} More
                                                     </div>
                                                 )}
@@ -193,7 +193,7 @@ export default function TournamentMaintenance() {
                     {/* Selected Date Detail */}
                     {selectedDate && (
                         <div>
-                            <p className="text-xs text-[#64748B] font-semibold uppercase tracking-wider mb-2">
+                            <p className="text-xs text-[#9FB3C8] font-semibold uppercase tracking-wider mb-2">
                                 {new Date(year, month, selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                             </p>
                             {selectedTournaments.length > 0 ? (
@@ -202,7 +202,7 @@ export default function TournamentMaintenance() {
                                         <div key={t.id} className="cmd-panel p-4 flex items-center gap-3">
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-semibold text-white truncate">{t.name}</p>
-                                                <div className="flex items-center gap-3 mt-1 text-xs text-[#64748B]">
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-[#9FB3C8]">
                                                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />
                                                         {new Date(t.scheduled_start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                                     </span>
@@ -217,7 +217,7 @@ export default function TournamentMaintenance() {
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${STATUS_COLORS[t.status] || STATUS_COLORS.scheduled}`}>{(t.status || '').replace(/_/g, ' ')}</span>
                                             <button
                                                 onClick={() => router.push(`/commander/tournaments/${t.id}/settings`)} /* 2026-08-04 audit fix: tournaments list ignores ?edit= - open the settings editor directly */
-                                                className="p-2 rounded-lg hover:bg-[#1877F2]/10 text-[#64748B] hover:text-[#1877F2] transition-colors"
+                                                className="p-2 rounded-lg hover:bg-[#0C55C0]/10 text-[#9FB3C8] hover:text-[#86DAFF] transition-colors"
                                                 title="Edit Tournament"
                                             >
                                                 <Edit2 className="w-4 h-4" />
@@ -226,7 +226,7 @@ export default function TournamentMaintenance() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="cmd-panel p-4 text-center text-[#64748B] text-sm">
+                                <div className="cmd-panel p-4 text-center text-[#9FB3C8] text-sm">
                                     No Tournaments Scheduled For This Date
                                 </div>
                             )}
@@ -235,7 +235,7 @@ export default function TournamentMaintenance() {
 
                     {loading && (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-6 h-6 animate-spin text-[#1877F2]" />
+                            <Loader2 className="w-6 h-6 animate-spin text-[#86DAFF]" />
                         </div>
                     )}
                 </div>

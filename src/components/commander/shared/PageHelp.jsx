@@ -8,7 +8,7 @@
  * MAKES IT HARDER TO USE THE SITE, WE NEED TO SIMPLY PAGES."
  *
  * Mirrors Club Arena's src/components/help/PageHelp.tsx in behaviour, in the
- * Commander palette (accent #1877F2, surface #242526, border #3A3B3C).
+ * Commander palette (accent #1981EC, surface #0A1829, border #2A4560).
  *
  * Every page header used to print a giant title and a sentence describing the
  * page. The words moved in here: step 0 ("About This Page") is the page title
@@ -26,6 +26,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
+import { usePageHelpHost } from './PageHelpHost';
+import { SD_HEADER_HELP_ICON } from './sdHeaderHelp';
 
 export const FOCUS_ATTR = 'data-tutorial-focus';
 const MAX_SECTION_STEPS = 6;
@@ -117,8 +119,17 @@ export function clearTutorialFocus() {
   document.querySelectorAll(`[${FOCUS_ATTR}]`).forEach((el) => el.removeAttribute(FOCUS_ATTR));
 }
 
-export default function PageHelp({ title, summary, steps, className = '' }) {
+export default function PageHelp({ title, summary, steps, className = '', embedded = false }) {
   const router = useRouter();
+  // #SMARTERDESIGN (2026-11-27): when the page has an image header, its painted
+  // "?" is the page's one help control. This instance hands its content to the
+  // header (PageHelpHost) and draws nothing.
+  const host = usePageHelpHost();
+  const delegate = !embedded && !!(host && host.hasHeader);
+  const register = host && host.register;
+  useEffect(() => {
+    if (delegate && register) register({ title, summary, steps });
+  }, [delegate, register, title, summary, steps]);
   const panelId = useId();
   const titleId = useId();
   const buttonRef = useRef(null);
@@ -207,19 +218,23 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
   const step = tour[index];
   const last = index >= tour.length - 1;
 
+  if (delegate) return null;
+
   return (
     <>
       <button
         ref={buttonRef}
         type="button"
-        className={`cmd-page-help inline-flex flex-none items-center justify-center w-11 h-11 rounded-full bg-[#242526] border-2 border-[#1877F2] text-[#E4E6EB] text-lg font-bold leading-none cursor-pointer select-none active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1877F2] focus-visible:ring-offset-2 focus-visible:ring-offset-[#18191A] ${className}`}
-        aria-label="Page Help"
+        className={embedded ? 'sd-header-help' : `cmd-page-help ${className}`}
+        data-focus-custom=""
+        aria-label={`Help For ${pageTitle || 'This Page'}`}
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => (open ? close() : openHelp())}
         data-page-help=""
       >
-        <span aria-hidden="true">?</span>
+        <img src={SD_HEADER_HELP_ICON} alt="" width="36" height="37" draggable={false} />
       </button>
       {open &&
         step &&
@@ -228,7 +243,7 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
           <div
             id={panelId}
             ref={panelRef}
-            className="cmd-tutorial-panel fixed mx-auto max-w-[560px] rounded-2xl border border-[#3A3B3C] bg-[#242526] text-[#E4E6EB] shadow-2xl outline-none font-['Inter']"
+            className="cmd-tutorial-panel sd-panel fixed mx-auto max-w-[560px] rounded-2xl border border-[#445E77] bg-[#0A1829] text-[#F2F7FF] shadow-2xl outline-none font-['Inter']"
             style={{
               left: 'max(12px, env(safe-area-inset-left))',
               right: 'max(12px, env(safe-area-inset-right))',
@@ -243,27 +258,27 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
             data-page-help=""
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#1877F2]">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#86DAFF]">
                 {index === 0 ? 'About This Page' : `Step ${index} Of ${tour.length - 1}`}
               </span>
               <button
                 type="button"
-                className="min-h-[32px] rounded-lg px-3 text-xs font-semibold text-[#B0B3B8] hover:text-white active:bg-[#3A3B3C]"
+                className="min-h-[32px] rounded-lg px-3 text-xs font-semibold text-[#BDD0E2] hover:text-white active:bg-[#132A42]"
                 aria-label="Close Help"
                 onClick={close}
               >
                 Close
               </button>
             </div>
-            <h2 id={titleId} className="mt-2 text-lg font-extrabold leading-tight text-[#E4E6EB]">
+            <h2 id={titleId} className="mt-2 text-lg font-extrabold leading-tight text-[#F2F7FF]">
               {step.title}
             </h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-[#B0B3B8]">{step.body}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-[#BDD0E2]">{step.body}</p>
             <div className="mt-3.5 flex flex-wrap gap-1.5" aria-hidden="true">
               {tour.map((s, i) => (
                 <span
                   key={`${s.title}-${i}`}
-                  className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-[#1877F2]' : 'bg-[#B0B3B8] opacity-40'}`}
+                  className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-[#0C55C0]' : 'bg-[#BDD0E2] opacity-40'}`}
                 />
               ))}
             </div>
@@ -271,7 +286,7 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
               {index > 0 ? (
                 <button
                   type="button"
-                  className="min-h-[44px] rounded-xl bg-[#3A3B3C] text-sm font-semibold text-[#E4E6EB] active:bg-[#4E4F50]"
+                  className="min-h-[44px] rounded-xl bg-[#132A42] text-sm font-semibold text-[#F2F7FF] active:bg-[#1B3753]"
                   onClick={() => setIndex((i) => Math.max(0, i - 1))}
                 >
                   Back
@@ -279,7 +294,7 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
               ) : (
                 <button
                   type="button"
-                  className="min-h-[44px] rounded-xl bg-[#3A3B3C] text-sm font-semibold text-[#E4E6EB] active:bg-[#4E4F50]"
+                  className="min-h-[44px] rounded-xl bg-[#132A42] text-sm font-semibold text-[#F2F7FF] active:bg-[#1B3753]"
                   onClick={close}
                 >
                   Got It
@@ -288,7 +303,7 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
               {last ? (
                 <button
                   type="button"
-                  className="min-h-[44px] rounded-xl bg-[#1877F2] text-sm font-semibold text-white active:bg-[#1664D9]"
+                  className="min-h-[44px] rounded-xl bg-[#0C55C0] text-sm font-semibold text-white active:bg-[#0A4AA8]"
                   onClick={close}
                 >
                   Done
@@ -296,7 +311,7 @@ export default function PageHelp({ title, summary, steps, className = '' }) {
               ) : (
                 <button
                   type="button"
-                  className="min-h-[44px] rounded-xl bg-[#1877F2] text-sm font-semibold text-white active:bg-[#1664D9]"
+                  className="min-h-[44px] rounded-xl bg-[#0C55C0] text-sm font-semibold text-white active:bg-[#0A4AA8]"
                   onClick={() => setIndex((i) => Math.min(tour.length - 1, i + 1))}
                 >
                   {index === 0 ? 'Start Tutorial' : 'Next'}

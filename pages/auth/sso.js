@@ -132,7 +132,7 @@ export default function SSOPage() {
 
   // -- UI ----------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
       <SEOHead
         title="Club Commander - Signing In"
         description="Completing your Club Commander sign-in."
@@ -148,31 +148,31 @@ export default function SSOPage() {
         />
 
         {status === 'loading' && (
-          <div className="bg-[#242526] rounded-xl p-8 border border-[#3A3B3C]">
-            <Loader2 className="w-10 h-10 animate-spin text-[#1877F2] mx-auto mb-4" />
-            <p className="text-[#E4E6EB] font-semibold text-lg mb-2">Signing you in…</p>
-            <p className="text-[#B0B3B8] text-sm">
+          <div className="bg-[#0A1829] rounded-xl p-8 border border-[#445E77]">
+            <Loader2 className="w-10 h-10 animate-spin text-[#86DAFF] mx-auto mb-4" />
+            <p className="text-[#F2F7FF] font-semibold text-lg mb-2">Signing you in…</p>
+            <p className="text-[#BDD0E2] text-sm">
               Completing your Smarter.Poker session transfer.
             </p>
           </div>
         )}
 
         {status === 'success' && (
-          <div className="bg-[#242526] rounded-xl p-8 border border-[#3A3B3C]">
+          <div className="bg-[#0A1829] rounded-xl p-8 border border-[#445E77]">
             <ShieldCheck className="w-10 h-10 text-green-400 mx-auto mb-4" />
-            <p className="text-[#E4E6EB] font-semibold text-lg mb-2">Signed In!</p>
-            <p className="text-[#B0B3B8] text-sm">Redirecting to your dashboard…</p>
+            <p className="text-[#F2F7FF] font-semibold text-lg mb-2">Signed In!</p>
+            <p className="text-[#BDD0E2] text-sm">Redirecting to your dashboard…</p>
           </div>
         )}
 
         {status === 'error' && (
-          <div className="bg-[#242526] rounded-xl p-8 border border-[#3A3B3C]">
+          <div className="bg-[#0A1829] rounded-xl p-8 border border-[#445E77]">
             <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-4" />
-            <p className="text-[#E4E6EB] font-semibold text-lg mb-3">Sign-In Failed</p>
-            <p className="text-[#B0B3B8] text-sm mb-6">{error}</p>
+            <p className="text-[#F2F7FF] font-semibold text-lg mb-3">Sign-In Failed</p>
+            <p className="text-[#BDD0E2] text-sm mb-6">{error}</p>
             <a
               href="/commander/login"
-              className="block w-full bg-[#1877F2] hover:bg-[#1664d9] text-white font-semibold py-3 px-6 rounded-lg text-center transition-colors"
+              className="block w-full bg-[#0C55C0] hover:bg-[#0A4AA8] text-white font-semibold py-3 px-6 rounded-lg text-center transition-colors"
             >
               Sign In Manually
             </a>

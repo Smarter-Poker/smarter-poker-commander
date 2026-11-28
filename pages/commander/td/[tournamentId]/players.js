@@ -341,7 +341,7 @@ export default function TDPlayers() {
           type: 'restore_force', player,
           message: `Undo Elimination For ${player.player_name}?`,
           detail: 'A Payout Is Already Recorded For This Player. Forcing The Undo Will Clear That Payout. Continue?',
-          color: '#F59E0B' });
+          color: '#22D3EE' });
       } else {
         setToast({ type: 'error', text: json?.error?.message || 'Failed To Undo Elimination.' });
       }
@@ -441,7 +441,7 @@ export default function TDPlayers() {
       type: 'addon', player,
       message: `Add-on for ${player.player_name}?`,
       detail: floor?.tournament?.addon_cost ? `Cost: $${floor.tournament.addon_cost}, Chips: ${formatChips(floor.tournament.addon_chips || floor.tournament.starting_chips)}` : 'Process Add-On For This Player.',
-      color: '#8B5CF6' });
+      color: '#5AA9FF' });
   };
 
   const handleUpdateChips = async () => {
@@ -555,7 +555,7 @@ export default function TDPlayers() {
 
   const navigateTo = (path) => router.push(`/commander/td/${tournamentId}${path}`);
 
-  if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen bg-[#040D18] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>;
 
   return (
     <CommanderLayout title="Commander - Players" backHref={`/commander/td/${tournamentId}`}>
@@ -564,30 +564,30 @@ export default function TDPlayers() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-20 font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] pb-20 font-['Inter']">
 
         {/* Header */}
         <PageBar
           title="Players"
           summary="Everyone Entered In This Tournament With Their Table, Seat, Chips And Status. Search By Name Or Filter By Status, Then Tap A Player To Move Them, Assign A Seat, Update Chips, Rebuy, Add On, Eliminate Or Re-Enter."
           status={`${allPlayers.filter(p => p.status === 'active').length} Active${baggedCount > 0 ? `, ${baggedCount} Bagged` : ''}, ${allPlayers.length} Total`}
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         />
 
         {/* Search */}
         <div className="px-4 py-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#B0B3B8]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#BDD0E2]" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search Players..."
-              className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl pl-10 pr-10 py-3 text-[#E4E6EB] text-base placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2]"
+              className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl pl-10 pr-10 py-3 text-[#F2F7FF] text-base placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#1981EC]"
             />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                <X className="w-5 h-5 text-[#B0B3B8]" />
+                <X className="w-5 h-5 text-[#BDD0E2]" />
               </button>
             )}
           </div>
@@ -598,17 +598,17 @@ export default function TDPlayers() {
           {FILTERS.map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)}
               className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${filter === f.key
-                ? 'bg-[#1877F2] text-white'
-                : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
+                ? 'bg-[#0C55C0] text-white'
+                : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'
                 }`}>
               {f.label}
               {f.key === 'alternate' && alternateCount > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#22D3EE]/20 text-[#22D3EE]'}`}>
                   {alternateCount}
                 </span>
               )}
               {f.key === 'bagged' && baggedCount > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#F59E0B]/20 text-[#F59E0B]'}`}>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${filter === f.key ? 'bg-white/25 text-white' : 'bg-[#22D3EE]/20 text-[#22D3EE]'}`}>
                   {baggedCount}
                 </span>
               )}
@@ -624,7 +624,7 @@ export default function TDPlayers() {
             <button
               onClick={performNotifyAlternates}
               disabled={actionLoading === 'notify-alternates'}
-              className="w-full min-h-[44px] rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1877F2]/20 disabled:opacity-50">
+              className="w-full min-h-[44px] rounded-xl bg-[#0C55C0]/10 border border-[#1981EC]/30 text-[#86DAFF] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#0C55C0]/20 disabled:opacity-50">
               {actionLoading === 'notify-alternates'
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : <Bell className="w-4 h-4" />}
@@ -641,22 +641,22 @@ export default function TDPlayers() {
             <button
               key={player.entry_id}
               onClick={() => setSelectedPlayer(player)}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-[#242526] rounded-xl border border-[#3A3B3C] active:bg-[#3A3B3C] text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 bg-[#0A1829] rounded-xl border border-[#445E77] active:bg-[#132A42] text-left"
             >
               {player.avatar_url ? (
                 <img src={player.avatar_url} alt="" width={36} height={36} loading="lazy" decoding="async" className="w-9 h-9 rounded-full object-cover flex-shrink-0 border-2" />
               ) : (
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${player.status === 'active' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${player.status === 'active' ? 'bg-[#0C55C0]/20 text-[#86DAFF]' :
                   player.status === 'eliminated' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
-                    player.status === 'alternate' || player.status === 'bagged' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
-                      'bg-[#B0B3B8]/20 text-[#B0B3B8]'
+                    player.status === 'alternate' || player.status === 'bagged' ? 'bg-[#22D3EE]/20 text-[#22D3EE]' :
+                      'bg-[#BDD0E2]/20 text-[#BDD0E2]'
                   }`}>
                   {player.player_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??'}
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#E4E6EB] truncate">{player.player_name}</p>
-                <p className="text-xs text-[#B0B3B8]">
+                <p className="text-sm font-medium text-[#F2F7FF] truncate">{player.player_name}</p>
+                <p className="text-xs text-[#BDD0E2]">
                   {player.status === 'active'
                     ? `${formatChips(player.current_chips)} Chips${player.rebuy_count > 0 ? ` - ${player.rebuy_count}R` : ''}${player.addon_taken ? ' - A' : ''}`
                     : player.status === 'eliminated'
@@ -673,19 +673,19 @@ export default function TDPlayers() {
               </div>
               {player.status === 'alternate' && player.queue_position && (
                 <span className={`flex-shrink-0 px-2 py-1 rounded-full text-[11px] font-bold whitespace-nowrap border ${player.queue_position === 1
-                  ? 'bg-[#F59E0B]/20 border-[#F59E0B]/50 text-[#F59E0B]'
-                  : 'bg-[#F59E0B]/10 border-[#F59E0B]/30 text-[#F59E0B]'
+                  ? 'bg-[#22D3EE]/20 border-[#22D3EE]/50 text-[#22D3EE]'
+                  : 'bg-[#22D3EE]/10 border-[#22D3EE]/30 text-[#22D3EE]'
                   }`}>
                   {player.queue_position === 1 ? '#1 Next Up' : `#${player.queue_position}`}
                 </span>
               )}
-              <ChevronDown className="w-4 h-4 text-[#B0B3B8] rotate-[-90deg]" />
+              <ChevronDown className="w-4 h-4 text-[#BDD0E2] rotate-[-90deg]" />
             </button>
           ))}
           {filtered.length === 0 && (
             <div className="text-center py-12">
-              <Users className="w-10 h-10 text-[#3A3B3C] mx-auto mb-2" />
-              <p className="text-[#B0B3B8]">{search ? 'No Players Found' : 'No Players In This Category'}</p>
+              <Users className="w-10 h-10 text-[#7F97B0] mx-auto mb-2" />
+              <p className="text-[#BDD0E2]">{search ? 'No Players Found' : 'No Players In This Category'}</p>
             </div>
           )}
         </div>
@@ -693,23 +693,23 @@ export default function TDPlayers() {
         {/* ===== PLAYER ACTION SHEET ===== */}
         {selectedPlayer && !chipModal && !moveModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setSelectedPlayer(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${['alternate', 'bagged'].includes(selectedPlayer.status) ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${['alternate', 'bagged'].includes(selectedPlayer.status) ? 'bg-[#22D3EE]/20' : 'bg-[#0C55C0]/20'}`}>
                   {selectedPlayer.status === 'bagged'
-                    ? <Package className="w-5 h-5 text-[#F59E0B]" />
-                    : <Users className={`w-5 h-5 ${selectedPlayer.status === 'alternate' ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />}
+                    ? <Package className="w-5 h-5 text-[#22D3EE]" />
+                    : <Users className={`w-5 h-5 ${selectedPlayer.status === 'alternate' ? 'text-[#22D3EE]' : 'text-[#86DAFF]'}`} />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-bold text-white truncate">{selectedPlayer.player_name}</h3>
                     {selectedPlayer.status === 'alternate' && selectedPlayer.queue_position && (
-                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#F59E0B]/20 border border-[#F59E0B]/50 text-[#F59E0B] text-[11px] font-bold whitespace-nowrap">
+                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#22D3EE]/20 border border-[#22D3EE]/50 text-[#22D3EE] text-[11px] font-bold whitespace-nowrap">
                         {selectedPlayer.queue_position === 1 ? '#1 Next Up' : `#${selectedPlayer.queue_position}`}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#B0B3B8]">
+                  <p className="text-xs text-[#BDD0E2]">
                     {selectedPlayer.status === 'alternate'
                       ? selectedPlayer.queue_position
                         ? `Alternate, Position ${selectedPlayer.queue_position} In Line`
@@ -727,16 +727,16 @@ export default function TDPlayers() {
               <div className="space-y-2">
                 {selectedPlayer.status === 'active' && (
                   <>
-                    <ActionBtn icon={ArrowRightLeft} label="Move Player" color="#1877F2"
+                    <ActionBtn icon={ArrowRightLeft} label="Move Player" color="#1981EC"
                       onClick={() => openMovePlayer(selectedPlayer)} />
-                    <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#1877F2"
+                    <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#1981EC"
                       onClick={() => openAssignSeat(selectedPlayer)} />
-                    <ActionBtn icon={Coins} label="Update Chips" color="#F59E0B"
+                    <ActionBtn icon={Coins} label="Update Chips" color="#22D3EE"
                       onClick={() => { setChipModal(selectedPlayer); setChipValue(String(selectedPlayer.current_chips || '')); }} />
                     <ActionBtn icon={RotateCcw} label="Rebuy" color="#31A24C"
                       loading={actionLoading === 'rebuy'}
                       onClick={() => handleRebuy(selectedPlayer)} />
-                    <ActionBtn icon={Star} label="Add-On" color="#B0B3B8"
+                    <ActionBtn icon={Star} label="Add-On" color="#BDD0E2"
                       loading={actionLoading === 'addon'}
                       onClick={() => handleAddon(selectedPlayer)} />
                     <ActionBtn icon={UserX} label="Eliminate" color="#EF4444" danger
@@ -746,7 +746,7 @@ export default function TDPlayers() {
                 )}
                 {selectedPlayer.status === 'eliminated' && (
                   <>
-                    <ActionBtn icon={Undo2} label="Undo Elimination" color="#F59E0B"
+                    <ActionBtn icon={Undo2} label="Undo Elimination" color="#22D3EE"
                       loading={actionLoading === 'restore'}
                       onClick={() => performRestore(selectedPlayer)} />
                     <ActionBtn icon={RotateCcw} label="Re-Entry" color="#31A24C"
@@ -777,7 +777,7 @@ export default function TDPlayers() {
                     <ActionBtn icon={UserPlus} label="Assign Exact Seat" color="#31A24C"
                       loading={actionLoading === 'move'}
                       onClick={() => openAssignSeat(selectedPlayer)} />
-                    <ActionBtn icon={Coins} label="Correct Bagged Chips" color="#F59E0B"
+                    <ActionBtn icon={Coins} label="Correct Bagged Chips" color="#22D3EE"
                       onClick={() => { setChipModal(selectedPlayer); setChipValue(String(selectedPlayer.current_chips || '')); }} />
                     <ActionBtn icon={UserX} label="Eliminate" color="#EF4444" danger
                       loading={actionLoading === 'eliminate'}
@@ -787,7 +787,7 @@ export default function TDPlayers() {
               </div>
 
               <button onClick={() => setSelectedPlayer(null)}
-                className="w-full mt-3 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C]">
+                className="w-full mt-3 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-base font-medium active:bg-[#1B3753]">
                 Cancel
               </button>
             </div>
@@ -797,31 +797,31 @@ export default function TDPlayers() {
         {/* ===== CHIP UPDATE MODAL ===== */}
         {chipModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setChipModal(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white mb-1">Update Chip Count</h3>
-              <p className="text-sm text-[#B0B3B8] mb-4">{chipModal.player_name}</p>
+              <p className="text-sm text-[#BDD0E2] mb-4">{chipModal.player_name}</p>
               <input
                 type="number"
                 value={chipValue}
                 onChange={e => setChipValue(e.target.value)}
                 placeholder="Enter Chip Count"
-                className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-2xl font-mono text-center focus:outline-none focus:border-[#1877F2] mb-4"
+                className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-2xl font-mono text-center focus:outline-none focus:border-[#1981EC] mb-4"
                 autoFocus
               />
               <div className="flex gap-2 flex-wrap mb-4">
                 {[1000, 5000, 10000, 25000, 50000, 100000].map(v => (
                   <button key={v} onClick={() => setChipValue(String(v))}
-                    className="px-3 py-2 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-sm active:bg-[#4A4B4C]">
+                    className="px-3 py-2 rounded-lg bg-[#132A42] text-[#BDD0E2] text-sm active:bg-[#1B3753]">
                     {formatChips(v)}
                   </button>
                 ))}
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setChipModal(null)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={handleUpdateChips}
                   disabled={!chipValue || actionLoading === 'chips'}
-                  className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50">
+                  className="flex-1 py-3 rounded-xl bg-[#0C55C0] text-white font-medium active:bg-[#0A4AA8] disabled:opacity-50">
                   {actionLoading === 'chips' ? 'Saving...' : 'Save'}
                 </button>
               </div>
@@ -832,11 +832,11 @@ export default function TDPlayers() {
         {/* ===== MOVE PLAYER MODAL ===== */}
         {moveModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={closeMoveModal}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white mb-1">
                 {moveMode === 'assign' ? 'Assign Seat' : 'Move Player'}
               </h3>
-              <p className="text-sm text-[#B0B3B8] mb-4">
+              <p className="text-sm text-[#BDD0E2] mb-4">
                 {moveModal.player_name}
                 {moveModal.table_number
                   ? `, Currently Table ${moveModal.table_number} Seat ${moveModal.seat_number}`
@@ -850,7 +850,7 @@ export default function TDPlayers() {
                       setMoveTable(String(t.table_number));
                       setMoveSeat('');
                     }}
-                      className={`px-3 py-2 rounded-lg text-sm ${moveTable === String(t.table_number) ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
+                      className={`px-3 py-2 rounded-lg text-sm ${moveTable === String(t.table_number) ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'
                         }`}>
                       T{t.table_number} ({t.available_seats} Open)
                     </button>
@@ -863,23 +863,23 @@ export default function TDPlayers() {
                 if (!t) return (
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div>
-                      <label className="text-xs text-[#B0B3B8] mb-1 block">Table</label>
+                      <label className="text-xs text-[#BDD0E2] mb-1 block">Table</label>
                       <input type="number" value={moveTable} onChange={e => setMoveTable(e.target.value)}
                         placeholder="Table #"
-                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#B0B3B8] mb-1 block">Seat</label>
+                      <label className="text-xs text-[#BDD0E2] mb-1 block">Seat</label>
                       <input type="number" value={moveSeat} onChange={e => setMoveSeat(e.target.value)}
                         placeholder="Seat #"
-                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1981EC]" />
                     </div>
                   </div>
                 );
                 const occupied = t.players.map(p => p.seat_number);
                 return (
                   <div className="mb-4">
-                    <p className="text-xs text-[#B0B3B8] mb-2">Tap An Open Seat On Table {t.table_number}</p>
+                    <p className="text-xs text-[#BDD0E2] mb-2">Tap An Open Seat On Table {t.table_number}</p>
                     <div className="grid grid-cols-5 gap-2">
                       {Array.from({ length: t.max_seats }, (_, i) => i + 1).map(s => {
                         const isOccupied = occupied.includes(s);
@@ -888,8 +888,8 @@ export default function TDPlayers() {
                         return (
                           <button key={s} onClick={() => !isOccupied && setMoveSeat(String(s))}
                             disabled={isOccupied}
-                            className={`relative rounded-xl p-2 text-center border-2 transition-all ${isSelected ? 'bg-[#1877F2]/20 border-[#1877F2] text-[#1877F2]' :
-                              isOccupied ? 'bg-[#3A3B3C]/40 border-[#3A3B3C] text-[#666] cursor-not-allowed' :
+                            className={`relative rounded-xl p-2 text-center border-2 transition-all ${isSelected ? 'bg-[#0C55C0]/20 border-[#1981EC] text-[#86DAFF]' :
+                              isOccupied ? 'bg-[#132A42]/40 border-[#445E77] text-[#666] cursor-not-allowed' :
                                 'bg-[#31A24C]/10 border-[#31A24C]/40 text-[#31A24C] active:bg-[#31A24C]/20'
                               }`}>
                             <div className="text-lg font-bold">{s}</div>
@@ -906,26 +906,26 @@ export default function TDPlayers() {
               {!moveTable && (
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
-                    <label className="text-xs text-[#B0B3B8] mb-1 block">Table</label>
+                    <label className="text-xs text-[#BDD0E2] mb-1 block">Table</label>
                     <input type="number" value={moveTable} onChange={e => setMoveTable(e.target.value)}
                       placeholder="Table #"
-                      className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]"
+                      className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1981EC]"
                       autoFocus />
                   </div>
                   <div>
-                    <label className="text-xs text-[#B0B3B8] mb-1 block">Seat</label>
+                    <label className="text-xs text-[#BDD0E2] mb-1 block">Seat</label>
                     <input type="number" value={moveSeat} onChange={e => setMoveSeat(e.target.value)}
                       placeholder="Seat #"
-                      className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                      className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1981EC]" />
                   </div>
                 </div>
               )}
               <div className="flex gap-3">
                 <button onClick={closeMoveModal}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={handleMove}
                   disabled={!moveTable || !moveSeat || actionLoading === 'move'}
-                  className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50">
+                  className="flex-1 py-3 rounded-xl bg-[#0C55C0] text-white font-medium active:bg-[#0A4AA8] disabled:opacity-50">
                   {actionLoading === 'move'
                     ? (moveMode === 'assign' ? 'Seating...' : 'Moving...')
                     : (moveMode === 'assign' ? 'Assign Seat' : 'Move')}
@@ -938,7 +938,7 @@ export default function TDPlayers() {
         {/* ===== CONFIRMATION MODAL ===== */}
         {confirmAction && (
           <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center px-4" onClick={() => setConfirmAction(null)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6 border border-[#445E77]" onClick={e => e.stopPropagation()}>
               <div className="text-center mb-4">
                 <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: `${confirmAction.color}20` }}>
                   {confirmAction.type === 'eliminate'
@@ -949,13 +949,13 @@ export default function TDPlayers() {
                   }
                 </div>
                 <h3 className="text-lg font-bold text-white">{confirmAction.message}</h3>
-                <p className="text-sm text-[#B0B3B8] mt-1">{confirmAction.detail}</p>
+                <p className="text-sm text-[#BDD0E2] mt-1">{confirmAction.detail}</p>
               </div>
               {confirmAction.type === 'eliminate' && floor?.stats?.bounty_per_entry > 0 && (
                 <div className="mb-4 text-left">
                   {/* PKO: the head is worth whatever the busted player has
                       accumulated, and half of it goes onto the eliminator. */}
-                  <label className="text-xs text-[#B0B3B8] mb-1 block">
+                  <label className="text-xs text-[#BDD0E2] mb-1 block">
                     {String(floor?.tournament?.tournament_type || '').toLowerCase() === 'pko'
                       ? `Eliminated By, Takes Half Of A $${(
                           Number(confirmAction.player?.bounty_value) > 0
@@ -965,7 +965,7 @@ export default function TDPlayers() {
                       : `Eliminated By, Awards $${Number(floor.stats.bounty_per_entry).toLocaleString()} Bounty`}
                   </label>
                   <select value={eliminatorId} onChange={e => setEliminatorId(e.target.value)}
-                    className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1877F2]">
+                    className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1981EC]">
                     <option value="">Unknown, No Bounty Awarded</option>
                     {allPlayers.filter(p => p.status === 'active' && p.entry_id !== confirmAction.player.entry_id).map(p => (
                       <option key={p.entry_id} value={p.entry_id}>{p.player_name}{p.table_number ? ` (T${p.table_number})` : ''}</option>
@@ -975,7 +975,7 @@ export default function TDPlayers() {
               )}
               <div className="flex gap-3">
                 <button onClick={() => setConfirmAction(null)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={executeConfirmedAction}
                   className="flex-1 py-3 rounded-xl text-white font-bold active:opacity-80"
                   style={{ backgroundColor: confirmAction.color }}>
@@ -987,14 +987,14 @@ export default function TDPlayers() {
         )}
 
         {/* Bottom Nav */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
           <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
             {NAV_ITEMS.map(item => {
               const Icon = NAV_ICONS[item.key];
               const isActive = item.key === 'players';
               return (
                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                  className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'
+                  className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'
                     }`}>
                   <Icon className="w-5 h-5" />
                   <span className="text-[10px] font-medium capitalize">{item.key}</span>
@@ -1014,7 +1014,7 @@ export default function TDPlayers() {
           // outside the scheduled add-on break: the action DID succeed, so
           // painting it error-red would read as a failed sale.
           background: toast.type === 'success' ? '#22C55E'
-            : toast.type === 'warning' ? '#F59E0B'
+            : toast.type === 'warning' ? '#22D3EE'
               : '#EF4444',
           color: '#fff', fontSize: 13, fontWeight: 600,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -1036,13 +1036,13 @@ export default function TDPlayers() {
 function ActionBtn({ icon: Icon, label, color, danger, onClick, loading }) {
   return (
     <button onClick={onClick} disabled={loading}
-      className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl active:scale-[0.98] transition-transform disabled:opacity-50 ${danger ? 'bg-[#EF4444]/10 border border-[#EF4444]/30' : 'bg-[#3A3B3C]/50 border border-[#3A3B3C]'
+      className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl active:scale-[0.98] transition-transform disabled:opacity-50 ${danger ? 'bg-[#EF4444]/10 border border-[#EF4444]/30' : 'bg-[#132A42]/50 border border-[#445E77]'
         }`}>
       {loading
         ? <Loader2 className="w-5 h-5 animate-spin" style={{ color }} />
         : <Icon className="w-5 h-5" style={{ color }} />
       }
-      <span className="text-base font-medium text-[#E4E6EB]">{label}</span>
+      <span className="text-base font-medium text-[#F2F7FF]">{label}</span>
     </button>
   );
 }

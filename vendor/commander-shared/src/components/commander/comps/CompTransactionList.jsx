@@ -8,9 +8,9 @@ import { TrendingUp, TrendingDown, RefreshCw, Gift, Clock, User } from 'lucide-r
 
 const TRANSACTION_STYLES = {
   earn: { icon: TrendingUp, color: '#22C55E', label: 'Earned' },
-  bonus: { icon: Gift, color: '#8B5CF6', label: 'Bonus' },
+  bonus: { icon: Gift, color: '#5AA9FF', label: 'Bonus' },
   redeem: { icon: TrendingDown, color: '#EF4444', label: 'Redeemed' },
-  adjust: { icon: RefreshCw, color: '#F59E0B', label: 'Adjustment' },
+  adjust: { icon: RefreshCw, color: '#22D3EE', label: 'Adjustment' },
   expire: { icon: Clock, color: '#6B7280', label: 'Expired' },
   transfer: { icon: User, color: '#3B82F6', label: 'Transfer' }
 };
@@ -38,8 +38,8 @@ function CompTransactionList({
   if (transactions.length === 0) {
     return (
       <div className="cmd-panel p-8 text-center">
-        <Clock size={32} className="mx-auto text-[#4A5E78] mb-2" />
-        <p className="text-[#64748B]">No Transactions Yet</p>
+        <Clock size={32} className="mx-auto text-[#8FA6BE] mb-2" />
+        <p className="text-[#9FB3C8]">No Transactions Yet</p>
       </div>
     );
   }
@@ -77,8 +77,8 @@ function CompTransactionList({
     <div className="space-y-4">
       {Object.entries(groupedTransactions || {}).map(([date, txs]) => (
         <div key={date}>
-          <div className="text-xs text-[#4A5E78] mb-2 px-1">{date}</div>
-          <div className="cmd-panel overflow-hidden divide-y divide-[#4A5E78]">
+          <div className="text-xs text-[#8FA6BE] mb-2 px-1">{date}</div>
+          <div className="cmd-panel overflow-hidden divide-y divide-[#445E77]">
             {txs.map((tx) => {
               const style = TRANSACTION_STYLES[tx.transaction_type] || TRANSACTION_STYLES.adjust;
               const Icon = style.icon;
@@ -105,12 +105,12 @@ function CompTransactionList({
                         {style.label}
                       </span>
                       {showPlayer && tx.profiles && (
-                        <span className="text-xs text-[#4A5E78]">
+                        <span className="text-xs text-[#8FA6BE]">
                           - {tx.profiles.display_name}
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-[#4A5E78] truncate">
+                    <div className="text-xs text-[#8FA6BE] truncate">
                       {tx.description || (tx.source_type === 'session'
                         ? `${tx.hours_played?.toFixed(1)}h played`
                         : style.label
@@ -125,7 +125,7 @@ function CompTransactionList({
                     }`}>
                       {isPositive ? '+' : ''}${Math.abs(amount).toFixed(2)}
                     </div>
-                    <div className="text-xs text-[#4A5E78]">
+                    <div className="text-xs text-[#8FA6BE]">
                       {formatDate(tx.created_at)}
                     </div>
                   </div>

@@ -66,7 +66,7 @@ export default function RsvpForm({
             className={`flex-1 py-3 rounded-lg border-2 font-medium transition-colors flex items-center justify-center gap-2 ${
               response === 'yes'
                 ? 'border-[#10B981] bg-[#10B981]/10 text-[#10B981]'
-                : 'border-[#4A5E78] text-[#64748B] hover:border-[#10B981]'
+                : 'border-[#445E77] text-[#9FB3C8] hover:border-[#10B981]'
             }`}
           >
             <Check className="w-5 h-5" />
@@ -77,8 +77,8 @@ export default function RsvpForm({
             onClick={() => setResponse('maybe')}
             className={`flex-1 py-3 rounded-lg border-2 font-medium transition-colors flex items-center justify-center gap-2 ${
               response === 'maybe'
-                ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-[#F59E0B]'
-                : 'border-[#4A5E78] text-[#64748B] hover:border-[#F59E0B]'
+                ? 'border-[#22D3EE] bg-[#22D3EE]/10 text-[#22D3EE]'
+                : 'border-[#445E77] text-[#9FB3C8] hover:border-[#22D3EE]'
             }`}
           >
             <HelpCircle className="w-5 h-5" />
@@ -90,7 +90,7 @@ export default function RsvpForm({
             className={`flex-1 py-3 rounded-lg border-2 font-medium transition-colors flex items-center justify-center gap-2 ${
               response === 'no'
                 ? 'border-[#EF4444] bg-[#EF4444]/10 text-[#EF4444]'
-                : 'border-[#4A5E78] text-[#64748B] hover:border-[#EF4444]'
+                : 'border-[#445E77] text-[#9FB3C8] hover:border-[#EF4444]'
             }`}
           >
             <X className="w-5 h-5" />
@@ -101,8 +101,8 @@ export default function RsvpForm({
 
       {/* Capacity warning */}
       {willBeWaitlisted && (
-        <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B] rounded-lg">
-          <p className="text-sm text-[#D97706]">
+        <div className="p-3 bg-[#22D3EE]/10 border border-[#22D3EE] rounded-lg">
+          <p className="text-sm text-[#0EA5C6]">
             This event is full. You will be added to the waitlist.
           </p>
         </div>
@@ -127,7 +127,7 @@ export default function RsvpForm({
                 </option>
               ))}
             </select>
-            <span className="text-sm text-[#64748B]">
+            <span className="text-sm text-[#9FB3C8]">
               Max {maxGuests} guest{maxGuests === 1 ? '' : 's'} allowed
             </span>
           </div>
@@ -192,7 +192,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
       {sections.map(section => (
         section.items.length > 0 && (
           <div key={section.key}>
-            <h4 className="text-sm font-medium text-[#64748B] mb-2">
+            <h4 className="text-sm font-medium text-[#9FB3C8] mb-2">
               {section.label} ({section.items.length})
             </h4>
             <div className="space-y-2">
@@ -210,7 +210,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-[#0D192E] flex items-center justify-center">
-                        <Users className="w-4 h-4 text-[#64748B]" />
+                        <Users className="w-4 h-4 text-[#9FB3C8]" />
                       </div>
                     )}
                     <div>
@@ -218,7 +218,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
                         {rsvp.profiles?.display_name || 'Unknown'}
                       </p>
                       {rsvp.bringing_guests > 0 && (
-                        <p className="text-xs text-[#64748B]">
+                        <p className="text-xs text-[#9FB3C8]">
                           +{rsvp.bringing_guests} guest{rsvp.bringing_guests > 1 ? 's' : ''}
                         </p>
                       )}
@@ -232,7 +232,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
                       </span>
                     )}
                     {rsvp.seat_number && (
-                      <span className="text-xs text-[#64748B]">
+                      <span className="text-xs text-[#9FB3C8]">
                         Seat {rsvp.seat_number}
                       </span>
                     )}
@@ -261,7 +261,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
       ))}
 
       {Object.values(rsvps || {}).every(arr => arr.length === 0) && (
-        <p className="text-center text-[#64748B] py-4">
+        <p className="text-center text-[#9FB3C8] py-4">
           No RSVPs yet
         </p>
       )}

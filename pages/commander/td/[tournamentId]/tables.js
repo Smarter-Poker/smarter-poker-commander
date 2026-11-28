@@ -31,10 +31,10 @@ const NAV_ITEMS = [
 
 const COLOR_MAP = {
   green: { bg: 'bg-[#31A24C]/15', border: 'border-[#31A24C]/40', dot: 'bg-[#31A24C]', text: 'text-[#31A24C]' },
-  yellow: { bg: 'bg-[#F59E0B]/15', border: 'border-[#F59E0B]/40', dot: 'bg-[#F59E0B]', text: 'text-[#F59E0B]' },
+  yellow: { bg: 'bg-[#22D3EE]/15', border: 'border-[#22D3EE]/40', dot: 'bg-[#22D3EE]', text: 'text-[#22D3EE]' },
   red: { bg: 'bg-[#EF4444]/15', border: 'border-[#EF4444]/40', dot: 'bg-[#EF4444]', text: 'text-[#EF4444]' },
-  blue: { bg: 'bg-[#1877F2]/15', border: 'border-[#1877F2]/40', dot: 'bg-[#1877F2]', text: 'text-[#1877F2]' },
-  grey: { bg: 'bg-[#3A3B3C]/30', border: 'border-[#3A3B3C]', dot: 'bg-[#3A3B3C]', text: 'text-[#B0B3B8]' } };
+  blue: { bg: 'bg-[#0C55C0]/15', border: 'border-[#1981EC]/40', dot: 'bg-[#0C55C0]', text: 'text-[#86DAFF]' },
+  grey: { bg: 'bg-[#132A42]/30', border: 'border-[#445E77]', dot: 'bg-[#132A42]', text: 'text-[#BDD0E2]' } };
 
 function formatChips(n) {
   if (!n) return '0';
@@ -536,7 +536,7 @@ export default function TDTablesMap() {
       type: 'seat_draw',
       message: `Randomly Seat ${count} Registered Player${count === 1 ? '' : 's'}?`,
       detail: 'Every Unseated Registered Player Will Be Assigned A Random Seat.',
-      color: '#1877F2',
+      color: '#1981EC',
       onConfirm: async () => {
         setActionLoading('seat_draw');
         try {
@@ -564,7 +564,7 @@ export default function TDTablesMap() {
     router.push(path ? `${base}${path}` : base);
   };
 
-  if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen bg-[#040D18] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>;
 
   const tables = floor?.tables || [];
 
@@ -593,40 +593,40 @@ export default function TDTablesMap() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-20 font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] pb-20 font-['Inter']">
 
         {/* Header */}
         <PageBar
           title="Table Map"
           summary="Every Table In Play With Its Seated Players. Run The Seat Draw, Get A Balance Suggestion And Apply It, And Tap A Table To See Its Players. An Alert Appears When A Table Should Break. The Pill Shows Whether The Map Is Live."
           status={`${tables.length} Tables Active, ${floor?.stats?.players_remaining || 0} Players`}
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
           {/* Realtime health, so the floor knows whether this map is live
               or riding the fallback poll. */}
           <ConnectionPill conn={conn} />
-          <button onClick={fetchFloor} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={fetchFloor} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
         {/* Auto-Break Alert */}
         {autoBreak?.should_break && (
-          <div className="mx-4 mt-3 p-4 bg-[#F59E0B]/10 border-2 border-[#F59E0B]/40 rounded-2xl">
+          <div className="mx-4 mt-3 p-4 bg-[#22D3EE]/10 border-2 border-[#22D3EE]/40 rounded-2xl">
             <div className="flex items-start gap-3 mb-3">
-              <AlertTriangle className="w-6 h-6 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-6 h-6 text-[#22D3EE] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-base font-bold text-[#F59E0B]">Break Table {autoBreak.break_table}</h3>
-                <p className="text-xs text-[#B0B3B8] mt-0.5">{autoBreak.reason}</p>
+                <h3 className="text-base font-bold text-[#22D3EE]">Break Table {autoBreak.break_table}</h3>
+                <p className="text-xs text-[#BDD0E2] mt-0.5">{autoBreak.reason}</p>
               </div>
             </div>
             {/* Assignment preview */}
             <div className="space-y-1 mb-3">
               {(autoBreak.assignments || []).map((a, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-[#18191A]/60 rounded-lg text-xs">
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-[#040D18]/60 rounded-lg text-xs">
                   <span className="text-white flex-1 truncate">{a.player_name}</span>
-                  <span className="text-[#B0B3B8] font-mono">T{a.from_table}-S{a.from_seat}</span>
-                  <span className="text-[#F59E0B]">→</span>
+                  <span className="text-[#BDD0E2] font-mono">T{a.from_table}-S{a.from_seat}</span>
+                  <span className="text-[#22D3EE]">→</span>
                   <span className="text-[#31A24C] font-bold font-mono">T{a.to_table}-S{a.to_seat}</span>
                 </div>
               ))}
@@ -658,7 +658,7 @@ export default function TDTablesMap() {
                 finally { setBreakExecuting(false); }
               }}
               disabled={breakExecuting}
-              className="w-full py-3.5 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-[#22D3EE] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#0EA5C6] disabled:opacity-50"
             >
               {breakExecuting
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Breaking Table...</>
@@ -671,12 +671,12 @@ export default function TDTablesMap() {
         {/* Balance Tables. Prominent alert card while floor-view reports an
             imbalance, otherwise a quiet button in the action stack below. */}
         {floor?.alerts?.imbalanced && (
-          <div className="mx-4 mt-3 p-4 bg-[#1877F2]/10 border-2 border-[#1877F2]/40 rounded-2xl">
+          <div className="mx-4 mt-3 p-4 bg-[#0C55C0]/10 border-2 border-[#1981EC]/40 rounded-2xl">
             <div className="flex items-start gap-3 mb-3">
-              <Scale className="w-6 h-6 text-[#1877F2] flex-shrink-0 mt-0.5" />
+              <Scale className="w-6 h-6 text-[#86DAFF] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-base font-bold text-[#1877F2]">Tables Are Out Of Balance</h3>
-                <p className="text-xs text-[#B0B3B8] mt-0.5">
+                <h3 className="text-base font-bold text-[#86DAFF]">Tables Are Out Of Balance</h3>
+                <p className="text-xs text-[#BDD0E2] mt-0.5">
                   Two Or More Seats Between The Fullest And Emptiest Table.
                 </p>
               </div>
@@ -684,7 +684,7 @@ export default function TDTablesMap() {
             <button
               onClick={handleBalanceSuggest}
               disabled={balanceLoading || balanceExecuting}
-              className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-[#0C55C0] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
               {balanceLoading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking Balance...</>
@@ -700,7 +700,7 @@ export default function TDTablesMap() {
             <button
               onClick={handleSeatDraw}
               disabled={actionLoading === 'seat_draw'}
-              className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-[#0C55C0] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
               {actionLoading === 'seat_draw'
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Drawing Seats...</>
@@ -715,19 +715,19 @@ export default function TDTablesMap() {
         <div className="mx-4 mt-3 grid grid-cols-2 gap-3">
           <button
             onClick={() => navigateTo('/chips')}
-            className="w-full py-3.5 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#3A3B3C] transition-colors"
+            className="w-full py-3.5 rounded-xl bg-[#0A1829] border border-[#445E77] text-[#F2F7FF] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#132A42] transition-colors"
           >
-            <Coins className="w-4 h-4 text-[#F59E0B]" /> Chip Counts
+            <Coins className="w-4 h-4 text-[#22D3EE]" /> Chip Counts
           </button>
           {!floor?.alerts?.imbalanced && (
             <button
               onClick={handleBalanceSuggest}
               disabled={balanceLoading || balanceExecuting || tables.length < 2}
-              className="w-full py-3.5 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#3A3B3C] transition-colors disabled:opacity-40"
+              className="w-full py-3.5 rounded-xl bg-[#0A1829] border border-[#445E77] text-[#F2F7FF] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#132A42] transition-colors disabled:opacity-40"
             >
               {balanceLoading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
-                : <><Scale className="w-4 h-4 text-[#1877F2]" /> Balance Tables</>
+                : <><Scale className="w-4 h-4 text-[#86DAFF]" /> Balance Tables</>
               }
             </button>
           )}
@@ -747,7 +747,7 @@ export default function TDTablesMap() {
                 <button
                   key={table.table_number}
                   onClick={() => setSelectedTable(table)}
-                  className={`relative rounded-2xl border-2 p-4 aspect-[4/3] flex flex-col items-center justify-center ${colors.bg} ${colors.border} active:scale-[0.98] transition-transform ${hasConflict ? 'ring-2 ring-[#EF4444] ring-offset-2 ring-offset-[#18191A]' : ''}`}
+                  className={`relative rounded-2xl border-2 p-4 aspect-[4/3] flex flex-col items-center justify-center ${colors.bg} ${colors.border} active:scale-[0.98] transition-transform ${hasConflict ? 'ring-2 ring-[#EF4444] ring-offset-2 ring-offset-[#040D18]' : ''}`}
                 >
                   {hasConflict && (
                     <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#EF4444] flex items-center justify-center z-10"
@@ -759,7 +759,7 @@ export default function TDTablesMap() {
                   <div className="relative w-full h-full">
                     {/* Center table info */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xs text-[#B0B3B8] uppercase tracking-wider">Table</span>
+                      <span className="text-xs text-[#BDD0E2] uppercase tracking-wider">Table</span>
                       <span className="text-3xl font-bold text-white">{table.table_number}</span>
                       <span className={`text-sm font-semibold ${colors.text}`}>
                         {table.player_count}/{maxSeats}
@@ -777,7 +777,7 @@ export default function TDTablesMap() {
                             ? 'bg-[#EF4444] border-white animate-pulse'
                             : isOccupied
                               ? `${colors.dot} border-white/30`
-                              : 'bg-transparent border-[#3A3B3C]'
+                              : 'bg-transparent border-[#445E77]'
                             }`}
                           style={{
                             left: `${pos.x}%`,
@@ -795,8 +795,8 @@ export default function TDTablesMap() {
 
           {tables.length === 0 && (
             <div className="text-center py-16">
-              <LayoutGrid className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-              <p className="text-[#B0B3B8]">No Active Tables</p>
+              <LayoutGrid className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+              <p className="text-[#BDD0E2]">No Active Tables</p>
             </div>
           )}
 
@@ -832,7 +832,7 @@ export default function TDTablesMap() {
                             <p className="text-sm font-bold text-[#EF4444]">
                               Table {c.table_number} Seat {c.seat_number} Has {c.players?.length || 2} Players
                             </p>
-                            <p className="text-xs text-[#E4E6EB] truncate">
+                            <p className="text-xs text-[#F2F7FF] truncate">
                               {(c.players || []).filter(Boolean).join(' And ') || 'Unknown Players'}
                             </p>
                           </div>
@@ -863,7 +863,7 @@ export default function TDTablesMap() {
                       : <><Wrench className="w-4 h-4" /> Resolve Conflicts Automatically</>
                     }
                   </button>
-                  <p className="mt-2 text-xs text-[#B0B3B8]">
+                  <p className="mt-2 text-xs text-[#BDD0E2]">
                     The Earliest Registered Player Keeps The Seat. Everyone After Them Moves To A Real Open Seat And Gets A Seat Change Card.
                   </p>
                 </div>
@@ -876,20 +876,20 @@ export default function TDTablesMap() {
         {selectedTable && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
             onClick={() => setSelectedTable(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}>
 
               {/* Modal header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#3A3B3C]">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#445E77]">
                 <div>
                   <h3 className="text-lg font-bold text-white">Table {selectedTable.table_number}</h3>
-                  <p className="text-xs text-[#B0B3B8]">
+                  <p className="text-xs text-[#BDD0E2]">
                     {selectedTable.player_count} Players, {selectedTable.available_seats} Seats Open
                   </p>
                 </div>
                 <button onClick={() => setSelectedTable(null)}
-                  className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C]">
-                  <X className="w-5 h-5 text-[#E4E6EB]" />
+                  className="w-10 h-10 rounded-full bg-[#132A42] flex items-center justify-center active:bg-[#1B3753]">
+                  <X className="w-5 h-5 text-[#F2F7FF]" />
                 </button>
               </div>
 
@@ -905,13 +905,13 @@ export default function TDTablesMap() {
                         {player?.avatar_url ? (
                           <img src={player.avatar_url} alt="" width={28} height={28} loading="lazy" decoding="async" className={`w-7 h-7 rounded-full object-cover border-2 ${posConflicted ? 'border-[#EF4444]' : 'border-white/30'}`} />
                         ) : (
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${posConflicted ? 'bg-[#EF4444] text-white' : player ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${posConflicted ? 'bg-[#EF4444] text-white' : player ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'
                             }`}>
                             {player ? (player.player_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || pos.seat) : pos.seat}
                           </div>
                         )}
                         {player && (
-                          <span className="text-[8px] text-[#B0B3B8] mt-0.5 max-w-[50px] truncate text-center">
+                          <span className="text-[8px] text-[#BDD0E2] mt-0.5 max-w-[50px] truncate text-center">
                             {player.player_name?.split(' ')[0]}
                           </span>
                         )}
@@ -930,17 +930,17 @@ export default function TDTablesMap() {
                       const seatConflicted = conflictSeatKeys.has(`${selectedTable.table_number}:${player.seat_number}`);
                       return (
                       <div key={player.entry_id}
-                        className={`flex items-center gap-3 px-3 py-3 rounded-xl ${seatConflicted ? 'bg-[#EF4444]/15 ring-1 ring-[#EF4444]/50' : 'bg-[#3A3B3C]/50'}`}>
+                        className={`flex items-center gap-3 px-3 py-3 rounded-xl ${seatConflicted ? 'bg-[#EF4444]/15 ring-1 ring-[#EF4444]/50' : 'bg-[#132A42]/50'}`}>
                         {player.avatar_url ? (
-                          <img src={player.avatar_url} alt="" width={28} height={28} loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover border-2 border-[#1877F2]/40 flex-shrink-0" />
+                          <img src={player.avatar_url} alt="" width={28} height={28} loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover border-2 border-[#1981EC]/40 flex-shrink-0" />
                         ) : (
-                          <span className="w-7 h-7 rounded-full bg-[#1877F2]/20 text-[#1877F2] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          <span className="w-7 h-7 rounded-full bg-[#0C55C0]/20 text-[#86DAFF] flex items-center justify-center text-xs font-bold flex-shrink-0">
                             {player.seat_number}
                           </span>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#E4E6EB] truncate">{player.player_name}</p>
-                          <p className="text-xs text-[#B0B3B8]">
+                          <p className="text-sm font-medium text-[#F2F7FF] truncate">{player.player_name}</p>
+                          <p className="text-xs text-[#BDD0E2]">
                             {formatChips(player.current_chips)} Chips
                             {player.rebuy_count > 0 && ` - ${player.rebuy_count}R`}
                             {player.addon_taken && ' - A'}
@@ -954,10 +954,10 @@ export default function TDTablesMap() {
                         <div className="flex gap-1">
                           <button
                             onClick={() => router.push(`/commander/td/${tournamentId}/players?move=${player.entry_id}`)}
-                            className="w-10 h-10 rounded-lg bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C]"
+                            className="w-10 h-10 rounded-lg bg-[#132A42] flex items-center justify-center active:bg-[#1B3753]"
                             title="Move Player"
                           >
-                            <ArrowRightLeft className="w-4 h-4 text-[#B0B3B8]" />
+                            <ArrowRightLeft className="w-4 h-4 text-[#BDD0E2]" />
                           </button>
                           <button
                             onClick={() => handleEliminate(player.entry_id, player.player_name)}
@@ -1047,17 +1047,17 @@ export default function TDTablesMap() {
         {balanceSuggestion && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
             onClick={() => { if (!balanceExecuting) { setBalanceSuggestion(null); setBalanceFailures([]); } }}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}>
-              <div className="px-5 py-4 border-b border-[#3A3B3C] flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center flex-shrink-0">
-                  <Scale className="w-5 h-5 text-[#1877F2]" />
+              <div className="px-5 py-4 border-b border-[#445E77] flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#0C55C0]/20 flex items-center justify-center flex-shrink-0">
+                  <Scale className="w-5 h-5 text-[#86DAFF]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold text-white">
                     {balanceSuggestion.type === 'break' ? 'Break And Rebalance' : 'Balance Tables'}
                   </h3>
-                  <p className="text-xs text-[#B0B3B8]">{balanceSuggestion.message || 'Review The Proposed Moves'}</p>
+                  <p className="text-xs text-[#BDD0E2]">{balanceSuggestion.message || 'Review The Proposed Moves'}</p>
                   {/* Players the plan could not seat anywhere. The route used to
                       drop these silently while still reporting the full
                       headcount, so the floor could approve a break that leaves
@@ -1071,8 +1071,8 @@ export default function TDTablesMap() {
                 </div>
                 <button onClick={() => { setBalanceSuggestion(null); setBalanceFailures([]); }}
                   disabled={balanceExecuting}
-                  className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50 flex-shrink-0">
-                  <X className="w-5 h-5 text-[#E4E6EB]" />
+                  className="w-10 h-10 rounded-full bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] disabled:opacity-50 flex-shrink-0">
+                  <X className="w-5 h-5 text-[#F2F7FF]" />
                 </button>
               </div>
 
@@ -1087,7 +1087,7 @@ export default function TDTablesMap() {
                         <span key={tn}
                           className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono ${tn === balanceSuggestion.table_to_break
                             ? 'bg-[#EF4444]/20 text-[#EF4444]'
-                            : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                            : 'bg-[#132A42] text-[#BDD0E2]'
                             }`}>
                           T{tn}: {balanceSuggestion.table_counts[tn]}
                         </span>
@@ -1097,14 +1097,14 @@ export default function TDTablesMap() {
 
                 <div className="space-y-1">
                   {(balanceSuggestion.moves || []).map(m => (
-                    <div key={m.entry_id} className="flex items-center gap-2 px-3 py-2.5 bg-[#3A3B3C]/50 rounded-xl">
-                      <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                    <div key={m.entry_id} className="flex items-center gap-2 px-3 py-2.5 bg-[#132A42]/50 rounded-xl">
+                      <span className="flex-1 min-w-0 text-sm font-medium text-[#F2F7FF] truncate">
                         {m.player_name || 'Player'}
                       </span>
-                      <span className="text-xs text-[#B0B3B8] font-mono flex-shrink-0">
+                      <span className="text-xs text-[#BDD0E2] font-mono flex-shrink-0">
                         T{m.from_table}-S{m.from_seat ?? '-'}
                       </span>
-                      <ArrowRightLeft className="w-3.5 h-3.5 text-[#1877F2] flex-shrink-0" />
+                      <ArrowRightLeft className="w-3.5 h-3.5 text-[#86DAFF] flex-shrink-0" />
                       <span className="text-xs font-bold text-[#31A24C] font-mono flex-shrink-0">
                         T{m.to_table}-S{m.to_seat}
                       </span>
@@ -1121,7 +1121,7 @@ export default function TDTablesMap() {
                     <div className="divide-y divide-[#EF4444]/15">
                       {balanceFailures.map(f => (
                         <div key={f.entry_id || f.player_name} className="px-3 py-2">
-                          <p className="text-sm font-medium text-[#E4E6EB]">{f.player_name}</p>
+                          <p className="text-sm font-medium text-[#F2F7FF]">{f.player_name}</p>
                           <p className="text-xs text-[#EF4444]">{f.error}</p>
                         </div>
                       ))}
@@ -1130,15 +1130,15 @@ export default function TDTablesMap() {
                 )}
               </div>
 
-              <div className="px-5 pb-5 pt-2 border-t border-[#3A3B3C] flex gap-3">
+              <div className="px-5 pb-5 pt-2 border-t border-[#445E77] flex gap-3">
                 <button onClick={() => { setBalanceSuggestion(null); setBalanceFailures([]); }}
                   disabled={balanceExecuting}
-                  className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  className="flex-1 py-3.5 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753] disabled:opacity-50">
                   Cancel
                 </button>
                 <button onClick={handleBalanceExecute}
                   disabled={balanceExecuting || (balanceSuggestion.moves || []).length === 0}
-                  className="flex-1 py-3.5 rounded-xl bg-[#1877F2] text-white font-bold flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-50">
+                  className="flex-1 py-3.5 rounded-xl bg-[#0C55C0] text-white font-bold flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-50">
                   {balanceExecuting
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Moving...</>
                     : <><Printer className="w-4 h-4" /> Move {(balanceSuggestion.moves || []).length} &amp; Print</>
@@ -1153,9 +1153,9 @@ export default function TDTablesMap() {
         {conflictPlan && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
             onClick={closeConflictSheet}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}>
-              <div className="px-5 py-4 border-b border-[#3A3B3C] flex items-start gap-3">
+              <div className="px-5 py-4 border-b border-[#445E77] flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${conflictResult ? 'bg-[#31A24C]/20' : 'bg-[#EF4444]/20'}`}>
                   {conflictResult
                     ? <CheckCircle2 className="w-5 h-5 text-[#31A24C]" />
@@ -1166,7 +1166,7 @@ export default function TDTablesMap() {
                   <h3 className="text-lg font-bold text-white">
                     {conflictResult ? 'Seat Conflicts Repaired' : 'Resolve Seat Conflicts'}
                   </h3>
-                  <p className="text-xs text-[#B0B3B8]">
+                  <p className="text-xs text-[#BDD0E2]">
                     {conflictResult
                       ? `${conflictResult.resolved.length} Player${conflictResult.resolved.length === 1 ? '' : 's'} Moved${conflictResult.failed.length > 0 ? `, ${conflictResult.failed.length} Failed` : ''}`
                       : `${conflictPlan.conflicts.length} Contested Seat${conflictPlan.conflicts.length === 1 ? '' : 's'}, ${conflictPlan.players_to_move} Player${conflictPlan.players_to_move === 1 ? '' : 's'} To Move`
@@ -1175,8 +1175,8 @@ export default function TDTablesMap() {
                 </div>
                 <button onClick={closeConflictSheet}
                   disabled={conflictExecuting}
-                  className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50 flex-shrink-0">
-                  <X className="w-5 h-5 text-[#E4E6EB]" />
+                  className="w-10 h-10 rounded-full bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] disabled:opacity-50 flex-shrink-0">
+                  <X className="w-5 h-5 text-[#F2F7FF]" />
                 </button>
               </div>
 
@@ -1185,32 +1185,32 @@ export default function TDTablesMap() {
                     floor-view alert never says. */}
                 {!conflictResult && conflictPlan.conflicts.map(c => (
                   <div key={`${c.table_number}-${c.seat_number}`}
-                    className="bg-[#3A3B3C]/40 rounded-xl overflow-hidden border border-[#3A3B3C]">
-                    <div className="px-3 py-2 flex items-center gap-2 border-b border-[#3A3B3C]">
+                    className="bg-[#132A42]/40 rounded-xl overflow-hidden border border-[#445E77]">
+                    <div className="px-3 py-2 flex items-center gap-2 border-b border-[#445E77]">
                       <span className="px-2 py-1 rounded-lg bg-[#EF4444] text-white text-xs font-bold font-mono">
                         T{c.table_number}-S{c.seat_number}
                       </span>
-                      <span className="text-xs text-[#B0B3B8]">
+                      <span className="text-xs text-[#BDD0E2]">
                         Table {c.table_number}, Seat {c.seat_number}
                       </span>
                     </div>
                     <div className="px-3 py-2 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-[#31A24C] flex-shrink-0" />
-                      <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                      <span className="flex-1 min-w-0 text-sm font-medium text-[#F2F7FF] truncate">
                         {c.keeps_seat?.player_name || 'Player'}
                       </span>
                       <span className="text-xs text-[#31A24C] font-bold flex-shrink-0">Keeps The Seat</span>
                     </div>
                     {(c.must_move || []).map(m => (
-                      <div key={m.entry_id} className="px-3 py-2 flex items-center gap-2 border-t border-[#3A3B3C]/60">
-                        <ArrowRightLeft className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
-                        <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                      <div key={m.entry_id} className="px-3 py-2 flex items-center gap-2 border-t border-[#445E77]/60">
+                        <ArrowRightLeft className="w-4 h-4 text-[#22D3EE] flex-shrink-0" />
+                        <span className="flex-1 min-w-0 text-sm font-medium text-[#F2F7FF] truncate">
                           {m.player_name || 'Player'}
                         </span>
-                        <span className="text-xs text-[#B0B3B8] font-mono flex-shrink-0">
+                        <span className="text-xs text-[#BDD0E2] font-mono flex-shrink-0">
                           {formatChips(m.current_chips)}
                         </span>
-                        <span className="text-xs text-[#F59E0B] font-bold flex-shrink-0">Moves</span>
+                        <span className="text-xs text-[#22D3EE] font-bold flex-shrink-0">Moves</span>
                       </div>
                     ))}
                   </div>
@@ -1220,14 +1220,14 @@ export default function TDTablesMap() {
                 {conflictResult && conflictResult.resolved.length > 0 && (
                   <div className="space-y-1">
                     {conflictResult.resolved.map(r => (
-                      <div key={r.entry_id} className="flex items-center gap-2 px-3 py-2.5 bg-[#3A3B3C]/50 rounded-xl">
-                        <span className="flex-1 min-w-0 text-sm font-medium text-[#E4E6EB] truncate">
+                      <div key={r.entry_id} className="flex items-center gap-2 px-3 py-2.5 bg-[#132A42]/50 rounded-xl">
+                        <span className="flex-1 min-w-0 text-sm font-medium text-[#F2F7FF] truncate">
                           {r.player_name || 'Player'}
                         </span>
-                        <span className="text-xs text-[#B0B3B8] font-mono flex-shrink-0">
+                        <span className="text-xs text-[#BDD0E2] font-mono flex-shrink-0">
                           T{r.from_table}-S{r.from_seat ?? '-'}
                         </span>
-                        <ArrowRightLeft className="w-3.5 h-3.5 text-[#1877F2] flex-shrink-0" />
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-[#86DAFF] flex-shrink-0" />
                         <span className="text-xs font-bold text-[#31A24C] font-mono flex-shrink-0">
                           T{r.to_table}-S{r.to_seat}
                         </span>
@@ -1237,7 +1237,7 @@ export default function TDTablesMap() {
                 )}
 
                 {conflictResult && conflictResult.resolved.length === 0 && (
-                  <p className="text-sm text-[#B0B3B8] text-center py-6">No Players Were Moved.</p>
+                  <p className="text-sm text-[#BDD0E2] text-center py-6">No Players Were Moved.</p>
                 )}
 
                 {conflictResult && conflictResult.failed.length > 0 && (
@@ -1248,7 +1248,7 @@ export default function TDTablesMap() {
                     <div className="divide-y divide-[#EF4444]/15">
                       {conflictResult.failed.map(f => (
                         <div key={f.entry_id || f.player_name} className="px-3 py-2">
-                          <p className="text-sm font-medium text-[#E4E6EB]">{f.player_name || 'Player'}</p>
+                          <p className="text-sm font-medium text-[#F2F7FF]">{f.player_name || 'Player'}</p>
                           <p className="text-xs text-[#EF4444]">{f.error || 'Move Failed'}</p>
                         </div>
                       ))}
@@ -1257,26 +1257,26 @@ export default function TDTablesMap() {
                 )}
 
                 {conflictResult?.print_job_id && (
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl">
-                    <Printer className="w-4 h-4 text-[#1877F2] flex-shrink-0" />
-                    <p className="text-xs text-[#E4E6EB]">
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl">
+                    <Printer className="w-4 h-4 text-[#86DAFF] flex-shrink-0" />
+                    <p className="text-xs text-[#F2F7FF]">
                       Seat Change Cards Queued At The Print Station.
                     </p>
                   </div>
                 )}
               </div>
 
-              <div className="px-5 pb-5 pt-2 border-t border-[#3A3B3C] flex gap-3">
+              <div className="px-5 pb-5 pt-2 border-t border-[#445E77] flex gap-3">
                 {conflictResult ? (
                   <button onClick={closeConflictSheet}
-                    className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-base font-bold active:scale-[0.98] transition-transform">
+                    className="w-full py-3.5 rounded-xl bg-[#0C55C0] text-white text-base font-bold active:scale-[0.98] transition-transform">
                     Done
                   </button>
                 ) : (
                   <>
                     <button onClick={closeConflictSheet}
                       disabled={conflictExecuting}
-                      className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                      className="flex-1 py-3.5 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753] disabled:opacity-50">
                       Cancel
                     </button>
                     <button onClick={executeConflictPlan}
@@ -1298,16 +1298,16 @@ export default function TDTablesMap() {
         {seatDrawResults && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
             onClick={() => setSeatDrawResults(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}>
-              <div className="px-5 py-4 border-b border-[#3A3B3C]">
+              <div className="px-5 py-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center flex-shrink-0">
                     <Shuffle className="w-5 h-5 text-[#31A24C]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">Seat Draw Complete</h3>
-                    <p className="text-xs text-[#B0B3B8]">
+                    <p className="text-xs text-[#BDD0E2]">
                       {seatDrawResults.message || `${seatDrawResults.players_drawn || 0} Players Seated`}
                     </p>
                   </div>
@@ -1323,19 +1323,19 @@ export default function TDTablesMap() {
                   });
                   const tableNums = Object.keys(groups).map(Number).sort((a, b) => a - b);
                   if (tableNums.length === 0) {
-                    return <p className="text-sm text-[#B0B3B8] text-center py-6">No Assignments Returned</p>;
+                    return <p className="text-sm text-[#BDD0E2] text-center py-6">No Assignments Returned</p>;
                   }
                   return tableNums.map(tn => (
                     <div key={tn}>
-                      <p className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider mb-2">Table {tn}</p>
+                      <p className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider mb-2">Table {tn}</p>
                       <div className="space-y-1">
                         {groups[tn].sort((a, b) => (a.seat_number || 0) - (b.seat_number || 0)).map(a => (
-                          <div key={a.entry_id} className="flex items-center gap-3 px-3 py-2.5 bg-[#3A3B3C]/50 rounded-xl">
-                            <span className="w-7 h-7 rounded-full bg-[#1877F2]/20 text-[#1877F2] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          <div key={a.entry_id} className="flex items-center gap-3 px-3 py-2.5 bg-[#132A42]/50 rounded-xl">
+                            <span className="w-7 h-7 rounded-full bg-[#0C55C0]/20 text-[#86DAFF] flex items-center justify-center text-xs font-bold flex-shrink-0">
                               {a.seat_number}
                             </span>
-                            <span className="flex-1 text-sm font-medium text-[#E4E6EB] truncate">{a.player_name || 'Player'}</span>
-                            <span className="text-xs text-[#B0B3B8] font-mono">T{a.table_number}-S{a.seat_number}</span>
+                            <span className="flex-1 text-sm font-medium text-[#F2F7FF] truncate">{a.player_name || 'Player'}</span>
+                            <span className="text-xs text-[#BDD0E2] font-mono">T{a.table_number}-S{a.seat_number}</span>
                           </div>
                         ))}
                       </div>
@@ -1343,9 +1343,9 @@ export default function TDTablesMap() {
                   ));
                 })()}
               </div>
-              <div className="px-5 pb-5 pt-2 border-t border-[#3A3B3C]">
+              <div className="px-5 pb-5 pt-2 border-t border-[#445E77]">
                 <button onClick={() => setSeatDrawResults(null)}
-                  className="w-full py-3.5 rounded-xl bg-[#1877F2] text-white text-base font-bold active:scale-[0.98] transition-transform">
+                  className="w-full py-3.5 rounded-xl bg-[#0C55C0] text-white text-base font-bold active:scale-[0.98] transition-transform">
                   Done
                 </button>
               </div>
@@ -1356,7 +1356,7 @@ export default function TDTablesMap() {
         {/* ===== CONFIRMATION MODAL ===== */}
         {confirmAction && (
           <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center px-4" onClick={() => setConfirmAction(null)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6 border border-[#445E77]" onClick={e => e.stopPropagation()}>
               <div className="text-center mb-4">
                 <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: `${confirmAction.color}20` }}>
                   {confirmAction.type === 'seat_draw'
@@ -1365,11 +1365,11 @@ export default function TDTablesMap() {
                   }
                 </div>
                 <h3 className="text-lg font-bold text-white">{confirmAction.message}</h3>
-                <p className="text-sm text-[#B0B3B8] mt-1">{confirmAction.detail}</p>
+                <p className="text-sm text-[#BDD0E2] mt-1">{confirmAction.detail}</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setConfirmAction(null)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={async () => { setConfirmAction(null); await confirmAction.onConfirm(); }}
                   className="flex-1 py-3 rounded-xl text-white font-bold active:opacity-80"
                   style={{ backgroundColor: confirmAction.color }}>
@@ -1381,14 +1381,14 @@ export default function TDTablesMap() {
         )}
 
         {/* Bottom Nav */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
           <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
               const isActive = item.key === 'tables';
               return (
                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                  className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'
+                  className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'
                     }`}>
                   <Icon className="w-5 h-5" />
                   <span className="text-[10px] font-medium">{item.label}</span>

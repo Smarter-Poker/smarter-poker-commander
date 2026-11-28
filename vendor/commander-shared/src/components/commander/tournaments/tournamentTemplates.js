@@ -224,7 +224,7 @@ export const TOURNAMENT_TEMPLATES = [
         allows_addon: false,
         bounty_amount: 0,
         icon: 'Zap',
-        color: '#F59E0B',
+        color: '#22D3EE',
     },
     {
         id: 'weekend-major',
@@ -241,7 +241,7 @@ export const TOURNAMENT_TEMPLATES = [
         allows_addon: false,
         bounty_amount: 0,
         icon: 'Crown',
-        color: '#A855F7',
+        color: '#5AA9FF',
     },
     {
         id: 'bounty-hunter',

@@ -33,12 +33,12 @@ function formatCountdown(seconds) {
 function getTimeColor(seconds) {
   if (seconds <= 0) return '#EF4444';
   if (seconds <= 300) return '#EF4444';
-  if (seconds <= 900) return '#F59E0B';
+  if (seconds <= 900) return '#22D3EE';
   return '#31A24C';
 }
 
 const TIER_LABELS = { standard: 'Standard', gold: 'Gold', platinum: 'Platinum', vip: 'VIP' };
-const TIER_COLORS = { standard: '#B0B3B8', gold: '#F59E0B', platinum: '#94A3B8', vip: '#A855F7' };
+const TIER_COLORS = { standard: '#BDD0E2', gold: '#22D3EE', platinum: '#A9BDD1', vip: '#5AA9FF' };
 
 export default function PlayerCheckIn() {
   const router = useRouter();
@@ -116,26 +116,26 @@ useEffect(() => {
     return () => { _ctrl.abort(); clearInterval(ticker); };
   }, [activeSession?.session_id]);
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="w-10 h-10 text-[#1877F2] animate-spin mx-auto mb-4" />
-        <p className="text-[#B0B3B8] text-sm">Loading Your Account...</p>
+        <Loader2 className="w-10 h-10 text-[#86DAFF] animate-spin mx-auto mb-4" />
+        <p className="text-[#BDD0E2] text-sm">Loading Your Account...</p>
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-6">
       <div className="text-center max-w-sm">
         <XCircle className="w-16 h-16 text-[#EF4444] mx-auto mb-4" />
         <h2 className="text-xl font-bold text-white mb-2">Not Found</h2>
-        <p className="text-[#B0B3B8]">{error}</p>
-        <p className="text-sm text-[#B0B3B8] mt-4">Show This Screen To Staff For Help.</p>
+        <p className="text-[#BDD0E2]">{error}</p>
+        <p className="text-sm text-[#BDD0E2] mt-4">Show This Screen To Staff For Help.</p>
       </div>
     </div>
   );
 
-  const tierColor = TIER_COLORS[member?.membership_tier] || '#B0B3B8';
+  const tierColor = TIER_COLORS[member?.membership_tier] || '#BDD0E2';
   const tierLabel = TIER_LABELS[member?.membership_tier] || 'Standard';
   const t = activeSession?.time_remaining;
 
@@ -146,7 +146,7 @@ useEffect(() => {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] p-4 pb-12 max-w-md mx-auto">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] p-4 pb-12 max-w-md mx-auto">
 
         {/* Header */}
         <div className="text-center mb-6 pt-2">
@@ -159,7 +159,7 @@ useEffect(() => {
             <span className="text-sm font-medium" style={{ color: tierColor }}>{tierLabel} Member</span>
           </div>
           {member?.member_number && (
-            <p className="text-xs text-[#B0B3B8] mt-1">{member.member_number}</p>
+            <p className="text-xs text-[#BDD0E2] mt-1">{member.member_number}</p>
           )}
         </div>
 
@@ -183,14 +183,14 @@ useEffect(() => {
 
         {/* Time Balance */}
         <div className={`rounded-2xl p-5 mb-3 border text-center ${timeBalance > 0
-          ? 'bg-[#1877F2]/10 border-[#1877F2]/30'
-          : 'bg-[#F59E0B]/10 border-[#F59E0B]/30'
+          ? 'bg-[#0C55C0]/10 border-[#1981EC]/30'
+          : 'bg-[#22D3EE]/10 border-[#22D3EE]/30'
           }`}>
-          <Timer className="w-8 h-8 mx-auto mb-2" style={{ color: timeBalance > 0 ? '#1877F2' : '#F59E0B' }} />
+          <Timer className="w-8 h-8 mx-auto mb-2" style={{ color: timeBalance > 0 ? '#1981EC' : '#22D3EE' }} />
           <p className="text-3xl font-bold text-white">{timeBalance} Min</p>
-          <p className="text-sm text-[#B0B3B8]">Time Balance On Card</p>
+          <p className="text-sm text-[#BDD0E2]">Time Balance On Card</p>
           {timeBalance === 0 && (
-            <p className="text-xs text-[#F59E0B] mt-2">Visit The Kiosk Or Front Desk To Add Time</p>
+            <p className="text-xs text-[#22D3EE] mt-2">Visit The Kiosk Or Front Desk To Add Time</p>
           )}
         </div>
 
@@ -201,7 +201,7 @@ useEffect(() => {
               backgroundColor: `${getTimeColor(t)}10`,
               borderColor: `${getTimeColor(t)}40`
             }}>
-            <p className="text-sm text-[#B0B3B8] mb-1">Currently Seated</p>
+            <p className="text-sm text-[#BDD0E2] mb-1">Currently Seated</p>
             <p className="text-lg font-bold text-white mb-3">
               Table {activeSession.table_number}, Seat {activeSession.seat_number}
             </p>
@@ -215,7 +215,7 @@ useEffect(() => {
                     'Time Remaining'}
             </p>
             {t <= 900 && t > 0 && (
-              <p className="text-xs text-[#F59E0B] mt-3">
+              <p className="text-xs text-[#22D3EE] mt-3">
                 Visit The Kiosk Or Ask A Dealer To Add More Time
               </p>
             )}
@@ -224,15 +224,15 @@ useEffect(() => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
+          <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
             <p className="text-lg font-bold text-white">{member?.total_visits || 0}</p>
-            <p className="text-[10px] text-[#B0B3B8]">Total Visits</p>
+            <p className="text-[10px] text-[#BDD0E2]">Total Visits</p>
           </div>
-          <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
+          <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
             <p className="text-lg font-bold text-white">
               {member?.total_visits ? new Date(member.last_visit || member.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
             </p>
-            <p className="text-[10px] text-[#B0B3B8]">Last Visit</p>
+            <p className="text-[10px] text-[#BDD0E2]">Last Visit</p>
           </div>
         </div>
 

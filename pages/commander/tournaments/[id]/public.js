@@ -50,12 +50,12 @@ function ordinal(n) {
 }
 
 const STATUS_CONFIG = {
-  scheduled: { color: '#B0B3B8', label: 'Upcoming', bg: '#B0B3B8' },
-  registering: { color: '#1877F2', label: 'Registration Open', bg: '#1877F2' },
-  registration: { color: '#1877F2', label: 'Registration Open', bg: '#1877F2' },
+  scheduled: { color: '#BDD0E2', label: 'Upcoming', bg: '#BDD0E2' },
+  registering: { color: '#1981EC', label: 'Registration Open', bg: '#1981EC' },
+  registration: { color: '#1981EC', label: 'Registration Open', bg: '#1981EC' },
   running: { color: '#31A24C', label: 'In Progress', bg: '#31A24C' },
-  break: { color: '#F59E0B', label: 'On Break', bg: '#F59E0B' },
-  final_table: { color: '#A855F7', label: 'Final Table', bg: '#A855F7' },
+  break: { color: '#22D3EE', label: 'On Break', bg: '#22D3EE' },
+  final_table: { color: '#5AA9FF', label: 'Final Table', bg: '#5AA9FF' },
   completed: { color: '#31A24C', label: 'Completed', bg: '#31A24C' },
   cancelled: { color: '#EF4444', label: 'Cancelled', bg: '#EF4444' }
 };
@@ -235,14 +235,14 @@ export default function TournamentPublic() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
     </div>
   );
 
   if (!tournament) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-6">
-      <p className="text-[#B0B3B8] text-lg">Tournament Not Found</p>
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-6">
+      <p className="text-[#BDD0E2] text-lg">Tournament Not Found</p>
     </div>
   );
 
@@ -282,7 +282,7 @@ export default function TournamentPublic() {
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDesc} />
       </Head>
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] pb-12">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] pb-12">
 
         {/* Header */}
         <div className="px-6 py-6 text-center" style={{ backgroundColor: `${sc.bg}10` }}>
@@ -293,7 +293,7 @@ export default function TournamentPublic() {
           </div>
           <h1 className="text-2xl font-bold text-white">{t.name}</h1>
           {t.scheduled_start && (
-            <p className="text-sm text-[#B0B3B8] mt-1">
+            <p className="text-sm text-[#BDD0E2] mt-1">
               {new Date(t.scheduled_start).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               {' At '}
               {new Date(t.scheduled_start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -302,12 +302,12 @@ export default function TournamentPublic() {
           {/* Share + Post buttons */}
           <div className="flex items-center justify-center gap-2 mt-3">
             <button onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-xs font-semibold active:bg-[#3A3B3C]">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0A1829] border border-[#445E77] text-[#F2F7FF] text-xs font-semibold active:bg-[#132A42]">
               {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-[#31A24C]" /> : <Share2 className="w-3.5 h-3.5" />}
               {copied ? 'Link Copied!' : 'Share'}
             </button>
             <button onClick={handlePostToMyPage} disabled={posting || posted}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold ${posted ? 'bg-[#31A24C]/20 border border-[#31A24C]/40 text-[#31A24C]' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'} disabled:opacity-60`}>
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold ${posted ? 'bg-[#31A24C]/20 border border-[#31A24C]/40 text-[#31A24C]' : 'bg-[#0C55C0] text-white active:bg-[#0A4AA8]'} disabled:opacity-60`}>
               {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : posted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {posted ? 'Posted!' : 'Post To My Page'}
             </button>
@@ -316,15 +316,15 @@ export default function TournamentPublic() {
 
         {/* Live Clock (if running) */}
         {clock && isLive && (
-          <div className="mx-4 mt-4 bg-[#242526] border border-[#3A3B3C] rounded-2xl p-5 text-center">
-            <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">
+          <div className="mx-4 mt-4 bg-[#0A1829] border border-[#445E77] rounded-2xl p-5 text-center">
+            <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">
               {(t.status === 'break' || clock.is_break) ? (clock.break_label || 'Break') : `Level ${clock.current_level || '?'}`}
             </p>
             <p className="text-5xl font-mono font-bold text-white mb-2">
               {formatTime(clock.time_remaining)}
             </p>
             {clock.blinds && (
-              <p className="text-lg text-[#1877F2] font-semibold">
+              <p className="text-lg text-[#86DAFF] font-semibold">
                 Blinds: {clock.blinds.small_blind?.toLocaleString()}/{clock.blinds.big_blind?.toLocaleString()}
                 {clock.blinds.ante > 0 && ` (Ante ${clock.blinds.ante?.toLocaleString()})`}
               </p>
@@ -334,9 +334,9 @@ export default function TournamentPublic() {
 
         {/* COMPLETED: Winner banner */}
         {isCompleted && finalStandings.length > 0 && (
-          <div className="mx-4 mt-4 bg-gradient-to-r from-[#F59E0B]/20 to-[#F59E0B]/5 border border-[#F59E0B]/30 rounded-2xl p-5 text-center">
-            <Trophy className="w-10 h-10 text-[#F59E0B] mx-auto mb-2" />
-            <p className="text-xs text-[#F59E0B] uppercase tracking-wider mb-1">Champion</p>
+          <div className="mx-4 mt-4 bg-gradient-to-r from-[#22D3EE]/20 to-[#22D3EE]/5 border border-[#22D3EE]/30 rounded-2xl p-5 text-center">
+            <Trophy className="w-10 h-10 text-[#22D3EE] mx-auto mb-2" />
+            <p className="text-xs text-[#22D3EE] uppercase tracking-wider mb-1">Champion</p>
             <p className="text-2xl font-bold text-white">{getName(finalStandings[0]) || 'TBD'}</p>
             {finalStandings[0]?.payout_amount > 0 && (
               <p className="text-lg font-semibold text-[#31A24C] mt-1">${finalStandings[0].payout_amount.toLocaleString()}</p>
@@ -346,53 +346,53 @@ export default function TournamentPublic() {
 
         {/* Stats */}
         <div className="px-4 mt-4 grid grid-cols-3 gap-2">
-          <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
+          <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
             <DollarSign className="w-5 h-5 text-[#31A24C] mx-auto mb-1" />
             <p className="text-lg font-bold text-white">
               ${t.buyin_amount || 0}{t.buyin_fee ? `+$${t.buyin_fee}` : ''}
             </p>
-            <p className="text-[10px] text-[#B0B3B8]">Buy-In</p>
+            <p className="text-[10px] text-[#BDD0E2]">Buy-In</p>
           </div>
-          <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
-            <Users className="w-5 h-5 text-[#1877F2] mx-auto mb-1" />
+          <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
+            <Users className="w-5 h-5 text-[#86DAFF] mx-auto mb-1" />
             <p className="text-lg font-bold text-white">{isCompleted ? allEntries : activeEntries.length}</p>
-            <p className="text-[10px] text-[#B0B3B8]">
+            <p className="text-[10px] text-[#BDD0E2]">
               {isCompleted ? 'Total Entries' : isLive ? 'Remaining' : 'Registered'}
             </p>
           </div>
-          <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
-            <Trophy className="w-5 h-5 text-[#F59E0B] mx-auto mb-1" />
+          <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
+            <Trophy className="w-5 h-5 text-[#22D3EE] mx-auto mb-1" />
             <p className="text-lg font-bold text-white">${prizePool.toLocaleString()}</p>
-            <p className="text-[10px] text-[#B0B3B8]">Prize Pool</p>
+            <p className="text-[10px] text-[#BDD0E2]">Prize Pool</p>
           </div>
         </div>
 
         {/* Info cards */}
         <div className="px-4 mt-4 space-y-2">
           {t.starting_chips && (
-            <div className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-              <span className="text-sm text-[#B0B3B8]">Starting Chips</span>
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
+              <span className="text-sm text-[#BDD0E2]">Starting Chips</span>
               <span className="text-sm font-bold text-white">{t.starting_chips?.toLocaleString()}</span>
             </div>
           )}
           {t.tournament_type && (
-            <div className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-              <span className="text-sm text-[#B0B3B8]">Format</span>
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
+              <span className="text-sm text-[#BDD0E2]">Format</span>
               <span className="text-sm font-bold text-white capitalize">{t.tournament_type}</span>
             </div>
           )}
           {/* 2026-08-04 audit fix: real columns are late_registration_levels / guaranteed_pool -
               the old field names never existed so these rows never rendered */}
           {t.late_registration_levels && (
-            <div className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-              <span className="text-sm text-[#B0B3B8]">Late Reg</span>
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
+              <span className="text-sm text-[#BDD0E2]">Late Reg</span>
               <span className="text-sm font-bold text-white">Through Level {t.late_registration_levels}</span>
             </div>
           )}
           {t.guaranteed_pool > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl">
-              <span className="text-sm text-[#F59E0B]">Guaranteed</span>
-              <span className="text-sm font-bold text-[#F59E0B]">${t.guaranteed_pool?.toLocaleString()}</span>
+            <div className="flex items-center justify-between px-4 py-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl">
+              <span className="text-sm text-[#22D3EE]">Guaranteed</span>
+              <span className="text-sm font-bold text-[#22D3EE]">${t.guaranteed_pool?.toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -401,19 +401,19 @@ export default function TournamentPublic() {
         {isCompleted && finalStandings.length > 0 && (
           <div className="px-4 mt-4">
             <button onClick={() => setShowResults(!showResults)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
               <span className="text-sm font-semibold text-white">Final Standings ({finalStandings.length} Places)</span>
-              {showResults ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
+              {showResults ? <ChevronUp className="w-4 h-4 text-[#BDD0E2]" /> : <ChevronDown className="w-4 h-4 text-[#BDD0E2]" />}
             </button>
             {showResults && (
               <div className="mt-1 space-y-1">
                 {finalStandings.map((e, i) => (
-                  <div key={e.id || i} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${i === 0 ? 'bg-[#F59E0B]/10 border-[#F59E0B]/30' :
-                    i === 1 ? 'bg-[#B0B3B8]/10 border-[#B0B3B8]/20' :
+                  <div key={e.id || i} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${i === 0 ? 'bg-[#22D3EE]/10 border-[#22D3EE]/30' :
+                    i === 1 ? 'bg-[#BDD0E2]/10 border-[#BDD0E2]/20' :
                       i === 2 ? 'bg-[#CD7F32]/10 border-[#CD7F32]/20' :
-                        'bg-[#242526] border-[#3A3B3C]'
+                        'bg-[#0A1829] border-[#445E77]'
                     }`}>
-                    <span className={`w-8 text-center text-sm font-bold ${i === 0 ? 'text-[#F59E0B]' : i === 1 ? 'text-[#B0B3B8]' : i === 2 ? 'text-[#CD7F32]' : 'text-[#B0B3B8]'
+                    <span className={`w-8 text-center text-sm font-bold ${i === 0 ? 'text-[#22D3EE]' : i === 1 ? 'text-[#BDD0E2]' : i === 2 ? 'text-[#CD7F32]' : 'text-[#BDD0E2]'
                       }`}>
                       {ordinal(e.finish_position)}
                     </span>
@@ -432,15 +432,15 @@ export default function TournamentPublic() {
         {blindStructure.length > 0 && (
           <div className="px-4 mt-4">
             <button onClick={() => setShowStructure(!showStructure)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
               <span className="text-sm font-semibold text-white">Blind Structure ({blindStructure.filter(l => !l.is_break).length} Levels)</span>
-              {showStructure ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
+              {showStructure ? <ChevronUp className="w-4 h-4 text-[#BDD0E2]" /> : <ChevronDown className="w-4 h-4 text-[#BDD0E2]" />}
             </button>
             {showStructure && (
-              <div className="mt-1 bg-[#242526] border border-[#3A3B3C] rounded-xl overflow-hidden">
+              <div className="mt-1 bg-[#0A1829] border border-[#445E77] rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-[#3A3B3C] text-[#B0B3B8]">
+                    <tr className="border-b border-[#445E77] text-[#BDD0E2]">
                       <th className="px-3 py-2 text-left">Lvl</th>
                       <th className="px-3 py-2 text-right">SB</th>
                       <th className="px-3 py-2 text-right">BB</th>
@@ -458,8 +458,8 @@ export default function TournamentPublic() {
                         if (!isBreakLvl) displayNum++;
                         const isCurrent = !isBreakLvl && !clock?.is_break && clock?.current_level === displayNum;
                         return (
-                          <tr key={i} className={`border-b border-[#3A3B3C]/50 ${isCurrent ? 'bg-[#1877F2]/10 text-[#1877F2]' :
-                            isBreakLvl ? 'bg-[#F59E0B]/5 text-[#F59E0B]' : 'text-white'
+                          <tr key={i} className={`border-b border-[#445E77]/50 ${isCurrent ? 'bg-[#0C55C0]/10 text-[#86DAFF]' :
+                            isBreakLvl ? 'bg-[#22D3EE]/5 text-[#22D3EE]' : 'text-white'
                             }`}>
                             <td className="px-3 py-2 font-medium">
                               {isBreakLvl ? (level.label || 'Break') : displayNum}{isCurrent ? ' *' : ''}
@@ -483,18 +483,18 @@ export default function TournamentPublic() {
         {payoutStructure.length > 0 && (
           <div className="px-4 mt-3">
             <button onClick={() => setShowPayouts(!showPayouts)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
               <span className="text-sm font-semibold text-white">Payouts ({payoutStructure.length} Places)</span>
-              {showPayouts ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
+              {showPayouts ? <ChevronUp className="w-4 h-4 text-[#BDD0E2]" /> : <ChevronDown className="w-4 h-4 text-[#BDD0E2]" />}
             </button>
             {showPayouts && (
               <div className="mt-1 space-y-1">
                 {payoutStructure.map((p, i) => {
-                  const placeColors = ['#F59E0B', '#B0B3B8', '#CD7F32'];
-                  const color = placeColors[i] || '#B0B3B8';
+                  const placeColors = ['#22D3EE', '#BDD0E2', '#CD7F32'];
+                  const color = placeColors[i] || '#BDD0E2';
                   const amount = p.amount || (prizePool * (p.percentage || 0) / 100);
                   return (
-                    <div key={i} className="flex items-center justify-between px-4 py-2 bg-[#242526] border border-[#3A3B3C] rounded-lg">
+                    <div key={i} className="flex items-center justify-between px-4 py-2 bg-[#0A1829] border border-[#445E77] rounded-lg">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold" style={{ color }}>
                           {ordinal(i + 1)}
@@ -502,7 +502,7 @@ export default function TournamentPublic() {
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold text-white">${amount.toLocaleString()}</span>
-                        {p.percentage && <span className="text-[10px] text-[#B0B3B8] ml-1">({p.percentage}%)</span>}
+                        {p.percentage && <span className="text-[10px] text-[#BDD0E2] ml-1">({p.percentage}%)</span>}
                       </div>
                     </div>
                   );
@@ -519,11 +519,11 @@ export default function TournamentPublic() {
             .length > 0 && (
           <div className="px-4 mt-3">
             <button onClick={() => setShowChipCounts(!showChipCounts)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
               <span className="text-sm font-semibold text-white">
                 Chip Counts ({entries.filter(e => (e.status === 'active' || e.status === 'playing' || e.status === 'seated') && e.current_chips > 0).length} Players)
               </span>
-              {showChipCounts ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
+              {showChipCounts ? <ChevronUp className="w-4 h-4 text-[#BDD0E2]" /> : <ChevronDown className="w-4 h-4 text-[#BDD0E2]" />}
             </button>
             {showChipCounts && (
               <div className="mt-1 space-y-1">
@@ -531,8 +531,8 @@ export default function TournamentPublic() {
                   .filter(e => (e.status === 'active' || e.status === 'playing' || e.status === 'seated') && e.current_chips > 0)
                   .sort((a, b) => (b.current_chips || 0) - (a.current_chips || 0))
                   .map((e, i) => (
-                    <div key={e.id || i} className="flex items-center gap-3 px-4 py-2 bg-[#242526] border border-[#3A3B3C] rounded-lg">
-                      <span className="w-8 text-center text-sm font-bold text-[#B0B3B8]">
+                    <div key={e.id || i} className="flex items-center gap-3 px-4 py-2 bg-[#0A1829] border border-[#445E77] rounded-lg">
+                      <span className="w-8 text-center text-sm font-bold text-[#BDD0E2]">
                         {i + 1}.
                       </span>
                       <span className="flex-1 text-sm font-medium text-white">{getName(e)}</span>

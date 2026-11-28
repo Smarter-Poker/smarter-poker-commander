@@ -310,7 +310,7 @@ export default function TournamentSettings() {
   // Fetch tournament
   useEffect(() => {
 
-  if (!router.isReady) return null;
+  if (!router.isReady) return; // an effect may only return a cleanup function
 
     if (!id) return;
     const fetch_ = async () => {
@@ -691,8 +691,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
   const breakCount = levels.filter(l => l.is_break).length;
 
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
     </div>
   );
 
@@ -709,17 +709,17 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex flex-col">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
           <h1 className="sr-only">Tournament Settings</h1>
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => router.back()} aria-label="Back"
-              className="w-11 h-11 flex items-center justify-center rounded-lg transition-colors flex-shrink-0" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}>
+              className="w-11 h-11 flex items-center justify-center rounded-lg transition-colors flex-shrink-0" style={{ background: '#2A4560', border: '1px solid #3A5873' }}>
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
-            <p className="text-xs font-semibold text-[#B0B3B8] truncate" role="status">{name}</p>
+            <p className="text-xs font-semibold text-[#BDD0E2] truncate" role="status">{name}</p>
           </div>
           <button onClick={saveSettings} disabled={saving || saveBlocked}
             title={saveBlocked
@@ -727,7 +727,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                 ? 'Fix The Blind Structure Errors First'
                 : 'Acknowledge The Blind Structure Warnings First')
               : 'Save'}
-            className={`ml-auto px-4 min-h-[44px] rounded-lg text-sm font-semibold flex items-center gap-2 ${saved ? 'bg-[#31A24C] text-white' : 'bg-[#1877F2] text-white active:bg-[#1565D8]'
+            className={`ml-auto px-4 min-h-[44px] rounded-lg text-sm font-semibold flex items-center gap-2 ${saved ? 'bg-[#31A24C] text-white' : 'bg-[#0C55C0] text-white active:bg-[#0A4AA8]'
               } disabled:opacity-50`}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
               saved ? <Check className="w-4 h-4" /> :
@@ -742,12 +742,12 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
         </div>
 
         {/* Tabs */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 flex gap-1">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 flex gap-1">
           {TABS.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 -mb-px ${activeTab === tab.key
-                ? 'text-[#1877F2] border-[#1877F2]'
-                : 'text-[#B0B3B8] border-transparent'
+                ? 'text-[#86DAFF] border-[#1981EC]'
+                : 'text-[#BDD0E2] border-transparent'
                 }`}>
               <tab.icon className="w-4 h-4" /> {tab.label}
             </button>
@@ -755,31 +755,31 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
         </div>
 
         {/* Saved Templates toolbar */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-2 flex items-center gap-2 flex-wrap">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-2 flex items-center gap-2 flex-wrap">
           <button onClick={openTemplatePicker}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#3A3B3C] text-[#E4E6EB] active:bg-[#4A4B4C]">
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#132A42] text-[#F2F7FF] active:bg-[#1B3753]">
             {showTemplatePicker ? 'Hide Templates' : 'Load Template'}
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)}
               placeholder="Template Name"
-              className="px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-xs text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none w-40 placeholder-[#6A6B6D]" />
+              className="px-2 py-1.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-xs text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none w-40 placeholder-[#93A9C0]" />
             <button onClick={saveAsTemplate} disabled={templateBusy || !templateName.trim()}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1877F2] text-white disabled:opacity-50">
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#0C55C0] text-white disabled:opacity-50">
               {templateBusy ? 'Saving...' : 'Save As Template'}
             </button>
           </div>
           {showTemplatePicker && (
-            <div className="w-full mt-2 border-t border-[#3A3B3C] pt-2">
+            <div className="w-full mt-2 border-t border-[#445E77] pt-2">
               {templates.length === 0 ? (
-                <p className="text-xs text-[#64748B]">No Saved Templates For This Venue Yet.</p>
+                <p className="text-xs text-[#9FB3C8]">No Saved Templates For This Venue Yet.</p>
               ) : (
                 <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                   {templates.map(tpl => (
                     <button key={tpl.id} onClick={() => loadSavedTemplate(tpl)}
                       className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0D192E] hover:bg-[#132240] text-left">
-                      <span className="text-sm text-[#E4E6EB]">{tpl.name}</span>
-                      <span className="text-[10px] text-[#64748B]">{parseBlinds(tpl.blind_structure).filter(l => !l.is_break).length} Levels</span>
+                      <span className="text-sm text-[#F2F7FF]">{tpl.name}</span>
+                      <span className="text-[10px] text-[#9FB3C8]">{parseBlinds(tpl.blind_structure).filter(l => !l.is_break).length} Levels</span>
                     </button>
                   ))}
                 </div>
@@ -797,21 +797,21 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
               {/* Stats bar */}
               <div className="grid grid-cols-4 gap-2">
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
                   <p className="text-lg font-bold text-white">{levelCount}</p>
-                  <p className="text-[10px] text-[#B0B3B8]">Levels</p>
+                  <p className="text-[10px] text-[#BDD0E2]">Levels</p>
                 </div>
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
                   <p className="text-lg font-bold text-white">{breakCount}</p>
-                  <p className="text-[10px] text-[#B0B3B8]">Breaks</p>
+                  <p className="text-[10px] text-[#BDD0E2]">Breaks</p>
                 </div>
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
                   <p className="text-lg font-bold text-white">{totalMinutes}m</p>
-                  <p className="text-[10px] text-[#B0B3B8]">Total</p>
+                  <p className="text-[10px] text-[#BDD0E2]">Total</p>
                 </div>
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
                   <p className="text-lg font-bold text-white">{totalHours}h</p>
-                  <p className="text-[10px] text-[#B0B3B8]">Hours</p>
+                  <p className="text-[10px] text-[#BDD0E2]">Hours</p>
                 </div>
               </div>
 
@@ -829,7 +829,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   </div>
                   <ul className="space-y-1">
                     {structureErrorList.map((e, i) => (
-                      <li key={`err-${i}`} className="text-xs text-[#E4E6EB] flex gap-2">
+                      <li key={`err-${i}`} className="text-xs text-[#F2F7FF] flex gap-2">
                         <span className="text-[#EF4444] font-mono flex-shrink-0">
                           {e.level_index == null ? '--' : `#${e.level_index + 1}`}
                         </span>
@@ -841,17 +841,17 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               )}
 
               {structureWarningList.length > 0 && (
-                <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/40 rounded-xl p-3">
+                <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/40 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
-                    <p className="text-sm font-semibold text-[#F59E0B]">
+                    <AlertTriangle className="w-4 h-4 text-[#22D3EE]" />
+                    <p className="text-sm font-semibold text-[#22D3EE]">
                       {structureWarningList.length.toLocaleString()} Warning{structureWarningList.length === 1 ? '' : 's'}
                     </p>
                   </div>
                   <ul className="space-y-1 mb-3">
                     {structureWarningList.map((w, i) => (
-                      <li key={`warn-${i}`} className="text-xs text-[#E4E6EB] flex gap-2">
-                        <span className="text-[#F59E0B] font-mono flex-shrink-0">
+                      <li key={`warn-${i}`} className="text-xs text-[#F2F7FF] flex gap-2">
+                        <span className="text-[#22D3EE] font-mono flex-shrink-0">
                           {w.level_index == null ? '--' : `#${w.level_index + 1}`}
                         </span>
                         <span>{w.message}</span>
@@ -862,7 +862,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     onClick={() => setAckedWarnings(warningsAcknowledged ? '' : warningSignature)}
                     className={`w-full min-h-[44px] rounded-lg text-sm font-semibold flex items-center justify-center gap-2 ${warningsAcknowledged
                       ? 'bg-[#31A24C]/20 text-[#31A24C] border border-[#31A24C]/40'
-                      : 'bg-[#F59E0B] text-[#18191A]'}`}>
+                      : 'bg-[#22D3EE] text-[#040D18]'}`}>
                     {warningsAcknowledged ? <ShieldCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                     {warningsAcknowledged ? 'Warnings Acknowledged' : 'Acknowledge Warnings And Allow Saving'}
                   </button>
@@ -883,11 +883,11 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
               {/* Templates */}
               <div>
-                <p className="text-xs text-[#B0B3B8] mb-2 uppercase tracking-wider">Load Template</p>
+                <p className="text-xs text-[#BDD0E2] mb-2 uppercase tracking-wider">Load Template</p>
                 <div className="flex gap-2">
                   {Object.entries(STRUCTURE_TEMPLATES || {}).map(([key, template]) => (
                     <button key={key} onClick={() => loadTemplate(key)}
-                      className="flex-1 py-2.5 rounded-lg bg-[#3A3B3C] text-sm text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">
+                      className="flex-1 py-2.5 rounded-lg bg-[#132A42] text-sm text-[#F2F7FF] font-medium active:bg-[#1B3753]">
                       {template.name}
                     </button>
                   ))}
@@ -897,7 +897,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Level Table */}
               <div className="space-y-1">
                 {/* Header */}
-                <div className="grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 px-2 text-[10px] text-[#B0B3B8] uppercase tracking-wider">
+                <div className="grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 px-2 text-[10px] text-[#BDD0E2] uppercase tracking-wider">
                   <span>#</span><span>Small</span><span>Big</span><span>Ante</span><span>Min</span><span></span><span></span>
                 </div>
 
@@ -908,43 +908,43 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   const sev = rowSeverity[i];
                   const rowBorder = sev === 'error'
                     ? 'border-[#EF4444]'
-                    : sev === 'warning' ? 'border-[#F59E0B]' : null;
+                    : sev === 'warning' ? 'border-[#22D3EE]' : null;
 
                   if (level.is_break) {
                     return (
-                      <div key={i} className={`bg-[#F59E0B]/10 border ${rowBorder || 'border-[#F59E0B]/30'} rounded-lg px-3 py-2 flex items-center gap-2`}>
-                        <Coffee className="w-4 h-4 text-[#F59E0B]" />
-                        <span className="text-sm font-medium text-[#F59E0B] flex-1">{level.label ? level.label.toUpperCase() : 'BREAK'}</span>
+                      <div key={i} className={`bg-[#22D3EE]/10 border ${rowBorder || 'border-[#22D3EE]/30'} rounded-lg px-3 py-2 flex items-center gap-2`}>
+                        <Coffee className="w-4 h-4 text-[#22D3EE]" />
+                        <span className="text-sm font-medium text-[#22D3EE] flex-1">{level.label ? level.label.toUpperCase() : 'BREAK'}</span>
                         <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
                           onChange={e => updateLevel(i, 'duration', e.target.value)}
-                          className="w-14 px-2 py-1 bg-[#3A3B3C] rounded text-center text-sm text-white"
+                          className="w-14 px-2 py-1 bg-[#132A42] rounded text-center text-sm text-white"
                         />
-                        <span className="text-[10px] text-[#F59E0B]">Min</span>
-                        <button onClick={() => moveLevel(i, -1)} className="p-1"><ChevronUp className="w-3.5 h-3.5 text-[#B0B3B8]" /></button>
-                        <button onClick={() => moveLevel(i, 1)} className="p-1"><ChevronDown className="w-3.5 h-3.5 text-[#B0B3B8]" /></button>
+                        <span className="text-[10px] text-[#22D3EE]">Min</span>
+                        <button onClick={() => moveLevel(i, -1)} className="p-1"><ChevronUp className="w-3.5 h-3.5 text-[#BDD0E2]" /></button>
+                        <button onClick={() => moveLevel(i, 1)} className="p-1"><ChevronDown className="w-3.5 h-3.5 text-[#BDD0E2]" /></button>
                         <button onClick={() => removeLevel(i)} className="p-1"><Trash2 className="w-3.5 h-3.5 text-[#EF4444]" /></button>
                       </div>
                     );
                   }
 
                   return (
-                    <div key={i} className={`grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 items-center bg-[#242526] border ${rowBorder || 'border-[#3A3B3C]'} rounded-lg px-2 py-1.5`}>
-                      <span className="text-xs text-[#B0B3B8] font-mono">{levelNum}</span>
+                    <div key={i} className={`grid grid-cols-[40px_1fr_1fr_1fr_60px_40px_40px] gap-1 items-center bg-[#0A1829] border ${rowBorder || 'border-[#445E77]'} rounded-lg px-2 py-1.5`}>
+                      <span className="text-xs text-[#BDD0E2] font-mono">{levelNum}</span>
                       <input type="number" value={level.small_blind}
                         onChange={e => updateLevel(i, 'small_blind', e.target.value)}
-                        className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
+                        className="px-2 py-1.5 bg-[#132A42] rounded text-sm text-white text-center" />
                       <input type="number" value={level.big_blind}
                         onChange={e => updateLevel(i, 'big_blind', e.target.value)}
-                        className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
+                        className="px-2 py-1.5 bg-[#132A42] rounded text-sm text-white text-center" />
                       <input type="number" value={level.ante}
                         onChange={e => updateLevel(i, 'ante', e.target.value)}
-                        className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
+                        className="px-2 py-1.5 bg-[#132A42] rounded text-sm text-white text-center" />
                       <input type="number" value={level.duration ?? level.duration_minutes ?? 0}
                         onChange={e => updateLevel(i, 'duration', e.target.value)}
-                        className="px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
+                        className="px-2 py-1.5 bg-[#132A42] rounded text-sm text-white text-center" />
                       <div className="flex flex-col">
-                        <button onClick={() => moveLevel(i, -1)} className="p-0.5"><ChevronUp className="w-3 h-3 text-[#B0B3B8]" /></button>
-                        <button onClick={() => moveLevel(i, 1)} className="p-0.5"><ChevronDown className="w-3 h-3 text-[#B0B3B8]" /></button>
+                        <button onClick={() => moveLevel(i, -1)} className="p-0.5"><ChevronUp className="w-3 h-3 text-[#BDD0E2]" /></button>
+                        <button onClick={() => moveLevel(i, 1)} className="p-0.5"><ChevronDown className="w-3 h-3 text-[#BDD0E2]" /></button>
                       </div>
                       <button onClick={() => removeLevel(i)} className="p-1"><Trash2 className="w-3.5 h-3.5 text-[#EF4444]" /></button>
                     </div>
@@ -955,11 +955,11 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Add buttons */}
               <div className="flex gap-2">
                 <button onClick={addLevel}
-                  className="flex-1 py-3 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1877F2]/20">
+                  className="flex-1 py-3 rounded-xl bg-[#0C55C0]/10 border border-[#1981EC]/30 text-[#86DAFF] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#0C55C0]/20">
                   <Plus className="w-4 h-4" /> Add Level
                 </button>
                 <button onClick={addBreak}
-                  className="flex-1 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-[#F59E0B] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#F59E0B]/20">
+                  className="flex-1 py-3 rounded-xl bg-[#22D3EE]/10 border border-[#22D3EE]/30 text-[#22D3EE] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#22D3EE]/20">
                   <Coffee className="w-4 h-4" /> Add Break
                 </button>
               </div>
@@ -971,14 +971,14 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
             <div className="p-4 space-y-4">
               {/* Tournament Name */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Tournament Name</label>
+                <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Tournament Name</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                  className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
               </div>
 
               {/* Type */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Tournament Type</label>
+                <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Tournament Type</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { key: 'freezeout', label: 'Freezeout' },
@@ -989,7 +989,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     { key: 'turbo', label: 'Turbo' },
                   ].map(type => (
                     <button key={type.key} onClick={() => setTournamentType(type.key)}
-                      className={`h-11 rounded-lg text-sm font-medium ${tournamentType === type.key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                      className={`h-11 rounded-lg text-sm font-medium ${tournamentType === type.key ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'
                         }`}>{type.label}</button>
                   ))}
                 </div>
@@ -997,8 +997,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
               {/* Payout Rounding */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Round Payouts To</label>
-                <p className="text-[10px] text-[#64748B] mb-2">
+                <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Round Payouts To</label>
+                <p className="text-[10px] text-[#9FB3C8] mb-2">
                   Every Place Is Floored To This Denomination And The Remainder Goes To 1st Place, So The Total Still Equals The Prize Pool
                 </p>
                 <div className="grid grid-cols-4 gap-2">
@@ -1009,7 +1009,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                     { value: 100, label: '$100' },
                   ].map(d => (
                     <button key={d.value} onClick={() => setPayoutDenomination(d.value)}
-                      className={`h-11 rounded-lg text-sm font-medium ${Number(payoutDenomination) === d.value ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                      className={`h-11 rounded-lg text-sm font-medium ${Number(payoutDenomination) === d.value ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'
                         }`}>{d.label}</button>
                   ))}
                 </div>
@@ -1018,10 +1018,10 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Bounty / PKO */}
               {['bounty', 'pko'].includes(tournamentType) && (
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">
                     {tournamentType === 'pko' ? 'Starting Bounty' : 'Bounty Per Knockout'}
                   </label>
-                  <p className="text-[10px] text-[#64748B] mb-2">
+                  <p className="text-[10px] text-[#9FB3C8] mb-2">
                     Taken Out Of The Buy-In, Not Added On Top. A ${Number(buyinAmount || 0).toLocaleString()} Buy-In
                     With A ${Number(bountyAmount || 0).toLocaleString()} Bounty Puts
                     ${Math.max(0, Number(buyinAmount || 0) - Number(bountyAmount || 0)).toLocaleString()} Into The Prize Pool.
@@ -1032,7 +1032,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   <input type="number" inputMode="numeric" value={bountyAmount}
                     onChange={e => setBountyAmount(e.target.value)}
                     placeholder={tournamentType === 'pko' ? String(Math.floor(Number(buyinAmount || 0) / 2)) : '25'}
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                 </div>
               )}
 
@@ -1040,42 +1040,42 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {tournamentType === 'satellite' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Seat Value</label>
-                    <p className="text-[10px] text-[#64748B] mb-2">
+                    <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Seat Value</label>
+                    <p className="text-[10px] text-[#9FB3C8] mb-2">
                       What One Seat Is Worth. Leave At 0 To Pay A Normal Cash Ladder Instead Of Seats.
                     </p>
                     <input type="number" inputMode="numeric" value={seatValue}
                       onChange={e => setSeatValue(e.target.value)} placeholder="500"
-                      className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                      className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Seats Awarded</label>
-                    <p className="text-[10px] text-[#64748B] mb-2">
+                    <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Seats Awarded</label>
+                    <p className="text-[10px] text-[#9FB3C8] mb-2">
                       Leave Blank To Award As Many Seats As The Prize Pool Funds. Any Money Left Over Is Paid To The
                       Next Finisher As A Cash Bubble Prize.
                     </p>
                     <input type="number" inputMode="numeric" value={seatsAwarded}
                       onChange={e => setSeatsAwarded(e.target.value)} placeholder="Auto"
-                      className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                      className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                   </div>
                 </div>
               )}
 
               {/* Clock Color */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Clock Color</label>
-                <p className="text-[10px] text-[#64748B] mb-2">Assign A Unique Color To Distinguish This Tournament's Clock Display</p>
+                <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Clock Color</label>
+                <p className="text-[10px] text-[#9FB3C8] mb-2">Assign A Unique Color To Distinguish This Tournament's Clock Display</p>
                 <div className="grid grid-cols-6 gap-2">
                   {[
                     { key: 'navy', label: 'Navy', from: '#2C3E6B', to: '#1E2D52' },
                     { key: 'red', label: 'Red', from: '#6B2C2C', to: '#521E1E' },
                     { key: 'green', label: 'Green', from: '#2C6B3E', to: '#1E522D' },
-                    { key: 'purple', label: 'Purple', from: '#4B2C6B', to: '#351E52' },
-                    { key: 'gold', label: 'Gold', from: '#6B5C2C', to: '#52451E' },
+                    { key: 'purple', label: 'Purple', from: '#17325A', to: '#10264A' },
+                    { key: 'gold', label: 'Gold', from: '#2C4A66', to: '#1E3A52' },
                     { key: 'teal', label: 'Teal', from: '#2C5F6B', to: '#1E4852' },
                   ].map(c => (
                     <button key={c.key} onClick={() => setClockColor(c.key)}
-                      className={`py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${clockColor === c.key ? 'ring-2 ring-white ring-offset-2 ring-offset-[#18191A] scale-105' : 'opacity-70 hover:opacity-100'
+                      className={`py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${clockColor === c.key ? 'ring-2 ring-white ring-offset-2 ring-offset-[#040D18] scale-105' : 'opacity-70 hover:opacity-100'
                         }`}
                       style={{ background: `linear-gradient(180deg, ${c.from}, ${c.to})`, color: '#fff' }}>
                       {c.label}
@@ -1086,13 +1086,13 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
               {/* Season Leaderboard */}
               <div>
-                <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Season Leaderboard</label>
-                <p className="text-[10px] text-[#64748B] mb-2">
+                <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Season Leaderboard</label>
+                <p className="text-[10px] text-[#9FB3C8] mb-2">
                   Points Are Awarded When This Tournament Is Finalized. Leave On Automatic To Score
                   Into Whichever Season Is Active At The Time.
                 </p>
                 <select value={leaderboardId} onChange={e => setLeaderboardId(e.target.value)}
-                  className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none">
+                  className="w-full h-12 px-3 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none">
                   <option value="">Automatic (Venue's Active Season)</option>
                   {leaderboards.map(lb => (
                     <option key={lb.id} value={lb.id}>
@@ -1101,7 +1101,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
                   ))}
                 </select>
                 {leaderboards.length === 0 && (
-                  <p className="text-[10px] text-[#F59E0B] mt-1">
+                  <p className="text-[10px] text-[#22D3EE] mt-1">
                     No Seasons Exist Yet. Create One At Commander, Tournament Leaderboards.
                   </p>
                 )}
@@ -1110,97 +1110,97 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
               {/* Buy-in */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Buy-In ($)</label>
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Buy-In ($)</label>
                   <input type="number" value={buyinAmount} onChange={e => setBuyinAmount(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">House Fee ($)</label>
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">House Fee ($)</label>
                   <input type="number" value={buyinFee} onChange={e => setBuyinFee(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                 </div>
               </div>
 
               {/* Starting Chips + Late Reg */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Starting Chips</label>
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Starting Chips</label>
                   <input type="number" value={startingChips} onChange={e => setStartingChips(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Late Reg (Levels)</label>
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Late Reg (Levels)</label>
                   <input type="number" value={lateRegLevels} onChange={e => setLateRegLevels(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none" />
                 </div>
               </div>
 
               {/* Max Entries + Guarantee */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Max Entries</label>
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Max Entries</label>
                   <input type="number" value={maxEntries} onChange={e => setMaxEntries(e.target.value)}
                     placeholder="Unlimited"
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none placeholder-[#6A6B6D]" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none placeholder-[#93A9C0]" />
                 </div>
                 <div>
-                  <label className="text-xs text-[#B0B3B8] uppercase tracking-wider block mb-1">Guarantee ($)</label>
+                  <label className="text-xs text-[#BDD0E2] uppercase tracking-wider block mb-1">Guarantee ($)</label>
                   <input type="number" value={guaranteedPool} onChange={e => setGuaranteedPool(e.target.value)}
                     placeholder="None"
-                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] focus:border-[#1877F2] focus:outline-none placeholder-[#6A6B6D]" />
+                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] focus:border-[#1981EC] focus:outline-none placeholder-[#93A9C0]" />
                 </div>
               </div>
 
               {/* Rebuys */}
-              <div className="bg-[#242526] rounded-xl p-4 border border-[#3A3B3C] space-y-3">
+              <div className="bg-[#0A1829] rounded-xl p-4 border border-[#445E77] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-white">Rebuys</span>
                   <button onClick={() => setRebuyAllowed(!rebuyAllowed)}
-                    className={`w-12 h-6 rounded-full transition-colors ${rebuyAllowed ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`}>
+                    className={`w-12 h-6 rounded-full transition-colors ${rebuyAllowed ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`}>
                     <div className={`w-5 h-5 rounded-full bg-white transition-transform ${rebuyAllowed ? 'translate-x-6' : 'translate-x-0.5'}`} />
                   </button>
                 </div>
                 {rebuyAllowed && (
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-[10px] text-[#B0B3B8]">Thru Level</label>
+                      <label className="text-[10px] text-[#BDD0E2]">Thru Level</label>
                       <input type="number" value={rebuyLevels} onChange={e => setRebuyLevels(parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-2 bg-[#3A3B3C] rounded-lg text-sm text-white text-center" />
+                        className="w-full px-2 py-2 bg-[#132A42] rounded-lg text-sm text-white text-center" />
                     </div>
                     <div>
-                      <label className="text-[10px] text-[#B0B3B8]">Cost ($)</label>
+                      <label className="text-[10px] text-[#BDD0E2]">Cost ($)</label>
                       <input type="number" value={rebuyCost} onChange={e => setRebuyCost(parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-2 bg-[#3A3B3C] rounded-lg text-sm text-white text-center" />
+                        className="w-full px-2 py-2 bg-[#132A42] rounded-lg text-sm text-white text-center" />
                     </div>
                     <div>
-                      <label className="text-[10px] text-[#B0B3B8]">Chips</label>
+                      <label className="text-[10px] text-[#BDD0E2]">Chips</label>
                       <input type="number" value={rebuyChips} onChange={e => setRebuyChips(parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-2 bg-[#3A3B3C] rounded-lg text-sm text-white text-center" />
+                        className="w-full px-2 py-2 bg-[#132A42] rounded-lg text-sm text-white text-center" />
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Add-ons */}
-              <div className="bg-[#242526] rounded-xl p-4 border border-[#3A3B3C] space-y-3">
+              <div className="bg-[#0A1829] rounded-xl p-4 border border-[#445E77] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-white">Add-On</span>
                   <button onClick={() => setAddonAllowed(!addonAllowed)}
-                    className={`w-12 h-6 rounded-full transition-colors ${addonAllowed ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`}>
+                    className={`w-12 h-6 rounded-full transition-colors ${addonAllowed ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`}>
                     <div className={`w-5 h-5 rounded-full bg-white transition-transform ${addonAllowed ? 'translate-x-6' : 'translate-x-0.5'}`} />
                   </button>
                 </div>
                 {addonAllowed && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] text-[#B0B3B8]">Cost ($)</label>
+                      <label className="text-[10px] text-[#BDD0E2]">Cost ($)</label>
                       <input type="number" value={addonCost} onChange={e => setAddonCost(parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-2 bg-[#3A3B3C] rounded-lg text-sm text-white text-center" />
+                        className="w-full px-2 py-2 bg-[#132A42] rounded-lg text-sm text-white text-center" />
                     </div>
                     <div>
-                      <label className="text-[10px] text-[#B0B3B8]">Chips</label>
+                      <label className="text-[10px] text-[#BDD0E2]">Chips</label>
                       <input type="number" value={addonChips} onChange={e => setAddonChips(parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-2 bg-[#3A3B3C] rounded-lg text-sm text-white text-center" />
+                        className="w-full px-2 py-2 bg-[#132A42] rounded-lg text-sm text-white text-center" />
                     </div>
                   </div>
                 )}
@@ -1213,53 +1213,53 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
             <div className="p-4 space-y-4">
 
               {/* Entries slider */}
-              <div className="bg-[#242526] rounded-xl p-4 border border-[#3A3B3C]">
+              <div className="bg-[#0A1829] rounded-xl p-4 border border-[#445E77]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-[#B0B3B8] uppercase tracking-wider">Estimated Entries</span>
+                  <span className="text-xs text-[#BDD0E2] uppercase tracking-wider">Estimated Entries</span>
                   <span className="text-lg font-bold text-white">{estimatedEntries}</span>
                 </div>
                 <input type="range" min="6" max="200" value={estimatedEntries}
                   onChange={e => setEstimatedEntries(parseInt(e.target.value))}
-                  className="w-full accent-[#1877F2]" />
-                <div className="flex justify-between text-[10px] text-[#B0B3B8]">
+                  className="w-full accent-[#86DAFF]" />
+                <div className="flex justify-between text-[10px] text-[#BDD0E2]">
                   <span>6</span><span>50</span><span>100</span><span>150</span><span>200</span>
                 </div>
               </div>
 
               {/* Pool summary */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
-                  <p className="text-xs text-[#B0B3B8]">Prize Pool</p>
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
+                  <p className="text-xs text-[#BDD0E2]">Prize Pool</p>
                   <p className="text-lg font-bold text-[#31A24C]">${totalPool.toLocaleString()}</p>
                 </div>
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
-                  <p className="text-xs text-[#B0B3B8]">House Revenue</p>
-                  <p className="text-lg font-bold text-[#1877F2]">${(estimatedEntries * buyinFee).toLocaleString()}</p>
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
+                  <p className="text-xs text-[#BDD0E2]">House Revenue</p>
+                  <p className="text-lg font-bold text-[#86DAFF]">${(estimatedEntries * buyinFee).toLocaleString()}</p>
                 </div>
-                <div className="bg-[#242526] rounded-xl p-3 text-center border border-[#3A3B3C]">
-                  <p className="text-xs text-[#B0B3B8]">Paid Places</p>
+                <div className="bg-[#0A1829] rounded-xl p-3 text-center border border-[#445E77]">
+                  <p className="text-xs text-[#BDD0E2]">Paid Places</p>
                   <p className="text-lg font-bold text-white">{payoutRows.length}</p>
                 </div>
               </div>
 
               {/* Generate from preset */}
               <div>
-                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Generate From Preset</p>
+                <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-2">Generate From Preset</p>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(PAYOUT_STRUCTURES || {}).map(([key, struct]) => (
                     <button key={key} onClick={() => genPayoutsFromPreset(key)}
-                      className={`py-2.5 rounded-lg text-xs font-medium ${payoutStructure === key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                      className={`py-2.5 rounded-lg text-xs font-medium ${payoutStructure === key ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'
                         }`}>{struct.name.split('(')[0].trim()}</button>
                   ))}
                 </div>
-                <p className="text-[10px] text-[#64748B] mt-2">Presets Seed The Table Below From Your Estimated Entries. Every Place And Percentage Stays Editable Afterwards.</p>
+                <p className="text-[10px] text-[#9FB3C8] mt-2">Presets Seed The Table Below From Your Estimated Entries. Every Place And Percentage Stays Editable Afterwards.</p>
               </div>
 
               {/* Total allocation validation */}
               <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg border ${payoutSumOk
                 ? 'bg-[#31A24C]/10 border-[#31A24C]/30'
                 : 'bg-[#EF4444]/10 border-[#EF4444]/30'}`}>
-                <span className="text-xs text-[#B0B3B8] uppercase tracking-wider">Total Allocation</span>
+                <span className="text-xs text-[#BDD0E2] uppercase tracking-wider">Total Allocation</span>
                 <span className={`text-sm font-bold ${payoutSumOk ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>
                   {payoutSum.toFixed(2)}%{payoutSumOk ? '' : ', Must Total 100%'}
                 </span>
@@ -1267,22 +1267,22 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
               {/* Editable payout table */}
               <div className="space-y-1">
-                <div className="grid grid-cols-[52px_1fr_1fr_40px] gap-2 px-2 text-[10px] text-[#B0B3B8] uppercase tracking-wider">
+                <div className="grid grid-cols-[52px_1fr_1fr_40px] gap-2 px-2 text-[10px] text-[#BDD0E2] uppercase tracking-wider">
                   <span>Place</span><span>Percent</span><span className="text-right">Payout</span><span></span>
                 </div>
                 {payoutRows.map((p, i) => (
                   <div key={i}
-                    className={`grid grid-cols-[52px_1fr_1fr_40px] gap-2 items-center px-2 py-1.5 rounded-lg ${p.place === 1 ? 'bg-[#F59E0B]/10 border border-[#F59E0B]/30' :
+                    className={`grid grid-cols-[52px_1fr_1fr_40px] gap-2 items-center px-2 py-1.5 rounded-lg ${p.place === 1 ? 'bg-[#22D3EE]/10 border border-[#22D3EE]/30' :
                       p.place === 2 ? 'bg-white/5 border border-white/10' :
                         p.place === 3 ? 'bg-[#B87333]/10 border border-[#B87333]/30' :
-                          'bg-[#242526] border border-[#3A3B3C]'
+                          'bg-[#0A1829] border border-[#445E77]'
                       }`}>
                     <span className="text-sm font-bold text-white pl-1">{p.place}</span>
                     <div className="flex items-center gap-1">
                       <input type="number" step="0.01" min="0" value={p.pct}
                         onChange={e => updatePayoutPct(i, e.target.value)}
-                        className="w-20 px-2 py-1.5 bg-[#3A3B3C] rounded text-sm text-white text-center" />
-                      <span className="text-xs text-[#B0B3B8]">%</span>
+                        className="w-20 px-2 py-1.5 bg-[#132A42] rounded text-sm text-white text-center" />
+                      <span className="text-xs text-[#BDD0E2]">%</span>
                     </div>
                     <span className="text-sm font-bold text-[#31A24C] text-right">${p.amount.toLocaleString()}</span>
                     <button onClick={() => removePayoutPlace(i)} className="p-1 justify-self-end"><Trash2 className="w-3.5 h-3.5 text-[#EF4444]" /></button>
@@ -1292,7 +1292,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}`, {
 
               {/* Add place */}
               <button onClick={addPayoutPlace}
-                className="w-full py-3 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1877F2]/20">
+                className="w-full py-3 rounded-xl bg-[#0C55C0]/10 border border-[#1981EC]/30 text-[#86DAFF] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#0C55C0]/20">
                 <Plus className="w-4 h-4" /> Add Place
               </button>
 

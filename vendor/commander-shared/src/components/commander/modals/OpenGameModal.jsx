@@ -97,7 +97,7 @@ export default function OpenGameModal({ isOpen, onClose, onSubmit, tables = [], 
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#22D3EE] rounded-lg flex items-center justify-center">
               <Play className="w-5 h-5 text-white" />
@@ -108,7 +108,7 @@ export default function OpenGameModal({ isOpen, onClose, onSubmit, tables = [], 
             onClick={onClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 

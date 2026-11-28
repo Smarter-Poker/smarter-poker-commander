@@ -21,9 +21,9 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import PageBar from '../../src/components/commander/shared/PageBar';
 
-const TIER_COLORS = { daily: '#3B82F6', weekly: '#F59E0B', monthly: '#10B981', yearly: '#A855F7' };
+const TIER_COLORS = { daily: '#3B82F6', weekly: '#22D3EE', monthly: '#10B981', yearly: '#5AA9FF' };
 const TIER_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
-const STATUS_COLORS = { active: '#31A24C', suspended: '#EF4444', expired: '#8A8D91', banned: '#DC2626' };
+const STATUS_COLORS = { active: '#31A24C', suspended: '#EF4444', expired: '#9FB3C8', banned: '#DC2626' };
 
 export default function MembersPage() {
     const router = useRouter();
@@ -137,26 +137,26 @@ export default function MembersPage() {
                 />
 
                 {!staff ? (
-                    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#18191A' }}>
-                        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#040D18' }}>
+                        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                     </div>
                 ) : (
-                    <div className="min-h-screen bg-[#18191A]">
+                    <div className="min-h-screen bg-[#040D18]">
                         {/* Header */}
                         <PageBar
                             title="Members"
                             summary="Your Club's Member Directory. Search By Name, Number, Phone Or Email, Filter By Tier Or Status, And Tap A Member For Their Profile, Balances And History. Scan Reads An ID To Find Or Add A Member."
                             status={`${total} Total Members`}
-                            className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-30 px-4 py-1.5"
+                            className="bg-[#0A1829] border-b border-[#445E77] sticky top-0 z-30 px-4 py-1.5"
                             innerClassName="max-w-6xl mx-auto"
                         >
                                 <div className="flex items-center gap-2">
                                     <button onClick={() => setShowScanModal(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#3A3B3C] hover:bg-[#4E4F50] text-[#E4E6EB] rounded-lg text-sm font-medium transition-colors">
+                                        className="flex items-center gap-2 px-4 py-2 bg-[#132A42] hover:bg-[#1B3753] text-[#F2F7FF] rounded-lg text-sm font-medium transition-colors">
                                         <ScanLine className="w-4 h-4" /> Scan
                                     </button>
                                     <button onClick={() => setShowAddModal(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg text-sm font-medium transition-colors">
+                                        className="flex items-center gap-2 px-4 py-2 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg text-sm font-medium transition-colors">
                                         <UserPlus className="w-4 h-4" /> Add Member
                                     </button>
                                 </div>
@@ -166,13 +166,13 @@ export default function MembersPage() {
                         <div className="max-w-6xl mx-auto px-4 py-4">
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A8D91]" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9FB3C8]" />
                                     <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
                                         placeholder="Search By Name, Number, Phone, Or Email..."
-                                        className="w-full pl-10 pr-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none placeholder-[#8A8D91]" />
+                                        className="w-full pl-10 pr-4 py-2.5 bg-[#0A1829] border border-[#445E77] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none placeholder-[#9FB3C8]" />
                                 </div>
                                 <button onClick={() => setShowFilters(!showFilters)}
-                                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? 'bg-[#1877F2] text-white' : 'bg-[#242526] border border-[#3A3B3C] text-[#B0B3B8] hover:bg-[#3A3B3C]'}`}>
+                                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? 'bg-[#0C55C0] text-white' : 'bg-[#0A1829] border border-[#445E77] text-[#BDD0E2] hover:bg-[#132A42]'}`}>
                                     <Filter className="w-4 h-4" /> Filters
                                 </button>
                             </div>
@@ -181,7 +181,7 @@ export default function MembersPage() {
                             {showFilters && (
                                 <div className="flex gap-3 mt-3">
                                     <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                                        className="px-3 py-2 bg-[#242526] border border-[#3A3B3C] rounded-lg text-[#E4E6EB] text-sm">
+                                        className="px-3 py-2 bg-[#0A1829] border border-[#445E77] rounded-lg text-[#F2F7FF] text-sm">
                                         <option value="">All Statuses</option>
                                         <option value="active">Active</option>
                                         <option value="suspended">Suspended</option>
@@ -189,7 +189,7 @@ export default function MembersPage() {
                                         <option value="banned">Banned</option>
                                     </select>
                                     <select value={tierFilter} onChange={e => { setTierFilter(e.target.value); setPage(1); }}
-                                        className="px-3 py-2 bg-[#242526] border border-[#3A3B3C] rounded-lg text-[#E4E6EB] text-sm">
+                                        className="px-3 py-2 bg-[#0A1829] border border-[#445E77] rounded-lg text-[#F2F7FF] text-sm">
                                         <option value="">All Tiers</option>
                                         <option value="daily">Daily</option>
                                         <option value="weekly">Weekly</option>
@@ -198,7 +198,7 @@ export default function MembersPage() {
                                     </select>
                                     {(statusFilter || tierFilter) && (
                                         <button onClick={() => { setStatusFilter(''); setTierFilter(''); setPage(1); }}
-                                            className="px-3 py-2 text-[#1877F2] text-sm font-medium">Clear</button>
+                                            className="px-3 py-2 text-[#86DAFF] text-sm font-medium">Clear</button>
                                     )}
                                 </div>
                             )}
@@ -207,14 +207,14 @@ export default function MembersPage() {
                         {/* Members List */}
                         <div className="max-w-6xl mx-auto px-4 pb-8">
                             {loading ? (
-                                <div className="text-center py-16"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin mx-auto mb-2" /><p className="text-sm text-[#B0B3B8]">Loading Members...</p></div>
+                                <div className="text-center py-16"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin mx-auto mb-2" /><p className="text-sm text-[#BDD0E2]">Loading Members...</p></div>
                             ) : members.length === 0 ? (
-                                <div className="text-center py-16 bg-[#242526] rounded-xl border border-[#3A3B3C]">
-                                    <Users className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                                    <h3 className="text-lg font-medium text-[#E4E6EB] mb-1">{search ? 'No Members Found' : 'No Members Yet'}</h3>
-                                    <p className="text-sm text-[#B0B3B8] mb-4">{search ? 'Try A Different Search Term' : 'Add Your First Club Member To Get Started'}</p>
+                                <div className="text-center py-16 bg-[#0A1829] rounded-xl border border-[#445E77]">
+                                    <Users className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                                    <h3 className="text-lg font-medium text-[#F2F7FF] mb-1">{search ? 'No Members Found' : 'No Members Yet'}</h3>
+                                    <p className="text-sm text-[#BDD0E2] mb-4">{search ? 'Try A Different Search Term' : 'Add Your First Club Member To Get Started'}</p>
                                     {!search && (
-                                        <button onClick={() => setShowAddModal(true)} className="px-6 py-2.5 bg-[#1877F2] text-white rounded-lg text-sm font-medium">
+                                        <button onClick={() => setShowAddModal(true)} className="px-6 py-2.5 bg-[#0C55C0] text-white rounded-lg text-sm font-medium">
                                             Add First Member
                                         </button>
                                     )}
@@ -222,15 +222,15 @@ export default function MembersPage() {
                             ) : (
                                 <>
                                     {/* Desktop Table */}
-                                    <div className="hidden md:block bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
+                                    <div className="hidden md:block bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
                                         <table className="w-full">
                                             <thead>
-                                                <tr className="border-b border-[#3A3B3C]">
-                                                    <th className="text-left px-4 py-3 text-xs text-[#8A8D91] font-medium uppercase tracking-wider">Member</th>
-                                                    <th className="text-left px-4 py-3 text-xs text-[#8A8D91] font-medium uppercase tracking-wider">Membership</th>
-                                                    <th className="text-left px-4 py-3 text-xs text-[#8A8D91] font-medium uppercase tracking-wider">Expires</th>
-                                                    <th className="text-left px-4 py-3 text-xs text-[#8A8D91] font-medium uppercase tracking-wider">Time Balance</th>
-                                                    <th className="text-left px-4 py-3 text-xs text-[#8A8D91] font-medium uppercase tracking-wider">Comps</th>
+                                                <tr className="border-b border-[#445E77]">
+                                                    <th className="text-left px-4 py-3 text-xs text-[#9FB3C8] font-medium uppercase tracking-wider">Member</th>
+                                                    <th className="text-left px-4 py-3 text-xs text-[#9FB3C8] font-medium uppercase tracking-wider">Membership</th>
+                                                    <th className="text-left px-4 py-3 text-xs text-[#9FB3C8] font-medium uppercase tracking-wider">Expires</th>
+                                                    <th className="text-left px-4 py-3 text-xs text-[#9FB3C8] font-medium uppercase tracking-wider">Time Balance</th>
+                                                    <th className="text-left px-4 py-3 text-xs text-[#9FB3C8] font-medium uppercase tracking-wider">Comps</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -248,15 +248,15 @@ export default function MembersPage() {
                                                         : '--';
 
                                                     return (
-                                                        <tr key={m.id} className="border-b border-[#3A3B3C] last:border-0 hover:bg-[#3A3B3C]/30 transition-colors">
+                                                        <tr key={m.id} className="border-b border-[#445E77] last:border-0 hover:bg-[#132A42]/30 transition-colors">
                                                             <td className="px-4 py-3 cursor-pointer" onClick={() => setSelectedMember(m)}>
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-9 h-9 bg-[#3A3B3C] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                                                        {m.photo_url ? <Image src={m.photo_url} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover" /> : <User className="w-4 h-4 text-[#B0B3B8]" />}
+                                                                    <div className="w-9 h-9 bg-[#132A42] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                                        {m.photo_url ? <Image src={m.photo_url} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover" /> : <User className="w-4 h-4 text-[#BDD0E2]" />}
                                                                     </div>
                                                                     <div>
-                                                                        <div className="text-sm font-medium text-[#E4E6EB]">{m.first_name} {m.last_name}</div>
-                                                                        <div className="text-xs font-mono text-[#1877F2]">{m.member_number}</div>
+                                                                        <div className="text-sm font-medium text-[#F2F7FF]">{m.first_name} {m.last_name}</div>
+                                                                        <div className="text-xs font-mono text-[#86DAFF]">{m.member_number}</div>
                                                                     </div>
                                                                 </div>
                                                             </td>
@@ -268,14 +268,14 @@ export default function MembersPage() {
                                                                     title="Click To Update Membership"
                                                                 >
                                                                     <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                                                        style={{ backgroundColor: (TIER_COLORS[m.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[m.membership_tier] || '#B0B3B8' }}>
+                                                                        style={{ backgroundColor: (TIER_COLORS[m.membership_tier] || '#BDD0E2') + '20', color: TIER_COLORS[m.membership_tier] || '#BDD0E2' }}>
                                                                         {TIER_LABELS[m.membership_tier] || m.membership_tier || '--'}
                                                                     </span>
                                                                     <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                                                                        style={{ backgroundColor: (STATUS_COLORS[m.membership_status] || '#8A8D91') + '20', color: STATUS_COLORS[m.membership_status] }}>
+                                                                        style={{ backgroundColor: (STATUS_COLORS[m.membership_status] || '#9FB3C8') + '20', color: STATUS_COLORS[m.membership_status] }}>
                                                                         {m.membership_status || '--'}
                                                                     </span>
-                                                                    <CreditCard className="w-3 h-3 text-[#8A8D91] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                    <CreditCard className="w-3 h-3 text-[#9FB3C8] opacity-0 group-hover:opacity-100 transition-opacity" />
                                                                 </button>
                                                             </td>
                                                             {/* Expires */}
@@ -283,7 +283,7 @@ export default function MembersPage() {
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); router.push(`/commander/cashier?action=membership&member=${encodeURIComponent(memberName)}&member_id=${m.id}`); }}
                                                                     className="text-sm hover:underline transition-colors"
-                                                                    style={{ color: isExpired ? '#EF4444' : '#B0B3B8' }}
+                                                                    style={{ color: isExpired ? '#EF4444' : '#BDD0E2' }}
                                                                     title="Click To Renew Membership"
                                                                 >
                                                                     {expiresStr}
@@ -297,15 +297,15 @@ export default function MembersPage() {
                                                                     title="Click To Add Time"
                                                                 >
                                                                     <Clock className="w-3.5 h-3.5 text-[#3B82F6]" />
-                                                                    <span className={`text-sm font-semibold ${timeMin > 0 ? 'text-[#3B82F6]' : 'text-[#8A8D91]'}`}>{timeStr}</span>
-                                                                    <span className="text-[10px] text-[#8A8D91] opacity-0 group-hover:opacity-100 transition-opacity">+ Add</span>
+                                                                    <span className={`text-sm font-semibold ${timeMin > 0 ? 'text-[#3B82F6]' : 'text-[#9FB3C8]'}`}>{timeStr}</span>
+                                                                    <span className="text-[10px] text-[#9FB3C8] opacity-0 group-hover:opacity-100 transition-opacity">+ Add</span>
                                                                 </button>
                                                             </td>
                                                             {/* Comp Balance */}
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center gap-1.5">
                                                                     <DollarSign className="w-3.5 h-3.5 text-[#10B981]" />
-                                                                    <span className={`text-sm font-semibold ${compBal > 0 ? 'text-[#10B981]' : 'text-[#8A8D91]'}`}>
+                                                                    <span className={`text-sm font-semibold ${compBal > 0 ? 'text-[#10B981]' : 'text-[#9FB3C8]'}`}>
                                                                         ${Number(compBal).toFixed(2)}
                                                                     </span>
                                                                 </div>
@@ -333,50 +333,50 @@ export default function MembersPage() {
                                                 : '--';
 
                                             return (
-                                                <div key={m.id} className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 hover:bg-[#3A3B3C]/30 transition-colors">
+                                                <div key={m.id} className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 hover:bg-[#132A42]/30 transition-colors">
                                                     {/* Top row - name + member detail */}
                                                     <button onClick={() => setSelectedMember(m)} className="w-full text-left">
                                                         <div className="flex items-center gap-3 mb-3">
-                                                            <div className="w-10 h-10 bg-[#3A3B3C] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                                                {m.photo_url ? <Image src={m.photo_url} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" /> : <User className="w-5 h-5 text-[#B0B3B8]" />}
+                                                            <div className="w-10 h-10 bg-[#132A42] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                                {m.photo_url ? <Image src={m.photo_url} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" /> : <User className="w-5 h-5 text-[#BDD0E2]" />}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="text-sm font-semibold text-[#E4E6EB]">{m.first_name} {m.last_name}</div>
+                                                                <div className="text-sm font-semibold text-[#F2F7FF]">{m.first_name} {m.last_name}</div>
                                                                 <div className="flex items-center gap-2 mt-0.5">
                                                                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                                                                        style={{ backgroundColor: (TIER_COLORS[m.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[m.membership_tier] || '#B0B3B8' }}>
+                                                                        style={{ backgroundColor: (TIER_COLORS[m.membership_tier] || '#BDD0E2') + '20', color: TIER_COLORS[m.membership_tier] || '#BDD0E2' }}>
                                                                         {TIER_LABELS[m.membership_tier] || m.membership_tier || '--'}
                                                                     </span>
                                                                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                                                                        style={{ backgroundColor: (STATUS_COLORS[m.membership_status] || '#8A8D91') + '20', color: STATUS_COLORS[m.membership_status] }}>
+                                                                        style={{ backgroundColor: (STATUS_COLORS[m.membership_status] || '#9FB3C8') + '20', color: STATUS_COLORS[m.membership_status] }}>
                                                                         {m.membership_status}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <ChevronDown className="w-4 h-4 text-[#8A8D91] -rotate-90" />
+                                                            <ChevronDown className="w-4 h-4 text-[#9FB3C8] -rotate-90" />
                                                         </div>
                                                     </button>
                                                     {/* Bottom row - account data shortcuts */}
                                                     <div className="grid grid-cols-3 gap-2">
                                                         <button
                                                             onClick={() => router.push(`/commander/cashier?action=membership&member=${encodeURIComponent(memberName)}&member_id=${m.id}`)}
-                                                            className="bg-[#18191A] rounded-lg p-2 text-center hover:bg-[#3A3B3C]/50 transition-colors"
+                                                            className="bg-[#040D18] rounded-lg p-2 text-center hover:bg-[#132A42]/50 transition-colors"
                                                         >
-                                                            <div className="text-[10px] text-[#8A8D91] mb-0.5">Expires</div>
-                                                            <div className={`text-xs font-bold ${isExpired ? 'text-[#EF4444]' : 'text-[#B0B3B8]'}`}>{expiresStr}</div>
+                                                            <div className="text-[10px] text-[#9FB3C8] mb-0.5">Expires</div>
+                                                            <div className={`text-xs font-bold ${isExpired ? 'text-[#EF4444]' : 'text-[#BDD0E2]'}`}>{expiresStr}</div>
                                                         </button>
                                                         <button
                                                             onClick={() => router.push(`/commander/cashier?action=addtime&member=${encodeURIComponent(memberName)}&member_id=${m.id}`)}
-                                                            className="bg-[#18191A] rounded-lg p-2 text-center hover:bg-[#3A3B3C]/50 transition-colors"
+                                                            className="bg-[#040D18] rounded-lg p-2 text-center hover:bg-[#132A42]/50 transition-colors"
                                                         >
-                                                            <div className="text-[10px] text-[#8A8D91] mb-0.5">Time</div>
-                                                            <div className={`text-xs font-bold flex items-center justify-center gap-1 ${timeMin > 0 ? 'text-[#3B82F6]' : 'text-[#8A8D91]'}`}>
+                                                            <div className="text-[10px] text-[#9FB3C8] mb-0.5">Time</div>
+                                                            <div className={`text-xs font-bold flex items-center justify-center gap-1 ${timeMin > 0 ? 'text-[#3B82F6]' : 'text-[#9FB3C8]'}`}>
                                                                 <Clock className="w-3 h-3" />{timeStr}
                                                             </div>
                                                         </button>
-                                                        <div className="bg-[#18191A] rounded-lg p-2 text-center">
-                                                            <div className="text-[10px] text-[#8A8D91] mb-0.5">Comps</div>
-                                                            <div className={`text-xs font-bold flex items-center justify-center gap-0.5 ${compBal > 0 ? 'text-[#10B981]' : 'text-[#8A8D91]'}`}>
+                                                        <div className="bg-[#040D18] rounded-lg p-2 text-center">
+                                                            <div className="text-[10px] text-[#9FB3C8] mb-0.5">Comps</div>
+                                                            <div className={`text-xs font-bold flex items-center justify-center gap-0.5 ${compBal > 0 ? 'text-[#10B981]' : 'text-[#9FB3C8]'}`}>
                                                                 <DollarSign className="w-3 h-3" />{Number(compBal).toFixed(2)}
                                                             </div>
                                                         </div>

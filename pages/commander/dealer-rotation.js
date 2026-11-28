@@ -197,7 +197,7 @@ export default function DealerRotation() {
   // ── Loading State ───────────────────────────────────
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#18191A', padding: 16 }}>
+    <div style={{ minHeight: '100vh', background: '#040D18', padding: 16 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ background: '#2A2B2C', height: 22, width: 180, borderRadius: 6, marginBottom: 16 }} />
         <SkeletonDark variant="dealer-rotation" />
@@ -210,11 +210,11 @@ export default function DealerRotation() {
       <SEOHead title="Commander - Dealer Rotation" description="Club Commander Dealer Rotation Manager" noindex={true} />
 
       <style>{`
-        .dr-page { min-height: 100vh; background: #0a0a0a; color: #E4E6EB; font-family: 'Inter', sans-serif; }
+        .dr-page { min-height: 100vh; background: #0a0a0a; color: #F2F7FF; font-family: 'Inter', sans-serif; }
         .dr-stats { background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); border-bottom: 1px solid #222; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         .dr-stats-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .dr-stat { font-size: 13px; color: #888; }
-        .dr-stat b { color: #E4E6EB; font-weight: 700; }
+        .dr-stat b { color: #F2F7FF; font-weight: 700; }
         .dr-refresh { background: none; border: 1px solid #333; border-radius: 8px; padding: 6px 8px; cursor: pointer; color: #888; display: flex; align-items: center; }
         .dr-refresh:active { background: #222; }
 
@@ -227,48 +227,48 @@ export default function DealerRotation() {
         .dr-section-title { font-size: 12px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 
         .dr-card { background: #111; border: 1px solid #222; border-radius: 12px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
-        .dr-card.warning { border-color: rgba(245, 158, 11, 0.4); }
+        .dr-card.warning { border-color: rgba(34, 211, 238, 0.4); }
         .dr-card.overdue { border-color: rgba(239, 68, 68, 0.4); }
         .dr-card-body { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
         .dr-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
-        .dr-avatar.dealing { background: rgba(24, 119, 242, 0.12); color: #4A9AF5; }
-        .dr-avatar.warning { background: rgba(245, 158, 11, 0.12); color: #F59E0B; }
+        .dr-avatar.dealing { background: rgba(25, 129, 236, 0.12); color: #4A9AF5; }
+        .dr-avatar.warning { background: rgba(34, 211, 238, 0.12); color: #22D3EE; }
         .dr-avatar.overdue { background: rgba(239, 68, 68, 0.12); color: #EF4444; }
         .dr-name { font-size: 15px; font-weight: 600; color: #fff; }
         .dr-meta { font-size: 12px; color: #666; margin-top: 2px; }
         .dr-badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; margin-left: auto; flex-shrink: 0; }
-        .dr-badge.push { background: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+        .dr-badge.push { background: rgba(34, 211, 238, 0.15); color: #22D3EE; }
         .dr-badge.overdue-badge { background: rgba(239, 68, 68, 0.15); color: #EF4444; }
 
         .dr-actions { display: flex; border-top: 1px solid #1a1a1a; }
         .dr-action-btn { flex: 1; padding: 10px; font-size: 12px; font-weight: 600; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.15s; }
         .dr-action-btn:not(:last-child) { border-right: 1px solid #1a1a1a; }
         .dr-action-btn.push-btn { color: #4A9AF5; }
-        .dr-action-btn.push-btn:hover { background: rgba(24, 119, 242, 0.08); }
-        .dr-action-btn.break-btn { color: #F59E0B; }
-        .dr-action-btn.break-btn:hover { background: rgba(245, 158, 11, 0.08); }
+        .dr-action-btn.push-btn:hover { background: rgba(25, 129, 236, 0.08); }
+        .dr-action-btn.break-btn { color: #22D3EE; }
+        .dr-action-btn.break-btn:hover { background: rgba(34, 211, 238, 0.08); }
 
         .dr-push-panel { padding: 12px 16px; border-top: 1px solid #1a1a1a; background: #0d0d0d; }
         .dr-push-label { font-size: 11px; color: #666; margin-bottom: 8px; font-weight: 600; }
         .dr-push-tables { display: flex; flex-wrap: wrap; gap: 6px; }
         .dr-push-table { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #333; background: #1a1a1a; color: #ccc; transition: all 0.15s; }
-        .dr-push-table:hover { border-color: #4A9AF5; color: #4A9AF5; background: rgba(24, 119, 242, 0.08); }
+        .dr-push-table:hover { border-color: #4A9AF5; color: #4A9AF5; background: rgba(25, 129, 236, 0.08); }
         .dr-push-table.current { opacity: 0.3; cursor: default; }
         .dr-push-cancel { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #333; background: #1a1a1a; color: #888; }
 
-        .dr-break-card { background: #111; border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
-        .dr-break-icon { width: 32px; height: 32px; border-radius: 50%; background: rgba(245, 158, 11, 0.1); display: flex; align-items: center; justify-content: center; }
-        .dr-break-time { font-size: 11px; color: rgba(245, 158, 11, 0.7); }
+        .dr-break-card { background: #111; border: 1px solid rgba(34, 211, 238, 0.2); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .dr-break-icon { width: 32px; height: 32px; border-radius: 50%; background: rgba(34, 211, 238, 0.1); display: flex; align-items: center; justify-content: center; }
+        .dr-break-time { font-size: 11px; color: rgba(34, 211, 238, 0.7); }
         .dr-return-btn { margin-left: auto; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(49, 162, 76, 0.15); color: #31A24C; border: 1px solid rgba(49, 162, 76, 0.3); cursor: pointer; }
         .dr-return-btn:hover { background: rgba(49, 162, 76, 0.25); }
 
         .dr-available-card { background: #111; border: 1px solid #1a1a1a; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .dr-available-dot { width: 8px; height: 8px; border-radius: 50%; background: #31A24C; flex-shrink: 0; }
-        .dr-assign-btn { margin-left: auto; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(24, 119, 242, 0.15); color: #4A9AF5; border: 1px solid rgba(24, 119, 242, 0.3); cursor: pointer; }
-        .dr-assign-btn:hover { background: rgba(24, 119, 242, 0.25); }
+        .dr-assign-btn { margin-left: auto; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(25, 129, 236, 0.15); color: #4A9AF5; border: 1px solid rgba(25, 129, 236, 0.3); cursor: pointer; }
+        .dr-assign-btn:hover { background: rgba(25, 129, 236, 0.25); }
 
-        .dr-warning-box { background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; padding: 12px; margin-bottom: 16px; }
-        .dr-warning-title { font-size: 13px; font-weight: 700; color: #F59E0B; display: flex; align-items: center; gap: 6px; }
+        .dr-warning-box { background: rgba(34, 211, 238, 0.06); border: 1px solid rgba(34, 211, 238, 0.2); border-radius: 10px; padding: 12px; margin-bottom: 16px; }
+        .dr-warning-title { font-size: 13px; font-weight: 700; color: #22D3EE; display: flex; align-items: center; gap: 6px; }
         .dr-warning-detail { font-size: 12px; color: #888; margin-top: 4px; }
 
         .dr-history-toggle { background: none; border: 1px solid #222; border-radius: 8px; padding: 8px 14px; color: #888; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-top: 16px; width: 100%; justify-content: center; }
@@ -295,7 +295,7 @@ export default function DealerRotation() {
             <span className="dr-stat"><b>{breakDealers.length}</b> Break</span>
             <span className="dr-stat"><b>{availableDealers.length}</b> Available</span>
             {unassignedTables.length > 0 && (
-              <span className="dr-stat" style={{ color: '#F59E0B' }}>
+              <span className="dr-stat" style={{ color: '#22D3EE' }}>
                 <b>{unassignedTables.length}</b> Tables Need Dealer
               </span>
             )}
@@ -349,7 +349,7 @@ export default function DealerRotation() {
                         <div className="dr-meta">
                           {tableInfo.gameType && `${tableInfo.gameType.toUpperCase()} `}
                           {tableInfo.stakes && `${tableInfo.stakes} · `}
-                          <span style={{ color: isOverdue ? '#EF4444' : isWarning ? '#F59E0B' : '#666', fontWeight: isOverdue || isWarning ? 700 : 400 }}>
+                          <span style={{ color: isOverdue ? '#EF4444' : isWarning ? '#22D3EE' : '#666', fontWeight: isOverdue || isWarning ? 700 : 400 }}>
                             {mins}m
                           </span>
                           {rotation?.started_at && ` · Started ${formatTime(rotation.started_at)}`}
@@ -428,7 +428,7 @@ export default function DealerRotation() {
 
             {/* On Break */}
             <div className="dr-section-title">
-              <Coffee style={{ width: 14, height: 14, color: '#F59E0B' }} /> On Break ({breakDealers.length})
+              <Coffee style={{ width: 14, height: 14, color: '#22D3EE' }} /> On Break ({breakDealers.length})
             </div>
             {breakDealers.length === 0 ? (
               <div className="dr-empty" style={{ fontSize: 12, padding: 12 }}>No Dealers On Break</div>
@@ -436,7 +436,7 @@ export default function DealerRotation() {
               breakDealers.map(d => (
                 <div key={d.id} className="dr-break-card dr-pulse">
                   <div className="dr-break-icon">
-                    <Coffee style={{ width: 16, height: 16, color: '#F59E0B' }} />
+                    <Coffee style={{ width: 16, height: 16, color: '#22D3EE' }} />
                   </div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{d.name || d.display_name}</div>

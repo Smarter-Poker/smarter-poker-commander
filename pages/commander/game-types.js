@@ -16,15 +16,15 @@ import { useConfirmAction } from "../../src/components/commander/shared/ConfirmM
 import PageBar from '../../src/components/commander/shared/PageBar';
 
 const PRESET_GAMES = [
-  { name: 'No Limit Hold\'em', short_code: 'NLH', max_players: 9, color: '#1877F2' },
-  { name: 'Pot Limit Omaha', short_code: 'PLO', max_players: 9, color: '#F59E0B' },
+  { name: 'No Limit Hold\'em', short_code: 'NLH', max_players: 9, color: '#1981EC' },
+  { name: 'Pot Limit Omaha', short_code: 'PLO', max_players: 9, color: '#22D3EE' },
   { name: 'PLO Hi-Lo', short_code: 'PLO8', max_players: 9, color: '#EF4444' },
   { name: 'Limit Hold\'em', short_code: 'LHE', max_players: 10, color: '#31A24C' },
-  { name: 'No Limit Omaha 5', short_code: 'PLO5', max_players: 8, color: '#8B5CF6' },
-  { name: '7 Card Stud', short_code: 'STUD', max_players: 8, color: '#EC4899' },
+  { name: 'No Limit Omaha 5', short_code: 'PLO5', max_players: 8, color: '#5AA9FF' },
+  { name: '7 Card Stud', short_code: 'STUD', max_players: 8, color: '#38BDF8' },
   { name: 'Mixed Game', short_code: 'MIXED', max_players: 8, color: '#14B8A6' },
   { name: 'Big O', short_code: 'BIGO', max_players: 8, color: '#F97316' },
-  { name: 'Short Deck', short_code: 'SD', max_players: 9, color: '#6366F1' },
+  { name: 'Short Deck', short_code: 'SD', max_players: 9, color: '#3B82F6' },
 ];
 
 export default function GameTypesPage() {
@@ -47,7 +47,7 @@ export default function GameTypesPage() {
   const [form, setForm] = useState({
     name: '', short_code: '', stakes: '', min_buyin: 100, max_buyin: 0,
     max_players: 9, rake_type: 'pot', rake_percent: 5, rake_cap: 15,
-    time_rate: 0, color: '#1877F2', notes: ''
+    time_rate: 0, color: '#1981EC', notes: ''
   });
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const json = await commanderFetchJSON('/api/commander/game-types?include_inactiv
     setForm({
       name: '', short_code: '', stakes: '', min_buyin: 100, max_buyin: 0,
       max_players: 9, rake_type: 'pot', rake_percent: 5, rake_cap: 15,
-      time_rate: 0, color: '#1877F2', notes: ''
+      time_rate: 0, color: '#1981EC', notes: ''
     });
     setEditingId(null);
     setShowForm(false);
@@ -91,7 +91,7 @@ const json = await commanderFetchJSON('/api/commander/game-types?include_inactiv
       name: gt.name, short_code: gt.short_code, stakes: gt.stakes,
       min_buyin: gt.min_buyin, max_buyin: gt.max_buyin, max_players: gt.max_players,
       rake_type: gt.rake_type, rake_percent: gt.rake_percent, rake_cap: gt.rake_cap,
-      time_rate: gt.time_rate, color: gt.color || '#1877F2', notes: gt.notes || ''
+      time_rate: gt.time_rate, color: gt.color || '#1981EC', notes: gt.notes || ''
     });
     setEditingId(gt.id);
     setShowForm(true);
@@ -171,18 +171,18 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
           {/* Header */}
           <PageBar
             title="Game Types"
             summary="The Games Your Room Spreads: Variant, Stakes, Buy In Range And Whether Each Is Active. Active Games Appear On The Waitlist And Tables. Managers Can Add, Edit Or Retire A Game."
             status={`${venueName ? `${venueName} - ` : ''}${gameTypes.filter(g => g.is_active).length} Active`}
-            className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-50 px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] sticky top-0 z-50 px-4 py-1.5"
             innerClassName="max-w-4xl mx-auto"
           >
             {canManage && (
               <button onClick={() => { resetForm(); setShowForm(true); }}
-                className="flex items-center gap-2 px-4 min-h-[44px] bg-[#1877F2] text-white rounded-xl text-sm font-medium hover:bg-[#1877F2]/80">
+                className="flex items-center gap-2 px-4 min-h-[44px] bg-[#0C55C0] text-white rounded-xl text-sm font-medium hover:bg-[#0C55C0]/80">
                 <Plus className="w-4 h-4" /> Add Game
               </button>
             )}
@@ -195,16 +195,16 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
 
             {/* Add/Edit Form */}
             {showForm && (
-              <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center justify-between">
                   <h2 className="font-semibold text-white">{editingId ? 'Edit Game Type' : 'New Game Type'}</h2>
-                  <button onClick={resetForm} className="p-1 hover:bg-[#3A3B3C] rounded"><X className="w-5 h-5 text-[#B0B3B8]" /></button>
+                  <button onClick={resetForm} className="p-1 hover:bg-[#132A42] rounded"><X className="w-5 h-5 text-[#BDD0E2]" /></button>
                 </div>
 
                 {/* Quick presets */}
                 {!editingId && (
-                  <div className="p-4 border-b border-[#3A3B3C]">
-                    <p className="text-xs text-[#B0B3B8] uppercase mb-2">Quick Start</p>
+                  <div className="p-4 border-b border-[#445E77]">
+                    <p className="text-xs text-[#BDD0E2] uppercase mb-2">Quick Start</p>
                     <div className="flex flex-wrap gap-2">
                       {PRESET_GAMES.map(p => (
                         <button key={p.short_code} onClick={() => applyPreset(p)}
@@ -221,60 +221,60 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                   {/* Row 1: Name + Code + Color */}
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-5">
-                      <label className="text-xs text-[#B0B3B8] uppercase">Game Name *</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase">Game Name *</label>
                       <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                         placeholder="No Limit Hold'em"
-                        className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div className="col-span-3">
-                      <label className="text-xs text-[#B0B3B8] uppercase">Short Code *</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase">Short Code *</label>
                       <input value={form.short_code} onChange={e => setForm(p => ({ ...p, short_code: e.target.value.toUpperCase() }))}
                         placeholder="NLH" maxLength={6}
-                        className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div className="col-span-3">
-                      <label className="text-xs text-[#B0B3B8] uppercase">Stakes *</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase">Stakes *</label>
                       <input value={form.stakes} onChange={e => setForm(p => ({ ...p, stakes: e.target.value }))}
                         placeholder="1/3"
-                        className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div className="col-span-1">
-                      <label className="text-xs text-[#B0B3B8] uppercase">Color</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase">Color</label>
                       <input type="color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))}
-                        className="w-full mt-1 h-[42px] bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl cursor-pointer" />
+                        className="w-full mt-1 h-[42px] bg-[#132A42] border border-[#5A7590] rounded-xl cursor-pointer" />
                     </div>
                   </div>
 
                   {/* Row 2: Buy-in + Players */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs text-[#B0B3B8] uppercase flex items-center gap-1"><DollarSign className="w-3 h-3" /> Min Buy-In</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase flex items-center gap-1"><DollarSign className="w-3 h-3" /> Min Buy-In</label>
                       <input type="number" value={form.min_buyin} onChange={e => setForm(p => ({ ...p, min_buyin: parseInt(e.target.value) || 0 }))}
-                        className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#B0B3B8] uppercase flex items-center gap-1"><DollarSign className="w-3 h-3" /> Max Buy-In (0=No Cap)</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase flex items-center gap-1"><DollarSign className="w-3 h-3" /> Max Buy-In (0=No Cap)</label>
                       <input type="number" value={form.max_buyin} onChange={e => setForm(p => ({ ...p, max_buyin: parseInt(e.target.value) || 0 }))}
-                        className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#B0B3B8] uppercase flex items-center gap-1"><Users className="w-3 h-3" /> Max Players</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase flex items-center gap-1"><Users className="w-3 h-3" /> Max Players</label>
                       <input type="number" value={form.max_players} onChange={e => setForm(p => ({ ...p, max_players: parseInt(e.target.value) || 9 }))}
                         min={2} max={10}
-                        className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
+                        className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />
                     </div>
                   </div>
 
                   {/* Row 3: Rake Configuration */}
                   <div>
-                    <label className="text-xs text-[#B0B3B8] uppercase mb-2 block">Rake / Collection Method</label>
+                    <label className="text-xs text-[#BDD0E2] uppercase mb-2 block">Rake / Collection Method</label>
                     <div className="flex gap-2 mb-3">
                       {[{ v: 'pot', l: 'Pot Rake', icon: Percent }, { v: 'time', l: 'Time Collection', icon: Clock }, { v: 'none', l: 'No Rake', icon: X }].map(opt => (
                         <button key={opt.v}
                           onClick={() => setForm(p => ({ ...p, rake_type: opt.v }))}
                           className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors flex items-center justify-center gap-2 ${form.rake_type === opt.v
-                            ? 'bg-[#1877F2]/10 border-[#1877F2] text-[#1877F2]'
-                            : 'border-[#3A3B3C] text-[#B0B3B8] hover:bg-[#3A3B3C]'
+                            ? 'bg-[#0C55C0]/10 border-[#1981EC] text-[#86DAFF]'
+                            : 'border-[#445E77] text-[#BDD0E2] hover:bg-[#132A42]'
                             }`}>
                           <opt.icon className="w-4 h-4" /> {opt.l}
                         </button>
@@ -283,45 +283,45 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                     {form.rake_type === 'pot' && (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs text-[#B0B3B8]">Rake %</label>
+                          <label className="text-xs text-[#BDD0E2]">Rake %</label>
                           <input type="number" value={form.rake_percent} step="0.5"
                             onChange={e => setForm(p => ({ ...p, rake_percent: parseFloat(e.target.value) || 0 }))}
-                            className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
+                            className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />
                         </div>
                         <div>
-                          <label className="text-xs text-[#B0B3B8]">Rake Cap ($)</label>
+                          <label className="text-xs text-[#BDD0E2]">Rake Cap ($)</label>
                           <input type="number" value={form.rake_cap} step="1"
                             onChange={e => setForm(p => ({ ...p, rake_cap: parseFloat(e.target.value) || 0 }))}
-                            className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
+                            className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />
                         </div>
                       </div>
                     )}
                     {form.rake_type === 'time' && (
                       <div>
-                        <label className="text-xs text-[#B0B3B8]">Hourly Rate ($/hr)</label>
+                        <label className="text-xs text-[#BDD0E2]">Hourly Rate ($/hr)</label>
                         <input type="number" value={form.time_rate} step="1"
                           onChange={e => setForm(p => ({ ...p, time_rate: parseFloat(e.target.value) || 0 }))}
-                          className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#1877F2]" />
+                          className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />
                       </div>
                     )}
                   </div>
 
                   {/* Notes */}
                   <div>
-                    <label className="text-xs text-[#B0B3B8] uppercase">Notes (Optional)</label>
+                    <label className="text-xs text-[#BDD0E2] uppercase">Notes (Optional)</label>
                     <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
                       rows={2} placeholder="Special Rules, House Rules, Etc."
-                      className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2] resize-none" />
+                      className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC] resize-none" />
                   </div>
 
                   {/* Save */}
                   <div className="flex gap-3 pt-2">
                     <button onClick={handleSave} disabled={saving}
-                      className="flex-1 py-3 bg-[#1877F2] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#1877F2]/80 disabled:opacity-50">
+                      className="flex-1 py-3 bg-[#0C55C0] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#0C55C0]/80 disabled:opacity-50">
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       {editingId ? 'Update Game Type' : 'Create Game Type'}
                     </button>
-                    <button onClick={resetForm} className="px-6 py-3 bg-[#3A3B3C] text-[#B0B3B8] rounded-xl text-sm hover:bg-[#4A4B4C]">Cancel</button>
+                    <button onClick={resetForm} className="px-6 py-3 bg-[#132A42] text-[#BDD0E2] rounded-xl text-sm hover:bg-[#1B3753]">Cancel</button>
                   </div>
                 </div>
               </div>
@@ -329,15 +329,15 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
 
             {/* Game Types List */}
             {loading ? (
-              <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#1877F2] mx-auto" /></div>
+              <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#86DAFF] mx-auto" /></div>
             ) : gameTypes.length === 0 ? (
-              <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-12 text-center">
-                <DollarSign className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
+              <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] p-12 text-center">
+                <DollarSign className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No Game Types Configured</h3>
-                <p className="text-sm text-[#B0B3B8] mb-4">Add Your First Game Type To Get Started</p>
+                <p className="text-sm text-[#BDD0E2] mb-4">Add Your First Game Type To Get Started</p>
                 {canManage && (
                   <button onClick={() => { resetForm(); setShowForm(true); }}
-                    className="px-6 py-2.5 bg-[#1877F2] text-white rounded-xl text-sm font-medium">
+                    className="px-6 py-2.5 bg-[#0C55C0] text-white rounded-xl text-sm font-medium">
                     <Plus className="w-4 h-4 inline mr-2" /> Add Game Type
                   </button>
                 )}
@@ -346,12 +346,12 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
               <div className="space-y-3">
                 {gameTypes.map(gt => (
                   <div key={gt.id}
-                    className={`bg-[#242526] rounded-2xl border overflow-hidden transition-all ${gt.is_active ? 'border-[#3A3B3C]' : 'border-[#3A3B3C]/50 opacity-60'
+                    className={`bg-[#0A1829] rounded-2xl border overflow-hidden transition-all ${gt.is_active ? 'border-[#445E77]' : 'border-[#445E77]/50 opacity-60'
                       }`}>
                     <div className="p-4 flex items-center gap-4">
                       {/* Color badge */}
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xs font-bold"
-                        style={{ backgroundColor: (gt.color || '#1877F2') + '20', color: gt.color || '#1877F2' }}>
+                        style={{ backgroundColor: (gt.color || '#1981EC') + '20', color: gt.color || '#1981EC' }}>
                         {gt.short_code}
                       </div>
 
@@ -359,12 +359,12 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-white truncate">{gt.name}</h3>
-                          <span className="text-lg font-bold" style={{ color: gt.color || '#1877F2' }}>{gt.stakes}</span>
+                          <span className="text-lg font-bold" style={{ color: gt.color || '#1981EC' }}>{gt.stakes}</span>
                           {!gt.is_active && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#3A3B3C] text-[#B0B3B8]">INACTIVE</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#132A42] text-[#BDD0E2]">INACTIVE</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-[#B0B3B8] mt-1">
+                        <div className="flex items-center gap-4 text-xs text-[#BDD0E2] mt-1">
                           <span>Buy-In: ${gt.min_buyin}{gt.max_buyin > 0 ? `–$${gt.max_buyin}` : '+'}</span>
                           <span>{gt.max_players} Max</span>
                           {gt.rake_type === 'pot' && <span>Rake: {gt.rake_percent}% / ${gt.rake_cap} Cap</span>}
@@ -377,11 +377,11 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                       {canManage && (
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleToggleActive(gt)}
-                            className="p-2 hover:bg-[#3A3B3C] rounded-lg" title={gt.is_active ? 'Deactivate' : 'Activate'}>
-                            {gt.is_active ? <ToggleRight className="w-5 h-5 text-[#31A24C]" /> : <ToggleLeft className="w-5 h-5 text-[#B0B3B8]" />}
+                            className="p-2 hover:bg-[#132A42] rounded-lg" title={gt.is_active ? 'Deactivate' : 'Activate'}>
+                            {gt.is_active ? <ToggleRight className="w-5 h-5 text-[#31A24C]" /> : <ToggleLeft className="w-5 h-5 text-[#BDD0E2]" />}
                           </button>
                           <button onClick={() => startEdit(gt)}
-                            className="p-2 hover:bg-[#3A3B3C] rounded-lg"><Edit2 className="w-4 h-4 text-[#B0B3B8]" /></button>
+                            className="p-2 hover:bg-[#132A42] rounded-lg"><Edit2 className="w-4 h-4 text-[#BDD0E2]" /></button>
                           <button onClick={() => handleDelete(gt)}
                             className="p-2 hover:bg-[#EF4444]/10 rounded-lg"><Trash2 className="w-4 h-4 text-[#EF4444]" /></button>
                         </div>
@@ -389,7 +389,7 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                     </div>
                     {gt.notes && (
                       <div className="px-4 pb-3">
-                        <p className="text-xs text-[#B0B3B8] italic">{gt.notes}</p>
+                        <p className="text-xs text-[#BDD0E2] italic">{gt.notes}</p>
                       </div>
                     )}
                   </div>

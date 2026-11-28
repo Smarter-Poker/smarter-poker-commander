@@ -237,7 +237,7 @@ export default function CommanderSettingsPage() {
   if (!staff || loading) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -261,10 +261,10 @@ export default function CommanderSettingsPage() {
             {canManageSettings && isDirty && (
               <div style={{
                 position: 'sticky', top: 56, zIndex: 40,
-                background: 'linear-gradient(135deg, #1877F2 0%, #166FE5 100%)',
+                background: 'linear-gradient(135deg, #1981EC 0%, #166FE5 100%)',
                 borderRadius: 12, padding: '12px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                boxShadow: '0 4px 20px rgba(24,119,242,0.4)',
+                boxShadow: '0 4px 20px rgba(25, 129, 236,0.4)',
                 animation: 'slideDown 0.2s ease-out' }}>
                 <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>You have unsaved changes</p>
                 <button
@@ -301,8 +301,8 @@ export default function CommanderSettingsPage() {
             )}
 
             {!canManageSettings && (
-              <div className="p-4 bg-[#F59E0B]/10 rounded-xl">
-                <p className="text-sm text-[#F59E0B]">
+              <div className="p-4 bg-[#22D3EE]/10 rounded-xl">
+                <p className="text-sm text-[#22D3EE]">
                   You don't have permission to modify settings. Contact a manager.
                 </p>
               </div>
@@ -311,26 +311,26 @@ export default function CommanderSettingsPage() {
             {/* ── Security Gate Toggle (OWNER ONLY) ── */}
             {staff.role === 'owner' && (
               <section className="cmd-panel">
-                <div className="p-4 border-b border-[#3A3B3C]">
+                <div className="p-4 border-b border-[#445E77]">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#EF4444]/10 rounded-lg flex items-center justify-center">
                       <Shield className="w-5 h-5 text-[#EF4444]" />
                     </div>
                     <div>
                       <h2 className="font-semibold text-white">Security Gate</h2>
-                      <p className="text-xs text-[#B0B3B8]">PIN verification for restricted pages (Owner Only)</p>
+                      <p className="text-xs text-[#BDD0E2]">PIN verification for restricted pages (Owner Only)</p>
                     </div>
                   </div>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                   <div className="p-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium text-white">Require PIN For Sensitive Pages</p>
-                      <p className="text-sm text-[#B0B3B8]">Staff, Settings, Analytics, Reports, Close Day, Exports</p>
+                      <p className="text-sm text-[#BDD0E2]">Staff, Settings, Analytics, Reports, Close Day, Exports</p>
                     </div>
                     <button
                       onClick={() => handleToggle('security_gate_enabled')}
-                      className={`w-12 h-7 rounded-full transition-colors relative ${settings.security_gate_enabled ? 'bg-[#31A24C]' : 'bg-[#3A3B3C]'
+                      className={`w-12 h-7 rounded-full transition-colors relative ${settings.security_gate_enabled ? 'bg-[#31A24C]' : 'bg-[#132A42]'
                         }`}
                     >
                       <span
@@ -340,8 +340,8 @@ export default function CommanderSettingsPage() {
                     </button>
                   </div>
                   {!settings.security_gate_enabled && (
-                    <div className="px-4 py-3 bg-[#F59E0B]/5">
-                      <p className="text-xs text-[#F59E0B] flex items-center gap-1.5">
+                    <div className="px-4 py-3 bg-[#22D3EE]/5">
+                      <p className="text-xs text-[#22D3EE] flex items-center gap-1.5">
                         Security gate is OFF - restricted pages are accessible without PIN verification
                       </p>
                     </div>
@@ -352,14 +352,14 @@ export default function CommanderSettingsPage() {
 
             {/* ── Club Branding (Logo Upload) ── */}
             <section className="cmd-panel">
-              <div className="p-4 border-b border-[#3A3B3C]">
+              <div className="p-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#8B5CF6]/10 rounded-lg flex items-center justify-center">
-                    <Image className="w-5 h-5 text-[#8B5CF6]" />
+                  <div className="w-10 h-10 bg-[#5AA9FF]/10 rounded-lg flex items-center justify-center">
+                    <Image className="w-5 h-5 text-[#5AA9FF]" />
                   </div>
                   <div>
                     <h2 className="font-semibold text-white">Club Branding</h2>
-                    <p className="text-xs text-[#B0B3B8]">Logo appears on all TV displays and menus</p>
+                    <p className="text-xs text-[#BDD0E2]">Logo appears on all TV displays and menus</p>
                   </div>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function CommanderSettingsPage() {
                   {/* Logo Preview */}
                   <div style={{
                     width: 80, height: 80, borderRadius: 16, overflow: 'hidden',
-                    background: '#242526', border: '2px solid #3A3B3C',
+                    background: '#0A1829', border: '2px solid #2A4560',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0 }}>
                     {logoUrl ? (
@@ -376,7 +376,7 @@ export default function CommanderSettingsPage() {
                         onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
                     ) : (
                       <span style={{
-                        fontSize: 36, fontWeight: 900, color: '#4A5E78',
+                        fontSize: 36, fontWeight: 900, color: '#445E77',
                         fontFamily: "var(--font-orbitron), sans-serif", textTransform: 'uppercase' }}>
                         {(venue?.name || 'P').charAt(0)}
                       </span>
@@ -387,7 +387,7 @@ export default function CommanderSettingsPage() {
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors
-                        ${canManageSettings ? 'bg-[#1877F2] text-white hover:bg-[#166FE5]' : 'bg-[#3A3B3C] text-[#B0B3B8] cursor-not-allowed'}`}>
+                        ${canManageSettings ? 'bg-[#0C55C0] text-white hover:bg-[#166FE5]' : 'bg-[#132A42] text-[#BDD0E2] cursor-not-allowed'}`}>
                         {logoUploading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
@@ -465,7 +465,7 @@ export default function CommanderSettingsPage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-[#64748B]">PNG, JPG, WebP, or SVG. Max 5MB. Recommended: 200×200px square.</p>
+                    <p className="text-xs text-[#9FB3C8]">PNG, JPG, WebP, or SVG. Max 5MB. Recommended: 200×200px square.</p>
                   </div>
                 </div>
               </div>
@@ -473,15 +473,15 @@ export default function CommanderSettingsPage() {
 
             {/* Notifications */}
             <section className="cmd-panel">
-              <div className="p-4 border-b border-[#3A3B3C]">
+              <div className="p-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-[#1877F2]" />
+                  <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-[#86DAFF]" />
                   </div>
                   <h2 className="font-semibold text-white">Notifications</h2>
                 </div>
               </div>
-              <div className="divide-y divide-[#3A3B3C]">
+              <div className="divide-y divide-[#445E77]">
                 <SettingToggle
                   label="SMS Notifications"
                   description="Send Text Messages When Calling Players"
@@ -501,15 +501,15 @@ export default function CommanderSettingsPage() {
 
             {/* Waitlist */}
             <section className="cmd-panel">
-              <div className="p-4 border-b border-[#3A3B3C]">
+              <div className="p-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#F59E0B]/10 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-[#F59E0B]" />
+                  <div className="w-10 h-10 bg-[#22D3EE]/10 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-[#22D3EE]" />
                   </div>
                   <h2 className="font-semibold text-white">Waitlist</h2>
                 </div>
               </div>
-              <div className="divide-y divide-[#3A3B3C]">
+              <div className="divide-y divide-[#445E77]">
                 <SettingNumber
                   label="Call Timeout (minutes)"
                   description="Time Player Has To Respond After Being Called"
@@ -542,7 +542,7 @@ export default function CommanderSettingsPage() {
 
             {/* Display */}
             <section className="cmd-panel">
-              <div className="p-4 border-b border-[#3A3B3C]">
+              <div className="p-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#31A24C]/10 rounded-lg flex items-center justify-center">
                     <Users className="w-5 h-5 text-[#31A24C]" />
@@ -550,7 +550,7 @@ export default function CommanderSettingsPage() {
                   <h2 className="font-semibold text-white">Display</h2>
                 </div>
               </div>
-              <div className="divide-y divide-[#3A3B3C]">
+              <div className="divide-y divide-[#445E77]">
                 <SettingToggle
                   label="Show Player Names"
                   description="Display Full Names On Public Screens"
@@ -572,25 +572,25 @@ export default function CommanderSettingsPage() {
 
             {/* Time Billing */}
             <section className="cmd-panel">
-              <div className="p-4 border-b border-[#3A3B3C]">
+              <div className="p-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-[#1877F2]" />
+                  <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 text-[#86DAFF]" />
                   </div>
                   <h2 className="font-semibold text-white">Time Billing</h2>
                 </div>
               </div>
-              <div className="divide-y divide-[#3A3B3C]">
+              <div className="divide-y divide-[#445E77]">
                 <div className="p-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-white">Venue Type</p>
-                    <p className="text-sm text-[#B0B3B8]">Texas = Prepaid Time, Charity = No Time Billing</p>
+                    <p className="text-sm text-[#BDD0E2]">Texas = Prepaid Time, Charity = No Time Billing</p>
                   </div>
-                  <div className="flex rounded-lg overflow-hidden border border-[#3A3B3C]">
+                  <div className="flex rounded-lg overflow-hidden border border-[#445E77]">
                     {['texas', 'charity'].map(t => (
                       <button key={t} onClick={() => handleChange('venue_type', t)}
                         disabled={!canManageSettings}
-                        className={`px-4 py-2 text-sm font-medium capitalize ${settings.venue_type === t ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'} disabled:opacity-50`}>
+                        className={`px-4 py-2 text-sm font-medium capitalize ${settings.venue_type === t ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'} disabled:opacity-50`}>
                         {t}
                       </button>
                     ))}
@@ -620,31 +620,31 @@ export default function CommanderSettingsPage() {
 
             {/* Bulk Time Packages */}
             <section className="cmd-panel">
-              <div className="p-4 border-b border-[#3A3B3C]">
+              <div className="p-4 border-b border-[#445E77]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#F59E0B]/10 rounded-lg flex items-center justify-center">
-                    <Package className="w-5 h-5 text-[#F59E0B]" />
+                  <div className="w-10 h-10 bg-[#22D3EE]/10 rounded-lg flex items-center justify-center">
+                    <Package className="w-5 h-5 text-[#22D3EE]" />
                   </div>
                   <div className="flex-1">
                     <h2 className="font-semibold text-white">Bulk Time Packages</h2>
-                    <p className="text-xs text-[#B0B3B8]">Deals for players who buy time in bulk</p>
+                    <p className="text-xs text-[#BDD0E2]">Deals for players who buy time in bulk</p>
                   </div>
                   {canManageSettings && (
                     <button onClick={() => {
                       const pkgs = [...(settings.bulk_time_packages || [])];
                       pkgs.push({ name: '', hours: 5, price: 50, active: true });
                       handleChange('bulk_time_packages', pkgs);
-                    }} className="px-3 py-1.5 rounded-lg bg-[#1877F2] text-white text-xs font-medium">
+                    }} className="px-3 py-1.5 rounded-lg bg-[#0C55C0] text-white text-xs font-medium">
                       + Add Package
                     </button>
                   )}
                 </div>
               </div>
-              <div className="divide-y divide-[#3A3B3C]">
+              <div className="divide-y divide-[#445E77]">
                 {(!settings.bulk_time_packages || settings.bulk_time_packages.length === 0) ? (
                   <div className="p-6 text-center">
-                    <p className="text-sm text-[#B0B3B8]">No bulk packages configured</p>
-                    <p className="text-xs text-[#64748B] mt-1">Add packages for discounted bulk time purchases</p>
+                    <p className="text-sm text-[#BDD0E2]">No bulk packages configured</p>
+                    <p className="text-xs text-[#9FB3C8] mt-1">Add packages for discounted bulk time purchases</p>
                   </div>
                 ) : (
                   settings.bulk_time_packages.map((pkg, idx) => (
@@ -657,7 +657,7 @@ export default function CommanderSettingsPage() {
                             handleChange('bulk_time_packages', pkgs);
                           }}
                           disabled={!canManageSettings}
-                          className="flex-1 px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm focus:outline-none focus:border-[#1877F2] disabled:opacity-50" />
+                          className="flex-1 px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm focus:outline-none focus:border-[#1981EC] disabled:opacity-50" />
                         <button onClick={() => {
                           const pkgs = settings.bulk_time_packages.filter((_, i) => i !== idx);
                           handleChange('bulk_time_packages', pkgs);
@@ -666,7 +666,7 @@ export default function CommanderSettingsPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[10px] text-[#B0B3B8] block mb-1">Hours</label>
+                          <label className="text-[10px] text-[#BDD0E2] block mb-1">Hours</label>
                           <input type="number" value={pkg.hours} min={1} max={100}
                             onChange={e => {
                               const pkgs = [...settings.bulk_time_packages];
@@ -674,10 +674,10 @@ export default function CommanderSettingsPage() {
                               handleChange('bulk_time_packages', pkgs);
                             }}
                             disabled={!canManageSettings}
-                            className="w-full px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1877F2] disabled:opacity-50" />
+                            className="w-full px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1981EC] disabled:opacity-50" />
                         </div>
                         <div>
-                          <label className="text-[10px] text-[#B0B3B8] block mb-1">Price ($)</label>
+                          <label className="text-[10px] text-[#BDD0E2] block mb-1">Price ($)</label>
                           <input type="number" value={pkg.price} min={0} step={0.01}
                             onChange={e => {
                               const pkgs = [...settings.bulk_time_packages];
@@ -685,12 +685,12 @@ export default function CommanderSettingsPage() {
                               handleChange('bulk_time_packages', pkgs);
                             }}
                             disabled={!canManageSettings}
-                            className="w-full px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1877F2] disabled:opacity-50" />
+                            className="w-full px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1981EC] disabled:opacity-50" />
                         </div>
                         <div>
-                          <label className="text-[10px] text-[#B0B3B8] block mb-1">Per Hr</label>
-                          <div className="px-2 py-2 bg-[#242526] border border-[#3A3B3C] rounded-lg text-sm text-center font-mono">
-                            <span className={pkg.hours > 0 && (pkg.price / pkg.hours) < settings.time_billing_rate ? 'text-[#31A24C]' : 'text-[#B0B3B8]'}>
+                          <label className="text-[10px] text-[#BDD0E2] block mb-1">Per Hr</label>
+                          <div className="px-2 py-2 bg-[#0A1829] border border-[#445E77] rounded-lg text-sm text-center font-mono">
+                            <span className={pkg.hours > 0 && (pkg.price / pkg.hours) < settings.time_billing_rate ? 'text-[#31A24C]' : 'text-[#BDD0E2]'}>
                               ${pkg.hours > 0 ? (pkg.price / pkg.hours).toFixed(2) : '0.00'}
                             </span>
                           </div>
@@ -702,7 +702,7 @@ export default function CommanderSettingsPage() {
               </div>
             </section>
 
-            <section className="cmd-panel divide-y divide-[#3A3B3C]">
+            <section className="cmd-panel divide-y divide-[#445E77]">
               {staff?.role === 'owner' && (
                 <button 
                   onClick={async (e) => {
@@ -731,86 +731,86 @@ export default function CommanderSettingsPage() {
                       btn.style.opacity = '1';
                     }
                   }}
-                  className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors relative overflow-hidden group text-left">
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#1877F2]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors relative overflow-hidden group text-left">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0C55C0]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <div className="relative">
-                    <span className="font-bold text-[#1877F2]">Manage Subscription & Billing</span>
-                    <p className="text-xs text-[#B0B3B8]">View invoices, update card, cancel, or manage Commander tier</p>
+                    <span className="font-bold text-[#86DAFF]">Manage Subscription & Billing</span>
+                    <p className="text-xs text-[#BDD0E2]">View invoices, update card, cancel, or manage Commander tier</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-[#1877F2] relative" />
+                  <ChevronRight className="w-5 h-5 text-[#86DAFF] relative" />
                 </button>
               )}
               <button onClick={() => router.push('/commander/membership-plans')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <div>
                   <span className="font-medium text-white">Membership Plans</span>
-                  <p className="text-xs text-[#B0B3B8]">Set Daily/Weekly/Monthly/Yearly Pricing Per Tier</p>
+                  <p className="text-xs text-[#BDD0E2]">Set Daily/Weekly/Monthly/Yearly Pricing Per Tier</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/game-types')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <div>
                   <span className="font-medium text-white">Game Types</span>
-                  <p className="text-xs text-[#B0B3B8]">Configure Games, Stakes, Buy-Ins, Rake</p>
+                  <p className="text-xs text-[#BDD0E2]">Configure Games, Stakes, Buy-Ins, Rake</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/room-presets')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <div>
                   <span className="font-medium text-white">Room Presets</span>
-                  <p className="text-xs text-[#B0B3B8]">Saved Room Configurations For Quick Setup</p>
+                  <p className="text-xs text-[#BDD0E2]">Saved Room Configurations For Quick Setup</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/tables')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Manage Tables</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/staff')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Manage Staff</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/dealers')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Manage Dealers</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/members')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Members</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/promotions')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Promotions</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/displays')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">TV Displays</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/reports')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Reports</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/time-billing')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <span className="font-medium text-white">Time Billing</span>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
               <button onClick={() => router.push('/commander/system-info')}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors text-left">
+                className="w-full p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors text-left">
                 <div>
                   <span className="font-medium text-white">System Information</span>
-                  <p className="text-xs text-[#B0B3B8]">Version, Diagnostics, Health Checks</p>
+                  <p className="text-xs text-[#BDD0E2]">Version, Diagnostics, Health Checks</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#3A3B3C]" />
+                <ChevronRight className="w-5 h-5 text-[#7F97B0]" />
               </button>
             </section>
           </main>
@@ -831,12 +831,12 @@ function SettingToggle({ label, description, enabled, onChange, disabled }) {
     <div className="p-4 flex items-center justify-between">
       <div>
         <p className="font-medium text-white">{label}</p>
-        <p className="text-sm text-[#B0B3B8]">{description}</p>
+        <p className="text-sm text-[#BDD0E2]">{description}</p>
       </div>
       <button
         onClick={onChange}
         disabled={disabled}
-        className={`w-12 h-7 rounded-full transition-colors relative ${enabled ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'
+        className={`w-12 h-7 rounded-full transition-colors relative ${enabled ? 'bg-[#0C55C0]' : 'bg-[#132A42]'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <span
@@ -853,7 +853,7 @@ function SettingNumber({ label, description, value, onChange, min, max, step, di
     <div className="p-4 flex items-center justify-between">
       <div>
         <p className="font-medium text-white">{label}</p>
-        <p className="text-sm text-[#B0B3B8]">{description}</p>
+        <p className="text-sm text-[#BDD0E2]">{description}</p>
       </div>
       <input
         type="number"

@@ -9,16 +9,16 @@ const STATUS_CONFIG = {
   draft: { label: 'Draft', color: 'bg-[#6B7280]' },
   scheduled: { label: 'Scheduled', color: 'bg-[#22D3EE]' },
   confirmed: { label: 'Confirmed', color: 'bg-[#10B981]' },
-  in_progress: { label: 'In Progress', color: 'bg-[#F59E0B]' },
+  in_progress: { label: 'In Progress', color: 'bg-[#22D3EE]' },
   completed: { label: 'Completed', color: 'bg-[#6B7280]' },
   cancelled: { label: 'Cancelled', color: 'bg-[#EF4444]' }
 };
 
 const RSVP_CONFIG = {
   yes: { label: 'Going', color: 'text-[#10B981]', bg: 'bg-[#10B981]/10' },
-  maybe: { label: 'Maybe', color: 'text-[#F59E0B]', bg: 'bg-[#F59E0B]/10' },
+  maybe: { label: 'Maybe', color: 'text-[#22D3EE]', bg: 'bg-[#22D3EE]/10' },
   no: { label: 'Not Going', color: 'text-[#EF4444]', bg: 'bg-[#EF4444]/10' },
-  waitlist: { label: 'Waitlist', color: 'text-[#64748B]', bg: 'bg-[#0D192E]' }
+  waitlist: { label: 'Waitlist', color: 'text-[#9FB3C8]', bg: 'bg-[#0D192E]' }
 };
 
 export default function EventCard({
@@ -71,7 +71,7 @@ export default function EventCard({
         <div className="flex items-start justify-between mb-2">
           <div>
             {showGroup && event.commander_home_groups && (
-              <p className="text-xs text-[#64748B] mb-1">
+              <p className="text-xs text-[#9FB3C8] mb-1">
                 {event.commander_home_groups.name}
               </p>
             )}
@@ -85,7 +85,7 @@ export default function EventCard({
         </div>
 
         {/* Date/Time */}
-        <div className="flex items-center gap-4 text-sm text-[#64748B] mt-3">
+        <div className="flex items-center gap-4 text-sm text-[#9FB3C8] mt-3">
           <span className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
             {formatDate(event.scheduled_date)}
@@ -108,7 +108,7 @@ export default function EventCard({
             </span>
           )}
           {(event.buyin_min || event.buyin_max) && (
-            <span className="text-xs text-[#64748B]">
+            <span className="text-xs text-[#9FB3C8]">
               ${event.buyin_min || 0}
               {event.buyin_max && event.buyin_max !== event.buyin_min && ` - $${event.buyin_max}`}
               {' buy-in'}
@@ -127,10 +127,10 @@ export default function EventCard({
               />
             ) : (
               <div className="w-6 h-6 rounded-full bg-[#0D192E] flex items-center justify-center">
-                <User className="w-3 h-3 text-[#64748B]" />
+                <User className="w-3 h-3 text-[#9FB3C8]" />
               </div>
             )}
-            <span className="text-sm text-[#64748B]">
+            <span className="text-sm text-[#9FB3C8]">
               Hosted by {event.profiles.display_name || 'Unknown'}
             </span>
           </div>
@@ -138,19 +138,19 @@ export default function EventCard({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 bg-[#0B1426] border-t border-[#4A5E78] flex items-center justify-between">
+      <div className="px-4 py-3 bg-[#0B1426] border-t border-[#445E77] flex items-center justify-between">
         <div className="flex items-center gap-4 text-sm">
           <span className="flex items-center gap-1 text-white">
             <Users className="w-4 h-4" />
             {event.rsvp_yes}/{event.max_players}
           </span>
           {event.rsvp_maybe > 0 && (
-            <span className="text-[#F59E0B]">
+            <span className="text-[#22D3EE]">
               +{event.rsvp_maybe} maybe
             </span>
           )}
           {event.waitlist_count > 0 && (
-            <span className="text-[#64748B]">
+            <span className="text-[#9FB3C8]">
               {event.waitlist_count} waitlist
             </span>
           )}
@@ -171,7 +171,7 @@ export default function EventCard({
               }}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 isFull
-                  ? 'bg-[#0D192E] text-[#64748B]'
+                  ? 'bg-[#0D192E] text-[#9FB3C8]'
                   : 'cmd-btn cmd-btn-primary'
               }`}
             >
@@ -208,7 +208,7 @@ export function EventListItem({ event, onClick }) {
         <h4 className="font-medium text-white truncate">
           {event.title || 'Home Game'}
         </h4>
-        <p className="text-sm text-[#64748B]">
+        <p className="text-sm text-[#9FB3C8]">
           {event.game_type?.toUpperCase()} {event.stakes && `• ${event.stakes}`}
           {' • '}{event.rsvp_yes}/{event.max_players} going
         </p>

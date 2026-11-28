@@ -146,10 +146,10 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-lg">
-        <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h3 className="text-lg font-semibold text-white">API Keys</h3>
-          <button onClick={onClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={onClose} className="p-2 hover:bg-[#132A42] rounded-lg">
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -159,7 +159,7 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
               {error}
             </div>
           )}
-          <p className="text-sm text-[#B0B3B8] mb-4">
+          <p className="text-sm text-[#BDD0E2] mb-4">
             API Keys Allow External Systems To Access Commander Data. Keep Your Keys Secure.
           </p>
 
@@ -194,10 +194,10 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
           {/* Keys List */}
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-[#B0B3B8]" />
+              <Loader2 className="w-6 h-6 animate-spin text-[#BDD0E2]" />
             </div>
           ) : apiKeys.length === 0 ? (
-            <div className="text-center py-8 text-[#B0B3B8]">
+            <div className="text-center py-8 text-[#BDD0E2]">
               <Key className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>No API Keys Yet</p>
             </div>
@@ -206,18 +206,18 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="flex items-center justify-between p-3 bg-[#3A3B3C] rounded-lg"
+                  className="flex items-center justify-between p-3 bg-[#132A42] rounded-lg"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white truncate">{key.name}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="text-xs text-[#B0B3B8] font-mono">
+                      <code className="text-xs text-[#BDD0E2] font-mono">
                         {keyDisplay(key)}
                       </code>
                       {getFullKey(key) && (
                         <button
                           onClick={() => setShowKey(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                          className="text-[#B0B3B8] hover:text-white"
+                          className="text-[#BDD0E2] hover:text-white"
                         >
                           {showKey[key.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         </button>
@@ -228,14 +228,14 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
                     {getFullKey(key) && (
                       <button
                         onClick={() => handleCopyKey(key)}
-                        className="p-2 text-[#B0B3B8] hover:text-white hover:bg-[#3A3B3C] rounded"
+                        className="p-2 text-[#BDD0E2] hover:text-white hover:bg-[#132A42] rounded"
                       >
                         {copiedKey === key.id ? <Check className="w-4 h-4 text-[#31A24C]" /> : <Copy className="w-4 h-4" />}
                       </button>
                     )}
                     <button
                       onClick={() => handleDeleteKey(key.id)}
-                      className="p-2 text-[#B0B3B8] hover:text-[#EF4444] hover:bg-[#3A3B3C] rounded"
+                      className="p-2 text-[#BDD0E2] hover:text-[#EF4444] hover:bg-[#132A42] rounded"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -330,10 +330,10 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-lg">
-        <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h3 className="text-lg font-semibold text-white">{venue.name} Settings</h3>
-          <button onClick={onClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={onClose} className="p-2 hover:bg-[#132A42] rounded-lg">
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -346,7 +346,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
           )}
           {/* Comp Rate */}
           <div>
-            <label className="block text-sm font-medium text-[#94A3B8] mb-2">Comp Rate ($/hr)</label>
+            <label className="block text-sm font-medium text-[#A9BDD1] mb-2">Comp Rate ($/hr)</label>
             <input
               type="number"
               step="0.25"
@@ -360,7 +360,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-white">Auto Text Notifications</p>
-              <p className="text-sm text-[#B0B3B8]">Send Automatic SMS To Players When Called</p>
+              <p className="text-sm text-[#BDD0E2]">Send Automatic SMS To Players When Called</p>
             </div>
             <label className="relative inline-flex cursor-pointer">
               <input
@@ -369,16 +369,16 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                 onChange={(e) => setSettings(prev => ({ ...prev, sms_notifications_enabled: e.target.checked }))}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1877F2]"></div>
+              <div className="w-11 h-6 bg-[#132A42] peer-focus:ring-2 peer-focus:ring-[#1981EC] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0C55C0]"></div>
             </label>
           </div>
 
           {/* Waitlist Settings */}
-          <div className="pt-3 border-t border-[#3A3B3C]">
+          <div className="pt-3 border-t border-[#445E77]">
             <p className="font-medium text-white mb-3">Waitlist Settings</p>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Max Waitlist Size</span>
+                <span className="text-sm text-[#BDD0E2]">Max Waitlist Size</span>
                 <input
                   type="number"
                   min="1"
@@ -389,7 +389,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Call Timeout (Minutes)</span>
+                <span className="text-sm text-[#BDD0E2]">Call Timeout (Minutes)</span>
                 <input
                   type="number"
                   min="1"
@@ -400,7 +400,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Default Wait Per Player (Minutes)</span>
+                <span className="text-sm text-[#BDD0E2]">Default Wait Per Player (Minutes)</span>
                 <input
                   type="number"
                   min="1"
@@ -414,11 +414,11 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
           </div>
 
           {/* Display Settings */}
-          <div className="pt-3 border-t border-[#3A3B3C]">
+          <div className="pt-3 border-t border-[#445E77]">
             <p className="font-medium text-white mb-3">Display Settings</p>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Show Player Names On Display</span>
+                <span className="text-sm text-[#BDD0E2]">Show Player Names On Display</span>
                 <label className="relative inline-flex cursor-pointer">
                   <input
                     type="checkbox"
@@ -426,11 +426,11 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
                     onChange={(e) => setSettings(prev => ({ ...prev, show_player_names_on_display: e.target.checked }))}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-[#3A3B3C] peer-focus:ring-2 peer-focus:ring-[#1877F2] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1877F2]"></div>
+                  <div className="w-9 h-5 bg-[#132A42] peer-focus:ring-2 peer-focus:ring-[#1981EC] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0C55C0]"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#B0B3B8]">Auto Refresh Interval (Seconds)</span>
+                <span className="text-sm text-[#BDD0E2]">Auto Refresh Interval (Seconds)</span>
                 <input
                   type="number"
                   min="5"
@@ -444,7 +444,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
           </div>
         </div>
 
-        <div className="p-4 border-t border-[#3A3B3C]">
+        <div className="p-4 border-t border-[#445E77]">
           <button
             onClick={handleSave}
             disabled={saving}
@@ -630,7 +630,7 @@ export default function AdminDashboard() {
       <div className="cmd-page" style={{ fontFamily: 'Inter, sans-serif' }}>
 
         {/* Tabs */}
-        <div className="border-b border-[#3A3B3C] bg-[#0F1D32]">
+        <div className="border-b border-[#445E77] bg-[#0F1D32]">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex gap-1">
               {TABS.map(tab => {
@@ -641,8 +641,8 @@ export default function AdminDashboard() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${isActive
-                      ? 'border-[#1877F2] text-[#1877F2]'
-                      : 'border-transparent text-[#B0B3B8] hover:text-white'
+                      ? 'border-[#1981EC] text-[#86DAFF]'
+                      : 'border-transparent text-[#BDD0E2] hover:text-white'
                       }`}
                   >
                     <Icon size={18} />
@@ -685,7 +685,7 @@ export default function AdminDashboard() {
             <div>
               {venues.length > 1 && (
                 <div className="mb-4">
-                  <label className="block text-sm text-[#B0B3B8] mb-2">Select Venue</label>
+                  <label className="block text-sm text-[#BDD0E2] mb-2">Select Venue</label>
                   <select
                     value={selectedVenue?.id || ''}
                     onChange={(e) => {
@@ -714,7 +714,7 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <div className="cmd-panel p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">API Keys</h3>
-                <p className="text-[#B0B3B8] mb-4">
+                <p className="text-[#BDD0E2] mb-4">
                   Create API Keys For External Integrations Like POS Systems, Player Tracking Software, Or Custom Displays.
                 </p>
                 <button
@@ -728,22 +728,22 @@ export default function AdminDashboard() {
 
               <div className="cmd-panel p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Venue Settings</h3>
-                <p className="text-[#B0B3B8] mb-4">
+                <p className="text-[#BDD0E2] mb-4">
                   Configure Venue-Specific Settings Like Comp Rates, Notification Preferences, And Display Options.
                 </p>
                 <div className="space-y-3">
                   {venues.map(venue => (
                     <div
                       key={venue.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-[#3A3B3C]"
+                      className="flex items-center justify-between p-3 rounded-lg bg-[#132A42]"
                     >
                       <div className="flex items-center gap-3">
-                        <Building2 size={20} className="text-[#B0B3B8]" />
+                        <Building2 size={20} className="text-[#BDD0E2]" />
                         <span className="text-white">{venue.name}</span>
                       </div>
                       <button
                         onClick={() => handleConfigureVenue(venue)}
-                        className="text-[#1877F2] text-sm hover:underline"
+                        className="text-[#86DAFF] text-sm hover:underline"
                       >
                         Configure
                       </button>

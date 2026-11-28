@@ -491,7 +491,7 @@ export default function TroubleshootingPage() {
       case 'high':
         return 'bg-red-500/10 text-red-400 border-red-500/30';
       case 'medium':
-        return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30';
+        return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
       case 'low':
         return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
       default:
@@ -512,16 +512,16 @@ export default function TroubleshootingPage() {
         <header className="cmd-header-bar sticky top-0 z-20">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/commander/dashboard" className="text-[#B0B3B8] hover:text-white">
+              <Link href="/commander/dashboard" className="text-[#BDD0E2] hover:text-white">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-[#F59E0B]" />
+                <AlertTriangle className="w-6 h-6 text-[#22D3EE]" />
                 <h1 className="text-xl font-bold text-white">Troubleshooting Guide</h1>
               </div>
             </div>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B0B3B8]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDD0E2]" />
               <input
                 type="text"
                 placeholder="Search Issues..."
@@ -552,8 +552,8 @@ export default function TroubleshootingPage() {
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                             activeSection === section.id && !searchTerm
-                              ? 'bg-[#1877F2]/10 text-[#1877F2]'
-                              : 'text-[#B0B3B8] hover:text-white hover:bg-[#374151]'
+                              ? 'bg-[#0C55C0]/10 text-[#86DAFF]'
+                              : 'text-[#BDD0E2] hover:text-white hover:bg-[#374151]'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
@@ -576,7 +576,7 @@ export default function TroubleshootingPage() {
               {searchTerm ? (
                 // Search Results
                 <div className="space-y-4">
-                  <p className="text-[#B0B3B8] mb-4">
+                  <p className="text-[#BDD0E2] mb-4">
                     Found{' '}
                     {filteredSections.reduce((sum, s) => sum + s.issues.length, 0)} issues matching
                     "{searchTerm}"
@@ -605,8 +605,8 @@ export default function TroubleshootingPage() {
                       const Icon = currentSection.icon;
                       return (
                         <CommanderLayout title="Troubleshooting Guide" backHref="/commander/dashboard?card=reports">
-                        <div className="w-10 h-10 bg-[#F59E0B]/10 rounded-lg flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-[#F59E0B]" />
+                        <div className="w-10 h-10 bg-[#22D3EE]/10 rounded-lg flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-[#22D3EE]" />
                         </div>
                         </CommanderLayout>
                       );
@@ -632,7 +632,7 @@ export default function TroubleshootingPage() {
                   <AlertTriangle className="w-5 h-5 text-red-500" />
                   Emergency Support
                 </h3>
-                <p className="text-[#94A3B8] mb-4">
+                <p className="text-[#A9BDD1] mb-4">
                   For critical issues affecting active games or tournaments:
                 </p>
                 <div className="space-y-2">
@@ -666,7 +666,7 @@ function IssueCard({ issue, isExpanded, onToggle, getSeverityColor }) {
           <span className="font-medium text-white">{issue.title}</span>
         </div>
         <ChevronDown
-          className={`w-5 h-5 text-[#B0B3B8] flex-shrink-0 transition-transform ${
+          className={`w-5 h-5 text-[#BDD0E2] flex-shrink-0 transition-transform ${
             isExpanded ? 'rotate-180' : ''
           }`}
         />
@@ -680,7 +680,7 @@ function IssueCard({ issue, isExpanded, onToggle, getSeverityColor }) {
               <XCircle className="w-4 h-4 text-red-400" />
               Symptoms
             </h4>
-            <ul className="list-disc list-inside text-sm text-[#94A3B8] space-y-1 ml-6">
+            <ul className="list-disc list-inside text-sm text-[#A9BDD1] space-y-1 ml-6">
               {issue.symptoms.map((symptom, idx) => (
                 <li key={idx}>{symptom}</li>
               ))}
@@ -690,10 +690,10 @@ function IssueCard({ issue, isExpanded, onToggle, getSeverityColor }) {
           {/* Causes */}
           <div className="mt-4">
             <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-400" />
+              <AlertTriangle className="w-4 h-4 text-cyan-400" />
               Possible Causes
             </h4>
-            <ul className="list-disc list-inside text-sm text-[#94A3B8] space-y-1 ml-6">
+            <ul className="list-disc list-inside text-sm text-[#A9BDD1] space-y-1 ml-6">
               {issue.causes.map((cause, idx) => (
                 <li key={idx}>{cause}</li>
               ))}
@@ -709,12 +709,12 @@ function IssueCard({ issue, isExpanded, onToggle, getSeverityColor }) {
             <ol className="space-y-3">
               {issue.solutions.map((solution, idx) => (
                 <li key={idx} className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-[#1877F2]/20 rounded-full flex items-center justify-center text-xs text-[#1877F2] font-medium">
+                  <span className="flex-shrink-0 w-6 h-6 bg-[#0C55C0]/20 rounded-full flex items-center justify-center text-xs text-[#86DAFF] font-medium">
                     {idx + 1}
                   </span>
                   <div>
                     <p className="font-medium text-white text-sm">{solution.step}</p>
-                    <p className="text-sm text-[#B0B3B8] mt-1">{solution.details}</p>
+                    <p className="text-sm text-[#BDD0E2] mt-1">{solution.details}</p>
                   </div>
                 </li>
               ))}

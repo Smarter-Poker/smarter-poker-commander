@@ -22,14 +22,14 @@ import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 const STATUS_CONFIG = {
   in_use: { color: '#31A24C', glow: '0 0 12px rgba(49,162,76,0.5)', label: 'Active' },
-  available: { color: '#1877F2', glow: '0 0 8px rgba(24,119,242,0.3)', label: 'Open' },
-  reserved: { color: '#F59E0B', glow: '0 0 8px rgba(245,158,11,0.3)', label: 'Reserved' },
+  available: { color: '#1981EC', glow: '0 0 8px rgba(25, 129, 236,0.3)', label: 'Open' },
+  reserved: { color: '#22D3EE', glow: '0 0 8px rgba(34, 211, 238,0.3)', label: 'Reserved' },
   maintenance: { color: '#6B7280', glow: '0 0 6px rgba(107,114,128,0.2)', label: 'Maintenance' },
   breaking: { color: '#EF4444', glow: '0 0 8px rgba(239,68,68,0.3)', label: 'Breaking' } };
 
 const GAME_COLORS = {
-  'NLH': '#1877F2', 'PLO': '#31A24C', 'MIXED': '#F59E0B',
-  'TOURNAMENT': '#A855F7', 'OMAHA': '#EF4444', 'NLO': '#22D3EE' };
+  'NLH': '#1981EC', 'PLO': '#31A24C', 'MIXED': '#22D3EE',
+  'TOURNAMENT': '#5AA9FF', 'OMAHA': '#EF4444', 'NLO': '#22D3EE' };
 
 const TABLE_WIDTH = 150;
 const TABLE_HEIGHT = 100;
@@ -281,25 +281,25 @@ return { };
   return (
     <CommanderLayout title="Floor Map" backHref="/commander/dashboard?card=floor">
       <SEOHead title="Commander - Floor Map" description="Spatial Poker Room Floor Map." noindex={true} />
-      <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#E4E6EB', fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#F2F7FF', fontFamily: 'Inter, sans-serif', display: 'flex', flexDirection: 'column' }}>
 
         {/* Top bar */}
-        <div data-page-bar="" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, background: '#18191A', borderBottom: '1px solid #2A2B2D', flexShrink: 0 }}>
+        <div data-page-bar="" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, background: '#040D18', borderBottom: '1px solid #2A2B2D', flexShrink: 0 }}>
           <h1 className="sr-only">Floor Map</h1>
-          <p role="status" style={{ fontSize: 12, color: '#B0B3B8', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <p role="status" style={{ fontSize: 12, color: '#BDD0E2', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Activity size={14} color="#31A24C" aria-hidden="true" />
             {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {tables.length} Tables
           </p>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {/* Zoom controls */}
             <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={btnStyle}>
-              <ZoomOut size={14} color="#B0B3B8" />
+              <ZoomOut size={14} color="#BDD0E2" />
             </button>
-            <span style={{ fontSize: 11, color: '#8A8D91', minWidth: 36, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+            <span style={{ fontSize: 11, color: '#9FB3C8', minWidth: 36, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
             <button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} style={btnStyle}>
-              <ZoomIn size={14} color="#B0B3B8" />
+              <ZoomIn size={14} color="#BDD0E2" />
             </button>
-            <div style={{ width: 1, height: 20, background: '#3A3B3C', margin: '0 4px' }} />
+            <div style={{ width: 1, height: 20, background: '#2A4560', margin: '0 4px' }} />
 
             {/* Edit/View toggle */}
             <button onClick={() => { setEditMode(!editMode); setSelectedTable(null); }}
@@ -307,13 +307,13 @@ return { };
               style={{
                 background: 'none', border: 'none', padding: 6,
                 cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-              {editMode ? <Unlock size={22} color="#F59E0B" /> : <Lock size={22} color="#8A8D91" />}
+              {editMode ? <Unlock size={22} color="#22D3EE" /> : <Lock size={22} color="#9FB3C8" />}
             </button>
 
             {/* Save button (only in edit mode with changes) */}
             {editMode && hasChanges && (
               <button onClick={savePositions} disabled={saving}
-                style={{ ...btnStyle, background: '#1877F2', border: '1px solid #1877F2', padding: '6px 12px', display: 'flex', gap: 4, alignItems: 'center' }}>
+                style={{ ...btnStyle, background: '#1981EC', border: '1px solid #1981EC', padding: '6px 12px', display: 'flex', gap: 4, alignItems: 'center' }}>
                 {saving ? <Loader2 size={14} color="#fff" style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} color="#fff" />}
                 <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{saving ? 'Saving...' : 'Save'}</span>
               </button>
@@ -323,7 +323,7 @@ return { };
             )}
 
             <button onClick={fetchAll} style={btnStyle} aria-label="Refresh">
-              <RefreshCw size={14} color="#B0B3B8" />
+              <RefreshCw size={14} color="#BDD0E2" />
             </button>
             <PageHelp
               title="Floor Map"
@@ -333,14 +333,14 @@ return { };
         </div>
 
         {/* Stats strip */}
-        <div style={{ padding: '8px 16px', display: 'flex', gap: 12, background: '#18191A', borderBottom: '1px solid #2A2B2D', flexShrink: 0 }}>
+        <div style={{ padding: '8px 16px', display: 'flex', gap: 12, background: '#040D18', borderBottom: '1px solid #2A2B2D', flexShrink: 0 }}>
           <StatPill label="Cash" value={cashActive} color="#31A24C" />
-          <StatPill label="Tourney" value={tournamentActive} color="#F59E0B" />
-          <StatPill label="Open" value={openCount} color="#1877F2" />
-          <StatPill label="Seats" value={`${occupiedSeats}/${totalSeats}`} color="#E4E6EB" />
-          {totalWaiting > 0 && <StatPill label="Waiting" value={totalWaiting} color="#F59E0B" />}
+          <StatPill label="Tourney" value={tournamentActive} color="#22D3EE" />
+          <StatPill label="Open" value={openCount} color="#1981EC" />
+          <StatPill label="Seats" value={`${occupiedSeats}/${totalSeats}`} color="#F2F7FF" />
+          {totalWaiting > 0 && <StatPill label="Waiting" value={totalWaiting} color="#22D3EE" />}
           {Object.entries(waitlists || {}).map(([g, c]) => (
-            <span key={g} style={{ fontSize: 11, color: '#F59E0B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span key={g} style={{ fontSize: 11, color: '#22D3EE', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
               <AlertTriangle size={10} /> {g}: {c}
             </span>
           ))}
@@ -349,14 +349,14 @@ return { };
         {/* Canvas area */}
         {loading ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={32} color="#1877F2" style={{ animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={32} color="#1981EC" style={{ animation: 'spin 1s linear infinite' }} />
           </div>
         ) : (
           <div ref={canvasRef} style={{
             flex: 1, overflow: 'auto', position: 'relative',
             touchAction: editMode ? 'none' : 'auto', overscrollBehavior: 'none',
             background: `
-              radial-gradient(circle at 50% 50%, rgba(24,119,242,0.03) 0%, transparent 70%),
+              radial-gradient(circle at 50% 50%, rgba(25, 129, 236,0.03) 0%, transparent 70%),
               linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
               linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
               #0D0E10
@@ -369,7 +369,7 @@ return { };
                 const status = table.status || 'available';
                 const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.available;
                 const gameType = (table.game_type || '').toUpperCase();
-                const gameColor = GAME_COLORS[gameType] || '#B0B3B8';
+                const gameColor = GAME_COLORS[gameType] || '#BDD0E2';
                 const maxSeats = table.max_seats || 9;
                 const occupied = table.current_players || 0;
                 const isActive = status === 'in_use';
@@ -403,7 +403,7 @@ return { };
                       background: isActive
                         ? `radial-gradient(ellipse, rgba(26,92,42,0.9) 0%, rgba(13,51,24,0.95) 100%)`
                         : status === 'reserved'
-                          ? `radial-gradient(ellipse, rgba(80,60,10,0.6) 0%, rgba(40,30,5,0.8) 100%)`
+                          ? `radial-gradient(ellipse, rgba(10, 40, 70,0.6) 0%, rgba(40,30,5,0.8) 100%)`
                           : status === 'maintenance'
                             ? `radial-gradient(ellipse, rgba(50,50,50,0.6) 0%, rgba(30,30,30,0.8) 100%)`
                             : `radial-gradient(ellipse, rgba(30,50,80,0.5) 0%, rgba(15,25,40,0.7) 100%)`,
@@ -418,7 +418,7 @@ return { };
                       {isActive && (
                         <div style={{
                           position: 'absolute', inset: 2, borderRadius: '50%',
-                          border: '1px solid rgba(180,150,60,0.3)',
+                          border: '1px solid rgba(95, 184, 224,0.3)',
                           pointerEvents: 'none' }} />
                       )}
 
@@ -439,7 +439,7 @@ return { };
                       )}
 
                       {/* Seat count */}
-                      <div style={{ fontSize: Math.max(8, 10 * zoom), color: isActive ? '#fff' : '#8A8D91', fontWeight: 600, marginTop: 2 * zoom, display: 'flex', alignItems: 'center', gap: 2 * zoom }}>
+                      <div style={{ fontSize: Math.max(8, 10 * zoom), color: isActive ? '#fff' : '#9FB3C8', fontWeight: 600, marginTop: 2 * zoom, display: 'flex', alignItems: 'center', gap: 2 * zoom }}>
                         <Users size={Math.max(7, 9 * zoom)} /> {occupied}/{maxSeats}
                       </div>
 
@@ -448,9 +448,9 @@ return { };
                         <div style={{
                           position: 'absolute', top: 2 * zoom, right: 6 * zoom,
                           fontSize: Math.max(7, 8 * zoom), fontWeight: 800,
-                          color: '#F59E0B', background: 'rgba(245,158,11,0.15)',
+                          color: '#22D3EE', background: 'rgba(34, 211, 238,0.15)',
                           padding: `${1 * zoom}px ${3 * zoom}px`, borderRadius: 3 * zoom,
-                          border: '1px solid rgba(245,158,11,0.3)',
+                          border: '1px solid rgba(34, 211, 238,0.3)',
                           lineHeight: 1, letterSpacing: 0.5 }}>T</div>
                       )}
                     </div>
@@ -461,7 +461,7 @@ return { };
                         <div style={{
                           position: 'absolute', top: -4, right: -4,
                           width: 12, height: 12, borderRadius: 6,
-                          background: '#F59E0B', border: '2px solid #0D0E10',
+                          background: '#22D3EE', border: '2px solid #0D0E10',
                           boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} />
                         <button
                           onClick={(e) => { e.stopPropagation(); setRotations(prev => ({ ...prev, [table.id]: ((prev[table.id] || 0) + 90) % 360 })); setHasChanges(true); }}
@@ -470,7 +470,7 @@ return { };
                           style={{
                             position: 'absolute', bottom: -8, left: '50%', transform: 'translateX(-50%)',
                             width: 22, height: 22, borderRadius: 11,
-                            background: '#1877F2', border: '2px solid #0D0E10',
+                            background: '#1981EC', border: '2px solid #0D0E10',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer', zIndex: 10, padding: 0,
                             boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}>
@@ -489,7 +489,7 @@ return { };
         {selectedTable && !editMode && (
           <div style={{
             position: 'fixed', bottom: 0, left: 0, right: 0,
-            background: '#242526', borderTop: '2px solid #3A3B3C',
+            background: '#0A1829', borderTop: '2px solid #2A4560',
             borderRadius: '16px 16px 0 0', padding: '16px 20px',
             boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
             zIndex: 50 }}>
@@ -499,11 +499,11 @@ return { };
                   Table {selectedTable.table_number}
                 </h3>
                 {selectedTable.table_name && selectedTable.table_name !== `Table ${selectedTable.table_number}` && (
-                  <p style={{ fontSize: 12, color: '#8A8D91', margin: 0 }}>{selectedTable.table_name}</p>
+                  <p style={{ fontSize: 12, color: '#9FB3C8', margin: 0 }}>{selectedTable.table_name}</p>
                 )}
               </div>
               <button onClick={() => setSelectedTable(null)} style={{ ...btnStyle, padding: 6 }}>
-                <X size={16} color="#B0B3B8" />
+                <X size={16} color="#BDD0E2" />
               </button>
             </div>
 
@@ -513,7 +513,7 @@ return { };
                 const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.available;
                 const isActive = status === 'in_use';
                 const gameType = (selectedTable.game_type || '').toUpperCase();
-                const gameColor = GAME_COLORS[gameType] || '#B0B3B8';
+                const gameColor = GAME_COLORS[gameType] || '#BDD0E2';
                 const maxSeats = selectedTable.max_seats || 9;
                 const occupied = selectedTable.current_players || 0;
                 const elapsed = isActive ? getElapsed(selectedTable.game_started_at) : '';
@@ -529,7 +529,7 @@ return { };
                       </div>
                     )}
                     <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Users size={14} color="#B0B3B8" />
+                      <Users size={14} color="#BDD0E2" />
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{occupied}/{maxSeats}</span>
                       {occupied < maxSeats && occupied > 0 && (
                         <span style={{ fontSize: 11, color: '#31A24C' }}>{maxSeats - occupied} Open</span>
@@ -537,8 +537,8 @@ return { };
                     </div>
                     {elapsed && (
                       <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Clock size={14} color="#8A8D91" />
-                        <span style={{ fontSize: 12, color: '#8A8D91' }}>Running {elapsed}</span>
+                        <Clock size={14} color="#9FB3C8" />
+                        <span style={{ fontSize: 12, color: '#9FB3C8' }}>Running {elapsed}</span>
                       </div>
                     )}
                   </>
@@ -548,11 +548,11 @@ return { };
 
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
               <button onClick={() => router.push(`/commander/tables`)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: 10, background: '#1877F2', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '10px 16px', borderRadius: 10, background: '#1981EC', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
                 Open Tables & Floor
               </button>
               <button onClick={() => router.push(`/commander/table-tablets`)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: 10, background: '#242526', color: '#B0B3B8', fontSize: 13, fontWeight: 600, border: '1px solid #3A3B3C', cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '10px 16px', borderRadius: 10, background: '#0A1829', color: '#BDD0E2', fontSize: 13, fontWeight: 600, border: '1px solid #2A4560', cursor: 'pointer' }}>
                 Table Tablets
               </button>
             </div>
@@ -563,12 +563,12 @@ return { };
         {editMode && (
           <div style={{
             position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
+            background: 'rgba(34, 211, 238,0.15)', border: '1px solid rgba(34, 211, 238,0.3)',
             borderRadius: 12, padding: '8px 20px', zIndex: 40,
             display: 'flex', alignItems: 'center', gap: 8,
             backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-            <Unlock size={14} color="#F59E0B" />
-            <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>
+            <Unlock size={14} color="#22D3EE" />
+            <span style={{ fontSize: 12, color: '#22D3EE', fontWeight: 600 }}>
               Drag Tables To Match Your Room Layout · {hasChanges ? 'Unsaved Changes' : 'No Changes'}
             </span>
           </div>
@@ -607,7 +607,7 @@ function StatPill({ label, value, color }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span style={{ fontSize: 16, fontWeight: 800, color }}>{value}</span>
-      <span style={{ fontSize: 10, color: '#6A6B6D', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: 10, color: '#93A9C0', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
     </div>
   );
 }
@@ -615,6 +615,6 @@ function StatPill({ label, value, color }) {
 // Shared button style
 const btnStyle = {
   width: 32, height: 32, borderRadius: 8,
-  background: '#242526', border: '1px solid #3A3B3C',
+  background: '#0A1829', border: '1px solid #2A4560',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', flexShrink: 0 };

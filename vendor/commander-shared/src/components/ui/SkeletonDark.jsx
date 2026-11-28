@@ -17,7 +17,7 @@ const CSS = `
   100% { background-position: -200% 0; }
 }
 .sk-dark {
-  background: linear-gradient(90deg, #2A2B2C 25%, #3A3B3C 50%, #2A2B2C 75%);
+  background: linear-gradient(90deg, #2A2B2C 25%, #2A4560 50%, #2A2B2C 75%);
   background-size: 200% 100%;
   animation: sk-dark-shimmer 1.4s ease-in-out infinite;
   border-radius: 6px;
@@ -36,7 +36,7 @@ function Box({ w = '100%', h = 14, r = 6, mb = 0, style = {} }) {
 // ── Single stat card (e.g. "Active Tables: 4")
 function StatCard() {
     return (
-        <div style={{ background: '#242526', border: '1px solid #3A3B3C', borderRadius: 10, padding: '16px 18px' }}>
+        <div style={{ background: '#0A1829', border: '1px solid #2A4560', borderRadius: 10, padding: '16px 18px' }}>
             <Box w="40%" h={11} mb={10} style={{ opacity: 0.6 }} />
             <Box w="55%" h={26} mb={8} />
             <Box w="30%" h={10} style={{ opacity: 0.4 }} />
@@ -49,7 +49,7 @@ function TableRow() {
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '11px 14px', borderBottom: '1px solid #3A3B3C'
+            padding: '11px 14px', borderBottom: '1px solid #2A4560'
         }}>
             <Box w={36} h={36} r={8} />
             <div style={{ flex: 1 }}>
@@ -67,7 +67,7 @@ function WaitlistRow() {
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 14px', borderBottom: '1px solid #3A3B3C'
+            padding: '10px 14px', borderBottom: '1px solid #2A4560'
         }}>
             <Box w={32} h={32} r={16} />
             <div style={{ flex: 1 }}>
@@ -84,7 +84,7 @@ function WaitlistRow() {
 function PokerTableCard() {
     return (
         <div style={{
-            background: '#242526', border: '1px solid #3A3B3C', borderRadius: 12,
+            background: '#0A1829', border: '1px solid #2A4560', borderRadius: 12,
             padding: 14, minWidth: 200
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -108,7 +108,7 @@ function TournamentSkeleton() {
     return (
         <div>
             {/* Header */}
-            <div style={{ background: '#242526', borderRadius: 12, padding: 20, marginBottom: 12, border: '1px solid #3A3B3C' }}>
+            <div style={{ background: '#0A1829', borderRadius: 12, padding: 20, marginBottom: 12, border: '1px solid #2A4560' }}>
                 <Box w="55%" h={22} mb={10} />
                 <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
                     <Box w={80} h={13} />
@@ -125,7 +125,7 @@ function TournamentSkeleton() {
                 {Array.from({ length: 4 }).map((_, i) => <StatCard key={i} />)}
             </div>
             {/* Entry list */}
-            <div style={{ background: '#242526', borderRadius: 12, border: '1px solid #3A3B3C', overflow: 'hidden' }}>
+            <div style={{ background: '#0A1829', borderRadius: 12, border: '1px solid #2A4560', overflow: 'hidden' }}>
                 {Array.from({ length: 6 }).map((_, i) => <TableRow key={i} />)}
             </div>
         </div>
@@ -138,7 +138,7 @@ function DealerRotationSkeleton() {
         <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: 14 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} style={{ background: '#242526', borderRadius: 12, padding: 14, border: '1px solid #3A3B3C' }}>
+                    <div key={i} style={{ background: '#0A1829', borderRadius: 12, padding: 14, border: '1px solid #2A4560' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                             <Box w={40} h={40} r={20} />
                             <div style={{ flex: 1 }}>
@@ -150,7 +150,7 @@ function DealerRotationSkeleton() {
                     </div>
                 ))}
             </div>
-            <div style={{ background: '#242526', borderRadius: 12, border: '1px solid #3A3B3C', overflow: 'hidden' }}>
+            <div style={{ background: '#0A1829', borderRadius: 12, border: '1px solid #2A4560', overflow: 'hidden' }}>
                 {Array.from({ length: 4 }).map((_, i) => <TableRow key={i} />)}
             </div>
         </div>
@@ -163,13 +163,13 @@ export default function SkeletonDark({ variant = 'table-rows', rows = 5, count =
             <style>{CSS}</style>
 
             {variant === 'table-rows' && (
-                <div style={{ background: '#242526', borderRadius: 12, border: '1px solid #3A3B3C', overflow: 'hidden' }}>
+                <div style={{ background: '#0A1829', borderRadius: 12, border: '1px solid #2A4560', overflow: 'hidden' }}>
                     {Array.from({ length: rows }).map((_, i) => <TableRow key={i} />)}
                 </div>
             )}
 
             {variant === 'waitlist' && (
-                <div style={{ background: '#242526', borderRadius: 12, border: '1px solid #3A3B3C', overflow: 'hidden' }}>
+                <div style={{ background: '#0A1829', borderRadius: 12, border: '1px solid #2A4560', overflow: 'hidden' }}>
                     {Array.from({ length: rows }).map((_, i) => <WaitlistRow key={i} />)}
                 </div>
             )}
@@ -185,7 +185,7 @@ export default function SkeletonDark({ variant = 'table-rows', rows = 5, count =
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: 14 }}>
                         {Array.from({ length: count }).map((_, i) => <PokerTableCard key={i} />)}
                     </div>
-                    <div style={{ background: '#242526', borderRadius: 12, border: '1px solid #3A3B3C', overflow: 'hidden' }}>
+                    <div style={{ background: '#0A1829', borderRadius: 12, border: '1px solid #2A4560', overflow: 'hidden' }}>
                         {Array.from({ length: rows }).map((_, i) => <WaitlistRow key={i} />)}
                     </div>
                 </div>

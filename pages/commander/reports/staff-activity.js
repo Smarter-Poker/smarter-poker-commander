@@ -65,11 +65,11 @@ const params = new URLSearchParams();
   }, [activeTab]);
 
   const typeColors = {
-    floor_call: '#F59E0B',
+    floor_call: '#22D3EE',
     dispute: '#EF4444',
     incident: '#EF4444',
-    maintenance: '#B0B3B8',
-    general: '#1877F2'
+    maintenance: '#BDD0E2',
+    general: '#1981EC'
   };
 
   return (
@@ -80,8 +80,8 @@ const params = new URLSearchParams();
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-          <div className="bg-[#242526] border-b border-[#3A3B3C]">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
+          <div className="bg-[#0A1829] border-b border-[#445E77]">
             <PageBar
               title="Staff Operations"
               summary="What Your Staff Have Done. Incidents And Floor Calls Lists The Floor's Recent Work, And Audit Trail Records Every Sensitive Action With Who Did It And When."
@@ -90,14 +90,14 @@ const params = new URLSearchParams();
             <div className="flex px-4 gap-4 pb-0">
               <button
                 onClick={() => setActiveTab('incidents')}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'incidents' ? 'border-[#1877F2] text-[#1877F2]' : 'border-transparent text-[#B0B3B8] hover:text-white'
+                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'incidents' ? 'border-[#1981EC] text-[#86DAFF]' : 'border-transparent text-[#BDD0E2] hover:text-white'
                   }`}
               >
                 Incidents & Floor Calls
               </button>
               <button
                 onClick={() => setActiveTab('audit')}
-                className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'audit' ? 'border-[#1877F2] text-[#1877F2]' : 'border-transparent text-[#B0B3B8] hover:text-white'
+                className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'audit' ? 'border-[#1981EC] text-[#86DAFF]' : 'border-transparent text-[#BDD0E2] hover:text-white'
                   }`}
               >
                 <Shield size={16} /> Audit Trail
@@ -107,38 +107,38 @@ const params = new URLSearchParams();
           <div className="p-4">
             {activeTab === 'incidents' ? (
               loading ? (
-                <div className="py-12 text-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin mx-auto" /></div>
+                <div className="py-12 text-center"><Loader2 className="w-6 h-6 text-[#86DAFF] animate-spin mx-auto" /></div>
               ) : activities.length === 0 ? (
                 <div className="text-center py-16">
-                  <Activity className="w-10 h-10 text-[#3A3B3C] mx-auto mb-3" />
-                  <p className="text-[#B0B3B8]">No Activity Logged Yet</p>
-                  <p className="text-xs text-[#B0B3B8]/60 mt-1">Floor Calls, Incidents, And Actions Will Appear Here</p>
+                  <Activity className="w-10 h-10 text-[#7F97B0] mx-auto mb-3" />
+                  <p className="text-[#BDD0E2]">No Activity Logged Yet</p>
+                  <p className="text-xs text-[#BDD0E2]/60 mt-1">Floor Calls, Incidents, And Actions Will Appear Here</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {activities.map(a => (
-                    <div key={a.id} className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 flex items-start gap-3">
+                    <div key={a.id} className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 flex items-start gap-3">
                       <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
-                        style={{ backgroundColor: typeColors[a.incident_type] || '#B0B3B8' }} />
+                        style={{ backgroundColor: typeColors[a.incident_type] || '#BDD0E2' }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-[#B0B3B8] uppercase">{a.incident_type?.replace('_', ' ')}</span>
-                          {a.table_number && <span className="text-xs text-[#B0B3B8]">• Table {a.table_number}</span>}
-                          <span className="text-xs text-[#B0B3B8]/50">
+                          <span className="text-xs font-medium text-[#BDD0E2] uppercase">{a.incident_type?.replace('_', ' ')}</span>
+                          {a.table_number && <span className="text-xs text-[#BDD0E2]">• Table {a.table_number}</span>}
+                          <span className="text-xs text-[#BDD0E2]/50">
                             {a.created_at ? new Date(a.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
                           </span>
                         </div>
-                        <p className="text-sm text-[#E4E6EB]">{a.description}</p>
+                        <p className="text-sm text-[#F2F7FF]">{a.description}</p>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${a.incident_status === 'open' ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${a.incident_status === 'open' ? 'bg-[#22D3EE]/20 text-[#22D3EE]' :
                         a.incident_status === 'resolved' ? 'bg-[#31A24C]/20 text-[#31A24C]' :
-                          'bg-[#3A3B3C] text-[#B0B3B8]'
+                          'bg-[#132A42] text-[#BDD0E2]'
                         }`}>{a.incident_status}</span>
                     </div>
                   ))}
                 </div>
               )) : (
-              <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
+              <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
                 <AuditLogViewer
                   logs={auditLogs}
                   total={auditLogs.length}

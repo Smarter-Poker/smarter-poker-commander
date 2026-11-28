@@ -113,19 +113,19 @@ const JOB_TYPE_LABELS = {
 };
 
 const JOB_TYPE_COLORS = {
-  seat_change: '#1877F2',
-  table_break: '#1877F2',
+  seat_change: '#1981EC',
+  table_break: '#1981EC',
   buyin: '#31A24C',
-  rebuy: '#F59E0B',
-  addon: '#F59E0B',
+  rebuy: '#22D3EE',
+  addon: '#22D3EE',
   payout: '#31A24C',
-  chip_race: '#F59E0B',
-  custom: '#B0B3B8'
+  chip_race: '#22D3EE',
+  custom: '#BDD0E2'
 };
 
 const STATUS_COLORS = {
-  queued: '#F59E0B',
-  printing: '#1877F2',
+  queued: '#22D3EE',
+  printing: '#1981EC',
   printed: '#31A24C',
   voided: '#EF4444'
 };
@@ -610,15 +610,15 @@ export default function PrintStation() {
   /* ─── Render ───────────────────────────────────────────────── */
 
   const renderJob = (job) => {
-    const typeColor = JOB_TYPE_COLORS[job.job_type] || '#B0B3B8';
-    const statusColor = STATUS_COLORS[job.status] || '#B0B3B8';
+    const typeColor = JOB_TYPE_COLORS[job.job_type] || '#BDD0E2';
+    const statusColor = STATUS_COLORS[job.status] || '#BDD0E2';
     const count = Number(job.receipt_count) || 0;
     const isQueued = job.status === 'queued';
 
     return (
       <div
         key={job.id}
-        className={`bg-[#242526] border rounded-xl p-4 ${isQueued ? 'border-[#F59E0B]/50' : 'border-[#3A3B3C]'}`}
+        className={`bg-[#0A1829] border rounded-xl p-4 ${isQueued ? 'border-[#22D3EE]/50' : 'border-[#445E77]'}`}
       >
         <div className="flex items-start gap-3">
           <div
@@ -643,14 +643,14 @@ export default function PrintStation() {
                 {String(job.status || '').replace(/^./, c => c.toUpperCase())}
               </span>
               {job.table_number !== null && job.table_number !== undefined && (
-                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#3A3B3C] text-[#E4E6EB]">
+                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#132A42] text-[#F2F7FF]">
                   Table {job.table_number}
                 </span>
               )}
               {/* A job with no table belongs to no room. Say so, so nobody
                   assumes another station has it covered. */}
               {(job.table_number === null || job.table_number === undefined) && job.status === 'queued' && (
-                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#B0B3B8]/20 text-[#B0B3B8]">
+                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#BDD0E2]/20 text-[#BDD0E2]">
                   Unrouted
                 </span>
               )}
@@ -658,7 +658,7 @@ export default function PrintStation() {
                   pulling, so the floor can print it here anyway if the other
                   room's printer is down. */}
               {job.status === 'queued' && !isMine(job) && (
-                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#F59E0B]/15 text-[#F59E0B]">
+                <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg bg-[#22D3EE]/15 text-[#22D3EE]">
                   Another Station
                 </span>
               )}
@@ -666,7 +666,7 @@ export default function PrintStation() {
 
             <p className="text-[15px] font-bold text-white leading-snug break-words">{titleFor(job)}</p>
 
-            <p className="text-xs text-[#B0B3B8] mt-1">
+            <p className="text-xs text-[#BDD0E2] mt-1">
               {count.toLocaleString()} Card{count === 1 ? '' : 's'}
               {' '}&middot;{' '}{formatAge(job.created_at)}
               {job.source ? ` · ${String(job.source).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}` : ''}
@@ -682,7 +682,7 @@ export default function PrintStation() {
           <button
             onClick={() => runAction(job, 'print')}
             disabled={busyId === `${job.id}-print`}
-            className="flex-1 min-w-[110px] min-h-[44px] rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+            className="flex-1 min-w-[110px] min-h-[44px] rounded-xl bg-[#0C55C0] text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
           >
             {busyId === `${job.id}-print`
               ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -712,7 +712,7 @@ export default function PrintStation() {
           <button
             onClick={() => runAction(job, 'reprint')}
             disabled={busyId === `${job.id}-reprint`}
-            className="flex-1 min-w-[100px] min-h-[44px] rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+            className="flex-1 min-w-[100px] min-h-[44px] rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
           >
             <RotateCcw className="w-4 h-4" /> Reprint
           </button>
@@ -733,19 +733,19 @@ export default function PrintStation() {
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         </Head>
 
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
           {/* Header */}
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-start gap-3" data-page-bar="">
+          <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5 flex items-start gap-3" data-page-bar="">
             <h1 className="sr-only">{station.name ? station.name : 'Print Station'}</h1>
             <div className="flex-1 min-w-0 min-h-[44px] flex flex-col justify-center" role="status">
               {station.name && (
                 <p className="text-sm font-semibold text-white flex items-center gap-2" aria-hidden="true">
-                  <Printer className="w-4 h-4 text-[#1877F2]" />
+                  <Printer className="w-4 h-4 text-[#86DAFF]" />
                   {station.name}
                 </p>
               )}
-              <p className="text-xs text-[#B0B3B8]">
+              <p className="text-xs text-[#BDD0E2]">
                 {queued.length.toLocaleString()} Job{queued.length === 1 ? '' : 's'} Waiting
                 {' '}&middot;{' '}{totalCards.toLocaleString()} Card{totalCards === 1 ? '' : 's'}
                 {stationFilterActive && (
@@ -760,10 +760,10 @@ export default function PrintStation() {
             </div>
             <button
               onClick={manualRefresh}
-              className="w-11 h-11 rounded-xl flex items-center justify-center active:bg-[#3A3B3C] active:scale-[0.98]"
+              className="w-11 h-11 rounded-xl flex items-center justify-center active:bg-[#132A42] active:scale-[0.98]"
               aria-label="Refresh"
             >
-              <RefreshCw className={`w-5 h-5 text-[#B0B3B8] ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-5 h-5 text-[#BDD0E2] ${refreshing ? 'animate-spin' : ''}`} />
             </button>
             <PageHelp
               title="Print Station"
@@ -780,7 +780,7 @@ export default function PrintStation() {
                   <AlertTriangle className="w-6 h-6 text-[#EF4444] shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm font-bold text-[#EF4444]">Popups Are Blocked. Cards Cannot Print.</p>
-                    <p className="text-xs text-[#E4E6EB] mt-1">
+                    <p className="text-xs text-[#F2F7FF] mt-1">
                       Allow Popups For This Site In The Browser Address Bar, Then Resume.
                       Nothing Was Lost, Every Job Is Still In The Queue.
                     </p>
@@ -803,18 +803,18 @@ export default function PrintStation() {
                   <p className="text-sm font-bold text-[#31A24C]">
                     New Cards, {Number(flash.count || 0).toLocaleString()} To Collect
                   </p>
-                  <p className="text-xs text-[#B0B3B8] truncate">{flash.label}</p>
+                  <p className="text-xs text-[#BDD0E2] truncate">{flash.label}</p>
                 </div>
               </div>
             )}
 
             {/* Station routing. A venue with two rooms runs a printer in each,
                 and this is where a device says which work is its own. */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white">Station Routing</p>
-                  <p className="text-xs text-[#B0B3B8] mt-0.5">
+                  <p className="text-xs text-[#BDD0E2] mt-0.5">
                     {stationFilterActive
                       ? `${station.name || 'This Printer'} Pulls ${
                         station.tables.length > 0 ? `Tables ${formatTableList(station.tables)}` : 'Selected Job Types'
@@ -824,16 +824,16 @@ export default function PrintStation() {
                 </div>
                 <button
                   onClick={() => setStationOpen(o => !o)}
-                  className="min-h-[44px] px-4 rounded-xl text-sm font-bold bg-[#3A3B3C] text-[#E4E6EB] active:scale-[0.98]"
+                  className="min-h-[44px] px-4 rounded-xl text-sm font-bold bg-[#132A42] text-[#F2F7FF] active:scale-[0.98]"
                 >
                   {stationOpen ? 'Close' : 'Set Up'}
                 </button>
               </div>
 
               {stationOpen && (
-                <div className="mt-4 space-y-3 border-t border-[#3A3B3C] pt-4">
+                <div className="mt-4 space-y-3 border-t border-[#445E77] pt-4">
                   <div>
-                    <label className="text-xs font-bold text-[#B0B3B8] block mb-1" htmlFor="station-name">
+                    <label className="text-xs font-bold text-[#BDD0E2] block mb-1" htmlFor="station-name">
                       Station Name
                     </label>
                     <input
@@ -842,12 +842,12 @@ export default function PrintStation() {
                       value={stationDraft.name}
                       onChange={e => setStationDraft(d => ({ ...d, name: e.target.value }))}
                       placeholder="Main Room Printer"
-                      className="w-full min-h-[44px] rounded-xl bg-[#18191A] border border-[#3A3B3C] px-3 text-sm text-white"
+                      className="w-full min-h-[44px] rounded-xl bg-[#040D18] border border-[#445E77] px-3 text-sm text-white"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-[#B0B3B8] block mb-1" htmlFor="station-tables">
+                    <label className="text-xs font-bold text-[#BDD0E2] block mb-1" htmlFor="station-tables">
                       Tables (Blank Means Every Table)
                     </label>
                     <input
@@ -857,15 +857,15 @@ export default function PrintStation() {
                       value={stationDraft.tables}
                       onChange={e => setStationDraft(d => ({ ...d, tables: e.target.value }))}
                       placeholder="1-12, 20"
-                      className="w-full min-h-[44px] rounded-xl bg-[#18191A] border border-[#3A3B3C] px-3 text-sm text-white"
+                      className="w-full min-h-[44px] rounded-xl bg-[#040D18] border border-[#445E77] px-3 text-sm text-white"
                     />
-                    <p className="text-[11px] text-[#B0B3B8] mt-1">
+                    <p className="text-[11px] text-[#BDD0E2] mt-1">
                       Ranges And Lists Both Work. Example: 1-12, 20, 21
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-[#B0B3B8] mb-2">Job Types (None Selected Means All)</p>
+                    <p className="text-xs font-bold text-[#BDD0E2] mb-2">Job Types (None Selected Means All)</p>
                     <div className="flex flex-wrap gap-2">
                       {Object.keys(JOB_TYPE_LABELS).map(type => {
                         const on = (stationDraft.jobTypes || []).includes(type);
@@ -874,7 +874,7 @@ export default function PrintStation() {
                             key={type}
                             onClick={() => toggleDraftType(type)}
                             className={`min-h-[40px] px-3 rounded-xl text-xs font-bold active:scale-[0.98] ${
-                              on ? 'bg-[#1877F2] text-white' : 'bg-[#18191A] border border-[#3A3B3C] text-[#B0B3B8]'
+                              on ? 'bg-[#0C55C0] text-white' : 'bg-[#040D18] border border-[#445E77] text-[#BDD0E2]'
                             }`}
                           >
                             {JOB_TYPE_LABELS[type]}
@@ -884,7 +884,7 @@ export default function PrintStation() {
                     </div>
                   </div>
 
-                  <label className="flex items-center gap-3 text-sm text-[#E4E6EB]">
+                  <label className="flex items-center gap-3 text-sm text-[#F2F7FF]">
                     <input
                       type="checkbox"
                       checked={stationDraft.includeUnrouted !== false}
@@ -893,7 +893,7 @@ export default function PrintStation() {
                     />
                     Also Print Jobs That Have No Table
                   </label>
-                  <p className="text-[11px] text-[#B0B3B8]">
+                  <p className="text-[11px] text-[#BDD0E2]">
                     Payouts And Chip Race Cards Carry No Table Number. Leave This
                     On At One Station At Least, Or Nothing Will Print Them.
                   </p>
@@ -901,13 +901,13 @@ export default function PrintStation() {
                   <div className="flex flex-wrap gap-2 pt-1">
                     <button
                       onClick={saveStation}
-                      className="flex-1 min-w-[120px] min-h-[44px] rounded-xl bg-[#1877F2] text-white text-sm font-bold active:scale-[0.98]"
+                      className="flex-1 min-w-[120px] min-h-[44px] rounded-xl bg-[#0C55C0] text-white text-sm font-bold active:scale-[0.98]"
                     >
                       Save Station
                     </button>
                     <button
                       onClick={clearStationFilter}
-                      className="flex-1 min-w-[120px] min-h-[44px] rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:scale-[0.98]"
+                      className="flex-1 min-w-[120px] min-h-[44px] rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:scale-[0.98]"
                     >
                       Pull Every Job
                     </button>
@@ -917,10 +917,10 @@ export default function PrintStation() {
             </div>
 
             {/* Auto print toggle */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center gap-3">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white">Auto Print</p>
-                <p className="text-xs text-[#B0B3B8] mt-0.5">
+                <p className="text-xs text-[#BDD0E2] mt-0.5">
                   {autoPrint
                     ? 'New Jobs Print The Moment They Arrive.'
                     : 'Jobs Wait Here Until You Tap Print.'}
@@ -931,7 +931,7 @@ export default function PrintStation() {
                 className={`min-h-[44px] px-4 rounded-xl text-sm font-bold flex items-center gap-2 active:scale-[0.98] ${
                   autoPrint
                     ? 'bg-[#31A24C] text-white'
-                    : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                    : 'bg-[#132A42] text-[#BDD0E2]'
                 }`}
               >
                 {autoPrint ? <Zap className="w-4 h-4" /> : <ZapOff className="w-4 h-4" />}
@@ -970,8 +970,8 @@ export default function PrintStation() {
                   onClick={() => setTab(t.key)}
                   className={`flex-1 min-h-[44px] rounded-xl text-sm font-bold active:scale-[0.98] ${
                     tab === t.key
-                      ? 'bg-[#1877F2] text-white'
-                      : 'bg-[#242526] border border-[#3A3B3C] text-[#B0B3B8]'
+                      ? 'bg-[#0C55C0] text-white'
+                      : 'bg-[#0A1829] border border-[#445E77] text-[#BDD0E2]'
                   }`}
                 >
                   {t.label}
@@ -982,17 +982,17 @@ export default function PrintStation() {
             {/* List */}
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
               </div>
             ) : list.length === 0 ? (
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-8 text-center">
-                <Layers className="w-10 h-10 text-[#3A3B3C] mx-auto mb-3" />
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-8 text-center">
+                <Layers className="w-10 h-10 text-[#7F97B0] mx-auto mb-3" />
                 <p className="text-base font-bold text-white">
                   {tab === 'queue' ? 'No Cards Waiting.'
                     : tab === 'all' ? 'Nothing Queued Anywhere In The Venue.'
                       : 'Nothing Printed Yet.'}
                 </p>
-                <p className="text-sm text-[#B0B3B8] mt-2 leading-relaxed">
+                <p className="text-sm text-[#BDD0E2] mt-2 leading-relaxed">
                   {tab === 'queue'
                     ? (stationFilterActive
                       ? 'Nothing Waiting For This Station. Check All Jobs For Work Routed Elsewhere.'

@@ -55,8 +55,8 @@ export function useConfirmAction() {
 
     const colors = {
       danger: { bg: '#EF4444', border: '#EF444444', text: '#EF4444' },
-      warning: { bg: '#F59E0B', border: '#F59E0B44', text: '#F59E0B' },
-      info: { bg: '#1877F2', border: '#1877F244', text: '#1877F2' },
+      warning: { bg: '#22D3EE', border: '#22D3EE44', text: '#22D3EE' },
+      info: { bg: '#1981EC', border: '#1981EC44', text: '#1981EC' },
     };
     const c = colors[state.variant] || colors.danger;
 
@@ -68,7 +68,7 @@ export function useConfirmAction() {
         padding: 16,
       }} onClick={handleCancel}>
         <div style={{
-          background: '#242526', borderRadius: 16,
+          background: '#0A1829', borderRadius: 16,
           border: `1px solid ${c.border}`,
           maxWidth: 400, width: '100%',
           padding: 24,
@@ -77,7 +77,7 @@ export function useConfirmAction() {
         }} onClick={e => e.stopPropagation()}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
             <AlertTriangle size={20} color={c.text} style={{ flexShrink: 0, marginTop: 2 }} />
-            <p style={{ color: '#E4E6EB', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
+            <p style={{ color: '#F2F7FF', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
               {state.message}
             </p>
           </div>
@@ -86,7 +86,7 @@ export function useConfirmAction() {
               onClick={handleCancel}
               style={{
                 flex: 1, height: 42, borderRadius: 10,
-                background: '#3A3B3C', border: 'none', color: '#E4E6EB',
+                background: '#2A4560', border: 'none', color: '#F2F7FF',
                 fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}
             >

@@ -115,14 +115,14 @@ td:last-child{text-align:right;font-weight:bold}
   return (
     <CommanderLayout title="Daily Summary" backHref="/commander/dashboard?card=reports">
       <SEOHead title="Commander - Daily Summary" description="Shift And Daily Summary Report With Cashier Breakdown." noindex={true} />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-3 flex items-center gap-3">
           <h1 className="sr-only">Shift / Daily Summary</h1>
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
-            className="bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg px-3 py-2 text-sm text-[#E4E6EB]" />
+            className="bg-[#132A42] border border-[#5A7590] rounded-lg px-3 py-2 text-sm text-[#F2F7FF]" />
           {cashierData && (
             <button onClick={printReport}
-              className="bg-[#1877F2] text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5">
+              className="bg-[#0C55C0] text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5">
               <Printer className="w-4 h-4" /> Print
             </button>
           )}
@@ -134,42 +134,42 @@ td:last-child{text-align:right;font-weight:bold}
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>
+          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>
         ) : (
           <div className="p-4 space-y-4">
             {/* Top Stats */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard icon={DollarSign} label="Net Revenue" value={`$${(cashierData?.netRevenue || 0).toLocaleString()}`} color="#31A24C" />
-              <StatCard icon={BarChart3} label="Transactions" value={cashierData?.transactions?.length || 0} color="#1877F2" />
-              <StatCard icon={Users} label="Total Players" value={data?.total_players || 0} color="#F59E0B" />
-              <StatCard icon={TrendingUp} label="Tournaments" value={data?.tournaments_run || 0} color="#8B5CF6" />
+              <StatCard icon={BarChart3} label="Transactions" value={cashierData?.transactions?.length || 0} color="#1981EC" />
+              <StatCard icon={Users} label="Total Players" value={data?.total_players || 0} color="#22D3EE" />
+              <StatCard icon={TrendingUp} label="Tournaments" value={data?.tournaments_run || 0} color="#5AA9FF" />
             </div>
 
             {/* Payment Breakdown */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
-              <h3 className="text-sm font-semibold text-[#B0B3B8] uppercase mb-3">Payment Breakdown</h3>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
+              <h3 className="text-sm font-semibold text-[#BDD0E2] uppercase mb-3">Payment Breakdown</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[#31A24C]/10 border border-[#31A24C]/20 rounded-lg p-3 text-center">
                   <Banknote className="w-5 h-5 mx-auto mb-1 text-[#31A24C]" />
                   <p className="text-xl font-black text-[#31A24C]">${(cashierData?.cashTotal || 0).toLocaleString()}</p>
-                  <p className="text-[10px] text-[#B0B3B8] uppercase font-semibold">Cash</p>
+                  <p className="text-[10px] text-[#BDD0E2] uppercase font-semibold">Cash</p>
                 </div>
-                <div className="bg-[#1877F2]/10 border border-[#1877F2]/20 rounded-lg p-3 text-center">
-                  <CreditCard className="w-5 h-5 mx-auto mb-1 text-[#1877F2]" />
-                  <p className="text-xl font-black text-[#1877F2]">${(cashierData?.cardTotal || 0).toLocaleString()}</p>
-                  <p className="text-[10px] text-[#B0B3B8] uppercase font-semibold">Card</p>
+                <div className="bg-[#0C55C0]/10 border border-[#1981EC]/20 rounded-lg p-3 text-center">
+                  <CreditCard className="w-5 h-5 mx-auto mb-1 text-[#86DAFF]" />
+                  <p className="text-xl font-black text-[#86DAFF]">${(cashierData?.cardTotal || 0).toLocaleString()}</p>
+                  <p className="text-[10px] text-[#BDD0E2] uppercase font-semibold">Card</p>
                 </div>
               </div>
             </div>
 
             {/* Category Breakdown */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
-              <h3 className="text-sm font-semibold text-[#B0B3B8] uppercase mb-3">Category Breakdown</h3>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
+              <h3 className="text-sm font-semibold text-[#BDD0E2] uppercase mb-3">Category Breakdown</h3>
               <div className="space-y-2">
                 <CategoryRow icon={Clock} label="Time Sales" amount={cashierData?.time?.total || 0} count={cashierData?.time?.count || 0}
-                  cash={cashierData?.time?.cash || 0} card={cashierData?.time?.card || 0} color="#F59E0B" />
+                  cash={cashierData?.time?.cash || 0} card={cashierData?.time?.card || 0} color="#22D3EE" />
                 <CategoryRow icon={CreditCard} label="Memberships" amount={cashierData?.membership?.total || 0} count={cashierData?.membership?.count || 0}
-                  cash={cashierData?.membership?.cash || 0} card={cashierData?.membership?.card || 0} color="#8B5CF6" />
+                  cash={cashierData?.membership?.cash || 0} card={cashierData?.membership?.card || 0} color="#5AA9FF" />
                 <CategoryRow icon={DollarSign} label="Buy-Ins" amount={cashierData?.buyIn?.total || 0} count={cashierData?.buyIn?.count || 0}
                   cash={cashierData?.buyIn?.cash || 0} card={cashierData?.buyIn?.card || 0} color="#31A24C" />
                 {(cashierData?.voids?.count || 0) > 0 && (
@@ -180,17 +180,17 @@ td:last-child{text-align:right;font-weight:bold}
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
-              <h3 className="text-sm font-semibold text-[#B0B3B8] uppercase mb-3">Transactions</h3>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
+              <h3 className="text-sm font-semibold text-[#BDD0E2] uppercase mb-3">Transactions</h3>
               {(cashierData?.transactions?.length || 0) > 0 ? (
                 <div className="space-y-1 max-h-80 overflow-y-auto">
                   {cashierData.transactions.map(tx => {
                     const isVoidTx = (tx.notes || '').includes('VOID') || (tx.notes || '').includes('REFUND');
                     return (
-                      <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-[#3A3B3C] last:border-0">
+                      <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-[#445E77] last:border-0">
                         <div>
                           <p className="text-xs font-medium text-white">{tx.player_name}</p>
-                          <p className="text-[10px] text-[#B0B3B8]">{tx.notes || 'Buy-In'} • {tx.payment_method} • {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-[10px] text-[#BDD0E2]">{tx.notes || 'Buy-In'} • {tx.payment_method} • {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         <span className={`text-sm font-bold ${isVoidTx ? 'text-[#EF4444]' : 'text-[#31A24C]'}`}>
                           {isVoidTx ? '-' : ''}${parseFloat(tx.amount).toLocaleString()}
@@ -200,7 +200,7 @@ td:last-child{text-align:right;font-weight:bold}
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-[#B0B3B8] text-center py-4">No Transactions For This Date</p>
+                <p className="text-sm text-[#BDD0E2] text-center py-4">No Transactions For This Date</p>
               )}
             </div>
           </div>
@@ -212,29 +212,29 @@ td:last-child{text-align:right;font-weight:bold}
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 text-center">
+    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 text-center">
       <Icon className="w-5 h-5 mx-auto mb-2" style={{ color }} />
       <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-[#B0B3B8] uppercase mt-1">{label}</p>
+      <p className="text-xs text-[#BDD0E2] uppercase mt-1">{label}</p>
     </div>
   );
 }
 
 function CategoryRow({ icon: Icon, label, amount, count, cash, card, color, isNegative }) {
   return (
-    <div className="bg-[#18191A] rounded-lg p-3 flex items-center justify-between">
+    <div className="bg-[#040D18] rounded-lg p-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Icon className="w-4 h-4" style={{ color }} />
         <div>
           <p className="text-xs font-semibold text-white">{label}</p>
-          {cash + card > 0 && <p className="text-[9px] text-[#B0B3B8]">{cash} Cash / {card} Card</p>}
+          {cash + card > 0 && <p className="text-[9px] text-[#BDD0E2]">{cash} Cash / {card} Card</p>}
         </div>
       </div>
       <div className="text-right">
         <p className={`text-sm font-bold ${isNegative ? 'text-[#EF4444]' : ''}`} style={!isNegative ? { color } : {}}>
           {isNegative ? '-' : ''}${amount.toLocaleString()}
         </p>
-        <p className="text-[9px] text-[#B0B3B8]">{count} Transactions</p>
+        <p className="text-[9px] text-[#BDD0E2]">{count} Transactions</p>
       </div>
     </div>
   );

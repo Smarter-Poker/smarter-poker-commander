@@ -105,7 +105,7 @@ return { 'x-staff-session': staff };
         className="min-h-screen bg-black text-white font-['Inter'] select-none overflow-hidden flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#F59E0B] px-8 py-4 flex items-center justify-between">
+        <div className="bg-[#22D3EE] px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <h1 className="text-3xl font-bold tracking-wide text-black">DEALER ROTATION</h1>
             <span className="text-lg text-black/70">
@@ -132,9 +132,9 @@ return { 'x-staff-session': staff };
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {dealing.map(d => (
-                <div key={d.id} className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
-                    <span className="text-lg font-bold text-[#1877F2]">T{d.current_table || '?'}</span>
+                <div key={d.id} className="bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#0C55C0]/20 flex items-center justify-center">
+                    <span className="text-lg font-bold text-[#86DAFF]">T{d.current_table || '?'}</span>
                   </div>
                   <div>
                     <p className="text-lg font-semibold text-white">{d.name || d.first_name}</p>
@@ -162,13 +162,13 @@ return { 'x-staff-session': staff };
               ) : (
                 <div className="space-y-2">
                   {onBreak.map(d => (
-                    <div key={d.id} className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-3 flex items-center gap-3 break-pulse">
-                      <div className="w-8 h-8 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
-                        <span className="text-sm font-bold text-[#F59E0B]">B</span>
+                    <div key={d.id} className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-3 flex items-center gap-3 break-pulse">
+                      <div className="w-8 h-8 rounded-full bg-[#22D3EE]/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-[#22D3EE]">B</span>
                       </div>
                       <div>
                         <p className="text-base font-medium text-white">{d.name || d.first_name}</p>
-                        <p className="text-xs text-[#F59E0B]/60">
+                        <p className="text-xs text-[#22D3EE]/60">
                           {d.break_started ? `${Math.floor((now - new Date(d.break_started)) / 60000)}m` : 'On break'}
                         </p>
                       </div>
@@ -201,7 +201,7 @@ return { 'x-staff-session': staff };
 
         {/* Dealer Push & Break Ticker */}
         <DealerTicker
-          accentColor="#F59E0B"
+          accentColor="#22D3EE"
           bgColor="#000"
           fontSize={18}
           borderColor="rgba(255,255,255,0.1)"

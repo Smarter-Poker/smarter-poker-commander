@@ -110,14 +110,14 @@ export default function SeatPlayerModal({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#10B981] rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Seat Player</h2>
-              <p className="text-sm text-[#64748B]">
+              <p className="text-sm text-[#9FB3C8]">
                 {player.player_name || 'Player'} - {player.stakes} {player.game_type?.toUpperCase()}
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function SeatPlayerModal({
             onClick={resetAndClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -140,8 +140,8 @@ export default function SeatPlayerModal({
 
           {matchingGames.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-[#64748B]">No Matching Games Available</p>
-              <p className="text-sm text-[#4A5E78] mt-1">
+              <p className="text-[#9FB3C8]">No Matching Games Available</p>
+              <p className="text-sm text-[#8FA6BE] mt-1">
                 Open A {player.stakes} {player.game_type?.toUpperCase()} Game First
               </p>
             </div>
@@ -169,7 +169,7 @@ export default function SeatPlayerModal({
                         <div className="font-medium">
                           {game.table_name || `Table ${game.table_number}`}
                         </div>
-                        <div className={`text-sm ${selectedGame?.id === game.id ? 'text-white/80' : 'text-[#64748B]'}`}>
+                        <div className={`text-sm ${selectedGame?.id === game.id ? 'text-white/80' : 'text-[#9FB3C8]'}`}>
                           {game.player_count || 0}/{game.max_players} Players
                         </div>
                       </button>
@@ -204,7 +204,7 @@ export default function SeatPlayerModal({
 
         {/* Footer */}
         {matchingGames.length > 0 && (
-          <div className="p-4 border-t border-[#4A5E78]">
+          <div className="p-4 border-t border-[#445E77]">
             <button
               onClick={handleSubmit}
               disabled={!selectedGame || !selectedSeat || submitting}

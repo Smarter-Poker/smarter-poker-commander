@@ -11,7 +11,7 @@
  *   - Custom ticker messages from venue settings
  * 
  * Props:
- *   accentColor: string (hex) - ticker text color (default: #D4AF37 gold)
+ *   accentColor: string (hex) - ticker text color (default: #86DAFF gold)
  *   bgColor: string (hex) - background color (default: transparent)
  *   fontSize: number - font size in px (default: 18)
  *   borderColor: string - top border color (default: #333)
@@ -29,7 +29,7 @@ function minutesSince(dateStr) {
 }
 
 export default function DealerTicker({
-    accentColor = '#D4AF37',
+    accentColor = '#86DAFF',
     bgColor = 'transparent',
     fontSize = 18,
     borderColor = '#333',

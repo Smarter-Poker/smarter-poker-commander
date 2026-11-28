@@ -146,15 +146,15 @@ const headers = { };
   });
 
   const GAME_COLORS = {
-    'NLH': '#1877F2', 'PLO': '#31A24C', 'Mixed': '#F59E0B',
-    'Omaha': '#EF4444', 'Stud': '#A855F7', 'Cash': '#B0B3B8'
+    'NLH': '#1981EC', 'PLO': '#31A24C', 'Mixed': '#22D3EE',
+    'Omaha': '#EF4444', 'Stud': '#5AA9FF', 'Cash': '#BDD0E2'
   };
 
   const getGameColor = (name) => {
     for (const [key, color] of Object.entries(GAME_COLORS || {})) {
       if (name.includes(key)) return color;
     }
-    return '#1877F2';
+    return '#1981EC';
   };
 
   return (
@@ -175,7 +175,7 @@ const headers = { };
         className="h-screen bg-black text-white font-['Inter'] select-none flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#1877F2] px-8 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#0C55C0] px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Now Playing</h1>
             <p className="text-sm opacity-80">{activeTables.length} Tables Running, {Object.keys(waitlists || {}).length > 0 ? `${Object.values(waitlists || {}).reduce((s, n) => s + n, 0)} On Waitlist` : 'No Waitlist'}</p>
@@ -271,7 +271,7 @@ const headers = { };
                   {Object.entries(waitlists || {}).map(([game, count]) => (
                     <div key={game} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/3">
                       <span className="text-sm text-white">{game}</span>
-                      <span className="text-lg font-bold text-[#F59E0B]">{count}</span>
+                      <span className="text-lg font-bold text-[#22D3EE]">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -286,14 +286,14 @@ const headers = { };
                 <div className="space-y-2">
                   {tournaments.map(t => {
                     const statusColors = {
-                      scheduled: '#B0B3B8', registering: '#1877F2', registration: '#1877F2',
-                      running: '#31A24C', break: '#F59E0B', final_table: '#A855F7'
+                      scheduled: '#BDD0E2', registering: '#1981EC', registration: '#1981EC',
+                      running: '#31A24C', break: '#22D3EE', final_table: '#5AA9FF'
                     };
                     const statusLabels = {
                       scheduled: 'Upcoming', registering: 'Reg Open', registration: 'Reg Open',
                       running: 'In Progress', break: 'On Break', final_table: 'Final Table'
                     };
-                    const color = statusColors[t.status] || '#B0B3B8';
+                    const color = statusColors[t.status] || '#BDD0E2';
                     return (
                       <>
                         <div key={t.id} className="bg-white/3 rounded-lg p-3">

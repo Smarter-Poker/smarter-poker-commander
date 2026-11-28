@@ -93,7 +93,7 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#10B981] rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-white" />
@@ -104,7 +104,7 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
             onClick={onClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -136,7 +136,7 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
               Phone Number
             </label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#4A5E78]" />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA6BE]" />
               <input
                 type="tel"
                 value={playerPhone}
@@ -145,7 +145,7 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
                 className="cmd-input w-full h-12 pl-10 pr-3"
               />
             </div>
-            <p className="text-xs text-[#64748B] mt-1">For SMS Notifications When Seat Is Ready</p>
+            <p className="text-xs text-[#9FB3C8] mt-1">For SMS Notifications When Seat Is Ready</p>
           </div>
 
           {/* Quick Select from Active Games */}

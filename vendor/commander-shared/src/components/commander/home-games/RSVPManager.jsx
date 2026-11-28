@@ -12,7 +12,7 @@ import { rsvpGuestCount, rsvpSeatCount } from './rsvpCapacity.mjs';
 
 const RSVP_STATUS = {
   yes: { label: 'Going', color: '#10B981', icon: UserCheck },
-  maybe: { label: 'Maybe', color: '#F59E0B', icon: Clock },
+  maybe: { label: 'Maybe', color: '#22D3EE', icon: Clock },
   no: { label: 'Declined', color: '#EF4444', icon: UserX },
   waitlist: { label: 'Waitlist', color: '#6B7280', icon: Clock },
   pending: { label: 'Pending', color: '#3B82F6', icon: Clock }
@@ -77,7 +77,7 @@ export default function RSVPManager({
             >
               <Icon size={18} className="mx-auto mb-1" style={{ color: config.color }} />
               <p className="text-lg font-bold text-white">{count}</p>
-              <p className="text-xs text-[#64748B]">{config.label}</p>
+              <p className="text-xs text-[#9FB3C8]">{config.label}</p>
             </button>
           );
         })}
@@ -86,7 +86,7 @@ export default function RSVPManager({
       {/* Capacity Bar */}
       <div className="cmd-panel p-3">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-[#64748B]">Capacity</span>
+          <span className="text-[#9FB3C8]">Capacity</span>
           <span className="text-white font-medium">
             {confirmed} / {capacity}
             {spotsLeft > 0 && (
@@ -110,7 +110,7 @@ export default function RSVPManager({
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9FB3C8]" />
         <input
           type="text"
           value={searchTerm}
@@ -124,15 +124,15 @@ export default function RSVPManager({
       <div className="cmd-panel overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-8 text-center">
-            <Users size={36} className="mx-auto text-[#4A5E78] mb-2" />
-            <p className="text-[#64748B]">
+            <Users size={36} className="mx-auto text-[#8FA6BE] mb-2" />
+            <p className="text-[#9FB3C8]">
               {searchTerm || filterStatus !== 'all'
                 ? 'No matching RSVPs'
                 : 'No RSVPs yet'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#4A5E78]">
+          <div className="divide-y divide-[#445E77]">
             {filtered.map(rsvp => {
               const playerName = rsvp.player_name || rsvp.profiles?.display_name || 'Unknown';
               const config = RSVP_STATUS[rsvp.status] || RSVP_STATUS.pending;
@@ -152,7 +152,7 @@ export default function RSVPManager({
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
-                          <Users size={18} className="text-[#64748B]" />
+                          <Users size={18} className="text-[#9FB3C8]" />
                         )}
                       </div>
 
@@ -167,11 +167,11 @@ export default function RSVPManager({
                             {config.label}
                           </span>
                           {guestCount > 0 && (
-                            <span className="text-xs text-[#64748B]">+{guestCount} guest(s)</span>
+                            <span className="text-xs text-[#9FB3C8]">+{guestCount} guest(s)</span>
                           )}
                         </div>
                         {rsvp.message && (
-                          <p className="text-xs text-[#64748B] mt-0.5 flex items-center gap-1">
+                          <p className="text-xs text-[#9FB3C8] mt-0.5 flex items-center gap-1">
                             <MessageSquare size={12} />
                             {rsvp.message.length > 50 ? rsvp.message.slice(0, 50) + '...' : rsvp.message}
                           </p>
@@ -184,7 +184,7 @@ export default function RSVPManager({
                       {isHost && onSendMessage && rsvp.user_id && (
                         <button
                           onClick={() => onSendMessage(rsvp.user_id)}
-                          className="p-2 rounded-lg border border-[#4A5E78] text-[#22D3EE] hover:border-[#22D3EE] transition-colors"
+                          className="p-2 rounded-lg border border-[#445E77] text-[#22D3EE] hover:border-[#22D3EE] transition-colors"
                           title="Message Player"
                         >
                           <MessageSquare size={16} />
@@ -195,7 +195,7 @@ export default function RSVPManager({
                           <button
                             onClick={() => onApprove?.(rsvp.id)}
                             disabled={isLoading}
-                            className="p-2 rounded-lg border border-[#4A5E78] text-[#10B981] hover:border-[#10B981] transition-colors disabled:opacity-50"
+                            className="p-2 rounded-lg border border-[#445E77] text-[#10B981] hover:border-[#10B981] transition-colors disabled:opacity-50"
                             title="Approve"
                           >
                             <Check size={16} />
@@ -203,7 +203,7 @@ export default function RSVPManager({
                           <button
                             onClick={() => onWaitlist?.(rsvp.id)}
                             disabled={isLoading}
-                            className="p-2 rounded-lg border border-[#4A5E78] text-[#F59E0B] hover:border-[#F59E0B] transition-colors disabled:opacity-50"
+                            className="p-2 rounded-lg border border-[#445E77] text-[#22D3EE] hover:border-[#22D3EE] transition-colors disabled:opacity-50"
                             title="Waitlist"
                           >
                             <Clock size={16} />
@@ -211,7 +211,7 @@ export default function RSVPManager({
                           <button
                             onClick={() => onDecline?.(rsvp.id)}
                             disabled={isLoading}
-                            className="p-2 rounded-lg border border-[#4A5E78] text-[#EF4444] hover:border-[#EF4444] transition-colors disabled:opacity-50"
+                            className="p-2 rounded-lg border border-[#445E77] text-[#EF4444] hover:border-[#EF4444] transition-colors disabled:opacity-50"
                             title="Decline"
                           >
                             <X size={16} />
@@ -223,7 +223,7 @@ export default function RSVPManager({
                         <button
                           onClick={() => onRemove?.(rsvp.id)}
                           disabled={isLoading}
-                          className="p-2 rounded-lg border border-[#4A5E78] text-[#EF4444] hover:border-[#EF4444] transition-colors disabled:opacity-50"
+                          className="p-2 rounded-lg border border-[#445E77] text-[#EF4444] hover:border-[#EF4444] transition-colors disabled:opacity-50"
                           title="Remove"
                         >
                           <UserX size={16} />
@@ -232,7 +232,7 @@ export default function RSVPManager({
 
                       <button
                         onClick={() => setExpandedRsvp(isExpanded ? null : rsvp.id)}
-                        className="p-2 rounded-lg text-[#64748B] hover:text-white transition-colors"
+                        className="p-2 rounded-lg text-[#9FB3C8] hover:text-white transition-colors"
                       >
                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
@@ -241,8 +241,8 @@ export default function RSVPManager({
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="mt-3 pl-13 pt-3 border-t border-[#4A5E78]/50 text-sm">
-                      <div className="grid grid-cols-2 gap-2 text-[#64748B]">
+                    <div className="mt-3 pl-13 pt-3 border-t border-[#445E77]/50 text-sm">
+                      <div className="grid grid-cols-2 gap-2 text-[#9FB3C8]">
                         <div>Status: <span className="text-white">{config.label}</span></div>
                         {guestCount > 0 && (
                           <div>Guests: <span className="text-white">{guestCount}</span></div>
@@ -260,7 +260,7 @@ export default function RSVPManager({
                       </div>
                       {rsvp.message && (
                         <div className="mt-2">
-                          <span className="text-[#64748B]">Message:</span>
+                          <span className="text-[#9FB3C8]">Message:</span>
                           <p className="text-white mt-1">{rsvp.message}</p>
                         </div>
                       )}

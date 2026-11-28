@@ -493,20 +493,20 @@ ${raceOrder.map((r, i) => `<tr>
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
       </div>
     );
   }
 
   if (error || !floor) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
-        <div className="bg-[#242526] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" />
-          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament Not Found'}</p>
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
+        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
+          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
           <button onClick={() => navigateTo('')}
-            className="px-6 py-3 bg-[#1877F2] text-white rounded-lg text-base font-medium">
+            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
             Back To Control Center
           </button>
         </div>
@@ -522,26 +522,26 @@ ${raceOrder.map((r, i) => `<tr>
         noindex={true}
       />
 
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-24 font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] pb-24 font-['Inter']">
 
         {/* ===== HEADER ===== */}
         <PageBar
           title="Color Up Helper"
           summary="Works Out A Chip Race For The Floor. Enter The Denomination Being Raced Off; It Colors Up Into The Next Denomination In Play. Enter Each Player's Count Of The Old Chips To See What Each Player Receives And The Race Order. It Is A Floor Helper Only: It Changes No Chip Counts, So Update Counts On The Chip Counts Screen."
           status={`${players.length} Player${players.length === 1 ? '' : 's'} Live`}
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
-          <button onClick={() => fetchFloor()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" title="Refresh" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={() => fetchFloor()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" title="Refresh" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
         {/* ===== RACE SETUP ===== */}
         <div className="px-4 pt-3 space-y-3">
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Layers className="w-4 h-4 text-[#F59E0B]" />
-              <span className="text-xs text-[#B0B3B8] uppercase tracking-wider font-semibold">
+              <Layers className="w-4 h-4 text-[#22D3EE]" />
+              <span className="text-xs text-[#BDD0E2] uppercase tracking-wider font-semibold">
                 Denomination Being Raced Off
               </span>
             </div>
@@ -553,10 +553,10 @@ ${raceOrder.map((r, i) => `<tr>
               onChange={e => setRaceDenomRaw(digitsOnly(e.target.value))}
               onFocus={e => e.target.select()}
               aria-label="Denomination Being Raced Off"
-              className="w-full h-14 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] px-4 text-2xl font-bold text-white focus:outline-none focus:border-[#1877F2]"
+              className="w-full h-14 rounded-xl bg-[#132A42] border border-[#5A7590] px-4 text-2xl font-bold text-white focus:outline-none focus:border-[#1981EC]"
             />
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs text-[#B0B3B8]">Next Denomination Up</span>
+              <span className="text-xs text-[#BDD0E2]">Next Denomination Up</span>
               <span className={`text-sm font-bold ${nextDenom > 0 ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>
                 {nextDenom > 0 ? nextDenom.toLocaleString() : 'None Available'}
               </span>
@@ -569,13 +569,13 @@ ${raceOrder.map((r, i) => `<tr>
           </div>
 
           {/* ===== DENOMINATIONS IN PLAY ===== */}
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs text-[#B0B3B8] uppercase tracking-wider font-semibold">
+              <span className="text-xs text-[#BDD0E2] uppercase tracking-wider font-semibold">
                 Denominations In Play
               </span>
               <button onClick={handleResetDenoms}
-                className="text-xs text-[#1877F2] font-semibold px-2 py-1 rounded-lg active:bg-[#3A3B3C]">
+                className="text-xs text-[#86DAFF] font-semibold px-2 py-1 rounded-lg active:bg-[#132A42]">
                 Reset
               </button>
             </div>
@@ -590,10 +590,10 @@ ${raceOrder.map((r, i) => `<tr>
                     onChange={e => handleDenom(i, e.target.value)}
                     onFocus={e => e.target.select()}
                     aria-label={`Denomination ${i + 1}`}
-                    className="flex-1 h-12 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] px-4 text-base font-semibold text-white focus:outline-none focus:border-[#1877F2]"
+                    className="flex-1 h-12 rounded-xl bg-[#132A42] border border-[#5A7590] px-4 text-base font-semibold text-white focus:outline-none focus:border-[#1981EC]"
                   />
                   <button onClick={() => handleRemoveDenom(i)}
-                    className="w-12 h-12 rounded-xl bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] flex-shrink-0"
+                    className="w-12 h-12 rounded-xl bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] flex-shrink-0"
                     title="Remove Denomination">
                     <X className="w-4 h-4 text-[#EF4444]" />
                   </button>
@@ -601,39 +601,39 @@ ${raceOrder.map((r, i) => `<tr>
               ))}
             </div>
             <button onClick={handleAddDenom}
-              className="mt-3 w-full h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#4A4B4C]">
+              className="mt-3 w-full h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1B3753]">
               <Plus className="w-4 h-4" /> Add Denomination
             </button>
           </div>
 
           {/* ===== RACE TOTALS ===== */}
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Coins className="w-4 h-4 text-[#F59E0B]" />
-              <span className="text-xs text-[#B0B3B8] uppercase tracking-wider font-semibold">
+              <Coins className="w-4 h-4 text-[#22D3EE]" />
+              <span className="text-xs text-[#BDD0E2] uppercase tracking-wider font-semibold">
                 Race Totals
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-lg font-bold text-white">{totals.totalChips.toLocaleString()}</p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Chips Being Raced</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Chips Being Raced</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-white">{totals.totalValue.toLocaleString()}</p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Total Value Raced</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Total Value Raced</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-[#31A24C]">{totals.totalReceived.toLocaleString()}</p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Chips Handed Out</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Chips Handed Out</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-[#F59E0B]">{totals.chipsToAward.toLocaleString()}</p>
-                <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Chips To Award By Race</p>
+                <p className="text-lg font-bold text-[#22D3EE]">{totals.chipsToAward.toLocaleString()}</p>
+                <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Chips To Award By Race</p>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-[#3A3B3C] flex items-center justify-between">
-              <span className="text-xs text-[#B0B3B8]">Total Odd Chip Value</span>
+            <div className="mt-3 pt-3 border-t border-[#445E77] flex items-center justify-between">
+              <span className="text-xs text-[#BDD0E2]">Total Odd Chip Value</span>
               <span className="text-sm font-bold text-white">{totals.totalRemainderValue.toLocaleString()}</span>
             </div>
           </div>
@@ -642,23 +642,23 @@ ${raceOrder.map((r, i) => `<tr>
         {/* ===== PLAYER ENTRY ===== */}
         <div className="px-4 pt-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider">
               Chips Held Per Player
             </h2>
             <button onClick={handleClearCounts}
-              className="text-xs text-[#1877F2] font-semibold px-2 py-1 rounded-lg active:bg-[#3A3B3C]">
+              className="text-xs text-[#86DAFF] font-semibold px-2 py-1 rounded-lg active:bg-[#132A42]">
               Clear All
             </button>
           </div>
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] divide-y divide-[#3A3B3C] overflow-hidden">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] divide-y divide-[#445E77] overflow-hidden">
             {raceRows.map(r => (
               <div key={r.entry_id} className="px-4 py-3 flex items-center gap-3">
-                <span className="w-14 text-[11px] text-[#B0B3B8] font-mono flex-shrink-0">
+                <span className="w-14 text-[11px] text-[#BDD0E2] font-mono flex-shrink-0">
                   T{r.table_number}-S{r.seat_number ?? '-'}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#E4E6EB] truncate">{r.player_name}</p>
-                  <p className="text-[11px] text-[#B0B3B8]">
+                  <p className="text-sm font-medium text-[#F2F7FF] truncate">{r.player_name}</p>
+                  <p className="text-[11px] text-[#BDD0E2]">
                     Value {r.value.toLocaleString()}, Receives {r.received.toLocaleString()}, Odd {r.remainderChips.toLocaleString()}
                   </p>
                   {/* Hidden once this player's slice of the race is written:
@@ -688,45 +688,45 @@ ${raceOrder.map((r, i) => `<tr>
                   onChange={e => handleHeld(r.entry_id, e.target.value)}
                   onFocus={e => e.target.select()}
                   aria-label={`Raced Chips Held By ${r.player_name}`}
-                  className="w-24 h-14 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] px-3 text-right text-xl font-bold text-white placeholder-[#B0B3B8]/40 focus:outline-none focus:border-[#1877F2] flex-shrink-0"
+                  className="w-24 h-14 rounded-xl bg-[#132A42] border border-[#5A7590] px-3 text-right text-xl font-bold text-white placeholder-[#BDD0E2]/40 focus:outline-none focus:border-[#1981EC] flex-shrink-0"
                 />
               </div>
             ))}
             {rows.length === 0 && (
-              <div className="px-4 py-8 text-center text-sm text-[#B0B3B8]">No Live Players</div>
+              <div className="px-4 py-8 text-center text-sm text-[#BDD0E2]">No Live Players</div>
             )}
           </div>
         </div>
 
         {/* ===== RACE ORDER ===== */}
         <div className="px-4 pt-4">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Race Order, Highest Remainder First
           </h2>
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
-            <p className="text-xs text-[#B0B3B8] mb-3">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
+            <p className="text-xs text-[#BDD0E2] mb-3">
               {totals.chipsToAward.toLocaleString()} Chip{totals.chipsToAward === 1 ? '' : 's'} At {nextDenom > 0 ? nextDenom.toLocaleString() : '--'} Available To Award. One Chip Per Player Down The List.
             </p>
-            <div className="divide-y divide-[#3A3B3C]">
+            <div className="divide-y divide-[#445E77]">
               {raceOrder.map((r, i) => (
                 <div key={r.entry_id} className="py-2.5 flex items-center gap-3">
                   <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i < totals.chipsToAward
                     ? 'bg-[#31A24C]/20 text-[#31A24C]'
-                    : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                    : 'bg-[#132A42] text-[#BDD0E2]'
                     }`}>
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#E4E6EB] truncate">{r.player_name}</p>
-                    <p className="text-[11px] text-[#B0B3B8] font-mono">T{r.table_number}-S{r.seat_number ?? '-'}</p>
+                    <p className="text-sm text-[#F2F7FF] truncate">{r.player_name}</p>
+                    <p className="text-[11px] text-[#BDD0E2] font-mono">T{r.table_number}-S{r.seat_number ?? '-'}</p>
                   </div>
-                  <span className="text-sm font-bold text-[#F59E0B] flex-shrink-0">
+                  <span className="text-sm font-bold text-[#22D3EE] flex-shrink-0">
                     {r.remainderChips.toLocaleString()} Odd
                   </span>
                 </div>
               ))}
               {raceOrder.length === 0 && (
-                <p className="py-4 text-center text-sm text-[#B0B3B8]">No Odd Chips To Race</p>
+                <p className="py-4 text-center text-sm text-[#BDD0E2]">No Odd Chips To Race</p>
               )}
             </div>
           </div>
@@ -734,11 +734,11 @@ ${raceOrder.map((r, i) => `<tr>
 
         {/* ===== APPLY CHIP RACE ===== */}
         <div className="px-4 pt-4">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Apply Chip Race
           </h2>
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
-            <p className="text-xs text-[#B0B3B8] mb-3">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
+            <p className="text-xs text-[#BDD0E2] mb-3">
               Writes Each Player&apos;s Post-Race Stack Back To The Tournament And Queues A Paper Record At The Print Station.
             </p>
 
@@ -755,12 +755,12 @@ ${raceOrder.map((r, i) => `<tr>
 
             {applying && (
               <div className="mb-3">
-                <div className="flex items-center justify-between text-[11px] text-[#B0B3B8] mb-1.5">
+                <div className="flex items-center justify-between text-[11px] text-[#BDD0E2] mb-1.5">
                   <span>Updating Stacks</span>
                   <span className="font-mono">{applyProgress.done} / {applyProgress.total}</span>
                 </div>
-                <div className="h-2 rounded-full bg-[#3A3B3C] overflow-hidden">
-                  <div className="h-full bg-[#1877F2] transition-all"
+                <div className="h-2 rounded-full bg-[#132A42] overflow-hidden">
+                  <div className="h-full bg-[#0C55C0] transition-all"
                     style={{ width: `${applyProgress.total > 0 ? Math.round((applyProgress.done / applyProgress.total) * 100) : 0}%` }} />
                 </div>
               </div>
@@ -782,35 +782,35 @@ ${raceOrder.map((r, i) => `<tr>
         {/* ===== PRINT / DISPLAY SUMMARY ===== */}
         <div className="px-4 pt-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider">
               Print / Display Summary
             </h2>
             <button onClick={handlePrint} disabled={summaryRows.length === 0}
-              className="px-3 h-9 rounded-lg bg-[#1877F2] text-white text-xs font-bold flex items-center gap-1.5 active:scale-[0.98] transition-transform disabled:opacity-40">
+              className="px-3 h-9 rounded-lg bg-[#0C55C0] text-white text-xs font-bold flex items-center gap-1.5 active:scale-[0.98] transition-transform disabled:opacity-40">
               <Printer className="w-3.5 h-3.5" /> Print
             </button>
           </div>
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <p className="text-sm font-bold text-white">{floor.tournament?.name}</p>
-            <p className="text-xs text-[#B0B3B8] mb-3">
+            <p className="text-xs text-[#BDD0E2] mb-3">
               Racing Off {raceDenom.toLocaleString()} Into {nextDenom > 0 ? nextDenom.toLocaleString() : '--'}
             </p>
             <div className="grid grid-cols-[2.5rem_2.5rem_1fr_4.5rem] gap-x-2 gap-y-1.5 text-xs">
-              <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Table</span>
-              <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Seat</span>
-              <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Name</span>
-              <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider text-right">Received</span>
+              <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Table</span>
+              <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Seat</span>
+              <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Name</span>
+              <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider text-right">Received</span>
               {summaryRows.map(r => (
                 <div key={r.entry_id} className="contents">
-                  <span className="text-[#E4E6EB] font-mono">{r.table_number}</span>
-                  <span className="text-[#E4E6EB] font-mono">{r.seat_number ?? '-'}</span>
-                  <span className="text-[#E4E6EB] truncate">{r.player_name}</span>
+                  <span className="text-[#F2F7FF] font-mono">{r.table_number}</span>
+                  <span className="text-[#F2F7FF] font-mono">{r.seat_number ?? '-'}</span>
+                  <span className="text-[#F2F7FF] truncate">{r.player_name}</span>
                   <span className="text-[#31A24C] font-bold text-right">{r.received.toLocaleString()}</span>
                 </div>
               ))}
             </div>
             {summaryRows.length === 0 && (
-              <p className="text-sm text-[#B0B3B8] text-center py-4">Enter Chip Counts To Build The Summary</p>
+              <p className="text-sm text-[#BDD0E2] text-center py-4">Enter Chip Counts To Build The Summary</p>
             )}
           </div>
         </div>
@@ -819,21 +819,21 @@ ${raceOrder.map((r, i) => `<tr>
         {showApplyConfirm && (
           <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center px-4"
             onClick={() => setShowApplyConfirm(false)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]"
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6 border border-[#445E77]"
               onClick={e => e.stopPropagation()}>
               <div className="text-center mb-4">
                 <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center bg-[#31A24C]/20">
                   <Zap className="w-7 h-7 text-[#31A24C]" />
                 </div>
                 <h3 className="text-lg font-bold text-white">Apply Chip Race?</h3>
-                <p className="text-sm text-[#B0B3B8] mt-1">
+                <p className="text-sm text-[#BDD0E2] mt-1">
                   {applyRows.length} Player{applyRows.length === 1 ? '' : 's'} Will Have Their Stack Overwritten With The Post-Race Total.
                   Racing Off {raceDenom.toLocaleString()} Into {nextDenom.toLocaleString()}. This Cannot Be Undone Automatically.
                 </p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowApplyConfirm(false)}
-                  className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">
+                  className="flex-1 h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">
                   Cancel
                 </button>
                 <button
@@ -866,13 +866,13 @@ ${raceOrder.map((r, i) => `<tr>
         )}
 
         {/* ===== BOTTOM NAV BAR ===== */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
           <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
               return (
                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg text-[#B0B3B8] active:text-[#E4E6EB]">
+                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg text-[#BDD0E2] active:text-[#F2F7FF]">
                   <Icon className="w-5 h-5" />
                   <span className="text-[10px] font-medium">{item.label}</span>
                 </button>

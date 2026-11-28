@@ -51,7 +51,7 @@ export default function WaitlistCard({ entry, onLeave, confirmingLeave = false }
               <span className="text-white ml-2">{waitlist_entry?.stakes}</span>
             </h3>
             {venue && (
-              <p className="text-sm text-[#64748B] flex items-center gap-2 mt-1 font-medium">
+              <p className="text-sm text-[#9FB3C8] flex items-center gap-2 mt-1 font-medium">
                 <MapPin className="w-4 h-4" />
                 {venue.name}
               </p>
@@ -85,7 +85,7 @@ export default function WaitlistCard({ entry, onLeave, confirmingLeave = false }
 
         <div className="text-center">
           <div className="cmd-stat-value flex items-center gap-3">
-            <Clock className="w-10 h-10 text-[#64748B]" />
+            <Clock className="w-10 h-10 text-[#9FB3C8]" />
             {estimated_wait || '--'}
           </div>
           <div className="cmd-stat-label">Est. Minutes</div>
@@ -96,7 +96,7 @@ export default function WaitlistCard({ entry, onLeave, confirmingLeave = false }
       <div className="cmd-divider" style={{ margin: '24px 0 16px 0' }} />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-[#64748B] font-bold uppercase tracking-wider">
+        <span className="text-xs text-[#9FB3C8] font-bold uppercase tracking-wider">
           Joined {waitlist_entry?.created_at
             ? new Date(waitlist_entry.created_at).toLocaleTimeString()
             : '--'}

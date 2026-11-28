@@ -622,7 +622,7 @@ async function createAutoStory(playerId, storyType, tournament, position, payout
 
   const gradients = {
     itm: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    winner: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%)'
+    winner: 'linear-gradient(135deg, #22D3EE 0%, #22D3EE 50%, #22D3EE 100%)'
   };
 
   // link_url ties the story to the event it is about. Two reasons, both real:

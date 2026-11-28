@@ -25,14 +25,14 @@ import { commanderFetch } from '../../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../../src/components/commander/shared/PageHelp';
 
 const STATUS_CONFIG = {
-  scheduled: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', border: 'border-[#B0B3B8]/30', label: 'Scheduled' },
-  registration: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', border: 'border-[#1877F2]/30', label: 'Registration' },
+  scheduled: { bg: 'bg-[#BDD0E2]/10', text: 'text-[#BDD0E2]', border: 'border-[#BDD0E2]/30', label: 'Scheduled' },
+  registration: { bg: 'bg-[#0C55C0]/10', text: 'text-[#86DAFF]', border: 'border-[#1981EC]/30', label: 'Registration' },
   running: { bg: 'bg-[#31A24C]/10', text: 'text-[#31A24C]', border: 'border-[#31A24C]/30', label: 'Running' },
-  paused: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', border: 'border-[#F59E0B]/30', label: 'Paused' },
-  break: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', border: 'border-[#F59E0B]/30', label: 'On Break' },
-  final_table: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', border: 'border-[#1877F2]/30', label: 'Final Table' },
+  paused: { bg: 'bg-[#22D3EE]/10', text: 'text-[#22D3EE]', border: 'border-[#22D3EE]/30', label: 'Paused' },
+  break: { bg: 'bg-[#22D3EE]/10', text: 'text-[#22D3EE]', border: 'border-[#22D3EE]/30', label: 'On Break' },
+  final_table: { bg: 'bg-[#0C55C0]/10', text: 'text-[#86DAFF]', border: 'border-[#1981EC]/30', label: 'Final Table' },
   hand_for_hand: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30', label: 'Hand For Hand' },
-  completed: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', border: 'border-[#B0B3B8]/30', label: 'Completed' },
+  completed: { bg: 'bg-[#BDD0E2]/10', text: 'text-[#BDD0E2]', border: 'border-[#BDD0E2]/30', label: 'Completed' },
   cancelled: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30', label: 'Cancelled' }
 };
 
@@ -368,20 +368,20 @@ export default function TDControlCenter() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
       </div>
     );
   }
 
   if (error || !floor) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
-        <div className="bg-[#242526] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" />
-          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament Not Found'}</p>
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
+        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
+          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
           <button onClick={() => router.push('/commander/tournaments')}
-            className="px-6 py-3 bg-[#1877F2] text-white rounded-lg text-base font-medium">
+            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
             Back To Tournaments
           </button>
         </div>
@@ -401,10 +401,10 @@ export default function TDControlCenter() {
         noindex={true}
       />
 
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-20 font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] pb-20 font-['Inter']">
 
         {/* ===== TOURNAMENT HEADER ===== */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5" data-page-bar="">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5" data-page-bar="">
           <div className="flex items-start justify-between gap-2">
             <h1 className="sr-only">{tournament.name}</h1>
             <div className="flex-1 min-w-0" role="status">
@@ -415,7 +415,7 @@ export default function TDControlCenter() {
                 </span>
                 {/* Multi-day: which day of the event is on the floor right now. */}
                 {tournament.is_multi_day && (
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#1877F2]/10 text-[#1877F2] whitespace-nowrap">
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#0C55C0]/10 text-[#86DAFF] whitespace-nowrap">
                     Day {tournament.current_day || 1}
                     {tournament.total_days > 1 ? ` Of ${tournament.total_days}` : ''}
                     {tournament.flight_label ? `, ${tournament.flight_label}` : ''}
@@ -427,7 +427,7 @@ export default function TDControlCenter() {
                   </span>
                 )}
                 {alerts.on_break && (
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#F59E0B]/10 text-[#F59E0B]">
+                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#22D3EE]/10 text-[#22D3EE]">
                     Break
                   </span>
                 )}
@@ -442,12 +442,12 @@ export default function TDControlCenter() {
               {/* 2026-08-04 audit fix: the announcement modal and H4H handler existed
                   but nothing opened/invoked them - surface both controls here */}
               <button onClick={handleHandForHand} title="Toggle Hand-For-Hand"
-                className={`p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C] ${alerts.hand_for_hand ? 'bg-[#EF4444]/10' : ''}`}>
-                <AlertTriangle className={`w-5 h-5 ${alerts.hand_for_hand ? 'text-[#EF4444]' : 'text-[#B0B3B8]'}`} />
+                className={`p-2 rounded-lg hover:bg-[#132A42] active:bg-[#1B3753] ${alerts.hand_for_hand ? 'bg-[#EF4444]/10' : ''}`}>
+                <AlertTriangle className={`w-5 h-5 ${alerts.hand_for_hand ? 'text-[#EF4444]' : 'text-[#BDD0E2]'}`} />
               </button>
               <button onClick={() => setMessageModal(true)} title="Broadcast Announcement"
-                className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
-                <Volume2 className="w-5 h-5 text-[#B0B3B8]" />
+                className="p-2 rounded-lg hover:bg-[#132A42] active:bg-[#1B3753]">
+                <Volume2 className="w-5 h-5 text-[#BDD0E2]" />
               </button>
               {/* Pop the TV clock into its own window. Ported from the retired
                   /commander/tournaments/[id] screen: the modern Clock screen
@@ -455,11 +455,11 @@ export default function TDControlCenter() {
                   board onto a second monitor from the console. */}
               <button onClick={() => window.open(`/commander/tournaments/${tournamentId}/clock-display`, '_blank')}
                 title="Open The Clock Display In A New Window"
-                className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]">
-                <Monitor className="w-5 h-5 text-[#B0B3B8]" />
+                className="p-2 rounded-lg hover:bg-[#132A42] active:bg-[#1B3753]">
+                <Monitor className="w-5 h-5 text-[#BDD0E2]" />
               </button>
-              <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#3A3B3C] active:bg-[#4A4B4C]" aria-label="Refresh">
-                <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+              <button onClick={fetchFloor} className="p-2 rounded-lg hover:bg-[#132A42] active:bg-[#1B3753]" aria-label="Refresh">
+                <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
               </button>
               <PageHelp
                 title="Tournament Director"
@@ -477,14 +477,14 @@ export default function TDControlCenter() {
             breaking. Say so, and fix it in one tap. */}
         {tableSetup && tableSetup.assigned_count < 2 && (
           <div className="px-4 pt-3">
-            <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4">
+            <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4">
               <div className="flex items-start gap-3">
-                <LayoutGrid className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                <LayoutGrid className="w-5 h-5 text-[#22D3EE] flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[#F59E0B] text-sm font-bold">
+                  <p className="text-[#22D3EE] text-sm font-bold">
                     {tableSetup.assigned_count === 0 ? 'No Tables Assigned' : 'Only One Table Assigned'}
                   </p>
-                  <p className="text-[#B0B3B8] text-xs mt-1">
+                  <p className="text-[#BDD0E2] text-xs mt-1">
                     Assign Tables To Enable The Seat Draw And Automatic Table Breaking.
                     {tableSetup.available_count > 0
                       ? ` ${tableSetup.available_count} Table${tableSetup.available_count === 1 ? '' : 's'} Free Right Now.`
@@ -501,13 +501,13 @@ export default function TDControlCenter() {
                     setAssignCount(String(Math.max(2, suggested - (tableSetup.assigned_count || 0))));
                     setAssignModal(true);
                   }}
-                  className="flex-1 h-11 rounded-xl bg-[#F59E0B] text-black text-sm font-bold active:opacity-90"
+                  className="flex-1 h-11 rounded-xl bg-[#22D3EE] text-black text-sm font-bold active:opacity-90"
                 >
                   Assign Tables
                 </button>
                 <button
                   onClick={() => router.push('/commander/table-assignments')}
-                  className="flex-1 h-11 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C]"
+                  className="flex-1 h-11 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:bg-[#1B3753]"
                 >
                   Table Assignments
                 </button>
@@ -522,12 +522,12 @@ export default function TDControlCenter() {
             action to take, so a running event does not carry a dead panel. */}
         {!['completed', 'cancelled'].includes(tournament.status) && (
           <div className="px-4 pt-3">
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 space-y-3">
-              <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Tournament Status</h3>
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 space-y-3">
+              <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Tournament Status</h3>
 
               {tournament.status === 'scheduled' && (
                 <button onClick={openRegistration} disabled={lifecycleBusy}
-                  className="w-full h-12 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                  className="w-full h-12 rounded-xl bg-[#0C55C0] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
                   {lifecycleBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
                   Open Registration
                 </button>
@@ -544,17 +544,17 @@ export default function TDControlCenter() {
               {!['completed', 'cancelled'].includes(tournament.status) && (
                 !confirmCancel ? (
                   <button onClick={() => setConfirmCancel(true)} disabled={lifecycleBusy}
-                    className="w-full h-11 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+                    className="w-full h-11 rounded-xl bg-[#132A42] text-[#BDD0E2] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-50">
                     <Ban className="w-4 h-4" /> Cancel Tournament
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-xs text-[#E4E6EB]">
+                    <p className="text-xs text-[#F2F7FF]">
                       Cancel {tournament.name}? The Event Is Marked Cancelled And Ended. Entries And Cash Records Are Kept.
                     </p>
                     <div className="flex gap-2">
                       <button onClick={() => setConfirmCancel(false)} disabled={lifecycleBusy}
-                        className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50">
+                        className="flex-1 h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:bg-[#1B3753] disabled:opacity-50">
                         Keep It
                       </button>
                       <button onClick={cancelTournament} disabled={lifecycleBusy}
@@ -604,16 +604,16 @@ export default function TDControlCenter() {
             )}
             {alerts.can_break_table && (
               <button onClick={() => navigateTo('tables')}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl">
-                <LayoutGrid className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
-                <span className="text-[#F59E0B] text-sm font-medium flex-1 text-left">A Table Can Be Broken</span>
-                <ChevronRight className="w-4 h-4 text-[#F59E0B]" />
+                className="w-full flex items-center gap-3 px-4 py-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl">
+                <LayoutGrid className="w-5 h-5 text-[#22D3EE] flex-shrink-0" />
+                <span className="text-[#22D3EE] text-sm font-medium flex-1 text-left">A Table Can Be Broken</span>
+                <ChevronRight className="w-4 h-4 text-[#22D3EE]" />
               </button>
             )}
             {stats.late_reg_open && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl">
-                <UserPlus className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
-                <span className="text-[#1877F2] text-sm font-medium">
+              <div className="flex items-center gap-3 px-4 py-3 bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl">
+                <UserPlus className="w-5 h-5 text-[#86DAFF] flex-shrink-0" />
+                <span className="text-[#86DAFF] text-sm font-medium">
                   Late Registration Open, {stats.levels_until_late_reg_closes} Level{stats.levels_until_late_reg_closes !== 1 ? 's' : ''} Remaining
                 </span>
               </div>
@@ -625,19 +625,19 @@ export default function TDControlCenter() {
         {stats.players_alternate > 0 && (
           <div className="px-4 py-2">
             <button onClick={() => router.push(`/commander/td/${tournamentId}/players?tab=alternate`)}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl active:bg-[#F59E0B]/20">
-              <UserPlus className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+              className="w-full flex items-center gap-3 px-4 py-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl active:bg-[#22D3EE]/20">
+              <UserPlus className="w-5 h-5 text-[#22D3EE] flex-shrink-0" />
               <div className="flex-1 min-w-0 text-left">
-                <span className="block text-[#F59E0B] text-sm font-medium">
+                <span className="block text-[#22D3EE] text-sm font-medium">
                   {stats.players_alternate} Alternate{stats.players_alternate !== 1 ? 's' : ''} Waiting
                 </span>
                 {alternates?.[0] && (
-                  <span className="block text-[#B0B3B8] text-xs truncate">
+                  <span className="block text-[#BDD0E2] text-xs truncate">
                     Next Up: {alternates[0].player_name}
                   </span>
                 )}
               </div>
-              <ChevronRight className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-[#22D3EE] flex-shrink-0" />
             </button>
           </div>
         )}
@@ -645,7 +645,7 @@ export default function TDControlCenter() {
         {/* ===== CLOCK DISPLAY LINK ===== */}
         <div className="px-4 py-3">
           <button onClick={() => navigateTo('clock')}
-            className="w-full bg-[#1877F2] rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform shadow-lg">
+            className="w-full bg-[#0C55C0] rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform shadow-lg">
             <div className="flex flex-col items-start gap-1">
               <span className="text-white font-bold text-lg">Tournament Clock</span>
               <span className="text-white/80 text-xs">Tap To Open Fullscreen Mirror Display</span>
@@ -657,17 +657,17 @@ export default function TDControlCenter() {
         {/* ===== ADD PLAYER / REGISTER ===== */}
         <div className="px-4 pb-1">
           <button onClick={() => navigateTo('register')}
-            className="w-full bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center justify-between active:bg-[#3A3B3C] transition-colors">
+            className="w-full bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex items-center justify-between active:bg-[#132A42] transition-colors">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
-                <UserPlus className="w-5 h-5 text-[#1877F2]" />
+              <div className="w-10 h-10 rounded-full bg-[#0C55C0]/20 flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-[#86DAFF]" />
               </div>
               <div className="flex flex-col items-start">
                 <span className="text-white font-semibold text-base">Add Player</span>
-                <span className="text-[#B0B3B8] text-xs">Register An Entrant Or Re-Entry</span>
+                <span className="text-[#BDD0E2] text-xs">Register An Entrant Or Re-Entry</span>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
+            <ChevronRight className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -678,21 +678,21 @@ export default function TDControlCenter() {
         {['final_table', 'completed', 'hand_for_hand'].includes(tournament.status) && (
           <div className="px-4 pt-2">
             <button onClick={() => navigateTo('results')}
-              className="w-full bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#F59E0B]/20 transition-colors">
+              className="w-full bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#22D3EE]/20 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                <div className="w-10 h-10 rounded-full bg-[#22D3EE]/20 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-[#22D3EE]" />
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-white font-semibold text-base">Final Results</span>
-                  <span className="text-[#B0B3B8] text-xs text-left">
+                  <span className="text-[#BDD0E2] text-xs text-left">
                     {tournament.status === 'completed'
                       ? 'View, Print And Export The Results'
                       : 'Finishing Order, Payouts And Finalize'}
                   </span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-[#F59E0B]" />
+              <ChevronRight className="w-5 h-5 text-[#22D3EE]" />
             </button>
           </div>
         )}
@@ -716,7 +716,7 @@ export default function TDControlCenter() {
                     <span className="text-white font-semibold text-base">
                       Start Day {(tournament.current_day || 1) + 1}
                     </span>
-                    <span className="text-[#B0B3B8] text-xs text-left">
+                    <span className="text-[#BDD0E2] text-xs text-left">
                       {stats.players_bagged.toLocaleString()} Bagged Player{stats.players_bagged === 1 ? '' : 's'} Waiting, Fresh Random Seat Draw
                     </span>
                   </div>
@@ -726,26 +726,26 @@ export default function TDControlCenter() {
             ) : (
               <button onClick={() => setMultiDayAction('bag')}
                 disabled={!stats.players_seated}
-                className="w-full bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#F59E0B]/20 transition-colors disabled:opacity-50">
+                className="w-full bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4 flex items-center justify-between active:bg-[#22D3EE]/20 transition-colors disabled:opacity-50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
-                    <Package className="w-5 h-5 text-[#F59E0B]" />
+                  <div className="w-10 h-10 rounded-full bg-[#22D3EE]/20 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-[#22D3EE]" />
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="text-white font-semibold text-base">End Day, Bag And Tag</span>
-                    <span className="text-[#B0B3B8] text-xs text-left">
+                    <span className="text-[#BDD0E2] text-xs text-left">
                       {stats.players_seated
                         ? `Bag ${stats.players_seated.toLocaleString()} Stack${stats.players_seated === 1 ? '' : 's'}, Print Tags, Release The Tables`
                         : 'Nobody Is Seated Right Now'}
                     </span>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#F59E0B]" />
+                <ChevronRight className="w-5 h-5 text-[#22D3EE]" />
               </button>
             )}
             {tournament.resume_time && stats.players_bagged > 0 && (
-              <p className="text-[#B0B3B8] text-xs mt-2 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#B0B3B8]" />
+              <p className="text-[#BDD0E2] text-xs mt-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#BDD0E2]" />
                 Scheduled Restart: {new Date(tournament.resume_time).toLocaleString()}
               </p>
             )}
@@ -758,28 +758,28 @@ export default function TDControlCenter() {
             44px minimum at 375px. */}
         <div className="px-4 pt-2 grid grid-cols-2 gap-2">
           <button onClick={() => navigateTo('chips')}
-            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
-            <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center">
-              <Coins className="w-5 h-5 text-[#F59E0B]" />
+            className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#132A42] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#22D3EE]/20 flex items-center justify-center">
+              <Coins className="w-5 h-5 text-[#22D3EE]" />
             </div>
             <span className="text-white font-semibold text-sm">Chip Counts</span>
-            <span className="text-[#B0B3B8] text-xs text-left">Enter Stacks At The Break</span>
+            <span className="text-[#BDD0E2] text-xs text-left">Enter Stacks At The Break</span>
           </button>
           <button onClick={() => navigateTo('color-up')}
-            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
-            <div className="w-10 h-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center">
-              <Layers className="w-5 h-5 text-[#1877F2]" />
+            className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#132A42] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#0C55C0]/20 flex items-center justify-center">
+              <Layers className="w-5 h-5 text-[#86DAFF]" />
             </div>
             <span className="text-white font-semibold text-sm">Color Up</span>
-            <span className="text-[#B0B3B8] text-xs text-left">Race Off A Denomination</span>
+            <span className="text-[#BDD0E2] text-xs text-left">Race Off A Denomination</span>
           </button>
           <button onClick={() => navigateTo('dealers')}
-            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
+            className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#132A42] transition-colors">
             <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
               <ArrowRightLeft className="w-5 h-5 text-[#31A24C]" />
             </div>
             <span className="text-white font-semibold text-sm">Dealer Rotation</span>
-            <span className="text-[#B0B3B8] text-xs text-left">Who Is Down, For How Long, Who Is Next</span>
+            <span className="text-[#BDD0E2] text-xs text-left">Who Is Down, For How Long, Who Is Next</span>
           </button>
           {/* The structure / configuration / payout editor. It is deliberately
               NOT part of the td console (it is a long-form desk screen, not a
@@ -787,12 +787,12 @@ export default function TDControlCenter() {
               /commander/tournaments/[id] page and from the selector, so the TD
               had no way to reach it from the console. */}
           <button onClick={() => router.push(`/commander/tournaments/${tournamentId}/settings`)}
-            className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#3A3B3C] transition-colors">
-            <div className="w-10 h-10 rounded-full bg-[#B0B3B8]/20 flex items-center justify-center">
-              <Settings className="w-5 h-5 text-[#B0B3B8]" />
+            className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex flex-col items-start gap-2 active:bg-[#132A42] transition-colors">
+            <div className="w-10 h-10 rounded-full bg-[#BDD0E2]/20 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-[#BDD0E2]" />
             </div>
             <span className="text-white font-semibold text-sm">Event Settings</span>
-            <span className="text-[#B0B3B8] text-xs text-left">Blind Structure, Prices, Payout Table</span>
+            <span className="text-[#BDD0E2] text-xs text-left">Blind Structure, Prices, Payout Table</span>
           </button>
         </div>
 
@@ -800,15 +800,15 @@ export default function TDControlCenter() {
         <div className="px-4 py-2">
           <div className="grid grid-cols-3 gap-2">
             <StatCard icon={Users} label="Remaining" value={stats.players_remaining} color="#31A24C" />
-            <StatCard icon={Trophy} label="Entries" value={stats.total_entries} color="#1877F2" />
-            <StatCard icon={DollarSign} label="Prize Pool" value={formatMoney(stats.prize_pool)} color="#F59E0B" />
-            <StatCard icon={RefreshCw} label="Rebuys" value={stats.total_rebuys} color="#B0B3B8" />
-            <StatCard icon={Star} label="Add-Ons" value={stats.total_addons} color="#B0B3B8" />
-            <StatCard icon={DollarSign} label="Avg Stack" value={formatChips(stats.average_stack)} color="#B0B3B8" />
+            <StatCard icon={Trophy} label="Entries" value={stats.total_entries} color="#1981EC" />
+            <StatCard icon={DollarSign} label="Prize Pool" value={formatMoney(stats.prize_pool)} color="#22D3EE" />
+            <StatCard icon={RefreshCw} label="Rebuys" value={stats.total_rebuys} color="#BDD0E2" />
+            <StatCard icon={Star} label="Add-Ons" value={stats.total_addons} color="#BDD0E2" />
+            <StatCard icon={DollarSign} label="Avg Stack" value={formatChips(stats.average_stack)} color="#BDD0E2" />
             {/* Bagged players are inside Remaining above. This breaks out how
                 many of them are in a bag rather than in a chair. */}
             {stats.players_bagged > 0 && (
-              <StatCard icon={Package} label="Bagged" value={stats.players_bagged} color="#F59E0B" />
+              <StatCard icon={Package} label="Bagged" value={stats.players_bagged} color="#22D3EE" />
             )}
           </div>
         </div>
@@ -816,21 +816,21 @@ export default function TDControlCenter() {
         {/* ===== CHIP LEADER & PAYOUTS ===== */}
         {(chipLeader || tournament.paying_places || tournament.actual_prizepool) && (
           <div className="px-4 py-2 grid grid-cols-2 gap-2">
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Trophy className="w-3.5 h-3.5" style={{ color: '#F59E0B' }} />
-                <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Chip Leader</span>
+                <Trophy className="w-3.5 h-3.5" style={{ color: '#22D3EE' }} />
+                <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Chip Leader</span>
               </div>
               <p className="text-sm font-bold text-white truncate">{chipLeader ? chipLeader.name : '--'}</p>
               <p className="text-xs text-[#31A24C] font-medium">{chipLeader ? `${formatChips(chipLeader.chips)} chips` : ''}</p>
             </div>
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3">
               <div className="flex items-center gap-1 mb-1">
                 <DollarSign className="w-3.5 h-3.5" style={{ color: '#31A24C' }} />
-                <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Prize Pool / Paying</span>
+                <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Prize Pool / Paying</span>
               </div>
               <p className="text-sm font-bold text-white truncate">{formatMoney(tournament.actual_prizepool || stats.prize_pool)}</p>
-              <p className="text-xs text-[#B0B3B8] font-medium">{tournament.paying_places ? `${tournament.paying_places} Places Paid` : 'Places TBD'}</p>
+              <p className="text-xs text-[#BDD0E2] font-medium">{tournament.paying_places ? `${tournament.paying_places} Places Paid` : 'Places TBD'}</p>
               {stats.overlay_amount > 0 && (
                 <p className="text-xs text-[#EF4444] font-medium">Overlay {formatMoney(stats.overlay_amount)}</p>
               )}
@@ -841,11 +841,11 @@ export default function TDControlCenter() {
         {/* ===== TABLES OVERVIEW (compact) ===== */}
         <div className="px-4 py-2">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider">
               Tables ({stats.tables_active})
             </h2>
             <button onClick={() => navigateTo('tables')}
-              className="text-xs text-[#1877F2] font-medium flex items-center gap-1">
+              className="text-xs text-[#86DAFF] font-medium flex items-center gap-1">
               View All <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -854,16 +854,16 @@ export default function TDControlCenter() {
               <button key={table.table_number}
                 onClick={() => navigateTo('tables')}
                 className={`flex-shrink-0 w-20 h-20 rounded-xl border flex flex-col items-center justify-center ${table.color === 'red' ? 'bg-[#EF4444]/10 border-[#EF4444]/30' :
-                  table.color === 'yellow' ? 'bg-[#F59E0B]/10 border-[#F59E0B]/30' :
-                    table.color === 'blue' ? 'bg-[#1877F2]/10 border-[#1877F2]/30' :
-                      'bg-[#242526] border-[#3A3B3C]'
+                  table.color === 'yellow' ? 'bg-[#22D3EE]/10 border-[#22D3EE]/30' :
+                    table.color === 'blue' ? 'bg-[#0C55C0]/10 border-[#1981EC]/30' :
+                      'bg-[#0A1829] border-[#445E77]'
                   }`}
               >
-                <span className="text-xs text-[#B0B3B8]">Table</span>
+                <span className="text-xs text-[#BDD0E2]">Table</span>
                 <span className="text-lg font-bold text-white">{table.table_number}</span>
                 <span className={`text-xs font-medium ${table.color === 'red' ? 'text-[#EF4444]' :
-                  table.color === 'yellow' ? 'text-[#F59E0B]' :
-                    'text-[#B0B3B8]'
+                  table.color === 'yellow' ? 'text-[#22D3EE]' :
+                    'text-[#BDD0E2]'
                   }`}>
                   {table.player_count}/{table.max_seats}
                 </span>
@@ -875,17 +875,17 @@ export default function TDControlCenter() {
         {/* ===== RECENT ELIMINATIONS ===== */}
         {floor.eliminated && floor.eliminated.length > 0 && (
           <div className="px-4 py-2">
-            <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+            <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
               Recent Eliminations
             </h2>
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] divide-y divide-[#3A3B3C]">
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] divide-y divide-[#445E77]">
               {floor.eliminated.slice(0, 5).map((e, i) => (
                 <div key={e.entry_id} className="px-4 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-[#B0B3B8] w-6 text-right">
+                    <span className="text-xs text-[#BDD0E2] w-6 text-right">
                       {e.finish_position ? `#${e.finish_position}` : '--'}
                     </span>
-                    <span className="text-sm text-[#E4E6EB]">{e.player_name}</span>
+                    <span className="text-sm text-[#F2F7FF]">{e.player_name}</span>
                   </div>
                   {e.payout_amount > 0 && (
                     <span className="text-sm font-medium text-[#31A24C]">
@@ -902,25 +902,25 @@ export default function TDControlCenter() {
         <div className="fixed bottom-20 left-0 right-0 px-4 z-40 flex justify-center pointer-events-none">
           <button
             onClick={() => setShowActivityLog(true)}
-            className="pointer-events-auto bg-[#3A3B3C] border border-[#4A4B4C] rounded-full px-6 py-3 shadow-lg flex items-center gap-2 active:scale-95 transition-transform"
+            className="pointer-events-auto bg-[#132A42] border border-[#5A7590] rounded-full px-6 py-3 shadow-lg flex items-center gap-2 active:scale-95 transition-transform"
           >
-            <RefreshCw className="w-4 h-4 text-[#E4E6EB]" />
+            <RefreshCw className="w-4 h-4 text-[#F2F7FF]" />
             <span className="text-sm font-bold text-white tracking-widest uppercase">Activity Log</span>
           </button>
         </div>
 
         {showActivityLog && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={() => setShowActivityLog(false)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[70vh] flex flex-col pointer-events-auto" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#3A3B3C]">
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[70vh] flex flex-col pointer-events-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#445E77]">
                 <h3 className="text-lg font-bold text-white">Activity Log</h3>
-                <button onClick={() => setShowActivityLog(false)} className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center">
+                <button onClick={() => setShowActivityLog(false)} className="w-10 h-10 rounded-full bg-[#132A42] flex items-center justify-center">
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
               <div className="overflow-y-auto px-2 py-2">
                 {floor.entries && floor.entries.length > 0 ? (
-                  <div className="divide-y divide-[#3A3B3C]">
+                  <div className="divide-y divide-[#445E77]">
                     {sortedActivityEntries.map((e, i) => {
                       const isEliminated = e.status === 'eliminated';
                       const isAlternate = e.status === 'alternate';
@@ -935,12 +935,12 @@ export default function TDControlCenter() {
                       return (
                         <div key={e.entry_id + '-' + i} className="px-4 py-3 flex items-center gap-3">
                           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isEliminated ? 'bg-[#EF4444]' :
-                            isAlternate || isBagged ? 'bg-[#F59E0B]' :
-                              isActive ? 'bg-[#31A24C]' : 'bg-[#1877F2]'
+                            isAlternate || isBagged ? 'bg-[#22D3EE]' :
+                              isActive ? 'bg-[#31A24C]' : 'bg-[#0C55C0]'
                             }`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-[#E4E6EB] truncate">{e.player_name}</p>
-                            <p className="text-xs text-[#B0B3B8] mt-0.5">
+                            <p className="text-sm text-[#F2F7FF] truncate">{e.player_name}</p>
+                            <p className="text-xs text-[#BDD0E2] mt-0.5">
                               {isEliminated ? `Eliminated #${e.finish_position || '?'}` :
                                 isAlternate ? 'Added To Alternates' :
                                   isBagged ? `Bagged ${formatChips(e.current_chips)}` :
@@ -950,13 +950,13 @@ export default function TDControlCenter() {
                               {e.addon_taken ? ' • Add-on' : ''}
                             </p>
                           </div>
-                          <span className="text-xs text-[#B0B3B8] flex-shrink-0">{timeStr}</span>
+                          <span className="text-xs text-[#BDD0E2] flex-shrink-0">{timeStr}</span>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-[#B0B3B8]">No Activity Yet</div>
+                  <div className="p-8 text-center text-[#BDD0E2]">No Activity Yet</div>
                 )}
               </div>
             </div>
@@ -971,13 +971,13 @@ export default function TDControlCenter() {
         {multiDayAction && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
             onClick={() => !multiDayBusy && setMultiDayAction(null)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4"
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-lg p-5 space-y-4"
               onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: multiDayAction === 'bag' ? 'rgba(245,158,11,0.2)' : 'rgba(49,162,76,0.2)' }}>
+                  style={{ backgroundColor: multiDayAction === 'bag' ? 'rgba(34, 211, 238,0.2)' : 'rgba(49,162,76,0.2)' }}>
                   {multiDayAction === 'bag'
-                    ? <Package className="w-5 h-5 text-[#F59E0B]" />
+                    ? <Package className="w-5 h-5 text-[#22D3EE]" />
                     : <Play className="w-5 h-5 text-[#31A24C]" />}
                 </div>
                 <h3 className="text-lg font-bold text-white">
@@ -987,7 +987,7 @@ export default function TDControlCenter() {
                 </h3>
               </div>
               {multiDayAction === 'bag' ? (
-                <div className="text-[#B0B3B8] text-sm space-y-2">
+                <div className="text-[#BDD0E2] text-sm space-y-2">
                   <p>
                     Every Seated Player Is Bagged With Their Current Chip Count
                     ({stats.players_seated ? stats.players_seated.toLocaleString() : 0} Player
@@ -995,12 +995,12 @@ export default function TDControlCenter() {
                   </p>
                   <p>Bag Tags Are Sent To The Print Station, One Per Player.</p>
                   <p>The Tournament Is Paused And Its Tables Are Released Back To The Room.</p>
-                  <p className="text-[#F59E0B]">
+                  <p className="text-[#22D3EE]">
                     You Will Need To Assign Tables Again Before The Next Day Can Start.
                   </p>
                 </div>
               ) : (
-                <div className="text-[#B0B3B8] text-sm space-y-2">
+                <div className="text-[#BDD0E2] text-sm space-y-2">
                   <p>
                     {stats.players_bagged.toLocaleString()} Bagged Player
                     {stats.players_bagged === 1 ? '' : 's'} Return With The Chip Count They Bagged.
@@ -1017,13 +1017,13 @@ export default function TDControlCenter() {
               )}
               <div className="flex gap-3">
                 <button onClick={() => setMultiDayAction(null)} disabled={multiDayBusy}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-base font-medium active:bg-[#1B3753] disabled:opacity-50">
                   Cancel
                 </button>
                 <button onClick={runMultiDayAction} disabled={multiDayBusy}
                   className="flex-1 py-3 rounded-xl text-base font-bold active:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
-                    backgroundColor: multiDayAction === 'bag' ? '#F59E0B' : '#31A24C',
+                    backgroundColor: multiDayAction === 'bag' ? '#22D3EE' : '#31A24C',
                     color: multiDayAction === 'bag' ? '#000' : '#fff'
                   }}>
                   {multiDayBusy
@@ -1040,15 +1040,15 @@ export default function TDControlCenter() {
         {assignModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
             onClick={() => !assigning && setAssignModal(false)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4"
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-lg p-5 space-y-4"
               onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">Assign Tables</h3>
-              <p className="text-[#B0B3B8] text-sm">
+              <p className="text-[#BDD0E2] text-sm">
                 Reserves Free Tables In Table Number Order For This Tournament.
                 A Table Running A Cash Game Or Another Tournament Is Never Taken.
               </p>
               <div>
-                <label className="block text-xs font-bold text-[#B0B3B8] uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-[#BDD0E2] uppercase tracking-wider mb-2">
                   How Many Tables
                 </label>
                 <input
@@ -1057,19 +1057,19 @@ export default function TDControlCenter() {
                   max="100"
                   value={assignCount}
                   onChange={e => setAssignCount(e.target.value)}
-                  className="w-full h-12 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 text-[#E4E6EB] text-base focus:outline-none focus:border-[#1877F2]"
+                  className="w-full h-12 bg-[#132A42] border border-[#5A7590] rounded-xl px-4 text-[#F2F7FF] text-base focus:outline-none focus:border-[#1981EC]"
                 />
-                <p className="text-[#B0B3B8] text-xs mt-2">
+                <p className="text-[#BDD0E2] text-xs mt-2">
                   Currently Assigned: {tableSetup?.assigned_count || 0}. Free In The Room: {tableSetup?.available_count || 0}.
                 </p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setAssignModal(false)} disabled={assigning}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C] disabled:opacity-50">
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-base font-medium active:bg-[#1B3753] disabled:opacity-50">
                   Cancel
                 </button>
                 <button onClick={handleAssignTables} disabled={assigning}
-                  className="flex-1 py-3 rounded-xl bg-[#F59E0B] text-black text-base font-bold active:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 py-3 rounded-xl bg-[#22D3EE] text-black text-base font-bold active:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
                   {assigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <LayoutGrid className="w-4 h-4" />}
                   Assign
                 </button>
@@ -1082,7 +1082,7 @@ export default function TDControlCenter() {
         {messageModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
             onClick={() => setMessageModal(false)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4"
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-lg p-5 space-y-4"
               onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">Broadcast Announcement</h3>
               <textarea
@@ -1090,25 +1090,25 @@ export default function TDControlCenter() {
                 onChange={e => setMessageText(e.target.value)}
                 placeholder="Enter Message For Clock Displays..."
                 rows={3}
-                className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-[#E4E6EB] text-base placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2] resize-none"
+                className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-[#F2F7FF] text-base placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#1981EC] resize-none"
                 autoFocus
               />
               <div className="flex gap-2 flex-wrap">
                 {['Color Up', 'Break Time', 'Registration Closing', 'Final Table', 'Dealers Stand'].map(q => (
                   <button key={q} onClick={() => setMessageText(q)}
-                    className="px-3 py-2 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs active:bg-[#4A4B4C]">
+                    className="px-3 py-2 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs active:bg-[#1B3753]">
                     {q}
                   </button>
                 ))}
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setMessageModal(false)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-base font-medium active:bg-[#4A4B4C]">
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-base font-medium active:bg-[#1B3753]">
                   Cancel
                 </button>
                 <button onClick={handleSendMessage}
                   disabled={!messageText.trim() || sendingMessage}
-                  className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white text-base font-medium active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 py-3 rounded-xl bg-[#0C55C0] text-white text-base font-medium active:bg-[#0A4AA8] disabled:opacity-50 flex items-center justify-center gap-2">
                   {sendingMessage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
                   Broadcast
                 </button>
@@ -1118,7 +1118,7 @@ export default function TDControlCenter() {
         )}
 
         {/* ===== BOTTOM NAV BAR ===== */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
           <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
@@ -1127,7 +1127,7 @@ export default function TDControlCenter() {
                 <button
                   key={item.key}
                   onClick={() => navigateTo(item.key)}
-                  className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'
+                  className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'
                     }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -1164,10 +1164,10 @@ export default function TDControlCenter() {
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 flex flex-col items-center">
+    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 flex flex-col items-center">
       <Icon className="w-4 h-4 mb-1" style={{ color }} />
       <span className="text-lg font-bold text-white">{value}</span>
-      <span className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">{label}</span>
     </div>
   );
 }

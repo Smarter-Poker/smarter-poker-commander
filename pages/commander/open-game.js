@@ -18,11 +18,11 @@ import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth'
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 
 const GAME_TYPES = [
-  { type: 'NLH', name: "No Limit Hold'em", color: '#1877F2' },
+  { type: 'NLH', name: "No Limit Hold'em", color: '#1981EC' },
   { type: 'PLO', name: 'Pot Limit Omaha', color: '#31A24C' },
-  { type: 'Mixed', name: 'Mixed Game', color: '#F59E0B' },
+  { type: 'Mixed', name: 'Mixed Game', color: '#22D3EE' },
   { type: 'Omaha', name: 'Omaha Hi-Lo', color: '#EF4444' },
-  { type: 'Stud', name: '7-Card Stud', color: '#A855F7' }
+  { type: 'Stud', name: '7-Card Stud', color: '#5AA9FF' }
 ];
 
 const COMMON_STAKES = {
@@ -161,16 +161,16 @@ const headers = { 'Content-Type': 'application/json' };
 
   return (
     <CommanderLayout title="Open Cash Game" backHref="/commander/dashboard?card=floor">
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Progress bar */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center gap-3">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
-            <p className="text-xs text-[#B0B3B8]">Step {step} Of 3</p>
+            <p className="text-xs text-[#BDD0E2]">Step {step} Of 3</p>
           </div>
           <div className="flex gap-1.5">
             {[1, 2, 3].map(s => (
-              <div key={s} className={`w-2.5 h-2.5 rounded-full ${s <= step ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`} />
+              <div key={s} className={`w-2.5 h-2.5 rounded-full ${s <= step ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`} />
             ))}
           </div>
         </div>
@@ -187,13 +187,13 @@ const headers = { 'Content-Type': 'application/json' };
                     onClick={() => { setSelectedGame(game); setSelectedStakes(null); }}
                     className={`w-full px-4 py-4 rounded-xl text-left flex items-center gap-3 border-2 ${selectedGame?.type === game.type
                       ? `border-[${game.color}] bg-[${game.color}]/10`
-                      : 'border-[#3A3B3C] bg-[#242526]'
+                      : 'border-[#445E77] bg-[#0A1829]'
                       }`}
                     style={selectedGame?.type === game.type ? { borderColor: game.color, backgroundColor: `${game.color}10` } : {}}>
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: game.color }} />
                     <div>
                       <p className="text-base font-semibold text-white">{game.name}</p>
-                      <p className="text-xs text-[#B0B3B8]">{game.type}</p>
+                      <p className="text-xs text-[#BDD0E2]">{game.type}</p>
                     </div>
                   </button>
                 ))}
@@ -205,20 +205,20 @@ const headers = { 'Content-Type': 'application/json' };
                   <div className="grid grid-cols-3 gap-2">
                     {(COMMON_STAKES[selectedGame.type] || []).map(s => (
                       <button key={s} onClick={() => { setSelectedStakes(s); setCustomStakes(''); }}
-                        className={`py-3 rounded-xl text-sm font-semibold ${selectedStakes === s ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#E4E6EB]'
+                        className={`py-3 rounded-xl text-sm font-semibold ${selectedStakes === s ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#F2F7FF]'
                           }`}>{s}</button>
                     ))}
                   </div>
                   <input type="text" value={customStakes}
                     onChange={e => { setCustomStakes(e.target.value); setSelectedStakes(null); }}
                     placeholder="Custom Stakes (E.g. $5/$10/$25)"
-                    className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
+                    className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                 </>
               )}
 
               {selectedGame && stakes && (
                 <button onClick={() => setStep(2)}
-                  className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8]">
+                  className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8]">
                   Next <ChevronRight className="w-5 h-5" />
                 </button>
               )}
@@ -234,13 +234,13 @@ const headers = { 'Content-Type': 'application/json' };
 
               {loading ? (
                 <div className="py-10 flex justify-center">
-                  <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                  <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                 </div>
               ) : tables.length === 0 ? (
-                <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 text-center">
-                  <AlertTriangle className="w-8 h-8 text-[#F59E0B] mx-auto mb-2" />
-                  <p className="text-[#F59E0B] font-medium">No Available Tables</p>
-                  <p className="text-sm text-[#B0B3B8] mt-1">All Tables Are Currently In Use Or Need To Be Added In Tables & Floor.</p>
+                <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4 text-center">
+                  <AlertTriangle className="w-8 h-8 text-[#22D3EE] mx-auto mb-2" />
+                  <p className="text-[#22D3EE] font-medium">No Available Tables</p>
+                  <p className="text-sm text-[#BDD0E2] mt-1">All Tables Are Currently In Use Or Need To Be Added In Tables & Floor.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -249,13 +249,13 @@ const headers = { 'Content-Type': 'application/json' };
                     const isSelected = selectedTable?.id === t.id;
                     return (
                       <button key={t.id || tNum} onClick={() => setSelectedTable(t)}
-                        className={`w-full px-4 py-4 rounded-xl text-left flex items-center justify-between border-2 ${isSelected ? 'border-[#1877F2] bg-[#1877F2]/10' : 'border-[#3A3B3C] bg-[#242526]'
+                        className={`w-full px-4 py-4 rounded-xl text-left flex items-center justify-between border-2 ${isSelected ? 'border-[#1981EC] bg-[#0C55C0]/10' : 'border-[#445E77] bg-[#0A1829]'
                           }`}>
                         <div>
                           <p className="text-lg font-bold text-white">Table {tNum}</p>
-                          <p className="text-xs text-[#B0B3B8]">{t.max_seats || t.seats || 9} Seats</p>
+                          <p className="text-xs text-[#BDD0E2]">{t.max_seats || t.seats || 9} Seats</p>
                         </div>
-                        {isSelected && <Check className="w-6 h-6 text-[#1877F2]" />}
+                        {isSelected && <Check className="w-6 h-6 text-[#86DAFF]" />}
                       </button>
                     );
                   })}
@@ -264,7 +264,7 @@ const headers = { 'Content-Type': 'application/json' };
 
               {selectedTable && (
                 <button onClick={() => setStep(3)}
-                  className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8]">
+                  className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8]">
                   Next <ChevronRight className="w-5 h-5" />
                 </button>
               )}
@@ -277,21 +277,21 @@ const headers = { 'Content-Type': 'application/json' };
               <h2 className="text-xl font-bold text-white">Confirm & Open</h2>
 
               {/* Summary card */}
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-5 space-y-3">
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#B0B3B8]">Game</span>
+                  <span className="text-sm text-[#BDD0E2]">Game</span>
                   <span className="text-base font-bold text-white">{selectedGame?.name}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#B0B3B8]">Stakes</span>
+                  <span className="text-sm text-[#BDD0E2]">Stakes</span>
                   <span className="text-base font-bold text-white">{stakes}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#B0B3B8]">Table</span>
+                  <span className="text-sm text-[#BDD0E2]">Table</span>
                   <span className="text-base font-bold text-white">Table {selectedTable?.table_number || selectedTable?.number}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#B0B3B8]">Seats</span>
+                  <span className="text-sm text-[#BDD0E2]">Seats</span>
                   <span className="text-base font-bold text-white">{selectedTable?.max_seats || selectedTable?.seats || 9}</span>
                 </div>
               </div>

@@ -139,7 +139,7 @@ export default function VenueOnboardingPage() {
               <Check className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Request Submitted</h1>
-            <p className="text-[#B0B3B8] mb-6">
+            <p className="text-[#BDD0E2] mb-6">
               Thank You For Your Interest In Club Commander. Our Team Will Contact You Within 1 Business Day To Schedule A Demo.
             </p>
 
@@ -148,11 +148,11 @@ export default function VenueOnboardingPage() {
               <div className="space-y-3 text-left">
                 {STEPS.map((s, i) => (
                   <div key={s.id} className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${i === 0 ? 'bg-[#31A24C] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${i === 0 ? 'bg-[#31A24C] text-white' : 'bg-[#132A42] text-[#BDD0E2]'
                       }`}>
                       {i === 0 ? <Check className="w-3 h-3" /> : s.id}
                     </div>
-                    <span className={i === 0 ? 'text-[#31A24C]' : 'text-[#B0B3B8]'}>{s.label}</span>
+                    <span className={i === 0 ? 'text-[#31A24C]' : 'text-[#BDD0E2]'}>{s.label}</span>
                   </div>
                 ))}
               </div>
@@ -160,7 +160,7 @@ export default function VenueOnboardingPage() {
 
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-[#1877F2] hover:underline"
+              className="inline-flex items-center gap-2 text-[#86DAFF] hover:underline"
             >
               <ChevronLeft className="w-4 h-4" />
               Return To Home
@@ -184,7 +184,7 @@ export default function VenueOnboardingPage() {
         <header className="cmd-header-bar">
           <div className="max-w-5xl mx-auto px-4 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <Building2 className="w-8 h-8 text-[#1877F2]" />
+              <Building2 className="w-8 h-8 text-[#86DAFF]" />
               <span className="text-xl font-bold text-white">Club Commander</span>
             </Link>
           </div>
@@ -198,7 +198,7 @@ export default function VenueOnboardingPage() {
                 <h1 className="text-3xl font-bold text-white mb-4">
                   Modern Poker Room Management
                 </h1>
-                <p className="text-lg text-[#B0B3B8]">
+                <p className="text-lg text-[#BDD0E2]">
                   Replace Outdated Waitlist Systems With A Digital-First Platform That Players Love And Staff Find Easy To Use.
                 </p>
               </div>
@@ -212,11 +212,11 @@ export default function VenueOnboardingPage() {
                       key={i}
                       className="cmd-panel p-5"
                     >
-                      <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center mb-3">
-                        <Icon className="w-5 h-5 text-[#1877F2]" />
+                      <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center mb-3">
+                        <Icon className="w-5 h-5 text-[#86DAFF]" />
                       </div>
                       <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
-                      <p className="text-sm text-[#B0B3B8]">{feature.description}</p>
+                      <p className="text-sm text-[#BDD0E2]">{feature.description}</p>
                     </div>
                   );
                 })}
@@ -231,7 +231,7 @@ export default function VenueOnboardingPage() {
                   Request A Demo
                   <ArrowRight className="w-5 h-5" />
                 </button>
-                <p className="text-sm text-[#B0B3B8] mt-3">
+                <p className="text-sm text-[#BDD0E2] mt-3">
                   Free Demo, No Obligation
                 </p>
               </div>
@@ -242,12 +242,12 @@ export default function VenueOnboardingPage() {
                 <div className="flex justify-between items-center max-w-2xl mx-auto">
                   {STEPS.map((s, i) => (
                     <div key={s.id} className="flex flex-col items-center relative">
-                      <div className="w-10 h-10 bg-[#1877F2]/10 rounded-full flex items-center justify-center text-[#1877F2] font-medium">
+                      <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-full flex items-center justify-center text-[#86DAFF] font-medium">
                         {s.id}
                       </div>
-                      <span className="text-xs text-[#B0B3B8] mt-2 text-center">{s.label}</span>
+                      <span className="text-xs text-[#BDD0E2] mt-2 text-center">{s.label}</span>
                       {i < STEPS.length - 1 && (
-                        <div className="absolute left-[calc(50%+20px)] top-5 w-[calc(100%-40px)] h-0.5 bg-[#3A3B3C]" />
+                        <div className="absolute left-[calc(50%+20px)] top-5 w-[calc(100%-40px)] h-0.5 bg-[#132A42]" />
                       )}
                     </div>
                   ))}
@@ -259,7 +259,7 @@ export default function VenueOnboardingPage() {
             <div className="max-w-xl mx-auto">
               <button
                 onClick={() => setStep('info')}
-                className="flex items-center gap-2 text-[#B0B3B8] hover:text-white mb-6"
+                className="flex items-center gap-2 text-[#BDD0E2] hover:text-white mb-6"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back
@@ -275,7 +275,7 @@ export default function VenueOnboardingPage() {
                       Venue Name *
                     </label>
                     <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                       <input
                         type="text"
                         name="venueName"
@@ -294,7 +294,7 @@ export default function VenueOnboardingPage() {
                       Your Name *
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                       <input
                         type="text"
                         name="contactName"
@@ -314,7 +314,7 @@ export default function VenueOnboardingPage() {
                         Email *
                       </label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                         <input
                           type="email"
                           name="email"
@@ -331,7 +331,7 @@ export default function VenueOnboardingPage() {
                         Phone *
                       </label>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                         <input
                           type="tel"
                           name="phone"
@@ -352,7 +352,7 @@ export default function VenueOnboardingPage() {
                         City *
                       </label>
                       <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                         <input
                           type="text"
                           name="city"
@@ -447,10 +447,10 @@ export default function VenueOnboardingPage() {
                   {/* Promo Code */}
                   <div>
                     <label className="block text-sm font-medium text-white mb-1">
-                      Promo Code <span className="text-[#B0B3B8] font-normal">(Optional)</span>
+                      Promo Code <span className="text-[#BDD0E2] font-normal">(Optional)</span>
                     </label>
                     <div className="relative">
-                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                       <input
                         type="text"
                         name="promoCode"
@@ -462,7 +462,7 @@ export default function VenueOnboardingPage() {
                         style={{ fontFamily: 'monospace', letterSpacing: '2px' }}
                       />
                     </div>
-                    <p className="text-xs text-[#B0B3B8] mt-1">Have A Promo Code? Enter It Here For Special Pricing Or Perks.</p>
+                    <p className="text-xs text-[#BDD0E2] mt-1">Have A Promo Code? Enter It Here For Special Pricing Or Perks.</p>
                   </div>
 
                   {error && (
@@ -486,7 +486,7 @@ export default function VenueOnboardingPage() {
                     )}
                   </button>
 
-                  <p className="text-xs text-[#B0B3B8] text-center">
+                  <p className="text-xs text-[#BDD0E2] text-center">
                     By Submitting, You Agree To Be Contacted About Club Commander.
                   </p>
                 </form>

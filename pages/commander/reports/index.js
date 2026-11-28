@@ -19,7 +19,7 @@ const REPORTS = [
     icon: BarChart3,
     title: 'Daily Summary',
     description: 'Revenue, Players, Table Hours, Peak Times',
-    color: '#1877F2'
+    color: '#1981EC'
   },
   {
     id: 'tournament-results',
@@ -33,14 +33,14 @@ const REPORTS = [
     icon: Clock,
     title: 'Waitlist Metrics',
     description: 'Wait Times, Call Rates, No-Show Rates, Demand',
-    color: '#F59E0B'
+    color: '#22D3EE'
   },
   {
     id: 'player-activity',
     icon: Users,
     title: 'Player Activity',
     description: 'Visit Frequency, Session Duration, Game Preferences',
-    color: '#B0B3B8'
+    color: '#BDD0E2'
   },
   {
     id: 'revenue',
@@ -54,21 +54,21 @@ const REPORTS = [
     icon: TrendingUp,
     title: 'Table Utilization',
     description: 'Occupancy Rates, Game Type Popularity, Peak Hours',
-    color: '#1877F2'
+    color: '#1981EC'
   },
   {
     id: 'staff-activity',
     icon: Activity,
     title: 'Staff Activity Log',
     description: 'Actions, Incidents, Session Management',
-    color: '#B0B3B8'
+    color: '#BDD0E2'
   },
   {
     id: 'analytics-daily',
     icon: TrendingUp,
     title: 'Analytics Daily',
     description: 'Aggregated Daily Metrics, Trends, Session And Revenue Charts',
-    color: '#9333EA'
+    color: '#3B82F6'
   },
   {
     id: 'tax-compliance',
@@ -106,13 +106,13 @@ const json = await commanderFetchJSON(`/api/commander/reports/summary?range=${da
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Date Range Filter */}
         <div className="px-4 py-3 flex gap-2">
           {['today', 'week', 'month', 'quarter'].map(r => (
             <button key={r} onClick={() => setDateRange(r)}
-              className={`px-4 py-2 rounded-full text-sm font-medium capitalize ${dateRange === r ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
+              className={`px-4 py-2 rounded-full text-sm font-medium capitalize ${dateRange === r ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'
                 }`}>
               {r}
             </button>
@@ -138,16 +138,16 @@ const json = await commanderFetchJSON(`/api/commander/reports/summary?range=${da
             return (
               <button key={report.id}
                 onClick={() => router.push(`/commander/reports/${report.id}`)}
-                className="w-full bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 flex items-center gap-4 active:bg-[#3A3B3C] text-left">
+                className="w-full bg-[#0A1829] rounded-xl border border-[#445E77] p-4 flex items-center gap-4 active:bg-[#132A42] text-left">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center"
                   style={{ backgroundColor: `${report.color}15` }}>
                   <Icon className="w-6 h-6" style={{ color: report.color }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-white">{report.title}</p>
-                  <p className="text-xs text-[#B0B3B8]">{report.description}</p>
+                  <p className="text-xs text-[#BDD0E2]">{report.description}</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#B0B3B8]" />
+                <ChevronRight className="w-5 h-5 text-[#BDD0E2]" />
               </button>
             );
           })}
@@ -159,10 +159,10 @@ const json = await commanderFetchJSON(`/api/commander/reports/summary?range=${da
 
 function QuickStat({ label, value, icon: Icon }) {
   return (
-    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 text-center">
-      <Icon className="w-4 h-4 text-[#B0B3B8] mx-auto mb-1" />
+    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 text-center">
+      <Icon className="w-4 h-4 text-[#BDD0E2] mx-auto mb-1" />
       <p className="text-lg font-bold text-white">{value}</p>
-      <p className="text-[10px] text-[#B0B3B8] uppercase">{label}</p>
+      <p className="text-[10px] text-[#BDD0E2] uppercase">{label}</p>
     </div>
   );
 }

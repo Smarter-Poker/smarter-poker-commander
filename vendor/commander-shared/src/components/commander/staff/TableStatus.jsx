@@ -21,9 +21,9 @@ const STATUS_CONFIG = {
     label: 'In Use'
   },
   reserved: {
-    color: 'bg-[#F59E0B]',
-    textColor: 'text-[#F59E0B]',
-    bgColor: 'bg-[#F59E0B]/10',
+    color: 'bg-[#22D3EE]',
+    textColor: 'text-[#22D3EE]',
+    bgColor: 'bg-[#22D3EE]/10',
     icon: Clock,
     label: 'Reserved'
   },
@@ -55,7 +55,7 @@ export default function TableStatus({
       className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
         selected
           ? 'border-[#22D3EE] bg-[#22D3EE]/10'
-          : 'border-[#4A5E78] bg-[#132240] hover:border-[#22D3EE]'
+          : 'border-[#445E77] bg-[#132240] hover:border-[#22D3EE]'
       }`}
     >
       <div className="flex items-start justify-between mb-2">
@@ -64,7 +64,7 @@ export default function TableStatus({
             Table {table.table_number}
           </h3>
           {table.table_name && (
-            <p className="text-sm text-[#64748B]">{table.table_name}</p>
+            <p className="text-sm text-[#9FB3C8]">{table.table_name}</p>
           )}
         </div>
         <span className={`px-2 py-1 rounded text-xs font-medium ${config.bgColor} ${config.textColor}`}>
@@ -73,11 +73,11 @@ export default function TableStatus({
       </div>
 
       {showDetails && game && table.status === 'in_use' && (
-        <div className="mt-3 pt-3 border-t border-[#4A5E78]">
+        <div className="mt-3 pt-3 border-t border-[#445E77]">
           <p className="font-medium text-white">
             {game.game_type?.toUpperCase()} {game.stakes}
           </p>
-          <div className="flex items-center gap-4 mt-2 text-sm text-[#64748B]">
+          <div className="flex items-center gap-4 mt-2 text-sm text-[#9FB3C8]">
             <span className="flex items-center gap-1">
               <Users className="w-4 h-4" />
               {occupiedSeats}/{maxSeats}
@@ -96,7 +96,7 @@ export default function TableStatus({
               <div
                 key={i}
                 className={`h-2 flex-1 rounded-full ${
-                  i < occupiedSeats ? 'bg-[#22D3EE]' : 'bg-[#4A5E78]'
+                  i < occupiedSeats ? 'bg-[#22D3EE]' : 'bg-[#445E77]'
                 }`}
               />
             ))}
@@ -105,8 +105,8 @@ export default function TableStatus({
       )}
 
       {table.status === 'available' && showDetails && (
-        <div className="mt-3 pt-3 border-t border-[#4A5E78]">
-          <p className="text-sm text-[#64748B]">
+        <div className="mt-3 pt-3 border-t border-[#445E77]">
+          <p className="text-sm text-[#9FB3C8]">
             {maxSeats} seats available
           </p>
         </div>

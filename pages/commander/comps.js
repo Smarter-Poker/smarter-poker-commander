@@ -25,11 +25,11 @@ import PageBar from '../../src/components/commander/shared/PageBar';
 // ─── Comp Categories ─────────────────────────────────────────
 const COMP_CATEGORIES = [
   { key: 'free_time', label: 'Free Time', icon: Timer, color: '#3B82F6', desc: 'Comp Table Time' },
-  { key: 'free_membership', label: 'Free Membership', icon: CreditCard, color: '#8B5CF6', desc: 'Comp Membership Period' },
-  { key: 'free_chips', label: 'Free Chips', icon: Coins, color: '#F59E0B', desc: 'Bonus Chips' },
+  { key: 'free_membership', label: 'Free Membership', icon: CreditCard, color: '#5AA9FF', desc: 'Comp Membership Period' },
+  { key: 'free_chips', label: 'Free Chips', icon: Coins, color: '#22D3EE', desc: 'Bonus Chips' },
   { key: 'free_food', label: 'Food & Beverage', icon: UtensilsCrossed, color: '#EF4444', desc: 'Meals, Drinks, Snacks' },
   { key: 'cash_bonus', label: 'Cash Bonus', icon: DollarSign, color: '#31A24C', desc: 'Straight Cash Comp' },
-  { key: 'tournament_entry', label: 'Tournament Entry', icon: Ticket, color: '#EC4899', desc: 'Free Tournament Seat' },
+  { key: 'tournament_entry', label: 'Tournament Entry', icon: Ticket, color: '#38BDF8', desc: 'Free Tournament Seat' },
   { key: 'merchandise', label: 'Merchandise', icon: ShoppingBag, color: '#06B6D4', desc: 'Club Store Items' },
   { key: 'other', label: 'Other', icon: FileText, color: '#6B7280', desc: 'Custom Comp' },
 ];
@@ -390,7 +390,7 @@ export default function CompSystem() {
       const receiptWindow = window.open('', '_blank', 'width=400,height=600');
       if (!receiptWindow) return; // popup blocked
       const amountLine = data.isMembership
-        ? `<div class="amount" style="color:#8B5CF6">${data.durationLabel}</div>
+        ? `<div class="amount" style="color:#5AA9FF">${data.durationLabel}</div>
            <div style="text-align:center;font-size:18px;font-weight:bold;color:#31A24C;margin:-8px 0 4px">$${(data.amount || 0).toFixed(2)} Club Expense</div>`
         : `<div class="amount">$${data.amount.toFixed(2)}</div>`;
       const balanceLine = data.isMembership && data.newExpires
@@ -587,7 +587,7 @@ export default function CompSystem() {
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
           {successOverlay && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80">
@@ -597,9 +597,9 @@ export default function CompSystem() {
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">{successOverlay.title}</h2>
                 <p className="text-4xl font-black text-[#31A24C] mb-3">{successOverlay.amount}</p>
-                <p className="text-base text-[#B0B3B8] mb-1">{successOverlay.detail}</p>
+                <p className="text-base text-[#BDD0E2] mb-1">{successOverlay.detail}</p>
                 {successOverlay.balance && (
-                  <p className="text-sm font-semibold text-[#1877F2] mt-2 bg-[#1877F2]/10 px-4 py-2 rounded-xl inline-block">{successOverlay.balance}</p>
+                  <p className="text-sm font-semibold text-[#86DAFF] mt-2 bg-[#0C55C0]/10 px-4 py-2 rounded-xl inline-block">{successOverlay.balance}</p>
                 )}
               </div>
             </div>
@@ -608,16 +608,16 @@ export default function CompSystem() {
           {/* ═══ PIN Authorization Modal ═══ */}
           {showPinModal && (
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
-              <div className="bg-[#242526] rounded-2xl w-full max-w-sm border border-[#3A3B3C] shadow-2xl">
-                <div className="p-5 text-center border-b border-[#3A3B3C]">
-                  <div className="w-14 h-14 rounded-full bg-[#F59E0B]/10 flex items-center justify-center mx-auto mb-3">
-                    <Shield className="w-7 h-7 text-[#F59E0B]" />
+              <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm border border-[#445E77] shadow-2xl">
+                <div className="p-5 text-center border-b border-[#445E77]">
+                  <div className="w-14 h-14 rounded-full bg-[#22D3EE]/10 flex items-center justify-center mx-auto mb-3">
+                    <Shield className="w-7 h-7 text-[#22D3EE]" />
                   </div>
                   <h3 className="text-lg font-bold text-white">Staff PIN Required</h3>
-                  <p className="text-sm text-[#B0B3B8] mt-1">
+                  <p className="text-sm text-[#BDD0E2] mt-1">
                     Authorize{' '}
                     {selectedCategory === 'free_membership'
-                      ? <><span className="text-[#8B5CF6] font-bold">{MEMBERSHIP_DURATIONS.find(d => d.key === compAmount)?.label || 'Membership'}</span>{' '}<span className="text-[#31A24C] font-bold">(${membershipCost || '0'})</span></>
+                      ? <><span className="text-[#5AA9FF] font-bold">{MEMBERSHIP_DURATIONS.find(d => d.key === compAmount)?.label || 'Membership'}</span>{' '}<span className="text-[#31A24C] font-bold">(${membershipCost || '0'})</span></>
                       : <span className="text-[#31A24C] font-bold">${compAmount}</span>
                     }{' '}
                     <span className="text-white font-medium">
@@ -636,14 +636,14 @@ export default function CompSystem() {
                     onKeyDown={e => e.key === 'Enter' && verifyPinAndAward()}
                     placeholder="Enter 4-Digit PIN"
                     autoFocus
-                    className="w-full px-4 py-4 bg-[#18191A] border border-[#4A4B4C] rounded-xl text-white text-center text-2xl tracking-[0.5em] placeholder:text-[#6A6B6D] placeholder:tracking-normal placeholder:text-base focus:outline-none focus:border-[#1877F2]"
+                    className="w-full px-4 py-4 bg-[#040D18] border border-[#5A7590] rounded-xl text-white text-center text-2xl tracking-[0.5em] placeholder:text-[#93A9C0] placeholder:tracking-normal placeholder:text-base focus:outline-none focus:border-[#1981EC]"
                   />
                   {pinError && (
                     <p className="text-sm text-[#EF4444] text-center">{pinError}</p>
                   )}
                   <div className="flex gap-3">
                     <button onClick={() => { setShowPinModal(false); setPinCode(''); setPinError(''); }}
-                      className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-white font-medium active:bg-[#4A4B4C]">
+                      className="flex-1 py-3 rounded-xl bg-[#132A42] text-white font-medium active:bg-[#1B3753]">
                       Cancel
                     </button>
                     <button onClick={verifyPinAndAward} disabled={verifying || pinCode.length !== 4}
@@ -660,13 +660,13 @@ export default function CompSystem() {
           {/* ═══ Void PIN Modal ═══ */}
           {voidPinModal && (
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
-              <div className="bg-[#242526] rounded-2xl w-full max-w-sm border border-[#3A3B3C] shadow-2xl">
-                <div className="p-5 text-center border-b border-[#3A3B3C]">
+              <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm border border-[#445E77] shadow-2xl">
+                <div className="p-5 text-center border-b border-[#445E77]">
                   <div className="w-14 h-14 rounded-full bg-[#EF4444]/10 flex items-center justify-center mx-auto mb-3">
                     <X className="w-7 h-7 text-[#EF4444]" />
                   </div>
                   <h3 className="text-lg font-bold text-white">{voidPinModal.actionLabel} Comp</h3>
-                  <p className="text-sm text-[#B0B3B8] mt-1">
+                  <p className="text-sm text-[#BDD0E2] mt-1">
                     Reverse <span className="text-[#EF4444] font-bold">${Math.abs(voidPinModal.logEntry.amount || 0).toFixed(2)}</span>
                     {' '}<span className="text-white">{(COMP_CATEGORIES.find(c => c.key === voidPinModal.logEntry.comp_category)?.label) || 'Comp'}</span>
                     {' '}From <span className="text-white font-medium">{voidPinModal.logEntry.member_name || 'Member'}</span>
@@ -680,12 +680,12 @@ export default function CompSystem() {
                     onKeyDown={e => e.key === 'Enter' && executeVoidComp()}
                     placeholder="Enter 4-Digit PIN"
                     autoFocus
-                    className="w-full px-4 py-4 bg-[#18191A] border border-[#4A4B4C] rounded-xl text-white text-center text-2xl tracking-[0.5em] placeholder:text-[#6A6B6D] placeholder:tracking-normal placeholder:text-base focus:outline-none focus:border-[#EF4444]"
+                    className="w-full px-4 py-4 bg-[#040D18] border border-[#5A7590] rounded-xl text-white text-center text-2xl tracking-[0.5em] placeholder:text-[#93A9C0] placeholder:tracking-normal placeholder:text-base focus:outline-none focus:border-[#EF4444]"
                   />
                   {voidPinError && <p className="text-sm text-[#EF4444] text-center">{voidPinError}</p>}
                   <div className="flex gap-3">
                     <button onClick={() => { setVoidPinModal(null); setVoidPinCode(''); setVoidPinError(''); }}
-                      className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-white font-medium active:bg-[#4A4B4C]">Cancel</button>
+                      className="flex-1 py-3 rounded-xl bg-[#132A42] text-white font-medium active:bg-[#1B3753]">Cancel</button>
                     <button onClick={executeVoidComp} disabled={voidLoading || voidPinCode.length !== 4}
                       className="flex-1 py-3 rounded-xl bg-[#EF4444] text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 active:bg-[#DC2626]">
                       {voidLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
@@ -701,21 +701,21 @@ export default function CompSystem() {
           <PageBar
             title="Comp System"
             summary="Player Comps Earned From Play. The Pill Shows The Hourly Rake-Back Rate. Dashboard Shows Balances And Totals, Issue Comp Spends A Player's Comp Balance, Comp Log Lists Every Comp, And Rates Sets How Fast Comps Are Earned."
-            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
           >
             <span className="text-xs px-2 py-0.5 rounded-full bg-[#31A24C]/20 text-[#31A24C] font-medium">
               ${autoCompRate}/hr Rake-Back
             </span>
-            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh">
-              <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" aria-label="Refresh">
+              <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
             </button>
           </PageBar>
 
           {/* ═══ Tabs ═══ */}
-          <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 flex gap-1 overflow-x-auto">
+          <div className="bg-[#0A1829] border-b border-[#445E77] px-4 flex gap-1 overflow-x-auto">
             {TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
-                className={`px-3 py-3 text-sm font-medium flex items-center gap-1.5 border-b-2 -mb-px whitespace-nowrap ${tab === t.key ? 'text-[#1877F2] border-[#1877F2]' : 'text-[#B0B3B8] border-transparent'
+                className={`px-3 py-3 text-sm font-medium flex items-center gap-1.5 border-b-2 -mb-px whitespace-nowrap ${tab === t.key ? 'text-[#86DAFF] border-[#1981EC]' : 'text-[#BDD0E2] border-transparent'
                   }`}>
                 <t.icon className="w-4 h-4" /> {t.label}
               </button>
@@ -728,39 +728,39 @@ export default function CompSystem() {
             {tab === 'dashboard' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <StatCard label="Today" value={`$${stats.today.toFixed(2)}`} icon={Clock} color="#1877F2" />
+                  <StatCard label="Today" value={`$${stats.today.toFixed(2)}`} icon={Clock} color="#1981EC" />
                   <StatCard label="This Week" value={`$${stats.week.toFixed(2)}`} icon={TrendingUp} color="#31A24C" />
-                  <StatCard label="All Time" value={`$${stats.allTime.toFixed(2)}`} icon={Award} color="#F59E0B" />
-                  <StatCard label="Total Comps" value={stats.count} icon={Gift} color="#8B5CF6" />
+                  <StatCard label="All Time" value={`$${stats.allTime.toFixed(2)}`} icon={Award} color="#22D3EE" />
+                  <StatCard label="Total Comps" value={stats.count} icon={Gift} color="#5AA9FF" />
                 </div>
 
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-lg bg-[#31A24C]/10 flex items-center justify-center">
                       <DollarSign className="w-5 h-5 text-[#31A24C]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-white">Auto Rake-Back Rate</p>
-                      <p className="text-xs text-[#B0B3B8]">Players Earn Comps Per Hour Of Play</p>
+                      <p className="text-xs text-[#BDD0E2]">Players Earn Comps Per Hour Of Play</p>
                     </div>
                   </div>
                   <div className="text-3xl font-bold text-[#31A24C] text-center py-2">
-                    ${autoCompRate.toFixed(2)}<span className="text-base text-[#B0B3B8] font-normal">/hour</span>
+                    ${autoCompRate.toFixed(2)}<span className="text-base text-[#BDD0E2] font-normal">/hour</span>
                   </div>
-                  <p className="text-xs text-[#6A6B6D] text-center">Configured In Settings</p>
+                  <p className="text-xs text-[#93A9C0] text-center">Configured In Settings</p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Top Comp Balances</p>
+                  <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-2">Top Comp Balances</p>
                   {loading ? (
-                    <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 text-[#1877F2] animate-spin" /></div>
+                    <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 text-[#86DAFF] animate-spin" /></div>
                   ) : topEarners.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-[#B0B3B8]">No Comp Balances Yet</p>
+                    <p className="py-6 text-center text-sm text-[#BDD0E2]">No Comp Balances Yet</p>
                   ) : (
                     <div className="space-y-1">
                       {topEarners.map((m, i) => (
-                        <div key={m.id} className="flex items-center gap-3 px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-xl">
-                          <span className="text-xs text-[#6A6B6D] w-5 font-bold">#{i + 1}</span>
+                        <div key={m.id} className="flex items-center gap-3 px-4 py-2.5 bg-[#0A1829] border border-[#445E77] rounded-xl">
+                          <span className="text-xs text-[#93A9C0] w-5 font-bold">#{i + 1}</span>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-white">{m.first_name} {m.last_name}</p>
                           </div>
@@ -791,22 +791,22 @@ export default function CompSystem() {
                       <Check className="w-10 h-10 text-[#31A24C]" />
                     </div>
                     <h2 className="text-2xl font-bold text-white">Comp Issued</h2>
-                    <p className="text-[#B0B3B8] mt-2">
+                    <p className="text-[#BDD0E2] mt-2">
                       {lastAwardData?.isMembership
                         ? `${lastAwardData.durationLabel} Free Membership ($${(lastAwardData.amount || 0).toFixed(2)}) To ${selectedMember?.first_name} ${selectedMember?.last_name}`
                         : `$${compAmount} ${COMP_CATEGORIES.find(c => c.key === selectedCategory)?.label} To ${selectedMember?.first_name} ${selectedMember?.last_name}`
                       }
                     </p>
                     {lastAwardData?.newExpires && (
-                      <p className="text-xs text-[#8B5CF6] mt-1">Membership Active Through {new Date(lastAwardData.newExpires).toLocaleDateString()}</p>
+                      <p className="text-xs text-[#5AA9FF] mt-1">Membership Active Through {new Date(lastAwardData.newExpires).toLocaleDateString()}</p>
                     )}
                     <p className="text-xs text-[#31A24C] mt-1">PIN Verified And Documented</p>
                     {lastAwardData && (
-                      <p className="text-xs text-[#B0B3B8] mt-1">Authorized By: {lastAwardData.authorizedBy}</p>
+                      <p className="text-xs text-[#BDD0E2] mt-1">Authorized By: {lastAwardData.authorizedBy}</p>
                     )}
                     {lastAwardData && (
                       <button onClick={() => printCompReceipt(lastAwardData)}
-                        className="mt-4 px-6 py-2 rounded-xl bg-[#3A3B3C] text-white text-sm font-medium active:bg-[#4A4B4C]">
+                        className="mt-4 px-6 py-2 rounded-xl bg-[#132A42] text-white text-sm font-medium active:bg-[#1B3753]">
                         Print Receipt Again
                       </button>
                     )}
@@ -814,16 +814,16 @@ export default function CompSystem() {
 
                 ) : !selectedMember ? (
                   <>
-                    <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">Step 1: Select Member</p>
+                    <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">Step 1: Select Member</p>
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B0B3B8]" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDD0E2]" />
                         <input type="text" value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                           placeholder="Search By Name Or Phone..."
                           autoFocus
-                          className="w-full pl-10 pr-4 py-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
-                        {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1877F2] animate-spin" />}
+                          className="w-full pl-10 pr-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
+                        {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86DAFF] animate-spin" />}
                       </div>
                     </div>
 
@@ -831,16 +831,16 @@ export default function CompSystem() {
                       <div className="space-y-1">
                         {searchResults.map(m => (
                           <button key={m.id} onClick={() => setSelectedMember(m)}
-                            className="w-full px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl text-left flex items-center gap-3 active:bg-[#2D2E2F]">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${m._is_staff ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
-                              <Users className={`w-5 h-5 ${m._is_staff ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />
+                            className="w-full px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl text-left flex items-center gap-3 active:bg-[#2D2E2F]">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${m._is_staff ? 'bg-[#22D3EE]/20' : 'bg-[#0C55C0]/20'}`}>
+                              <Users className={`w-5 h-5 ${m._is_staff ? 'text-[#22D3EE]' : 'text-[#86DAFF]'}`} />
                             </div>
                             <div className="flex-1">
                               <p className="text-sm font-medium text-white">
-                                {m._is_staff && <span className="text-[#F59E0B] font-semibold">{(m._staff_role || 'STAFF').toUpperCase()} · </span>}
+                                {m._is_staff && <span className="text-[#22D3EE] font-semibold">{(m._staff_role || 'STAFF').toUpperCase()} · </span>}
                                 {m.first_name} {m.last_name}
                               </p>
-                              <p className="text-xs text-[#B0B3B8]">{m.phone || m.email || m.member_number || ''}</p>
+                              <p className="text-xs text-[#BDD0E2]">{m.phone || m.email || m.member_number || ''}</p>
                             </div>
                             <span className="text-sm font-bold text-[#31A24C]">${(m.comp_balance || 0).toFixed(2)}</span>
                           </button>
@@ -851,42 +851,42 @@ export default function CompSystem() {
 
                 ) : (
                   <>
-                    <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${selectedMember._is_staff ? 'bg-[#F59E0B]/20' : 'bg-[#1877F2]/20'}`}>
-                        <Users className={`w-6 h-6 ${selectedMember._is_staff ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`} />
+                    <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${selectedMember._is_staff ? 'bg-[#22D3EE]/20' : 'bg-[#0C55C0]/20'}`}>
+                        <Users className={`w-6 h-6 ${selectedMember._is_staff ? 'text-[#22D3EE]' : 'text-[#86DAFF]'}`} />
                       </div>
                       <div className="flex-1">
                         <p className="text-lg font-bold text-white">
                           {selectedMember.first_name} {selectedMember.last_name}
                           {selectedMember._is_staff && (
-                            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B]/20 text-[#F59E0B] font-semibold align-middle">
+                            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#22D3EE]/20 text-[#22D3EE] font-semibold align-middle">
                               {(selectedMember._staff_role || 'STAFF').toUpperCase()}
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-[#B0B3B8]">
+                        <p className="text-xs text-[#BDD0E2]">
                           Balance: <span className="text-[#31A24C] font-bold">${(selectedMember.comp_balance || 0).toFixed(2)}</span>
                         </p>
                       </div>
                       <button onClick={resetIssueFlow}
-                        className="text-xs text-[#B0B3B8] px-2 py-1 rounded-lg active:bg-[#3A3B3C]">Change</button>
+                        className="text-xs text-[#BDD0E2] px-2 py-1 rounded-lg active:bg-[#132A42]">Change</button>
                     </div>
 
                     {!selectedCategory ? (
                       <>
-                        <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">Step 2: Comp Type</p>
+                        <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">Step 2: Comp Type</p>
                         <div className="grid grid-cols-2 gap-2">
                           {COMP_CATEGORIES.map(cat => {
                             const Icon = cat.icon;
                             return (
                               <button key={cat.key} onClick={() => setSelectedCategory(cat.key)}
-                                className="p-4 bg-[#242526] border border-[#3A3B3C] rounded-xl text-left flex flex-col gap-2 active:border-[#1877F2] hover:border-[#4A4B4C] transition-colors">
+                                className="p-4 bg-[#0A1829] border border-[#445E77] rounded-xl text-left flex flex-col gap-2 active:border-[#1981EC] hover:border-[#5A7590] transition-colors">
                                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color + '20' }}>
                                   <Icon className="w-5 h-5" style={{ color: cat.color }} />
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium text-white">{cat.label}</p>
-                                  <p className="text-[10px] text-[#6A6B6D]">{cat.desc}</p>
+                                  <p className="text-[10px] text-[#93A9C0]">{cat.desc}</p>
                                 </div>
                               </button>
                             );
@@ -896,15 +896,15 @@ export default function CompSystem() {
                     ) : (
                       <>
                         <div className="flex items-center gap-2">
-                          <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">
+                          <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">
                             {selectedCategory === 'free_membership' ? 'Step 3: Duration' : selectedCategory === 'free_time' ? 'Step 3: Time' : 'Step 3: Amount'}
                           </p>
                           <button onClick={() => { setSelectedCategory(null); setCompAmount(''); setMembershipCost(''); setTimeMinutes(''); }}
-                            className="ml-auto text-xs px-2 py-1 rounded-lg flex items-center gap-1 active:bg-[#3A3B3C]"
+                            className="ml-auto text-xs px-2 py-1 rounded-lg flex items-center gap-1 active:bg-[#132A42]"
                             style={{ color: COMP_CATEGORIES.find(c => c.key === selectedCategory)?.color }}>
                             {(() => { const Cat = COMP_CATEGORIES.find(c => c.key === selectedCategory); const Icon = Cat?.icon; return Icon ? <Icon className="w-3 h-3" /> : null; })()}
                             {COMP_CATEGORIES.find(c => c.key === selectedCategory)?.label}
-                            <X className="w-3 h-3 ml-1 text-[#6A6B6D]" />
+                            <X className="w-3 h-3 ml-1 text-[#93A9C0]" />
                           </button>
                         </div>
 
@@ -927,19 +927,19 @@ export default function CompSystem() {
                                     }
                                     setMembershipCost(cost > 0 ? String(cost.toFixed(2)) : '0.00');
                                   }}
-                                  className={`py-3 rounded-xl text-sm font-semibold ${compAmount === dur.key ? 'bg-[#8B5CF6] text-white' : 'bg-[#3A3B3C] text-[#E4E6EB]'}`}>
+                                  className={`py-3 rounded-xl text-sm font-semibold ${compAmount === dur.key ? 'bg-[#5AA9FF] text-white' : 'bg-[#132A42] text-[#F2F7FF]'}`}>
                                   {dur.label}
                                 </button>
                               ))}
                             </div>
                             {compAmount && (
                               <div>
-                                <p className="text-xs text-[#B0B3B8] mb-1">Membership Value (Club Expense)</p>
-                                <div className="w-full px-4 py-3 bg-[#2D2E2F] border border-[#4A4B4C] rounded-xl text-center">
+                                <p className="text-xs text-[#BDD0E2] mb-1">Membership Value (Club Expense)</p>
+                                <div className="w-full px-4 py-3 bg-[#2D2E2F] border border-[#5A7590] rounded-xl text-center">
                                   <span className="text-2xl font-bold text-[#31A24C]">${membershipCost || '0.00'}</span>
                                 </div>
-                                <p className="text-[10px] text-[#6A6B6D] mt-1 flex items-center justify-center gap-1">
-                                  <Shield className="w-3 h-3 text-[#F59E0B]" /> Locked, Pulled From Membership Plan Pricing
+                                <p className="text-[10px] text-[#93A9C0] mt-1 flex items-center justify-center gap-1">
+                                  <Shield className="w-3 h-3 text-[#22D3EE]" /> Locked, Pulled From Membership Plan Pricing
                                 </p>
                               </div>
                             )}
@@ -955,17 +955,17 @@ export default function CompSystem() {
                                     const dollarVal = (tp.minutes / 60) * autoCompRate;
                                     setCompAmount(String(dollarVal.toFixed(2)));
                                   }}
-                                  className={`py-3 rounded-xl text-sm font-semibold ${timeMinutes === String(tp.minutes) ? 'bg-[#3B82F6] text-white' : 'bg-[#3A3B3C] text-[#E4E6EB]'}`}>
+                                  className={`py-3 rounded-xl text-sm font-semibold ${timeMinutes === String(tp.minutes) ? 'bg-[#3B82F6] text-white' : 'bg-[#132A42] text-[#F2F7FF]'}`}>
                                   {tp.label}
                                 </button>
                               ))}
                             </div>
                             {timeMinutes && (
                               <div>
-                                <p className="text-xs text-[#B0B3B8] mb-1">Comp Value (Auto-Calculated)</p>
-                                <div className="w-full px-4 py-3 bg-[#2D2E2F] border border-[#4A4B4C] rounded-xl text-center">
+                                <p className="text-xs text-[#BDD0E2] mb-1">Comp Value (Auto-Calculated)</p>
+                                <div className="w-full px-4 py-3 bg-[#2D2E2F] border border-[#5A7590] rounded-xl text-center">
                                   <span className="text-2xl font-bold text-[#31A24C]">${compAmount || '0.00'}</span>
-                                  <span className="text-sm text-[#6A6B6D] ml-2">({Math.floor(parseInt(timeMinutes) / 60)}h{parseInt(timeMinutes) % 60 > 0 ? ` ${parseInt(timeMinutes) % 60}m` : ''} × ${autoCompRate}/hr)</span>
+                                  <span className="text-sm text-[#93A9C0] ml-2">({Math.floor(parseInt(timeMinutes) / 60)}h{parseInt(timeMinutes) % 60 > 0 ? ` ${parseInt(timeMinutes) % 60}m` : ''} × ${autoCompRate}/hr)</span>
                                 </div>
                               </div>
                             )}
@@ -977,14 +977,14 @@ export default function CompSystem() {
                               {QUICK_AMOUNTS.map(amt => (
                                 <button key={amt}
                                   onClick={() => setCompAmount(String(amt))}
-                                  className={`py-2.5 rounded-xl text-sm font-semibold ${compAmount === String(amt) ? 'bg-[#31A24C] text-white' : 'bg-[#3A3B3C] text-[#E4E6EB]'
+                                  className={`py-2.5 rounded-xl text-sm font-semibold ${compAmount === String(amt) ? 'bg-[#31A24C] text-white' : 'bg-[#132A42] text-[#F2F7FF]'
                                     }`}>${amt}</button>
                               ))}
                             </div>
                             <input type="number" value={compAmount}
                               onChange={e => setCompAmount(e.target.value)}
                               placeholder="Custom Amount"
-                              className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2] text-center text-lg" />
+                              className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC] text-center text-lg" />
                           </>
                         )}
 
@@ -995,16 +995,16 @@ export default function CompSystem() {
                             <input type="text" value={compLocation}
                               onChange={e => setCompLocation(e.target.value)}
                               placeholder="E.g., The Bistro, Main Bar, VIP Lounge..."
-                              className="w-full px-4 py-2.5 bg-[#3A3B3C] border border-[#EF4444] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] text-sm focus:outline-none focus:border-[#1877F2]" />
+                              className="w-full px-4 py-2.5 bg-[#132A42] border border-[#EF4444] rounded-xl text-[#F2F7FF] placeholder-[#93A9C0] text-sm focus:outline-none focus:border-[#1981EC]" />
                           </div>
                         )}
 
                         <div>
-                          <p className="text-xs text-[#B0B3B8] mb-1">Notes (Optional)</p>
+                          <p className="text-xs text-[#BDD0E2] mb-1">Notes (Optional)</p>
                           <input type="text" value={compNotes}
                             onChange={e => setCompNotes(e.target.value)}
                             placeholder="E.g., Birthday Bonus, 2 Hours Free Table Time..."
-                            className="w-full px-4 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] placeholder-[#6A6B6D] text-sm focus:outline-none focus:border-[#1877F2]" />
+                            className="w-full px-4 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] placeholder-[#93A9C0] text-sm focus:outline-none focus:border-[#1981EC]" />
                         </div>
 
                         <button onClick={requestComp} disabled={awarding || !compAmount || (selectedCategory === 'free_membership' ? (!membershipCost || parseFloat(membershipCost) <= 0) : selectedCategory === 'free_time' ? !timeMinutes : selectedCategory === 'free_food' ? (!compLocation || !compLocation.trim()) : parseFloat(compAmount) <= 0)}
@@ -1016,7 +1016,7 @@ export default function CompSystem() {
                               ? `Issue ${(() => { const m = parseInt(timeMinutes || 0); const h = Math.floor(m / 60); const mins = m % 60; return h > 0 ? `${h}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`; })()} ($${compAmount || '0'}) - Requires PIN`
                               : `Issue $${compAmount || '0'} - Requires PIN`}
                         </button>
-                        <p className="text-[10px] text-[#6A6B6D] text-center">
+                        <p className="text-[10px] text-[#93A9C0] text-center">
                           All Comps Require Staff PIN Verification And Are Fully Documented
                         </p>
                       </>
@@ -1031,24 +1031,24 @@ export default function CompSystem() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
                   <button onClick={() => setLogFilter('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${logFilter === 'all' ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${logFilter === 'all' ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
                     All
                   </button>
                   {COMP_CATEGORIES.map(cat => (
                     <button key={cat.key} onClick={() => setLogFilter(cat.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1 ${logFilter === cat.key ? 'text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1 ${logFilter === cat.key ? 'text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}
                       style={logFilter === cat.key ? { backgroundColor: cat.color } : {}}>
                       {cat.label}
                     </button>
                   ))}
                 </div>
 
-                <p className="text-xs text-[#6A6B6D]">{filteredLog.length} Comp Transaction{filteredLog.length !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-[#93A9C0]">{filteredLog.length} Comp Transaction{filteredLog.length !== 1 ? 's' : ''}</p>
 
                 {loading ? (
-                  <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin" /></div>
+                  <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#86DAFF] animate-spin" /></div>
                 ) : filteredLog.length === 0 ? (
-                  <p className="py-10 text-center text-[#B0B3B8]">No Comp Transactions Yet</p>
+                  <p className="py-10 text-center text-[#BDD0E2]">No Comp Transactions Yet</p>
                 ) : (
                   <div className="space-y-1">
                     {filteredLog.slice(0, 50).map((t, i) => {
@@ -1060,20 +1060,20 @@ export default function CompSystem() {
                       const minutesAgo = (Date.now() - txTime.getTime()) / 60000;
                       const voidLabel = minutesAgo <= 15 ? 'Void' : 'Revoke';
                       return (
-                        <div key={t.id || i} className={`flex items-center gap-3 px-4 py-3 bg-[#242526] border rounded-xl ${isVoided ? 'border-[#EF4444]/30 opacity-50' : 'border-[#3A3B3C]'}`}>
+                        <div key={t.id || i} className={`flex items-center gap-3 px-4 py-3 bg-[#0A1829] border rounded-xl ${isVoided ? 'border-[#EF4444]/30 opacity-50' : 'border-[#445E77]'}`}>
                           <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: isVoidEntry ? '#EF444420' : cat.color + '20' }}>
                             {isVoidEntry ? <X className="w-4 h-4 text-[#EF4444]" /> : <CatIcon className="w-4 h-4" style={{ color: cat.color }} />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium truncate ${isVoided ? 'text-[#6A6B6D] line-through' : 'text-white'}`}>{t.member_name || 'Member'}</p>
-                            <p className="text-[10px] text-[#6A6B6D] truncate">
+                            <p className={`text-sm font-medium truncate ${isVoided ? 'text-[#93A9C0] line-through' : 'text-white'}`}>{t.member_name || 'Member'}</p>
+                            <p className="text-[10px] text-[#93A9C0] truncate">
                               {isVoidEntry ? <span className="text-[#EF4444] font-semibold">VOID - </span> : null}
                               {t.reason || cat.label}
                               {t.authorized_pin && <span className="text-[#31A24C] ml-1">[PIN]</span>}
                             </p>
                             {t.authorized_by && (
-                              <p className="text-[10px] text-[#4A4B4C]">By: {t.authorized_by}</p>
+                              <p className="text-[10px] text-[#8FA6BE]">By: {t.authorized_by}</p>
                             )}
                             {isVoided && !isVoidEntry && (
                               <p className="text-[10px] text-[#EF4444] font-semibold">VOIDED</p>
@@ -1082,24 +1082,24 @@ export default function CompSystem() {
                           <div className="text-right flex-shrink-0">
                             {t.comp_category === 'free_membership' && !isVoidEntry ? (
                               <>
-                                <p className={`text-sm font-bold ${isVoided ? 'text-[#6A6B6D] line-through' : 'text-[#8B5CF6]'}`}>
+                                <p className={`text-sm font-bold ${isVoided ? 'text-[#93A9C0] line-through' : 'text-[#5AA9FF]'}`}>
                                   {(t.reason || '').replace(/^Free Membership [\u2014-]\s*/, '').split(/\s[\u2014-]\s/)[0] || 'Membership'}
                                 </p>
                                 {(t.amount || 0) > 0 && (
-                                  <p className={`text-[10px] font-medium ${isVoided ? 'text-[#6A6B6D] line-through' : 'text-[#31A24C]'}`}>${(t.amount || 0).toFixed(2)}</p>
+                                  <p className={`text-[10px] font-medium ${isVoided ? 'text-[#93A9C0] line-through' : 'text-[#31A24C]'}`}>${(t.amount || 0).toFixed(2)}</p>
                                 )}
                               </>
                             ) : (
-                              <p className={`text-sm font-bold ${isVoidEntry ? 'text-[#EF4444]' : (t.amount || 0) > 0 ? (isVoided ? 'text-[#6A6B6D] line-through' : 'text-[#31A24C]') : 'text-[#EF4444]'}`}>
+                              <p className={`text-sm font-bold ${isVoidEntry ? 'text-[#EF4444]' : (t.amount || 0) > 0 ? (isVoided ? 'text-[#93A9C0] line-through' : 'text-[#31A24C]') : 'text-[#EF4444]'}`}>
                                 {isVoidEntry ? '−' : (t.amount || 0) > 0 ? '+' : ''}${Math.abs(t.amount || 0).toFixed(2)}
                               </p>
                             )}
-                            <p className="text-[10px] text-[#6A6B6D]">
+                            <p className="text-[10px] text-[#93A9C0]">
                               {t.created_at ? new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
                             </p>
                             {!isVoided && !isVoidEntry && (
                               <button onClick={() => voidCompEntry(t)}
-                                className={`mt-1 text-[10px] px-2 py-0.5 rounded font-medium ${minutesAgo <= 15 ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#F59E0B]/10 text-[#F59E0B]'}`}>
+                                className={`mt-1 text-[10px] px-2 py-0.5 rounded font-medium ${minutesAgo <= 15 ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#22D3EE]/10 text-[#22D3EE]'}`}>
                                 {voidLabel}
                               </button>
                             )}
@@ -1115,70 +1115,70 @@ export default function CompSystem() {
             {/* ═══════════ RATES TAB ═══════════ */}
             {tab === 'rates' && (
               <div className="space-y-4">
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-5">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-[#31A24C]/10 flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 text-[#31A24C]" />
                     </div>
                     <div>
                       <p className="text-base font-bold text-white">Auto Rake-Back</p>
-                      <p className="text-xs text-[#B0B3B8]">Comps Earned Automatically Per Hour Of Play</p>
+                      <p className="text-xs text-[#BDD0E2]">Comps Earned Automatically Per Hour Of Play</p>
                     </div>
                   </div>
                   <div className="text-4xl font-bold text-[#31A24C] text-center py-3">
-                    ${autoCompRate.toFixed(2)}<span className="text-lg text-[#B0B3B8] font-normal">/hour</span>
+                    ${autoCompRate.toFixed(2)}<span className="text-lg text-[#BDD0E2] font-normal">/hour</span>
                   </div>
-                  <p className="text-xs text-[#6A6B6D] text-center mb-3">Applied To All Seated Players. Configure In Settings.</p>
+                  <p className="text-xs text-[#93A9C0] text-center mb-3">Applied To All Seated Players. Configure In Settings.</p>
                   <button onClick={() => router.push('/commander/settings')}
-                    className="w-full py-2.5 rounded-xl bg-[#3A3B3C] text-white text-sm font-medium active:bg-[#4A4B4C]">
+                    className="w-full py-2.5 rounded-xl bg-[#132A42] text-white text-sm font-medium active:bg-[#1B3753]">
                     Edit Rate In Settings
                   </button>
                 </div>
 
                 <div>
-                  <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Configured Comp Rates</p>
+                  <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-2">Configured Comp Rates</p>
                   {compRates.length > 0 ? (
                     <div className="space-y-2">
                       {compRates.map((r) => (
-                        <div key={r.id} className="flex items-center justify-between px-4 py-3 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+                        <div key={r.id} className="flex items-center justify-between px-4 py-3 bg-[#0A1829] border border-[#445E77] rounded-xl">
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-white truncate">{r.name}</p>
                             {Array.isArray(r.game_types) && r.game_types.length > 0 && (
-                              <p className="text-[10px] text-[#6A6B6D] truncate">{r.game_types.join(', ')}</p>
+                              <p className="text-[10px] text-[#93A9C0] truncate">{r.game_types.join(', ')}</p>
                             )}
                           </div>
-                          <span className="text-base font-bold text-[#1877F2] whitespace-nowrap">${Number(r.comp_value || 0).toFixed(2)}{r.unit_label ? `/${r.unit_label}` : '/hr'}</span>
+                          <span className="text-base font-bold text-[#86DAFF] whitespace-nowrap">${Number(r.comp_value || 0).toFixed(2)}{r.unit_label ? `/${r.unit_label}` : '/hr'}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="px-4 py-6 bg-[#242526] border border-[#3A3B3C] rounded-xl text-center">
-                      <p className="text-xs text-[#6A6B6D]">No Custom Comp Rates Configured. The Auto Rake-Back Rate Of ${autoCompRate.toFixed(2)}/hr Applies To All Seated Players.</p>
+                    <div className="px-4 py-6 bg-[#0A1829] border border-[#445E77] rounded-xl text-center">
+                      <p className="text-xs text-[#93A9C0]">No Custom Comp Rates Configured. The Auto Rake-Back Rate Of ${autoCompRate.toFixed(2)}/hr Applies To All Seated Players.</p>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Manual Comp Categories</p>
+                  <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-2">Manual Comp Categories</p>
                   <div className="space-y-1">
                     {COMP_CATEGORIES.map(cat => {
                       const Icon = cat.icon;
                       return (
-                        <div key={cat.key} className="flex items-center gap-3 px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-xl">
+                        <div key={cat.key} className="flex items-center gap-3 px-4 py-2.5 bg-[#0A1829] border border-[#445E77] rounded-xl">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color + '20' }}>
                             <Icon className="w-4 h-4" style={{ color: cat.color }} />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-white">{cat.label}</p>
-                            <p className="text-[10px] text-[#6A6B6D]">{cat.desc}</p>
+                            <p className="text-[10px] text-[#93A9C0]">{cat.desc}</p>
                           </div>
-                          <Shield className="w-3 h-3 text-[#F59E0B]" />
+                          <Shield className="w-3 h-3 text-[#22D3EE]" />
                         </div>
                       );
                     })}
                   </div>
-                  <p className="text-[10px] text-[#6A6B6D] text-center mt-2 flex items-center justify-center gap-1">
-                    <Shield className="w-3 h-3 text-[#F59E0B]" /> All Manual Comps Require Staff PIN Verification
+                  <p className="text-[10px] text-[#93A9C0] text-center mt-2 flex items-center justify-center gap-1">
+                    <Shield className="w-3 h-3 text-[#22D3EE]" /> All Manual Comps Require Staff PIN Verification
                   </p>
                 </div>
               </div>
@@ -1213,10 +1213,10 @@ export default function CompSystem() {
 
 function StatCard({ label, value, icon: Icon, color }) {
   return (
-    <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+    <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
       <div className="flex items-center gap-2 mb-1">
         <Icon className="w-4 h-4" style={{ color }} />
-        <span className="text-xs text-[#B0B3B8]">{label}</span>
+        <span className="text-xs text-[#BDD0E2]">{label}</span>
       </div>
       <p className="text-xl font-bold text-white">{value}</p>
     </div>

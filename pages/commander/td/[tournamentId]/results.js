@@ -539,24 +539,24 @@ export default function TDResults() {
     return (
         <CommanderLayout title="Final Results">
             <SEOHead title="TD Final Results" noindex={true} />
-            <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] pb-24">
+            <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] pb-24">
 
                 {/* Header */}
                 <PageBar
                     title="Final Results"
                     summary="The Finishing Order And Prizes For This Tournament. Check Every Place, Then Print The Results Or Export Them. Finalizing Here Also Awards Season Leaderboard Points."
                     status={tournament?.name || 'Tournament'}
-                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
                     innerClassName="max-w-2xl mx-auto"
                     sticky
                 >
                         <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                             <button onClick={printResults} disabled={busy || loading || standings.length === 0}
-                                className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                                className="h-11 px-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                                 <Printer className="w-4 h-4" /> Print
                             </button>
                             <button onClick={() => setExportOpen(true)} disabled={busy || loading}
-                                className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                                className="h-11 px-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Export
                             </button>
                         </div>
@@ -564,15 +564,15 @@ export default function TDResults() {
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                     </div>
                 ) : (
                     <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
 
                         {/* Champion */}
-                        <div className="bg-gradient-to-br from-[#242526] to-[#3A3B3C] border border-[#4A4B4C] rounded-xl p-5 text-center">
-                            <Trophy className="w-8 h-8 text-[#F59E0B] mx-auto mb-2" />
-                            <p className="text-xs uppercase tracking-wider text-[#B0B3B8]">
+                        <div className="bg-gradient-to-br from-[#0A1829] to-[#132A42] border border-[#5A7590] rounded-xl p-5 text-center">
+                            <Trophy className="w-8 h-8 text-[#22D3EE] mx-auto mb-2" />
+                            <p className="text-xs uppercase tracking-wider text-[#BDD0E2]">
                                 {isCompleted ? 'Champion' : 'Current Chip Leader Or Winner'}
                             </p>
                             <p className="text-2xl font-bold text-white mt-1 break-words">
@@ -580,7 +580,7 @@ export default function TDResults() {
                             </p>
                             {winner && Number(winner.amount) > 0 && (
                                 winner.is_seat ? (
-                                    <p className="text-lg font-bold text-[#1877F2] mt-1 flex items-center justify-center gap-2">
+                                    <p className="text-lg font-bold text-[#86DAFF] mt-1 flex items-center justify-center gap-2">
                                         <Ticket className="w-5 h-5" /> Seat, {formatMoney(winner.amount)} Value
                                     </p>
                                 ) : (
@@ -588,7 +588,7 @@ export default function TDResults() {
                                 )
                             )}
                             {winner?.projected && (
-                                <p className="text-[11px] text-[#F59E0B] mt-2">
+                                <p className="text-[11px] text-[#22D3EE] mt-2">
                                     Provisional. Finalize To Lock This In.
                                 </p>
                             )}
@@ -605,22 +605,22 @@ export default function TDResults() {
                             <SummaryCard
                                 label="Overlay"
                                 value={formatMoney(payoutData?.overlay)}
-                                color={Number(payoutData?.overlay) > 0 ? '#EF4444' : '#B0B3B8'}
+                                color={Number(payoutData?.overlay) > 0 ? '#EF4444' : '#BDD0E2'}
                             />
                             <SummaryCard label="Entries" value={formatCount(payoutData?.total_entries ?? liveEntries.length)} />
-                            <SummaryCard label="House Fees" value={formatMoney(payoutData?.house_fees)} color="#F59E0B" />
+                            <SummaryCard label="House Fees" value={formatMoney(payoutData?.house_fees)} color="#22D3EE" />
                             <SummaryCard label="Rebuys" value={formatCount(payoutData?.total_rebuys)} />
                             <SummaryCard label="Add-Ons" value={formatCount(payoutData?.total_addons)} />
                             {isSatellite && (
                                 <>
-                                    <SummaryCard label="Seats Awarded" value={formatCount(payoutData?.seats_awarded)} color="#1877F2" />
-                                    <SummaryCard label="Seat Value" value={formatMoney(seatValue)} color="#1877F2" />
+                                    <SummaryCard label="Seats Awarded" value={formatCount(payoutData?.seats_awarded)} color="#1981EC" />
+                                    <SummaryCard label="Seat Value" value={formatMoney(seatValue)} color="#1981EC" />
                                 </>
                             )}
                             {Number(payoutData?.bounty_pool) > 0 && (
                                 <>
-                                    <SummaryCard label="Bounty Pool" value={formatMoney(payoutData?.bounty_pool)} color="#F59E0B" />
-                                    <SummaryCard label="Bounties Paid" value={formatMoney(totalBountyWinnings)} color="#F59E0B" />
+                                    <SummaryCard label="Bounty Pool" value={formatMoney(payoutData?.bounty_pool)} color="#22D3EE" />
+                                    <SummaryCard label="Bounties Paid" value={formatMoney(totalBountyWinnings)} color="#22D3EE" />
                                 </>
                             )}
                         </div>
@@ -638,12 +638,12 @@ export default function TDResults() {
                                 <div className="divide-y divide-[#EF4444]/20">
                                     {w2gRows.map(x => (
                                         <div key={x.key} className="px-4 py-3 flex items-center gap-3">
-                                            <span className="w-10 text-xs font-bold text-[#B0B3B8] flex-shrink-0">
+                                            <span className="w-10 text-xs font-bold text-[#BDD0E2] flex-shrink-0">
                                                 {ordinal(x.position)}
                                             </span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-[#E4E6EB] truncate">{x.player_name}</p>
-                                                <p className="text-[10px] text-[#B0B3B8]">
+                                                <p className="text-sm text-[#F2F7FF] truncate">{x.player_name}</p>
+                                                <p className="text-[10px] text-[#BDD0E2]">
                                                     Gross {formatMoney(x.gross)}, Buy-In {formatMoney(x.buy_in)}
                                                     {x.projected ? ', Provisional' : ''}
                                                 </p>
@@ -654,7 +654,7 @@ export default function TDResults() {
                                         </div>
                                     ))}
                                 </div>
-                                <p className="px-4 py-2.5 text-[11px] text-[#E4E6EB] border-t border-[#EF4444]/20">
+                                <p className="px-4 py-2.5 text-[11px] text-[#F2F7FF] border-t border-[#EF4444]/20">
                                     Reportable Amount Is Net Of That Entry Buy-In, Over {formatMoney(W2G_NET_THRESHOLD)}.
                                     Collect The Taxpayer Identification Number At The Window. No TIN Is Stored By This
                                     System, So Backup Withholding Is Never Applied Automatically.
@@ -672,26 +672,26 @@ export default function TDResults() {
 
                         {/* Bounty winnings, whole field */}
                         {bountyStandings.length > 0 && (
-                            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                                <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center justify-between">
+                            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                                <div className="px-4 py-2 border-b border-[#445E77] flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <Coins className="w-4 h-4 text-[#F59E0B]" />
-                                        <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Bounty Winnings</h3>
+                                        <Coins className="w-4 h-4 text-[#22D3EE]" />
+                                        <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Bounty Winnings</h3>
                                     </div>
-                                    <span className="text-[10px] text-[#B0B3B8]">
+                                    <span className="text-[10px] text-[#BDD0E2]">
                                         {formatMoney(totalBountyWinnings)} Paid On Knockouts
                                     </span>
                                 </div>
-                                <div className="divide-y divide-[#3A3B3C]">
+                                <div className="divide-y divide-[#445E77]">
                                     {bountyStandings.map(r => (
                                         <div key={r.entry_id} className="px-4 py-3 flex items-center gap-3">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-[#E4E6EB] truncate">{r.player_name}</p>
-                                                <p className="text-[10px] text-[#B0B3B8]">
+                                                <p className="text-sm text-[#F2F7FF] truncate">{r.player_name}</p>
+                                                <p className="text-[10px] text-[#BDD0E2]">
                                                     {formatCount(r.knockouts)} Knockout{r.knockouts === 1 ? '' : 's'}
                                                 </p>
                                             </div>
-                                            <span className="text-sm font-bold text-[#F59E0B] flex-shrink-0">
+                                            <span className="text-sm font-bold text-[#22D3EE] flex-shrink-0">
                                                 {formatMoney(r.winnings)}
                                             </span>
                                         </div>
@@ -701,10 +701,10 @@ export default function TDResults() {
                         )}
 
                         {/* Timing */}
-                        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-2">
+                        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 space-y-2">
                             <div className="flex items-center gap-2 mb-1">
-                                <Clock className="w-4 h-4 text-[#B0B3B8]" />
-                                <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Event Timing</h3>
+                                <Clock className="w-4 h-4 text-[#BDD0E2]" />
+                                <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Event Timing</h3>
                             </div>
                             <InfoRow label="Started" value={formatDateTime(tournament?.actual_start || tournament?.scheduled_start)} />
                             <InfoRow label="Ended" value={formatDateTime(tournament?.ended_at)} />
@@ -719,27 +719,27 @@ export default function TDResults() {
                         </div>
 
                         {/* Finishing order */}
-                        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                            <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center justify-between">
-                                <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Finishing Order</h3>
-                                <span className="text-[10px] text-[#B0B3B8]">{standings.length} Place{standings.length === 1 ? '' : 's'}</span>
+                        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                            <div className="px-4 py-2 border-b border-[#445E77] flex items-center justify-between">
+                                <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Finishing Order</h3>
+                                <span className="text-[10px] text-[#BDD0E2]">{standings.length} Place{standings.length === 1 ? '' : 's'}</span>
                             </div>
-                            <div className="divide-y divide-[#3A3B3C]">
+                            <div className="divide-y divide-[#445E77]">
                                 {standings.length === 0 ? (
-                                    <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">
+                                    <div className="px-4 py-8 text-center text-[#BDD0E2] text-sm">
                                         No Finishing Order Recorded Yet
                                     </div>
                                 ) : standings.map(r => (
                                     <div key={`${r.position}-${r.entry_id || r.player_name}`} className="px-4 py-3 flex items-center gap-3">
-                                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${r.position === 1 ? 'bg-[#F59E0B]/20 text-[#F59E0B]'
-                                            : r.position <= 3 ? 'bg-[#1877F2]/20 text-[#1877F2]'
-                                                : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${r.position === 1 ? 'bg-[#22D3EE]/20 text-[#22D3EE]'
+                                            : r.position <= 3 ? 'bg-[#0C55C0]/20 text-[#86DAFF]'
+                                                : 'bg-[#132A42] text-[#BDD0E2]'
                                             }`}>
                                             {r.position}
                                         </span>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-[#E4E6EB] truncate">{r.player_name}</p>
-                                            <p className="text-[10px] text-[#B0B3B8]">
+                                            <p className="text-sm text-[#F2F7FF] truncate">{r.player_name}</p>
+                                            <p className="text-[10px] text-[#BDD0E2]">
                                                 {ordinal(r.position)}
                                                 {r.rebuys > 0 ? `, ${r.rebuys}R` : ''}
                                                 {r.addon ? ', Add-On' : ''}
@@ -751,8 +751,8 @@ export default function TDResults() {
                                             </p>
                                         </div>
                                         <span className={`text-sm font-bold flex-shrink-0 ${Number(r.amount) <= 0
-                                            ? 'text-[#B0B3B8]'
-                                            : r.is_seat ? 'text-[#1877F2]' : 'text-[#31A24C]'}`}>
+                                            ? 'text-[#BDD0E2]'
+                                            : r.is_seat ? 'text-[#86DAFF]' : 'text-[#31A24C]'}`}>
                                             {Number(r.amount) <= 0 ? '--' : (r.is_seat ? 'Seat' : formatMoney(r.amount))}
                                         </span>
                                     </div>
@@ -762,17 +762,17 @@ export default function TDResults() {
 
                         {/* Finalize */}
                         {!isCompleted && (
-                            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-3">
+                            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 space-y-3">
                                 <h3 className="text-sm font-bold text-white">Finalize Tournament</h3>
-                                <p className="text-xs text-[#B0B3B8]">
+                                <p className="text-xs text-[#BDD0E2]">
                                     Stamps The Finishing Order And Payouts Onto Every Paid Entry, Awards Season
                                     Leaderboard Points And Ends The Clock. This Marks The Event Completed.
                                 </p>
 
                                 {playersRemaining > 1 && (
-                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30">
-                                        <AlertTriangle className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5" />
-                                        <p className="text-xs text-[#F59E0B]">
+                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#22D3EE]/10 border border-[#22D3EE]/30">
+                                        <AlertTriangle className="w-4 h-4 text-[#22D3EE] flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-[#22D3EE]">
                                             {playersRemaining} Players Are Still In. Finalizing Now Ends The Event Early
                                             And Locks The Provisional Order Below.
                                         </p>
@@ -780,9 +780,9 @@ export default function TDResults() {
                                 )}
 
                                 {hasProjected && playersRemaining <= 1 && (
-                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/30">
-                                        <AlertTriangle className="w-4 h-4 text-[#1877F2] flex-shrink-0 mt-0.5" />
-                                        <p className="text-xs text-[#1877F2]">
+                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[#0C55C0]/10 border border-[#1981EC]/30">
+                                        <AlertTriangle className="w-4 h-4 text-[#86DAFF] flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-[#86DAFF]">
                                             Some Places Are Still Provisional And Will Be Stamped From The Order Above.
                                         </p>
                                     </div>
@@ -795,14 +795,14 @@ export default function TDResults() {
                                     </button>
                                 ) : (
                                     <div className="space-y-2">
-                                        <p className="text-xs text-[#E4E6EB]">
+                                        <p className="text-xs text-[#F2F7FF]">
                                             {playersRemaining > 1
                                                 ? `Confirm Early Finalize With ${playersRemaining} Players Still Seated?`
                                                 : 'Confirm Finalize? This Cannot Be Undone From This Screen.'}
                                         </p>
                                         <div className="flex gap-2">
                                             <button onClick={() => setConfirmFinalize(false)} disabled={busy}
-                                                className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50">
+                                                className="flex-1 h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:bg-[#1B3753] disabled:opacity-50">
                                                 Cancel
                                             </button>
                                             <button onClick={finalize} disabled={busy}
@@ -833,13 +833,13 @@ export default function TDResults() {
                         role="presentation"
                     >
                         <div
-                            className="w-full max-w-md bg-[#242526] border-t border-[#3A3B3C] rounded-t-xl p-4 pb-8 space-y-2"
+                            className="w-full max-w-md bg-[#0A1829] border-t border-[#445E77] rounded-t-xl p-4 pb-8 space-y-2"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-sm font-bold text-white">Export Event</h3>
                                 <button onClick={() => setExportOpen(false)}
-                                    className="w-11 h-11 rounded-xl flex items-center justify-center text-[#B0B3B8] active:bg-[#3A3B3C]">
+                                    className="w-11 h-11 rounded-xl flex items-center justify-center text-[#BDD0E2] active:bg-[#132A42]">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
@@ -893,7 +893,7 @@ export default function TDResults() {
                 )}
 
                 {/* Bottom Nav */}
-                <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+                <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
                     <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
                         {NAV_ITEMS.map(item => {
                             const Icon = NAV_ICONS[item.key];
@@ -903,7 +903,7 @@ export default function TDResults() {
                             const isActive = item.key === 'reports';
                             return (
                                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'}`}>
+                                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'}`}>
                                     <Icon className="w-5 h-5" />
                                     <span className="text-[9px] font-medium">{item.label}</span>
                                 </button>
@@ -918,9 +918,9 @@ export default function TDResults() {
 
 function SummaryCard({ label, value, color }) {
     return (
-        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 text-center">
-            <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">{label}</p>
-            <p className="text-lg font-bold" style={{ color: color || '#E4E6EB' }}>{value}</p>
+        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 text-center">
+            <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">{label}</p>
+            <p className="text-lg font-bold" style={{ color: color || '#F2F7FF' }}>{value}</p>
         </div>
     );
 }
@@ -930,12 +930,12 @@ function ExportOption({ icon: Icon, title, subtitle, onClick, disabled }) {
         <button
             onClick={onClick}
             disabled={disabled}
-            className="w-full min-h-[56px] px-4 py-3 rounded-xl bg-[#3A3B3C] text-left flex items-center gap-3 active:bg-[#4A4B4C] disabled:opacity-50"
+            className="w-full min-h-[56px] px-4 py-3 rounded-xl bg-[#132A42] text-left flex items-center gap-3 active:bg-[#1B3753] disabled:opacity-50"
         >
-            <Icon className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
+            <Icon className="w-5 h-5 text-[#86DAFF] flex-shrink-0" />
             <span className="flex-1 min-w-0">
-                <span className="block text-sm font-semibold text-[#E4E6EB]">{title}</span>
-                <span className="block text-[11px] text-[#B0B3B8] leading-snug">{subtitle}</span>
+                <span className="block text-sm font-semibold text-[#F2F7FF]">{title}</span>
+                <span className="block text-[11px] text-[#BDD0E2] leading-snug">{subtitle}</span>
             </span>
         </button>
     );
@@ -944,7 +944,7 @@ function ExportOption({ icon: Icon, title, subtitle, onClick, disabled }) {
 function InfoRow({ label, value }) {
     return (
         <div className="flex items-center justify-between">
-            <span className="text-sm text-[#B0B3B8]">{label}</span>
+            <span className="text-sm text-[#BDD0E2]">{label}</span>
             <span className="text-sm font-medium text-white">{value}</span>
         </div>
     );

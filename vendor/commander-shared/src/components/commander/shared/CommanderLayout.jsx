@@ -17,6 +17,7 @@ import { X, Users, Clock, Layout, Map, Bell, Trophy,
   AlertTriangle, PlusCircle, Lock, Upload, QrCode, Settings, LogOut, Globe, Crown, FileText, Shield, AlertCircle, Timer
 , ChevronDown, LayoutGrid, Printer } from 'lucide-react';
 import CommanderErrorBoundary from './CommanderErrorBoundary';
+import PageHeaderSlot from './PageHeaderSlot';
 import FloorCallAlert from './FloorCallAlert';
 import { canAccessRoute, getUpgradeTier, getTierConfig } from '../../../lib/commander/tierConfig';
 import { canRoleAccessRoute, isSensitiveRoute } from '../../../lib/commander/auth';
@@ -834,7 +835,7 @@ export default function CommanderLayout({ children, title }) {
           align-items: center;
           gap: 4px;
           font-size: 10px;
-          color: #F59E0B;
+          color: #22D3EE;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -1167,22 +1168,22 @@ export default function CommanderLayout({ children, title }) {
             role="status"
             aria-live="polite"
             style={{
-              background: 'linear-gradient(90deg, #F59E0B22, #D9770622)',
-              borderBottom: '1px solid #F59E0B44',
+              background: 'linear-gradient(90deg, #22D3EE22, #0EA5C622)',
+              borderBottom: '1px solid #22D3EE44',
               padding: '8px 16px',
               display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <AlertCircle size={16} color="#F59E0B" />
-              <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>{switchNotice}</span>
+              <AlertCircle size={16} color="#22D3EE" />
+              <span style={{ fontSize: 12, color: '#22D3EE', fontWeight: 600 }}>{switchNotice}</span>
             </div>
             <button
               type="button"
               onClick={() => setSwitchNotice('')}
               aria-label="Dismiss"
               style={{
-                background: 'transparent', color: '#F59E0B', border: '1px solid #F59E0B66', borderRadius: 6,
+                background: 'transparent', color: '#22D3EE', border: '1px solid #22D3EE66', borderRadius: 6,
                 padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
               }}
             >
@@ -1220,19 +1221,19 @@ export default function CommanderLayout({ children, title }) {
         {/* ── SESSION EXPIRY WARNING BANNER ── */}
         {sessionExpiring && !isOffline && (
           <div style={{
-            background: 'linear-gradient(90deg, #F59E0B22, #EF444422)',
-            borderBottom: '1px solid #F59E0B44',
+            background: 'linear-gradient(90deg, #22D3EE22, #EF444422)',
+            borderBottom: '1px solid #22D3EE44',
             padding: '8px 16px',
             display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <AlertCircle size={16} color="#F59E0B" />
-              <span style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>
+              <AlertCircle size={16} color="#22D3EE" />
+              <span style={{ fontSize: 12, color: '#22D3EE', fontWeight: 600 }}>
                 Session expires in ~{sessionExpiring.minutesLeft} min - save your work
               </span>
             </div>
             <button onClick={() => setSessionExpiring(null)} style={{
-              background: 'none', border: 'none', color: '#F59E0B', cursor: 'pointer', padding: 4,
+              background: 'none', border: 'none', color: '#22D3EE', cursor: 'pointer', padding: 4,
               fontSize: 16, lineHeight: 1,
             }}>×</button>
           </div>
@@ -1321,7 +1322,7 @@ export default function CommanderLayout({ children, title }) {
               {/* Dynamic Club Page Link */}
               <button
                 className="cmd-menu-item"
-                style={{ color: clubPageId ? '#1877F2' : '#31A24C', fontWeight: 600 }}
+                style={{ color: clubPageId ? '#1981EC' : '#31A24C', fontWeight: 600 }}
                 onClick={() => {
                   setMenuOpen(false);
                   if (clubPageId) {
@@ -1351,14 +1352,14 @@ export default function CommanderLayout({ children, title }) {
               boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
               border: '2px solid rgba(255,255,255,0.12)'
             }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #F59E0B, #EF4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #22D3EE, #EF4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <Crown size={28} color="#fff" />
               </div>
               <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
                 Upgrade Required
               </h2>
               <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                <strong style={{ color: '#F59E0B' }}>{showUpgradeModal.label}</strong> requires the{' '}
+                <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.label}</strong> requires the{' '}
                 <strong style={{ color: '#22D3EE' }}>{showUpgradeModal.upgradeTierName}</strong> plan
                 {showUpgradeModal.upgradePrice && <> (${showUpgradeModal.upgradePrice}/mo)</>}.
               </p>
@@ -1371,9 +1372,9 @@ export default function CommanderLayout({ children, title }) {
                   }}
                   style={{
                     padding: '12px 24px', borderRadius: 10, border: 'none',
-                    background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#fff',
+                    background: 'linear-gradient(135deg, #22D3EE, #EF4444)', color: '#fff',
                     fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                    boxShadow: '0 4px 16px rgba(245,158,11,0.4)'
+                    boxShadow: '0 4px 16px rgba(34, 211, 238,0.4)'
                   }}
                 >
                   Upgrade Plan
@@ -1393,40 +1394,25 @@ export default function CommanderLayout({ children, title }) {
           </div>
         )}
 
-        {/* ── CLUB PAGE CREATION POPUP ── */}
+        {/* ── CLUB PAGE CREATION POPUP (#SMARTERDESIGN, 2026-11-27) ── */}
         {showClubPagePopup && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div onClick={dismissClubPagePopup} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
-            <div style={{
-              position: 'relative', background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%)',
-              borderRadius: 16, width: '90%', maxWidth: 440, padding: 28,
-              boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
-              border: '2px solid rgba(255,255,255,0.12)'
-            }}>
-              {/* Header icon */}
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #1877F2, #42B72A)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div className="cmd-clubpage" role="presentation">
+            <div className="cmd-clubpage__scrim" onClick={dismissClubPagePopup} />
+            <div className="sd-panel cmd-clubpage__card" role="dialog" aria-modal="true" aria-labelledby="cmd-clubpage-title">
+              <div className="cmd-clubpage__icon" aria-hidden="true">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
                   <rect x="2" y="3" width="20" height="18" rx="2" />
                   <path d="M8 21V3" />
                   <path d="M16 3v18" />
                 </svg>
               </div>
-              <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>Create Your Club Page</h2>
-              <p style={{ margin: '0 0 20px', fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
-                Set up a public page for <strong style={{ color: '#ddd' }}>{venueName}</strong> on Smarter.Poker Social. Attract new players and keep your regulars updated.
+              <h2 id="cmd-clubpage-title" className="cmd-clubpage__title">Create Your Club Page</h2>
+              <p className="cmd-clubpage__body">
+                Set Up A Public Page For <strong>{venueName}</strong> On Smarter.Poker Social. Attract New Players And Keep Your Regulars Updated.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <button onClick={() => { dismissClubPagePopup(); window.location.href = '/hub/social-media?createPage=true'; }} style={{
-                  padding: '12px 24px', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, #1877F2, #166FE5)', color: '#fff',
-                  fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                  boxShadow: '0 4px 16px rgba(24,119,242,0.4)'
-                }}>Create Club Page</button>
-                <button onClick={dismissClubPagePopup} style={{
-                  padding: '10px 20px', borderRadius: 10, border: '2px solid rgba(255,255,255,0.15)',
-                  background: 'transparent', color: '#888',
-                  fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                }}>Remind Me Later</button>
+              <div className="cmd-clubpage__actions">
+                <button type="button" className="sd-button sd-primary" onClick={() => { dismissClubPagePopup(); window.location.href = '/hub/social-media?createPage=true'; }}>Create Club Page</button>
+                <button type="button" className="sd-button" onClick={dismissClubPagePopup}>Remind Me Later</button>
               </div>
             </div>
           </div>
@@ -1483,6 +1469,8 @@ export default function CommanderLayout({ children, title }) {
         {routeBlocked ? null : (
           <PushNotificationProvider>
             <CommanderEffectsProvider>
+              {/* #SMARTERDESIGN page image header (2026-11-27), filled by the app. */}
+              <PageHeaderSlot title={title} />
               {children}
             </CommanderEffectsProvider>
           </PushNotificationProvider>

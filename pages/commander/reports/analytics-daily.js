@@ -120,13 +120,13 @@ const endDate = new Date().toISOString().split('T')[0];
         <PageBar
           title="Analytics Daily"
           summary="Aggregated Daily Metrics, Auto-Runs At 4 AM. Pick A Range To See Sessions, Players, Table Hours, Revenue And Waitlist Conversion. Refresh Runs The Analytics Now."
-          style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px' }}
+          style={{ background: '#0A1829', borderBottom: '1px solid #2A4560', padding: '6px 16px' }}
         >
           <button onClick={() => router.push('/commander/reports')} aria-label="Back To Reports" style={{ background: 'white', border: 'none', borderRadius: 8, width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
-            <ArrowLeft size={20} color="#1877F2" />
+            <ArrowLeft size={20} color="#1981EC" />
           </button>
           <button onClick={handleManualRefresh} disabled={refreshing}
-            style={{ background: '#1877F2', border: 'none', borderRadius: 8, padding: '0 12px', minHeight: 44, color: 'white', cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+            style={{ background: '#1981EC', border: 'none', borderRadius: 8, padding: '0 12px', minHeight: 44, color: 'white', cursor: refreshing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
             <RefreshCw size={14} className={refreshing ? 'spin' : ''} /> Refresh
           </button>
         </PageBar>
@@ -142,18 +142,18 @@ const endDate = new Date().toISOString().split('T')[0];
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {[{ v: 7, l: '7 Days' }, { v: 14, l: '14 Days' }, { v: 30, l: '30 Days' }, { v: 90, l: '90 Days' }].map(r => (
               <button key={r.v} onClick={() => setRange(r.v)}
-                style={{ flex: 1, padding: '8px 0', border: '2px solid', borderColor: range === r.v ? '#1877F2' : '#CED0D4', borderRadius: 8, background: range === r.v ? '#EBF5FF' : 'white', color: range === r.v ? '#1877F2' : '#65676B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '8px 0', border: '2px solid', borderColor: range === r.v ? '#1981EC' : '#CED0D4', borderRadius: 8, background: range === r.v ? '#EBF5FF' : 'white', color: range === r.v ? '#1981EC' : '#65676B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 {r.l}
               </button>
             ))}
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
+            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
           ) : data.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               <div style={{ marginBottom: 10 }}>No Analytics Data For This Period</div>
-              <button onClick={handleManualRefresh} style={{ background: '#1877F2', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={handleManualRefresh} style={{ background: '#1981EC', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 Run Analytics Now
               </button>
             </div>
@@ -162,16 +162,16 @@ const endDate = new Date().toISOString().split('T')[0];
               {/* Period Summary */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 16 }}>
                 {[
-                  { label: 'Total Sessions', val: totals.sessions, avg: avg(totals.sessions) + '/Day', icon: Users, color: '#1877F2' },
+                  { label: 'Total Sessions', val: totals.sessions, avg: avg(totals.sessions) + '/Day', icon: Users, color: '#1981EC' },
                   { label: 'Unique Players', val: totals.players, avg: avg(totals.players) + '/Day', icon: Users, color: '#31A24C' },
-                  { label: 'Table Hours', val: totals.tableHours.toFixed(0), avg: avg(totals.tableHours) + '/Day', icon: Clock, color: '#F59E0B' },
+                  { label: 'Table Hours', val: totals.tableHours.toFixed(0), avg: avg(totals.tableHours) + '/Day', icon: Clock, color: '#22D3EE' },
                   { label: 'Time Revenue', val: fmt(totals.timeRevenue), avg: fmt(totals.timeRevenue / Math.max(totals.days, 1)) + '/Day', icon: DollarSign, color: '#31A24C' },
-                  { label: 'Tournament Fees', val: fmt(totals.tournamentFees), avg: '', icon: Trophy, color: '#9333EA' },
+                  { label: 'Tournament Fees', val: fmt(totals.tournamentFees), avg: '', icon: Trophy, color: '#3B82F6' },
                   { label: 'Net Drop', val: fmt(totals.netDrop), avg: '', icon: CreditCard, color: totals.netDrop >= 0 ? '#31A24C' : '#EF4444' },
-                  { label: 'Waitlist Seated', val: `${totals.waitlistSeated}/${totals.waitlistEntries}`, avg: totals.waitlistEntries > 0 ? `${Math.round(totals.waitlistSeated / totals.waitlistEntries * 100)}% Conv` : '', icon: TrendingUp, color: '#1877F2' },
+                  { label: 'Waitlist Seated', val: `${totals.waitlistSeated}/${totals.waitlistEntries}`, avg: totals.waitlistEntries > 0 ? `${Math.round(totals.waitlistSeated / totals.waitlistEntries * 100)}% Conv` : '', icon: TrendingUp, color: '#1981EC' },
                   { label: 'Incidents', val: totals.incidents, avg: '', icon: AlertTriangle, color: '#EF4444' },
                 ].map(c => (
-                  <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 14, border: '2px solid #E4E6EB' }}>
+                  <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 14, border: '2px solid #F2F7FF' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                       <c.icon size={14} color={c.color} />
                       <span style={{ fontSize: 12, color: '#65676B', fontWeight: 600 }}>{c.label}</span>
@@ -183,7 +183,7 @@ const endDate = new Date().toISOString().split('T')[0];
               </div>
 
               {/* Sessions Trend Chart */}
-              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #E4E6EB', marginBottom: 12 }}>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #F2F7FF', marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: '#1C2526', marginBottom: 12 }}>Sessions Per Day</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {[...data].sort((a, b) => a.date > b.date ? 1 : -1).slice(-14).map(d => {
@@ -193,7 +193,7 @@ const endDate = new Date().toISOString().split('T')[0];
                       <div key={d.date} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ fontSize: 11, color: '#65676B', minWidth: 50, textAlign: 'right' }}>{dateLabel}</div>
                         <div style={{ flex: 1, height: 20, background: '#F0F2F5', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.max(pct, 2)}%`, background: '#1877F2', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 6 }}>
+                          <div style={{ height: '100%', width: `${Math.max(pct, 2)}%`, background: '#1981EC', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 6 }}>
                             {pct > 15 && <span style={{ fontSize: 10, color: 'white', fontWeight: 700 }}>{d.total_sessions}</span>}
                           </div>
                         </div>
@@ -205,7 +205,7 @@ const endDate = new Date().toISOString().split('T')[0];
               </div>
 
               {/* Revenue Trend */}
-              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #E4E6EB', marginBottom: 12 }}>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #F2F7FF', marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: '#1C2526', marginBottom: 12 }}>Revenue Per Day</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {[...data].sort((a, b) => a.date > b.date ? 1 : -1).slice(-14).map(d => {
@@ -230,14 +230,14 @@ const endDate = new Date().toISOString().split('T')[0];
               </div>
 
               {/* Day-by-Day Detail */}
-              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #E4E6EB' }}>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '2px solid #F2F7FF' }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: '#1C2526', marginBottom: 12 }}>Day-By-Day Detail</div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: '#F9FAFB' }}>
                         {['Date', 'Sessions', 'Players', 'Table Hrs', 'Revenue', 'WL Seated', 'No-Show'].map(h => (
-                          <th key={h} style={{ padding: '8px 6px', textAlign: 'right', fontWeight: 700, color: '#65676B', borderBottom: '2px solid #E4E6EB', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} style={{ padding: '8px 6px', textAlign: 'right', fontWeight: 700, color: '#65676B', borderBottom: '2px solid #F2F7FF', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>

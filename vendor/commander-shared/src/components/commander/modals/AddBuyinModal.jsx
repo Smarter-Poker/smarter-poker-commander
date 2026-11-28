@@ -77,14 +77,14 @@ export default function AddBuyinModal({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-sm">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#10B981] rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Add Buy-In</h2>
-              <p className="text-sm text-[#64748B]">
+              <p className="text-sm text-[#9FB3C8]">
                 {session.player_name || 'Player'} - Seat {session.seat_number}
               </p>
             </div>
@@ -93,7 +93,7 @@ export default function AddBuyinModal({
             onClick={resetAndClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -107,7 +107,7 @@ export default function AddBuyinModal({
 
           {/* Current total */}
           <div className="p-3 bg-[#0D192E] rounded-lg">
-            <p className="text-sm text-[#64748B]">Current Total Buy-In</p>
+            <p className="text-sm text-[#9FB3C8]">Current Total Buy-In</p>
             <p className="text-xl font-bold text-white">
               ${session.total_buyin || 0}
             </p>
@@ -141,7 +141,7 @@ export default function AddBuyinModal({
               Amount
             </label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B]" />
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9FB3C8]" />
               <input
                 type="number"
                 value={amount}
@@ -153,7 +153,7 @@ export default function AddBuyinModal({
               />
             </div>
             {(minBuyin > 0 || maxBuyin < 999999) && (
-              <p className="text-xs text-[#64748B] mt-1">
+              <p className="text-xs text-[#9FB3C8] mt-1">
                 Buy-In Range: ${minBuyin} - ${maxBuyin}
               </p>
             )}
@@ -161,7 +161,7 @@ export default function AddBuyinModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#4A5E78]">
+        <div className="p-4 border-t border-[#445E77]">
           <button
             onClick={handleSubmit}
             disabled={!amount || parseInt(amount) <= 0 || submitting}

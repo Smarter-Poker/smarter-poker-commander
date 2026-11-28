@@ -32,7 +32,7 @@ import SEOHead from '../../../src/components/seo/SEOHead';
 import { getToken, getStaffSession, getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 
-const MEDAL = ['#FFD700', '#C0C0C0', '#CD7F32'];
+const MEDAL = ['#22D3EE', '#C0C0C0', '#CD7F32'];
 const MEDAL_E = ['1st', '2nd', '3rd'];
 
 export default function LeaderboardDisplay() {
@@ -70,9 +70,9 @@ export default function LeaderboardDisplay() {
     return h >= 100 ? `${Math.round(h)}h` : `${h.toFixed(1)}h`;
   }
   const TIERS = {
-    platinum: { l: 'Platinum', i: '', c: '#E5E4E2' }, gold: { l: 'Gold', i: '', c: '#FFD700' },
-    vip: { l: 'VIP', i: '', c: '#FFD700' }, silver: { l: 'Silver', i: '', c: '#C0C0C0' },
-    annual: { l: 'Annual', i: '', c: '#8B5CF6' }, monthly: { l: 'Monthly', i: '', c: '#3B82F6' },
+    platinum: { l: 'Platinum', i: '', c: '#E5E4E2' }, gold: { l: 'Gold', i: '', c: '#22D3EE' },
+    vip: { l: 'VIP', i: '', c: '#22D3EE' }, silver: { l: 'Silver', i: '', c: '#C0C0C0' },
+    annual: { l: 'Annual', i: '', c: '#5AA9FF' }, monthly: { l: 'Monthly', i: '', c: '#3B82F6' },
     weekly: { l: 'Weekly', i: '', c: '#10B981' }, daily: { l: 'Daily', i: '', c: '#6B7280' } };
   function ti(t) { return TIERS[(t || '').toLowerCase()] || { l: t || 'Member', i: '', c: '#6B7280' }; }
 
@@ -272,12 +272,12 @@ export default function LeaderboardDisplay() {
 
       <div onClick={goFS} className="bg-black text-white font-['Inter'] select-none flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
         {/* HEADER */}
-        <div className="bg-gradient-to-r from-[#1877F2] to-[#6366F1] px-8 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-gradient-to-r from-[#0C55C0] to-[#3B82F6] px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="text-3xl font-bold truncate">{board?.icon} {board?.title || 'Leaderboard'}</h1>
               {board?.source === 'custom' && <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">CUSTOM</span>}
-              {board?.source === 'league' && <span className="text-[10px] bg-yellow-500/30 text-yellow-300 px-2 py-0.5 rounded-full font-bold">LEAGUE</span>}
+              {board?.source === 'league' && <span className="text-[10px] bg-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-full font-bold">LEAGUE</span>}
             </div>
             <p className="text-sm text-white/70 mt-0.5 truncate">{board?.subtitle}</p>
           </div>
@@ -349,7 +349,7 @@ export default function LeaderboardDisplay() {
                         {entry.detail && <p className="text-[11px] text-white/25 truncate mt-0.5">{entry.detail}</p>}
                         {entry.barPct > 0 && (
                           <div className="h-1 bg-white/5 rounded-full mt-1.5 overflow-hidden" style={{ maxWidth: '200px' }}>
-                            <div className="bar-fill h-full rounded-full" style={{ width: `${entry.barPct}%`, animationDelay: `${i * 50 + 200}ms`, background: mc ? `linear-gradient(90deg, ${mc}, ${mc}80)` : 'linear-gradient(90deg, #3B82F6, #6366F1)' }} />
+                            <div className="bar-fill h-full rounded-full" style={{ width: `${entry.barPct}%`, animationDelay: `${i * 50 + 200}ms`, background: mc ? `linear-gradient(90deg, ${mc}, ${mc}80)` : 'linear-gradient(90deg, #3B82F6, #3B82F6)' }} />
                           </div>
                         )}
                       </div>
@@ -367,7 +367,7 @@ export default function LeaderboardDisplay() {
         </div>
 
         {/* TICKER */}
-        <div className="flex-shrink-0"><DealerTicker accentColor="#6366F1" bgColor="#000" fontSize={18} borderColor="rgba(255,255,255,0.1)" speed={50} showBorder={true} /></div>
+        <div className="flex-shrink-0"><DealerTicker accentColor="#3B82F6" bgColor="#000" fontSize={18} borderColor="rgba(255,255,255,0.1)" speed={50} showBorder={true} /></div>
 
         {/* FOOTER */}
         <div className="border-t border-white/10 px-6 py-1.5 flex items-center justify-between flex-shrink-0">

@@ -1,13 +1,11 @@
 /**
- * Membership Plans - Image-Based Layout with JS Click Detection
- * /commander/membership-plans
+ * Membership Plans - /commander/membership-plans
  *
- * Uses the exact mockup image as the page.
- * Clicks anywhere on the image are detected via JS - the Y position
- * relative to the image determines which plan card was tapped.
- * The edit popover appears directly on top of the clicked card.
+ * One steel-rimmed surface with a row per plan (Daily, Weekly, Monthly,
+ * Yearly): live price, Edit Price opens the inline editor, Save writes the
+ * plan's price field through the existing API (#SMARTERDESIGN, 2026-11-27).
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Loader2, Check } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
@@ -20,17 +18,6 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 const PLAN_ORDER = ['daily', 'weekly', 'monthly', 'yearly'];
 const PLAN_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
 const PRICE_SUFFIX = { daily: ' Per Day', weekly: ' Per Week', monthly: ' Per Month', yearly: ' Per Year' };
-// Y% positioning: centered within each card zone (measured from background image)
-const PRICE_TEXT_Y = { daily: 32.5, weekly: 45, monthly: 58, yearly: 71 };
-
-// Card zones in the source image - measured as percentage of image height
-// Each entry: [topPercent, bottomPercent]
-const CARD_ZONES = {
-  daily: [27, 38],
-  weekly: [39, 51],
-  monthly: [52, 64],
-  yearly: [65, 77] };
-
 function getPlanPrice(plan) {
   if (plan.tier === 'daily') return plan.price_daily;
   if (plan.tier === 'weekly') return plan.price_weekly;
@@ -49,7 +36,6 @@ function getPriceField(tier) {
 export default function MembershipPlansPage() {
   useEffect(() => { busEmit.sessionStart('commander-membership-plans'); }, []);
   const router = useRouter();
-  const imgRef = useRef(null);
   const [venueId, setVenueId] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,13 +47,16 @@ export default function MembershipPlansPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // An effect may only return a cleanup function: returning router.push()'s
+    // promise made React call it on unmount ("destroy is not a function").
+    const toLogin = () => { router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); };
     const s = getStaffSession();
-    if (!s) return router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+    if (!s) { toLogin(); return; }
     try {
       const sd = JSON.parse(s);
-      if (!sd.venue_id) return router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+      if (!sd.venue_id) { toLogin(); return; }
       setVenueId(sd.venue_id);
-    } catch { router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); }
+    } catch { toLogin(); }
   }, [router]);
 
   useEffect(() => { if (venueId) { const _c = new AbortController(); fetchPlans(_c.signal); return () => _c.abort(); } }, [venueId]);
@@ -91,30 +80,6 @@ const data = await commanderFetchJSON(`/api/commander/membership-plans?venue_id=
   // Map plans by tier
   const planByTier = {};
   plans.forEach(p => { planByTier[p.tier] = p; });
-
-  // JS click detection: calculate Y% relative to image, map to card zone
-  const handleImageClick = useCallback((e) => {
-    const img = e.currentTarget;
-    const rect = img.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const yPercent = (clickY / rect.height) * 100;
-
-    // Find which card zone was clicked
-    for (const [tier, [top, bottom]] of Object.entries(CARD_ZONES || {})) {
-      if (yPercent >= top && yPercent <= bottom) {
-        const plan = planByTier[tier];
-        if (plan) {
-          setEditingId(plan.id);
-          setEditingTier(tier);
-          const price = getPlanPrice(plan);
-          setEditPrice(price != null ? String(Number(price)) : '');
-          setError(null);
-        }
-        return;
-      }
-    }
-    // Click was outside any card zone - do nothing
-  }, [planByTier]);
 
   function closeEditor() {
     setEditingId(null);
@@ -146,288 +111,115 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
     setSaving(null);
   }
 
-  // Calculate the popover position based on the card zone
   const editingPlan = editingId ? plans.find(p => p.id === editingId) : null;
-  const editingZone = editingTier ? CARD_ZONES[editingTier] : null;
 
+  function startEdit(plan) {
+    setEditingId(plan.id);
+    setEditingTier(plan.tier);
+    const price = getPlanPrice(plan);
+    setEditPrice(price != null ? String(Number(price)) : '');
+    setError(null);
+  }
+
+  // #SMARTERDESIGN (Dan, 2026-11-27): this page used to BE a painted mockup
+  // image (membership-plans-bg-user-clean.jpg) with prices floated over it and
+  // clicks mapped to Y-percent zones. Same plans, same price editor and save,
+  // now real cards on the steel-rim surface with live, selectable text.
   return (
     <CommanderLayout title="Membership Plans" backHref="/commander/dashboard">
       <SEOHead
-              title="Commander - Membership Plans"
-              description="Club Commander Poker Room Management Tool."
-              noindex={true}
-            />
-      <style>{`
-        .mp-page {
-          min-height: 100vh;
-          background: #0f0f0f;
-          font-family: 'Inter', sans-serif;
-          padding: 0;
-          margin: 0;
-        }
-        .mp-container {
-          position: relative;
-          width: 100%;
-        }
-        .mp-bg-img {
-          width: 100%;
-          display: block;
-          cursor: pointer;
-        }
-        /* Inline edit popover - positioned absolutely over the card */
-        .mp-edit-popover {
-          position: absolute;
-          left: 8%;
-          right: 8%;
-          z-index: 300;
-          background: linear-gradient(135deg, rgba(20,20,30,0.97) 0%, rgba(14,14,18,0.97) 100%);
-          border: 2px solid #4a4aff;
-          border-radius: 16px;
-          padding: 16px 18px;
-          box-shadow: 0 8px 32px rgba(74,74,255,0.25), 0 0 60px rgba(0,0,0,0.6);
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          backdrop-filter: blur(12px);
-          animation: mp-popIn 0.2s ease-out;
-        }
-        @keyframes mp-popIn {
-          from { opacity: 0; transform: scale(0.92); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .mp-edit-label {
-          font-size: 14px;
-          font-weight: 700;
-          color: #ccc;
-          white-space: nowrap;
-          min-width: 60px;
-        }
-        .mp-edit-label strong {
-          display: block;
-          font-size: 16px;
-          color: #fff;
-          margin-bottom: 2px;
-        }
-        .mp-edit-inline-input-wrap {
-          position: relative;
-          flex: 0 0 auto;
-          width: 110px;
-        }
-        .mp-edit-inline-input-wrap .pfx {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 20px;
-          font-weight: 800;
-          color: #666;
-          pointer-events: none;
-        }
-        .mp-edit-inline-input {
-          width: 100%;
-          background: #111;
-          border: 2px solid #444;
-          border-radius: 10px;
-          padding: 10px 12px 10px 32px;
-          color: #fff;
-          font-size: 22px;
-          font-weight: 900;
-          outline: none;
-          text-align: center;
-          transition: border-color 0.2s;
-        }
-        .mp-edit-inline-input:focus { border-color: #4a4aff; }
-        .mp-edit-inline-btns {
-          display: flex;
-          gap: 8px;
-          margin-left: auto;
-        }
-        .mp-btn-save {
-          background: linear-gradient(135deg, #31A24C, #1e7a34);
-          border: none;
-          border-radius: 10px;
-          padding: 10px 18px;
-          color: #fff;
-          font-size: 14px;
-          font-weight: 700;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          box-shadow: 0 2px 8px rgba(49,162,76,0.3);
-          transition: opacity 0.2s;
-          white-space: nowrap;
-        }
-        .mp-btn-save:hover { opacity: 0.9; }
-        .mp-btn-cancel {
-          background: rgba(255,255,255,0.07);
-          border: 1px solid #444;
-          border-radius: 10px;
-          padding: 10px 14px;
-          color: #999;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-        .mp-btn-cancel:hover { border-color: #666; color: #fff; }
-        /* Dynamic price overlay - white text centered in the right-side gap of each card */
-        .mp-price-overlay {
-          position: absolute;
-          left: 72%;
-          transform: translate(-50%, -50%);
-          display: flex;
-          justify-content: center;
-          text-align: center;
-          align-items: center;
-          pointer-events: none;
-          z-index: 10;
-          font-family: 'Inter', -apple-system, sans-serif;
-          font-size: clamp(16px, 2.8vw, 28px);
-          font-weight: 700;
-          color: #ffffff;
-          letter-spacing: 0.5px;
-          text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.4);
-          background: none;
-        }
-        /* Scrim behind popover to catch dismiss clicks */
-        .mp-scrim {
-          position: fixed;
-          inset: 0;
-          z-index: 299;
-          background: rgba(0,0,0,0.45);
-        }
-        .mp-toast {
-          position: fixed;
-          top: 70px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 400;
-          padding: 12px 24px;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 700;
-        }
-        .mp-toast.ok { background: rgba(49,162,76,0.95); color: #fff; box-shadow: 0 4px 16px rgba(49,162,76,0.4); }
-        .mp-toast.err { background: rgba(239,68,68,0.95); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.4); }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* Responsive: stack vertically on narrow screens */
-        @media (max-width: 480px) {
-          .mp-edit-popover {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 10px;
-            left: 5%;
-            right: 5%;
-            padding: 14px;
-          }
-          .mp-edit-label {
-            text-align: center;
-          }
-          .mp-edit-inline-input-wrap {
-            width: 100%;
-          }
-          .mp-edit-inline-btns {
-            justify-content: center;
-            margin-left: 0;
-          }
-        }
-      `}</style>
-
+        title="Commander - Membership Plans"
+        description="Club Commander Poker Room Management Tool."
+        noindex={true}
+      />
       <div className="mp-page">
-        {/* Toasts */}
-        {success && <div className="mp-toast ok">✓ {success}</div>}
-        {error && !editingId && <div className="mp-toast err">⚠ {error}</div>}
+        {success && <div className="mp-toast ok" role="status">{success}</div>}
+        {error && !editingId && <div className="mp-toast err" role="alert">{error}</div>}
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-            <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: '#1877F2' }} />
-          </div>
+          <div className="mp-loading"><Loader2 size={32} className="animate-spin" aria-label="Loading Plans" /></div>
         ) : (
-          <div className="mp-container">
-            {/* Scrim to dismiss popover when clicking outside */}
-            {editingId && <div className="mp-scrim" onClick={closeEditor} />}
-
-            {/* Full-width background image - click detection via JS */}
-            <img
-              ref={imgRef}
-              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/commander/membership-plans-bg-user-clean.jpg`}
-              alt="Membership Plans"
-              className="mp-bg-img"
-              draggable={false}
-              onClick={handleImageClick}
-             loading="lazy" />
-
-            {/* Dynamic price overlays - positioned on each card zone */}
-            {PLAN_ORDER.map(tier => {
+          <section className="sd-panel mp-plans" aria-label="Membership Plans">
+            {PLAN_ORDER.map((tier) => {
               const plan = planByTier[tier];
               if (!plan) return null;
               const price = getPlanPrice(plan);
-              if (price == null) return null;
-              const yPct = PRICE_TEXT_Y[tier];
+              const editing = editingId === plan.id;
               return (
-                <div
-                  key={tier}
-                  className="mp-price-overlay"
-                  style={{ top: `${yPct}%` }}
-                >
-                  ${Number(price)}{PRICE_SUFFIX[tier]}
-                </div>
+                <article key={tier} className="mp-plan" data-tier={tier}>
+                  <div className="mp-plan__copy">
+                    <h2 className="mp-plan__name">{PLAN_LABELS[tier]}</h2>
+                    {plan.is_active === false ? <span className="mp-plan__state">Inactive</span> : null}
+                  </div>
+                  {editing ? (
+                    <div className="mp-plan__edit">
+                      <label className="mp-plan__field">
+                        <span className="sr-only">{PLAN_LABELS[tier]} Price</span>
+                        <span className="mp-plan__pfx" aria-hidden="true">$</span>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          inputMode="decimal"
+                          value={editPrice}
+                          onChange={(e) => setEditPrice(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') savePrice(plan);
+                            if (e.key === 'Escape') closeEditor();
+                          }}
+                        />
+                      </label>
+                      <button type="button" className="sd-button" onClick={closeEditor}>Cancel</button>
+                      <button type="button" className="sd-button sd-primary" disabled={saving === plan.id} onClick={() => savePrice(plan)}>
+                        {saving === plan.id ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Check size={14} aria-hidden="true" />} Save
+                      </button>
+                      {error ? <p className="mp-plan__error" role="alert">{error}</p> : null}
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mp-plan__price">
+                        {price == null ? 'Not Set' : <>${Number(price)}<span>{PRICE_SUFFIX[tier]}</span></>}
+                      </p>
+                      <button type="button" className="sd-button" onClick={() => startEdit(plan)} aria-label={`Edit ${PLAN_LABELS[tier]} Price`}>
+                        Edit Price
+                      </button>
+                    </>
+                  )}
+                </article>
               );
             })}
-
-            {/* Inline edit popover - anchored directly over the clicked card */}
-            {editingPlan && editingZone && (() => {
-              const [topPct, bottomPct] = editingZone;
-              const midPct = (topPct + bottomPct) / 2;
-              const heightPct = bottomPct - topPct;
-              const meta = PLAN_LABELS[editingPlan.tier] || editingPlan.tier;
-              return (
-                <div
-                  className="mp-edit-popover"
-                  style={{
-                    top: `${midPct}%`,
-                    transform: 'translateY(-50%)',
-                    minHeight: `${heightPct}%` }}
-                >
-                  <div className="mp-edit-label">
-                    <strong>{meta}</strong>
-                    Price
-                  </div>
-                  <div className="mp-edit-inline-input-wrap">
-                    <span className="pfx">$</span>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      className="mp-edit-inline-input"
-                      value={editPrice}
-                      onChange={e => setEditPrice(e.target.value)}
-                      autoFocus
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') savePrice(editingPlan);
-                        if (e.key === 'Escape') closeEditor();
-                      }}
-                    />
-                  </div>
-                  {error && <div style={{ color: '#EF4444', fontSize: 12, fontWeight: 600 }}>⚠ {error}</div>}
-                  <div className="mp-edit-inline-btns">
-                    <button className="mp-btn-cancel" onClick={closeEditor}>✕</button>
-                    <button className="mp-btn-save" disabled={saving === editingPlan.id} onClick={() => savePrice(editingPlan)}>
-                      {saving === editingPlan.id
-                        ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                        : <Check size={14} />}
-                      Save
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
+            {PLAN_ORDER.every((t) => !planByTier[t]) ? (
+              <p className="mp-empty">No Membership Plans Are Set Up For This Venue Yet.</p>
+            ) : null}
+          </section>
         )}
       </div>
+      <style>{`
+        .mp-page { max-width: 880px; margin: 0 auto; padding: 4px clamp(8px, 2vw, 24px) 96px; }
+        .mp-loading { display: flex; justify-content: center; padding: 80px 0; color: #86DAFF; }
+        .mp-plans { display: grid; gap: 0; }
+        .mp-plan { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 14px 4px; border-bottom: 1px solid #1d3550; }
+        .mp-plan:last-of-type { border-bottom: 0; }
+        .mp-plan__name { margin: 0; color: #F2F7FF; font: 700 clamp(1.25rem, 3vw, 1.6rem)/1.1 var(--sd-type); }
+        .mp-plan__state { display: inline-block; margin-top: 4px; color: #BDD0E2; font-size: .8rem; font-weight: 700; }
+        .mp-plan__price { margin: 0; color: #F2F7FF; font: 700 clamp(1.3rem, 3.4vw, 1.75rem)/1 var(--sd-type); font-variant-numeric: tabular-nums; text-align: right; }
+        .mp-plan__price span { margin-left: 6px; color: #BDD0E2; font-size: .62em; font-weight: 600; }
+        .mp-plan__edit { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+        .mp-plan__field { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px; border: 1px solid #445E77; background: #071420; border-radius: 8px; }
+        .mp-plan__field input { width: 7.5rem; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #F2F7FF; font: 700 1.2rem var(--sd-type); font-variant-numeric: tabular-nums; }
+        .mp-plan__pfx { color: #BDD0E2; font-weight: 700; }
+        .mp-plan__error { flex-basis: 100%; margin: 0; color: #F87171; font-size: .82rem; font-weight: 600; text-align: right; }
+        .mp-empty { margin: 0; padding: 24px 8px; color: #BDD0E2; text-align: center; }
+        .mp-toast { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 10px 18px; border-radius: 10px; font-weight: 700; color: #fff; }
+        .mp-toast.ok { background: #166534; }
+        .mp-toast.err { background: #991B1B; }
+        @media (max-width: 560px) {
+          .mp-plan { grid-template-columns: minmax(0, 1fr) auto; }
+          .mp-plan > .sd-button { grid-column: 1 / -1; }
+          .mp-plan__edit { grid-column: 1 / -1; justify-content: stretch; }
+        }
+      `}</style>
     </CommanderLayout>
   );
 }

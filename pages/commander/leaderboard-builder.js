@@ -266,7 +266,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                     style={{ marginBottom: '24px' }}
                 >
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }} data-tour="lb-actions">
-                        <button onClick={() => setShowCreate(!showCreate)} style={{ ...s.btn, background: '#1877F2', color: 'white' }}>
+                        <button onClick={() => setShowCreate(!showCreate)} style={{ ...s.btn, background: '#1981EC', color: 'white' }}>
                             {showCreate ? '✕ Cancel' : '+ Create Board'}
                         </button>
                         <a href="/commander/displays/leaderboard" target="_blank" rel="noopener" style={{ ...s.btn, background: 'rgba(255,255,255,0.1)', color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -277,7 +277,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
 
                 {/* CREATE FORM */}
                 {showCreate && (
-                    <div style={{ ...s.card, border: '2px solid #1877F2' }}>
+                    <div style={{ ...s.card, border: '2px solid #1981EC' }}>
                         <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>Create New Leaderboard</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div>
@@ -328,7 +328,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
 
                         <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                             <button onClick={() => setShowCreate(false)} style={{ ...s.btn, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}>Cancel</button>
-                            <button onClick={handleCreate} style={{ ...s.btn, background: '#1877F2', color: 'white' }}>Create Board</button>
+                            <button onClick={handleCreate} style={{ ...s.btn, background: '#1981EC', color: 'white' }}>Create Board</button>
                         </div>
                     </div>
                 )}
@@ -350,7 +350,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                         const isActive = board.status === 'active';
 
                         return (
-                            <div key={board.id} style={{ ...s.card, borderLeft: isActive ? '4px solid #31A24C' : '4px solid #64748B' }}>
+                            <div key={board.id} style={{ ...s.card, borderLeft: isActive ? '4px solid #31A24C' : '4px solid #9FB3C8' }}>
                                 {/* Board header */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => expandBoard(board.id)}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -358,7 +358,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                         <div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>{board.name}</h3>
-                                                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '99px', background: isActive ? 'rgba(49,162,76,0.15)' : 'rgba(100,116,139,0.15)', color: isActive ? '#31A24C' : '#64748B' }}>
+                                                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '99px', background: isActive ? 'rgba(49,162,76,0.15)' : 'rgba(100,116,139,0.15)', color: isActive ? '#31A24C' : '#9FB3C8' }}>
                                                     {isActive ? 'ON DISPLAY' : board.status?.toUpperCase()}
                                                 </span>
                                             </div>
@@ -381,7 +381,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                         {/* Auto-calculate button for session-based types */}
                                         {['hours_played', 'sessions'].includes(board.leaderboard_type) && (
                                             <div style={{ marginBottom: '16px' }}>
-                                                <button onClick={() => autoCalculate(board.id)} style={{ ...s.btn, background: 'rgba(99,102,241,0.15)', color: '#6366F1', fontSize: '12px' }}>
+                                                <button onClick={() => autoCalculate(board.id)} style={{ ...s.btn, background: 'rgba(99,102,241,0.15)', color: '#3B82F6', fontSize: '12px' }}>
                                                     Auto-Calculate From Player Sessions
                                                 </button>
                                                 <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginLeft: '10px' }}>
@@ -406,7 +406,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                                     <tbody>
                                                         {boardEntries.map((e, i) => (
                                                             <tr key={e.id || i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                                                <td style={{ padding: '8px', color: i < 3 ? '#FFD700' : 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{i + 1}</td>
+                                                                <td style={{ padding: '8px', color: i < 3 ? '#22D3EE' : 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{i + 1}</td>
                                                                 <td style={{ padding: '8px', fontWeight: 600 }}>{e.player_name || e.profiles?.display_name || 'Player'}</td>
                                                                 <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#3B82F6' }}>{e.score || 0}</td>
                                                                 <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>{e.hours_played ? `${Number(e.hours_played).toFixed(1)}h` : '-'}</td>
@@ -445,7 +445,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                                                     <label style={{ ...s.label, fontSize: '10px' }}>Sessions</label>
                                                     <input type="number" style={s.input} placeholder="0" value={addEntry.sessions_count} onChange={e => setAddEntry({ ...addEntry, sessions_count: e.target.value })} />
                                                 </div>
-                                                <button onClick={() => handleAddEntry(board.id)} style={{ ...s.btn, background: '#1877F2', color: 'white', whiteSpace: 'nowrap' }}>+ Add</button>
+                                                <button onClick={() => handleAddEntry(board.id)} style={{ ...s.btn, background: '#1981EC', color: 'white', whiteSpace: 'nowrap' }}>+ Add</button>
                                             </div>
                                         </div>
                                     </div>
@@ -456,7 +456,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                 )}
 
                 {/* INFO SECTION */}
-                <div data-tour="lb-info" style={{ ...s.card, marginTop: '24px', background: 'rgba(24,119,242,0.05)', border: '2px solid rgba(24,119,242,0.25)' }}>
+                <div data-tour="lb-info" style={{ ...s.card, marginTop: '24px', background: 'rgba(25, 129, 236,0.05)', border: '2px solid rgba(25, 129, 236,0.25)' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>How Leaderboards Work</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
                         <div>

@@ -34,7 +34,7 @@ export default function VenueCard({ venue, games = [], waitlistCounts = {} }) {
               <h3 className="font-extrabold text-white text-xl tracking-wide group-hover:text-[#22D3EE] transition-colors">
                 {venue.name}
               </h3>
-              <p className="text-sm text-[#64748B] flex items-center gap-2 mt-1 font-medium">
+              <p className="text-sm text-[#9FB3C8] flex items-center gap-2 mt-1 font-medium">
                 <MapPin className="w-4 h-4" />
                 {venue.city}, {venue.state}
               </p>
@@ -93,7 +93,7 @@ export default function VenueCard({ venue, games = [], waitlistCounts = {} }) {
       )}
 
       {venue.distance_mi && (
-        <div className="mt-4 text-xs text-[#64748B] font-bold uppercase tracking-[0.2em]">
+        <div className="mt-4 text-xs text-[#9FB3C8] font-bold uppercase tracking-[0.2em]">
           {venue.distance_mi} miles away
         </div>
       )}

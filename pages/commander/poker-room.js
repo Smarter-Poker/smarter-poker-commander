@@ -167,7 +167,7 @@ const res = await commanderFetch('/api/commander/settings', {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#18191A] p-4" style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div className="min-h-screen bg-[#040D18] p-4" style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ background: '#2A2B2C', height: 28, width: 220, borderRadius: 6, marginBottom: 8 }} />
           <div style={{ background: '#2A2B2C', height: 14, width: 140, borderRadius: 6 }} />
@@ -184,7 +184,7 @@ const res = await commanderFetch('/api/commander/settings', {
     <CommanderLayout title="Poker Room Functions" backHref="/commander/dashboard?card=staff">
       <>
         <SEOHead title="Commander - Poker Room Functions" description="Club Commander Poker Room Management Tool." noindex={true} />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
           {/* Room Status Banner */}
           <div className="px-4 pt-4 pb-2">
@@ -206,7 +206,7 @@ const res = await commanderFetch('/api/commander/settings', {
                   <h2 className="text-xl font-bold text-white">
                     Room {roomOpen ? 'Open' : 'Closed'}
                   </h2>
-                  <p className="text-sm text-[#B0B3B8]">
+                  <p className="text-sm text-[#BDD0E2]">
                     {roomOpen
                       ? `${activeTables.length} Tables Running • ${totalSeated} Seated`
                       : 'Tap To Open The Room'
@@ -229,10 +229,10 @@ const res = await commanderFetch('/api/commander/settings', {
           <div className="px-4 py-2">
             <div className="grid grid-cols-4 gap-2">
               <StatCard value={cashTables.length} label="Cash" icon={LayoutGrid} color="#31A24C" />
-              <StatCard value={tournamentTables.length} label="Tourney" icon={Trophy} color="#F59E0B" />
-              <StatCard value={totalSeated} label="Players" icon={Users} color="#1877F2" />
+              <StatCard value={tournamentTables.length} label="Tourney" icon={Trophy} color="#22D3EE" />
+              <StatCard value={totalSeated} label="Players" icon={Users} color="#1981EC" />
               <StatCard value={`${occupancyPct}%`} label="Full" icon={Zap}
-                color={occupancyPct > 80 ? '#EF4444' : occupancyPct > 50 ? '#F59E0B' : '#31A24C'} />
+                color={occupancyPct > 80 ? '#EF4444' : occupancyPct > 50 ? '#22D3EE' : '#31A24C'} />
             </div>
           </div>
 
@@ -242,14 +242,14 @@ const res = await commanderFetch('/api/commander/settings', {
               <h3 className="text-xs font-semibold text-[#31A24C] uppercase tracking-wider mb-2">Cash Games ({cashTables.length})</h3>
               <div className="space-y-1.5">
                 {Object.entries(cashGameGroups || {}).map(([game, data]) => (
-                  <div key={game} className="bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3 flex items-center justify-between">
+                  <div key={game} className="bg-[#0A1829] rounded-xl border border-[#445E77] px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-[#31A24C] animate-pulse" />
                       <span className="text-sm font-medium text-white">{game}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-[#B0B3B8]">{data.tables} Table{data.tables !== 1 ? 's' : ''}</span>
-                      <span className="text-sm font-bold text-[#1877F2]">{data.players} <span className="text-[#B0B3B8] font-normal text-xs">Players</span></span>
+                      <span className="text-xs text-[#BDD0E2]">{data.tables} Table{data.tables !== 1 ? 's' : ''}</span>
+                      <span className="text-sm font-bold text-[#86DAFF]">{data.players} <span className="text-[#BDD0E2] font-normal text-xs">Players</span></span>
                     </div>
                   </div>
                 ))}
@@ -260,17 +260,17 @@ const res = await commanderFetch('/api/commander/settings', {
           {/* Tournament Tables Breakdown */}
           {Object.keys(tournamentGameGroups || {}).length > 0 && (
             <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-[#F59E0B] uppercase tracking-wider mb-2">Tournament Tables ({tournamentTables.length})</h3>
+              <h3 className="text-xs font-semibold text-[#22D3EE] uppercase tracking-wider mb-2">Tournament Tables ({tournamentTables.length})</h3>
               <div className="space-y-1.5">
                 {Object.entries(tournamentGameGroups || {}).map(([game, data]) => (
-                  <div key={game} className="bg-[#242526] rounded-xl border border-[#F59E0B]/20 px-4 py-3 flex items-center justify-between">
+                  <div key={game} className="bg-[#0A1829] rounded-xl border border-[#22D3EE]/20 px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" />
+                      <div className="w-2 h-2 rounded-full bg-[#22D3EE] animate-pulse" />
                       <span className="text-sm font-medium text-white">{game}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-[#B0B3B8]">{data.tables} Table{data.tables !== 1 ? 's' : ''}</span>
-                      <span className="text-sm font-bold text-[#F59E0B]">{data.players} <span className="text-[#B0B3B8] font-normal text-xs">Players</span></span>
+                      <span className="text-xs text-[#BDD0E2]">{data.tables} Table{data.tables !== 1 ? 's' : ''}</span>
+                      <span className="text-sm font-bold text-[#22D3EE]">{data.players} <span className="text-[#BDD0E2] font-normal text-xs">Players</span></span>
                     </div>
                   </div>
                 ))}
@@ -281,8 +281,8 @@ const res = await commanderFetch('/api/commander/settings', {
           {/* Live Table Grid */}
           <div className="px-4 py-2">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-[#B0B3B8] uppercase tracking-wider">Table Floor</h3>
-              <button onClick={fetchData} className="flex items-center gap-1 text-xs text-[#1877F2] active:text-[#1565D8]">
+              <h3 className="text-xs font-semibold text-[#BDD0E2] uppercase tracking-wider">Table Floor</h3>
+              <button onClick={fetchData} className="flex items-center gap-1 text-xs text-[#86DAFF] active:text-[#0A4AA8]">
                 <RefreshCw className="w-3 h-3" /> Refresh
               </button>
             </div>
@@ -304,29 +304,29 @@ const res = await commanderFetch('/api/commander/settings', {
                         onClick={() => router.push(`/commander/table/${table.id || table.table_number}`)}
                         className={`rounded-xl border p-3 text-center active:scale-[0.97] transition-transform relative ${isActive
                           ? (table.mode || table.table_purpose) === 'tournament'
-                            ? 'bg-[#242526] border-[#F59E0B]/30'
-                            : 'bg-[#242526] border-[#31A24C]/30'
-                          : 'bg-[#1E1F20] border-[#3A3B3C]/50 opacity-50'
+                            ? 'bg-[#0A1829] border-[#22D3EE]/30'
+                            : 'bg-[#0A1829] border-[#31A24C]/30'
+                          : 'bg-[#1E1F20] border-[#445E77]/50 opacity-50'
                           }`}>
                         {/* Purpose badge */}
                         <div className={`absolute top-1 right-1 text-[8px] font-bold px-1.5 py-0.5 rounded-md ${(table.mode || table.table_purpose) === 'tournament'
-                          ? 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30'
+                          ? 'bg-[#22D3EE]/15 text-[#22D3EE] border border-[#22D3EE]/30'
                           : 'bg-[#31A24C]/15 text-[#31A24C] border border-[#31A24C]/30'
                           }`}>{(table.mode || table.table_purpose) === 'tournament' ? 'T' : 'C'}</div>
                         <div className="text-lg font-bold text-white">T{table.table_number}</div>
                         {isActive ? (
                           <>
                             <div className={`text-xl font-black ${fillPct >= 90 ? 'text-[#EF4444]' :
-                              fillPct >= 60 ? 'text-[#F59E0B]' : 'text-[#31A24C]'
+                              fillPct >= 60 ? 'text-[#22D3EE]' : 'text-[#31A24C]'
                               }`}>
                               {players}/{maxSeats}
                             </div>
-                            {game && <div className="text-[9px] text-[#B0B3B8] truncate mt-0.5">{game}</div>}
-                            {stakes && <div className={`text-[10px] font-medium ${(table.mode || table.table_purpose) === 'tournament' ? 'text-[#F59E0B]' : 'text-[#31A24C]'}`}>{stakes}</div>}
+                            {game && <div className="text-[9px] text-[#BDD0E2] truncate mt-0.5">{game}</div>}
+                            {stakes && <div className={`text-[10px] font-medium ${(table.mode || table.table_purpose) === 'tournament' ? 'text-[#22D3EE]' : 'text-[#31A24C]'}`}>{stakes}</div>}
                             {/* Fill bar */}
-                            <div className="mt-1.5 h-1 bg-[#3A3B3C] rounded-full overflow-hidden">
+                            <div className="mt-1.5 h-1 bg-[#132A42] rounded-full overflow-hidden">
                               <div className={`h-full rounded-full ${fillPct >= 90 ? 'bg-[#EF4444]' :
-                                fillPct >= 60 ? 'bg-[#F59E0B]' : 'bg-[#31A24C]'
+                                fillPct >= 60 ? 'bg-[#22D3EE]' : 'bg-[#31A24C]'
                                 }`} style={{ width: `${fillPct}%` }} />
                             </div>
                           </>
@@ -341,11 +341,11 @@ const res = await commanderFetch('/api/commander/settings', {
                   })}
               </div>
             ) : (
-              <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-8 text-center">
-                <LayoutGrid className="w-10 h-10 text-[#3A3B3C] mx-auto mb-2" />
-                <p className="text-[#B0B3B8] text-sm">No Tables Configured</p>
+              <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-8 text-center">
+                <LayoutGrid className="w-10 h-10 text-[#7F97B0] mx-auto mb-2" />
+                <p className="text-[#BDD0E2] text-sm">No Tables Configured</p>
                 <button onClick={() => router.push('/commander/tables')}
-                  className="mt-3 px-4 py-2 rounded-lg bg-[#1877F2] text-white text-sm font-medium active:bg-[#1565D8]">
+                  className="mt-3 px-4 py-2 rounded-lg bg-[#0C55C0] text-white text-sm font-medium active:bg-[#0A4AA8]">
                   Set Up Tables
                 </button>
               </div>
@@ -354,7 +354,7 @@ const res = await commanderFetch('/api/commander/settings', {
 
           {/* Quick Actions - Room-specific only */}
           <div className="px-4 py-3">
-            <h3 className="text-xs font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">Quick Actions</h3>
+            <h3 className="text-xs font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
               <QuickAction icon={LayoutGrid} label="Manage Tables" desc="Add, Edit, Close Tables" path="/commander/tables" router={router} />
               <QuickAction icon={ArrowRightLeft} label="Must-Move" desc="Move Players Between Games" path="/commander/must-move" router={router} />
@@ -366,11 +366,11 @@ const res = await commanderFetch('/api/commander/settings', {
           {/* Capacity Alert */}
           {occupancyPct >= 80 && roomOpen && (
             <div className="px-4 pb-4">
-              <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+              <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-[#22D3EE] flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-[#F59E0B]">High Occupancy</p>
-                  <p className="text-xs text-[#B0B3B8]">{occupancyPct}% Of Seats Filled - Consider Opening More Tables</p>
+                  <p className="text-sm font-medium text-[#22D3EE]">High Occupancy</p>
+                  <p className="text-xs text-[#BDD0E2]">{occupancyPct}% Of Seats Filled - Consider Opening More Tables</p>
                 </div>
               </div>
             </div>
@@ -404,10 +404,10 @@ const res = await commanderFetch('/api/commander/settings', {
 
 function StatCard({ value, label, icon: Icon, color }) {
   return (
-    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-2.5 text-center">
+    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-2.5 text-center">
       <Icon className="w-4 h-4 mx-auto mb-1" style={{ color }} />
       <p className="text-lg font-bold text-white">{value}</p>
-      <p className="text-[9px] text-[#B0B3B8] uppercase">{label}</p>
+      <p className="text-[9px] text-[#BDD0E2] uppercase">{label}</p>
     </div>
   );
 }
@@ -415,13 +415,13 @@ function StatCard({ value, label, icon: Icon, color }) {
 function QuickAction({ icon: Icon, label, desc, path, router }) {
   return (
     <button onClick={() => router.push(path)}
-      className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3.5 flex items-start gap-3 active:bg-[#3A3B3C] text-left">
-      <div className="w-9 h-9 rounded-lg bg-[#1877F2]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Icon className="w-4.5 h-4.5 text-[#1877F2]" />
+      className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3.5 flex items-start gap-3 active:bg-[#132A42] text-left">
+      <div className="w-9 h-9 rounded-lg bg-[#0C55C0]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon className="w-4.5 h-4.5 text-[#86DAFF]" />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-white">{label}</p>
-        <p className="text-[10px] text-[#B0B3B8]">{desc}</p>
+        <p className="text-[10px] text-[#BDD0E2]">{desc}</p>
       </div>
     </button>
   );

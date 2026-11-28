@@ -12,7 +12,7 @@ const HAND_RANKS = [
 ];
 
 const SUIT_SYMBOLS = {
-  spades: { symbol: 'S', color: '#94A3B8' },
+  spades: { symbol: 'S', color: '#A9BDD1' },
   hearts: { symbol: 'H', color: '#EF4444' },
   diamonds: { symbol: 'D', color: '#3B82F6' },
   clubs: { symbol: 'C', color: '#10B981' }
@@ -82,12 +82,12 @@ export default function HighHandDisplay({
       <div className="cmd-panel cmd-corner-lights p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Star size={20} className="text-[#F59E0B]" />
+            <Star size={20} className="text-[#22D3EE]" />
             Current High Hand
           </h3>
           {promotion?.end_time && (
             <div className="flex items-center gap-2 text-sm">
-              <Clock size={14} className="text-[#64748B]" />
+              <Clock size={14} className="text-[#9FB3C8]" />
               <TimeRemaining endTime={promotion.end_time} />
             </div>
           )}
@@ -106,18 +106,18 @@ export default function HighHandDisplay({
                       className="w-14 h-14 rounded-full object-cover"
                     />
                   ) : (
-                    <User size={24} className="text-[#64748B]" />
+                    <User size={24} className="text-[#9FB3C8]" />
                   )}
                 </div>
                 <div>
                   <p className="text-xl font-bold text-white">
                     {currentHighHand.player_name || currentHighHand.profiles?.display_name || 'Unknown'}
                   </p>
-                  <p className="text-lg font-medium text-[#F59E0B]">
+                  <p className="text-lg font-medium text-[#22D3EE]">
                     {currentHighHand.hand_description}
                   </p>
                   {currentHighHand.hand_rank && (
-                    <p className="text-sm text-[#64748B]">{currentHighHand.hand_rank}</p>
+                    <p className="text-sm text-[#9FB3C8]">{currentHighHand.hand_rank}</p>
                   )}
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function HighHandDisplay({
               {/* Prize */}
               {promotion?.prize_amount && (
                 <div className="text-right">
-                  <p className="text-sm text-[#64748B]">Prize</p>
+                  <p className="text-sm text-[#9FB3C8]">Prize</p>
                   <p className="text-2xl font-bold text-[#10B981]">
                     ${promotion.prize_amount.toLocaleString()}
                   </p>
@@ -134,7 +134,7 @@ export default function HighHandDisplay({
             </div>
 
             {/* Details */}
-            <div className="flex items-center gap-4 mt-3 text-sm text-[#64748B]">
+            <div className="flex items-center gap-4 mt-3 text-sm text-[#9FB3C8]">
               {currentHighHand.table_number && (
                 <span className="flex items-center gap-1">
                   <Table2 size={14} />
@@ -157,10 +157,10 @@ export default function HighHandDisplay({
           </div>
         ) : (
           <div className="bg-[#0B1426] rounded-lg p-8 text-center">
-            <Trophy size={48} className="mx-auto text-[#4A5E78] mb-2" />
-            <p className="text-[#64748B]">No Qualifying Hand Yet This Period</p>
+            <Trophy size={48} className="mx-auto text-[#8FA6BE] mb-2" />
+            <p className="text-[#9FB3C8]">No Qualifying Hand Yet This Period</p>
             {promotion?.qualifying_hand && (
-              <p className="text-xs text-[#4A5E78] mt-1">
+              <p className="text-xs text-[#8FA6BE] mt-1">
                 Minimum: {promotion.qualifying_hand}
               </p>
             )}
@@ -175,7 +175,7 @@ export default function HighHandDisplay({
                 <h4 className="font-medium text-white">Submit New High Hand</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#64748B] mb-1">
+                    <label className="block text-xs font-medium text-[#9FB3C8] mb-1">
                       Player Name *
                     </label>
                     <input
@@ -187,7 +187,7 @@ export default function HighHandDisplay({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#64748B] mb-1">
+                    <label className="block text-xs font-medium text-[#9FB3C8] mb-1">
                       Table Number
                     </label>
                     <input
@@ -200,7 +200,7 @@ export default function HighHandDisplay({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#64748B] mb-1">
+                  <label className="block text-xs font-medium text-[#9FB3C8] mb-1">
                     Hand *
                   </label>
                   <input
@@ -213,7 +213,7 @@ export default function HighHandDisplay({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#64748B] mb-1">
+                    <label className="block text-xs font-medium text-[#9FB3C8] mb-1">
                       Hand Rank
                     </label>
                     <select
@@ -228,7 +228,7 @@ export default function HighHandDisplay({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#64748B] mb-1">
+                    <label className="block text-xs font-medium text-[#9FB3C8] mb-1">
                       Game Type
                     </label>
                     <select
@@ -279,26 +279,26 @@ export default function HighHandDisplay({
             {promotion.prize_amount && (
               <div className="flex items-center gap-2">
                 <DollarSign size={14} className="text-[#10B981]" />
-                <span className="text-[#64748B]">Prize:</span>
+                <span className="text-[#9FB3C8]">Prize:</span>
                 <span className="text-white font-medium">${promotion.prize_amount.toLocaleString()}</span>
               </div>
             )}
             {promotion.qualifying_hand && (
               <div className="flex items-center gap-2">
-                <Star size={14} className="text-[#F59E0B]" />
-                <span className="text-[#64748B]">Min Hand:</span>
+                <Star size={14} className="text-[#22D3EE]" />
+                <span className="text-[#9FB3C8]">Min Hand:</span>
                 <span className="text-white font-medium">{promotion.qualifying_hand}</span>
               </div>
             )}
             {promotion.min_stakes && (
               <div className="flex items-center gap-2">
                 <Table2 size={14} className="text-[#22D3EE]" />
-                <span className="text-[#64748B]">Min Stakes:</span>
+                <span className="text-[#9FB3C8]">Min Stakes:</span>
                 <span className="text-white font-medium">{promotion.min_stakes}</span>
               </div>
             )}
             {promotion.description && (
-              <div className="col-span-2 text-[#94A3B8]">{promotion.description}</div>
+              <div className="col-span-2 text-[#A9BDD1]">{promotion.description}</div>
             )}
           </div>
         </div>
@@ -317,9 +317,9 @@ export default function HighHandDisplay({
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
                   style={{
-                    backgroundColor: index === 0 ? '#F59E0B' :
+                    backgroundColor: index === 0 ? '#22D3EE' :
                       index === 1 ? '#9CA3AF' :
-                      index === 2 ? '#B45309' : '#4A5E78'
+                      index === 2 ? '#0E7490' : '#445E77'
                   }}
                 >
                   {index + 1}
@@ -330,14 +330,14 @@ export default function HighHandDisplay({
                       {hand.player_name || hand.profiles?.display_name || 'Unknown'}
                     </span>
                   </div>
-                  <p className="text-sm text-[#F59E0B]">{hand.hand_description}</p>
+                  <p className="text-sm text-[#22D3EE]">{hand.hand_description}</p>
                 </div>
                 <div className="text-right text-sm flex-shrink-0">
                   {hand.table_number && (
-                    <p className="text-[#64748B]">Table {hand.table_number}</p>
+                    <p className="text-[#9FB3C8]">Table {hand.table_number}</p>
                   )}
                   {hand.created_at && (
-                    <p className="text-[#4A5E78] text-xs">
+                    <p className="text-[#8FA6BE] text-xs">
                       {new Date(hand.created_at).toLocaleTimeString([], {
                         hour: 'numeric',
                         minute: '2-digit'

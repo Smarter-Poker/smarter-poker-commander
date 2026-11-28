@@ -41,7 +41,7 @@ export default function CommanderEffectsProvider({ children }) {
 
     // ── Confetti Effect ──
     const triggerConfetti = useCallback(() => {
-        const colors = ['#1877F2', '#31A24C', '#F59E0B', '#EF4444', '#22D3EE', '#A855F7', '#fff'];
+        const colors = ['#1981EC', '#31A24C', '#22D3EE', '#EF4444', '#22D3EE', '#5AA9FF', '#fff'];
         const particles = [];
         for (let i = 0; i < 40; i++) {
             particles.push({
@@ -74,7 +74,7 @@ export default function CommanderEffectsProvider({ children }) {
     }, []);
 
     // ── Screen Flash Effect ──
-    const triggerFlash = useCallback((color = '#1877F2', duration = 200) => {
+    const triggerFlash = useCallback((color = '#1981EC', duration = 200) => {
         setFlashColor(color);
         if (flashRef.current) clearTimeout(flashRef.current);
         flashRef.current = setTimeout(() => setFlashColor(null), duration);

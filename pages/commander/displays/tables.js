@@ -63,7 +63,7 @@ function formatTime(seconds) {
 function getTimerColor(seconds) {
   if (seconds <= 0) return '#EF4444';
   if (seconds <= 300) return '#EF4444';
-  if (seconds <= 900) return '#F59E0B';
+  if (seconds <= 900) return '#22D3EE';
   return '#31A24C';
 }
 
@@ -536,7 +536,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         <div style={{
           position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
           background: 'radial-gradient(ellipse at 50% 45%, #0f1a12 0%, #0c1210 25%, #080d0b 50%, #050808 75%, #020303 100%)',
-          color: '#E4E6EB', fontFamily: 'Inter, sans-serif', overflow: 'hidden', zIndex: 50 }}>
+          color: '#F2F7FF', fontFamily: 'Inter, sans-serif', overflow: 'hidden', zIndex: 50 }}>
 
           {/* ── Minimal Top Bar (no green header) ── */}
           <div style={{
@@ -579,7 +579,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
             <div style={{
               position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)', zIndex: 80,
               padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
-              background: 'rgba(24,119,242,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
+              background: 'rgba(25, 129, 236,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
               🪑 Moving {movingPlayer.player_name} - tap an empty seat
               <button onClick={() => { setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
@@ -595,7 +595,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
             {!table ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>🔒</div>
-                <p style={{ fontSize: 20, color: '#8A8D91', fontWeight: 600 }}>Table {lockedTableNum} - Loading...</p>
+                <p style={{ fontSize: 20, color: '#9FB3C8', fontWeight: 600 }}>Table {lockedTableNum} - Loading...</p>
               </div>
             ) : (
               <div style={{ width: '100%', maxWidth: 1100, position: 'relative' }}>
@@ -606,9 +606,9 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                     {/* ── Center Info: Club Name + Game + Table ── */}
                     <div style={{ position: 'absolute', top: '48%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center' }}>
                       <div style={{
-                        fontSize: 28, fontWeight: 900, color: 'rgba(255,215,0,0.85)',
+                        fontSize: 28, fontWeight: 900, color: 'rgba(34, 211, 238,0.85)',
                         textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8,
-                        textShadow: '0 2px 12px rgba(255,215,0,0.3)' }}>
+                        textShadow: '0 2px 12px rgba(34, 211, 238,0.3)' }}>
                         {venueName || 'Poker Room'}
                       </div>
                       <div style={{
@@ -623,7 +623,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                         {isTournament ? (game?.buy_in ? `$${game.buy_in} Buy-In` : '') : stakes}
                       </div>
                       {!isActive && (
-                        <div style={{ fontSize: 14, color: '#1877F2', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                        <div style={{ fontSize: 14, color: '#1981EC', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
                           Table Open
                         </div>
                       )}
@@ -636,22 +636,22 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                         position: 'absolute', top: dealerPos.top, left: dealerPos.left,
                         transform: 'translate(-50%, -50%)', zIndex: 3, cursor: 'pointer',
                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10,
-                        background: 'rgba(24,119,242,0.15)', borderRadius: 14, padding: '6px 12px 6px 6px',
-                        border: '2px solid rgba(24,119,242,0.6)', backdropFilter: 'blur(8px)', minWidth: 90,
+                        background: 'rgba(25, 129, 236,0.15)', borderRadius: 14, padding: '6px 12px 6px 6px',
+                        border: '2px solid rgba(25, 129, 236,0.6)', backdropFilter: 'blur(8px)', minWidth: 90,
                         transition: 'border-color 0.2s, box-shadow 0.2s',
-                        boxShadow: '0 2px 16px rgba(0,0,0,0.4), 0 0 12px rgba(24,119,242,0.15)' }}
+                        boxShadow: '0 2px 16px rgba(0,0,0,0.4), 0 0 12px rgba(25, 129, 236,0.15)' }}
                     >
                       <div style={{
                         width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)',
-                        border: '2px solid rgba(24,119,242,0.6)', overflow: 'hidden',
+                        background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)',
+                        border: '2px solid rgba(25, 129, 236,0.6)', overflow: 'hidden',
                         fontSize: 26, fontWeight: 800, color: '#fff' }}>D</div>
                       <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: '#E4E6EB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: '#F2F7FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
                           {dealerName}
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(24,119,242,0.6)' }}>Tap to scan</div>
+                        <div style={{ fontSize: 10, color: 'rgba(25, 129, 236,0.6)' }}>Tap to scan</div>
                       </div>
                     </div>
 
@@ -672,11 +672,11 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                       if (isOccupied && seat.player?.time_remaining != null) {
                         const rem = isPausedOrBreak ? Math.max(0, seat.player.time_remaining) : adjustTime(seat.player.time_remaining);
                         timerText = rem <= 0 ? 'EXPIRED' : (isPausedOrBreak ? `⏸ ${formatTime(rem)}` : formatTime(rem));
-                        timerColor = isPausedOrBreak ? '#8A8D91' : getTimerColor(rem);
+                        timerColor = isPausedOrBreak ? '#9FB3C8' : getTimerColor(rem);
                       }
                       const isExpired = seat.player?.is_expired;
                       const borderColor = isOccupied
-                        ? (isExpired ? '#EF4444' : 'rgba(24,119,242,0.5)')
+                        ? (isExpired ? '#EF4444' : 'rgba(25, 129, 236,0.5)')
                         : 'rgba(62,64,66,0.5)';
 
                       return (
@@ -699,7 +699,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                           <div style={{
                             width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: isOccupied ? 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)' : 'rgba(255,255,255,0.06)',
+                            background: isOccupied ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)' : 'rgba(255,255,255,0.06)',
                             border: `2px solid ${borderColor}`,
                             position: 'relative' }}>
                             {isOccupied ? (
@@ -713,7 +713,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                                 position: 'absolute', top: -4, right: -4,
                                 width: 22, height: 22, borderRadius: '50%',
                                 background: (seat.player.missed_blinds >= 2) ? '#EF4444' : '#F97316',
-                                border: '2px solid #18191A',
+                                border: '2px solid #040D18',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: 10, fontWeight: 900, color: '#fff',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
@@ -723,12 +723,12 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                             )}
                           </div>
                           <div style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
-                            <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: isOccupied ? '#E4E6EB' : (movingPlayer ? '#22c55e' : '#6B7280'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, color: isOccupied ? '#F2F7FF' : (movingPlayer ? '#22c55e' : '#6B7280'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
                               {isOccupied ? fullName : (movingPlayer ? 'Move here' : 'Open')}
                             </div>
                             {/* Session Status Overlay (Paused / Meal Break) */}
                             {isOccupied && seat.player?.session_status && seat.player.session_status !== 'active' && (
-                              <div style={{ fontSize: 10, fontWeight: 700, color: seat.player.session_status === 'meal_break' ? '#22c55e' : '#F59E0B', lineHeight: 1.2 }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: seat.player.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
                                 {seat.player.session_status === 'paused' ? '⏸️ PAUSED' : '🍽️ MEAL BREAK'}
                               </div>
                             )}
@@ -741,7 +741,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                               </div>
                             )}
                             {isOccupied && seat.player?.membership_tier && (
-                              <div style={{ fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>{seat.player.membership_tier}</div>
+                              <div style={{ fontSize: 11, color: '#5AA9FF', fontWeight: 600 }}>{seat.player.membership_tier}</div>
                             )}
                           </div>
                         </div>
@@ -754,7 +754,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
           </div>
 
           {/* Ticker */}
-          <DealerTicker accentColor="#1877F2" bgColor="#000" fontSize={18} borderColor="rgba(255,255,255,0.1)" speed={50} showBorder={true} />
+          <DealerTicker accentColor="#1981EC" bgColor="#000" fontSize={18} borderColor="rgba(255,255,255,0.1)" speed={50} showBorder={true} />
 
           {/* Footer */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -768,13 +768,13 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 90,
               display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowPlayerMenu(null)}>
               <div onClick={e => e.stopPropagation()} style={{
-                background: '#242526', borderRadius: 20, padding: '24px', width: '90%', maxWidth: 340,
-                border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                background: '#0A1829', borderRadius: 20, padding: '24px', width: '90%', maxWidth: 340,
+                border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                 {/* Player Header */}
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
                   <div style={{
                     width: 64, height: 64, borderRadius: '50%', margin: '0 auto 10px',
-                    background: 'linear-gradient(135deg, #1877F2, #1565c0)',
+                    background: 'linear-gradient(135deg, #1981EC, #1565c0)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 28, fontWeight: 900, color: '#fff' }}>
                     {(showPlayerMenu.player?.player_name || 'P').charAt(0).toUpperCase()}
@@ -782,7 +782,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#fff' }}>
                     {showPlayerMenu.player?.player_name || 'Player'}
                   </h3>
-                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#8A8D91' }}>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9FB3C8' }}>
                     Seat {showPlayerMenu.number} · Table {lockedTableNum}
                   </p>
                 </div>
@@ -790,14 +790,14 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
-                    { label: '🪑 Move Player', color: '#1877F2', action: () => startMovePlayer(showPlayerMenu) },
+                    { label: '🪑 Move Player', color: '#1981EC', action: () => startMovePlayer(showPlayerMenu) },
                     { label: '✗ Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
                     ...(showPlayerMenu.player?.session_status === 'paused' || showPlayerMenu.player?.session_status === 'meal_break'
                       ? [{ label: '▶️ Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `▶️ ${json.data.player_name} resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchData(); } }]
-                      : [{ label: '⏸️ Pause Timer', color: '#F59E0B', action: () => pausePlayer(showPlayerMenu) }]
+                      : [{ label: '⏸️ Pause Timer', color: '#22D3EE', action: () => pausePlayer(showPlayerMenu) }]
                     ),
                     { label: 'Missed Blinds', color: '#F97316', action: () => markMissedBlinds(showPlayerMenu) },
-                    { label: '🍽️ 30-Min Meal Break', color: '#8B5CF6', action: () => addMealBreak(showPlayerMenu) },
+                    { label: '🍽️ 30-Min Meal Break', color: '#5AA9FF', action: () => addMealBreak(showPlayerMenu) },
                   ].map((btn, i) => (
                     <button key={i} onClick={btn.action} disabled={playerActionLoading}
                       style={{
@@ -814,7 +814,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 <button onClick={() => setShowPlayerMenu(null)}
                   style={{
                     width: '100%', marginTop: 12, padding: '12px', borderRadius: 12,
-                    background: '#3A3B3C', border: 'none', color: '#8A8D91', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                    background: '#2A4560', border: 'none', color: '#9FB3C8', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
                 >Cancel</button>
               </div>
             </div>
@@ -832,16 +832,16 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>
                   {showScanner.type === 'dealer' ? 'Scan Dealer QR Code' : `Scan Player for Seat ${showScanner.seatNumber}`}
                 </h3>
-                <p style={{ fontSize: 13, color: '#8A8D91', margin: '6px 0 0' }}>
+                <p style={{ fontSize: 13, color: '#9FB3C8', margin: '6px 0 0' }}>
                   Hold QR code in front of camera
                 </p>
               </div>
               <div style={{
                 width: '90%', maxWidth: 400, aspectRatio: '4/3', borderRadius: 16, overflow: 'hidden',
-                border: '3px solid #1877F2', position: 'relative' }}>
+                border: '3px solid #1981EC', position: 'relative' }}>
                 <video ref={scannerVideoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
                 <div style={{
-                  position: 'absolute', inset: 0, border: '3px solid rgba(24,119,242,0.5)',
+                  position: 'absolute', inset: 0, border: '3px solid rgba(25, 129, 236,0.5)',
                   borderRadius: 14, pointerEvents: 'none' }} />
               </div>
               {/* Manual QR Entry */}
@@ -849,10 +849,10 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 style={{ display: 'flex', gap: 8, marginTop: 16, width: '90%', maxWidth: 400 }}>
                 <input name="qr" type="text" placeholder="Or enter QR code manually..."
                   style={{
-                    flex: 1, padding: '12px 16px', borderRadius: 12, border: '2px solid #3A3B3C',
-                    background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none' }} autoComplete="off" />
+                    flex: 1, padding: '12px 16px', borderRadius: 12, border: '2px solid #2A4560',
+                    background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none' }} autoComplete="off" />
                 <button type="submit" style={{
-                  padding: '12px 20px', borderRadius: 12, background: '#1877F2', border: 'none',
+                  padding: '12px 20px', borderRadius: 12, background: '#1981EC', border: 'none',
                   color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Scan</button>
               </form>
               <button onClick={closeScanner}
@@ -869,19 +869,19 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100,
               display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowPinModal(false)}>
               <div onClick={(e) => e.stopPropagation()} style={{
-                background: '#242526', borderRadius: 20, padding: '32px 28px', width: '90%', maxWidth: 360,
-                border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                background: '#0A1829', borderRadius: 20, padding: '32px 28px', width: '90%', maxWidth: 360,
+                border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
                   <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#E4E6EB', margin: 0 }}>Manager Unlock</h3>
-                  <p style={{ fontSize: 13, color: '#8A8D91', marginTop: 6 }}>Enter owner or manager PIN</p>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>Manager Unlock</h3>
+                  <p style={{ fontSize: 13, color: '#9FB3C8', marginTop: 6 }}>Enter owner or manager PIN</p>
                 </div>
                 <div style={{
-                  background: '#18191A', border: '2px solid #3A3B3C', borderRadius: 14,
+                  background: '#040D18', border: '2px solid #2A4560', borderRadius: 14,
                   padding: '16px', textAlign: 'center', marginBottom: 16,
-                  fontSize: 32, fontWeight: 700, color: '#E4E6EB', letterSpacing: 12, fontFamily: 'monospace',
+                  fontSize: 32, fontWeight: 700, color: '#F2F7FF', letterSpacing: 12, fontFamily: 'monospace',
                   minHeight: 50 }}>
-                  {'•'.repeat(pinValue.length) || <span style={{ color: '#4E4F50', fontSize: 16, letterSpacing: 1 }}>Enter PIN</span>}
+                  {'•'.repeat(pinValue.length) || <span style={{ color: '#3A5873', fontSize: 16, letterSpacing: 1 }}>Enter PIN</span>}
                 </div>
                 {pinError && (
                   <div style={{
@@ -902,8 +902,8 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                         style={{
                           padding: '14px', borderRadius: 12, fontSize: isDelete ? 14 : 22,
                           fontWeight: 700, cursor: 'pointer',
-                          background: isDelete ? '#3A3B3C' : '#2A2B2D',
-                          border: '1px solid #4A4B4D', color: '#E4E6EB' }}
+                          background: isDelete ? '#2A4560' : '#2A2B2D',
+                          border: '1px solid #4A4B4D', color: '#F2F7FF' }}
                       >
                         {isDelete ? '⌫' : key}
                       </button>
@@ -915,7 +915,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                   disabled={pinLoading || pinValue.length !== 4}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12,
-                    background: pinValue.length === 4 ? '#1877F2' : '#3A3B3C',
+                    background: pinValue.length === 4 ? '#1981EC' : '#2A4560',
                     color: '#fff', border: 'none', fontSize: 16, fontWeight: 700,
                     cursor: pinValue.length === 4 ? 'pointer' : 'default',
                     opacity: pinLoading ? 0.6 : 1 }}
@@ -938,7 +938,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         className="min-h-screen bg-black text-white font-['Inter'] select-none overflow-hidden flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#1877F2] px-8 py-4 flex items-center justify-between">
+        <div className="bg-[#0C55C0] px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <h1 className="text-3xl font-bold tracking-wide">TABLE STATUS</h1>
             <div className="flex gap-4">
@@ -992,19 +992,19 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                   <div key={table.id || tNum}
                     onClick={(e) => { e.stopPropagation(); lockToTable(tNum); }}
                     className={`relative rounded-2xl p-3 flex flex-col items-center justify-center border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:brightness-110 ${!isActive ? 'bg-white/[0.03] border-white/10' :
-                      isFull ? 'bg-[#1877F2]/10 border-[#1877F2]/30' :
+                      isFull ? 'bg-[#0C55C0]/10 border-[#1981EC]/30' :
                         'bg-[#31A24C]/10 border-[#31A24C]/30'
                       }`}>
 
                     {/* Mini seat ring */}
                     <div className="relative w-20 h-16 mb-1">
-                      <div className={`absolute inset-[15%] rounded-[50%] border ${!isActive ? 'border-white/10' : isFull ? 'border-[#1877F2]/20' : 'border-[#31A24C]/20'}`} />
+                      <div className={`absolute inset-[15%] rounded-[50%] border ${!isActive ? 'border-white/10' : isFull ? 'border-[#1981EC]/20' : 'border-[#31A24C]/20'}`} />
                       {seatPositions.map((pos, i) => {
                         const seatData = seats.find(s => s.seat_number === i + 1);
                         const isOccupied = seatData?.status === 'occupied' || (isActive && i < seated);
                         return (
                           <div key={i}
-                            className={`absolute w-2.5 h-2.5 rounded-full ${isOccupied ? 'bg-[#1877F2]' : 'bg-white/15'}`}
+                            className={`absolute w-2.5 h-2.5 rounded-full ${isOccupied ? 'bg-[#0C55C0]' : 'bg-white/15'}`}
                             style={{ left: `${parseFloat(pos.left)}%`, top: `${parseFloat(pos.top)}%`, transform: 'translate(-50%, -50%)' }} />
                         );
                       })}
@@ -1020,7 +1020,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
                     {/* Dealer */}
                     {dealer && (
-                      <p className="text-[10px] text-[#1877F2] font-semibold truncate max-w-full mt-0.5">
+                      <p className="text-[10px] text-[#86DAFF] font-semibold truncate max-w-full mt-0.5">
                         🎲 {dealer}
                       </p>
                     )}
@@ -1034,7 +1034,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                         </span>
                       )}
                       {isActive && isFull && (
-                        <span className="text-xs font-bold text-[#1877F2] bg-[#1877F2]/20 px-2 py-0.5 rounded-full">
+                        <span className="text-xs font-bold text-[#86DAFF] bg-[#0C55C0]/20 px-2 py-0.5 rounded-full">
                           FULL
                         </span>
                       )}
@@ -1058,7 +1058,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
 
         {/* Dealer Push/Break + Promo Ticker */}
         <DealerTicker
-          accentColor="#1877F2"
+          accentColor="#1981EC"
           bgColor="#000"
           fontSize={18}
           borderColor="rgba(255,255,255,0.1)"

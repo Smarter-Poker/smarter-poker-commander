@@ -54,7 +54,7 @@ export default function SeatPicker({
               isSelected
                 ? 'bg-[#22D3EE] text-white ring-4 ring-[#22D3EE]/30'
                 : isAvailable
-                  ? 'bg-[#132240] border-2 border-[#4A5E78] hover:border-[#22D3EE] text-white'
+                  ? 'bg-[#132240] border-2 border-[#445E77] hover:border-[#22D3EE] text-white'
                   : 'bg-[#6B7280] text-white cursor-not-allowed'
             }`}
             style={position}
@@ -105,8 +105,8 @@ export function SeatPickerList({
               isSelected
                 ? 'bg-[#22D3EE] text-white'
                 : isAvailable
-                  ? 'bg-[#132240] border border-[#4A5E78] hover:border-[#22D3EE] text-white'
-                  : 'bg-[#0D192E] text-[#4A5E78] cursor-not-allowed'
+                  ? 'bg-[#132240] border border-[#445E77] hover:border-[#22D3EE] text-white'
+                  : 'bg-[#0D192E] text-[#8FA6BE] cursor-not-allowed'
             }`}
           >
             <span className="text-lg font-bold">{seat.seat_number}</span>

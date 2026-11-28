@@ -113,50 +113,50 @@ export default function ResponsibleGaming() {
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
           <PageBar
             title="Responsible Gaming"
             summary="Player Protection And Compliance. Check A Player's Exclusion Status Before Seating; Self-Excluded Players Must Not Be Allowed To Play."
-            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
           >
-            <button onClick={fetchMembers} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <button onClick={fetchMembers} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#BDD0E2]" /></button>
           </PageBar>
 
           <div className="px-4 py-4 space-y-4">
             {/* Info banner */}
-            <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-2xl p-4 flex items-start gap-3">
-              <Shield className="w-5 h-5 text-[#1877F2] mt-0.5 shrink-0" />
+            <div className="bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-2xl p-4 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-[#86DAFF] mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm text-white font-medium">Player Safety First</p>
-                <p className="text-xs text-[#B0B3B8] mt-1">Check Player Exclusion Status Before Seating. Self-Excluded Players Must Not Be Allowed To Play. Contact Management For Enforcement Questions.</p>
+                <p className="text-xs text-[#BDD0E2] mt-1">Check Player Exclusion Status Before Seating. Self-Excluded Players Must Not Be Allowed To Play. Contact Management For Enforcement Questions.</p>
               </div>
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4 text-center">
-                <Users className="w-6 h-6 text-[#1877F2] mx-auto mb-1" />
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4 text-center">
+                <Users className="w-6 h-6 text-[#86DAFF] mx-auto mb-1" />
                 <p className="text-2xl font-bold text-white">{totalMembers}</p>
-                <p className="text-xs text-[#B0B3B8]">Total Members</p>
+                <p className="text-xs text-[#BDD0E2]">Total Members</p>
               </div>
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4 text-center">
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4 text-center">
                 <Ban className="w-6 h-6 text-[#EF4444] mx-auto mb-1" />
                 <p className="text-2xl font-bold text-[#EF4444]">{excludedMembers}</p>
-                <p className="text-xs text-[#B0B3B8]">Active Exclusions</p>
+                <p className="text-xs text-[#BDD0E2]">Active Exclusions</p>
               </div>
             </div>
 
             {/* Player Check */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
               <h3 className="text-sm font-bold text-white mb-3">Check Player Status</h3>
               <div className="flex gap-2">
                 <input type="text" value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  className="flex-1 px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-xl text-white text-sm focus:border-[#1877F2] focus:outline-none"
+                  className="flex-1 px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-white text-sm focus:border-[#1981EC] focus:outline-none"
                   placeholder="Search By Name, Phone, Or Member #" />
                 <button onClick={handleSearch} disabled={searching || !searchQuery.trim()}
-                  className="px-4 py-3 rounded-xl bg-[#1877F2] text-white font-medium flex items-center gap-1.5 active:bg-[#1565D8] disabled:opacity-50">
+                  className="px-4 py-3 rounded-xl bg-[#0C55C0] text-white font-medium flex items-center gap-1.5 active:bg-[#0A4AA8] disabled:opacity-50">
                   {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </button>
               </div>
@@ -165,7 +165,7 @@ export default function ResponsibleGaming() {
               {searchResult && (
                 <div className="mt-3 space-y-2">
                   {!searchResult.found ? (
-                    <div className="py-4 text-center text-[#6A6B6D] text-sm">No Players Found For &quot;{searchResult.query}&quot;</div>
+                    <div className="py-4 text-center text-[#93A9C0] text-sm">No Players Found For &quot;{searchResult.query}&quot;</div>
                   ) : (
                     searchResult.players.map((p, i) => (
                       <div key={i} className={`rounded-xl p-3 flex items-center gap-3 ${p.is_excluded ? 'bg-[#EF4444]/10 border border-[#EF4444]/30' : 'bg-[#31A24C]/10 border border-[#31A24C]/30'
@@ -198,28 +198,28 @@ export default function ResponsibleGaming() {
             </div>
 
             {/* Guidelines */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
               <h3 className="text-sm font-bold text-white mb-3">Staff Guidelines</h3>
               <div className="space-y-3">
                 {[
-                  { icon: Search, text: 'Always Check New Players Before Seating', color: '#1877F2' },
+                  { icon: Search, text: 'Always Check New Players Before Seating', color: '#1981EC' },
                   { icon: Ban, text: 'Self-Excluded Players Must Be Denied Entry To Gaming Areas', color: '#EF4444' },
-                  { icon: Clock, text: 'Monitor For Signs Of Problem Gambling (Chasing Losses, Extended Sessions)', color: '#F59E0B' },
+                  { icon: Clock, text: 'Monitor For Signs Of Problem Gambling (Chasing Losses, Extended Sessions)', color: '#22D3EE' },
                   { icon: Shield, text: 'Offer Responsible Gaming Resources When Asked', color: '#31A24C' },
                 ].map((g, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <g.icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: g.color }} />
-                    <p className="text-sm text-[#B0B3B8]">{g.text}</p>
+                    <p className="text-sm text-[#BDD0E2]">{g.text}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Resources */}
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
               <h3 className="text-sm font-bold text-white mb-2">Resources</h3>
-              <p className="text-xs text-[#B0B3B8]">National Problem Gambling Helpline: <span className="text-[#1877F2] font-mono">1-800-522-4700</span></p>
-              <p className="text-xs text-[#B0B3B8] mt-1">Available 24/7 • Confidential</p>
+              <p className="text-xs text-[#BDD0E2]">National Problem Gambling Helpline: <span className="text-[#86DAFF] font-mono">1-800-522-4700</span></p>
+              <p className="text-xs text-[#BDD0E2] mt-1">Available 24/7 • Confidential</p>
             </div>
           </div>
         </div>

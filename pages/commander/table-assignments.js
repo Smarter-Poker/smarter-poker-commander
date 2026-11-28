@@ -26,9 +26,9 @@ import { useConfirmAction } from "../../src/components/commander/shared/ConfirmM
 import PageBar from '../../src/components/commander/shared/PageBar';
 
 const MODE_COLORS = {
-  inactive: { bg: '#3A3B3C', border: '#4A4B4C', text: '#B0B3B8', label: 'Inactive', icon: Power },
+  inactive: { bg: '#2A4560', border: '#3A5873', text: '#BDD0E2', label: 'Inactive', icon: Power },
   cash: { bg: '#31A24C', border: '#28883F', text: '#fff', label: 'Cash Game', icon: DollarSign },
-  tournament: { bg: '#F59E0B', border: '#D97706', text: '#fff', label: 'Tournament', icon: Trophy }
+  tournament: { bg: '#22D3EE', border: '#0EA5C6', text: '#fff', label: 'Tournament', icon: Trophy }
 };
 
 /* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
@@ -185,8 +185,8 @@ return {
     : tables.filter(t => (t.mode || 'inactive') === filterMode);
 
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
     </div>
   );
 
@@ -197,17 +197,17 @@ return {
         description="Assign tables to cash games or tournaments."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Header: refresh on the left, page help top right */}
         <PageBar
           title="Table Assignments"
           summary="Assign Tables To Cash Games Or Tournaments."
           steps={ASSIGN_STEPS}
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
-          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
@@ -232,30 +232,30 @@ return {
             <p className="text-lg font-bold text-[#31A24C]">{activeCash}</p>
             <p className="text-[10px] text-[#31A24C]/80">Cash</p>
           </div>
-          <div className="flex-1 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-3 py-2 text-center cursor-pointer"
+          <div className="flex-1 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl px-3 py-2 text-center cursor-pointer"
             onClick={() => setFilterMode(filterMode === 'tournament' ? 'all' : 'tournament')}>
-            <p className="text-lg font-bold text-[#F59E0B]">{activeTournament}</p>
-            <p className="text-[10px] text-[#F59E0B]/80">Tournament</p>
+            <p className="text-lg font-bold text-[#22D3EE]">{activeTournament}</p>
+            <p className="text-[10px] text-[#22D3EE]/80">Tournament</p>
           </div>
-          <div className="flex-1 bg-[#3A3B3C]/50 border border-[#3A3B3C] rounded-xl px-3 py-2 text-center cursor-pointer"
+          <div className="flex-1 bg-[#132A42]/50 border border-[#445E77] rounded-xl px-3 py-2 text-center cursor-pointer"
             onClick={() => setFilterMode(filterMode === 'inactive' ? 'all' : 'inactive')}>
-            <p className="text-lg font-bold text-[#B0B3B8]">{inactive}</p>
-            <p className="text-[10px] text-[#B0B3B8]/80">Inactive</p>
+            <p className="text-lg font-bold text-[#BDD0E2]">{inactive}</p>
+            <p className="text-[10px] text-[#BDD0E2]/80">Inactive</p>
           </div>
-          <div className="flex-1 bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl px-3 py-2 text-center cursor-pointer"
+          <div className="flex-1 bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl px-3 py-2 text-center cursor-pointer"
             onClick={() => setFilterMode('all')}>
-            <p className="text-lg font-bold text-[#1877F2]">{totalPlayers}</p>
-            <p className="text-[10px] text-[#1877F2]/80">Players</p>
+            <p className="text-lg font-bold text-[#86DAFF]">{totalPlayers}</p>
+            <p className="text-[10px] text-[#86DAFF]/80">Players</p>
           </div>
         </div>
 
         {/* Filter indicator */}
         {filterMode !== 'all' && (
           <div className="mx-4 mb-2 flex items-center justify-between">
-            <span className="text-xs text-[#B0B3B8]">
+            <span className="text-xs text-[#BDD0E2]">
               Showing: <strong className="text-white capitalize">{filterMode}</strong> ({filteredTables.length} tables)
             </span>
-            <button onClick={() => setFilterMode('all')} className="text-xs text-[#1877F2]">Show All</button>
+            <button onClick={() => setFilterMode('all')} className="text-xs text-[#86DAFF]">Show All</button>
           </div>
         )}
 
@@ -270,14 +270,14 @@ return {
             return (
               <div key={table.id}
                 className="rounded-2xl border-2 overflow-hidden transition-all hover:shadow-lg"
-                style={{ borderColor: mc.border, background: '#242526' }}>
+                style={{ borderColor: mc.border, background: '#0A1829' }}>
 
                 {/* Mode badge bar */}
                 <div className="px-3 py-1.5 flex items-center gap-1.5"
-                  style={{ background: mode === 'inactive' ? '#3A3B3C' : mc.bg + '20' }}>
-                  <Icon className="w-3.5 h-3.5" style={{ color: mode === 'inactive' ? '#B0B3B8' : mc.bg }} />
+                  style={{ background: mode === 'inactive' ? '#2A4560' : mc.bg + '20' }}>
+                  <Icon className="w-3.5 h-3.5" style={{ color: mode === 'inactive' ? '#BDD0E2' : mc.bg }} />
                   <span className="text-[10px] font-bold uppercase tracking-wider"
-                    style={{ color: mode === 'inactive' ? '#B0B3B8' : mc.bg }}>
+                    style={{ color: mode === 'inactive' ? '#BDD0E2' : mc.bg }}>
                     {mc.label}
                   </span>
                 </div>
@@ -287,7 +287,7 @@ return {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xl font-bold text-white">T{table.table_number}</span>
                     {table.table_name && table.table_name !== `Table ${table.table_number}` && (
-                      <span className="text-[10px] text-[#B0B3B8] truncate ml-1">{table.table_name}</span>
+                      <span className="text-[10px] text-[#BDD0E2] truncate ml-1">{table.table_name}</span>
                     )}
                   </div>
 
@@ -295,7 +295,7 @@ return {
                     {mode === 'cash' && (
                       <>
                         <p className="text-sm font-semibold text-[#31A24C]">{table.game_type} {table.stakes}</p>
-                        <p className="text-[10px] text-[#B0B3B8]">
+                        <p className="text-[10px] text-[#BDD0E2]">
                           <Users className="w-3 h-3 inline mr-0.5" />
                           {table.active_players || 0}/{table.max_seats} seated
                         </p>
@@ -304,24 +304,24 @@ return {
 
                     {mode === 'tournament' && (
                       <>
-                        <p className="text-xs font-semibold text-[#F59E0B] truncate">
+                        <p className="text-xs font-semibold text-[#22D3EE] truncate">
                           {tournaments.find(t => t.id === table.tournament_id)?.name || 'Tournament'}
                         </p>
-                        <p className="text-[10px] text-[#B0B3B8]">
+                        <p className="text-[10px] text-[#BDD0E2]">
                           {table.active_players || 0}/{table.max_seats} seated
                         </p>
                       </>
                     )}
 
                     {mode === 'inactive' && (
-                      <p className="text-[10px] text-[#6A6B6D]">{table.max_seats} seats - Not Assigned</p>
+                      <p className="text-[10px] text-[#93A9C0]">{table.max_seats} seats - Not Assigned</p>
                     )}
                   </div>
 
                   {/* Action buttons */}
                   <div className="flex gap-1.5">
                     <button onClick={() => openAssign(table)}
-                      className="flex-1 py-1.5 rounded-lg bg-[#1877F2] text-white text-[10px] font-semibold flex items-center justify-center gap-1 active:bg-[#1565D8]">
+                      className="flex-1 py-1.5 rounded-lg bg-[#0C55C0] text-white text-[10px] font-semibold flex items-center justify-center gap-1 active:bg-[#0A4AA8]">
                       <Table2 className="w-3 h-3" /> Assign
                     </button>
                     {mode !== 'inactive' && (
@@ -339,9 +339,9 @@ return {
 
           {tables.length === 0 && (
             <div className="col-span-full text-center py-16">
-              <Table2 className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-              <p className="text-[#B0B3B8]">No Tables Configured</p>
-              <p className="text-xs text-[#6A6B6D] mt-1">Add Tables In The Tables Section First</p>
+              <Table2 className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+              <p className="text-[#BDD0E2]">No Tables Configured</p>
+              <p className="text-xs text-[#93A9C0] mt-1">Add Tables In The Tables Section First</p>
             </div>
           )}
         </div>
@@ -349,25 +349,25 @@ return {
         {/* ===== ASSIGNMENT MODAL ===== */}
         {selectedTable && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setSelectedTable(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
               {/* Modal header */}
-              <div className="sticky top-0 bg-[#242526] border-b border-[#3A3B3C] px-5 py-4 flex items-center justify-between z-10">
+              <div className="sticky top-0 bg-[#0A1829] border-b border-[#445E77] px-5 py-4 flex items-center justify-between z-10">
                 <div>
                   <h3 className="text-lg font-bold text-white">Assign Table {selectedTable.table_number}</h3>
-                  <p className="text-xs text-[#B0B3B8]">{selectedTable.table_name} · {selectedTable.max_seats} seats</p>
+                  <p className="text-xs text-[#BDD0E2]">{selectedTable.table_name} · {selectedTable.max_seats} seats</p>
                 </div>
-                <button onClick={() => setSelectedTable(null)} className="p-2 rounded-lg active:bg-[#3A3B3C]">
-                  <X className="w-5 h-5 text-[#B0B3B8]" />
+                <button onClick={() => setSelectedTable(null)} className="p-2 rounded-lg active:bg-[#132A42]">
+                  <X className="w-5 h-5 text-[#BDD0E2]" />
                 </button>
               </div>
 
               <div className="p-5 space-y-4">
                 {/* Warning if players seated */}
                 {(selectedTable.active_players || 0) > 0 && selectedTable.mode !== 'inactive' && assignMode !== selectedTable.mode && (
-                  <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-[#F59E0B] mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-[#F59E0B]">
+                  <div className="p-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-[#22D3EE] mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-[#22D3EE]">
                       {selectedTable.active_players} player{selectedTable.active_players !== 1 ? 's are' : ' is'} currently at this table.
                       Changing mode will affect active sessions.
                     </p>
@@ -384,22 +384,22 @@ return {
 
                 {/* Mode Selection */}
                 <div>
-                  <p className="text-xs text-[#B0B3B8] mb-2 font-medium uppercase tracking-wider">Table Mode</p>
+                  <p className="text-xs text-[#BDD0E2] mb-2 font-medium uppercase tracking-wider">Table Mode</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { mode: 'inactive', label: 'Inactive', icon: Power, color: '#B0B3B8' },
+                      { mode: 'inactive', label: 'Inactive', icon: Power, color: '#BDD0E2' },
                       { mode: 'cash', label: 'Cash Game', icon: DollarSign, color: '#31A24C' },
-                      { mode: 'tournament', label: 'Tournament', icon: Trophy, color: '#F59E0B' },
+                      { mode: 'tournament', label: 'Tournament', icon: Trophy, color: '#22D3EE' },
                     ].map(opt => (
                       <button key={opt.mode} onClick={() => setAssignMode(opt.mode)}
                         className="py-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all"
                         style={assignMode === opt.mode
                           ? { borderColor: opt.color, background: opt.color + '15' }
-                          : { borderColor: '#3A3B3C', background: '#3A3B3C30' }
+                          : { borderColor: '#2A4560', background: '#2A456030' }
                         }>
-                        <opt.icon className="w-6 h-6" style={{ color: assignMode === opt.mode ? opt.color : '#B0B3B8' }} />
+                        <opt.icon className="w-6 h-6" style={{ color: assignMode === opt.mode ? opt.color : '#BDD0E2' }} />
                         <span className="text-xs font-semibold"
-                          style={{ color: assignMode === opt.mode ? opt.color : '#B0B3B8' }}>
+                          style={{ color: assignMode === opt.mode ? opt.color : '#BDD0E2' }}>
                           {opt.label}
                         </span>
                       </button>
@@ -410,12 +410,12 @@ return {
                 {/* Tournament Selection */}
                 {assignMode === 'tournament' && (
                   <div>
-                    <p className="text-xs text-[#B0B3B8] mb-2 font-medium">Link Tournament (Optional)</p>
+                    <p className="text-xs text-[#BDD0E2] mb-2 font-medium">Link Tournament (Optional)</p>
                     {tournaments.length === 0 ? (
-                      <div className="p-4 bg-[#3A3B3C]/30 rounded-xl text-center">
-                        <Trophy className="w-8 h-8 text-[#3A3B3C] mx-auto mb-2" />
-                        <p className="text-sm text-[#B0B3B8]">No Active Tournaments</p>
-                        <p className="text-xs text-[#6A6B6D] mt-1">Table will be marked as tournament-ready</p>
+                      <div className="p-4 bg-[#132A42]/30 rounded-xl text-center">
+                        <Trophy className="w-8 h-8 text-[#7F97B0] mx-auto mb-2" />
+                        <p className="text-sm text-[#BDD0E2]">No Active Tournaments</p>
+                        <p className="text-xs text-[#93A9C0] mt-1">Table will be marked as tournament-ready</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -423,13 +423,13 @@ return {
                           <button key={t.id} onClick={() => setSelectedTournament(t.id)}
                             className="w-full text-left px-4 py-3 rounded-xl border-2 transition-all"
                             style={selectedTournament === t.id
-                              ? { borderColor: '#F59E0B', background: '#F59E0B15' }
-                              : { borderColor: '#3A3B3C', background: '#3A3B3C30' }
+                              ? { borderColor: '#22D3EE', background: '#22D3EE15' }
+                              : { borderColor: '#2A4560', background: '#2A456030' }
                             }>
-                            <p className={`text-sm font-semibold ${selectedTournament === t.id ? 'text-[#F59E0B]' : 'text-white'}`}>
+                            <p className={`text-sm font-semibold ${selectedTournament === t.id ? 'text-[#22D3EE]' : 'text-white'}`}>
                               {t.name}
                             </p>
-                            <p className="text-xs text-[#B0B3B8]">
+                            <p className="text-xs text-[#BDD0E2]">
                               {t.game_type || 'NLH'} - {t.status} - ${t.buyin_amount || 0} buy-in
                             </p>
                           </button>
@@ -442,11 +442,11 @@ return {
                 {/* Save button */}
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => { setSelectedTable(null); setError(null); }}
-                    className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-semibold active:bg-[#4A4B4C]">
+                    className="flex-1 py-3.5 rounded-xl bg-[#132A42] text-[#F2F7FF] font-semibold active:bg-[#1B3753]">
                     Cancel
                   </button>
                   <button onClick={saveAssignment} disabled={saving}
-                    className="flex-1 py-3.5 rounded-xl bg-[#1877F2] text-white font-semibold active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
+                    className="flex-1 py-3.5 rounded-xl bg-[#0C55C0] text-white font-semibold active:bg-[#0A4AA8] disabled:opacity-50 flex items-center justify-center gap-2">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     {saving ? 'Saving...' : 'Save Assignment'}
                   </button>

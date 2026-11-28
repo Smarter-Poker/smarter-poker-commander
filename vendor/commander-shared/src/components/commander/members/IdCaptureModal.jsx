@@ -402,13 +402,13 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                     const offY = (h - vh * cover) / 2;
                     const pts = quad.map((p) => ({ x: p.x * s * cover + offX, y: p.y * s * cover + offY }));
                     const ready = stableCountRef.current >= AUTO.stableFrames;
-                    const accent = ready ? '#31A24C' : '#1877F2';
+                    const accent = ready ? '#31A24C' : '#1981EC';
 
                     ctx.beginPath();
                     ctx.moveTo(pts[0].x, pts[0].y);
                     for (let i = 1; i < 4; i++) ctx.lineTo(pts[i].x, pts[i].y);
                     ctx.closePath();
-                    ctx.fillStyle = ready ? 'rgba(49,162,76,0.14)' : 'rgba(24,119,242,0.10)';
+                    ctx.fillStyle = ready ? 'rgba(49,162,76,0.14)' : 'rgba(25, 129, 236,0.10)';
                     ctx.fill();
                     ctx.strokeStyle = accent;
                     ctx.lineWidth = ready ? 4 : 3;
@@ -664,29 +664,29 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/70" onClick={handleClose} />
 
-            <div className="relative bg-[#242526] rounded-xl w-full max-w-lg max-h-[92vh] overflow-y-auto border border-[#3A3B3C] shadow-2xl">
+            <div className="relative bg-[#0A1829] rounded-xl w-full max-w-lg max-h-[92vh] overflow-y-auto border border-[#445E77] shadow-2xl">
                 {/* Header */}
-                <div className="sticky top-0 bg-[#242526] border-b border-[#3A3B3C] p-4 flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-[#0A1829] border-b border-[#445E77] p-4 flex items-center justify-between z-10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#1877F2]/10 rounded-full flex items-center justify-center">
-                            <ScanLine className="w-5 h-5 text-[#1877F2]" />
+                        <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-full flex items-center justify-center">
+                            <ScanLine className="w-5 h-5 text-[#86DAFF]" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-[#E4E6EB]">Scan ID</h2>
-                            <p className="text-xs text-[#B0B3B8]">
+                            <h2 className="text-lg font-bold text-[#F2F7FF]">Scan ID</h2>
+                            <p className="text-xs text-[#BDD0E2]">
                                 {phase === 'confirm' && side === 'back' ? 'Review' : `${cfg.title} - Step ${side === 'front' ? 1 : 2} Of 2`}
                             </p>
                         </div>
                     </div>
-                    <button onClick={handleClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg" aria-label="Close">
-                        <X className="w-5 h-5 text-[#B0B3B8]" />
+                    <button onClick={handleClose} className="p-2 hover:bg-[#132A42] rounded-lg" aria-label="Close">
+                        <X className="w-5 h-5 text-[#BDD0E2]" />
                     </button>
                 </div>
 
                 {/* Privacy banner. Stated where staff and the member can see it. */}
                 <div className="mx-4 mt-3 p-2.5 bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-lg flex items-start gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#31A24C] flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#B0B3B8]">
+                    <p className="text-xs text-[#BDD0E2]">
                         ID Images Are Never Saved To This Device And Are Never Uploaded. Only The
                         Details Read From The Card Are Kept.
                     </p>
@@ -699,10 +699,10 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                                 <AlertCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0" />
                                 <p className="text-sm font-medium text-[#EF4444]">{cameraError.title}</p>
                             </div>
-                            <p className="text-xs text-[#B0B3B8]">{cameraError.body}</p>
+                            <p className="text-xs text-[#BDD0E2]">{cameraError.body}</p>
                             <div className="flex gap-2 pt-1">
-                                <button onClick={startCamera} className="px-3 py-2 bg-[#3A3B3C] text-[#E4E6EB] rounded-lg text-sm">Try Again</button>
-                                <button onClick={handleClose} className="px-3 py-2 bg-[#1877F2] text-white rounded-lg text-sm">Enter By Hand</button>
+                                <button onClick={startCamera} className="px-3 py-2 bg-[#132A42] text-[#F2F7FF] rounded-lg text-sm">Try Again</button>
+                                <button onClick={handleClose} className="px-3 py-2 bg-[#0C55C0] text-white rounded-lg text-sm">Enter By Hand</button>
                             </div>
                         </div>
                     )}
@@ -710,7 +710,7 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                     {/* Camera */}
                     {!cameraError && (phase === 'camera' || phase === 'processing') && (
                         <>
-                            <div className="flex items-center gap-2 text-sm text-[#B0B3B8]">
+                            <div className="flex items-center gap-2 text-sm text-[#BDD0E2]">
                                 <CreditCard className="w-4 h-4" />
                                 <span>{cfg.hint}</span>
                             </div>
@@ -720,31 +720,31 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                                 <canvas ref={overlayRef} className="absolute top-0 left-0 pointer-events-none" />
 
                                 <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 bg-black/70 rounded-full">
-                                    <span className={`w-2 h-2 rounded-full ${detected ? (stability >= 1 ? 'bg-[#31A24C]' : 'bg-[#1877F2]') : 'bg-[#8A8D91]'}`} />
-                                    <span className="text-xs text-[#E4E6EB] font-medium">{status}</span>
+                                    <span className={`w-2 h-2 rounded-full ${detected ? (stability >= 1 ? 'bg-[#31A24C]' : 'bg-[#0C55C0]') : 'bg-[#9FB3C8]'}`} />
+                                    <span className="text-xs text-[#F2F7FF] font-medium">{status}</span>
                                 </div>
 
                                 {phase === 'processing' && (
                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                        <Loader2 className="w-7 h-7 text-[#1877F2] animate-spin" />
+                                        <Loader2 className="w-7 h-7 text-[#86DAFF] animate-spin" />
                                     </div>
                                 )}
                             </div>
 
                             <div className="flex items-center justify-between gap-3">
-                                <div className="flex rounded-full border border-[#3A3B3C] overflow-hidden">
+                                <div className="flex rounded-full border border-[#445E77] overflow-hidden">
                                     <button onClick={() => setAutoCapture(true)}
-                                        className={`px-4 py-2 text-sm font-medium ${autoCapture ? 'bg-[#1877F2] text-white' : 'text-[#B0B3B8]'}`}>Auto</button>
+                                        className={`px-4 py-2 text-sm font-medium ${autoCapture ? 'bg-[#0C55C0] text-white' : 'text-[#BDD0E2]'}`}>Auto</button>
                                     <button onClick={() => { setAutoCapture(false); stableCountRef.current = 0; setStability(0); }}
-                                        className={`px-4 py-2 text-sm font-medium ${!autoCapture ? 'bg-[#1877F2] text-white' : 'text-[#B0B3B8]'}`}>Manual</button>
+                                        className={`px-4 py-2 text-sm font-medium ${!autoCapture ? 'bg-[#0C55C0] text-white' : 'text-[#BDD0E2]'}`}>Manual</button>
                                 </div>
                                 <button onClick={() => captureSide(lastQuadRef.current, detectWidthRef.current)}
-                                    className="w-16 h-16 rounded-full border-4 border-[#E4E6EB] flex items-center justify-center"
+                                    className="w-16 h-16 rounded-full border-4 border-[#F2F7FF] flex items-center justify-center"
                                     aria-label="Capture">
-                                    <span className="w-12 h-12 rounded-full bg-[#E4E6EB]" />
+                                    <span className="w-12 h-12 rounded-full bg-[#F2F7FF]" />
                                 </button>
                                 <div className="w-[104px] text-right">
-                                    <span className="text-xs text-[#8A8D91]">{cfg.purpose}</span>
+                                    <span className="text-xs text-[#9FB3C8]">{cfg.purpose}</span>
                                 </div>
                             </div>
                         </>
@@ -753,24 +753,24 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                     {/* Confirm */}
                     {phase === 'confirm' && (
                         <>
-                            <div className="rounded-xl overflow-hidden bg-black flex justify-center p-2 border border-[#3A3B3C]">
+                            <div className="rounded-xl overflow-hidden bg-black flex justify-center p-2 border border-[#445E77]">
                                 <canvas ref={previewRef} className="max-w-full max-h-[34vh] w-auto h-auto rounded" />
                             </div>
 
                             {side === 'front' && (
-                                <p className="text-sm text-[#B0B3B8]">
+                                <p className="text-sm text-[#BDD0E2]">
                                     Front Captured. Now Turn The ID Over To Read The Barcode.
                                 </p>
                             )}
 
                             {side === 'back' && busy && (
-                                <div className="flex items-center gap-2 text-sm text-[#B0B3B8]">
+                                <div className="flex items-center gap-2 text-sm text-[#BDD0E2]">
                                     <Loader2 className="w-4 h-4 animate-spin" /> Reading The Barcode
                                 </div>
                             )}
 
                             {side === 'back' && !busy && decodeState === 'ok' && parsed && (
-                                <div className="bg-[#18191A] rounded-xl p-4 space-y-3 border border-[#31A24C]/30">
+                                <div className="bg-[#040D18] rounded-xl p-4 space-y-3 border border-[#31A24C]/30">
                                     <div className="flex items-center gap-2">
                                         <Check className="w-4 h-4 text-[#31A24C]" />
                                         <p className="text-sm font-medium text-[#31A24C]">Details Read From The ID</p>
@@ -804,13 +804,13 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                                         </div>
                                     )}
                                     {age != null && age < 21 && (
-                                        <div className="flex items-center gap-2 p-2 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg">
-                                            <AlertCircle className="w-4 h-4 text-[#F59E0B]" />
-                                            <p className="text-xs text-[#F59E0B]">This Member Is {age}. Check Your Venue Age Policy.</p>
+                                        <div className="flex items-center gap-2 p-2 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-lg">
+                                            <AlertCircle className="w-4 h-4 text-[#22D3EE]" />
+                                            <p className="text-xs text-[#22D3EE]">This Member Is {age}. Check Your Venue Age Policy.</p>
                                         </div>
                                     )}
                                     {parsed.meta.truncatedNames && parsed.meta.truncatedNames.length > 0 && (
-                                        <p className="text-xs text-[#8A8D91]">
+                                        <p className="text-xs text-[#9FB3C8]">
                                             The Card Truncates The {parsed.meta.truncatedNames.join(' And ')} Name. Check It Against The Front.
                                         </p>
                                     )}
@@ -818,18 +818,18 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                             )}
 
                             {side === 'back' && !busy && decodeState === 'not-found' && (
-                                <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg space-y-1">
-                                    <p className="text-sm font-medium text-[#F59E0B]">Barcode Not Read</p>
-                                    <p className="text-xs text-[#B0B3B8]">
+                                <div className="p-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-lg space-y-1">
+                                    <p className="text-sm font-medium text-[#22D3EE]">Barcode Not Read</p>
+                                    <p className="text-xs text-[#BDD0E2]">
                                         Retake With The Barcode Flat And Well Lit, Or Continue And Enter The Details By Hand.
                                     </p>
                                 </div>
                             )}
 
                             {side === 'back' && !busy && decodeState === 'face' && (
-                                <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg space-y-1">
-                                    <p className="text-sm font-medium text-[#F59E0B]">Read From The Front Of The Card</p>
-                                    <p className="text-xs text-[#B0B3B8]">
+                                <div className="p-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-lg space-y-1">
+                                    <p className="text-sm font-medium text-[#22D3EE]">Read From The Front Of The Card</p>
+                                    <p className="text-xs text-[#BDD0E2]">
                                         The Barcode Would Not Scan, So These Details Come From The Printed Side.
                                         Check Them Against The Card Before You Continue.
                                     </p>
@@ -837,9 +837,9 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
                             )}
 
                             {side === 'back' && !busy && decodeState === 'unsupported' && (
-                                <div className="p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg space-y-1">
-                                    <p className="text-sm font-medium text-[#F59E0B]">This Browser Cannot Read ID Barcodes</p>
-                                    <p className="text-xs text-[#B0B3B8]">
+                                <div className="p-3 bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-lg space-y-1">
+                                    <p className="text-sm font-medium text-[#22D3EE]">This Browser Cannot Read ID Barcodes</p>
+                                    <p className="text-xs text-[#BDD0E2]">
                                         Safari On iPhone And iPad Has No Barcode Reader. Use An Android Tablet Or Chrome,
                                         Use A Hardware ID Scanner, Or Enter The Details By Hand.
                                     </p>
@@ -851,19 +851,19 @@ export default function IdCaptureModal({ isOpen, onClose, onComplete }) {
 
                 {/* Footer */}
                 {phase === 'confirm' && (
-                    <div className="sticky bottom-0 bg-[#242526] border-t border-[#3A3B3C] p-4 flex items-center gap-3">
+                    <div className="sticky bottom-0 bg-[#0A1829] border-t border-[#445E77] p-4 flex items-center gap-3">
                         <button onClick={retake}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#3A3B3C] text-[#E4E6EB] rounded-lg text-sm font-medium">
+                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#132A42] text-[#F2F7FF] rounded-lg text-sm font-medium">
                             <RotateCcw className="w-4 h-4" /> Retake
                         </button>
                         {side === 'front' ? (
                             <button onClick={goToBack}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1877F2] text-white rounded-lg text-sm font-medium">
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#0C55C0] text-white rounded-lg text-sm font-medium">
                                 Scan The Back <ChevronRight className="w-4 h-4" />
                             </button>
                         ) : (
                             <button onClick={finish} disabled={busy}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#31A24C] disabled:bg-[#3A3B3C] text-white rounded-lg text-sm font-medium">
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#31A24C] disabled:bg-[#132A42] text-white rounded-lg text-sm font-medium">
                                 <Check className="w-4 h-4" />
                                 {decodeState === 'ok' ? 'Use These Details'
                                     : decodeState === 'face' ? 'Use These Details After Checking'
@@ -885,8 +885,8 @@ function Detail({ label, value, span }) {
     if (!value) return null;
     return (
         <div className={span ? 'col-span-2' : ''}>
-            <span className="text-[#8A8D91]">{label}: </span>
-            <span className="text-[#E4E6EB]">{value}</span>
+            <span className="text-[#9FB3C8]">{label}: </span>
+            <span className="text-[#F2F7FF]">{value}</span>
         </div>
     );
 }

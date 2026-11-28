@@ -498,16 +498,16 @@ export default function MembershipKiosk() {
   // and direct staff to sign in rather than accepting no-op check-ins.
   if (staffMissing) return (
     <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: '#fff', padding: 24, textAlign: 'center' }}>
-      <AlertTriangle style={{ width: 44, height: 44, color: '#F59E0B' }} />
+      <AlertTriangle style={{ width: 44, height: 44, color: '#22D3EE' }} />
       <span style={{ fontSize: 20, fontWeight: 700 }}>Staff Sign-In Required</span>
-      <span style={{ fontSize: 15, color: '#B0B3B8', maxWidth: 360 }}>This Kiosk Must Be Started From A Signed-In Staff Session Before Players Can Check In.</span>
-      <button onClick={() => router.push('/commander/login')} style={{ padding: '10px 24px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Go To Staff Sign-In</button>
+      <span style={{ fontSize: 15, color: '#BDD0E2', maxWidth: 360 }}>This Kiosk Must Be Started From A Signed-In Staff Session Before Players Can Check In.</span>
+      <button onClick={() => router.push('/commander/login')} style={{ padding: '10px 24px', background: '#1981EC', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Go To Staff Sign-In</button>
     </div>
   );
   if (loadError) return (
     <div style={{ minHeight: '100vh', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#fff' }}>
       <span style={{ fontSize: 18 }}>{loadError}</span>
-      <button onClick={() => { setLoadError(null); }} style={{ padding: '8px 20px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Dismiss</button>
+      <button onClick={() => { setLoadError(null); }} style={{ padding: '8px 20px', background: '#1981EC', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Dismiss</button>
     </div>
   );
   return (
@@ -517,99 +517,29 @@ export default function MembershipKiosk() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#000000] text-[#E4E6EB] font-['Inter'] flex flex-col items-center justify-center p-0" style={{ overflow: 'hidden' }}>
+      <div className="min-h-screen bg-[#000000] text-[#F2F7FF] font-['Inter'] flex flex-col items-center justify-center p-0" style={{ overflow: 'hidden' }}>
 
-        {/* ===== HOME - Image-Based Welcome ===== */}
+        {/* ===== HOME (#SMARTERDESIGN, Dan 2026-11-27) =====
+            Was a painted metal "Welcome" frame (kiosk-welcome.png) with three
+            invisible hitboxes over painted buttons. Same three actions, now
+            real buttons with live text on one steel-rimmed surface. */}
         {mode === 'home' && (
-          <div style={{
-            position: 'relative',
-            width: '100vw',
-            height: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#000000'
-          }}>
-            {/*
-              Image + hitbox wrapper - hitboxes are positioned relative to THIS container
-              so they scale perfectly with the image at any viewport size
-            */}
-            <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%', display: 'flex' }}>
-              {/* Background Image - PNG with transparent background */}
-              <img
-                src="/images/commander/kiosk-welcome.png?v=32"
-                alt="Welcome Kiosk"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  display: 'block'
-                }}
-                draggable={false}
-                loading="lazy" />
-
-              {/* Invisible Hitboxes - positioned relative to the image */}
-              {/* Percentages are relative to image dimensions (829x946 after trim) */}
-
-              {/* Check In - opens 3-option picker */}
-              <button
-                onClick={() => { haptic(); setMode('checkin_pick'); }}
-                style={{
-                  position: 'absolute',
-                  top: '39.5%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '65%',
-                  height: '8%',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-                aria-label="Check In"
-              />
-
-              {/* Join Waitlist - Green button */}
-              {/* Image: y~496-566/946 ≈ 52.4%-59.8% */}
-              <button
-                onClick={() => { haptic(); fetchGames(); setMode('join_name'); }}
-                style={{
-                  position: 'absolute',
-                  top: '52%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '65%',
-                  height: '8%',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-                aria-label="Join Waitlist"
-              />
-
-              {/* New Member - Grey button */}
-              {/* Image: y~622-692/946 ≈ 65.7%-73.2% */}
-              <button
-                onClick={() => { haptic(); setShowNewMemberPopup(true); }}
-                style={{
-                  position: 'absolute',
-                  top: '65.5%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '65%',
-                  height: '8%',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-                aria-label="New Member"
-              />
-            </div>
+          <div className="cmd-kiosk-home">
+            <section className="sd-panel cmd-kiosk-welcome" aria-labelledby="kiosk-welcome-title">
+              <h1 id="kiosk-welcome-title" className="cmd-kiosk-welcome__title">Welcome</h1>
+              <p className="cmd-kiosk-welcome__sub">Tap To Get Started</p>
+              <div className="cmd-kiosk-welcome__actions">
+                <button type="button" className="sd-button sd-primary cmd-kiosk-action" onClick={() => { haptic(); setMode('checkin_pick'); }}>
+                  <UserCheck size={30} aria-hidden="true" /> Check In
+                </button>
+                <button type="button" className="sd-button sd-primary cmd-kiosk-action" onClick={() => { haptic(); fetchGames(); setMode('join_name'); }}>
+                  <Users size={30} aria-hidden="true" /> Join Waitlist
+                </button>
+                <button type="button" className="sd-button cmd-kiosk-action" onClick={() => { haptic(); setShowNewMemberPopup(true); }}>
+                  <Plus size={30} aria-hidden="true" /> New Member
+                </button>
+              </div>
+            </section>
           </div>
         )}
 
@@ -658,7 +588,7 @@ export default function MembershipKiosk() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: '#B0B3B8'
+                  color: '#BDD0E2'
                 }}
               >
                 <X className="w-5 h-5" />
@@ -669,12 +599,12 @@ export default function MembershipKiosk() {
                 width: '80px',
                 height: '80px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1877F2, #0d5bbd)',
+                background: 'linear-gradient(135deg, #1981EC, #0d5bbd)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px',
-                boxShadow: '0 0 20px rgba(24,119,242,0.4)'
+                boxShadow: '0 0 20px rgba(25, 129, 236,0.4)'
               }}>
                 <Users className="w-10 h-10" style={{ color: '#fff' }} />
               </div>
@@ -691,14 +621,14 @@ export default function MembershipKiosk() {
 
               <p style={{
                 fontSize: '20px',
-                color: '#E4E6EB',
+                color: '#F2F7FF',
                 lineHeight: '1.5',
                 marginBottom: '32px',
                 fontFamily: "var(--font-inter), sans-serif"
               }}>
                 Please See{' '}
                 <span style={{
-                  color: '#1877F2',
+                  color: '#1981EC',
                   fontWeight: '700'
                 }}>
                   {venueName || 'Our'}
@@ -711,9 +641,9 @@ export default function MembershipKiosk() {
                 style={{
                   padding: '16px 48px',
                   borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #3A3B3C, #2a2b2c)',
+                  background: 'linear-gradient(135deg, #2A4560, #2a2b2c)',
                   border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#E4E6EB',
+                  color: '#F2F7FF',
                   fontSize: '18px',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -740,7 +670,7 @@ export default function MembershipKiosk() {
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '12px',
                 padding: '12px 20px',
-                color: '#E4E6EB',
+                color: '#F2F7FF',
                 fontSize: '16px',
                 fontWeight: '600',
                 cursor: 'pointer',
@@ -757,37 +687,37 @@ export default function MembershipKiosk() {
             {mode === 'checkin_pick' && (
               <div className="w-full max-w-md space-y-5">
                 <div className="text-center mb-2">
-                  <div className="w-20 h-20 rounded-full bg-[#1877F2]/20 flex items-center justify-center mx-auto mb-4">
-                    <UserCheck className="w-10 h-10 text-[#1877F2]" />
+                  <div className="w-20 h-20 rounded-full bg-[#0C55C0]/20 flex items-center justify-center mx-auto mb-4">
+                    <UserCheck className="w-10 h-10 text-[#86DAFF]" />
                   </div>
                   <h2 className="text-3xl font-bold text-white mb-2">Check In</h2>
-                  <p className="text-[#B0B3B8] text-base">Choose How You'd Like To Check In</p>
+                  <p className="text-[#BDD0E2] text-base">Choose How You'd Like To Check In</p>
                 </div>
 
                 {/* Option 1: Scan Card */}
                 <button
                   onClick={() => { haptic(); setScanQR(''); setScanError(''); setMode('checkin_scan'); }}
-                  className="w-full py-6 rounded-2xl bg-[#242526] border-2 border-[#1877F2] text-[#E4E6EB] text-xl font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-4"
+                  className="w-full py-6 rounded-2xl bg-[#0A1829] border-2 border-[#1981EC] text-[#F2F7FF] text-xl font-semibold active:bg-[#132A42] flex items-center justify-center gap-4"
                 >
-                  <svg className="w-8 h-8 text-[#1877F2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                  <svg className="w-8 h-8 text-[#86DAFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                   Scan Player Card
                 </button>
 
                 {/* Option 2: Search by Name */}
                 <button
                   onClick={() => { haptic(); setCheckinName(''); setScanError(''); setMode('checkin_name'); }}
-                  className="w-full py-6 rounded-2xl bg-[#242526] border-2 border-[#1877F2] text-[#E4E6EB] text-xl font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-4"
+                  className="w-full py-6 rounded-2xl bg-[#0A1829] border-2 border-[#1981EC] text-[#F2F7FF] text-xl font-semibold active:bg-[#132A42] flex items-center justify-center gap-4"
                 >
-                  <Search className="w-8 h-8 text-[#1877F2]" />
+                  <Search className="w-8 h-8 text-[#86DAFF]" />
                   Search By Name
                 </button>
 
                 {/* Option 3: Search by Phone */}
                 <button
                   onClick={() => { haptic(); setCheckinPhone(''); setScanError(''); setMode('checkin_phone'); }}
-                  className="w-full py-6 rounded-2xl bg-[#242526] border-2 border-[#1877F2] text-[#E4E6EB] text-xl font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-4"
+                  className="w-full py-6 rounded-2xl bg-[#0A1829] border-2 border-[#1981EC] text-[#F2F7FF] text-xl font-semibold active:bg-[#132A42] flex items-center justify-center gap-4"
                 >
-                  <Phone className="w-8 h-8 text-[#1877F2]" />
+                  <Phone className="w-8 h-8 text-[#86DAFF]" />
                   Search By Phone
                 </button>
 
@@ -798,11 +728,11 @@ export default function MembershipKiosk() {
             {mode === 'checkin_scan' && (
               <div className="w-full max-w-md space-y-4">
                 <div className="text-center mb-4">
-                  <div className="w-20 h-20 rounded-full bg-[#1877F2]/20 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-10 h-10 text-[#1877F2]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                  <div className="w-20 h-20 rounded-full bg-[#0C55C0]/20 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-10 h-10 text-[#86DAFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Scan Your Player Card</h2>
-                  <p className="text-[#B0B3B8] text-sm">Hold Your Card&apos;s QR Code Up To The Scanner</p>
+                  <p className="text-[#BDD0E2] text-sm">Hold Your Card&apos;s QR Code Up To The Scanner</p>
                 </div>
 
                 <input
@@ -812,11 +742,11 @@ export default function MembershipKiosk() {
                   onKeyDown={e => { if (e.key === 'Enter') handleScanCheckIn(); }}
                   placeholder="Waiting For Scan..."
                   autoFocus
-                  className="w-full bg-[#3A3B3C] border-2 border-[#1877F2]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2]"
+                  className="w-full bg-[#132A42] border-2 border-[#1981EC]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#1981EC]"
                 />
 
                 <button onClick={handleScanCheckIn} disabled={!scanQR.trim() || submitting}
-                  className="w-full py-5 rounded-2xl bg-[#1877F2] text-white text-xl font-semibold active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="w-full py-5 rounded-2xl bg-[#0C55C0] text-white text-xl font-semibold active:bg-[#0A4AA8] disabled:opacity-50 flex items-center justify-center gap-2">
                   {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCheck className="w-6 h-6" />}
                   Check In
                 </button>
@@ -828,7 +758,7 @@ export default function MembershipKiosk() {
                 )}
 
                 <button onClick={() => setMode('checkin_pick')}
-                  className="w-full py-5 rounded-2xl bg-[#242526] border-2 border-[#3A3B3C] text-[#E4E6EB] text-lg font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-2">
+                  className="w-full py-5 rounded-2xl bg-[#0A1829] border-2 border-[#445E77] text-[#F2F7FF] text-lg font-semibold active:bg-[#132A42] flex items-center justify-center gap-2">
                   ← Other Check-In Options
                 </button>
               </div>
@@ -838,11 +768,11 @@ export default function MembershipKiosk() {
             {mode === 'checkin_name' && (
               <div className="w-full max-w-md space-y-4">
                 <div className="text-center mb-4">
-                  <div className="w-20 h-20 rounded-full bg-[#1877F2]/20 flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-10 h-10 text-[#1877F2]" />
+                  <div className="w-20 h-20 rounded-full bg-[#0C55C0]/20 flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-10 h-10 text-[#86DAFF]" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Check In By Name</h2>
-                  <p className="text-[#B0B3B8] text-sm">Enter Your First And Last Name</p>
+                  <p className="text-[#BDD0E2] text-sm">Enter Your First And Last Name</p>
                 </div>
 
                 <input
@@ -852,11 +782,11 @@ export default function MembershipKiosk() {
                   onKeyDown={e => { if (e.key === 'Enter') handleNameCheckIn(); }}
                   placeholder="First And Last Name"
                   autoFocus
-                  className="w-full bg-[#3A3B3C] border-2 border-[#1877F2]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2]"
+                  className="w-full bg-[#132A42] border-2 border-[#1981EC]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#1981EC]"
                 />
 
                 <button onClick={handleNameCheckIn} disabled={!checkinName.trim() || checkinName.trim().length < 2 || submitting}
-                  className="w-full py-5 rounded-2xl bg-[#1877F2] text-white text-xl font-semibold active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="w-full py-5 rounded-2xl bg-[#0C55C0] text-white text-xl font-semibold active:bg-[#0A4AA8] disabled:opacity-50 flex items-center justify-center gap-2">
                   {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCheck className="w-6 h-6" />}
                   Check In
                 </button>
@@ -868,7 +798,7 @@ export default function MembershipKiosk() {
                 )}
 
                 <button onClick={() => setMode('checkin_pick')}
-                  className="w-full py-5 rounded-2xl bg-[#242526] border-2 border-[#3A3B3C] text-[#E4E6EB] text-lg font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-2">
+                  className="w-full py-5 rounded-2xl bg-[#0A1829] border-2 border-[#445E77] text-[#F2F7FF] text-lg font-semibold active:bg-[#132A42] flex items-center justify-center gap-2">
                   ← Other Check-In Options
                 </button>
               </div>
@@ -878,11 +808,11 @@ export default function MembershipKiosk() {
             {mode === 'checkin_phone' && (
               <div className="w-full max-w-md space-y-4">
                 <div className="text-center mb-4">
-                  <div className="w-20 h-20 rounded-full bg-[#1877F2]/20 flex items-center justify-center mx-auto mb-4">
-                    <Phone className="w-10 h-10 text-[#1877F2]" />
+                  <div className="w-20 h-20 rounded-full bg-[#0C55C0]/20 flex items-center justify-center mx-auto mb-4">
+                    <Phone className="w-10 h-10 text-[#86DAFF]" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Check In By Phone</h2>
-                  <p className="text-[#B0B3B8] text-sm">Enter The Phone Number On Your Account</p>
+                  <p className="text-[#BDD0E2] text-sm">Enter The Phone Number On Your Account</p>
                 </div>
 
                 <input
@@ -893,11 +823,11 @@ export default function MembershipKiosk() {
                   onKeyDown={e => { if (e.key === 'Enter') handlePhoneCheckIn(); }}
                   placeholder="555-123-4567"
                   autoFocus
-                  className="w-full bg-[#3A3B3C] border-2 border-[#1877F2]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2]"
+                  className="w-full bg-[#132A42] border-2 border-[#1981EC]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#1981EC]"
                 />
 
                 <button onClick={handlePhoneCheckIn} disabled={checkinPhone.replace(/\D/g, '').length < 7 || submitting}
-                  className="w-full py-5 rounded-2xl bg-[#1877F2] text-white text-xl font-semibold active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="w-full py-5 rounded-2xl bg-[#0C55C0] text-white text-xl font-semibold active:bg-[#0A4AA8] disabled:opacity-50 flex items-center justify-center gap-2">
                   {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCheck className="w-6 h-6" />}
                   Check In
                 </button>
@@ -909,7 +839,7 @@ export default function MembershipKiosk() {
                 )}
 
                 <button onClick={() => setMode('checkin_pick')}
-                  className="w-full py-5 rounded-2xl bg-[#242526] border-2 border-[#3A3B3C] text-[#E4E6EB] text-lg font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-2">
+                  className="w-full py-5 rounded-2xl bg-[#0A1829] border-2 border-[#445E77] text-[#F2F7FF] text-lg font-semibold active:bg-[#132A42] flex items-center justify-center gap-2">
                   ← Other Check-In Options
                 </button>
               </div>
@@ -923,7 +853,7 @@ export default function MembershipKiosk() {
                     <svg className="w-10 h-10 text-[#31A24C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Scan Card To Join</h2>
-                  <p className="text-[#B0B3B8] text-sm">Hold Your Card&apos;s QR Code Up To The Scanner</p>
+                  <p className="text-[#BDD0E2] text-sm">Hold Your Card&apos;s QR Code Up To The Scanner</p>
                 </div>
 
                 <input
@@ -933,7 +863,7 @@ export default function MembershipKiosk() {
                   onKeyDown={e => { if (e.key === 'Enter') handleScanJoinWaitlist(); }}
                   placeholder="Waiting For Scan..."
                   autoFocus
-                  className="w-full bg-[#3A3B3C] border-2 border-[#31A24C]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#31A24C]"
+                  className="w-full bg-[#132A42] border-2 border-[#31A24C]/50 rounded-xl px-5 py-5 text-white text-xl text-center placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#31A24C]"
                 />
 
                 <button onClick={handleScanJoinWaitlist} disabled={!scanQR.trim() || submitting}
@@ -964,29 +894,29 @@ export default function MembershipKiosk() {
 
                 {/* Scan Card - Primary Action */}
                 <button onClick={() => { setScanQR(''); setScanError(''); setMode('scan_join'); }}
-                  className="w-full py-5 rounded-2xl bg-[#242526] border-2 border-[#31A24C] text-[#E4E6EB] text-xl font-semibold active:bg-[#3A3B3C] flex items-center justify-center gap-3">
+                  className="w-full py-5 rounded-2xl bg-[#0A1829] border-2 border-[#31A24C] text-[#F2F7FF] text-xl font-semibold active:bg-[#132A42] flex items-center justify-center gap-3">
                   <svg className="w-6 h-6 text-[#31A24C]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                   Scan Player Card
                 </button>
 
                 {/* Divider */}
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-[#3A3B3C]" />
-                  <span className="text-xs text-[#B0B3B8]">Or Enter Manually</span>
-                  <div className="flex-1 h-px bg-[#3A3B3C]" />
+                  <div className="flex-1 h-px bg-[#132A42]" />
+                  <span className="text-xs text-[#BDD0E2]">Or Enter Manually</span>
+                  <div className="flex-1 h-px bg-[#132A42]" />
                 </div>
 
                 <div>
-                  <label className="text-sm text-[#B0B3B8] mb-1 block">Your Name *</label>
+                  <label className="text-sm text-[#BDD0E2] mb-1 block">Your Name *</label>
                   <input type="text" value={joinName} onChange={e => setJoinName(e.target.value)}
                     placeholder="First And Last Name"
-                    className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-5 py-4 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#31A24C]" />
+                    className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-5 py-4 text-white text-xl text-center placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#31A24C]" />
                 </div>
 
                 <div>
-                  <label className="text-sm text-[#B0B3B8] mb-1 block">Phone</label>
+                  <label className="text-sm text-[#BDD0E2] mb-1 block">Phone</label>
                   <input type="tel" inputMode="numeric" value={joinPhone} onChange={e => setJoinPhone(liveFormatPhone(e.target.value))}
-                    className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-5 py-4 text-white text-xl text-center placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#31A24C]" />
+                    className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-5 py-4 text-white text-xl text-center placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#31A24C]" />
                 </div>
 
                 <button onClick={() => { if (joinName.trim()) setMode('join_game'); }}
@@ -1002,7 +932,7 @@ export default function MembershipKiosk() {
             {mode === 'join_game' && (
               <div className="w-full max-w-md space-y-4">
                 <h2 className="text-2xl font-bold text-white text-center mb-1">Select Game</h2>
-                <p className="text-center text-[#B0B3B8] text-sm mb-4">
+                <p className="text-center text-[#BDD0E2] text-sm mb-4">
                   Joining As <span className="text-white font-bold">{titleCase(joinName)}</span>
                 </p>
 
@@ -1010,7 +940,7 @@ export default function MembershipKiosk() {
                   /* FIX D4: no fabricated menu - reflect reality when nothing is running */
                   <div className="text-center py-10">
                     <p className="text-lg font-bold text-white">No Games Currently Spread</p>
-                    <p className="text-sm text-[#B0B3B8] mt-2">Please Check With The Floor For Today&apos;s Games.</p>
+                    <p className="text-sm text-[#BDD0E2] mt-2">Please Check With The Floor For Today&apos;s Games.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
@@ -1027,7 +957,7 @@ export default function MembershipKiosk() {
                           }}
                           className={`py-5 rounded-2xl text-center border-2 ${isSelected
                             ? 'bg-[#31A24C]/20 border-[#31A24C] text-[#31A24C]'
-                            : 'bg-[#242526] border-[#3A3B3C] text-[#E4E6EB] active:border-[#31A24C]'
+                            : 'bg-[#0A1829] border-[#445E77] text-[#F2F7FF] active:border-[#31A24C]'
                             }`}>
                           <p className="text-lg font-bold">{g.label}</p>
                           {isSelected && <p className="text-sm mt-1">✓ Selected</p>}
@@ -1046,7 +976,7 @@ export default function MembershipKiosk() {
                 )}
 
                 <button onClick={() => setMode('join_name')}
-                  className="w-full py-3 rounded-xl bg-transparent text-[#B0B3B8] text-base active:text-white">
+                  className="w-full py-3 rounded-xl bg-transparent text-[#BDD0E2] text-base active:text-white">
                   ← Back To Name
                 </button>
               </div>
@@ -1064,24 +994,24 @@ export default function MembershipKiosk() {
                 {!checkinIsWaitlisted && (
                   <div style={{
                     background: 'linear-gradient(145deg, #2a2d30, #1a1c1f)',
-                    border: '1px solid rgba(245,158,11,0.4)',
+                    border: '1px solid rgba(34, 211, 238,0.4)',
                     borderRadius: '16px',
                     padding: '20px 24px',
                     marginTop: '16px'
                   }}>
                     <div className="flex items-center gap-3 mb-2">
-                      <AlertTriangle className="w-6 h-6 text-[#F59E0B] flex-shrink-0" />
-                      <p className="text-lg font-semibold text-[#F59E0B]">Not A Member Yet?</p>
+                      <AlertTriangle className="w-6 h-6 text-[#22D3EE] flex-shrink-0" />
+                      <p className="text-lg font-semibold text-[#22D3EE]">Not A Member Yet?</p>
                     </div>
-                    <p className="text-[#E4E6EB] text-base leading-relaxed">
-                      Please See <span className="text-[#1877F2] font-bold">{venueName || 'Venue'}</span> Staff To Sign Up For Membership.
+                    <p className="text-[#F2F7FF] text-base leading-relaxed">
+                      Please See <span className="text-[#86DAFF] font-bold">{venueName || 'Venue'}</span> Staff To Sign Up For Membership.
                     </p>
                   </div>
                 )}
 
-                <p className="text-[#B0B3B8] text-sm">This Screen Will Reset Automatically</p>
+                <p className="text-[#BDD0E2] text-sm">This Screen Will Reset Automatically</p>
                 <button onClick={reset}
-                  className="px-8 py-4 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-lg font-medium active:bg-[#4A4B4C]">
+                  className="px-8 py-4 rounded-xl bg-[#132A42] text-[#F2F7FF] text-lg font-medium active:bg-[#1B3753]">
                   Done
                 </button>
               </div>

@@ -28,27 +28,27 @@ import PageHelp from '../../src/components/commander/shared/PageHelp';
 
 const PRIORITY_CONFIG = {
   urgent: { color: '#EF4444', label: 'URGENT', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.4)' },
-  high: { color: '#F59E0B', label: 'HIGH', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.3)' },
-  normal: { color: '#1877F2', label: 'Normal', bg: 'rgba(24,119,242,0.08)', border: 'rgba(24,119,242,0.2)' },
-  low: { color: '#8A8D91', label: 'Low', bg: 'rgba(138,141,145,0.08)', border: 'rgba(138,141,145,0.2)' } };
+  high: { color: '#22D3EE', label: 'HIGH', bg: 'rgba(34, 211, 238,0.10)', border: 'rgba(34, 211, 238,0.3)' },
+  normal: { color: '#1981EC', label: 'Normal', bg: 'rgba(25, 129, 236,0.08)', border: 'rgba(25, 129, 236,0.2)' },
+  low: { color: '#9FB3C8', label: 'Low', bg: 'rgba(138,141,145,0.08)', border: 'rgba(138,141,145,0.2)' } };
 
 const STATUS_CONFIG = {
   pending: { color: '#EF4444', label: 'Pending', icon: Bell },
-  acknowledged: { color: '#F59E0B', label: 'Acknowledged', icon: Check },
-  en_route: { color: '#1877F2', label: 'En Route', icon: ArrowRight },
+  acknowledged: { color: '#22D3EE', label: 'Acknowledged', icon: Check },
+  en_route: { color: '#1981EC', label: 'En Route', icon: ArrowRight },
   resolved: { color: '#31A24C', label: 'Resolved', icon: CheckCircle2 },
   cancelled: { color: '#6B7280', label: 'Cancelled', icon: X } };
 
 const REASON_CONFIG = {
   dispute: { icon: Gavel, label: 'Dispute', color: '#EF4444' },
-  chip_fill: { icon: DollarSign, label: 'Chip Fill', color: '#F59E0B' },
+  chip_fill: { icon: DollarSign, label: 'Chip Fill', color: '#22D3EE' },
   buyin: { icon: DollarSign, label: 'Buy-In / Cash', color: '#31A24C' },
-  player_issue: { icon: Users, label: 'Player Issue', color: '#E4405F' },
+  player_issue: { icon: Users, label: 'Player Issue', color: '#38BDF8' },
   security: { icon: Shield, label: 'Security', color: '#EF4444' },
   maintenance: { icon: Wrench, label: 'Maintenance', color: '#6B7280' },
-  dealer_relief: { icon: Coffee, label: 'Dealer Relief', color: '#8B5CF6' },
-  floor_assistance: { icon: Bell, label: 'Floor Assist', color: '#1877F2' },
-  other: { icon: HelpCircle, label: 'Other', color: '#B0B3B8' } };
+  dealer_relief: { icon: Coffee, label: 'Dealer Relief', color: '#5AA9FF' },
+  floor_assistance: { icon: Bell, label: 'Floor Assist', color: '#1981EC' },
+  other: { icon: HelpCircle, label: 'Other', color: '#BDD0E2' } };
 
 const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2, low: 3 };
 
@@ -275,14 +275,14 @@ export default function FloorCalls() {
   return (
     <CommanderLayout title={`Floor Calls${pendingCount > 0 ? ` (${pendingCount})` : ''}`} backHref="/commander/dashboard?card=floor">
       <SEOHead title="Commander - Floor Calls" description="Club Commander Floor Call Management." noindex={true} />
-      <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#0D0E10', color: '#F2F7FF', fontFamily: 'Inter, sans-serif' }}>
 
         {/* ── Header ───────────────────────────────── */}
-        <div data-page-bar="" style={{ background: '#18191A', borderBottom: '1px solid #2A2B2D', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div data-page-bar="" style={{ background: '#040D18', borderBottom: '1px solid #2A2B2D', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div role="status">
             <h1 className="sr-only">Floor Calls</h1>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#B0B3B8', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Bell size={18} color={pendingCount > 0 ? '#EF4444' : '#B0B3B8'} aria-hidden="true" />
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#BDD0E2', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Bell size={18} color={pendingCount > 0 ? '#EF4444' : '#BDD0E2'} aria-hidden="true" />
               {pendingCount > 0 ? (
                 <span style={{ fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', borderRadius: 12, padding: '2px 8px', minWidth: 22, textAlign: 'center' }}>{pendingCount} Pending</span>
               ) : 'No Pending Calls'}
@@ -298,7 +298,7 @@ export default function FloorCalls() {
               {soundOn ? <Volume2 size={16} color="#31A24C" /> : <VolumeX size={16} color="#6B7280" />}
             </button>
             <button onClick={fetchCalls} style={iconBtnStyle} aria-label="Refresh">
-              <RefreshCw size={16} color="#B0B3B8" />
+              <RefreshCw size={16} color="#BDD0E2" />
             </button>
             <PageHelp
               title="Floor Calls"
@@ -308,7 +308,7 @@ export default function FloorCalls() {
         </div>
 
         {/* ── Tabs ─────────────────────────────────── */}
-        <div style={{ display: 'flex', background: '#18191A', borderBottom: '1px solid #2A2B2D' }}>
+        <div style={{ display: 'flex', background: '#040D18', borderBottom: '1px solid #2A2B2D' }}>
           {[
             { key: 'active', label: `Live Queue (${calls.length})`, color: '#EF4444' },
             { key: 'history', label: `History (${resolved.length})`, color: '#31A24C' },
@@ -333,9 +333,9 @@ export default function FloorCalls() {
               <button key={f.key} onClick={() => setReasonFilter(f.key)}
                 style={{
                   padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  background: reasonFilter === f.key ? '#1877F2' : '#242526',
-                  color: reasonFilter === f.key ? '#fff' : '#B0B3B8',
-                  border: `1px solid ${reasonFilter === f.key ? '#1877F2' : '#3A3B3C'}`,
+                  background: reasonFilter === f.key ? '#1981EC' : '#0A1829',
+                  color: reasonFilter === f.key ? '#fff' : '#BDD0E2',
+                  border: `1px solid ${reasonFilter === f.key ? '#1981EC' : '#2A4560'}`,
                   cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{f.label}</button>
             ))}
           </div>
@@ -344,7 +344,7 @@ export default function FloorCalls() {
         {/* ── Content ───────────────────────────────── */}
         {loading ? (
           <div style={{ padding: '80px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 size={32} color="#1877F2" style={{ animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={32} color="#1981EC" style={{ animation: 'spin 1s linear infinite' }} />
           </div>
         ) : (
           <div style={{ padding: '8px 16px 100px' }}>
@@ -385,7 +385,7 @@ export default function FloorCalls() {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <Clock size={12} color="#6B7280" />
-                              <span style={{ fontSize: 12, color: '#8A8D91', fontWeight: 600 }}>{timeAgo(call.created_at)}</span>
+                              <span style={{ fontSize: 12, color: '#9FB3C8', fontWeight: 600 }}>{timeAgo(call.created_at)}</span>
                             </div>
                           </div>
 
@@ -396,12 +396,12 @@ export default function FloorCalls() {
                               background: `${rCfg.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <ReasonIcon size={14} color={rCfg.color} />
                             </div>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: '#E4E6EB', textTransform: 'capitalize' }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#F2F7FF', textTransform: 'capitalize' }}>
                               {rCfg.label}
                             </span>
                           </div>
                           {call.description && (
-                            <p style={{ fontSize: 12, color: '#8A8D91', margin: '0 0 6px', lineHeight: 1.4 }}>{call.description}</p>
+                            <p style={{ fontSize: 12, color: '#9FB3C8', margin: '0 0 6px', lineHeight: 1.4 }}>{call.description}</p>
                           )}
 
                           {/* Status + caller */}
@@ -414,7 +414,7 @@ export default function FloorCalls() {
                               <span style={{ fontSize: 10, color: '#6B7280' }}>By {call.called_by}</span>
                             )}
                             {call.responded_by && (
-                              <span style={{ fontSize: 10, color: '#1877F2' }}>→ {call.responded_by}</span>
+                              <span style={{ fontSize: 10, color: '#1981EC' }}>→ {call.responded_by}</span>
                             )}
                           </div>
                         </div>
@@ -424,11 +424,11 @@ export default function FloorCalls() {
                           {call.status === 'pending' && (
                             <>
                               <button onClick={() => updateCall(call.id, 'acknowledged')}
-                                style={{ ...actionBtnStyle, color: '#F59E0B', borderRight: '1px solid #2A2B2D' }}>
+                                style={{ ...actionBtnStyle, color: '#22D3EE', borderRight: '1px solid #2A2B2D' }}>
                                 <Check size={14} /> Acknowledge
                               </button>
                               <button onClick={() => updateCall(call.id, 'en_route')}
-                                style={{ ...actionBtnStyle, color: '#1877F2' }}>
+                                style={{ ...actionBtnStyle, color: '#1981EC' }}>
                                 <ArrowRight size={14} /> On My Way
                               </button>
                             </>
@@ -436,7 +436,7 @@ export default function FloorCalls() {
                           {call.status === 'acknowledged' && (
                             <>
                               <button onClick={() => updateCall(call.id, 'en_route')}
-                                style={{ ...actionBtnStyle, color: '#1877F2', borderRight: '1px solid #2A2B2D' }}>
+                                style={{ ...actionBtnStyle, color: '#1981EC', borderRight: '1px solid #2A2B2D' }}>
                                 <ArrowRight size={14} /> On My Way
                               </button>
                               <button onClick={() => { setResolveModal(call); setResolveNote(''); }}
@@ -466,7 +466,7 @@ export default function FloorCalls() {
                 {resolved.length > 0 && (
                   <div style={{ display: 'flex', gap: 12, marginBottom: 12, overflowX: 'auto' }}>
                     <StatCard label="Total Resolved" value={resolved.length} color="#31A24C" />
-                    <StatCard label="Avg Response" value={formatDuration(avgResponse)} color="#1877F2" />
+                    <StatCard label="Avg Response" value={formatDuration(avgResponse)} color="#1981EC" />
                   </div>
                 )}
 
@@ -489,7 +489,7 @@ export default function FloorCalls() {
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: '#E4E6EB' }}>Table {call.table_number}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: '#F2F7FF' }}>Table {call.table_number}</span>
                               <ReasonIcon size={12} color={rCfg.color} />
                               <span style={{ fontSize: 11, color: rCfg.color }}>{rCfg.label}</span>
                             </div>
@@ -499,7 +499,7 @@ export default function FloorCalls() {
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             {responseSeconds(call) > 0 && (
-                              <span style={{ fontSize: 11, fontWeight: 600, color: '#1877F2', display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#1981EC', display: 'flex', alignItems: 'center', gap: 3 }}>
                                 <Timer size={10} /> {formatDuration(responseSeconds(call))}
                               </span>
                             )}
@@ -520,8 +520,8 @@ export default function FloorCalls() {
           <button onClick={() => setShowNewCall(true)}
             style={{
               position: 'fixed', bottom: 24, right: 20, width: 56, height: 56, borderRadius: 28,
-              background: 'linear-gradient(135deg, #1877F2, #1565D8)', color: '#fff',
-              border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(24,119,242,0.4)',
+              background: 'linear-gradient(135deg, #1981EC, #0A4AA8)', color: '#fff',
+              border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(25, 129, 236,0.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
             <Plus size={24} />
           </button>
@@ -533,7 +533,7 @@ export default function FloorCalls() {
             <div style={modalStyle} onClick={e => e.stopPropagation()}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>New Floor Call</h3>
-                <button onClick={() => setShowNewCall(false)} style={iconBtnStyle}><X size={18} color="#B0B3B8" /></button>
+                <button onClick={() => setShowNewCall(false)} style={iconBtnStyle}><X size={18} color="#BDD0E2" /></button>
               </div>
 
               {/* Table number */}
@@ -550,9 +550,9 @@ export default function FloorCalls() {
                     <button key={key} onClick={() => setNewReason(key)}
                       style={{
                         padding: '10px 6px', borderRadius: 10, fontSize: 11, fontWeight: 600,
-                        background: newReason === key ? `${cfg.color}20` : '#242526',
-                        color: newReason === key ? cfg.color : '#8A8D91',
-                        border: `1px solid ${newReason === key ? `${cfg.color}50` : '#3A3B3C'}`,
+                        background: newReason === key ? `${cfg.color}20` : '#0A1829',
+                        color: newReason === key ? cfg.color : '#9FB3C8',
+                        border: `1px solid ${newReason === key ? `${cfg.color}50` : '#2A4560'}`,
                         cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <Icon size={16} />
                       {cfg.label}
@@ -568,9 +568,9 @@ export default function FloorCalls() {
                   <button key={key} onClick={() => setNewPriority(key)}
                     style={{
                       flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                      background: newPriority === key ? cfg.bg : '#242526',
+                      background: newPriority === key ? cfg.bg : '#0A1829',
                       color: newPriority === key ? cfg.color : '#6B7280',
-                      border: `1px solid ${newPriority === key ? cfg.border : '#3A3B3C'}`,
+                      border: `1px solid ${newPriority === key ? cfg.border : '#2A4560'}`,
                       cursor: 'pointer' }}>{cfg.label}</button>
                 ))}
               </div>
@@ -585,7 +585,7 @@ export default function FloorCalls() {
               <button onClick={createCall} disabled={!newTable || submitting}
                 style={{
                   width: '100%', padding: '14px 0', borderRadius: 12, fontSize: 15, fontWeight: 700,
-                  background: newTable ? 'linear-gradient(135deg, #1877F2, #1565D8)' : '#3A3B3C',
+                  background: newTable ? 'linear-gradient(135deg, #1981EC, #0A4AA8)' : '#2A4560',
                   color: newTable ? '#fff' : '#6B7280',
                   border: 'none', cursor: newTable ? 'pointer' : 'default', marginTop: 14,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -601,7 +601,7 @@ export default function FloorCalls() {
           <div style={overlayStyle} onClick={() => setResolveModal(null)}>
             <div style={modalStyle} onClick={e => e.stopPropagation()}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: '0 0 4px' }}>Resolve Call</h3>
-              <p style={{ fontSize: 13, color: '#8A8D91', margin: '0 0 16px' }}>
+              <p style={{ fontSize: 13, color: '#9FB3C8', margin: '0 0 16px' }}>
                 Table {resolveModal.table_number}, {(REASON_CONFIG[resolveModal.reason] || REASON_CONFIG.other).label}
               </p>
 
@@ -616,16 +616,16 @@ export default function FloorCalls() {
                   <button key={q} onClick={() => setResolveNote(q)}
                     style={{
                       padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                      background: resolveNote === q ? '#31A24C' : '#242526',
-                      color: resolveNote === q ? '#fff' : '#B0B3B8',
-                      border: `1px solid ${resolveNote === q ? '#31A24C' : '#3A3B3C'}`,
+                      background: resolveNote === q ? '#31A24C' : '#0A1829',
+                      color: resolveNote === q ? '#fff' : '#BDD0E2',
+                      border: `1px solid ${resolveNote === q ? '#31A24C' : '#2A4560'}`,
                       cursor: 'pointer' }}>{q}</button>
                 ))}
               </div>
 
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setResolveModal(null)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#242526', color: '#B0B3B8', fontSize: 14, fontWeight: 600, border: '1px solid #3A3B3C', cursor: 'pointer' }}>Cancel</button>
+                  style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#0A1829', color: '#BDD0E2', fontSize: 14, fontWeight: 600, border: '1px solid #2A4560', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={handleResolve} disabled={submitting}
                   style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: '#31A24C', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   {submitting ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={16} />}
@@ -686,7 +686,7 @@ function StatCard({ label, value, color }) {
 
 const iconBtnStyle = {
   width: 36, height: 36, borderRadius: 10,
-  background: '#242526', border: '1px solid #3A3B3C',
+  background: '#0A1829', border: '1px solid #2A4560',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', flexShrink: 0 };
 
@@ -706,10 +706,10 @@ const modalStyle = {
   padding: '20px 20px 28px', border: '1px solid #2A2B2D' };
 
 const labelStyle = {
-  display: 'block', fontSize: 11, fontWeight: 600, color: '#8A8D91',
+  display: 'block', fontSize: 11, fontWeight: 600, color: '#9FB3C8',
   textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 };
 
 const inputStyle = {
   width: '100%', padding: '12px 14px', borderRadius: 10, fontSize: 14,
-  background: '#242526', color: '#E4E6EB', border: '1px solid #3A3B3C',
+  background: '#0A1829', color: '#F2F7FF', border: '1px solid #2A4560',
   outline: 'none', boxSizing: 'border-box' };

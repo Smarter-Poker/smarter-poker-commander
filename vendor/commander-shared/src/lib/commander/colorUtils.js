@@ -5,7 +5,7 @@
 
 /**
  * Lighten a hex color by a percentage.
- * @param {string} hex - Hex color (e.g., '#B8860B')
+ * @param {string} hex - Hex color (e.g., '#3A8FC0')
  * @param {number} percent - Percentage (0-100)
  * @returns {string} Lightened hex color
  */
@@ -19,7 +19,7 @@ export function lighten(hex, percent) {
 
 /**
  * Darken a hex color by a percentage.
- * @param {string} hex - Hex color (e.g., '#B8860B')
+ * @param {string} hex - Hex color (e.g., '#3A8FC0')
  * @param {number} percent - Percentage (0-100)
  * @returns {string} Darkened hex color
  */

@@ -14,7 +14,7 @@ export default function PasswordStrength({ password }) {
   let text = 'Weak';
   
   if (score >= 3) {
-    color = '#F59E0B'; // Yellow
+    color = '#22D3EE'; // Yellow
     text = 'Medium';
   }
   if (score >= 4) {
@@ -29,7 +29,7 @@ export default function PasswordStrength({ password }) {
         height: '4px',
         flex: 1,
         borderRadius: '2px',
-        background: i <= Math.min(score, 4) ? color : '#3A3B3C',
+        background: i <= Math.min(score, 4) ? color : '#2A4560',
         transition: 'background 0.3s ease'
       }}
     />

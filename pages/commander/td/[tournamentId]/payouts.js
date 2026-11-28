@@ -271,8 +271,8 @@ export default function TDPayouts() {
     if (loading) {
         return (
             <CommanderLayout title="Payouts">
-                <div className="flex items-center justify-center min-h-screen bg-[#18191A]">
-                    <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                <div className="flex items-center justify-center min-h-screen bg-[#040D18]">
+                    <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                 </div>
             </CommanderLayout>
         );
@@ -281,12 +281,12 @@ export default function TDPayouts() {
     return (
         <CommanderLayout title="Payouts">
             <SEOHead title="TD Payouts" />
-            <div className="min-h-screen bg-[#18191A] pb-24">
+            <div className="min-h-screen bg-[#040D18] pb-24">
                 {/* Header */}
                 <PageBar
                     title="Payout Calculator"
                     summary="Work Out The Prize Split For This Tournament. Payouts Auto-Calculate From The Prize Pool And Places Paid, Or Override Any Place For A Deal. Once The Tournament Is Completed, Finalize Saves The Final Result."
-                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
                     innerClassName="max-w-2xl mx-auto"
                     sticky
                 >
@@ -300,17 +300,17 @@ export default function TDPayouts() {
                 <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
                     {/* Prize Pool Summary */}
                     <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 text-center">
-                            <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">Prize Pool</p>
+                        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 text-center">
+                            <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">Prize Pool</p>
                             <p className="text-xl font-bold text-[#31A24C]">{formatMoney(prizePool)}</p>
                         </div>
-                        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 text-center">
-                            <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">Entries</p>
+                        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 text-center">
+                            <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">Entries</p>
                             <p className="text-xl font-bold text-white">{calcData?.total_entries || 0}</p>
                         </div>
-                        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 text-center">
-                            <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">House Fees</p>
-                            <p className="text-xl font-bold text-[#F59E0B]">{formatMoney(calcData?.house_fees)}</p>
+                        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 text-center">
+                            <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">House Fees</p>
+                            <p className="text-xl font-bold text-[#22D3EE]">{formatMoney(calcData?.house_fees)}</p>
                         </div>
                     </div>
 
@@ -338,7 +338,7 @@ export default function TDPayouts() {
                             <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-[#EF4444]">Overlay Alert</p>
-                                <p className="text-xs text-[#B0B3B8]">
+                                <p className="text-xs text-[#BDD0E2]">
                                     Guaranteed {formatMoney(calcData.guaranteed)} Exceeds Collected {formatMoney(calcData.collected_pool)} By {formatMoney(calcData.overlay)} Overlay
                                 </p>
                             </div>
@@ -346,11 +346,11 @@ export default function TDPayouts() {
                     )}
 
                     {isSatellite && (
-                        <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl px-4 py-3 flex items-center gap-3">
-                            <Ticket className="w-5 h-5 text-[#1877F2] flex-shrink-0" />
+                        <div className="bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <Ticket className="w-5 h-5 text-[#86DAFF] flex-shrink-0" />
                             <div>
-                                <p className="text-sm font-medium text-[#1877F2]">Satellite, Paying Seats</p>
-                                <p className="text-xs text-[#B0B3B8]">
+                                <p className="text-sm font-medium text-[#86DAFF]">Satellite, Paying Seats</p>
+                                <p className="text-xs text-[#BDD0E2]">
                                     {seatsAwarded.toLocaleString()} Seat{seatsAwarded === 1 ? '' : 's'} At {formatMoney(seatValue)} Each.
                                     Any Money Left Over Is Paid To The Next Finisher As A Cash Bubble Prize.
                                 </p>
@@ -359,13 +359,13 @@ export default function TDPayouts() {
                     )}
 
                     {bountyPool > 0 && (
-                        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-4 py-3 flex items-center gap-3">
-                            <Coins className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+                        <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <Coins className="w-5 h-5 text-[#22D3EE] flex-shrink-0" />
                             <div>
-                                <p className="text-sm font-medium text-[#F59E0B]">
+                                <p className="text-sm font-medium text-[#22D3EE]">
                                     Bounty Pool {formatMoney(bountyPool)}
                                 </p>
-                                <p className="text-xs text-[#B0B3B8]">
+                                <p className="text-xs text-[#BDD0E2]">
                                     Held Out Of The Prize Pool And Paid On Knockouts, {formatMoney(calcData?.bounty_per_entry)} Per Entry.
                                 </p>
                             </div>
@@ -373,13 +373,13 @@ export default function TDPayouts() {
                     )}
 
                     {/* Denomination Rounding */}
-                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3">
+                    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] px-4 py-3">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                                <Coins className="w-4 h-4 text-[#B0B3B8]" />
-                                <span className="text-sm font-medium text-[#E4E6EB]">Round Payouts To</span>
+                                <Coins className="w-4 h-4 text-[#BDD0E2]" />
+                                <span className="text-sm font-medium text-[#F2F7FF]">Round Payouts To</span>
                             </div>
-                            {savingDenom && <Loader2 className="w-4 h-4 text-[#1877F2] animate-spin" />}
+                            {savingDenom && <Loader2 className="w-4 h-4 text-[#86DAFF] animate-spin" />}
                         </div>
                         <div className="flex gap-2">
                             {DENOMINATIONS.map(d => (
@@ -387,13 +387,13 @@ export default function TDPayouts() {
                                     onClick={() => applyDenomination(d.value)}
                                     disabled={savingDenom || isSatellite}
                                     className={`flex-1 h-11 rounded-xl text-sm font-medium disabled:opacity-50 ${activeDenom === d.value
-                                        ? 'bg-[#1877F2] text-white'
-                                        : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>
+                                        ? 'bg-[#0C55C0] text-white'
+                                        : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'}`}>
                                     {d.label}
                                 </button>
                             ))}
                         </div>
-                        <p className="text-xs text-[#B0B3B8] mt-2">
+                        <p className="text-xs text-[#BDD0E2] mt-2">
                             {isSatellite
                                 ? 'Satellites Pay Whole Seats, So There Is Nothing To Round.'
                                 : activeDenom > 1
@@ -401,7 +401,7 @@ export default function TDPayouts() {
                                     : 'Places Are Paid To The Exact Dollar.'}
                         </p>
                         {!isSatellite && activeDenom > 1 && roundingRemainder !== 0 && (
-                            <p className="text-xs text-[#F59E0B] mt-1">
+                            <p className="text-xs text-[#22D3EE] mt-1">
                                 {roundingRemainder > 0
                                     ? `${formatMoney(roundingRemainder)} Of Rounding Went To 1st Place.`
                                     : `1st Place Gave Up ${formatMoney(Math.abs(roundingRemainder))} So Every Paying Place Keeps At Least One $${activeDenom.toLocaleString()} Unit.`}
@@ -410,17 +410,17 @@ export default function TDPayouts() {
                     </div>
 
                     {/* Payout Table */}
-                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                        <div className="px-4 py-3 border-b border-[#3A3B3C] flex items-center justify-between">
+                    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                        <div className="px-4 py-3 border-b border-[#445E77] flex items-center justify-between">
                             <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                                 {isSatellite ? 'Seat Breakdown' : 'Payout Breakdown'}
                             </h2>
-                            <button onClick={fetchPayouts} className="text-[#1877F2] text-xs flex items-center gap-1">
+                            <button onClick={fetchPayouts} className="text-[#86DAFF] text-xs flex items-center gap-1">
                                 <RefreshCw className="w-3 h-3" /> Recalculate
                             </button>
                         </div>
 
-                        <div className="divide-y divide-[#3A3B3C]">
+                        <div className="divide-y divide-[#445E77]">
                             {(calcData?.calculated_payouts || []).map(slot => {
                                 const overrideAmount = overrides[slot.position];
                                 const isOverridden = overrideAmount !== undefined && overrideAmount !== slot.amount;
@@ -428,20 +428,20 @@ export default function TDPayouts() {
                                 return (
                                     <div key={slot.position} className="px-4 py-3 flex items-center gap-3">
                                         {/* Position */}
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${slot.position === 1 ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
-                                            slot.position === 2 ? 'bg-[#B0B3B8]/20 text-[#B0B3B8]' :
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${slot.position === 1 ? 'bg-[#22D3EE]/20 text-[#22D3EE]' :
+                                            slot.position === 2 ? 'bg-[#BDD0E2]/20 text-[#BDD0E2]' :
                                                 slot.position === 3 ? 'bg-[#CD7F32]/20 text-[#CD7F32]' :
-                                                    'bg-[#3A3B3C] text-[#B0B3B8]'
+                                                    'bg-[#132A42] text-[#BDD0E2]'
                                             }`}>
                                             {slot.position}
                                         </div>
 
                                         {/* Player Name */}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-[#E4E6EB] truncate">
-                                                {slot.player_name || <span className="text-[#B0B3B8] italic">TBD</span>}
+                                            <p className="text-sm text-[#F2F7FF] truncate">
+                                                {slot.player_name || <span className="text-[#BDD0E2] italic">TBD</span>}
                                             </p>
-                                            <p className="text-xs text-[#B0B3B8]">
+                                            <p className="text-xs text-[#BDD0E2]">
                                                 {slot.is_seat
                                                     ? `Seat, ${formatMoney(slot.amount)} Value`
                                                     : slot.is_bubble
@@ -451,7 +451,7 @@ export default function TDPayouts() {
                                         </div>
 
                                         {/* Auto Amount */}
-                                        <div className={`text-right text-xs flex-shrink-0 w-16 ${slot.is_seat ? 'text-[#1877F2] font-medium' : 'text-[#B0B3B8]'}`}>
+                                        <div className={`text-right text-xs flex-shrink-0 w-16 ${slot.is_seat ? 'text-[#86DAFF] font-medium' : 'text-[#BDD0E2]'}`}>
                                             {slot.is_seat ? 'Seat' : formatMoney(slot.amount)}
                                         </div>
 
@@ -462,8 +462,8 @@ export default function TDPayouts() {
                                                 value={overrideAmount !== undefined ? overrideAmount : slot.amount}
                                                 onChange={e => handleOverride(slot.position, e.target.value)}
                                                 className={`w-full px-2 py-1.5 rounded-lg text-sm text-right font-medium ${isOverridden
-                                                    ? 'bg-[#1877F2]/20 border border-[#1877F2]/40 text-[#1877F2]'
-                                                    : 'bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB]'
+                                                    ? 'bg-[#0C55C0]/20 border border-[#1981EC]/40 text-[#86DAFF]'
+                                                    : 'bg-[#132A42] border border-[#5A7590] text-[#F2F7FF]'
                                                     }`}
                                             />
                                         </div>
@@ -473,16 +473,16 @@ export default function TDPayouts() {
                         </div>
 
                         {/* Totals */}
-                        <div className="px-4 py-3 border-t border-[#3A3B3C] bg-[#1C1D1E]">
+                        <div className="px-4 py-3 border-t border-[#445E77] bg-[#1C1D1E]">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-[#B0B3B8]">Total Payouts</span>
-                                <span className={`text-lg font-bold ${Math.abs(diff) > 0 ? (diff > 0 ? 'text-[#EF4444]' : 'text-[#F59E0B]') : 'text-[#31A24C]'
+                                <span className="text-sm font-medium text-[#BDD0E2]">Total Payouts</span>
+                                <span className={`text-lg font-bold ${Math.abs(diff) > 0 ? (diff > 0 ? 'text-[#EF4444]' : 'text-[#22D3EE]') : 'text-[#31A24C]'
                                     }`}>
                                     {formatMoney(totalOverridden)}
                                 </span>
                             </div>
                             {Math.abs(diff) > 0 && (
-                                <p className="text-xs text-[#B0B3B8] mt-1">
+                                <p className="text-xs text-[#BDD0E2] mt-1">
                                     {diff > 0 ? `${formatMoney(diff)} Over Prize Pool` : `${formatMoney(Math.abs(diff))} Remaining`}
                                 </p>
                             )}
@@ -499,22 +499,22 @@ export default function TDPayouts() {
 
                     {/* Deal Calculator */}
                     <button onClick={() => setShowDealCalc(true)}
-                        className="w-full bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3 flex items-center justify-between active:bg-[#3A3B3C]">
+                        className="w-full bg-[#0A1829] rounded-xl border border-[#445E77] px-4 py-3 flex items-center justify-between active:bg-[#132A42]">
                         <div className="flex items-center gap-2">
                             <Handshake className="w-4 h-4 text-[#31A24C]" />
-                            <span className="text-sm font-medium text-[#E4E6EB]">Deal Calculator</span>
+                            <span className="text-sm font-medium text-[#F2F7FF]">Deal Calculator</span>
                         </div>
-                        <ChevronDown className="w-4 h-4 text-[#B0B3B8] rotate-[-90deg]" />
+                        <ChevronDown className="w-4 h-4 text-[#BDD0E2] rotate-[-90deg]" />
                     </button>
 
                     {/* ICM Calculator Toggle */}
                     <button onClick={() => setShowICM(!showICM)}
-                        className="w-full bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-3 flex items-center justify-between active:bg-[#3A3B3C]">
+                        className="w-full bg-[#0A1829] rounded-xl border border-[#445E77] px-4 py-3 flex items-center justify-between active:bg-[#132A42]">
                         <div className="flex items-center gap-2">
-                            <Calculator className="w-4 h-4 text-[#1877F2]" />
-                            <span className="text-sm font-medium text-[#E4E6EB]">ICM Chop Calculator</span>
+                            <Calculator className="w-4 h-4 text-[#86DAFF]" />
+                            <span className="text-sm font-medium text-[#F2F7FF]">ICM Chop Calculator</span>
                         </div>
-                        {showICM ? <ChevronUp className="w-4 h-4 text-[#B0B3B8]" /> : <ChevronDown className="w-4 h-4 text-[#B0B3B8]" />}
+                        {showICM ? <ChevronUp className="w-4 h-4 text-[#BDD0E2]" /> : <ChevronDown className="w-4 h-4 text-[#BDD0E2]" />}
                     </button>
 
                     {showICM && (
@@ -543,14 +543,14 @@ export default function TDPayouts() {
                 )}
 
                 {/* Bottom Nav */}
-                <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+                <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
                     <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
                         {NAV_ITEMS.map(item => {
                             const Icon = NAV_ICONS[item.key];
                             const isActive = item.key === 'payouts';
                             return (
                                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'}`}>
+                                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'}`}>
                                     <Icon className="w-5 h-5" />
                                     <span className="text-[9px] font-medium">{item.label}</span>
                                 </button>
@@ -751,29 +751,29 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
 
     return (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[#3A3B3C]">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#445E77]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#31A24C]/20 flex items-center justify-center">
                             <Handshake className="w-5 h-5 text-[#31A24C]" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white">Deal Calculator</h3>
-                            <p className="text-xs text-[#B0B3B8]">{n} Player{n === 1 ? '' : 's'} Remaining</p>
+                            <p className="text-xs text-[#BDD0E2]">{n} Player{n === 1 ? '' : 's'} Remaining</p>
                         </div>
                     </div>
                     <button onClick={onClose}
-                        className="w-10 h-10 rounded-full bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C]">
-                        <X className="w-5 h-5 text-[#E4E6EB]" />
+                        className="w-10 h-10 rounded-full bg-[#132A42] flex items-center justify-center active:bg-[#1B3753]">
+                        <X className="w-5 h-5 text-[#F2F7FF]" />
                     </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                     {players === null ? (
-                        <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin" /></div>
+                        <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[#86DAFF] animate-spin" /></div>
                     ) : n === 0 ? (
-                        <p className="text-sm text-[#B0B3B8] text-center py-8">No Remaining Players Found</p>
+                        <p className="text-sm text-[#BDD0E2] text-center py-8">No Remaining Players Found</p>
                     ) : (
                         <>
                             {/* Mode Tabs */}
@@ -781,8 +781,8 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
                                 {DEAL_MODES.map(m => (
                                     <button key={m.key} onClick={() => setMode(m.key)}
                                         className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${mode === m.key
-                                            ? 'bg-[#1877F2] text-white'
-                                            : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>
+                                            ? 'bg-[#0C55C0] text-white'
+                                            : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'}`}>
                                         {m.label}
                                     </button>
                                 ))}
@@ -791,27 +791,27 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
                             {/* Inputs */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs text-[#B0B3B8] mb-1 block">Money To Chop</label>
+                                    <label className="text-xs text-[#BDD0E2] mb-1 block">Money To Chop</label>
                                     <input type="number" value={moneyInput} onChange={e => setMoneyInput(e.target.value)}
                                         placeholder="Amount"
-                                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                                        className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1981EC]" />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-[#B0B3B8] mb-1 block">Reserve For 1st (Optional)</label>
+                                    <label className="text-xs text-[#BDD0E2] mb-1 block">Reserve For 1st (Optional)</label>
                                     <input type="number" value={reserveInput} onChange={e => setReserveInput(e.target.value)}
                                         placeholder="0"
-                                        className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1877F2]" />
+                                        className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-white text-lg text-center focus:outline-none focus:border-[#1981EC]" />
                                 </div>
                             </div>
 
                             {/* Results */}
-                            <div className="bg-[#18191A] rounded-xl border border-[#3A3B3C] divide-y divide-[#3A3B3C]">
+                            <div className="bg-[#040D18] rounded-xl border border-[#445E77] divide-y divide-[#445E77]">
                                 {players.map((p, i) => (
                                     <div key={p.entry_id || `${p.name}-${i}`} className="px-4 py-3 flex items-center gap-3">
-                                        <span className="w-7 h-7 rounded-full bg-[#3A3B3C] text-[#B0B3B8] flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
+                                        <span className="w-7 h-7 rounded-full bg-[#132A42] text-[#BDD0E2] flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-[#E4E6EB] truncate">{p.name}</p>
-                                            <p className="text-xs text-[#B0B3B8]">{p.chips.toLocaleString()} Chips</p>
+                                            <p className="text-sm text-[#F2F7FF] truncate">{p.name}</p>
+                                            <p className="text-xs text-[#BDD0E2]">{p.chips.toLocaleString()} Chips</p>
                                         </div>
                                         <span className="text-base font-bold text-[#31A24C]">${(amounts[i] || 0).toLocaleString()}</span>
                                     </div>
@@ -819,27 +819,27 @@ function DealCalculator({ tournamentId, calcData, overrides, setToast, onClose, 
                             </div>
 
                             {reserve > 0 && (
-                                <p className="text-xs text-[#F59E0B]">
+                                <p className="text-xs text-[#22D3EE]">
                                     Plus ${reserve.toLocaleString()} Reserved For 1st Place. It Goes To Whoever Finishes 1st (Added To The Chip Leader Line When Applied).
                                 </p>
                             )}
 
                             <div className="flex items-center justify-between px-1">
-                                <span className="text-sm text-[#B0B3B8]">Total{reserve > 0 ? ' (Chop + Reserve)' : ''}</span>
+                                <span className="text-sm text-[#BDD0E2]">Total{reserve > 0 ? ' (Chop + Reserve)' : ''}</span>
                                 <span className="text-base font-bold text-white">${money.toLocaleString()}</span>
                             </div>
 
                             {!players.every(p => p.entry_id) && (
-                                <p className="text-xs text-[#B0B3B8]">Entry Records Were Not Found For Every Player, So This Deal Can Be Calculated But Not Applied.</p>
+                                <p className="text-xs text-[#BDD0E2]">Entry Records Were Not Found For Every Player, So This Deal Can Be Calculated But Not Applied.</p>
                             )}
                         </>
                     )}
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 pb-5 pt-3 border-t border-[#3A3B3C] flex gap-3">
+                <div className="px-5 pb-5 pt-3 border-t border-[#445E77] flex gap-3">
                     <button onClick={onClose}
-                        className="flex-1 py-3.5 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Close</button>
+                        className="flex-1 py-3.5 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Close</button>
                     <button onClick={applyDeal} disabled={!canApply}
                         className="flex-1 py-3.5 rounded-xl bg-[#31A24C] text-white font-bold active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
                         {applying ? <><Loader2 className="w-4 h-4 animate-spin" /> Applying...</> : 'Apply As Deal'}
@@ -902,33 +902,33 @@ function ICMCalculator({ payouts, prizePool, onApply }) {
     };
 
     return (
-        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-3">
-            <p className="text-xs text-[#B0B3B8]">Enter Chip Counts For Remaining Players To Calculate Chip-Chop Values:</p>
+        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 space-y-3">
+            <p className="text-xs text-[#BDD0E2]">Enter Chip Counts For Remaining Players To Calculate Chip-Chop Values:</p>
             <div className="space-y-2">
                 {payouts.filter(p => p.player_name).map(p => (
                     <div key={p.position} className="flex items-center gap-3">
-                        <span className="text-sm text-[#E4E6EB] w-28 truncate">{p.player_name}</span>
+                        <span className="text-sm text-[#F2F7FF] w-28 truncate">{p.player_name}</span>
                         <input
                             type="number"
                             placeholder="Chip Count"
                             value={chipInputs[p.position] || ''}
                             onChange={e => setChipInputs(prev => ({ ...prev, [p.position]: parseInt(e.target.value) || 0 }))}
-                            className="flex-1 px-3 py-2 rounded-lg bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-sm"
+                            className="flex-1 px-3 py-2 rounded-lg bg-[#132A42] border border-[#5A7590] text-[#F2F7FF] text-sm"
                         />
                     </div>
                 ))}
             </div>
 
             <button onClick={calculate}
-                className="w-full py-2.5 rounded-xl bg-[#1877F2] text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-95">
+                className="w-full py-2.5 rounded-xl bg-[#0C55C0] text-white text-sm font-medium flex items-center justify-center gap-2 active:scale-95">
                 <Calculator className="w-4 h-4" /> Calculate Chip Chop
             </button>
 
             {results && (
-                <div className="space-y-2 pt-2 border-t border-[#3A3B3C]">
+                <div className="space-y-2 pt-2 border-t border-[#445E77]">
                     {results.map(r => (
                         <div key={r.position} className="flex items-center justify-between px-2 py-1.5">
-                            <span className="text-sm text-[#E4E6EB]">{r.percentage}% Equity</span>
+                            <span className="text-sm text-[#F2F7FF]">{r.percentage}% Equity</span>
                             <span className="text-sm font-bold text-[#31A24C]">{formatMoney(r.equity)}</span>
                         </div>
                     ))}

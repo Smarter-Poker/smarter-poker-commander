@@ -26,7 +26,7 @@ const FORMAT_OPTIONS = [
 ];
 
 const STATUS_CONFIG = {
-  pending: { color: '#F59E0B', icon: Clock, label: 'Pending' },
+  pending: { color: '#22D3EE', icon: Clock, label: 'Pending' },
   processing: { color: '#3B82F6', icon: Loader, label: 'Processing' },
   completed: { color: '#10B981', icon: CheckCircle, label: 'Completed' },
   failed: { color: '#EF4444', icon: XCircle, label: 'Failed' },
@@ -43,13 +43,13 @@ function ExportJobCard({ job, onDownload, onRefresh }) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#0D192E]">
-            <TypeIcon size={20} className="text-[#64748B]" />
+            <TypeIcon size={20} className="text-[#9FB3C8]" />
           </div>
           <div>
             <div className="font-medium text-white capitalize">
               {job.export_type.replace(/_/g, ' ')} Export
             </div>
-            <div className="text-xs text-[#4A5E78]">
+            <div className="text-xs text-[#8FA6BE]">
               {job.format?.toUpperCase()} - {new Date(job.created_at).toLocaleString()}
             </div>
           </div>
@@ -65,7 +65,7 @@ function ExportJobCard({ job, onDownload, onRefresh }) {
           {job.status === 'processing' && (
             <button
               onClick={() => onRefresh?.(job.id)}
-              className="p-1 text-[#4A5E78] hover:text-white"
+              className="p-1 text-[#8FA6BE] hover:text-white"
             >
               <RefreshCw size={16} />
             </button>
@@ -82,14 +82,14 @@ function ExportJobCard({ job, onDownload, onRefresh }) {
               style={{ width: `${job.progress}%`, backgroundColor: '#22D3EE' }}
             />
           </div>
-          <div className="text-xs text-[#4A5E78] mt-1">{job.progress}% complete</div>
+          <div className="text-xs text-[#8FA6BE] mt-1">{job.progress}% complete</div>
         </div>
       )}
 
       {/* Details for completed exports */}
       {job.status === 'completed' && (
         <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center gap-4 text-xs text-[#4A5E78]">
+          <div className="flex items-center gap-4 text-xs text-[#8FA6BE]">
             <span>{job.row_count?.toLocaleString() || 0} rows</span>
             <span>{formatFileSize(job.file_size)}</span>
             {job.date_from && job.date_to && (
@@ -115,7 +115,7 @@ function ExportJobCard({ job, onDownload, onRefresh }) {
 
       {/* Expiration warning */}
       {job.status === 'completed' && job.expires_at && (
-        <div className="mt-2 text-xs text-[#4A5E78]">
+        <div className="mt-2 text-xs text-[#8FA6BE]">
           Expires: {new Date(job.expires_at).toLocaleDateString()}
         </div>
       )}
@@ -180,7 +180,7 @@ export default function ExportManager({
 
           {/* Export type */}
           <div>
-            <label className="block text-sm text-[#64748B] mb-2">Export Type</label>
+            <label className="block text-sm text-[#9FB3C8] mb-2">Export Type</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {EXPORT_TYPES.map(type => {
                 const TypeIcon = type.icon;
@@ -190,12 +190,12 @@ export default function ExportManager({
                     key={type.value}
                     onClick={() => setFormData({ ...formData, export_type: type.value })}
                     className={`p-3 rounded-lg border text-left transition-all ${
-                      isSelected ? 'ring-2 ring-[#22D3EE] border-[#22D3EE] bg-[#22D3EE]/10' : 'border-[#4A5E78] bg-[#0D192E]'
+                      isSelected ? 'ring-2 ring-[#22D3EE] border-[#22D3EE] bg-[#22D3EE]/10' : 'border-[#445E77] bg-[#0D192E]'
                     }`}
                   >
-                    <TypeIcon size={20} className={isSelected ? 'text-[#22D3EE]' : 'text-[#64748B]'} />
+                    <TypeIcon size={20} className={isSelected ? 'text-[#22D3EE]' : 'text-[#9FB3C8]'} />
                     <div className="mt-2 font-medium text-white text-sm">{type.label}</div>
-                    <div className="text-xs text-[#4A5E78]">{type.description}</div>
+                    <div className="text-xs text-[#8FA6BE]">{type.description}</div>
                   </button>
                 );
               })}
@@ -204,7 +204,7 @@ export default function ExportManager({
 
           {/* Format */}
           <div>
-            <label className="block text-sm text-[#64748B] mb-2">Format</label>
+            <label className="block text-sm text-[#9FB3C8] mb-2">Format</label>
             <div className="flex gap-2">
               {FORMAT_OPTIONS.map(format => {
                 const FormatIcon = format.icon;
@@ -214,10 +214,10 @@ export default function ExportManager({
                     key={format.value}
                     onClick={() => setFormData({ ...formData, format: format.value })}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-                      isSelected ? 'ring-2 ring-[#22D3EE] border-[#22D3EE] bg-[#22D3EE]/10' : 'border-[#4A5E78] bg-[#0D192E]'
+                      isSelected ? 'ring-2 ring-[#22D3EE] border-[#22D3EE] bg-[#22D3EE]/10' : 'border-[#445E77] bg-[#0D192E]'
                     }`}
                   >
-                    <FormatIcon size={16} className={isSelected ? 'text-[#22D3EE]' : 'text-[#64748B]'} />
+                    <FormatIcon size={16} className={isSelected ? 'text-[#22D3EE]' : 'text-[#9FB3C8]'} />
                     <span className={isSelected ? 'text-white' : 'text-gray-300'}>{format.label}</span>
                   </button>
                 );
@@ -228,7 +228,7 @@ export default function ExportManager({
           {/* Date range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-[#64748B] mb-2">From Date (optional)</label>
+              <label className="block text-sm text-[#9FB3C8] mb-2">From Date (optional)</label>
               <input
                 type="date"
                 value={formData.date_from}
@@ -237,7 +237,7 @@ export default function ExportManager({
               />
             </div>
             <div>
-              <label className="block text-sm text-[#64748B] mb-2">To Date (optional)</label>
+              <label className="block text-sm text-[#9FB3C8] mb-2">To Date (optional)</label>
               <input
                 type="date"
                 value={formData.date_to}
@@ -278,10 +278,10 @@ export default function ExportManager({
 
       {/* Hendon Mob notice */}
       <div className="cmd-panel p-4 flex items-start gap-3">
-        <Trophy size={20} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+        <Trophy size={20} className="text-cyan-400 flex-shrink-0 mt-0.5" />
         <div>
           <h4 className="font-medium text-white">Hendon Mob Integration</h4>
-          <p className="text-sm text-[#64748B] mt-1">
+          <p className="text-sm text-[#9FB3C8] mt-1">
             For tournament results, use the dedicated Hendon Mob export format via the API:
           </p>
           <code className="block mt-2 p-2 rounded bg-[#0B1426] text-xs text-green-400">
@@ -302,9 +302,9 @@ export default function ExportManager({
         </div>
       ) : exports.length === 0 ? (
         <div className="cmd-panel p-8 text-center">
-          <Download size={32} className="mx-auto text-[#4A5E78] mb-2" />
-          <p className="text-[#64748B]">No Exports Yet</p>
-          <p className="text-sm text-[#4A5E78]">Create An Export To Download Your Data</p>
+          <Download size={32} className="mx-auto text-[#8FA6BE] mb-2" />
+          <p className="text-[#9FB3C8]">No Exports Yet</p>
+          <p className="text-sm text-[#8FA6BE]">Create An Export To Download Your Data</p>
         </div>
       ) : (
         <div className="space-y-3">

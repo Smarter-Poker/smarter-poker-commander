@@ -29,12 +29,12 @@ function VenueCard({ venue, onSelect, isSelected }) {
             />
           ) : (
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#0D192E]">
-              <Building2 size={20} className="text-[#64748B]" />
+              <Building2 size={20} className="text-[#9FB3C8]" />
             </div>
           )}
           <div>
             <h3 className="font-semibold text-white">{venue.name}</h3>
-            <div className="flex items-center gap-1 text-xs text-[#4A5E78]">
+            <div className="flex items-center gap-1 text-xs text-[#8FA6BE]">
               <MapPin size={12} />
               {venue.city}, {venue.state}
             </div>
@@ -44,7 +44,7 @@ function VenueCard({ venue, onSelect, isSelected }) {
           className="px-2 py-1 text-xs font-medium rounded"
           style={{
             backgroundColor: venue.role === 'owner' ? '#22D3EE20' : '#0D192E',
-            color: venue.role === 'owner' ? '#22D3EE' : '#4A5E78'
+            color: venue.role === 'owner' ? '#22D3EE' : '#445E77'
           }}
         >
           {venue.role}
@@ -54,14 +54,14 @@ function VenueCard({ venue, onSelect, isSelected }) {
       {/* Live stats */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="p-2 rounded-lg bg-[#0D192E]">
-          <div className="flex items-center gap-1 text-xs text-[#4A5E78] mb-1">
+          <div className="flex items-center gap-1 text-xs text-[#8FA6BE] mb-1">
             <Activity size={12} />
             Active Games
           </div>
           <div className="text-lg font-bold text-white">{stats.active_games || 0}</div>
         </div>
         <div className="p-2 rounded-lg bg-[#0D192E]">
-          <div className="flex items-center gap-1 text-xs text-[#4A5E78] mb-1">
+          <div className="flex items-center gap-1 text-xs text-[#8FA6BE] mb-1">
             <Users size={12} />
             Waitlist
           </div>
@@ -70,11 +70,11 @@ function VenueCard({ venue, onSelect, isSelected }) {
       </div>
 
       {/* Today's stats */}
-      <div className="border-t border-[#4A5E78] pt-3">
-        <div className="text-xs text-[#4A5E78] mb-2">Today</div>
+      <div className="border-t border-[#445E77] pt-3">
+        <div className="text-xs text-[#8FA6BE] mb-2">Today</div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#64748B]">{stats.today?.sessions || 0} sessions</span>
-          <span className="text-[#64748B]">{stats.today?.players || 0} players</span>
+          <span className="text-[#9FB3C8]">{stats.today?.sessions || 0} sessions</span>
+          <span className="text-[#9FB3C8]">{stats.today?.players || 0} players</span>
           <span className="text-green-400">${(stats.today?.buyin || 0).toLocaleString()}</span>
         </div>
       </div>
@@ -103,7 +103,7 @@ function SummaryCard({ icon: Icon, label, value, change, color = '#22D3EE' }) {
         </div>
         {change !== undefined && (
           <div className={`flex items-center gap-1 text-xs ${
-            isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-[#4A5E78]'
+            isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-[#8FA6BE]'
           }`}>
             {isPositive ? <TrendingUp size={14} /> : isNegative ? <TrendingDown size={14} /> : null}
             {Math.abs(change).toFixed(1)}%
@@ -112,7 +112,7 @@ function SummaryCard({ icon: Icon, label, value, change, color = '#22D3EE' }) {
       </div>
       <div className="mt-3">
         <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="text-sm text-[#64748B]">{label}</div>
+        <div className="text-sm text-[#9FB3C8]">{label}</div>
       </div>
     </div>
   );
@@ -165,7 +165,7 @@ export default function MultiVenueDashboard({
             icon={Building2}
             label="Total Venues"
             value={summary.total_venues || venues.length}
-            color="#8B5CF6"
+            color="#5AA9FF"
           />
           <SummaryCard
             icon={Activity}
@@ -183,7 +183,7 @@ export default function MultiVenueDashboard({
             icon={DollarSign}
             label="Today's Buy-ins"
             value={`$${(summary.today?.buyin || 0).toLocaleString()}`}
-            color="#F59E0B"
+            color="#22D3EE"
           />
         </div>
       </div>
@@ -195,19 +195,19 @@ export default function MultiVenueDashboard({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <div className="text-2xl font-bold text-white">{summary.week.sessions || 0}</div>
-              <div className="text-sm text-[#64748B]">Total Sessions</div>
+              <div className="text-sm text-[#9FB3C8]">Total Sessions</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-white">{summary.week.players || 0}</div>
-              <div className="text-sm text-[#64748B]">Unique Players</div>
+              <div className="text-sm text-[#9FB3C8]">Unique Players</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-white">{(summary.week.hours || 0).toFixed(0)}h</div>
-              <div className="text-sm text-[#64748B]">Play Hours</div>
+              <div className="text-sm text-[#9FB3C8]">Play Hours</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-green-400">${(summary.week.buyin || 0).toLocaleString()}</div>
-              <div className="text-sm text-[#64748B]">Total Buy-ins</div>
+              <div className="text-sm text-[#9FB3C8]">Total Buy-ins</div>
             </div>
           </div>
         </div>
@@ -221,7 +221,7 @@ export default function MultiVenueDashboard({
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'grid' ? 'bg-[#22D3EE] text-white' : 'text-[#64748B] hover:bg-[#132240]'
+                viewMode === 'grid' ? 'bg-[#22D3EE] text-white' : 'text-[#9FB3C8] hover:bg-[#132240]'
               }`}
             >
               <LayoutGrid size={18} />
@@ -229,7 +229,7 @@ export default function MultiVenueDashboard({
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'list' ? 'bg-[#22D3EE] text-white' : 'text-[#64748B] hover:bg-[#132240]'
+                viewMode === 'list' ? 'bg-[#22D3EE] text-white' : 'text-[#9FB3C8] hover:bg-[#132240]'
               }`}
             >
               <LayoutList size={18} />
@@ -239,9 +239,9 @@ export default function MultiVenueDashboard({
 
         {venues.length === 0 ? (
           <div className="cmd-panel p-8 text-center">
-            <Building2 size={48} className="mx-auto text-[#4A5E78] mb-3" />
-            <p className="text-[#64748B]">No Venues Found</p>
-            <p className="text-sm text-[#4A5E78]">You Need To Be Added As Staff To A Venue</p>
+            <Building2 size={48} className="mx-auto text-[#8FA6BE] mb-3" />
+            <p className="text-[#9FB3C8]">No Venues Found</p>
+            <p className="text-sm text-[#8FA6BE]">You Need To Be Added As Staff To A Venue</p>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -269,28 +269,28 @@ export default function MultiVenueDashboard({
                     <img src={venue.logo_url} alt={venue.name} className="w-10 h-10 rounded-lg object-cover" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#0D192E]">
-                      <Building2 size={20} className="text-[#64748B]" />
+                      <Building2 size={20} className="text-[#9FB3C8]" />
                     </div>
                   )}
                   <div>
                     <h3 className="font-semibold text-white">{venue.name}</h3>
-                    <div className="text-xs text-[#4A5E78]">{venue.city}, {venue.state}</div>
+                    <div className="text-xs text-[#8FA6BE]">{venue.city}, {venue.state}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 text-sm">
                   <div className="text-center">
                     <div className="text-white font-medium">{venue.stats?.active_games || 0}</div>
-                    <div className="text-xs text-[#4A5E78]">Games</div>
+                    <div className="text-xs text-[#8FA6BE]">Games</div>
                   </div>
                   <div className="text-center">
                     <div className="text-white font-medium">{venue.stats?.waitlist_count || 0}</div>
-                    <div className="text-xs text-[#4A5E78]">Waiting</div>
+                    <div className="text-xs text-[#8FA6BE]">Waiting</div>
                   </div>
                   <div className="text-center">
                     <div className="text-green-400 font-medium">${(venue.stats?.today?.buyin || 0).toLocaleString()}</div>
-                    <div className="text-xs text-[#4A5E78]">Today</div>
+                    <div className="text-xs text-[#8FA6BE]">Today</div>
                   </div>
-                  <ChevronRight size={20} className="text-[#4A5E78]" />
+                  <ChevronRight size={20} className="text-[#8FA6BE]" />
                 </div>
               </div>
             ))}

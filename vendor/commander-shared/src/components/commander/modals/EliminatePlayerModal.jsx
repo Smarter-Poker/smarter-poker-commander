@@ -83,14 +83,14 @@ export default function EliminatePlayerModal({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#EF4444] rounded-lg flex items-center justify-center">
               <UserMinus className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Eliminate Player</h2>
-              <p className="text-sm text-[#64748B]">
+              <p className="text-sm text-[#9FB3C8]">
                 {activeEntries.length} Players Remaining
               </p>
             </div>
@@ -99,7 +99,7 @@ export default function EliminatePlayerModal({
             onClick={onClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -113,7 +113,7 @@ export default function EliminatePlayerModal({
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9FB3C8]" />
             <input
               type="text"
               value={searchQuery}
@@ -130,7 +130,7 @@ export default function EliminatePlayerModal({
             </label>
             {filteredEntries.length === 0 ? (
               <div className="text-center py-6 bg-[#0D192E] rounded-lg">
-                <p className="text-[#64748B]">No Players Found</p>
+                <p className="text-[#9FB3C8]">No Players Found</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -142,7 +142,7 @@ export default function EliminatePlayerModal({
                     className={`w-full p-3 rounded-lg text-left transition-colors flex items-center justify-between ${selectedEntry?.id === entry.id
                       ? 'bg-[#EF4444] text-white'
                       : entry.id === eliminatedBy?.id
-                        ? 'bg-[#0D192E] text-[#4A5E78] cursor-not-allowed'
+                        ? 'bg-[#0D192E] text-[#8FA6BE] cursor-not-allowed'
                         : 'bg-[#0D192E] text-white hover:bg-[#132240]'
                       }`}
                   >
@@ -150,7 +150,7 @@ export default function EliminatePlayerModal({
                       {entry.player_name || entry.profiles?.display_name || `Entry #${entry.id.slice(0, 8)}`}
                     </span>
                     {entry.seat_number && (
-                      <span className={`text-sm ${selectedEntry?.id === entry.id ? 'text-white/80' : 'text-[#64748B]'}`}>
+                      <span className={`text-sm ${selectedEntry?.id === entry.id ? 'text-white/80' : 'text-[#9FB3C8]'}`}>
                         Seat {entry.seat_number}
                       </span>
                     )}
@@ -211,7 +211,7 @@ export default function EliminatePlayerModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#4A5E78]">
+        <div className="p-4 border-t border-[#445E77]">
           <button
             onClick={handleSubmit}
             disabled={!selectedEntry || submitting}

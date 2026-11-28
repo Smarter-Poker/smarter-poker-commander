@@ -50,7 +50,7 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#18191A', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#040D18', color: '#F2F7FF', fontFamily: 'Inter, sans-serif' }}>
       <p>{message}</p>
     </div>
   );

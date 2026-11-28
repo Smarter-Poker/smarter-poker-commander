@@ -59,77 +59,77 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
           <PageBar
             title="Revenue Report"
             summary="Total Revenue For The Selected Range, Broken Down By Source. Pick A Range Below To Change The Period."
             status={RANGES.find(r => r.value === range)?.label}
-            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
           >
-            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#BDD0E2]" /></button>
           </PageBar>
 
           <div className="px-4 py-3 flex gap-2">
             {RANGES.map(r => (
               <button key={r.value} onClick={() => setRange(r.value)}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-semibold ${range === r.value ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}>{r.label}</button>
+                className={`flex-1 py-2.5 rounded-xl text-xs font-semibold ${range === r.value ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'}`}>{r.label}</button>
             ))}
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>
+            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>
           ) : (
             <div className="px-4 pb-6 space-y-4">
               {/* Total */}
-              <div className="bg-gradient-to-br from-[#1877F2]/20 to-[#31A24C]/10 border border-[#1877F2]/30 rounded-2xl p-5 text-center">
-                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Total Revenue</p>
+              <div className="bg-gradient-to-br from-[#0C55C0]/20 to-[#31A24C]/10 border border-[#1981EC]/30 rounded-2xl p-5 text-center">
+                <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Total Revenue</p>
                 <p className="text-4xl font-bold text-white">{fmt(t.total_revenue)}</p>
-                <p className="text-sm text-[#B0B3B8] mt-1">Net After Comps: {fmt(t.net_after_comps)}</p>
+                <p className="text-sm text-[#BDD0E2] mt-1">Net After Comps: {fmt(t.net_after_comps)}</p>
               </div>
 
               {/* Breakdown */}
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Time Billing', value: tb.revenue, sub: `${tb.sessions || 0} Sessions`, sub2: `${Math.round((tb.total_minutes || 0) / 60)}h Played`, icon: Clock, color: '#31A24C' },
-                  { label: 'Tournament Fees', value: tn.fees, sub: `${tn.count || 0} Tournaments`, sub2: `${tn.entries || 0} Entries`, icon: Trophy, color: '#F59E0B' },
-                  { label: 'Prize Pools', value: tn.prize_pools, sub: 'Buy-Ins Collected', sub2: null, icon: DollarSign, color: '#A855F7' },
+                  { label: 'Tournament Fees', value: tn.fees, sub: `${tn.count || 0} Tournaments`, sub2: `${tn.entries || 0} Entries`, icon: Trophy, color: '#22D3EE' },
+                  { label: 'Prize Pools', value: tn.prize_pools, sub: 'Buy-Ins Collected', sub2: null, icon: DollarSign, color: '#5AA9FF' },
                   { label: 'Comps (Net)', value: t.comps_net, sub: `${fmt(t.comps_issued)} Issued`, sub2: `${fmt(t.comps_voided)} Voided`, icon: Gift, color: '#EF4444', neg: true },
                 ].map((c, i) => (
-                  <div key={i} className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+                  <div key={i} className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: c.color + '15' }}>
                         <c.icon className="w-4 h-4" style={{ color: c.color }} />
                       </div>
-                      <span className="text-xs text-[#B0B3B8]">{c.label}</span>
+                      <span className="text-xs text-[#BDD0E2]">{c.label}</span>
                     </div>
                     <p className="text-xl font-bold" style={{ color: c.color }}>{c.neg ? '-' : ''}{fmt(c.value)}</p>
-                    <p className="text-xs text-[#B0B3B8] mt-1">{c.sub}</p>
-                    {c.sub2 && <p className="text-xs text-[#6A6B6D]">{c.sub2}</p>}
+                    <p className="text-xs text-[#BDD0E2] mt-1">{c.sub}</p>
+                    {c.sub2 && <p className="text-xs text-[#93A9C0]">{c.sub2}</p>}
                   </div>
                 ))}
               </div>
 
               {/* Time billing detail */}
               {tb.sessions > 0 && (
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
                   <h3 className="text-sm font-bold text-white mb-3">Time Billing</h3>
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    <div><p className="text-lg font-bold text-white">{tb.sessions}</p><p className="text-xs text-[#B0B3B8]">Sessions</p></div>
-                    <div><p className="text-lg font-bold text-white">{Math.round((tb.total_minutes || 0) / 60)}h</p><p className="text-xs text-[#B0B3B8]">Total Hours</p></div>
-                    <div><p className="text-lg font-bold text-white">{fmt(tb.avg_per_session)}</p><p className="text-xs text-[#B0B3B8]">Avg/Session</p></div>
+                    <div><p className="text-lg font-bold text-white">{tb.sessions}</p><p className="text-xs text-[#BDD0E2]">Sessions</p></div>
+                    <div><p className="text-lg font-bold text-white">{Math.round((tb.total_minutes || 0) / 60)}h</p><p className="text-xs text-[#BDD0E2]">Total Hours</p></div>
+                    <div><p className="text-lg font-bold text-white">{fmt(tb.avg_per_session)}</p><p className="text-xs text-[#BDD0E2]">Avg/Session</p></div>
                   </div>
                 </div>
               )}
 
               {/* Tournaments */}
               {(tn.tournaments || []).length > 0 && (
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
                   <h3 className="text-sm font-bold text-white mb-3">Tournaments</h3>
                   <div className="space-y-2">
                     {tn.tournaments.map(t => (
-                      <div key={t.id} className="flex items-center justify-between px-3 py-2 bg-[#3A3B3C]/30 rounded-lg">
-                        <div><p className="text-sm font-medium text-white">{t.name}</p><p className="text-xs text-[#B0B3B8]">${t.buyin} + ${t.fee} Fee</p></div>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${t.status === 'completed' ? 'bg-[#31A24C]/15 text-[#31A24C]' : t.status === 'running' ? 'bg-[#1877F2]/15 text-[#1877F2]' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>{t.status}</span>
+                      <div key={t.id} className="flex items-center justify-between px-3 py-2 bg-[#132A42]/30 rounded-lg">
+                        <div><p className="text-sm font-medium text-white">{t.name}</p><p className="text-xs text-[#BDD0E2]">${t.buyin} + ${t.fee} Fee</p></div>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${t.status === 'completed' ? 'bg-[#31A24C]/15 text-[#31A24C]' : t.status === 'running' ? 'bg-[#0C55C0]/15 text-[#86DAFF]' : 'bg-[#132A42] text-[#BDD0E2]'}`}>{t.status}</span>
                       </div>
                     ))}
                   </div>
@@ -138,23 +138,23 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
 
               {/* Comp Breakdown */}
               {data?.comps && (data.comps.count > 0 || data.comps.void_count > 0) && (
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
                   <h3 className="text-sm font-bold text-white mb-3">Comp Breakdown</h3>
                   <div className="grid grid-cols-3 gap-3 text-center mb-3">
-                    <div><p className="text-lg font-bold text-white">{data.comps.count || 0}</p><p className="text-xs text-[#B0B3B8]">Issued</p></div>
-                    <div><p className="text-lg font-bold text-[#EF4444]">{data.comps.void_count || 0}</p><p className="text-xs text-[#B0B3B8]">Voided</p></div>
-                    <div><p className="text-lg font-bold text-[#F59E0B]">{fmt(data.comps.net)}</p><p className="text-xs text-[#B0B3B8]">Net Cost</p></div>
+                    <div><p className="text-lg font-bold text-white">{data.comps.count || 0}</p><p className="text-xs text-[#BDD0E2]">Issued</p></div>
+                    <div><p className="text-lg font-bold text-[#EF4444]">{data.comps.void_count || 0}</p><p className="text-xs text-[#BDD0E2]">Voided</p></div>
+                    <div><p className="text-lg font-bold text-[#22D3EE]">{fmt(data.comps.net)}</p><p className="text-xs text-[#BDD0E2]">Net Cost</p></div>
                   </div>
                   {/* Auto vs Manual */}
                   {(data.comps.auto_hourly > 0 || data.comps.manual > 0) && (
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div className="px-3 py-2 bg-[#3A3B3C]/30 rounded-lg text-center">
-                        <p className="text-sm font-bold text-[#1877F2]">{fmt(data.comps.auto_hourly)}</p>
-                        <p className="text-[10px] text-[#B0B3B8]">Auto (Hourly)</p>
+                      <div className="px-3 py-2 bg-[#132A42]/30 rounded-lg text-center">
+                        <p className="text-sm font-bold text-[#86DAFF]">{fmt(data.comps.auto_hourly)}</p>
+                        <p className="text-[10px] text-[#BDD0E2]">Auto (Hourly)</p>
                       </div>
-                      <div className="px-3 py-2 bg-[#3A3B3C]/30 rounded-lg text-center">
-                        <p className="text-sm font-bold text-[#A855F7]">{fmt(data.comps.manual)}</p>
-                        <p className="text-[10px] text-[#B0B3B8]">Manual (Staff)</p>
+                      <div className="px-3 py-2 bg-[#132A42]/30 rounded-lg text-center">
+                        <p className="text-sm font-bold text-[#5AA9FF]">{fmt(data.comps.manual)}</p>
+                        <p className="text-[10px] text-[#BDD0E2]">Manual (Staff)</p>
                       </div>
                     </div>
                   )}
@@ -164,8 +164,8 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
                       {Object.entries(data.comps.by_category || {}).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => {
                         const catLabels = { free_food: 'Food & Beverage', free_time: 'Free Time', free_membership: 'Free Membership', free_chips: 'Free Chips', cash_bonus: 'Cash Bonus', promo_credit: 'Promo Credit', tournament_entry: 'Tournament Entry', other: 'Other' };
                         return (
-                          <div key={cat} className="flex items-center justify-between px-3 py-2 bg-[#3A3B3C]/30 rounded-lg">
-                            <span className="text-sm text-[#E4E6EB]">{catLabels[cat] || cat}</span>
+                          <div key={cat} className="flex items-center justify-between px-3 py-2 bg-[#132A42]/30 rounded-lg">
+                            <span className="text-sm text-[#F2F7FF]">{catLabels[cat] || cat}</span>
                             <span className="text-sm font-bold text-[#EF4444]">{fmt(amt)}</span>
                           </div>
                         );
@@ -177,16 +177,16 @@ const json = await commanderFetchJSON(`/api/commander/reports/revenue?venue_id=$
 
               {/* Daily bars */}
               {(data?.daily_chart || []).length > 0 && (
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-4">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-4">
                   <h3 className="text-sm font-bold text-white mb-3">Daily Time Revenue</h3>
                   <div className="space-y-1.5">
                     {data.daily_chart.slice(-14).map(d => (
                       <div key={d.date} className="flex items-center gap-2">
-                        <span className="text-[10px] text-[#B0B3B8] w-14 shrink-0 font-mono">{d.date.slice(5)}</span>
-                        <div className="flex-1 h-5 bg-[#3A3B3C]/30 rounded-full overflow-hidden">
+                        <span className="text-[10px] text-[#BDD0E2] w-14 shrink-0 font-mono">{d.date.slice(5)}</span>
+                        <div className="flex-1 h-5 bg-[#132A42]/30 rounded-full overflow-hidden">
                           <div className="h-full rounded-full bg-[#31A24C]" style={{ width: `${(d.time_revenue / maxDaily) * 100}%` }} />
                         </div>
-                        <span className="text-[10px] text-[#B0B3B8] w-14 text-right font-mono">{fmt(d.time_revenue)}</span>
+                        <span className="text-[10px] text-[#BDD0E2] w-14 text-right font-mono">{fmt(d.time_revenue)}</span>
                       </div>
                     ))}
                   </div>

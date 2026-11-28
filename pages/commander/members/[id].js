@@ -48,7 +48,7 @@ export default function MemberProfile() {
   useEffect(() => {
     const _c = new AbortController();
 
-  if (!router.isReady) return null;
+  if (!router.isReady) return; // an effect may only return a cleanup function
 
     if (!id) return;
     fetchMember();
@@ -130,10 +130,10 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
   };
 
   const m = member;
-  const tierColors = { standard: '#B0B3B8', gold: '#F59E0B', platinum: '#A855F7', vip: '#EF4444' };
-  const statusColors = { active: '#31A24C', suspended: '#F59E0B', expired: '#B0B3B8', banned: '#EF4444' };
-  const tierColor = m ? (tierColors[m.membership_tier] || '#B0B3B8') : '#B0B3B8';
-  const statusColor = m ? (statusColors[m.membership_status] || '#B0B3B8') : '#B0B3B8';
+  const tierColors = { standard: '#BDD0E2', gold: '#22D3EE', platinum: '#5AA9FF', vip: '#EF4444' };
+  const statusColors = { active: '#31A24C', suspended: '#22D3EE', expired: '#BDD0E2', banned: '#EF4444' };
+  const tierColor = m ? (tierColors[m.membership_tier] || '#BDD0E2') : '#BDD0E2';
+  const statusColor = m ? (statusColors[m.membership_status] || '#BDD0E2') : '#BDD0E2';
 
   const timeHours = m ? Math.floor((m.time_balance_minutes || 0) / 60) : 0;
   const timeMin = m ? (m.time_balance_minutes || 0) % 60 : 0;
@@ -148,21 +148,21 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
         />
 
         {loading ? (
-          <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#18191A' }}>
-            <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+          <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#040D18' }}>
+            <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
           </div>
         ) : !member ? (
-          <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#18191A', color: '#fff' }}>
+          <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#040D18', color: '#fff' }}>
             Member Not Found
           </div>
         ) : (
-          <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+          <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
             {/* Header */}
             <PageBar
               title={`${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Member'}
               summary="This Member's Profile: Membership Tier And Status, Contact Details, Hours Played, Comp And Points Balances, And Recent Visits."
-              className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+              className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
             >
                 <p className="text-sm font-semibold text-white" aria-hidden="true">{m.first_name} {m.last_name}</p>
                 <div className="flex items-center gap-2">
@@ -177,35 +177,35 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
 
             {/* Member card */}
             <div className="p-4">
-              <div className="bg-gradient-to-br from-[#242526] to-[#3A3B3C] border border-[#4A4B4C] rounded-2xl p-5">
+              <div className="bg-gradient-to-br from-[#0A1829] to-[#132A42] border border-[#5A7590] rounded-2xl p-5">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-full bg-[#1877F2]/20 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-8 h-8 text-[#1877F2]" />
+                  <div className="w-16 h-16 rounded-full bg-[#0C55C0]/20 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-8 h-8 text-[#86DAFF]" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-[#B0B3B8]">Member #{m.member_number}</p>
+                    <p className="text-xs text-[#BDD0E2]">Member #{m.member_number}</p>
                     {m.phone && <p className="text-sm text-white mt-1">{m.phone}</p>}
-                    {m.email && <p className="text-sm text-[#B0B3B8]">{m.email}</p>}
-                    {m.date_of_birth && <p className="text-xs text-[#B0B3B8] mt-1">DOB: {new Date(m.date_of_birth).toLocaleDateString()}</p>}
+                    {m.email && <p className="text-sm text-[#BDD0E2]">{m.email}</p>}
+                    {m.date_of_birth && <p className="text-xs text-[#BDD0E2] mt-1">DOB: {new Date(m.date_of_birth).toLocaleDateString()}</p>}
                   </div>
                 </div>
 
                 {/* Balances */}
                 <div className="grid grid-cols-3 gap-3 mt-5">
                   <div className="bg-black/20 rounded-xl p-3 text-center">
-                    <Clock className="w-5 h-5 text-[#1877F2] mx-auto mb-1" />
+                    <Clock className="w-5 h-5 text-[#86DAFF] mx-auto mb-1" />
                     <p className="text-lg font-bold text-white">{timeHours}h {timeMin}m</p>
-                    <p className="text-[10px] text-[#B0B3B8]">Time Balance</p>
+                    <p className="text-[10px] text-[#BDD0E2]">Time Balance</p>
                   </div>
                   <div className="bg-black/20 rounded-xl p-3 text-center">
                     <DollarSign className="w-5 h-5 text-[#31A24C] mx-auto mb-1" />
                     <p className="text-lg font-bold text-white">${(m.comp_balance || 0).toFixed(2)}</p>
-                    <p className="text-[10px] text-[#B0B3B8]">Comp Balance</p>
+                    <p className="text-[10px] text-[#BDD0E2]">Comp Balance</p>
                   </div>
                   <div className="bg-black/20 rounded-xl p-3 text-center">
-                    <Calendar className="w-5 h-5 text-[#F59E0B] mx-auto mb-1" />
+                    <Calendar className="w-5 h-5 text-[#22D3EE] mx-auto mb-1" />
                     <p className="text-lg font-bold text-white">{m.total_visits || 0}</p>
-                    <p className="text-[10px] text-[#B0B3B8]">Total Visits</p>
+                    <p className="text-[10px] text-[#BDD0E2]">Total Visits</p>
                   </div>
                 </div>
               </div>
@@ -214,7 +214,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
             {/* Quick Actions */}
             <div className="px-4 flex gap-2">
               <button onClick={() => setShowAddTime(!showAddTime)}
-                className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white text-sm font-semibold flex items-center justify-center gap-1.5 active:bg-[#1565D8]">
+                className="flex-1 py-3 rounded-xl bg-[#0C55C0] text-white text-sm font-semibold flex items-center justify-center gap-1.5 active:bg-[#0A4AA8]">
                 <Plus className="w-4 h-4" /> Add Time
               </button>
               <button onClick={() => router.push(`/commander/comps?member=${id}`)}
@@ -223,12 +223,12 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
               </button>
               {m.membership_status === 'active' ? (
                 <button onClick={() => toggleStatus('suspended')}
-                  className="py-3 px-4 rounded-xl bg-[#3A3B3C] text-[#F59E0B] text-sm font-semibold active:bg-[#4A4B4C]">
+                  className="py-3 px-4 rounded-xl bg-[#132A42] text-[#22D3EE] text-sm font-semibold active:bg-[#1B3753]">
                   <Ban className="w-4 h-4" />
                 </button>
               ) : (
                 <button onClick={() => toggleStatus('active')}
-                  className="py-3 px-4 rounded-xl bg-[#3A3B3C] text-[#31A24C] text-sm font-semibold active:bg-[#4A4B4C]">
+                  className="py-3 px-4 rounded-xl bg-[#132A42] text-[#31A24C] text-sm font-semibold active:bg-[#1B3753]">
                   <Check className="w-4 h-4" />
                 </button>
               )}
@@ -237,30 +237,30 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
             {/* Add time panel */}
             {showAddTime && (
               <div className="px-4 mt-3">
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
                   <p className="text-sm font-semibold text-white mb-2">Add Time (Minutes)</p>
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     {[30, 60, 120, 180].map(mins => (
                       <button key={mins} onClick={() => setAddTimeAmount(String(mins))}
-                        className={`py-2 rounded-lg text-sm font-medium ${addTimeAmount === String(mins) ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#E4E6EB]'
+                        className={`py-2 rounded-lg text-sm font-medium ${addTimeAmount === String(mins) ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#F2F7FF]'
                           }`}>{mins >= 60 ? `${mins / 60}h` : `${mins}m`}</button>
                     ))}
                   </div>
                   <div className="flex gap-2">
                     <input type="number" value={addTimeAmount} onChange={e => setAddTimeAmount(e.target.value)}
                       placeholder="Custom Minutes"
-                      className="flex-1 px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm focus:outline-none focus:border-[#1877F2]" />
-                    <button onClick={addTime} className="px-4 py-2 bg-[#1877F2] rounded-lg text-white text-sm font-semibold">Add</button>
+                      className="flex-1 px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm focus:outline-none focus:border-[#1981EC]" />
+                    <button onClick={addTime} className="px-4 py-2 bg-[#0C55C0] rounded-lg text-white text-sm font-semibold">Add</button>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Tabs */}
-            <div className="mt-4 border-b border-[#3A3B3C] flex px-4">
+            <div className="mt-4 border-b border-[#445E77] flex px-4">
               {['overview', 'sessions', 'tournaments', 'notes'].map(t => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={`px-4 py-3 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? 'text-[#1877F2] border-[#1877F2]' : 'text-[#B0B3B8] border-transparent'
+                  className={`px-4 py-3 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? 'text-[#86DAFF] border-[#1981EC]' : 'text-[#BDD0E2] border-transparent'
                     }`}>{t}</button>
               ))}
             </div>
@@ -283,21 +283,21 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
               {tab === 'sessions' && (
                 <div className="space-y-2">
                   {sessions.length === 0 ? (
-                    <p className="py-6 text-center text-[#B0B3B8]">No Session History</p>
+                    <p className="py-6 text-center text-[#BDD0E2]">No Session History</p>
                   ) : (
                     sessions.slice(0, 20).map((s, i) => (
-                      <div key={s.id || i} className="flex items-center justify-between px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg">
+                      <div key={s.id || i} className="flex items-center justify-between px-4 py-2.5 bg-[#0A1829] border border-[#445E77] rounded-lg">
                         <div>
                           <p className="text-sm text-white">Table {s.table_number}, Seat {s.seat_number}</p>
-                          <p className="text-[10px] text-[#B0B3B8]">
+                          <p className="text-[10px] text-[#BDD0E2]">
                             {s.started_at ? new Date(s.started_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className={`text-xs font-bold ${s.status === 'active' ? 'text-[#31A24C]' : 'text-[#B0B3B8]'}`}>
+                          <span className={`text-xs font-bold ${s.status === 'active' ? 'text-[#31A24C]' : 'text-[#BDD0E2]'}`}>
                             {s.status}
                           </span>
-                          <p className="text-[10px] text-[#B0B3B8]">{s.time_allocated_minutes || 0}m</p>
+                          <p className="text-[10px] text-[#BDD0E2]">{s.time_allocated_minutes || 0}m</p>
                         </div>
                       </div>
                     ))
@@ -308,7 +308,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
               {/* Tournament History */}
               {tab === 'tournaments' && (
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Tournament History</h3>
+                  <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Tournament History</h3>
 
                   {/* Career summary. Only shown when the API supplied one, so an
                       older deployment returning a bare array never renders a
@@ -317,7 +317,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                     <div className="grid grid-cols-3 gap-2">
                       <StatTile label="Events" value={(tournamentSummary.events_played || 0).toLocaleString()} />
                       <StatTile label="Cashes" value={(tournamentSummary.cashes || 0).toLocaleString()} color="#31A24C" />
-                      <StatTile label="ITM Rate" value={`${tournamentSummary.itm_rate || 0}%`} color="#1877F2" />
+                      <StatTile label="ITM Rate" value={`${tournamentSummary.itm_rate || 0}%`} color="#1981EC" />
                       <StatTile label="Winnings" value={`$${(tournamentSummary.total_winnings || 0).toLocaleString()}`} color="#31A24C" />
                       <StatTile
                         label="Net"
@@ -327,20 +327,20 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                       <StatTile
                         label="Best Finish"
                         value={tournamentSummary.best_finish ? ordinalPlace(tournamentSummary.best_finish) : '--'}
-                        color="#F59E0B"
+                        color="#22D3EE"
                       />
                     </div>
                   )}
 
                   {tournamentResults.length === 0 ? (
-                    <p className="py-6 text-center text-[#B0B3B8]">No Tournament Results</p>
+                    <p className="py-6 text-center text-[#BDD0E2]">No Tournament Results</p>
                   ) : (
                     <div className="space-y-2">
                       {tournamentResults.slice(0, 30).map((t, i) => (
-                        <div key={t.id || i} className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg">
+                        <div key={t.id || i} className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#0A1829] border border-[#445E77] rounded-lg">
                           <div className="min-w-0">
                             <p className="text-sm text-white truncate">{t.tournament_name || t.name || 'Tournament'}</p>
-                            <p className="text-[10px] text-[#B0B3B8]">
+                            <p className="text-[10px] text-[#BDD0E2]">
                               {t.date ? new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                               {t.buyin_amount ? `, $${Number(t.buyin_amount).toLocaleString()} Buy-In` : ''}
                               {t.rebuys > 0 ? `, ${t.rebuys}R` : ''}
@@ -349,12 +349,12 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                           </div>
                           <div className="text-right flex-shrink-0">
                             {t.finish_position ? (
-                              <span className={`text-sm font-bold ${t.finish_position <= 3 ? 'text-[#F59E0B]' : 'text-[#B0B3B8]'}`}>
+                              <span className={`text-sm font-bold ${t.finish_position <= 3 ? 'text-[#22D3EE]' : 'text-[#BDD0E2]'}`}>
                                 {ordinalPlace(t.finish_position)}
                                 {t.field_size ? ` Of ${Number(t.field_size).toLocaleString()}` : ''}
                               </span>
                             ) : (
-                              <span className="text-xs text-[#B0B3B8] capitalize">{t.status || 'Entered'}</span>
+                              <span className="text-xs text-[#BDD0E2] capitalize">{t.status || 'Entered'}</span>
                             )}
                             {t.payout > 0 && (
                               <p className="text-xs text-[#31A24C] font-medium">${Number(t.payout).toLocaleString()}</p>
@@ -363,7 +363,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
                         </div>
                       ))}
                       {tournamentResults.length > 30 && (
-                        <p className="text-[10px] text-[#B0B3B8] text-center pt-1">
+                        <p className="text-[10px] text-[#BDD0E2] text-center pt-1">
                           Showing The 30 Most Recent Of {tournamentResults.length.toLocaleString()} Entries
                         </p>
                       )}
@@ -375,7 +375,7 @@ const res = await commanderFetch(`/api/commander/members/${id}`, {
               {/* Notes */}
               {tab === 'notes' && (
                 <div>
-                  <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+                  <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
                     <p className="text-sm text-white whitespace-pre-wrap">{m.notes || 'No Notes'}</p>
                   </div>
                 </div>
@@ -424,17 +424,17 @@ function ordinalPlace(n) {
 
 function StatTile({ label, value, color }) {
   return (
-    <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-3 text-center">
-      <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">{label}</p>
-      <p className="text-base font-bold" style={{ color: color || '#E4E6EB' }}>{value}</p>
+    <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-3 text-center">
+      <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">{label}</p>
+      <p className="text-base font-bold" style={{ color: color || '#F2F7FF' }}>{value}</p>
     </div>
   );
 }
 
 function InfoRow({ label, value }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 bg-[#242526] border border-[#3A3B3C] rounded-lg">
-      <span className="text-sm text-[#B0B3B8]">{label}</span>
+    <div className="flex items-center justify-between px-4 py-2.5 bg-[#0A1829] border border-[#445E77] rounded-lg">
+      <span className="text-sm text-[#BDD0E2]">{label}</span>
       <span className="text-sm font-medium text-white capitalize">{value}</span>
     </div>
   );

@@ -24,7 +24,7 @@ import { getToken, getStaffSession, getVenueId } from '../../../src/lib/commande
 import { commanderFetch } from '../../../src/lib/commander/commanderFetch';
 import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
-const TIER_COLORS = { standard: '#B0B3B8', gold: '#F59E0B', platinum: '#94A3B8', vip: '#A855F7' };
+const TIER_COLORS = { standard: '#BDD0E2', gold: '#22D3EE', platinum: '#A9BDD1', vip: '#5AA9FF' };
 
 function formatCountdown(seconds) {
   if (seconds === null || seconds === undefined) return '--:--';
@@ -769,7 +769,7 @@ export default function DealerTablet() {
     setTimeout(() => setFloorRequested(false), 30000);
   };
 
-  if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen bg-[#040D18] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>;
 
   const maxSeats = table?.max_seats || 9;
   const seatPositions = getSeatPositions(maxSeats);
@@ -786,39 +786,39 @@ export default function DealerTablet() {
         @keyframes pulse-warn { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .time-warn { animation: pulse-warn 1.5s ease-in-out infinite; }
       `}</style>
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex flex-col">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] flex flex-col">
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5 flex items-center justify-between gap-2 flex-shrink-0" data-page-bar="">
           <div className="min-w-0" role="status">
             <h1 className="sr-only">Table {tableNumber}</h1>
-            <p className="text-xs text-[#B0B3B8]">
+            <p className="text-xs text-[#BDD0E2]">
               <span className="font-bold text-white">T{tableNumber}</span>{' · '}
               {tournamentMode
-                ? <><span className="text-[#F59E0B] font-semibold">{tournamentMode.name}</span> - {seatedPlayers.length}/{maxSeats}</>
+                ? <><span className="text-[#22D3EE] font-semibold">{tournamentMode.name}</span> - {seatedPlayers.length}/{maxSeats}</>
                 : table?.mode === 'cash'
                   ? <>{table?.game_type || 'NLH'} {table?.stakes || '$1/$2'} - {seatedPlayers.length}/{maxSeats}</>
                   : table?.mode === 'inactive' || !table?.mode
-                    ? <span className="text-[#6A6B6D]">Table Not Assigned, Contact Floor</span>
+                    ? <span className="text-[#93A9C0]">Table Not Assigned, Contact Floor</span>
                     : <>{table?.game_type || 'NLH'} - {table?.stakes || '$1/$2'} - {seatedPlayers.length}/{maxSeats}</>
               }
             </p>
           </div>
           <div className="flex items-center gap-2">
             {table?.game?.is_must_move && (
-              <div className="bg-[#F59E0B]/15 border border-[#F59E0B]/30 rounded-lg px-2.5 py-1.5">
-                <span className="text-xs font-bold text-[#F59E0B]">MUST-MOVE</span>
+              <div className="bg-[#22D3EE]/15 border border-[#22D3EE]/30 rounded-lg px-2.5 py-1.5">
+                <span className="text-xs font-bold text-[#22D3EE]">MUST-MOVE</span>
               </div>
             )}
             {tournamentMode && (
-              <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-2.5 py-1.5">
-                <span className="text-xs font-bold text-[#F59E0B]">{tournamentMode.players_remaining} Left</span>
+              <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-lg px-2.5 py-1.5">
+                <span className="text-xs font-bold text-[#22D3EE]">{tournamentMode.players_remaining} Left</span>
               </div>
             )}
-            <div className="bg-[#3A3B3C] rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-              <Hash className="w-4 h-4 text-[#B0B3B8]" />
+            <div className="bg-[#132A42] rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <Hash className="w-4 h-4 text-[#BDD0E2]" />
               <span className="text-sm font-mono font-bold text-white">{handCount}</span>
             </div>
-            <button onClick={fetchTable} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <button onClick={fetchTable} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#BDD0E2]" /></button>
             <PageHelp
               title={`Table ${tableNumber}`}
               summary="The Dealer Screen For This Table. The Line At The Top Shows The Game, Stakes And Seats Filled, Or The Tournament And Players Left. The Counter Is The Hand Number. Seat And Bust Players From The Seats Below, And Lock The Screen Between Hands."
@@ -831,18 +831,18 @@ export default function DealerTablet() {
         {screenLocked && (
           <div className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center" onClick={() => setScreenLocked(false)}>
             <div className="text-center">
-              <Lock className="w-16 h-16 text-[#B0B3B8] mx-auto mb-4" />
+              <Lock className="w-16 h-16 text-[#BDD0E2] mx-auto mb-4" />
               <p className="text-xl font-bold text-white mb-2">Screen Locked</p>
-              <p className="text-sm text-[#B0B3B8]">Tap Anywhere To Unlock</p>
+              <p className="text-sm text-[#BDD0E2]">Tap Anywhere To Unlock</p>
             </div>
           </div>
         )}
 
         {/* Low Time Alert Banner */}
         {lowTimePlayers.length > 0 && (
-          <div className="bg-[#F59E0B]/10 border-b border-[#F59E0B]/30 px-4 py-2 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
-            <p className="text-sm text-[#F59E0B]">
+          <div className="bg-[#22D3EE]/10 border-b border-[#22D3EE]/30 px-4 py-2 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-[#22D3EE]" />
+            <p className="text-sm text-[#22D3EE]">
               {lowTimePlayers.map(p => `S${p.seat_number} ${p.player_name?.split(' ')[0]} (${formatCountdown(p.time_remaining)})`).join(' - ')}
             </p>
           </div>
@@ -864,38 +864,38 @@ export default function DealerTablet() {
             ? `Next ${Number(nb.small_blind || 0).toLocaleString()} / ${Number(nb.big_blind || 0).toLocaleString()}${nb.ante ? `, Ante ${Number(nb.ante).toLocaleString()}` : ''}`
             : null;
           return (
-            <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-2.5 flex-shrink-0">
+            <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-2.5 flex-shrink-0">
               <div className="flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
-                <p className="text-sm font-bold text-[#F59E0B] truncate flex-1">{tournamentMode.name}</p>
+                <Trophy className="w-4 h-4 text-[#22D3EE] flex-shrink-0" />
+                <p className="text-sm font-bold text-[#22D3EE] truncate flex-1">{tournamentMode.name}</p>
                 {isBreak && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[#F59E0B]">On Break</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22D3EE]/15 border border-[#22D3EE]/30 text-[#22D3EE]">On Break</span>
                 )}
               </div>
               <div className="grid grid-cols-4 gap-2">
-                <div className="bg-[#18191A] rounded-lg px-2 py-1.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-[#B0B3B8]">{isBreak ? 'Status' : 'Level'}</p>
+                <div className="bg-[#040D18] rounded-lg px-2 py-1.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-[#BDD0E2]">{isBreak ? 'Status' : 'Level'}</p>
                   <p className="text-sm font-bold text-white truncate">{levelText}</p>
                 </div>
-                <div className="bg-[#18191A] rounded-lg px-2 py-1.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-[#B0B3B8]">Blinds</p>
+                <div className="bg-[#040D18] rounded-lg px-2 py-1.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-[#BDD0E2]">Blinds</p>
                   <p className="text-sm font-bold text-white truncate">{isBreak ? '--' : blindsText}</p>
-                  <p className="text-[9px] text-[#B0B3B8] truncate">{isBreak ? 'Play Resumes Soon' : anteText}</p>
+                  <p className="text-[9px] text-[#BDD0E2] truncate">{isBreak ? 'Play Resumes Soon' : anteText}</p>
                 </div>
-                <div className="bg-[#18191A] rounded-lg px-2 py-1.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-[#B0B3B8]">Time Left</p>
+                <div className="bg-[#040D18] rounded-lg px-2 py-1.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-[#BDD0E2]">Time Left</p>
                   <p className="text-sm font-mono font-bold text-[#31A24C]">
                     {levelRemaining === null || levelRemaining === undefined ? '--:--' : formatCountdown(levelRemaining)}
                   </p>
                 </div>
-                <div className="bg-[#18191A] rounded-lg px-2 py-1.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-[#B0B3B8]">Players</p>
+                <div className="bg-[#040D18] rounded-lg px-2 py-1.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-[#BDD0E2]">Players</p>
                   <p className="text-sm font-bold text-white">{Number(tournamentMode.players_remaining || 0).toLocaleString()}</p>
-                  <p className="text-[9px] text-[#B0B3B8] truncate">Avg {Number(tournamentMode.average_stack || 0).toLocaleString()}</p>
+                  <p className="text-[9px] text-[#BDD0E2] truncate">Avg {Number(tournamentMode.average_stack || 0).toLocaleString()}</p>
                 </div>
               </div>
               {nextText && !isBreak && (
-                <p className="text-[10px] text-[#B0B3B8] mt-1.5 text-center">{nextText}</p>
+                <p className="text-[10px] text-[#BDD0E2] mt-1.5 text-center">{nextText}</p>
               )}
             </div>
           );
@@ -907,8 +907,8 @@ export default function DealerTablet() {
             <div className="absolute inset-[12%] rounded-[50%] bg-[#31A24C]/8 border-2 border-[#31A24C]/20" />
             {/* Dealer Position - center of table */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center flex flex-col items-center gap-2">
-              <p className="text-[9px] text-[#B0B3B8] uppercase tracking-wider">T{tableNumber}</p>
-              {breakTimer && <p className="text-sm font-mono font-bold text-[#F59E0B]">Break {Math.floor(breakSeconds / 60)}:{(breakSeconds % 60).toString().padStart(2, '0')}</p>}
+              <p className="text-[9px] text-[#BDD0E2] uppercase tracking-wider">T{tableNumber}</p>
+              {breakTimer && <p className="text-sm font-mono font-bold text-[#22D3EE]">Break {Math.floor(breakSeconds / 60)}:{(breakSeconds % 60).toString().padStart(2, '0')}</p>}
               {/* Dealer Scan Button - shows "Scan Dealer" if none, dealer name if scanned */}
               <button
                 onTouchStart={() => {
@@ -954,14 +954,14 @@ export default function DealerTablet() {
                 onContextMenu={e => e.preventDefault()}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 select-none ${currentDealer
                   ? 'bg-[#31A24C]/20 border border-[#31A24C]/40 text-[#31A24C]'
-                  : 'bg-[#1877F2]/20 border border-[#1877F2]/40 text-[#1877F2] animate-pulse'
+                  : 'bg-[#0C55C0]/20 border border-[#1981EC]/40 text-[#86DAFF] animate-pulse'
                   }`}>
                 <ScanLine className="w-3.5 h-3.5" />
                 {currentDealer ? currentDealer.name?.split(' ')[0] : 'Scan Dealer'}
               </button>
               {/* Lock Screen Button - in dealer position */}
               <button onClick={() => setScreenLocked(!screenLocked)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 select-none ${screenLocked ? 'bg-[#EF4444]/20 border border-[#EF4444]/40 text-[#EF4444]' : 'bg-[#3A3B3C]/60 border border-[#4A4B4C]/40 text-[#8A8D91]'}`}>
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1 select-none ${screenLocked ? 'bg-[#EF4444]/20 border border-[#EF4444]/40 text-[#EF4444]' : 'bg-[#132A42]/60 border border-[#5A7590]/40 text-[#9FB3C8]'}`}>
                 {screenLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
                 {screenLocked ? 'Locked' : 'Lock'}
               </button>
@@ -969,8 +969,8 @@ export default function DealerTablet() {
 
             {/* Dealer Push Menu (long-press popup) */}
             {dealerPushMenu && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] z-30 bg-[#242526] border border-[#3A3B3C] rounded-xl shadow-2xl p-3 w-48">
-                <p className="text-xs text-[#B0B3B8] mb-2 text-center">Dealer Actions</p>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] z-30 bg-[#0A1829] border border-[#445E77] rounded-xl shadow-2xl p-3 w-48">
+                <p className="text-xs text-[#BDD0E2] mb-2 text-center">Dealer Actions</p>
                 <button onClick={() => {
                   setDealerPushMenu(false);
                   setDealerScanMode(true);
@@ -980,11 +980,11 @@ export default function DealerTablet() {
                   setScannedMember(null);
                   setManualCode('');
                 }}
-                  className="w-full py-2.5 rounded-lg bg-[#1877F2] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8] mb-1.5">
+                  className="w-full py-2.5 rounded-lg bg-[#0C55C0] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8] mb-1.5">
                   <Camera className="w-4 h-4" /> Dealer Push
                 </button>
                 <button onClick={() => setDealerPushMenu(false)}
-                  className="w-full py-2 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C]">
+                  className="w-full py-2 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs font-medium active:bg-[#1B3753]">
                   Cancel
                 </button>
               </div>
@@ -1001,11 +1001,11 @@ export default function DealerTablet() {
                   style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)' }}>
                   {isEmpty ? (
                     <button onClick={() => tournamentMode ? setEmptySeatAction(pos.seat) : openScanner(pos.seat)}
-                      className={`w-14 h-14 rounded-full border-2 border-dashed flex items-center justify-center ${tournamentMode ? 'bg-[#3A3B3C]/40 border-[#3A3B3C] active:bg-[#3A3B3C]' : 'bg-[#3A3B3C]/50 border-[#3A3B3C] active:bg-[#3A3B3C]'
+                      className={`w-14 h-14 rounded-full border-2 border-dashed flex items-center justify-center ${tournamentMode ? 'bg-[#132A42]/40 border-[#445E77] active:bg-[#132A42]' : 'bg-[#132A42]/50 border-[#445E77] active:bg-[#132A42]'
                         }`}>
                       {tournamentMode
-                        ? <span className="text-xs text-[#B0B3B8]">{pos.seat}</span>
-                        : <ScanLine className="w-5 h-5 text-[#B0B3B8]" />
+                        ? <span className="text-xs text-[#BDD0E2]">{pos.seat}</span>
+                        : <ScanLine className="w-5 h-5 text-[#BDD0E2]" />
                       }
                     </button>
                   ) : (
@@ -1016,32 +1016,32 @@ export default function DealerTablet() {
                       onMouseUp={() => { if (tournamentMode) { if (longPressRef.current !== 'fired') clearTimeout(longPressRef.current); longPressRef.current = null; } else { setAddTimePlayer(player); } }}
                       onContextMenu={e => e.preventDefault()}
                       className={`w-14 h-14 rounded-full flex items-center justify-center border-2 select-none ${tournamentMode
-                        ? 'bg-[#F59E0B]/15 border-[#F59E0B]/40 active:bg-[#EF4444]/30'
+                        ? 'bg-[#22D3EE]/15 border-[#22D3EE]/40 active:bg-[#EF4444]/30'
                         : isExpired ? 'bg-[#EF4444]/20 border-[#EF4444]/60 time-warn'
                           : isCritical ? 'bg-[#EF4444]/15 border-[#EF4444]/40 time-warn'
-                            : isLow ? 'bg-[#F59E0B]/15 border-[#F59E0B]/40'
-                              : 'bg-[#1877F2]/20 border-[#1877F2]/40'
+                            : isLow ? 'bg-[#22D3EE]/15 border-[#22D3EE]/40'
+                              : 'bg-[#0C55C0]/20 border-[#1981EC]/40'
                         }`}>
                       <span className="text-sm font-bold text-white">{pos.seat}</span>
                     </button>
                   )}
-                  {player && <span className="text-[9px] text-[#B0B3B8] mt-0.5 max-w-[70px] truncate text-center font-medium">{player.player_name?.split(' ')[0]}</span>}
+                  {player && <span className="text-[9px] text-[#BDD0E2] mt-0.5 max-w-[70px] truncate text-center font-medium">{player.player_name?.split(' ')[0]}</span>}
                   {/* Cash mode: time remaining */}
                   {!tournamentMode && player && t !== null && t !== undefined && (
-                    <span className={`text-[10px] font-mono font-bold ${isExpired ? 'text-[#EF4444] time-warn' : isCritical ? 'text-[#EF4444]' : isLow ? 'text-[#F59E0B]' : 'text-[#31A24C]'}`}>
+                    <span className={`text-[10px] font-mono font-bold ${isExpired ? 'text-[#EF4444] time-warn' : isCritical ? 'text-[#EF4444]' : isLow ? 'text-[#22D3EE]' : 'text-[#31A24C]'}`}>
                       {isExpired ? 'EXPIRED' : formatCountdown(t)}
                     </span>
                   )}
                   {/* Tournament mode: chip count */}
                   {tournamentMode && player && (
-                    <span className="text-[9px] font-mono text-[#F59E0B]">
+                    <span className="text-[9px] font-mono text-[#22D3EE]">
                       {player.current_chips ? (player.current_chips >= 1000 ? `${(player.current_chips / 1000).toFixed(0)}K` : player.current_chips) : ''}
                     </span>
                   )}
                   {!tournamentMode && player?.membership_tier && player.membership_tier !== 'standard' && (
-                    <div className="w-2 h-2 rounded-full absolute -top-0.5 -right-0.5" style={{ backgroundColor: TIER_COLORS[player.membership_tier] || '#B0B3B8' }} />
+                    <div className="w-2 h-2 rounded-full absolute -top-0.5 -right-0.5" style={{ backgroundColor: TIER_COLORS[player.membership_tier] || '#BDD0E2' }} />
                   )}
-                  {isEmpty && !tournamentMode && <span className="text-[9px] text-[#B0B3B8]/50 mt-0.5">{pos.seat}</span>}
+                  {isEmpty && !tournamentMode && <span className="text-[9px] text-[#BDD0E2]/50 mt-0.5">{pos.seat}</span>}
                 </div>
               );
             })}
@@ -1050,7 +1050,7 @@ export default function DealerTablet() {
 
         {/* Seated Players List */}
         {seatedPlayers.length > 0 && (
-          <div className="bg-[#242526] border-t border-[#3A3B3C] px-4 py-2 max-h-44 overflow-y-auto">
+          <div className="bg-[#0A1829] border-t border-[#445E77] px-4 py-2 max-h-44 overflow-y-auto">
             <div className="space-y-1">
               {[...displayPlayers].sort((a, b) => tournamentMode
                 ? (a.seat_number - b.seat_number)
@@ -1064,15 +1064,15 @@ export default function DealerTablet() {
                 return (
                   <div key={player.session_id || player.seat_number}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isBusting ? 'bg-[#EF4444]/20' :
-                      isExpired ? 'bg-[#EF4444]/10' : isCritical ? 'bg-[#EF4444]/5' : isLow ? 'bg-[#F59E0B]/5' : 'bg-[#3A3B3C]/30'
+                      isExpired ? 'bg-[#EF4444]/10' : isCritical ? 'bg-[#EF4444]/5' : isLow ? 'bg-[#22D3EE]/5' : 'bg-[#132A42]/30'
                       }`}>
-                    <span className="text-xs text-[#B0B3B8] w-6">S{player.seat_number}</span>
+                    <span className="text-xs text-[#BDD0E2] w-6">S{player.seat_number}</span>
                     <span className="text-sm text-white flex-1 truncate">{player.player_name}</span>
                     {/* Tournament mode: show chips + bust-out */}
                     {tournamentMode ? (
                       <>
                         {player.current_chips && (
-                          <span className="text-xs font-mono text-[#B0B3B8]">{player.current_chips >= 1000 ? `${(player.current_chips / 1000).toFixed(1)}K` : player.current_chips}</span>
+                          <span className="text-xs font-mono text-[#BDD0E2]">{player.current_chips >= 1000 ? `${(player.current_chips / 1000).toFixed(1)}K` : player.current_chips}</span>
                         )}
                         <button onClick={(e) => { e.stopPropagation(); bustOutPlayer(player); }}
                           disabled={isBusting}
@@ -1086,12 +1086,12 @@ export default function DealerTablet() {
                         {/* Cash mode: tier badge */}
                         {player.membership_tier && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded-full"
-                            style={{ backgroundColor: (TIER_COLORS[player.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[player.membership_tier] }}>
+                            style={{ backgroundColor: (TIER_COLORS[player.membership_tier] || '#BDD0E2') + '20', color: TIER_COLORS[player.membership_tier] }}>
                             {player.membership_tier?.toUpperCase()}
                           </span>
                         )}
                         {/* Cash mode: time countdown */}
-                        <span className={`text-sm font-mono font-bold w-16 text-right ${isExpired ? 'text-[#EF4444] time-warn' : isCritical ? 'text-[#EF4444]' : isLow ? 'text-[#F59E0B]' : 'text-[#31A24C]'}`}>
+                        <span className={`text-sm font-mono font-bold w-16 text-right ${isExpired ? 'text-[#EF4444] time-warn' : isCritical ? 'text-[#EF4444]' : isLow ? 'text-[#22D3EE]' : 'text-[#31A24C]'}`}>
                           {t === null || t === undefined ? '--:--' : isExpired ? 'OUT' : formatCountdown(t)}
                         </span>
                         <button onClick={(e) => { e.stopPropagation(); setAddTimePlayer(player); }}
@@ -1112,13 +1112,13 @@ export default function DealerTablet() {
         )}
 
         {/* Bottom Actions */}
-        <div className="bg-[#242526] border-t border-[#3A3B3C] px-4 py-3 space-y-2 flex-shrink-0">
+        <div className="bg-[#0A1829] border-t border-[#445E77] px-4 py-3 space-y-2 flex-shrink-0">
 
           {/* Table not assigned warning */}
           {(!table?.mode || table?.mode === 'inactive') && (
-            <div className="p-3 bg-[#3A3B3C]/50 border border-[#3A3B3C] rounded-xl text-center mb-2">
-              <Power className="w-6 h-6 text-[#6A6B6D] mx-auto mb-1" />
-              <p className="text-xs text-[#6A6B6D]">Table Not Assigned, Ask Floor Manager To Assign Via Table Assignments</p>
+            <div className="p-3 bg-[#132A42]/50 border border-[#445E77] rounded-xl text-center mb-2">
+              <Power className="w-6 h-6 text-[#93A9C0] mx-auto mb-1" />
+              <p className="text-xs text-[#93A9C0]">Table Not Assigned, Ask Floor Manager To Assign Via Table Assignments</p>
             </div>
           )}
 
@@ -1136,13 +1136,13 @@ export default function DealerTablet() {
                 const json = await res.json();
                 if (json.success) setHandCount(json.hands_dealt);
               } catch (err) { console.warn('Hand count error:', err); setToast({ type: 'error', text: 'Action Failed: Hand Count. Please Try Again.' }); }
-            }} className="py-4 rounded-xl bg-[#1877F2] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8]"><Hash className="w-5 h-5" /> Hand +1</button>
+            }} className="py-4 rounded-xl bg-[#0C55C0] text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8]"><Hash className="w-5 h-5" /> Hand +1</button>
             <button onClick={requestFloor} disabled={floorRequested}
-              className={`py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${floorRequested ? 'bg-[#F59E0B] text-white animate-pulse' : 'bg-[#EF4444] text-white active:bg-[#DC2626]'}`}>
+              className={`py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${floorRequested ? 'bg-[#22D3EE] text-white animate-pulse' : 'bg-[#EF4444] text-white active:bg-[#DC2626]'}`}>
               <Bell className="w-5 h-5" /> {floorRequested ? 'Called' : 'Floor!'}
             </button>
             <button onClick={() => setBreakTimer(breakTimer ? null : Date.now())}
-              className={`py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${breakTimer ? 'bg-[#F59E0B] text-white' : 'bg-[#3A3B3C] text-[#E4E6EB] active:bg-[#4A4B4C]'}`}>
+              className={`py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${breakTimer ? 'bg-[#22D3EE] text-white' : 'bg-[#132A42] text-[#F2F7FF] active:bg-[#1B3753]'}`}>
               <Coffee className="w-5 h-5" /> {breakTimer ? 'On Break' : 'Break'}
             </button>
           </div>
@@ -1158,7 +1158,7 @@ export default function DealerTablet() {
           {/* Tournament: undo the last bust taken from this tablet */}
           {tournamentMode && lastBusted && (
             <button onClick={() => restoreEntry(lastBusted.entry_id, lastBusted.player_name)} disabled={tdBusy !== ''}
-              className="w-full py-3 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+              className="w-full py-3 rounded-xl bg-[#132A42] border border-[#5A7590] text-[#F2F7FF] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-50">
               {tdBusy === 'restore' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
               Undo Bust, {lastBusted.player_name}
             </button>
@@ -1167,7 +1167,7 @@ export default function DealerTablet() {
           {/* Tournament: only closable once the last player is off the table */}
           {seatedPlayers.length === 0 && tournamentMode && (
             <button onClick={closeTableAction} disabled={closingTable}
-              className="w-full py-3 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-[#B0B3B8] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+              className="w-full py-3 rounded-xl bg-[#132A42] border border-[#5A7590] text-[#BDD0E2] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-50">
               {closingTable ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
               {closingTable ? 'Closing...' : 'Close Table'}
             </button>
@@ -1176,7 +1176,7 @@ export default function DealerTablet() {
           {/* Cash game: Close Table when NO players left */}
           {seatedPlayers.length === 0 && !tournamentMode && table?.mode === 'cash' && (
             <button onClick={closeTableAction} disabled={closingTable}
-              className="w-full py-3 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-[#B0B3B8] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+              className="w-full py-3 rounded-xl bg-[#132A42] border border-[#5A7590] text-[#BDD0E2] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-50">
               {closingTable ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
               {closingTable ? 'Closing...' : 'Close Table'}
             </button>
@@ -1192,25 +1192,25 @@ export default function DealerTablet() {
                 });
                 if (res.ok) setHandCount(0);
               } catch (err) { console.warn('Hand reset error:', err); setToast({ type: 'error', text: 'Action Failed: Hand Reset. Please Try Again.' }); }
-            }} className="flex-1 py-2.5 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium flex items-center justify-center gap-1 active:bg-[#4A4B4C]"><RotateCcw className="w-3.5 h-3.5" /> Reset</button>
-            <button onClick={() => router.push('/commander/poker-room')} className="flex-1 py-2.5 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C]">Exit</button>
+            }} className="flex-1 py-2.5 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs font-medium flex items-center justify-center gap-1 active:bg-[#1B3753]"><RotateCcw className="w-3.5 h-3.5" /> Reset</button>
+            <button onClick={() => router.push('/commander/poker-room')} className="flex-1 py-2.5 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs font-medium active:bg-[#1B3753]">Exit</button>
           </div>
         </div>
 
         {/* ===== REMOVE ALL CONFIRMATION ===== */}
         {confirmRemoveAll && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={() => setConfirmRemoveAll(false)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
               <div className="w-16 h-16 rounded-full bg-[#EF4444]/10 flex items-center justify-center mx-auto mb-4">
                 <UserX className="w-8 h-8 text-[#EF4444]" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Remove All Players?</h3>
-              <p className="text-sm text-[#B0B3B8] mb-6">
+              <p className="text-sm text-[#BDD0E2] mb-6">
                 This Will End Sessions For All {seatedPlayers.length} Player{seatedPlayers.length !== 1 ? 's' : ''} At Table {tableNumber}. Their Time Will Stop Counting Down.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setConfirmRemoveAll(false)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-semibold active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-semibold active:bg-[#1B3753]">Cancel</button>
                 <button onClick={removeAllPlayers} disabled={removingAll}
                   className="flex-1 py-3 rounded-xl bg-[#EF4444] text-white font-semibold active:bg-[#DC2626] disabled:opacity-50 flex items-center justify-center gap-2">
                   {removingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
@@ -1224,26 +1224,26 @@ export default function DealerTablet() {
         {/* QR SCANNER MODAL */}
         {scannerOpen && (
           <div className="fixed inset-0 z-50 bg-black/80 flex items-end justify-center" onClick={closeScanner}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <div className="sticky top-0 bg-[#242526] border-b border-[#3A3B3C] px-4 py-3 flex items-center justify-between z-10">
-                <div><h3 className="text-lg font-bold text-white">{dealerScanMode ? 'Scan Dealer, Push In' : `Scan Player, Seat ${targetSeat}`}</h3><p className="text-xs text-[#B0B3B8]">{dealerScanMode ? 'Scan Employee QR Code' : 'Scan Member QR Code'}</p></div>
-                <button onClick={closeScanner} className="p-2 rounded-lg active:bg-[#3A3B3C]"><X className="w-5 h-5 text-[#B0B3B8]" /></button>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-[#0A1829] border-b border-[#445E77] px-4 py-3 flex items-center justify-between z-10">
+                <div><h3 className="text-lg font-bold text-white">{dealerScanMode ? 'Scan Dealer, Push In' : `Scan Player, Seat ${targetSeat}`}</h3><p className="text-xs text-[#BDD0E2]">{dealerScanMode ? 'Scan Employee QR Code' : 'Scan Member QR Code'}</p></div>
+                <button onClick={closeScanner} className="p-2 rounded-lg active:bg-[#132A42]"><X className="w-5 h-5 text-[#BDD0E2]" /></button>
               </div>
               <div className="p-4 space-y-4">
                 {scanError && <div className="p-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl flex items-center gap-2"><AlertCircle className="w-4 h-4 text-[#EF4444] flex-shrink-0" /><p className="text-sm text-[#EF4444]">{scanError}</p></div>}
-                {scanLoading && <div className="text-center py-8"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin mx-auto mb-2" /><p className="text-sm text-[#B0B3B8]">Checking Membership...</p></div>}
+                {scanLoading && <div className="text-center py-8"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin mx-auto mb-2" /><p className="text-sm text-[#BDD0E2]">Checking Membership...</p></div>}
                 {scannedMember && !scanLoading && (
                   <div className="space-y-3">
-                    <div className="bg-[#18191A] rounded-xl p-4">
+                    <div className="bg-[#040D18] rounded-xl p-4">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-[#3A3B3C] flex items-center justify-center"><User className="w-6 h-6 text-[#B0B3B8]" /></div>
+                        <div className="w-12 h-12 rounded-full bg-[#132A42] flex items-center justify-center"><User className="w-6 h-6 text-[#BDD0E2]" /></div>
                         <div className="flex-1">
                           <h4 className="text-lg font-bold text-white">{scannedMember.member?.first_name} {scannedMember.member?.last_name}</h4>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono text-[#1877F2]">{scannedMember.member?.member_number}</span>
+                            <span className="text-xs font-mono text-[#86DAFF]">{scannedMember.member?.member_number}</span>
                             {scannedMember.member?.membership_tier && (
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                style={{ backgroundColor: (TIER_COLORS[scannedMember.member.membership_tier] || '#B0B3B8') + '20', color: TIER_COLORS[scannedMember.member.membership_tier] }}>
+                                style={{ backgroundColor: (TIER_COLORS[scannedMember.member.membership_tier] || '#BDD0E2') + '20', color: TIER_COLORS[scannedMember.member.membership_tier] }}>
                                 {scannedMember.member.membership_tier?.toUpperCase()}
                               </span>
                             )}
@@ -1253,32 +1253,32 @@ export default function DealerTablet() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className={`p-3 rounded-xl flex items-center gap-2 ${scannedMember.membership_active ? 'bg-[#31A24C]/10' : 'bg-[#EF4444]/10'}`}>
                           <Shield className={`w-5 h-5 ${scannedMember.membership_active ? 'text-[#31A24C]' : 'text-[#EF4444]'}`} />
-                          <div><p className={`text-sm font-bold ${scannedMember.membership_active ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>{scannedMember.membership_active ? 'ACTIVE' : 'INACTIVE'}</p><p className="text-[10px] text-[#B0B3B8]">Membership</p></div>
+                          <div><p className={`text-sm font-bold ${scannedMember.membership_active ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>{scannedMember.membership_active ? 'ACTIVE' : 'INACTIVE'}</p><p className="text-[10px] text-[#BDD0E2]">Membership</p></div>
                         </div>
                         <div className={`p-3 rounded-xl flex items-center gap-2 ${(scannedMember.time_balance_minutes || 0) > 0 ? 'bg-[#31A24C]/10' : 'bg-[#EF4444]/10'}`}>
                           <Timer className={`w-5 h-5 ${(scannedMember.time_balance_minutes || 0) > 0 ? 'text-[#31A24C]' : 'text-[#EF4444]'}`} />
-                          <div><p className={`text-sm font-bold ${(scannedMember.time_balance_minutes || 0) > 0 ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>{scannedMember.time_balance_minutes || 0} MIN</p><p className="text-[10px] text-[#B0B3B8]">Time Balance</p></div>
+                          <div><p className={`text-sm font-bold ${(scannedMember.time_balance_minutes || 0) > 0 ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>{scannedMember.time_balance_minutes || 0} MIN</p><p className="text-[10px] text-[#BDD0E2]">Time Balance</p></div>
                         </div>
                       </div>
                     </div>
                     {!scannedMember.membership_active ? (
                       <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-4 text-center">
                         <p className="text-[#EF4444] font-medium">Membership Not Active</p>
-                        <p className="text-xs text-[#B0B3B8] mt-1">Player Needs To Renew At The Front Desk</p>
+                        <p className="text-xs text-[#BDD0E2] mt-1">Player Needs To Renew At The Front Desk</p>
                       </div>
                     ) : (scannedMember.time_balance_minutes || 0) <= 0 ? (
-                      <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 text-center">
-                        <p className="text-[#F59E0B] font-medium">No Time On Card</p>
-                        <p className="text-xs text-[#B0B3B8] mt-1">Player Needs To Add Time At The Front Desk</p>
+                      <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4 text-center">
+                        <p className="text-[#22D3EE] font-medium">No Time On Card</p>
+                        <p className="text-xs text-[#BDD0E2] mt-1">Player Needs To Add Time At The Front Desk</p>
                       </div>
                     ) : (
                       <>
                         {scannedMember.already_seated && (
-                          <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-3 flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-[#F59E0B] flex-shrink-0" />
+                          <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-3 flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-[#22D3EE] flex-shrink-0" />
                             <div>
-                              <p className="text-sm text-[#F59E0B] font-medium">Already Seated</p>
-                              <p className="text-xs text-[#B0B3B8]">Currently At Table {scannedMember.already_seated.table_number} Seat {scannedMember.already_seated.seat_number}</p>
+                              <p className="text-sm text-[#22D3EE] font-medium">Already Seated</p>
+                              <p className="text-xs text-[#BDD0E2]">Currently At Table {scannedMember.already_seated.table_number} Seat {scannedMember.already_seated.seat_number}</p>
                             </div>
                           </div>
                         )}
@@ -1287,7 +1287,7 @@ export default function DealerTablet() {
                         </button>
                       </>
                     )}
-                    <button onClick={() => { setScannedMember(null); startCamera(); }} className="w-full py-2 text-[#1877F2] text-sm font-medium">Scan Different Player</button>
+                    <button onClick={() => { setScannedMember(null); startCamera(); }} className="w-full py-2 text-[#86DAFF] text-sm font-medium">Scan Different Player</button>
                   </div>
                 )}
                 {!scannedMember && !scanLoading && (
@@ -1296,24 +1296,24 @@ export default function DealerTablet() {
                       <div className="space-y-3">
                         <div className="relative rounded-xl overflow-hidden bg-black">
                           <video ref={videoRef} autoPlay playsInline muted className="w-full aspect-[4/3]" />
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-48 h-48 border-2 border-[#1877F2] rounded-xl animate-pulse" /></div>
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-48 h-48 border-2 border-[#1981EC] rounded-xl animate-pulse" /></div>
                         </div>
-                        <p className="text-center text-sm text-[#B0B3B8]">Hold QR Code In View</p>
-                        <button onClick={stopCamera} className="w-full py-2.5 bg-[#3A3B3C] text-[#B0B3B8] rounded-lg text-sm font-medium active:bg-[#4A4B4C]">Stop Camera</button>
+                        <p className="text-center text-sm text-[#BDD0E2]">Hold QR Code In View</p>
+                        <button onClick={stopCamera} className="w-full py-2.5 bg-[#132A42] text-[#BDD0E2] rounded-lg text-sm font-medium active:bg-[#1B3753]">Stop Camera</button>
                       </div>
                     ) : (
-                      <button onClick={startCamera} className="w-full py-10 border-2 border-dashed border-[#3A3B3C] rounded-xl flex flex-col items-center gap-3 active:border-[#1877F2]">
-                        <Camera className="w-10 h-10 text-[#B0B3B8]" />
-                        <span className="text-sm font-medium text-[#E4E6EB]">Open Camera To Scan</span>
+                      <button onClick={startCamera} className="w-full py-10 border-2 border-dashed border-[#445E77] rounded-xl flex flex-col items-center gap-3 active:border-[#1981EC]">
+                        <Camera className="w-10 h-10 text-[#BDD0E2]" />
+                        <span className="text-sm font-medium text-[#F2F7FF]">Open Camera To Scan</span>
                       </button>
                     )}
-                    <div className="border-t border-[#3A3B3C] pt-4">
-                      <p className="text-xs text-[#B0B3B8] mb-2">Or Enter Code Manually:</p>
+                    <div className="border-t border-[#445E77] pt-4">
+                      <p className="text-xs text-[#BDD0E2] mb-2">Or Enter Code Manually:</p>
                       <div className="flex gap-2">
                         <input type="text" value={manualCode} onChange={e => setManualCode(e.target.value)} placeholder={dealerScanMode ? "Employee QR Code" : "CMD-1996-abc12345"}
-                          className="flex-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                          className="flex-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                           onKeyDown={e => e.key === 'Enter' && (dealerScanMode ? dealerScanIn(manualCode.trim()) : lookupMember(manualCode.trim()))} />
-                        <button onClick={() => dealerScanMode ? dealerScanIn(manualCode.trim()) : lookupMember(manualCode.trim())} className="px-4 py-2.5 bg-[#1877F2] text-white rounded-lg text-sm font-medium active:bg-[#1565D8]">{dealerScanMode ? 'Scan In' : 'Look Up'}</button>
+                        <button onClick={() => dealerScanMode ? dealerScanIn(manualCode.trim()) : lookupMember(manualCode.trim())} className="px-4 py-2.5 bg-[#0C55C0] text-white rounded-lg text-sm font-medium active:bg-[#0A4AA8]">{dealerScanMode ? 'Scan In' : 'Look Up'}</button>
                       </div>
                     </div>
                   </>
@@ -1326,19 +1326,19 @@ export default function DealerTablet() {
         {/* ADD TIME MODAL - Cash mode */}
         {addTimePlayer && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setAddTimePlayer(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">S{addTimePlayer.seat_number}, {addTimePlayer.player_name}</h3>
-              <p className="text-sm text-[#B0B3B8]">Current: <span className="font-mono font-bold text-white">{formatCountdown(addTimePlayer.time_remaining)}</span></p>
+              <p className="text-sm text-[#BDD0E2]">Current: <span className="font-mono font-bold text-white">{formatCountdown(addTimePlayer.time_remaining)}</span></p>
               <div className="grid grid-cols-4 gap-2">
                 {[30, 60, 120, 180].map(m => (
                   <button key={m} onClick={() => setAddTimeMinutes(String(m))}
-                    className={`py-3 rounded-xl text-sm font-medium ${addTimeMinutes === String(m) ? 'bg-[#31A24C] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+                    className={`py-3 rounded-xl text-sm font-medium ${addTimeMinutes === String(m) ? 'bg-[#31A24C] text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
                     +{m >= 60 ? `${m / 60}hr` : `${m}m`}
                   </button>
                 ))}
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setAddTimePlayer(null)} className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                <button onClick={() => setAddTimePlayer(null)} className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={addTime} disabled={addingTime}
                   className="flex-1 py-3 rounded-xl bg-[#31A24C] text-white font-medium active:bg-[#28883F] disabled:opacity-50 flex items-center justify-center gap-2">
                   {addingTime ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Add Time
@@ -1359,14 +1359,14 @@ export default function DealerTablet() {
           const busy = tdBusy !== '';
           return (
             <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setTournamentActionPlayer(null)}>
-              <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[88vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[88vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#F59E0B]/15 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg font-bold text-[#F59E0B]">S{p.seat_number}</span>
+                  <div className="w-12 h-12 rounded-full bg-[#22D3EE]/15 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-bold text-[#22D3EE]">S{p.seat_number}</span>
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold text-white truncate">{p.player_name}</h3>
-                    <p className="text-sm text-[#B0B3B8]">
+                    <p className="text-sm text-[#BDD0E2]">
                       {p.current_chips
                         ? `${Number(p.current_chips).toLocaleString()} Chips`
                         : 'No Chips Recorded'}
@@ -1381,7 +1381,7 @@ export default function DealerTablet() {
                   setChipEntryValue(String(p.current_chips || ''));
                   setTournamentActionPlayer(null);
                 }}
-                  className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-3 active:bg-[#1565D8]">
+                  className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-3 active:bg-[#0A4AA8]">
                   <DollarSign className="w-6 h-6" /> Enter Chip Count
                 </button>
 
@@ -1397,7 +1397,7 @@ export default function DealerTablet() {
                 </div>
 
                 <button onClick={() => { setMovePlayerFor(p); setTournamentActionPlayer(null); }} disabled={busy}
-                  className="w-full py-4 rounded-xl bg-[#F59E0B] text-white text-lg font-semibold flex items-center justify-center gap-3 active:bg-[#D97706] disabled:opacity-50">
+                  className="w-full py-4 rounded-xl bg-[#22D3EE] text-white text-lg font-semibold flex items-center justify-center gap-3 active:bg-[#0EA5C6] disabled:opacity-50">
                   <ArrowRightLeft className="w-6 h-6" /> Move Player
                 </button>
 
@@ -1413,13 +1413,13 @@ export default function DealerTablet() {
 
                 {(isEliminated || (lastBusted && lastBusted.entry_id === (p.entry_id || p.id))) && (
                   <button onClick={() => restoreEntry(p.entry_id || p.id, p.player_name)} disabled={busy}
-                    className="w-full py-4 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-base font-semibold flex items-center justify-center gap-3 active:bg-[#4A4B4C] disabled:opacity-50">
+                    className="w-full py-4 rounded-xl bg-[#132A42] border border-[#5A7590] text-[#F2F7FF] text-base font-semibold flex items-center justify-center gap-3 active:bg-[#1B3753] disabled:opacity-50">
                     {tdBusy === 'restore' ? <Loader2 className="w-5 h-5 animate-spin" /> : <RotateCcw className="w-5 h-5" />} Undo Bust
                   </button>
                 )}
 
                 <button onClick={() => setTournamentActionPlayer(null)}
-                  className="w-full py-3 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium active:bg-[#4A4B4C]">
+                  className="w-full py-3 rounded-xl bg-[#132A42] text-[#BDD0E2] text-sm font-medium active:bg-[#1B3753]">
                   Cancel
                 </button>
               </div>
@@ -1430,11 +1430,11 @@ export default function DealerTablet() {
         {/* EMPTY SEAT ACTIONS - Tournament mode */}
         {tournamentMode && emptySeatAction && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setEmptySeatAction(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">Seat {emptySeatAction} Is Open</h3>
               {(tournamentMode.alternates || []).length > 0 ? (
                 <>
-                  <p className="text-sm text-[#B0B3B8]">Seat Alternate Here</p>
+                  <p className="text-sm text-[#BDD0E2]">Seat Alternate Here</p>
                   {(tournamentMode.alternates || []).slice(0, 8).map(alt => (
                     <button key={alt.entry_id} onClick={() => promoteAlternateToSeat(alt, emptySeatAction)} disabled={tdBusy !== ''}
                       className="w-full py-3.5 rounded-xl bg-[#31A24C] text-white text-base font-semibold flex items-center justify-center gap-2 active:bg-[#28883F] disabled:opacity-50">
@@ -1444,14 +1444,14 @@ export default function DealerTablet() {
                   ))}
                 </>
               ) : (
-                <p className="text-sm text-[#B0B3B8]">No Alternates Are Waiting.</p>
+                <p className="text-sm text-[#BDD0E2]">No Alternates Are Waiting.</p>
               )}
               <button onClick={() => { setSeatMovePicker(emptySeatAction); setEmptySeatAction(null); }} disabled={tdBusy !== ''}
-                className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-3 active:bg-[#1565D8] disabled:opacity-50">
+                className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-3 active:bg-[#0A4AA8] disabled:opacity-50">
                 <ArrowRightLeft className="w-6 h-6" /> Move A Player Here
               </button>
               <button onClick={() => setEmptySeatAction(null)}
-                className="w-full py-3 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium active:bg-[#4A4B4C]">
+                className="w-full py-3 rounded-xl bg-[#132A42] text-[#BDD0E2] text-sm font-medium active:bg-[#1B3753]">
                 Cancel
               </button>
             </div>
@@ -1469,20 +1469,20 @@ export default function DealerTablet() {
           });
           return (
             <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setSeatMovePicker(null)}>
-              <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <h3 className="text-lg font-bold text-white">Move A Player To Seat {seatMovePicker}</h3>
                 {candidates.length === 0 ? (
-                  <p className="text-sm text-[#B0B3B8]">No Other Players Are Seated In This Tournament.</p>
+                  <p className="text-sm text-[#BDD0E2]">No Other Players Are Seated In This Tournament.</p>
                 ) : candidates.map(c => (
                   <button key={c.entry_id} onClick={() => movePlayerToSeat(c, parseInt(tableNumber), seatMovePicker)} disabled={tdBusy !== ''}
-                    className="w-full py-3 px-3 rounded-xl bg-[#18191A] border border-[#3A3B3C] text-left flex items-center gap-3 active:bg-[#3A3B3C] disabled:opacity-50">
-                    <span className="text-xs font-bold text-[#F59E0B] w-16 flex-shrink-0">T{c.from_table} S{c.seat_number}</span>
+                    className="w-full py-3 px-3 rounded-xl bg-[#040D18] border border-[#445E77] text-left flex items-center gap-3 active:bg-[#132A42] disabled:opacity-50">
+                    <span className="text-xs font-bold text-[#22D3EE] w-16 flex-shrink-0">T{c.from_table} S{c.seat_number}</span>
                     <span className="text-sm text-white flex-1 truncate">{c.player_name}</span>
-                    <span className="text-xs font-mono text-[#B0B3B8]">{Number(c.current_chips || 0).toLocaleString()}</span>
+                    <span className="text-xs font-mono text-[#BDD0E2]">{Number(c.current_chips || 0).toLocaleString()}</span>
                   </button>
                 ))}
                 <button onClick={() => setSeatMovePicker(null)}
-                  className="w-full py-3 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium active:bg-[#4A4B4C]">
+                  className="w-full py-3 rounded-xl bg-[#132A42] text-[#BDD0E2] text-sm font-medium active:bg-[#1B3753]">
                   Cancel
                 </button>
               </div>
@@ -1493,11 +1493,11 @@ export default function DealerTablet() {
         {/* MOVE PLAYER - seat picker built from the floor-view table list */}
         {tournamentMode && movePlayerFor && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setMovePlayerFor(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5 space-y-3 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">Move {movePlayerFor.player_name}</h3>
-              <p className="text-sm text-[#B0B3B8]">Pick An Open Seat</p>
+              <p className="text-sm text-[#BDD0E2]">Pick An Open Seat</p>
               {(tournamentMode.tables || []).length === 0 && (
-                <p className="text-sm text-[#6A6B6D]">No Tables Are Reporting Yet. Refresh And Try Again.</p>
+                <p className="text-sm text-[#93A9C0]">No Tables Are Reporting Yet. Refresh And Try Again.</p>
               )}
               {(tournamentMode.tables || []).map(t => {
                 const taken = new Set((t.players || []).map(pl => pl.seat_number));
@@ -1506,18 +1506,18 @@ export default function DealerTablet() {
                   .filter(s => !taken.has(s))
                   .filter(s => !(String(t.table_number) === String(tableNumber) && s === movePlayerFor.seat_number));
                 return (
-                  <div key={t.table_number} className="bg-[#18191A] rounded-xl p-3">
+                  <div key={t.table_number} className="bg-[#040D18] rounded-xl p-3">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-bold text-white">Table {t.table_number}</p>
-                      <p className="text-xs text-[#B0B3B8]">{Number(t.player_count || 0).toLocaleString()} / {Number(tableMax).toLocaleString()} Seated</p>
+                      <p className="text-xs text-[#BDD0E2]">{Number(t.player_count || 0).toLocaleString()} / {Number(tableMax).toLocaleString()} Seated</p>
                     </div>
                     {openSeats.length === 0 ? (
-                      <p className="text-xs text-[#6A6B6D]">No Open Seats</p>
+                      <p className="text-xs text-[#93A9C0]">No Open Seats</p>
                     ) : (
                       <div className="grid grid-cols-5 gap-2">
                         {openSeats.map(s => (
                           <button key={s} onClick={() => movePlayerToSeat(movePlayerFor, t.table_number, s)} disabled={tdBusy !== ''}
-                            className="py-2.5 rounded-lg bg-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold active:bg-[#1877F2] disabled:opacity-50">
+                            className="py-2.5 rounded-lg bg-[#132A42] text-[#F2F7FF] text-sm font-semibold active:bg-[#0C55C0] disabled:opacity-50">
                             S{s}
                           </button>
                         ))}
@@ -1527,7 +1527,7 @@ export default function DealerTablet() {
                 );
               })}
               <button onClick={() => setMovePlayerFor(null)}
-                className="w-full py-3 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium active:bg-[#4A4B4C]">
+                className="w-full py-3 rounded-xl bg-[#132A42] text-[#BDD0E2] text-sm font-medium active:bg-[#1B3753]">
                 Cancel
               </button>
             </div>
@@ -1537,22 +1537,22 @@ export default function DealerTablet() {
         {/* TOURNAMENT NOTICE - auto-break, promoted alternate, restore result */}
         {tdNotice && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={() => setTdNotice(null)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white mb-3">{tdNotice.title}</h3>
               <div className="space-y-1.5 mb-5">
                 {(tdNotice.lines || []).map((line, i) => (
-                  <p key={i} className="text-sm text-[#B0B3B8]">{line}</p>
+                  <p key={i} className="text-sm text-[#BDD0E2]">{line}</p>
                 ))}
               </div>
               <div className="flex gap-3">
                 {lastBusted && (
                   <button onClick={() => restoreEntry(lastBusted.entry_id, lastBusted.player_name)} disabled={tdBusy !== ''}
-                    className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50">
+                    className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-semibold flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-50">
                     {tdBusy === 'restore' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />} Undo Bust
                   </button>
                 )}
                 <button onClick={() => setTdNotice(null)}
-                  className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white text-sm font-semibold active:bg-[#1565D8]">
+                  className="flex-1 py-3 rounded-xl bg-[#0C55C0] text-white text-sm font-semibold active:bg-[#0A4AA8]">
                   Got It
                 </button>
               </div>
@@ -1563,15 +1563,15 @@ export default function DealerTablet() {
         {/* UNDO BUST CONFIRMATION - 409 PAYOUT_RECORDED, confirm then force */}
         {restoreConfirm && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4" onClick={() => setRestoreConfirm(null)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
-              <div className="w-14 h-14 rounded-full bg-[#F59E0B]/10 flex items-center justify-center mx-auto mb-3">
-                <AlertTriangle className="w-7 h-7 text-[#F59E0B]" />
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+              <div className="w-14 h-14 rounded-full bg-[#22D3EE]/10 flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle className="w-7 h-7 text-[#22D3EE]" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Payout Already Recorded</h3>
-              <p className="text-sm text-[#B0B3B8] mb-5">{restoreConfirm.message}</p>
+              <p className="text-sm text-[#BDD0E2] mb-5">{restoreConfirm.message}</p>
               <div className="flex gap-3">
                 <button onClick={() => setRestoreConfirm(null)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-semibold active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-semibold active:bg-[#1B3753]">Cancel</button>
                 <button onClick={() => restoreEntry(restoreConfirm.entry_id, restoreConfirm.player_name, true)} disabled={tdBusy !== ''}
                   className="flex-1 py-3 rounded-xl bg-[#EF4444] text-white font-semibold active:bg-[#DC2626] disabled:opacity-50 flex items-center justify-center gap-2">
                   {tdBusy === 'restore' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />} Undo Anyway
@@ -1584,11 +1584,11 @@ export default function DealerTablet() {
         {/* CHIP ENTRY MODAL - Tournament mode */}
         {chipEntryPlayer && (
           <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={() => setChipEntryPlayer(null)}>
-            <div className="bg-[#242526] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-t-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">
                 S{chipEntryPlayer.seat_number}, {chipEntryPlayer.player_name}
               </h3>
-              <p className="text-sm text-[#B0B3B8]">
+              <p className="text-sm text-[#BDD0E2]">
                 Current: <span className="font-mono font-bold text-white">
                   {chipEntryPlayer.current_chips ? chipEntryPlayer.current_chips.toLocaleString() : 'Not Set'}
                 </span>
@@ -1601,11 +1601,11 @@ export default function DealerTablet() {
                 onKeyDown={e => { if (e.key === 'Enter' && chipEntryValue) updatePlayerChips(); }}
                 placeholder="Enter Chip Count"
                 autoFocus
-                className="w-full px-4 py-4 bg-[#18191A] border-2 border-[#3A3B3C] rounded-xl text-2xl font-mono font-bold text-white text-center focus:border-[#1877F2] focus:outline-none"
+                className="w-full px-4 py-4 bg-[#040D18] border-2 border-[#445E77] rounded-xl text-2xl font-mono font-bold text-white text-center focus:border-[#1981EC] focus:outline-none"
               />
               <div className="flex gap-3">
                 <button onClick={() => { setChipEntryPlayer(null); setChipEntryValue(''); }}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={updatePlayerChips} disabled={savingChips || !chipEntryValue}
                   className="flex-1 py-3 rounded-xl bg-[#31A24C] text-white font-semibold active:bg-[#28883F] disabled:opacity-50 flex items-center justify-center gap-2">
                   {savingChips ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

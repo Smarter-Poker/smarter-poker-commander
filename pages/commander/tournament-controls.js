@@ -32,17 +32,17 @@ function levelLabel(t) {
 
 const STATUS_COLORS = {
     running: { bg: 'bg-[#31A24C]/10', text: 'text-[#31A24C]', label: 'Running' },
-    break: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'On Break' },
-    paused: { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', label: 'Paused' }, // 2026-08-04 audit fix: paused tournaments were unstyled
-    final_table: { bg: 'bg-[#8B5CF6]/10', text: 'text-[#8B5CF6]', label: 'Final Table' },
+    break: { bg: 'bg-[#22D3EE]/10', text: 'text-[#22D3EE]', label: 'On Break' },
+    paused: { bg: 'bg-[#22D3EE]/10', text: 'text-[#22D3EE]', label: 'Paused' }, // 2026-08-04 audit fix: paused tournaments were unstyled
+    final_table: { bg: 'bg-[#5AA9FF]/10', text: 'text-[#5AA9FF]', label: 'Final Table' },
     // 2026-08-20 audit fix: the real commander_tournaments value is
     // 'registration'. Only the legacy 'registering' spelling was mapped, so a
     // tournament that had opened registration rendered with the grey
     // "Scheduled" fallback pill.
-    registration: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', label: 'Registration' },
-    registering: { bg: 'bg-[#1877F2]/10', text: 'text-[#1877F2]', label: 'Registration' },
+    registration: { bg: 'bg-[#0C55C0]/10', text: 'text-[#86DAFF]', label: 'Registration' },
+    registering: { bg: 'bg-[#0C55C0]/10', text: 'text-[#86DAFF]', label: 'Registration' },
     hand_for_hand: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', label: 'Hand For Hand' },
-    scheduled: { bg: 'bg-[#B0B3B8]/10', text: 'text-[#B0B3B8]', label: 'Scheduled' } };
+    scheduled: { bg: 'bg-[#BDD0E2]/10', text: 'text-[#BDD0E2]', label: 'Scheduled' } };
 
 /* Page Help tour (Dan, 2026-10-17: the header words moved behind the "?"). */
 const TD_STEPS = [
@@ -136,15 +136,15 @@ export default function TournamentDirector() {
                     <div className="flex flex-1 gap-2" data-tour="td-tabs">
                         <button onClick={() => setTab('current')}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors ${tab === 'current'
-                                ? 'bg-[#1877F2] text-white'
-                                : 'bg-[#3A3B3C] text-[#B0B3B8] hover:bg-[#4A4B4C]'
+                                ? 'bg-[#0C55C0] text-white'
+                                : 'bg-[#132A42] text-[#BDD0E2] hover:bg-[#1B3753]'
                                 }`}>
                             Current ({currentTournaments.length})
                         </button>
                         <button onClick={() => setTab('upcoming')}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors ${tab === 'upcoming'
-                                ? 'bg-[#1877F2] text-white'
-                                : 'bg-[#3A3B3C] text-[#B0B3B8] hover:bg-[#4A4B4C]'
+                                ? 'bg-[#0C55C0] text-white'
+                                : 'bg-[#132A42] text-[#BDD0E2] hover:bg-[#1B3753]'
                                 }`}>
                             Upcoming ({upcomingTournaments.length})
                         </button>
@@ -153,12 +153,12 @@ export default function TournamentDirector() {
 
                     {loading ? (
                         <div className="py-20 text-center">
-                            <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin mx-auto" />
+                            <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin mx-auto" />
                         </div>
                     ) : displayList.length === 0 ? (
                         <div className="cmd-panel p-8 text-center">
-                            <Trophy className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                            <p className="text-[#B0B3B8] mb-4">
+                            <Trophy className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                            <p className="text-[#BDD0E2] mb-4">
                                 {tab === 'current' ? 'No Live Tournaments' : 'No Upcoming Tournaments'}
                             </p>
                             <button onClick={() => router.push('/commander/tournaments')}
@@ -172,30 +172,30 @@ export default function TournamentDirector() {
                                 const sc = STATUS_COLORS[t.status] || STATUS_COLORS.scheduled;
                                 const isLive = ['running', 'break', 'final_table'].includes(t.status);
                                 return (
-                                    <div key={t.id} className={`cmd-panel overflow-hidden ${isLive ? 'border-[#1877F2]/30' : ''}`}>
+                                    <div key={t.id} className={`cmd-panel overflow-hidden ${isLive ? 'border-[#1981EC]/30' : ''}`}>
                                         {/* Tournament Info Header */}
                                         <div className="p-4 pb-3">
                                             <div className="flex items-start gap-3">
-                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isLive ? 'bg-[#1877F2]/10' : 'bg-[#242526]'}`}>
-                                                    <Trophy className={`w-5 h-5 ${isLive ? 'text-[#1877F2]' : 'text-[#B0B3B8]'}`} />
+                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isLive ? 'bg-[#0C55C0]/10' : 'bg-[#0A1829]'}`}>
+                                                    <Trophy className={`w-5 h-5 ${isLive ? 'text-[#86DAFF]' : 'text-[#BDD0E2]'}`} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-semibold text-white truncate">{t.name}</p>
                                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${sc.bg} ${sc.text}`}>{sc.label}</span>
                                                         {t.scheduled_start && (
-                                                            <span className="text-xs text-[#B0B3B8]">
+                                                            <span className="text-xs text-[#BDD0E2]">
                                                                 {new Date(t.scheduled_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                                 {' '}
                                                                 {new Date(t.scheduled_start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                                             </span>
                                                         )}
                                                         {t.current_entries > 0 && (/* 2026-08-04 audit fix: rows expose current_entries, not player_count */
-                                                            <span className="text-xs text-[#B0B3B8] flex items-center gap-1">
+                                                            <span className="text-xs text-[#BDD0E2] flex items-center gap-1">
                                                                 <Users className="w-3 h-3" /> {t.current_entries}
                                                             </span>
                                                         )}
-                                                        {t.current_level > 0 && <span className="text-xs text-[#B0B3B8]">{levelLabel(t)}</span>}
+                                                        {t.current_level > 0 && <span className="text-xs text-[#BDD0E2]">{levelLabel(t)}</span>}
                                                     </div>
                                                 </div>
                                                 {isLive && (
@@ -219,34 +219,34 @@ export default function TournamentDirector() {
                                             2x2 rather than a 4-across row: four
                                             across drops every target under 44px
                                             at 375px. */}
-                                        <div className="border-t border-[#3A3B3C] grid grid-cols-2 divide-x divide-y divide-[#3A3B3C]" data-tour="td-actions">
+                                        <div className="border-t border-[#445E77] grid grid-cols-2 divide-x divide-y divide-[#445E77]" data-tour="td-actions">
                                             <button
                                                 onClick={() => router.push(`/commander/td/${t.id}`)}
-                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#132A42] transition-colors text-sm"
                                             >
-                                                <Play className="w-4 h-4 text-[#1877F2]" />
-                                                <span className="text-[#E4E6EB] font-medium">TD Controls</span>
+                                                <Play className="w-4 h-4 text-[#86DAFF]" />
+                                                <span className="text-[#F2F7FF] font-medium">TD Controls</span>
                                             </button>
                                             <button
                                                 onClick={() => router.push(`/commander/td/${t.id}/register`)}
-                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#132A42] transition-colors text-sm"
                                             >
                                                 <UserPlus className="w-4 h-4 text-[#31A24C]" />
-                                                <span className="text-[#E4E6EB] font-medium">Register</span>
+                                                <span className="text-[#F2F7FF] font-medium">Register</span>
                                             </button>
                                             <button
                                                 onClick={() => window.open(`/commander/tournaments/${t.id}/clock-display`, '_blank')}
-                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#132A42] transition-colors text-sm"
                                             >
-                                                <Monitor className="w-4 h-4 text-[#F59E0B]" />
-                                                <span className="text-[#E4E6EB] font-medium">Launch Clock</span>
+                                                <Monitor className="w-4 h-4 text-[#22D3EE]" />
+                                                <span className="text-[#F2F7FF] font-medium">Launch Clock</span>
                                             </button>
                                             <button
                                                 onClick={() => router.push(`/commander/tournaments/${t.id}/settings`)}
-                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#3A3B3C] transition-colors text-sm"
+                                                className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-2 hover:bg-[#132A42] transition-colors text-sm"
                                             >
-                                                <Settings className="w-4 h-4 text-[#B0B3B8]" />
-                                                <span className="text-[#E4E6EB] font-medium">Settings</span>
+                                                <Settings className="w-4 h-4 text-[#BDD0E2]" />
+                                                <span className="text-[#F2F7FF] font-medium">Settings</span>
                                             </button>
                                         </div>
                                     </div>

@@ -35,7 +35,7 @@ function debugLog(direction, channelName, message) {
         console.debug(
             `%c[BC ${direction} ${ts}] %c${channelName}`,
             direction === '📡 SEND' ? 'color:#00E0FF;font-weight:bold' : 'color:#22c55e;font-weight:bold',
-            'color:#FFD700',
+            'color:#22D3EE',
             message
         );
     } catch { /* noop */ }
