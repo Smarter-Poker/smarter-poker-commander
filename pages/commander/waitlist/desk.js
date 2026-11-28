@@ -27,6 +27,8 @@ import { supabase } from '../../../src/lib/supabase'; // 2026-08-04 audit fix: u
 import { useConfirmAction } from "../../../src/components/commander/shared/ConfirmModal";
 import { formatPhone, titleCase } from '../../../src/lib/commander/formatters';
 import { lighten, darken } from '../../../src/lib/commander/colorUtils';
+import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/sdPalette';
+import SdSwatchPicker from '../../../src/components/commander/shared/SdSwatchPicker';
 
 // formatPhone, titleCase imported from '@/lib/commander/formatters'
 // lighten, darken imported from '@/lib/commander/colorUtils'
@@ -34,14 +36,16 @@ import { lighten, darken } from '../../../src/lib/commander/colorUtils';
 const GAMES_PER_PAGE = 4;
 const ROTATE_INTERVAL = 10000;
 
-// Default customization - the classic gold theme
+// Default customization. Every colour is an SD_SWATCHES colour
+// (src/lib/commander/sdPalette.js) so the swatch picker shows it chosen.
+// displays/waitlist.js carries the same defaults for the TV board.
 const DEFAULT_CUSTOM = {
   headerColor: '#3A8FC0',
   accentColor: '#86DAFF',
   bgColor: '#000000',
-  cardBgColor: '#050505',
-  textColor: '#E0E0E0',
-  borderColor: '#666666',
+  cardBgColor: '#040D18',
+  textColor: '#F2F7FF',
+  borderColor: '#445E77',
   logoUrl: '',
   tickerMessage: '',
   gameTypes: [],  // empty = auto-detect from tables
@@ -101,7 +105,9 @@ export default function WaitlistDesk() {
       try {
 const json = await commanderFetchJSON('/api/commander/settings', { signal: controller.signal });
         if (json.success && json.data?.desk_customization) {
-          setCustom(prev => ({ ...prev, ...json.data.desk_customization }));
+          // Saved colours are read through normalizeSdColor (#SMARTERDESIGN):
+          // a banned hue saved before the swatch picker renders in-palette.
+          setCustom(prev => ({ ...prev, ...normalizeSdColors(json.data.desk_customization, DESK_COLOR_KEYS) }));
         }
       } catch (e) { if (e.name !== 'AbortError') console.warn(e); }
     })();
@@ -1416,7 +1422,7 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
 
   const colorFields = [
     { key: 'headerColor', label: 'Column Header' },
-    { key: 'accentColor', label: 'Accent / Gold' },
+    { key: 'accentColor', label: 'Accent' },
     { key: 'bgColor', label: 'Background' },
     { key: 'cardBgColor', label: 'Bar Background' },
     { key: 'textColor', label: 'Player Text' },
@@ -1458,29 +1464,16 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
           {activeTab === 'colors' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {colorFields.map(cf => (
-                <div key={cf.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label style={{ fontSize: '14px', fontWeight: 600, color: '#ccc' }}>{cf.label}</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <input
-                      type="color"
-                      value={draft[cf.key]}
-                      onChange={e => update(cf.key, e.target.value)}
-                      style={{ width: '44px', height: '36px', border: '2px solid #444', borderRadius: '6px', cursor: 'pointer', background: '#111', padding: '2px' }}
-                    />
-                    <input
-                      type="text"
-                      value={draft[cf.key]}
-                      onChange={e => update(cf.key, e.target.value)}
-                      style={{ width: '90px', padding: '6px 8px', background: '#1a1a1a', border: '1px solid #444', borderRadius: '4px', color: '#fff', fontSize: '13px', fontFamily: 'monospace' }}
-                    />
-                  </div>
+                <div key={cf.key}>
+                  <p style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 600, color: '#ccc' }}>{cf.label}</p>
+                  <SdSwatchPicker label={cf.label} value={draft[cf.key]} onChange={hex => update(cf.key, hex)} />
                 </div>
               ))}
               <button onClick={() => {
                 setDraft({ ...draft, ...DEFAULT_CUSTOM });
                 onUpdate({ ...draft, ...DEFAULT_CUSTOM });
               }} style={{ marginTop: '8px', padding: '8px 16px', background: '#222', border: '1px solid #444', borderRadius: '6px', color: '#888', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                Reset to Defaults
+                Reset To Defaults
               </button>
             </div>
           )}

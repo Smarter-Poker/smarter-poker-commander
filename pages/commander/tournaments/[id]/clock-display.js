@@ -27,6 +27,7 @@ import useWakeLock from '../../../../src/hooks/useWakeLock';
 import { busEmit } from '../../../../src/engine/EventBus';
 import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
+import { normalizeClockPreset } from '../../../../src/lib/commander/sdPalette';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -193,7 +194,8 @@ export default function ClockDisplay() {
 const json = await commanderFetchJSON('/api/commander/clock-presets', { });
       if (json.success) {
         const found = (json.data || []).find(p => p.id === presetId);
-        if (found) setPreset(found);
+        // Saved colours are read through normalizeSdColor (#SMARTERDESIGN).
+        if (found) setPreset(normalizeClockPreset(found));
       }
     } catch (err) { console.warn(err); }
   }, []);

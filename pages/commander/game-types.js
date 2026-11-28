@@ -14,6 +14,8 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import SdSwatchPicker from '../../src/components/commander/shared/SdSwatchPicker';
+import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
 
 const PRESET_GAMES = [
   { name: 'No Limit Hold\'em', short_code: 'NLH', max_players: 9, color: '#1981EC' },
@@ -22,9 +24,9 @@ const PRESET_GAMES = [
   { name: 'Limit Hold\'em', short_code: 'LHE', max_players: 10, color: '#31A24C' },
   { name: 'No Limit Omaha 5', short_code: 'PLO5', max_players: 8, color: '#5AA9FF' },
   { name: '7 Card Stud', short_code: 'STUD', max_players: 8, color: '#38BDF8' },
-  { name: 'Mixed Game', short_code: 'MIXED', max_players: 8, color: '#14B8A6' },
-  { name: 'Big O', short_code: 'BIGO', max_players: 8, color: '#F97316' },
-  { name: 'Short Deck', short_code: 'SD', max_players: 9, color: '#3B82F6' },
+  { name: 'Mixed Game', short_code: 'MIXED', max_players: 8, color: '#3A8FC0' },
+  { name: 'Big O', short_code: 'BIGO', max_players: 8, color: '#86DAFF' },
+  { name: 'Short Deck', short_code: 'SD', max_players: 9, color: '#0C55C0' },
 ];
 
 export default function GameTypesPage() {
@@ -66,7 +68,8 @@ export default function GameTypesPage() {
     if (!venueId) return;
     try {
 const json = await commanderFetchJSON('/api/commander/game-types?include_inactive=true');
-      if (json.success) setGameTypes(json.data || []);
+      // Saved colours are read through normalizeSdColor (#SMARTERDESIGN).
+      if (json.success) setGameTypes((json.data || []).map(gt => ({ ...gt, color: normalizeSdColor(gt.color, '#1981EC') })));
     } catch (err) { console.warn(err); }
     finally { setLoading(false); }
   }, [venueId]);
@@ -218,9 +221,9 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                 )}
 
                 <div className="p-4 space-y-4">
-                  {/* Row 1: Name + Code + Color */}
+                  {/* Row 1: Name + Code + Stakes */}
                   <div className="grid grid-cols-12 gap-3">
-                    <div className="col-span-5">
+                    <div className="col-span-6">
                       <label className="text-xs text-[#BDD0E2] uppercase">Game Name *</label>
                       <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                         placeholder="No Limit Hold'em"
@@ -238,11 +241,12 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                         placeholder="1/3"
                         className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                     </div>
-                    <div className="col-span-1">
-                      <label className="text-xs text-[#BDD0E2] uppercase">Color</label>
-                      <input type="color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))}
-                        className="w-full mt-1 h-[42px] bg-[#132A42] border border-[#5A7590] rounded-xl cursor-pointer" />
-                    </div>
+                  </div>
+
+                  {/* Row 1b: Color (approved #SMARTERDESIGN swatches only) */}
+                  <div>
+                    <p className="text-xs text-[#BDD0E2] uppercase">Color</p>
+                    <SdSwatchPicker label="Game" value={form.color} onChange={hex => setForm(p => ({ ...p, color: hex }))} />
                   </div>
 
                   {/* Row 2: Buy-in + Players */}

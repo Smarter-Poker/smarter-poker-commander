@@ -9,6 +9,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardManager } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
 
 let _supabase = null;
 function getSupabase() {
@@ -119,7 +120,7 @@ export default async function handler(req, res) {
             rake_percent: rake_percent || 5.00,
             rake_cap: rake_cap || 15.00,
             time_rate: time_rate || 0,
-            color: color || '#1981EC',
+            color: normalizeSdColor(color, '#1981EC'),
             notes: notes || null,
             sort_order: sort_order || 0
           })
@@ -156,7 +157,9 @@ export default async function handler(req, res) {
           'sort_order', 'is_active'];
         for (const key of allowed) {
           if (req.body[key] !== undefined) {
-            updates[key] = key === 'short_code' ? req.body[key].toUpperCase() : req.body[key];
+            updates[key] = key === 'short_code' ? req.body[key].toUpperCase()
+              : key === 'color' ? normalizeSdColor(req.body[key], '#1981EC')
+              : req.body[key];
           }
         }
         updates.updated_at = new Date().toISOString();
