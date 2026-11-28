@@ -9,6 +9,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
 
 let _supabase = null;
 function getSupabase() {
@@ -133,7 +134,7 @@ export default async function handler(req, res) {
       .from('commander_membership_plans')
       .insert({
         venue_id: parseInt(venue_id),
-        tier, name, description, color: color || '#1981EC',
+        tier, name, description, color: normalizeSdColor(color, '#1981EC'),
         sort_order: sort_order || 0,
         price_daily: price_daily || null,
         price_weekly: price_weekly || null,
@@ -167,6 +168,7 @@ export default async function handler(req, res) {
     delete updates.id;
     delete updates.venue_id;
     delete updates.created_at;
+    if (updates.color !== undefined) updates.color = normalizeSdColor(updates.color, '#1981EC');
 
     const { data, error } = await getSupabase()
       .from('commander_membership_plans')

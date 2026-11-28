@@ -18,6 +18,7 @@ import { getVenueId, getStaffData } from '../../../src/lib/commander/clientAuth'
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
 import { titleCase } from '../../../src/lib/commander/formatters';
 import { lighten, darken } from '../../../src/lib/commander/colorUtils';
+import { normalizeSdColors, DESK_COLOR_KEYS } from '../../../src/lib/commander/sdPalette';
 
 // titleCase imported from '@/lib/commander/formatters'
 
@@ -29,9 +30,9 @@ const DEFAULT_CUSTOM = {
   headerColor: '#3A8FC0',
   accentColor: '#86DAFF',
   bgColor: '#000000',
-  cardBgColor: '#050505',
-  textColor: '#E0E0E0',
-  borderColor: '#666666',
+  cardBgColor: '#040D18',
+  textColor: '#F2F7FF',
+  borderColor: '#445E77',
   logoUrl: '',
   tickerMessage: '',
   gameTypes: [],
@@ -63,7 +64,8 @@ const opts = signal ? { signal }
         : {};
       const json = await commanderFetchJSON('/api/commander/settings', opts);
       if (json.success && json.data?.desk_customization) {
-        setCustom(prev => ({ ...prev, ...json.data.desk_customization }));
+        // Saved colours are read through normalizeSdColor (#SMARTERDESIGN).
+        setCustom(prev => ({ ...prev, ...normalizeSdColors(json.data.desk_customization, DESK_COLOR_KEYS) }));
       }
     } catch (err) { if (err.name !== 'AbortError') { /* non-fatal */ } }
   }, []);

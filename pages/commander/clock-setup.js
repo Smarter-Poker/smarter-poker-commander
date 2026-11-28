@@ -14,22 +14,25 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import SdSwatchPicker from '../../src/components/commander/shared/SdSwatchPicker';
+import { normalizeClockPreset } from '../../src/lib/commander/sdPalette';
 
 const DEFAULT_THEME = {
     background: '#0D192E',
-    text: '#ffffff',
+    text: '#FFFFFF',
     accent: '#1981EC',
-    blinds: '#ffffff',
+    blinds: '#FFFFFF',
     headerBg: 'rgba(0,0,0,0.3)' };
 
 const DEFAULT_DISPLAY_OPTIONS = {
     chip_denominations: [
-        { value: 25, color: '#2E7D32', label: '25' },
-        { value: 100, color: '#1A1A1A', label: '100' },
-        { value: 500, color: '#1E4A80', label: '500' },
-        { value: 1000, color: '#5FB8E0', label: '1,000' },
-        { value: 5000, color: '#E65100', label: '5,000' },
-        { value: 25000, color: '#0E3A5F', label: '25,000' },
+        // Every default is an SD_SWATCHES colour, so the picker shows it chosen.
+        { value: 25, color: '#31A24C', label: '25' },
+        { value: 100, color: '#000000', label: '100' },
+        { value: 500, color: '#1981EC', label: '500' },
+        { value: 1000, color: '#FFFFFF', label: '1,000' },
+        { value: 5000, color: '#EF4444', label: '5,000' },
+        { value: 25000, color: '#86DAFF', label: '25,000' },
     ],
     sound_pack: 'classic',
     show_prize_pool: true,
@@ -57,13 +60,16 @@ const SOUND_PACKS = [
     { value: 'voice', label: 'Voice (Chime)', desc: 'Chime fallback' },
 ];
 
+// Every starter colour is an SD_SWATCHES colour (src/lib/commander/sdPalette.js).
+// The old purple and gold starters painted prohibited hues; they are now
+// Royal Blue and Ice Elite.
 const STARTER_THEMES = [
-    { name: 'Midnight Blue', theme: { background: '#0D192E', text: '#ffffff', accent: '#1981EC', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Classic Green', theme: { background: '#0a3d0a', text: '#ffffff', accent: '#31A24C', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Royal Purple', theme: { background: '#1a0a2e', text: '#ffffff', accent: '#5AA9FF', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Crimson Red', theme: { background: '#2a0a0a', text: '#ffffff', accent: '#EF4444', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Gold Elite', theme: { background: '#1a1508', text: '#ffffff', accent: '#22D3EE', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
-    { name: 'Stealth Black', theme: { background: '#0a0a0a', text: '#ffffff', accent: '#9FB3C8', blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Midnight Blue', theme: { background: '#0D192E', text: '#FFFFFF', accent: '#1981EC', blinds: '#FFFFFF', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Classic Green', theme: { background: '#0A3D0A', text: '#FFFFFF', accent: '#31A24C', blinds: '#FFFFFF', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Royal Blue', theme: { background: '#07377E', text: '#FFFFFF', accent: '#86DAFF', blinds: '#FFFFFF', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Crimson Red', theme: { background: '#2A0A0A', text: '#FFFFFF', accent: '#EF4444', blinds: '#FFFFFF', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Ice Elite', theme: { background: '#0A1829', text: '#FFFFFF', accent: '#86DAFF', blinds: '#FFFFFF', headerBg: 'rgba(0,0,0,0.3)' } },
+    { name: 'Stealth Black', theme: { background: '#000000', text: '#FFFFFF', accent: '#BDD0E2', blinds: '#FFFFFF', headerBg: 'rgba(0,0,0,0.3)' } },
 ];
 
 /* Page Help tours (Dan, 2026-10-17: the header words moved behind the "?"). */
@@ -149,7 +155,9 @@ export default function ClockSetup() {
         setLoading(true);
         try {
             const json = await commanderFetchJSON('/api/commander/clock-presets', {});
-            if (json.success) setPresets(json.data || []);
+            // Saved colours are read through normalizeSdColor (a banned hue saved
+            // before the swatch picker renders as its nearest approved colour).
+            if (json.success) setPresets((json.data || []).map(normalizeClockPreset));
         } catch (err) { console.warn(err); }
         finally { setLoading(false); }
     }, []);
@@ -302,23 +310,20 @@ export default function ClockSetup() {
                         {/* Theme Colors */}
                         <div style={panelStyle} data-tour="cs-colors">
                             <p style={sectionTitle}>Theme Colors</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
                                 {[
                                     { key: 'background', label: 'Background' },
                                     { key: 'text', label: 'Clock Text' },
-                                    { key: 'accent', label: 'Accent / Level Info' },
+                                    { key: 'accent', label: 'Accent And Level Info' },
                                     { key: 'blinds', label: 'Blinds Text' },
                                 ].map(({ key, label }) => (
-                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <input
-                                            type="color" value={formTheme[key]}
-                                            onChange={e => setFormTheme({ ...formTheme, [key]: e.target.value })}
-                                            style={{ width: 36, height: 36, borderRadius: 8, border: '2px solid #1E3A5F', cursor: 'pointer', background: 'transparent' }}
+                                    <div key={key}>
+                                        <p style={{ fontSize: 13, fontWeight: 600, margin: '0 0 2px', color: '#fff' }}>{label}</p>
+                                        <SdSwatchPicker
+                                            label={label}
+                                            value={formTheme[key]}
+                                            onChange={hex => setFormTheme({ ...formTheme, [key]: hex })}
                                         />
-                                        <div>
-                                            <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: '#fff' }}>{label}</p>
-                                            <p style={{ fontSize: 10, color: '#9FB3C8', fontFamily: 'monospace', margin: 0 }}>{formTheme[key]}</p>
-                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -427,16 +432,8 @@ export default function ClockSetup() {
                             <p style={{ fontSize: 11, color: '#9FB3C8', marginBottom: 10 }}>Configure Chip Values And Colors Shown On The Clock Display. Obsolete Chips Auto-Dim Based On Current Blinds.</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations).map((chip, idx) => (
-                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                        <input
-                                            type="color" value={chip.color || '#333'}
-                                            onChange={e => {
-                                                const updated = [...(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations)];
-                                                updated[idx] = { ...updated[idx], color: e.target.value };
-                                                setFormDisplay({ ...formDisplay, chip_denominations: updated });
-                                            }}
-                                            style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #1E3A5F', cursor: 'pointer', background: 'transparent' }}
-                                        />
+                                    <div key={idx} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                        <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: chip.color || '#445E77', boxShadow: 'inset 0 0 0 1px rgba(242, 247, 255, 0.28)' }} />
                                         <input
                                             type="number" value={chip.value}
                                             onChange={e => {
@@ -460,6 +457,18 @@ export default function ClockSetup() {
                                         >
                                             <Trash2 size={14} />
                                         </button>
+                                        <div style={{ flexBasis: '100%' }}>
+                                            <SdSwatchPicker
+                                                label={`Chip ${chip.label || chip.value}`}
+                                                value={chip.color}
+                                                onChange={hex => {
+                                                    const updated = [...(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations)];
+                                                    updated[idx] = { ...updated[idx], color: hex };
+                                                    setFormDisplay({ ...formDisplay, chip_denominations: updated });
+                                                }}
+                                                size={22}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -468,7 +477,7 @@ export default function ClockSetup() {
                                     const updated = [...(formDisplay.chip_denominations || DEFAULT_DISPLAY_OPTIONS.chip_denominations)];
                                     const maxVal = updated.length > 0 ? Math.max(...updated.map(c => c.value)) : 0;
                                     const newVal = maxVal > 0 ? maxVal * 5 : 100;
-                                    updated.push({ value: newVal, color: '#555555', label: newVal.toLocaleString() });
+                                    updated.push({ value: newVal, color: '#7F97B0', label: newVal.toLocaleString() });
                                     updated.sort((a, b) => a.value - b.value);
                                     setFormDisplay({ ...formDisplay, chip_denominations: updated });
                                 }}

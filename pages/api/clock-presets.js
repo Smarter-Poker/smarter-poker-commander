@@ -9,6 +9,7 @@ import { createClient } from '../../src/lib/supabaseServerClient';
 import { guardStaff } from '../../src/lib/commander/auth';
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
+import { normalizeSdColors, normalizeClockDisplayOptions, CLOCK_THEME_KEYS } from '../../src/lib/commander/sdPalette';
 
 let _supabase = null;
 function getSupabase() {
@@ -83,8 +84,8 @@ export default async function handler(req, res) {
                   .insert({
                       venue_id: venueId,
                       name: name.trim(),
-                      theme: theme || {},
-                      display_options: display_options || {},
+                      theme: normalizeSdColors(theme || {}, CLOCK_THEME_KEYS),
+                      display_options: normalizeClockDisplayOptions(display_options || {}),
                       is_default: is_default || false,
                   })
                   .select()
@@ -117,8 +118,9 @@ export default async function handler(req, res) {
 
               const updates = { updated_at: new Date().toISOString() };
               if (name !== undefined) updates.name = name.trim();
-              if (theme !== undefined) updates.theme = theme;
-              if (display_options !== undefined) updates.display_options = display_options;
+              // #SMARTERDESIGN: presets are stored in approved colours only.
+              if (theme !== undefined) updates.theme = normalizeSdColors(theme, CLOCK_THEME_KEYS);
+              if (display_options !== undefined) updates.display_options = normalizeClockDisplayOptions(display_options);
               if (is_default !== undefined) updates.is_default = is_default;
 
               const { data, error } = await getSupabase()
