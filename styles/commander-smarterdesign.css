@@ -56,6 +56,7 @@ body.cmd-sd {
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
+  /* side padding = --cmd-sd-gutter; the page content frame below reuses it */
   padding: clamp(8px, 1.6vw, 16px) clamp(8px, 2vw, 24px) clamp(6px, 1vw, 10px);
 }
 .cmd-sd-header.cmd-sd-header {
@@ -386,4 +387,36 @@ body.cmd-sd {
   background: radial-gradient(ellipse at 18% 120%, #1b5cab, transparent 60%), linear-gradient(115deg, #0c2035, #071322 58%, #040b14);
   color: #f1f7ff;
   font-family: var(--sd-type);
+}
+
+/* ── Page content frame = the image header's frame (2026-11-28) ─────────────
+   The header sits in .cmd-sd-header-wrap: at most 1600px, centred, with the
+   --cmd-sd-gutter side padding. Page content used whatever each page chose:
+   full-bleed (wider than the header on any screen over 1600px) or a centred
+   max-w-2xl..7xl / inline 600-1400px column (narrower, so panels floated in
+   the middle under a wide header). Every page root that follows the header
+   now has exactly the header's outer edges, and the page-level layout columns
+   inside it fill that frame: wide ones (4xl and up) wherever they sit, the
+   lg..3xl and inline 600-800px ones when they are the page column (within
+   three levels of the root). Cards, empty states, fixed overlays and dialogs
+   are never touched. Pinned by tests/unit/smarterdesignPolish.law.test.js. */
+.cmd-sd { --cmd-sd-gutter: clamp(8px, 2vw, 24px); }
+.cmd-sd [data-page-image-header] ~ :not(.fixed):not([style*="position: fixed"]):not([style*="position:fixed"]):not(style):not(script) {
+  box-sizing: border-box;
+  width: auto;
+  max-width: none !important;
+  margin-inline: max(var(--cmd-sd-gutter), calc((100% - 1600px) / 2 + var(--cmd-sd-gutter))) !important;
+}
+.cmd-sd [data-page-image-header] ~ * :is(.max-w-4xl, .max-w-5xl, .max-w-6xl, .max-w-7xl, .max-w-screen-lg, .max-w-screen-xl, .max-w-screen-2xl).mx-auto:not(.fixed *):not([style*="position: fixed"] *):not([style*="position:fixed"] *):not([role="dialog"] *),
+.cmd-sd [data-page-image-header] ~ * :is(
+  [style*="max-width:900px"], [style*="max-width: 900px"],
+  [style*="max-width:960px"], [style*="max-width: 960px"],
+  [style*="max-width:1100px"], [style*="max-width: 1100px"],
+  [style*="max-width:1200px"], [style*="max-width: 1200px"],
+  [style*="max-width:1400px"], [style*="max-width: 1400px"]
+):not(.fixed *):not([style*="position: fixed"] *):not([style*="position:fixed"] *):not([role="dialog"] *),
+.cmd-sd [data-page-image-header] ~ * > :is(.max-w-lg, .max-w-xl, .max-w-2xl, .max-w-3xl, [style*="max-width:600px"], [style*="max-width: 600px"], [style*="max-width:700px"], [style*="max-width: 700px"], [style*="max-width:800px"], [style*="max-width: 800px"]):is(.mx-auto, [style*="margin: 0px auto"], [style*="margin:0 auto"], [style*="margin: 0 auto"]),
+.cmd-sd [data-page-image-header] ~ * > * > :is(.max-w-lg, .max-w-xl, .max-w-2xl, .max-w-3xl, [style*="max-width:600px"], [style*="max-width: 600px"], [style*="max-width:700px"], [style*="max-width: 700px"], [style*="max-width:800px"], [style*="max-width: 800px"]):is(.mx-auto, [style*="margin: 0px auto"], [style*="margin:0 auto"], [style*="margin: 0 auto"]):not(.fixed *):not([role="dialog"] *),
+.cmd-sd [data-page-image-header] ~ * > * > * > :is(.max-w-lg, .max-w-xl, .max-w-2xl, .max-w-3xl, [style*="max-width:600px"], [style*="max-width: 600px"], [style*="max-width:700px"], [style*="max-width: 700px"], [style*="max-width:800px"], [style*="max-width: 800px"]):is(.mx-auto, [style*="margin: 0px auto"], [style*="margin:0 auto"], [style*="margin: 0 auto"]):not(.fixed *):not([role="dialog"] *) {
+  max-width: none !important;
 }
