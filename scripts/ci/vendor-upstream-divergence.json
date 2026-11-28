@@ -61,16 +61,6 @@
       "reason": "vendor-only component. Direction: VENDOR -> upstream.",
       "since": "2026-09-04"
     },
-    "components/commander/shared/DealerTicker.jsx": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
-    "components/commander/shared/FloorCallAlert.js": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
     "components/commander/tournaments/BlindStructureEditor.jsx": {
       "kind": "differs",
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
@@ -82,11 +72,6 @@
       "since": "2026-09-04"
     },
     "components/seo/SEOHead.js": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
-    "components/ui/SkeletonDark.jsx": {
       "kind": "differs",
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
       "since": "2026-09-04"

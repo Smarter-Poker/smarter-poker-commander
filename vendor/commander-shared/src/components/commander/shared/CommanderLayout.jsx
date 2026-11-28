@@ -624,7 +624,7 @@ export default function CommanderLayout({ children, title }) {
         {title && <title>{title} | Club Commander</title>}
       </Head>
 
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         /* Fonts self-hosted via next/font CSS vars: --font-orbitron, --font-inter */
 
         /* ── GLOBAL COMMANDER HEADER ── */
@@ -1119,7 +1119,7 @@ export default function CommanderLayout({ children, title }) {
           .cmd-approved-header { padding-top: max(env(safe-area-inset-top, 0px), 24px); }
           .cmd-approved-header__controls { top: max(env(safe-area-inset-top, 0px), 24px); }
         }
-      `}</style>
+      ` }} />
 
       <CommanderErrorBoundary>
 

@@ -45,17 +45,10 @@ function files(dir) {
 }
 const APP = [...files('pages'), ...files('src')].filter((f) => !f.startsWith('pages/api/'));
 
-// Vendored commander-shared files that still write <style>{`...`}</style>. They
-// are fixed upstream-first (CLAUDE.md law 3.5), then synced; this list may only
-// shrink. CommanderLayout's is the one every staff page renders.
-const VENDOR_STYLE_TEXT_DEBT = [
-  'vendor/commander-shared/src/components/commander/admin/ArenaLedger.jsx',
-  'vendor/commander-shared/src/components/commander/shared/CommanderEffectsProvider.jsx',
-  'vendor/commander-shared/src/components/commander/shared/CommanderLayout.jsx',
-  'vendor/commander-shared/src/components/commander/shared/DealerTicker.jsx',
-  'vendor/commander-shared/src/components/commander/shared/FloorCallAlert.js',
-  'vendor/commander-shared/src/components/ui/SkeletonDark.jsx',
-];
+// Vendored commander-shared files that still write <style>{`...`}</style>.
+// Empty since 2026-11-28 (commander-shared fixed upstream-first, CLAUDE.md law
+// 3.5, then synced). Nothing may be added back.
+const VENDOR_STYLE_TEXT_DEBT = [];
 
 // `useState(new Date())` kept only where the page renders nothing until the
 // staff session (browser-only state) has loaded, so the value is never
@@ -98,9 +91,10 @@ describe('no render path reads text the server cannot reproduce', () => {
     expect(hits).toEqual([]);
   });
 
-  it('vendored <style> text children only shrink (upstream-first fix pending)', () => {
+  it('no <style>{...}</style> text child in the vendored commander-shared either', () => {
     const now = files('vendor/commander-shared/src').filter((f) => /<style>\s*\{/.test(read(f))).sort();
-    for (const f of now) expect(VENDOR_STYLE_TEXT_DEBT, f).toContain(f);
+    expect(VENDOR_STYLE_TEXT_DEBT).toEqual([]);
+    expect(now).toEqual(VENDOR_STYLE_TEXT_DEBT);
   });
 
   it('no clock read into initial state', () => {

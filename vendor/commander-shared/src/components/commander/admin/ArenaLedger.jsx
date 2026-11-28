@@ -266,12 +266,12 @@ export default function ArenaLedger({ clubId, help = null }) {
           )}
         </div>
       </div>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .thin-scrollbar::-webkit-scrollbar { width: 6px; }
         .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .thin-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         .thin-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-      `}</style>
+      ` }} />
     </div>
   );
 }
