@@ -17,8 +17,11 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import useClientNow, { formatClientDateTime } from '../../src/hooks/useClientNow';
 
 export default function ShiftHandoff() {
+  // The handoff timestamp is read in the browser only (SSR and first render must match).
+  const [now] = useClientNow({ intervalMs: 30000 });
   const router = useRouter();
   useEffect(() => { busEmit.sessionStart('commander-shift-handoff'); }, []);
   const [staff, setStaff] = useState(null);
@@ -238,7 +241,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
             <div className="flex flex-col gap-3">
               <div className="bg-[#0A1829] rounded-xl p-4 border border-[#445E77]">
                 <div className="text-white font-bold text-sm">Outgoing Floor: {staff?.name || staff?.display_name || 'Staff'}</div>
-                <div className="text-[#BDD0E2] text-xs mt-1">{new Date().toLocaleString()}</div>
+                <div className="text-[#BDD0E2] text-xs mt-1">{formatClientDateTime(now)}</div>
               </div>
 
               {/* Incoming staff (optional) */}

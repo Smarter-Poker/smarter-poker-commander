@@ -15,6 +15,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 export default function SystemInfoPage() {
   useEffect(() => { busEmit.sessionStart('commander-system-info'); }, []);
@@ -221,8 +222,8 @@ const json = await commanderFetchJSON('/api/commander/system-info');
           )}
         </main>
       </div>
-    <style>{`
-`}</style>
+    <InlineStyle css={`
+`} />
     </>
     </CommanderLayout>
   );

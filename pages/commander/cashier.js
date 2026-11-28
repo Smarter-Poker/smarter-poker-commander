@@ -21,6 +21,7 @@ import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 500, 1000];
 // Fallback time options - overridden by owner settings from Time Billing page
@@ -1062,10 +1063,10 @@ const headers = { };
             </div>
           </div>
         )}
-        <style>{`
+        <InlineStyle css={`
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        `}</style>
+        `} />
 
         {/* Message Toast */}
         {message && (

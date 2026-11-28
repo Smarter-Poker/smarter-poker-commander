@@ -14,6 +14,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import SEOHead from '../../src/components/seo/SEOHead';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const PLAN_ORDER = ['daily', 'weekly', 'monthly', 'yearly'];
 const PLAN_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
@@ -195,7 +196,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
           </section>
         )}
       </div>
-      <style>{`
+      <InlineStyle css={`
         .mp-page { max-width: 880px; margin: 0 auto; padding: 4px clamp(8px, 2vw, 24px) 96px; }
         .mp-loading { display: flex; justify-content: center; padding: 80px 0; color: #86DAFF; }
         .mp-plans { display: grid; gap: 0; }
@@ -219,7 +220,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
           .mp-plan > .sd-button { grid-column: 1 / -1; }
           .mp-plan__edit { grid-column: 1 / -1; justify-content: stretch; }
         }
-      `}</style>
+      `} />
     </CommanderLayout>
   );
 }

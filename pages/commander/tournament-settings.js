@@ -16,6 +16,7 @@ import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { validateBlindStructure } from '../../src/lib/commander/structureValidation';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const ICON_MAP = {
     Trophy, Zap, Crown, Target, RefreshCw, Rocket, Crosshair };
@@ -443,7 +444,7 @@ export default function TournamentSettingsPage() {
                 </div>
             </div>
 
-            <style>{`
+            <InlineStyle css={`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
@@ -451,7 +452,7 @@ export default function TournamentSettingsPage() {
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out;
         }
-      `}</style>
+      `} />
         
       {/* TOAST */}
       {toast && (

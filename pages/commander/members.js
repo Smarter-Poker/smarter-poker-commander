@@ -20,6 +20,7 @@ import { useCommanderSync, broadcastChange } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const TIER_COLORS = { daily: '#3B82F6', weekly: '#22D3EE', monthly: '#10B981', yearly: '#5AA9FF' };
 const TIER_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
@@ -403,8 +404,8 @@ export default function MembersPage() {
                 <AddMemberModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSubmit={handleMemberCreated} venueId={venueId} />
                 <ScanMemberModal isOpen={showScanModal} onClose={() => setShowScanModal(false)} venueId={venueId} onMemberFound={(m) => { setShowScanModal(false); setSelectedMember(m); }} />
                 {selectedMember && <MemberDetailPanel member={selectedMember} venueName={venueName} onClose={() => setSelectedMember(null)} onUpdate={handleMemberUpdated} />}
-                <style>{`
-`}</style>
+                <InlineStyle css={`
+`} />
             </>
         </CommanderLayout>
     );

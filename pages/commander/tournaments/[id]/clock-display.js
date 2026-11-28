@@ -28,6 +28,7 @@ import { busEmit } from '../../../../src/engine/EventBus';
 import { getStaffSession } from '../../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../../src/lib/commander/commanderFetch';
 import { normalizeClockPreset } from '../../../../src/lib/commander/sdPalette';
+import InlineStyle from '../../../../src/components/commander/shared/InlineStyle';
 
 const parseBlinds = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -500,7 +501,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
       <SEOHead title="Commander - Clock Display" description="Club Commander Poker Room Management Tool." noindex={true} />
 
       {/* Ticker animations */}
-      <style>{`
+      <InlineStyle css={`
         html, body { overflow: hidden !important; overscroll-behavior: none !important; }
         @keyframes payoutTickerScroll {
           0% { transform: translateY(-50%); }
@@ -516,7 +517,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
         .sports-ticker {
           animation: sportsTickerScroll 75s linear infinite;
         }
-      `}</style>
+      `} />
 
       <div style={{
         ...S.container, ...bgStyle,

@@ -20,6 +20,7 @@ import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 import { getStaffData } from '../../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../../src/lib/commander/commanderFetch';
+import useClientNow, { formatClientTime } from '../../../src/hooks/useClientNow';
 
 /* ─── Helpers ────────────────────────────────────────────── */
 
@@ -72,7 +73,7 @@ function getTimerColor(seconds) {
 export default function TablesDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-displays-tables'); }, []);
   const [tables, setTables] = useState([]);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   const [dealerMap, setDealerMap] = useState({});
   const wakeLockRef = useRef(null);
   const lastFetchAt = useRef(Date.now());
@@ -550,7 +551,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
             </div>
             <div style={{
               fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}
             </div>
             <button
               onClick={() => { setShowPinModal(true); setPinValue(''); setPinError(''); }}
@@ -956,7 +957,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
           <div className="flex items-center gap-4">
             <p className="text-sm text-white/60">Tap a table to lock display</p>
             <p className="text-3xl font-mono font-bold tabular-nums">
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}
             </p>
           </div>
         </div>

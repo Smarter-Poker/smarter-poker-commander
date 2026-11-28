@@ -12,6 +12,7 @@ import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const VIBE_COLORS = {
   'Action Game': { bg: '#FEF2F2', text: '#991B1B', border: '#EF4444', emoji: '🔥' },
@@ -152,8 +153,8 @@ useEffect(() => {    const _c = new AbortController();
           )}
         </div>
       </div>
-      <style>{`
-.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <InlineStyle css={`
+.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`} />
     </CommanderLayout>
   );
 }

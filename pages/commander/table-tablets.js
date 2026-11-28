@@ -19,6 +19,7 @@ import { getToken, getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const STATUS_BADGE = {
     in_use: { bg: '#31A24C', label: 'Active' },
@@ -1654,12 +1655,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 </div>
             </div>
 
-            <style>{`
+            <InlineStyle css={`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         button:hover { border-color: rgba(25, 129, 236,0.4) !important; }
         @keyframes fullscreenIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.08); opacity: 0.85; } }
-      `}</style>
+      `} />
 
             {/* ── FULLSCREEN TABLE POPUP ── */}
             {fullscreenTable && (

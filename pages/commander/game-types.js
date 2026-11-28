@@ -16,6 +16,7 @@ import { useConfirmAction } from "../../src/components/commander/shared/ConfirmM
 import PageBar from '../../src/components/commander/shared/PageBar';
 import SdSwatchPicker from '../../src/components/commander/shared/SdSwatchPicker';
 import { normalizeSdColor } from '../../src/lib/commander/sdPalette';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const PRESET_GAMES = [
   { name: 'No Limit Hold\'em', short_code: 'NLH', max_players: 9, color: '#1981EC' },
@@ -402,8 +403,8 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
             )}
           </main>
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     
       <ConfirmDialog />

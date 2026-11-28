@@ -21,6 +21,7 @@ import { getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth'
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import { titleCase } from '../../src/lib/commander/formatters';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -718,9 +719,9 @@ return { 'Content-Type': 'application/json' };
         )}
       </div>
 
-      <style>{`
+      <InlineStyle css={`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
+      `} />
     </CommanderLayout>
   );
 }

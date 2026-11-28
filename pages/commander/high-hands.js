@@ -14,6 +14,7 @@ import { getStaffData } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
 import { useConfirmAction } from "../../src/components/commander/shared/ConfirmModal";
 import PageBar from '../../src/components/commander/shared/PageBar';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const HAND_RANKS = [
   'Royal Flush', 'Straight Flush', 'Four of a Kind', 'Full House',
@@ -299,8 +300,8 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
             </div>
           )}
         </div>
-        <style>{`
-`}</style>
+        <InlineStyle css={`
+`} />
       </>
     
       <ConfirmDialog />

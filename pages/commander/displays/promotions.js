@@ -16,6 +16,8 @@ import useWakeLock from '../../../src/hooks/useWakeLock';
 import { getToken, getStaffSession, getVenueId } from '../../../src/lib/commander/clientAuth';
 import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
+import InlineStyle from '../../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime, formatClientDate } from '../../../src/hooks/useClientNow';
 
 const PROMO_TYPE_STYLES = {
   high_hand: { bg: 'from-cyan-900/40 to-cyan-700/20', accent: '#22D3EE', label: 'HIGH HAND' },
@@ -36,7 +38,7 @@ export default function PromotionsDisplay() {
   useEffect(() => { busEmit.sessionStart('commander-displays-promotions'); }, []);
   const [promotions, setPromotions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   useWakeLock();
 
   // Extract venue info for API calls and cross-device sync
@@ -167,14 +169,14 @@ export default function PromotionsDisplay() {
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <style>{`
+      <InlineStyle css={`
         @keyframes shimmer { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         .shimmer { animation: shimmer 3s ease-in-out infinite; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .slide-in { animation: slideIn 0.6s ease-out; }
         @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 30px rgba(25, 129, 236,0.3); } 50% { box-shadow: 0 0 60px rgba(25, 129, 236,0.5); } }
         .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="min-h-screen bg-black text-white font-['Inter'] select-none overflow-hidden flex flex-col">
@@ -233,13 +235,13 @@ export default function PromotionsDisplay() {
               letterSpacing: '2px',
               textShadow: '0 2px 8px rgba(0,0,0,0.3)',
             }}>
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+              {formatClientTime(now, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
             </p>
             <p style={{
               fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0,
               fontWeight: 500, letterSpacing: '1px',
             }}>
-              {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              {formatClientDate(now, { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
         </div>

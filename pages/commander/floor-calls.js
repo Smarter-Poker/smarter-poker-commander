@@ -23,6 +23,8 @@ import CommanderLayout from '../../src/components/commander/shared/CommanderLayo
 import { getToken, getStaffSession, getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 import PageHelp from '../../src/components/commander/shared/PageHelp';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import useClientNow from '../../src/hooks/useClientNow';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -93,7 +95,7 @@ export default function FloorCalls() {
   const [resolved, setResolved] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('active'); // active | history
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useClientNow({ asNumber: true });
   const [reasonFilter, setReasonFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [soundOn, setSoundOn] = useState(true);
@@ -637,14 +639,14 @@ export default function FloorCalls() {
         )}
       </div>
 
-      <style>{`
+      <InlineStyle css={`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes urgent-pulse {
           0%, 100% { border-color: rgba(239,68,68,0.5); box-shadow: 0 0 0 0 rgba(239,68,68,0); }
           50% { border-color: rgba(239,68,68,0.8); box-shadow: 0 0 20px 0 rgba(239,68,68,0.15); }
         }
         @keyframes pulse-text { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      `}</style>
+      `} />
     
       {/* TOAST */}
       {toast && (

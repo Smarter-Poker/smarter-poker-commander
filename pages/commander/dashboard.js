@@ -27,6 +27,7 @@ import { canRoleAccessRoute } from '../../src/lib/commander/auth';
 import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 /* ─────────────────────────────────────────────────
    CARD DEFINITIONS - each card has sub-features
@@ -381,7 +382,7 @@ const venueId = staff?.venue_id;
           </div>
         )}
       </div>
-      <style>{`
+      <InlineStyle css={`
         .cmd-dashboard { max-width: 1600px; margin: 0 auto; padding: 0 clamp(8px, 2vw, 24px) 96px; }
         .cmd-hardstop { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 10px; padding: 10px 16px; border: 1px solid #22D3EE55; border-radius: 10px; background: #22D3EE14; color: #86DAFF; font-weight: 700; font-size: 13px; }
         .cmd-hardstop.is-urgent { border-color: #EF444466; background: #EF44441a; color: #FCA5A5; }
@@ -408,7 +409,7 @@ const venueId = staff?.venue_id;
         .cmd-upgrade__body strong { color: #86DAFF; }
         .cmd-upgrade__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         @media (prefers-reduced-motion: reduce) { .cmd-hardstop.is-pulsing { animation: none; } }
-      `}</style>
+      `} />
     </CommanderLayout>
   );
 }

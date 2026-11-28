@@ -20,6 +20,8 @@ import { useCommanderSync } from '../../src/lib/commander/useCommanderSync';
 import { busEmit } from '../../src/engine/EventBus';
 import { getVenueId } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
+import useClientNow, { formatClientTime } from '../../src/hooks/useClientNow';
 
 /**
  * Live occupied-seat count for one commander_tables row.
@@ -54,7 +56,7 @@ export default function LobbyDisplay() {
   const [tables, setTables] = useState([]);
   const [waitlists, setWaitlists] = useState({});
   const [tournaments, setTournaments] = useState([]);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useClientNow();
   useWakeLock();
   const [venueId] = useState(() => {
     return getVenueId();
@@ -164,12 +166,12 @@ const headers = { };
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <style>{`
+      <InlineStyle css={`
         * { cursor: none !important; }
         body { overflow: hidden; }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .ticker { animation: scroll-left 30s linear infinite; }
-      `}</style>
+      `} />
 
       <div onClick={goFullscreen}
         className="h-screen bg-black text-white font-['Inter'] select-none flex flex-col">
@@ -181,7 +183,7 @@ const headers = { };
             <p className="text-sm opacity-80">{activeTables.length} Tables Running, {Object.keys(waitlists || {}).length > 0 ? `${Object.values(waitlists || {}).reduce((s, n) => s + n, 0)} On Waitlist` : 'No Waitlist'}</p>
           </div>
           <p className="text-4xl font-mono font-bold tabular-nums">
-            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}
           </p>
         </div>
 

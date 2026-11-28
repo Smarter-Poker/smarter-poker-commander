@@ -11,6 +11,7 @@ import { broadcastChange, useCommanderSync } from '../../src/lib/commander/useCo
 import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/commanderFetch';
+import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 export default function CommanderSettingsPage() {
   const router = useRouter();
@@ -815,12 +816,12 @@ export default function CommanderSettingsPage() {
             </section>
           </main>
         </div>
-        <style>{`
+        <InlineStyle css={`
           @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
           }
-        `}</style>
+        `} />
       </>
     </CommanderLayout>
   );
