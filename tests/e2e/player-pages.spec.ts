@@ -220,6 +220,15 @@ test.describe('signed-in World Hub player pages', () => {
     }
 
     info.annotations.push({ type: 'visited', description: String(visited) });
+    // One line naming every failed assertion, so the workflow can raise it
+    // as a single annotation readable without log access (the soft
+    // assertions collect in info.errors; GitHub caps error annotations).
+    const failures = info.errors.map((e) => {
+      const lines = String(e.message || '').replace(/\u001b\[[0-9;]*m/g, '').split('\n').map((l) => l.trim()).filter(Boolean);
+      const received = lines.find((l) => /^Received/.test(l));
+      return [lines[0], received].filter(Boolean).join(' ');
+    }).filter(Boolean);
+    if (failures.length) console.log(`[player-pages] FAILURES (${failures.length}): ${failures.join(' || ')}`);
     console.log(`[player-pages] visited ${visited} of ${routes.length} player routes at 393px and 1280px; ${info.annotations.filter((a) => a.type === 'skipped').map((a) => a.description).join('; ') || 'none skipped'}`);
     if (!ONLY) expect(visited, 'too few player pages were visited').toBeGreaterThanOrEqual(MIN_VISITED);
   });

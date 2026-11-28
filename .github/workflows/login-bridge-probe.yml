@@ -263,6 +263,8 @@ jobs:
           status=${PIPESTATUS[0]}
           line=$(grep -o '\[player-pages\] visited.*' player-pages.log | tail -1)
           if [ -n "$line" ]; then echo "::notice title=Player page census::${line}"; fi
+          fails=$(grep -o '\[player-pages\] FAILURES.*' player-pages.log | tail -1 | cut -c1-60000)
+          if [ -n "$fails" ]; then echo "::error title=Player page census failures::${fails}"; echo "${fails}" >> "$GITHUB_STEP_SUMMARY"; fi
           if [ "$status" -ne 0 ]; then echo "### Player page census: FAILED. ${line}" >> "$GITHUB_STEP_SUMMARY"; exit "$status"; fi
           echo "### Player page census: PASSED. ${line} ($(ls test-results/player-pages | wc -l) screenshots in the player-page-screenshots artifact)" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload player page screenshots
