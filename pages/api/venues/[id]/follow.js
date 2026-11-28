@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       if (!authHeader) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' }
         });
       }
 
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Token' }
         });
       }
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         if (existing) {
           return res.status(200).json({
             success: true,
-            data: { message: 'Already following' }
+            data: { message: 'Already Following' }
           });
         }
 
@@ -122,19 +122,19 @@ export default async function handler(req, res) {
 
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     } catch (error) {
       console.warn('Venue follow API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to process request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Process Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

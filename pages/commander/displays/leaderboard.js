@@ -61,7 +61,7 @@ export default function LeaderboardDisplay() {
   function tAgo(d) {
     if (!d) return '-';
     const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-    if (m < 1) return 'Just now'; if (m < 60) return `${m}m ago`;
+    if (m < 1) return 'Just Now'; if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
     return `${Math.floor(h / 24)}d ago`;
   }
@@ -90,7 +90,7 @@ export default function LeaderboardDisplay() {
     try {
       // ── Fetch members ──
       const mRes = await commanderFetch(`/api/commander/members?venue_id=${venueId}&limit=200`, fetchOpts);
-      if (!mRes.ok) throw new Error(`Request failed (${mRes.status})`);
+      if (!mRes.ok) throw new Error(`Request Failed (${mRes.status})`);
       const mJson = await mRes.json();
       const members = (mJson?.data?.members || mJson?.members || []).filter(m => m.membership_status === 'active');
       setTotalMembers(members.length);
@@ -103,7 +103,7 @@ export default function LeaderboardDisplay() {
       // ════════════════════════════════════════════════════════════
       try {
         const lbRes = await commanderFetch(`/api/commander/leaderboards?venue_id=${venueId}&status=active`, fetchOpts);
-        if (!lbRes.ok) throw new Error(`Request failed (${lbRes.status})`);
+        if (!lbRes.ok) throw new Error(`Request Failed (${lbRes.status})`);
         const lbJson = await lbRes.json();
         const customs = lbJson?.leaderboards || lbJson?.data || [];
         if (Array.isArray(customs)) {
@@ -122,7 +122,7 @@ export default function LeaderboardDisplay() {
                     lb.leaderboard_type === 'referrals' ? 'REFERRALS' : 'POINTS';
               built.push({
                 id: `custom-${lb.id}`, icon: '', title: lb.name,
-                subtitle: lb.description || `${entries.length} players • Staff-managed board`,
+                subtitle: lb.description || `${entries.length} Players • Staff-Managed Board`,
                 scoreHeader: typeLabel, source: 'custom',
                 entries: entries.slice(0, 15).map((e, i) => ({
                   rank: i + 1, name: e.player_name || e.profiles?.display_name || 'Player',
@@ -140,21 +140,21 @@ export default function LeaderboardDisplay() {
       // ════════════════════════════════════════════════════════════
       try {
         const lgRes = await commanderFetch(`/api/commander/leagues?venue_id=${venueId}&status=active`, fetchOpts);
-        if (!lgRes.ok) throw new Error(`Request failed (${lgRes.status})`);
+        if (!lgRes.ok) throw new Error(`Request Failed (${lgRes.status})`);
         const lgJson = await lgRes.json();
         const leagues = lgJson?.data?.leagues || lgJson?.leagues || [];
         if (Array.isArray(leagues)) {
           for (const lg of leagues.slice(0, 3)) {
             try {
               const stRes = await commanderFetch(`/api/commander/leagues/${lg.id}/standings?venue_id=${venueId}`, fetchOpts);
-              if (!stRes.ok) throw new Error(`Request failed (${stRes.status})`);
+              if (!stRes.ok) throw new Error(`Request Failed (${stRes.status})`);
               const stJson = await stRes.json();
               const standings = stJson?.data?.standings || stJson?.standings || [];
               if (standings.length > 0) {
                 const maxPts = Math.max(...standings.map(s => s.points || 0), 1);
                 built.push({
                   id: `league-${lg.id}`, icon: '', title: lg.name,
-                  subtitle: `${standings.length} players • ${typeof lg.scoring_system === 'string' && !lg.scoring_system.startsWith('{') ? lg.scoring_system : 'Custom points'} system${lg.prize_pool ? ` • $${Number(lg.prize_pool).toLocaleString()} prize pool` : ''}`,
+                  subtitle: `${standings.length} Players • ${typeof lg.scoring_system === 'string' && !lg.scoring_system.startsWith('{') ? lg.scoring_system : 'Custom Points'} System${lg.prize_pool ? ` • $${Number(lg.prize_pool).toLocaleString()} prize pool` : ''}`,
                   scoreHeader: 'POINTS', source: 'league',
                   entries: standings.slice(0, 15).map((s, i) => ({
                     rank: i + 1, name: s.player_name || 'Player', avatar: s.avatar_url,
@@ -174,20 +174,20 @@ export default function LeaderboardDisplay() {
       // ── C1: Hours Played ──
       try {
         const hRes = await commanderFetch(`/api/commander/members/hours?venue_id=${venueId}&period=all&limit=15`, fetchOpts);
-        if (!hRes.ok) throw new Error(`Request failed (${hRes.status})`);
+        if (!hRes.ok) throw new Error(`Request Failed (${hRes.status})`);
         const hJson = await hRes.json();
         const players = hJson?.data?.players || [];
         if (players.length > 0 && players.some(p => p.total_hours > 0)) {
           const maxH = Math.max(...players.map(p => p.total_hours), 1);
           built.push({
             id: 'hours', icon: '', title: 'Hours Played - All Time',
-            subtitle: `${players.length} players ranked by total play time${!hJson?.data?.has_session_data ? ' (estimated from visits)' : ''}`,
+            subtitle: `${players.length} Players Ranked By Total Play Time${!hJson?.data?.has_session_data ? ' (estimated from visits)' : ''}`,
             scoreHeader: 'HOURS', source: 'auto',
             entries: players.slice(0, 15).map((p, i) => ({
               rank: p.rank || i + 1, name: mName(p),
               avatar: p.photo_url, score: p.total_hours,
               scoreDisplay: fmtHours(p.total_hours),
-              detail: `${p.session_count} sessions • ${p.visit_count} visits • ${ti(p.membership_tier).i} ${ti(p.membership_tier).l}`,
+              detail: `${p.session_count} Sessions • ${p.visit_count} Visits • ${ti(p.membership_tier).i} ${ti(p.membership_tier).l}`,
               barPct: Math.round((p.total_hours / maxH) * 100),
               tier: p.membership_tier })) });
         }
@@ -199,11 +199,11 @@ export default function LeaderboardDisplay() {
         const topV = byVisits[0].total_visits || 1;
         built.push({
           id: 'visits', icon: '', title: 'Most Visits - All Time',
-          subtitle: `Top ${byVisits.length} by total check-ins | ${members.length} total members`,
+          subtitle: `Top ${byVisits.length} By Total Check-Ins | ${members.length} Total Members`,
           scoreHeader: 'VISITS', source: 'auto',
           entries: byVisits.map((m, i) => ({
             rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
-            scoreDisplay: String(m.total_visits), detail: m.last_visit ? `Last seen ${tAgo(m.last_visit)}` : 'Never checked in',
+            scoreDisplay: String(m.total_visits), detail: m.last_visit ? `Last Seen ${tAgo(m.last_visit)}` : 'Never Checked In',
             barPct: Math.round(((m.total_visits || 0) / topV) * 100), tier: m.membership_tier })) });
       }
 
@@ -213,11 +213,11 @@ export default function LeaderboardDisplay() {
       if (todayIn.length > 0) {
         built.push({
           id: 'today', icon: '', title: "Today's Check-Ins",
-          subtitle: `${todayIn.length} player${todayIn.length !== 1 ? 's' : ''} today | ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`,
+          subtitle: `${todayIn.length} Player${todayIn.length !== 1 ? 's' : ''} Today | ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`,
           scoreHeader: 'CHECKED IN', source: 'auto',
           entries: todayIn.map((m, i) => ({
             rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
-            scoreDisplay: tAgo(m.last_visit), detail: `${m.total_visits || 0} lifetime visits • ${ti(m.membership_tier).l}`,
+            scoreDisplay: tAgo(m.last_visit), detail: `${m.total_visits || 0} Lifetime Visits • ${ti(m.membership_tier).l}`,
             barPct: 0, tier: m.membership_tier })) });
       }
 
@@ -228,17 +228,17 @@ export default function LeaderboardDisplay() {
       if (vips.length > 0 && vips.some(m => (m.total_visits || 0) > 0)) {
         built.push({
           id: 'vip', icon: '', title: 'VIP Hall of Fame',
-          subtitle: `${vips.length} premium members | Ranked by tier and activity`,
+          subtitle: `${vips.length} Premium Members | Ranked By Tier And Activity`,
           scoreHeader: 'VISITS', source: 'auto',
           entries: vips.map((m, i) => ({
             rank: i + 1, name: mName(m), avatar: m.photo_url, score: m.total_visits || 0,
-            scoreDisplay: String(m.total_visits || 0), detail: `${ti(m.membership_tier).i} ${ti(m.membership_tier).l} • Member since ${mSince(m.created_at)}`,
+            scoreDisplay: String(m.total_visits || 0), detail: `${ti(m.membership_tier).i} ${ti(m.membership_tier).l} • Member Since ${mSince(m.created_at)}`,
             barPct: 0, tier: m.membership_tier, tierBadge: true })) });
       }
 
       // ── FALLBACK ──
       if (built.length === 0) {
-        built.push({ id: 'setup', icon: '', title: 'Leaderboard Setup', subtitle: 'Check in members or create custom boards', scoreHeader: '', source: 'none', entries: [] });
+        built.push({ id: 'setup', icon: '', title: 'Leaderboard Setup', subtitle: 'Check In Members Or Create Custom Boards', scoreHeader: '', source: 'none', entries: [] });
       }
 
       setBoards(built);
@@ -305,11 +305,11 @@ export default function LeaderboardDisplay() {
               <div className="text-center max-w-lg">
                 <p className="text-2xl font-bold text-white/40 mb-3">No Leaderboard Data Yet</p>
                 <div className="text-left bg-white/5 rounded-xl p-6 border border-white/10 space-y-3">
-                  <p className="text-sm text-white/50 font-semibold uppercase tracking-wider mb-3">How to get started:</p>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">1.</span><p><strong className="text-white/60">Add Members</strong> - Register players in Commander → Members</p></div>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">2.</span><p><strong className="text-white/60">Check In Players</strong> - Track visits via kiosk or manual check-in</p></div>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">3.</span><p><strong className="text-white/60">Create Custom Boards</strong> - Go to Commander → Leaderboard Builder to add custom boards</p></div>
-                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">4.</span><p><strong className="text-white/60">Create a League</strong> - Go to Commander → Leagues to set up a poker league with custom points</p></div>
+                  <p className="text-sm text-white/50 font-semibold uppercase tracking-wider mb-3">How To Get Started:</p>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">1.</span><p><strong className="text-white/60">Add Members</strong> - Register Players In Commander → Members</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">2.</span><p><strong className="text-white/60">Check In Players</strong> - Track Visits Via Kiosk Or Manual Check-In</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">3.</span><p><strong className="text-white/60">Create Custom Boards</strong> - Go To Commander → Leaderboard Builder To Add Custom Boards</p></div>
+                  <div className="flex items-start gap-3 text-sm text-white/40"><span className="text-lg">4.</span><p><strong className="text-white/60">Create A League</strong> - Go to Commander → Leagues to set up a poker league with custom points</p></div>
                 </div>
               </div>
             </div>
@@ -373,7 +373,7 @@ export default function LeaderboardDisplay() {
 
         {/* FOOTER */}
         <div className="border-t border-white/10 px-6 py-1.5 flex items-center justify-between flex-shrink-0">
-          <p className="text-white/15 text-xs">{boards.length > 1 && `Board ${activeIdx + 1}/${boards.length} • `}{totalMembers > 0 && `${totalMembers} members • `}Auto-refreshes</p>
+          <p className="text-white/15 text-xs">{boards.length > 1 && `Board ${activeIdx + 1}/${boards.length} • `}{totalMembers > 0 && `${totalMembers} Members • `}Auto-refreshes</p>
           <p className="text-white/15 text-xs tracking-wider">Powered By Smarter.Poker</p>
         </div>
       </div>

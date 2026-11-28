@@ -145,7 +145,7 @@ const headers = { };
       // The drawer's day is the venue's business day (UTC is tomorrow from 6 PM Central).
       const today = businessDateKey(new Date(), venueTimeZone || browserTimeZone());
       const txRes = await commanderFetch(`/api/commander/cashier?venue_id=${venueId}&date=${today}&limit=50`, { headers });
-      if (!txRes.ok) throw new Error(`Transactions fetch failed (${txRes.status})`);
+      if (!txRes.ok) throw new Error(`Transactions Fetch Failed (${txRes.status})`);
       const txJson = await txRes.json();
       setTransactions(txJson.data || []);
 
@@ -236,7 +236,7 @@ const headers = { };
 
         // Time billing settings
         const settingsRes = await commanderFetch('/api/commander/settings', { headers });
-        if (!settingsRes.ok) throw new Error(`Settings fetch failed (${settingsRes.status})`);
+        if (!settingsRes.ok) throw new Error(`Settings Fetch Failed (${settingsRes.status})`);
         const settingsJson = await settingsRes.json();
         if (settingsJson.success && settingsJson.data) {
           setTimeBillingRate(settingsJson.data.time_billing_rate || 0);
@@ -245,7 +245,7 @@ const headers = { };
 
         // Membership plans - FIX A: track load failure so we never sell at $0
         const plansRes = await commanderFetch(`/api/commander/membership-plans?venue_id=${venueId}`, { headers });
-        if (!plansRes.ok) { setPricingUnavailable(true); throw new Error(`Plans fetch failed (${plansRes.status})`); }
+        if (!plansRes.ok) { setPricingUnavailable(true); throw new Error(`Plans Fetch Failed (${plansRes.status})`); }
         const plansJson = await plansRes.json();
         if (plansJson.success && plansJson.data?.plans) {
           setMembershipPlans(plansJson.data.plans.filter(p => p.is_active !== false));
@@ -355,7 +355,7 @@ const headers = { };
       }
       // Fallback: legacy name/phone/number search
       const res = await commanderFetch(`/api/commander/members?search=${encodeURIComponent(code)}&venue_id=${venueId}`, { headers: {} });
-      if (!res.ok) throw new Error(`Search failed (${res.status})`);
+      if (!res.ok) throw new Error(`Search Failed (${res.status})`);
       const json = await res.json();
       const members = json.data?.members || json.data || [];
       if (json.success && members.length > 0) {
@@ -470,7 +470,7 @@ const headers = { };
         headers: { 'Content-Type': 'application/json' || '' },
         body: JSON.stringify({ venue_id: venueId, pin_code: digits })
       });
-      if (!pinRes.ok) throw new Error('Request failed');
+      if (!pinRes.ok) throw new Error('Request Failed');
       const pinJson = await pinRes.json();
       if (!pinJson.success || !pinJson.data?.valid) {
         setPinError(pinJson.error?.message || 'Invalid PIN');
@@ -589,7 +589,7 @@ const headers = { 'Content-Type': 'application/json' };
       const res = await commanderFetch(`/api/commander/members/${selectedPlayer.id}`, {
         method: 'PUT', headers, body: JSON.stringify({ time_balance_minutes: newBalance })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success) { setMessage({ type: 'error', text: json.error || 'Failed To Add Time' }); setActionLoading(false); return; }
 
@@ -606,7 +606,7 @@ const headers = { 'Content-Type': 'application/json' };
           pin_verified_by: staff?.id || null
         })
       });
-      if (!txRes.ok) throw new Error('Request failed');
+      if (!txRes.ok) throw new Error('Request Failed');
       const txJson = await txRes.json();
       if (!txJson.success) console.warn('Time transaction record failed:', txJson.error);
 
@@ -663,7 +663,7 @@ const headers = { 'Content-Type': 'application/json' };
         method: 'PUT', headers,
         body: JSON.stringify({ membership_tier: selectedTier, membership_status: 'active', membership_expires: expires.toISOString() })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success) { setMessage({ type: 'error', text: json.error || 'Failed To Update Membership' }); setActionLoading(false); return; }
 
@@ -680,7 +680,7 @@ const headers = { 'Content-Type': 'application/json' };
           pin_verified_by: staff?.id || null
         })
       });
-      if (!txRes.ok) throw new Error('Request failed');
+      if (!txRes.ok) throw new Error('Request Failed');
       const txJson = await txRes.json();
       if (!txJson.success) console.warn('Membership transaction record failed:', txJson.error);
 
@@ -749,7 +749,7 @@ const headers = { 'Content-Type': 'application/json' };
           pin_verified_by: staff?.id || null
         })
       });
-      if (!voidRes.ok) throw new Error('Request failed');
+      if (!voidRes.ok) throw new Error('Request Failed');
       const voidJson = await voidRes.json();
       if (!voidJson.success) console.warn('Void transaction record failed:', voidJson.error);
 
@@ -763,10 +763,10 @@ const headers = { 'Content-Type': 'application/json' };
         })
       });
       const patchJson = await patchRes.json().catch(() => ({}));
-      if (!patchRes.ok && patchJson.error !== 'Transaction already voided') throw new Error('Request failed');
+      if (!patchRes.ok && patchJson.error !== 'Transaction Already Voided') throw new Error('Request Failed');
       if (!patchJson.success) {
         // Handle already-voided gracefully
-        if (patchJson.error === 'Transaction already voided') {
+        if (patchJson.error === 'Transaction Already Voided') {
           setMessage({ type: 'error', text: 'Transaction Already Voided, Cannot Void Again' });
           setActionLoading(false);
           fetchData();
@@ -784,7 +784,7 @@ const headers = { 'Content-Type': 'application/json' };
         // Lookup member by name for balance correction
         try {
           const searchRes = await commanderFetch(`/api/commander/members/search?q=${encodeURIComponent(details.player_name)}&venue_id=${venueId}&limit=1`, { headers });
-          if (!searchRes.ok) throw new Error(`Request failed (${searchRes.status})`);
+          if (!searchRes.ok) throw new Error(`Request Failed (${searchRes.status})`);
           const searchJson = await searchRes.json();
           const match = (searchJson.data || []).find(m => {
             const mName = m.name || `${m.first_name || ''} ${m.last_name || ''}`.trim();
@@ -880,7 +880,7 @@ const headers = { 'Content-Type': 'application/json' };
 const headers = { };
       // Use server-side player_name filter for efficiency
       const res = await commanderFetch(`/api/commander/cashier?venue_id=${venueId}&player_name=${encodeURIComponent(selectedPlayer.player_name)}&limit=100`, { headers });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       setPlayerHistory(json.data || []);
     } catch { setPlayerHistory([]); }

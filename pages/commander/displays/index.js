@@ -176,7 +176,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Megaphone}
               title="Promotions Board"
-              description="Active Promotions, High Hand Leaderboard, Jackpot Amounts - Auto-rotates"
+              description="Active Promotions, High Hand Leaderboard, Jackpot Amounts - Auto-Rotates"
               url={`${getBaseUrl()}/commander/displays/promotions`}
               path="/commander/displays/promotions"
               copied={copied}
@@ -187,7 +187,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Monitor}
               title="Announcements"
-              description="Room-wide Messages, Priority Alerts, Room Open/closed Status"
+              description="Room-Wide Messages, Priority Alerts, Room Open/Closed Status"
               url={`${getBaseUrl()}/commander/displays/announcements`}
               path="/commander/displays/announcements"
               copied={copied}
@@ -213,7 +213,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                 key={t}
                 icon={Timer}
                 title={`Table ${t} - Player View`}
-                description={`Live countdown timers for all seated players at Table ${t}`}
+                description={`Live Countdown Timers For All Seated Players At Table ${t}`}
                 url={`${getBaseUrl()}/commander/player/${t}`}
                 path={`/commander/player/${t}`}
                 copied={copied}
@@ -254,7 +254,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Monitor}
               title="Lobby Display"
-              description="Walk-in Player View: Running Games, Open Seats, Waitlist Counts, Upcoming Tournaments"
+              description="Walk-In Player View: Running Games, Open Seats, Waitlist Counts, Upcoming Tournaments"
               url={`${getBaseUrl()}/commander/lobby`}
               path="/commander/lobby"
               copied={copied}
@@ -265,7 +265,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Trophy}
               title="Leaderboard"
-              description="Player Rankings, Points Leaders, Tournament Wins - Auto-rotates Between Boards"
+              description="Player Rankings, Points Leaders, Tournament Wins - Auto-Rotates Between Boards"
               url={`${getBaseUrl()}/commander/displays/leaderboard`}
               path="/commander/displays/leaderboard"
               copied={copied}
@@ -288,7 +288,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                   <DisplayCard
                     icon={Tv}
                     title={`${t.name} - Structure`}
-                    description="Full Blind Schedule With Current Level Highlighted And Auto-scroll"
+                    description="Full Blind Schedule With Current Level Highlighted And Auto-Scroll"
                     url={`${getBaseUrl()}/commander/tournaments/${t.id}/structure-display`}
                     path={`/commander/tournaments/${t.id}/structure-display`}
                     copied={copied}
@@ -325,7 +325,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                 <DisplayCard
                   icon={Tv}
                   title="Clock + Waitlist"
-                  description="Split-screen: Tournament Clock Left, Waitlist Right"
+                  description="Split-Screen: Tournament Clock Left, Waitlist Right"
                   url={`${getBaseUrl()}/commander/displays/combined?layout=clock+waitlist&tournament=${activeTournaments[0]?.id}`}
                   path={`/commander/displays/combined?layout=clock+waitlist&tournament=${activeTournaments[0]?.id}`}
                   copied={copied}
@@ -336,7 +336,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                 <DisplayCard
                   icon={Tv}
                   title="Clock + Promotions"
-                  description="Split-screen: Tournament Clock Left, Promotions Right"
+                  description="Split-Screen: Tournament Clock Left, Promotions Right"
                   url={`${getBaseUrl()}/commander/displays/combined?layout=clock+promotions&tournament=${activeTournaments[0]?.id}`}
                   path={`/commander/displays/combined?layout=clock+promotions&tournament=${activeTournaments[0]?.id}`}
                   copied={copied}
@@ -360,7 +360,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             <DisplayCard
               icon={Tv}
               title="Waitlist + Promotions"
-              description="Split-screen: Waitlist Board Left, Promotions Right"
+              description="Split-Screen: Waitlist Board Left, Promotions Right"
               url={`${getBaseUrl()}/commander/displays/combined?layout=waitlist+promotions`}
               path="/commander/displays/combined?layout=waitlist+promotions"
               copied={copied}

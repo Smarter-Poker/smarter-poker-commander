@@ -186,8 +186,8 @@ export function applyRateLimit(req, res, opts = {}) {
     if (result.retryAfter) res.setHeader('Retry-After', String(result.retryAfter));
     res.status(429).json({
       success: false,
-      error: 'Too many requests',
-      message: 'Rate limit exceeded. Please try again later.',
+      error: 'Too Many Requests',
+      message: 'Rate Limit Exceeded. Please Try Again Later.',
       retryAfter: result.retryAfter,
     });
     return false;

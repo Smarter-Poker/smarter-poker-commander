@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         // 2026-07-25 audit fix: force venue scope to the session staff's venue;
         // an explicitly different venue_id is a cross-venue read attempt.
         if (venue_id && String(venue_id) !== String(_authResult.venue_id)) {
-          return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+          return res.status(403).json({ success: false, error: 'Not Authorized For This Venue' });
         }
         let query = getSupabase().from('commander_activity_log')
           .select('*')
@@ -79,11 +79,11 @@ export default async function handler(req, res) {
         }).select().maybeSingle();
 
         if (error) throw error;
-        if (!data) return res.status(500).json({ success: false, error: 'Failed to log activity' });
+        if (!data) return res.status(500).json({ success: false, error: 'Failed To Log Activity' });
         return res.status(201).json({ success: true, data });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Activity log error:', err);
       return res.status(500).json({ success: false, error: err.message });
@@ -92,6 +92,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

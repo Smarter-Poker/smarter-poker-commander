@@ -83,7 +83,7 @@ function LeaderboardDisplay({
                 >
                   {leaderboard.status}
                 </span>
-                <span>{entries.length} participants</span>
+                <span>{entries.length} Participants</span>
               </div>
             </div>
           </div>
@@ -169,7 +169,7 @@ function LeaderboardDisplay({
       <div className="divide-y divide-[#445E77]">
         {entries.length === 0 ? (
           <div className="p-8 text-center text-[#8FA6BE]">
-            No entries yet
+            No Entries Yet
           </div>
         ) : (
           entries.slice(0, 10).map((entry, idx) => {
@@ -240,7 +240,7 @@ function LeaderboardDisplay({
           onClick={() => onViewDetails(leaderboard)}
           className="w-full py-3 text-center text-sm font-medium text-[#22D3EE] hover:bg-[#132240] transition-colors border-t border-[#445E77]"
         >
-          View all {entries.length} participants
+          View All {entries.length} Participants
         </button>
       )}
     </div>

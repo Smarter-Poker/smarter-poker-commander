@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: `Invalid game_type. Must be one of: ${VALID_GAME_TYPES.join(', ')}`
+            message: `Invalid game_type. Must Be One Of: ${VALID_GAME_TYPES.join(', ')}`
           }
         });
       }
@@ -86,14 +86,14 @@ export default async function handler(req, res) {
       if (venueError || !venue) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Venue not found' }
+          error: { code: 'NOT_FOUND', message: 'Venue Not Found' }
         });
       }
 
       if (!venue.commander_enabled) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VENUE_NOT_COMMANDER', message: 'Venue is not using Commander' }
+          error: { code: 'VENUE_NOT_COMMANDER', message: 'Venue Is Not Using Commander' }
         });
       }
 
@@ -108,14 +108,14 @@ export default async function handler(req, res) {
         if (tableError || !table) {
           return res.status(404).json({
             success: false,
-            error: { code: 'NOT_FOUND', message: 'Table not found' }
+            error: { code: 'NOT_FOUND', message: 'Table Not Found' }
           });
         }
 
         if (table.status !== 'available') {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Table is not available' }
+            error: { code: 'VALIDATION_ERROR', message: 'Table Is Not Available' }
           });
         }
       }
@@ -144,7 +144,7 @@ export default async function handler(req, res) {
         console.warn('Commander game create error:', gameError);
         return res.status(500).json({
           success: false,
-          error: { code: 'DATABASE_ERROR', message: 'Failed to create game' }
+          error: { code: 'DATABASE_ERROR', message: 'Failed To Create Game' }
         });
       }
 
@@ -179,13 +179,13 @@ export default async function handler(req, res) {
       console.warn('Commander games API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

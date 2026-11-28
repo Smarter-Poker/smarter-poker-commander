@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     if (!gameId) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Game ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Game ID Required' }
       });
     }
 
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       if (gameError || !refGame) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Game not found' }
+          error: { code: 'NOT_FOUND', message: 'Game Not Found' }
         });
       }
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
           success: true,
           data: {
             balanced: true,
-            message: 'Only one table running - no balancing needed',
+            message: 'Only One Table Running - No Balancing Needed',
             suggestions: []
           }
         });
@@ -139,13 +139,13 @@ export default async function handler(req, res) {
       console.warn('Table balance error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to calculate table balance' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Calculate Table Balance' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

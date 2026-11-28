@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     if (req.method !== 'PATCH') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only PATCH allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only PATCH Allowed' }
       });
     }
 
@@ -79,13 +79,13 @@ export default async function handler(req, res) {
       console.warn('Mark read error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to mark as read' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Mark As Read' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

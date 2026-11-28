@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 
 const EXPORT_TYPES = [
-  { value: 'players', label: 'Player Stats', icon: Users, description: 'Player Statistics and Visit History' },
+  { value: 'players', label: 'Player Stats', icon: Users, description: 'Player Statistics And Visit History' },
   { value: 'sessions', label: 'Sessions', icon: Activity, description: 'Player Session Data' },
-  { value: 'tournaments', label: 'Tournaments', icon: Trophy, description: 'Tournament Results and Entries' },
+  { value: 'tournaments', label: 'Tournaments', icon: Trophy, description: 'Tournament Results And Entries' },
   { value: 'analytics', label: 'Analytics', icon: Table, description: 'Daily Analytics Data' },
   { value: 'promotions', label: 'Promotions', icon: Gift, description: 'Promotion Awards' },
   { value: 'comps', label: 'Comps', icon: DollarSign, description: 'Comp Transactions' },
@@ -82,7 +82,7 @@ function ExportJobCard({ job, onDownload, onRefresh }) {
               style={{ width: `${job.progress}%`, backgroundColor: '#22D3EE' }}
             />
           </div>
-          <div className="text-xs text-[#8FA6BE] mt-1">{job.progress}% complete</div>
+          <div className="text-xs text-[#8FA6BE] mt-1">{job.progress}% Complete</div>
         </div>
       )}
 
@@ -90,10 +90,10 @@ function ExportJobCard({ job, onDownload, onRefresh }) {
       {job.status === 'completed' && (
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-4 text-xs text-[#8FA6BE]">
-            <span>{job.row_count?.toLocaleString() || 0} rows</span>
+            <span>{job.row_count?.toLocaleString() || 0} Rows</span>
             <span>{formatFileSize(job.file_size)}</span>
             {job.date_from && job.date_to && (
-              <span>{job.date_from} to {job.date_to}</span>
+              <span>{job.date_from} To {job.date_to}</span>
             )}
           </div>
           <button
@@ -228,7 +228,7 @@ export default function ExportManager({
           {/* Date range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-[#9FB3C8] mb-2">From Date (optional)</label>
+              <label className="block text-sm text-[#9FB3C8] mb-2">From Date (Optional)</label>
               <input
                 type="date"
                 value={formData.date_from}
@@ -237,7 +237,7 @@ export default function ExportManager({
               />
             </div>
             <div>
-              <label className="block text-sm text-[#9FB3C8] mb-2">To Date (optional)</label>
+              <label className="block text-sm text-[#9FB3C8] mb-2">To Date (Optional)</label>
               <input
                 type="date"
                 value={formData.date_to}

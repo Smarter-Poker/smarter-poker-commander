@@ -108,7 +108,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
         fetchData();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   if (loading) return (
@@ -255,7 +255,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
           <div className="px-4 pb-4">
             <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white">Seat {showSeatPicker} - Seat a Player</h3>
+                <h3 className="text-sm font-bold text-white">Seat {showSeatPicker} - Seat A Player</h3>
                 <button onClick={() => setShowSeatPicker(null)} className="text-xs text-[#BDD0E2]">Cancel</button>
               </div>
 

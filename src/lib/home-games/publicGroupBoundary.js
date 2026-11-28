@@ -308,7 +308,7 @@ export function normalizeGroupUpdates(body, updatedAt = new Date().toISOString()
   }
   if (Object.prototype.hasOwnProperty.call(input, 'visibility')) {
     if (!['private', 'public'].includes(input.visibility)) {
-      return { updates: null, error: 'Visibility must be private or public' };
+      return { updates: null, error: 'Visibility Must Be Private Or Public' };
     }
     updates.is_private = input.visibility === 'private';
   }

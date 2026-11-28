@@ -137,7 +137,7 @@ export default function DealerTicker({
         }, { mins: 0, r: null });
         if (oldest.r && oldest.mins < PUSH_THRESHOLD) {
             const remaining = PUSH_THRESHOLD - oldest.mins;
-            parts.push(`⏱ Next push in ${remaining}m`);
+            parts.push(`⏱ Next Push In ${remaining}m`);
         } else if (oldest.r) {
             parts.push(`⚠ PUSH OVERDUE`);
         }

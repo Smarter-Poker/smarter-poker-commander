@@ -117,7 +117,7 @@ export default function CompBalanceCard({
       {(balance.last_earned_at || balance.last_redeemed_at) && (
         <div className="px-4 py-3 border-t border-[#445E77] text-xs text-[#8FA6BE]">
           {balance.last_earned_at && (
-            <div>Last earned: {new Date(balance.last_earned_at).toLocaleDateString()}</div>
+            <div>Last Earned: {new Date(balance.last_earned_at).toLocaleDateString()}</div>
           )}
         </div>
       )}

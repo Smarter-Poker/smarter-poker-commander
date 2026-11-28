@@ -11,22 +11,12 @@
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
       "since": "2026-09-04"
     },
-    "components/commander/modals/AddBuyinModal.jsx": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
     "components/commander/modals/CreateTournamentModal.jsx": {
       "kind": "differs",
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
       "since": "2026-09-04"
     },
     "components/commander/modals/EliminatePlayerModal.jsx": {
-      "kind": "differs",
-      "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
-      "since": "2026-09-04"
-    },
-    "components/commander/modals/PayoutModal.jsx": {
       "kind": "differs",
       "reason": "historical drift, pre-2026-09-04 (untriaged). Reconcile upstream-first when next touched.",
       "since": "2026-09-04"

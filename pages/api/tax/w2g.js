@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -59,7 +59,7 @@ async function listTaxEvents(req, res, staff) {
 
   // 2026-07-25 audit fix: staff can only list tax events for their own venue.
   if (String(venue_id) !== String(staff.venue_id)) {
-    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' } });
   }
 
   try {
@@ -130,7 +130,7 @@ async function generateW2G(req, res, staff) {
 
   // 2026-07-25 audit fix: generating a W-2G updates the tax event - manager role required.
   if (!['owner', 'manager'].includes(staff.role)) {
-    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager role required' } });
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager Role Required' } });
   }
 
   try {
@@ -142,12 +142,12 @@ async function generateW2G(req, res, staff) {
       .maybeSingle();
 
     if (fetchErr || !event) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tax event not found' } });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tax Event Not Found' } });
     }
 
     // 2026-07-25 audit fix: staff can only act on tax events at their own venue.
     if (String(event.venue_id) !== String(staff.venue_id)) {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' } });
     }
 
     // Get player info
@@ -281,7 +281,7 @@ async function updateTaxEvent(req, res, staff) {
 
   // 2026-07-25 audit fix: updates require manager role.
   if (!['owner', 'manager'].includes(staff.role)) {
-    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager role required' } });
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Manager Role Required' } });
   }
 
   try {
@@ -293,10 +293,10 @@ async function updateTaxEvent(req, res, staff) {
       .maybeSingle();
 
     if (fetchErr || !existing) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tax event not found' } });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Tax Event Not Found' } });
     }
     if (String(existing.venue_id) !== String(staff.venue_id)) {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' } });
     }
 
     const updates = {};

@@ -131,7 +131,7 @@ export default function EventCard({
               </div>
             )}
             <span className="text-sm text-[#9FB3C8]">
-              Hosted by {event.profiles.display_name || 'Unknown'}
+              Hosted By {event.profiles.display_name || 'Unknown'}
             </span>
           </div>
         )}

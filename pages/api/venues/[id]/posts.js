@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       if (!staffSession) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Staff session required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Staff Session Required' }
         });
       }
 
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       } catch (e) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_SESSION', message: 'Invalid staff session' }
+          error: { code: 'INVALID_SESSION', message: 'Invalid Staff Session' }
         });
       }
 
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       if (staff.venue_id !== venueId) {
         return res.status(403).json({
           success: false,
-          error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+          error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
         });
       }
 
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
         if (!content) {
           return res.status(400).json({
             success: false,
-            error: { code: 'MISSING_CONTENT', message: 'Post content required' }
+            error: { code: 'MISSING_CONTENT', message: 'Post Content Required' }
           });
         }
 
@@ -128,19 +128,19 @@ export default async function handler(req, res) {
 
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET and POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET And POST Allowed' }
       });
     } catch (error) {
       console.warn('Venue posts API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to process request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Process Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

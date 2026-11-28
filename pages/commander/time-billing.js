@@ -100,7 +100,7 @@ const headers = { };
       // Load all time-billing sessions (active + completed) from the unified
       // commander_table_sessions API. Status is filtered client-side below.
       const sRes = await commanderFetch(`/api/commander/time-billing/sessions?venue_id=${venueId}`, { headers });
-      if (!sRes.ok) throw new Error(`Sessions fetch failed (${sRes.status})`);
+      if (!sRes.ok) throw new Error(`Sessions Fetch Failed (${sRes.status})`);
       const sJson = await sRes.json();
       if (sJson.success) setSessions(sJson.data || []);
     } catch (err) { console.warn(err); }
@@ -167,13 +167,13 @@ const res = await commanderFetch('/api/commander/settings', {
           bulk_time_packages: pricing.bulk_time_packages
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setPricingDirty(false);
         broadcastChange('settings');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setPricingSaving(false); }
   };
 
@@ -208,7 +208,7 @@ const res = await commanderFetch('/api/commander/settings', {
         headers: { 'Content-Type': 'application/json' || '' },
         body: JSON.stringify({ venue_id: venueId, pin_code: digits })
       });
-      if (!pinRes.ok) throw new Error('Request failed');
+      if (!pinRes.ok) throw new Error('Request Failed');
       const pinJson = await pinRes.json();
       if (!pinJson.success || !pinJson.data?.valid) {
         setPinError(pinJson.error?.message || 'Invalid PIN');
@@ -293,13 +293,13 @@ const res = await commanderFetch('/api/commander/settings', {
           broadcastChange('tables');
         }
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setStopping(null); }
   };
 
   // Start a new time-billing session
   const handleStartSession = async () => {
-    if (!startForm.player_name.trim()) { setToast({ type: 'error', text: 'Player name required' }); return; }
+    if (!startForm.player_name.trim()) { setToast({ type: 'error', text: 'Player Name Required' }); return; }
     setStarting(true);
     try {
       const res = await commanderFetch('/api/commander/time-billing/sessions', {
@@ -312,14 +312,14 @@ const res = await commanderFetch('/api/commander/settings', {
           rate_per_hour: pricing.time_billing_rate || undefined
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setStartForm({ player_name: '', table_number: '', seat_number: '' });
         await fetchData();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setStarting(false); }
   };
 
@@ -390,7 +390,7 @@ const res = await commanderFetch(`/api/commander/time-billing/sessions/${payModa
           broadcastChange('tables');
         }
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   // Open the payment modal, prefilling the outstanding balance
@@ -422,14 +422,14 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: parseFloat(value) || 0 })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setMemberPlans(prev => prev.map(p => p.id === plan.id ? { ...p, [field]: parseFloat(value) || 0 } : p));
         setMemberDirty(prev => ({ ...prev, [plan.id]: false }));
         broadcastChange('settings');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setMemberSaving(null); }
   };
 
@@ -470,7 +470,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
               <span className="text-[10px] text-[#BDD0E2]">{formatMoney(pricing.time_billing_rate)}/hr</span>
             </div>
             <div className="grid grid-cols-12 gap-2">
-              <input type="text" value={startForm.player_name} placeholder="Player name"
+              <input type="text" value={startForm.player_name} placeholder="Player Name"
                 onChange={e => setStartForm(f => ({ ...f, player_name: e.target.value }))}
                 onKeyDown={e => { if (e.key === 'Enter') handleStartSession(); }}
                 className="col-span-6 px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm focus:outline-none focus:border-[#1981EC]" />
@@ -501,7 +501,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
 
           {/* Session list */}
           {filtered.length === 0 ? (
-            <p className="text-xs text-[#9FB3C8] text-center py-6">No {filter} sessions</p>
+            <p className="text-xs text-[#9FB3C8] text-center py-6">No {filter} Sessions</p>
           ) : (
             <div className="space-y-2">
               {filtered.map(s => {
@@ -563,13 +563,13 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-[#BDD0E2] block mb-1">Time Rate ($/hour)</label>
+                <label className="text-[10px] text-[#BDD0E2] block mb-1">Time Rate ($/Hour)</label>
                 <input type="number" value={pricing.time_billing_rate} min={1} max={100}
                   onChange={e => { setPricing(p => ({ ...p, time_billing_rate: parseInt(e.target.value) || 1 })); setPricingDirty(true); }}
                   className="w-full px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-lg font-mono text-center focus:outline-none focus:border-[#1981EC]" />
               </div>
               <div>
-                <label className="text-[10px] text-[#BDD0E2] block mb-1">Auto-Comp ($/hour played)</label>
+                <label className="text-[10px] text-[#BDD0E2] block mb-1">Auto-Comp ($/Hour Played)</label>
                 <input type="number" value={pricing.auto_comp_rate} min={0} max={25}
                   onChange={e => { setPricing(p => ({ ...p, auto_comp_rate: parseFloat(e.target.value) || 0 })); setPricingDirty(true); }}
                   className="w-full px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-lg font-mono text-center focus:outline-none focus:border-[#1981EC]" />
@@ -603,7 +603,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
             </div>
 
             {(!pricing.bulk_time_packages || pricing.bulk_time_packages.length === 0) ? (
-              <p className="text-xs text-[#9FB3C8] text-center py-3">No bulk packages - click + Add to create a deal</p>
+              <p className="text-xs text-[#9FB3C8] text-center py-3">No Bulk Packages - Click + Add To Create A Deal</p>
             ) : (
               <div className="space-y-3">
                 {pricing.bulk_time_packages.map((pkg, idx) => {
@@ -662,7 +662,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                       </div>
                       {isDiscount && (
                         <p className="text-[10px] text-[#31A24C] mt-1.5">
-                          Save ${((pricing.time_billing_rate - perHr) * pkg.hours).toFixed(2)} vs standard rate
+                          Save ${((pricing.time_billing_rate - perHr) * pkg.hours).toFixed(2)} Vs Standard Rate
                         </p>
                       )}
                     </div>
@@ -682,7 +682,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
               <p className="text-[10px] text-[#BDD0E2]">(saved to venue settings)</p>
             </div>
             {memberPlans.length === 0 ? (
-              <p className="text-xs text-[#9FB3C8] text-center py-3">No membership plans configured</p>
+              <p className="text-xs text-[#9FB3C8] text-center py-3">No Membership Plans Configured</p>
             ) : (
               <div className="space-y-3">
                 {memberPlans.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map(plan => {
@@ -759,7 +759,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
               <h3 className="text-base font-bold text-white">Enter Staff PIN</h3>
               <button onClick={() => { setPinStep(false); setPinDigits(''); setPinError(''); setPendingAction(null); }} className="p-1 text-[#BDD0E2]"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-[11px] text-[#BDD0E2] mb-4">{pendingAction?.type === 'stop' ? 'Authorize stopping this session' : 'Authorize this payment'}</p>
+            <p className="text-[11px] text-[#BDD0E2] mb-4">{pendingAction?.type === 'stop' ? 'Authorize Stopping This Session' : 'Authorize This Payment'}</p>
             <div className="flex justify-center gap-3 mb-4">
               {[0, 1, 2, 3].map(i => (
                 <div key={i} className={`w-4 h-4 rounded-full ${i < pinDigits.length ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`} />

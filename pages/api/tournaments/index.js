@@ -204,7 +204,7 @@ async function createTournament(req, res, staff) {
     if (!venue_id || !name || !tournament_type || !buyin_amount || !starting_chips || !scheduled_start) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Required Fields: venue_id, name, tournament_type, buyin_amount, starting_chips, scheduled_start' }
+        error: { code: 'VALIDATION_ERROR', message: 'Required Fields: venue_id, Name, tournament_type, buyin_amount, starting_chips, scheduled_start' }
       });
     }
 

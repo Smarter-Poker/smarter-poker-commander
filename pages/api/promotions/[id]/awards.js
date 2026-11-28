@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const { id: promotionId } = req.query;
 
     if (!promotionId) {
-      return res.status(400).json({ error: 'Promotion ID required' });
+      return res.status(400).json({ error: 'Promotion ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -46,12 +46,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -102,7 +102,7 @@ async function listAwards(req, res, promotionId, staff) {
     });
   } catch (error) {
     console.warn('List awards error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -110,7 +110,7 @@ async function createAward(req, res, promotionId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -118,7 +118,7 @@ async function createAward(req, res, promotionId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     // Get promotion
@@ -129,7 +129,7 @@ async function createAward(req, res, promotionId) {
       .maybeSingle();
 
     if (!promotion) {
-      return res.status(404).json({ error: 'Promotion not found' });
+      return res.status(404).json({ error: 'Promotion Not Found' });
     }
 
     // Check if user is staff at this venue
@@ -142,7 +142,7 @@ async function createAward(req, res, promotionId) {
       .maybeSingle();
 
     if (!staff) {
-      return res.status(403).json({ error: 'You are not authorized to create awards' });
+      return res.status(403).json({ error: 'You Are Not Authorized To Create Awards' });
     }
 
     const {
@@ -158,11 +158,11 @@ async function createAward(req, res, promotionId) {
     } = req.body;
 
     if (!player_name && !player_id) {
-      return res.status(400).json({ error: 'Player name or ID required' });
+      return res.status(400).json({ error: 'Player Name Or ID Required' });
     }
 
     if (!prize_value) {
-      return res.status(400).json({ error: 'Prize value required' });
+      return res.status(400).json({ error: 'Prize Value Required' });
     }
 
     const status = auto_approve ? 'approved' : 'pending';
@@ -202,6 +202,6 @@ async function createAward(req, res, promotionId) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create award error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

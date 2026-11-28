@@ -15,13 +15,13 @@ if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
 export default async function handler(req, res) {
   if (!applyRateLimit(req, res, LIMITS.auth)) return;
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { action, phone, code, hash } = req.body;
 
   if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required.' });
+    return res.status(400).json({ error: 'Phone Number Is Required.' });
   }
 
   try {
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
     if (action === 'verify') {
       if (!code || !hash) {
-        return res.status(400).json({ error: 'Code and hash are required.' });
+        return res.status(400).json({ error: 'Code And Hash Are Required.' });
       }
 
       const cleanPhone = phone.replace(/\D/g, '');
@@ -70,13 +70,13 @@ export default async function handler(req, res) {
       if (expectedHash === hash) {
         return res.status(200).json({ valid: true });
       } else {
-        return res.status(400).json({ valid: false, error: 'Invalid verification code.' });
+        return res.status(400).json({ valid: false, error: 'Invalid Verification Code.' });
       }
     }
 
-    return res.status(400).json({ error: 'Invalid action.' });
+    return res.status(400).json({ error: 'Invalid Action.' });
   } catch (error) {
     console.error('[verify-sms] Error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to process verification.' });
+    return res.status(500).json({ error: error.message || 'Failed To Process Verification.' });
   }
 }

@@ -237,7 +237,7 @@ export function PushNotificationButton({ className = '' }) {
   if (permission === 'denied') {
     return (
       <div className={`text-sm text-[#8FA6BE] ${className}`}>
-        Notifications blocked. Enable in browser settings.
+        Notifications Blocked. Enable In Browser Settings.
       </div>
     );
   }

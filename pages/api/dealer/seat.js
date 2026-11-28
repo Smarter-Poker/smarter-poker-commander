@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     if (!_staff) return;
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     const { member_id, table_number, seat_number, time_minutes } = req.body;
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (memberError || !member) {
-        return res.status(404).json({ success: false, error: 'Member not found' });
+        return res.status(404).json({ success: false, error: 'Member Not Found' });
       }
 
       // Verify membership is active
@@ -61,13 +61,13 @@ export default async function handler(req, res) {
         member.membership_status === 'banned' ||
         member.membership_status === 'expired' ||
         member.membership_status === 'inactive') {
-        return res.status(400).json({ success: false, error: 'Membership is not active' });
+        return res.status(400).json({ success: false, error: 'Membership Is Not Active' });
       }
 
       // Verify time balance
       const availableTime = member.time_balance_minutes || 0;
       if (availableTime <= 0) {
-        return res.status(400).json({ success: false, error: 'No time remaining on card. Player must add time first.' });
+        return res.status(400).json({ success: false, error: 'No Time Remaining On Card. Player Must Add Time First.' });
       }
 
       // Check if member already has an active session
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
       if (existing?.length > 0) {
         return res.status(400).json({
           success: false,
-          error: `Player already seated at Table ${existing[0].table_number} Seat ${existing[0].seat_number}`
+          error: `Player Already Seated At Table ${existing[0].table_number} Seat ${existing[0].seat_number}`
         });
       }
 
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
       if (seatTaken?.length > 0) {
         return res.status(400).json({
           success: false,
-          error: `Seat ${seat_number} already occupied by ${seatTaken[0].player_name}`
+          error: `Seat ${seat_number} Already Occupied By ${seatTaken[0].player_name}`
         });
       }
 
@@ -117,11 +117,11 @@ export default async function handler(req, res) {
 
       if (claimError) {
         console.warn('Time claim error:', claimError);
-        return res.status(500).json({ success: false, error: 'Failed to reserve time from card' });
+        return res.status(500).json({ success: false, error: 'Failed To Reserve Time From Card' });
       }
       if (!claimedMinutes || claimedMinutes <= 0) {
         // Another request claimed the balance between the check above and here.
-        return res.status(400).json({ success: false, error: 'No time remaining on card. Player must add time first.' });
+        return res.status(400).json({ success: false, error: 'No Time Remaining On Card. Player Must Add Time First.' });
       }
 
       const timeToAllocate = claimedMinutes;
@@ -221,6 +221,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

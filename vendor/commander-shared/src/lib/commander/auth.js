@@ -132,7 +132,7 @@ export async function requireStaff(req, res, venueId, allowedRoles = null) {
       success: false,
       error: {
         code: 'FORBIDDEN',
-        message: `Requires role: ${allowedRoles.join(' or ')}`
+        message: `Requires Role: ${allowedRoles.join(' or ')}`
       }
     });
     return null;
@@ -633,7 +633,7 @@ export async function guardOwnerStaff(req, res) {
   if (!user) {
     res.status(401).json({
       success: false,
-      error: { code: 'JWT_REQUIRED', message: 'Valid session token required for this operation' }
+      error: { code: 'JWT_REQUIRED', message: 'Valid Session Token Required For This Operation' }
     });
     return null;
   }
@@ -646,7 +646,7 @@ export async function guardOwnerStaff(req, res) {
   if (!['owner', 'manager'].includes(staff.role)) {
     res.status(403).json({
       success: false,
-      error: { code: 'FORBIDDEN', message: 'Owner or Manager role required' }
+      error: { code: 'FORBIDDEN', message: 'Owner Or Manager Role Required' }
     });
     return null;
   }

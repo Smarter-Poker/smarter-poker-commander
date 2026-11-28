@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -93,7 +93,7 @@ async function closeDay(req, res, staff) {
   } catch (error) {
     try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Close day error:', error);
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -125,6 +125,6 @@ async function listCloses(req, res, staff) {
     return res.status(200).json({ success: true, data: { closes: closes || [] } });
   } catch (error) {
     console.warn('List closes error:', error);
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

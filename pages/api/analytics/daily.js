@@ -39,12 +39,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -52,7 +52,7 @@ async function getDailyAnalytics(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -60,13 +60,13 @@ async function getDailyAnalytics(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const { venue_id, start_date, end_date, days = 30 } = req.query;
 
     if (!venue_id) {
-      return res.status(400).json({ error: 'Venue ID required' });
+      return res.status(400).json({ error: 'Venue ID Required' });
     }
 
     // Check if user is manager/owner at this venue
@@ -80,7 +80,7 @@ async function getDailyAnalytics(req, res) {
       .maybeSingle();
 
     if (!staff) {
-      return res.status(403).json({ error: 'Analytics access requires manager or owner role' });
+      return res.status(403).json({ error: 'Analytics Access Requires Manager Or Owner Role' });
     }
 
     let query = getSupabase()
@@ -137,7 +137,7 @@ async function getDailyAnalytics(req, res) {
     });
   } catch (error) {
     console.warn('Get daily analytics error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -145,7 +145,7 @@ async function calculateDailyAnalytics(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -153,13 +153,13 @@ async function calculateDailyAnalytics(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const { venue_id, date } = req.body;
 
     if (!venue_id) {
-      return res.status(400).json({ error: 'Venue ID required' });
+      return res.status(400).json({ error: 'Venue ID Required' });
     }
 
     // Check if user is manager/owner at this venue
@@ -173,7 +173,7 @@ async function calculateDailyAnalytics(req, res) {
       .maybeSingle();
 
     if (!staff) {
-      return res.status(403).json({ error: 'Analytics access requires manager or owner role' });
+      return res.status(403).json({ error: 'Analytics Access Requires Manager Or Owner Role' });
     }
 
     const timeZone = await fetchVenueTimeZone(getSupabase(), venue_id);
@@ -238,11 +238,11 @@ async function calculateDailyAnalytics(req, res) {
 
     return res.status(200).json({
       analytics: result,
-      message: `Analytics calculated for ${targetDate}`
+      message: `Analytics Calculated For ${targetDate}`
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Calculate daily analytics error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

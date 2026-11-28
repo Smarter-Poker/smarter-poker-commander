@@ -39,13 +39,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -99,7 +99,7 @@ async function handleList(req, res) {
     console.warn('List dealer schedule error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch dealer schedule' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Dealer Schedule' }
     });
   }
 }
@@ -130,7 +130,7 @@ async function handleCreate(req, res) {
     if (dealerError || !dealer) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Dealer not found at this venue' }
+        error: { code: 'NOT_FOUND', message: 'Dealer Not Found At This Venue' }
       });
     }
 
@@ -146,7 +146,7 @@ async function handleCreate(req, res) {
     if (tableError || !table) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Table not found at this venue' }
+        error: { code: 'NOT_FOUND', message: 'Table Not Found At This Venue' }
       });
     }
 
@@ -194,7 +194,7 @@ async function handleCreate(req, res) {
     console.warn('Create dealer rotation error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to create dealer rotation' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Create Dealer Rotation' }
     });
   }
 }

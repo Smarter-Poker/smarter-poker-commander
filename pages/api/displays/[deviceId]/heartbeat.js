@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       if (error || !display) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Display not registered' }
+          error: { code: 'NOT_FOUND', message: 'Display Not Registered' }
         });
       }
 
@@ -83,13 +83,13 @@ export default async function handler(req, res) {
       console.warn('Heartbeat error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Heartbeat failed' }
+        error: { code: 'SERVER_ERROR', message: 'Heartbeat Failed' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

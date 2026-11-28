@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       if (!authHeader?.startsWith('Bearer ')) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
         });
       }
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Or Expired Token' }
         });
       }
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       if (squadError || !squad) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Squad not found' }
+          error: { code: 'NOT_FOUND', message: 'Squad Not Found' }
         });
       }
 
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
       if (squad.leader_id !== user.id) {
         return res.status(403).json({
           success: false,
-          error: { code: 'FORBIDDEN', message: 'Only squad leader can submit to waitlist' }
+          error: { code: 'FORBIDDEN', message: 'Only Squad Leader Can Submit To Waitlist' }
         });
       }
 
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       if (squad.group_status !== 'forming') {
         return res.status(400).json({
           success: false,
-          error: { code: 'ALREADY_SUBMITTED', message: 'Squad already submitted to waitlist' }
+          error: { code: 'ALREADY_SUBMITTED', message: 'Squad Already Submitted To Waitlist' }
         });
       }
 
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       if (members.length < 2) {
         return res.status(400).json({
           success: false,
-          error: { code: 'NOT_ENOUGH_MEMBERS', message: 'Need at least 2 members' }
+          error: { code: 'NOT_ENOUGH_MEMBERS', message: 'Need At Least 2 Members' }
         });
       }
 
@@ -168,7 +168,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         data: {
-          message: 'Squad joined waitlist',
+          message: 'Squad Joined Waitlist',
           position: position,
           entries_created: entries?.length || 0
         }
@@ -177,13 +177,13 @@ export default async function handler(req, res) {
       console.warn('Submit squad error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to submit squad to waitlist' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Submit Squad To Waitlist' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

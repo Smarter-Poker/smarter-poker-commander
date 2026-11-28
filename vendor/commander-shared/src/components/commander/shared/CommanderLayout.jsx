@@ -561,7 +561,7 @@ export default function CommanderLayout({ children, title }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ venue_id: venueId, pin_code: pinInput }),
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       if (!res.ok || !data.data?.staff) {
         const nextAttempts = pinAttempts + 1;
@@ -1127,8 +1127,8 @@ export default function CommanderLayout({ children, title }) {
         <img src="/images/global-header/global-header-desktop.png" alt="" width="1648" height="168" className="cmd-approved-header__art" aria-hidden="true" fetchpriority="high" decoding="sync" />
           <div className="cmd-approved-header__controls">
             <button type="button" className="cmd-approved-header__button cmd-approved-header__menu" onClick={() => setMenuOpen(true)} aria-label="Open Menu" />
-            <button type="button" className="cmd-approved-header__button cmd-approved-header__back" onClick={() => router.back()} aria-label="Go back" />
-            <button type="button" className="cmd-approved-header__button cmd-approved-header__hub" onClick={() => router.push('/hub')} aria-label="Go to the Hub" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__back" onClick={() => router.back()} aria-label="Go Back" />
+            <button type="button" className="cmd-approved-header__button cmd-approved-header__hub" onClick={() => router.push('/hub')} aria-label="Go To The Hub" />
             <button type="button" className="cmd-approved-header__button cmd-approved-header__profile" onClick={() => router.push('/hub/profile')} aria-label="My Profile">
               <span className="cmd-approved-header__avatar-slot" aria-hidden="true">
                 <img
@@ -1157,7 +1157,7 @@ export default function CommanderLayout({ children, title }) {
           }}>
             <AlertCircle size={16} color="#EF4444" />
             <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>
-              You are offline - changes will not save until reconnected
+              You Are Offline - Changes Will Not Save Until Reconnected
             </span>
           </div>
         )}
@@ -1229,7 +1229,7 @@ export default function CommanderLayout({ children, title }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertCircle size={16} color="#22D3EE" />
               <span style={{ fontSize: 12, color: '#22D3EE', fontWeight: 600 }}>
-                Session expires in ~{sessionExpiring.minutesLeft} min - save your work
+                Session Expires In ~{sessionExpiring.minutesLeft} Min - Save Your Work
               </span>
             </div>
             <button onClick={() => setSessionExpiring(null)} style={{

@@ -214,7 +214,7 @@ const json = await commanderFetchJSON('/api/commander/clock-presets', { });
         `/api/commander/tournaments/${id}/floor-view?include=tournament,clock,stats,stacks,alerts`,
         { ...(signal ? { signal } : {}) }
       );
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setData(json.data);
@@ -373,14 +373,14 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
         setActionLoading(false);
         return;
       }
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         const res2 = await commanderFetch(
           `/api/commander/tournaments/${id}/floor-view?include=tournament,clock,stats,stacks,alerts`,
           { }
         );
-        if (!res2.ok) throw new Error(`Request failed (${res2.status})`);
+        if (!res2.ok) throw new Error(`Request Failed (${res2.status})`);
         const json2 = await res2.json();
         if (json2.success) {
           setData(json2.data);

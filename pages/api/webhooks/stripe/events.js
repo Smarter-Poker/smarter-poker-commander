@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     const sig = req.headers['stripe-signature'];
@@ -49,10 +49,10 @@ export default async function handler(req, res) {
       // If webhook secret is not configured, reject all events.
       if (!endpointSecret) {
         console.warn('STRIPE_WEBHOOK_SECRET not configured - rejecting webhook');
-        return res.status(500).json({ error: 'Webhook secret not configured' });
+        return res.status(500).json({ error: 'Webhook Secret Not Configured' });
       }
       if (!sig) {
-        return res.status(400).json({ error: 'Missing stripe-signature header' });
+        return res.status(400).json({ error: 'Missing Stripe-Signature Header' });
       }
 
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -100,13 +100,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ received: true });
     } catch (error) {
       console.warn('Webhook handler error:', error);
-      return res.status(500).json({ error: 'Webhook handler failed' });
+      return res.status(500).json({ error: 'Webhook Handler Failed' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 

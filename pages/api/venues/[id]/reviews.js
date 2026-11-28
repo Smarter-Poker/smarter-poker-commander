@@ -92,7 +92,7 @@ export default async function handler(req, res) {
         if (!authHeader) {
           return res.status(401).json({
             success: false,
-            error: { code: 'AUTH_REQUIRED', message: 'Login required to submit review' }
+            error: { code: 'AUTH_REQUIRED', message: 'Login Required To Submit Review' }
           });
         }
 
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
         if (authError || !user) {
           return res.status(401).json({
             success: false,
-            error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+            error: { code: 'INVALID_TOKEN', message: 'Invalid Token' }
           });
         }
 
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
         if (!overall_rating || overall_rating < 1 || overall_rating > 5) {
           return res.status(400).json({
             success: false,
-            error: { code: 'INVALID_RATING', message: 'Overall rating (1-5) required' }
+            error: { code: 'INVALID_RATING', message: 'Overall Rating (1-5) Required' }
           });
         }
 
@@ -209,19 +209,19 @@ export default async function handler(req, res) {
 
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET and POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET And POST Allowed' }
       });
     } catch (error) {
       console.warn('Venue reviews API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to process request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Process Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

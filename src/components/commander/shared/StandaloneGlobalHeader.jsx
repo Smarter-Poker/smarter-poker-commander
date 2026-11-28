@@ -216,8 +216,8 @@ export default function StandaloneGlobalHeader() {
         <img src="/images/global-header/global-header-desktop.png" alt="" width="1648" height="168" className="standalone-approved-header__art" aria-hidden="true" fetchpriority="high" decoding="sync" />
         <div className="standalone-approved-header__controls">
           <button type="button" className="standalone-approved-header__button standalone-approved-header__menu" onClick={() => setMenuOpen(true)} aria-label="Open Menu" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__back" onClick={() => router.back()} aria-label="Go back" />
-          <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => goHub('/hub')} aria-label="Go to the Hub" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__back" onClick={() => router.back()} aria-label="Go Back" />
+          <button type="button" className="standalone-approved-header__button standalone-approved-header__hub" onClick={() => goHub('/hub')} aria-label="Go To The Hub" />
           <button type="button" className="standalone-approved-header__button standalone-approved-header__profile" onClick={() => goHub('/hub/profile')} aria-label="My Profile">
             <span className="standalone-approved-header__avatar-slot" aria-hidden="true">
               <img src={profileAvatar} alt="" className="standalone-approved-header__avatar" onError={(event) => { event.currentTarget.src = '/default-avatar.png'; }} />

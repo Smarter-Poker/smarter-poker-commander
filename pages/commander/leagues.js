@@ -132,7 +132,7 @@ export default function LeaguesAndFreerollsManagement() {
     setLeaguesLoading(true);
     try {
       const res = await commanderFetch('/api/commander/leagues?limit=50', { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) setLeagues(json.data?.leagues || []);
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
@@ -144,7 +144,7 @@ export default function LeaguesAndFreerollsManagement() {
     setFreerollsLoading(true);
     try {
       const res = await commanderFetch('/api/commander/freerolls?limit=50', { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) setFreerolls(json.data?.freerolls || []);
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
@@ -204,7 +204,7 @@ export default function LeaguesAndFreerollsManagement() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success || json.data) {
         showToast('success', 'League Created');
@@ -259,7 +259,7 @@ export default function LeaguesAndFreerollsManagement() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success || json.data) {
         showToast('success', 'Freeroll Created');
@@ -295,7 +295,7 @@ export default function LeaguesAndFreerollsManagement() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         showToast('success', 'Player Added');

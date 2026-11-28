@@ -123,7 +123,7 @@ export default async function handler(req, res) {
         await getSupabase().from('commander_activity_log').insert({
           venue_id: callVenueId,
           event_type: safePriority === 'urgent' ? 'incident' : 'floor_call',
-          message: `Floor call at Table ${table_number}: ${safeReason.replace(/_/g, ' ')}`,
+          message: `Floor Call At Table ${table_number}: ${safeReason.replace(/_/g, ' ')}`,
           detail: description || '',
           table_number
         }).catch((err) => {
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, error: 'id and status required' });
         }
         if (!VALID_STATUSES.includes(status)) {
-          return res.status(400).json({ success: false, error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` });
+          return res.status(400).json({ success: false, error: `Invalid Status. Must Be One Of: ${VALID_STATUSES.join(', ')}` });
         }
 
         // Fetch existing call for response time computation
@@ -188,7 +188,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Floor calls error:', err);
       return res.status(500).json({ success: false, error: err.message });
@@ -197,6 +197,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

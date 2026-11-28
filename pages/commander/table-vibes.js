@@ -102,7 +102,7 @@ useEffect(() => {    const _c = new AbortController();
             <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
           ) : vibes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
-              No table ratings yet - players rate tables after sessions
+              No Table Ratings Yet - Players Rate Tables After Sessions
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -122,7 +122,7 @@ useEffect(() => {    const _c = new AbortController();
                             <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: vc.bg, color: vc.text, border: `2px solid ${vc.border}` }}>
                               {v.vibe}
                             </span>
-                            <span style={{ fontSize: 11, color: '#65676B' }}>{v.rating_count} ratings</span>
+                            <span style={{ fontSize: 11, color: '#65676B' }}>{v.rating_count} Ratings</span>
                           </div>
                         </div>
                       </div>

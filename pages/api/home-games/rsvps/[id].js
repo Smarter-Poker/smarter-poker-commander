@@ -147,7 +147,7 @@ async function ensureRsvpMembershipEligible(
         code: membership ? 'RSVP_MEMBER_INELIGIBLE' : 'RSVP_MEMBERSHIP_REQUIRED',
         error: membership
           ? 'This member must have an approved membership before the RSVP can be approved'
-          : 'This player is not a member of the group',
+          : 'This Player Is Not A Member Of The Group',
       },
     };
   }
@@ -181,7 +181,7 @@ async function ensureRsvpMembershipEligible(
   return {
     ok: false,
     status: 409,
-    body: { success: false, error: 'Membership approval was not applied' },
+    body: { success: false, error: 'Membership Approval Was Not Applied' },
   };
 }
 
@@ -202,7 +202,7 @@ export default async function handler(req, res) {
 
     const { id } = req.query;
     if (!isHomeGamesUuid(id)) {
-      return res.status(400).json({ success: false, error: 'Valid RSVP id required' });
+      return res.status(400).json({ success: false, error: 'Valid RSVP Id Required' });
     }
 
     const supabase = getSupabase();
@@ -222,7 +222,7 @@ export default async function handler(req, res) {
       .eq('id', rsvp.game_id)
       .maybeSingle();
     if (eventErr) throw eventErr;
-    if (!event) return res.status(404).json({ success: false, error: 'Event not found' });
+    if (!event) return res.status(404).json({ success: false, error: 'Event Not Found' });
 
     const { data: group, error: groupErr } = await supabase
       .from('commander_home_groups')
@@ -230,7 +230,7 @@ export default async function handler(req, res) {
       .eq('id', event.group_id)
       .maybeSingle();
     if (groupErr) throw groupErr;
-    if (!group) return res.status(404).json({ success: false, error: 'Home game not found' });
+    if (!group) return res.status(404).json({ success: false, error: 'Home Game Not Found' });
 
     // ── Authorization (GET) ────────────────────────────────────────────────
     // For GET, allow: the RSVP's own user, or a host/admin of the group.
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
       const isGroupStaff = await callerIsGroupStaff(supabase, caller.id, group.id);
       const isEventHost = caller.id === event.host_id;
       if (!isSelf && !isGroupStaff && !isEventHost) {
-        return res.status(403).json({ success: false, error: 'Not authorized' });
+        return res.status(403).json({ success: false, error: 'Not Authorized' });
       }
       // Include address only if the RSVP belongs to the caller AND is confirmed
       // (mirrors the address_visible_to='rsvp' contract), or if caller is staff.
@@ -263,7 +263,7 @@ export default async function handler(req, res) {
     if (!isGroupStaff && !isEventHost) {
       return res.status(403).json({
         success: false,
-        error: 'Only the group owner or admins can manage RSVPs',
+        error: 'Only The Group Owner Or Admins Can Manage RSVPs',
       });
     }
 
@@ -274,7 +274,7 @@ export default async function handler(req, res) {
         .delete()
         .eq('id', id);
       if (error) {
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
       return res.json({ success: true });
     }
@@ -295,7 +295,7 @@ export default async function handler(req, res) {
           .delete()
           .eq('id', id);
         if (error) {
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
         return res.json({ success: true, data: { action, removed: true, rsvp_id: id } });
       }
@@ -382,11 +382,11 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'PATCH', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     console.warn('[pages/api/commander/home-games/rsvps/[id].js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 

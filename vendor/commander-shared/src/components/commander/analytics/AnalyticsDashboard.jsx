@@ -275,7 +275,7 @@ function AnalyticsDashboard({
         <div className="cmd-panel p-4">
           <div className="flex items-center gap-2 text-[#9FB3C8] mb-2">
             <DollarSign size={16} className="text-emerald-400" />
-            <span className="text-sm">Avg Buy-in</span>
+            <span className="text-sm">Avg Buy-In</span>
           </div>
           <div className="text-xl font-bold text-white">
             ${analytics.length > 0

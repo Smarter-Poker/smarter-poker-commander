@@ -52,7 +52,7 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
           notes: formData.notes
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
       if (data.success) {
@@ -197,7 +197,7 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
           notes: formData.notes
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
       if (data.success) {

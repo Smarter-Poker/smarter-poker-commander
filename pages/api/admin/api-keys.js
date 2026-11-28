@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         .select('id, venue_id, name, key_prefix, permissions, rate_limit, is_active, created_at, expires_at')
         .maybeSingle();
       if (error) return res.status(500).json({ success: false, error: error.message });
-      if (!data) return res.status(500).json({ success: false, error: 'Failed to create API key' });
+      if (!data) return res.status(500).json({ success: false, error: 'Failed To Create API Key' });
       // The raw key is returned exactly once and cannot be recovered later -
       // only its sha256 hash is stored.
       return res.json({
@@ -77,15 +77,15 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('[pages/api/commander/admin/api-keys.js]', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
   }
 }

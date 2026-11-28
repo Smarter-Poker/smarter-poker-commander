@@ -334,7 +334,7 @@ return { 'Content-Type': 'application/json' };
         ...data };
       setShifts(prev => [...prev, newShift]);
       setShowAddModal(false);
-      showToast('Shift added', 'success');
+      showToast('Shift Added', 'success');
       return;
     }
     try {
@@ -344,7 +344,7 @@ return { 'Content-Type': 'application/json' };
         headers: getHeaders(),
         body: JSON.stringify({ venue_id: venueId, ...data })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const result = await res.json();
       if (result.success) {
         lastWriteRef.current = Date.now();
@@ -353,10 +353,10 @@ return { 'Content-Type': 'application/json' };
         setShowAddModal(false);
         showToast('Shift Added', 'success');
       } else {
-        showToast(result.error?.message || 'Failed to add shift', 'error');
+        showToast(result.error?.message || 'Failed To Add Shift', 'error');
       }
     } catch (err) {
-      showToast('Network error', 'error');
+      showToast('Network Error', 'error');
     }
   };
 
@@ -364,7 +364,7 @@ return { 'Content-Type': 'application/json' };
   const deleteShift = async (shiftId) => {
     if (usingMockData) {
       setShifts(prev => prev.filter(s => s.id !== shiftId));
-      showToast('Shift deleted', 'success');
+      showToast('Shift Deleted', 'success');
       return;
     }
     try {
@@ -373,7 +373,7 @@ return { 'Content-Type': 'application/json' };
         method: 'DELETE',
         headers: getHeaders()
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const result = await res.json();
       if (result.success) {
         lastWriteRef.current = Date.now();
@@ -382,7 +382,7 @@ return { 'Content-Type': 'application/json' };
         showToast('Shift Deleted', 'success');
       }
     } catch (err) {
-      showToast('Failed to delete', 'error');
+      showToast('Failed To Delete', 'error');
     }
   };
 
@@ -397,16 +397,16 @@ return { 'Content-Type': 'application/json' };
         headers: getHeaders(),
         body: JSON.stringify({ venue_id: venueId, week_start: weekStart, channel })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const result = await res.json();
       if (result.success) {
         setBroadcastResult(result.data);
-        showToast(`Schedule sent to ${result.data.sent} staff`, 'success');
+        showToast(`Schedule Sent To ${result.data.sent} Staff`, 'success');
       } else {
-        showToast(result.error?.message || 'Broadcast failed', 'error');
+        showToast(result.error?.message || 'Broadcast Failed', 'error');
       }
     } catch (err) {
-      showToast('Network error', 'error');
+      showToast('Network Error', 'error');
     }
     setBroadcasting(false);
   };
@@ -638,7 +638,7 @@ return { 'Content-Type': 'application/json' };
                                           alignItems: 'center', justifyContent: 'center', opacity: 0.7,
                                           fontSize: 8
                                         }}
-                                        title="Delete shift"
+                                        title="Delete Shift"
                                       >
                                         <X size={10} />
                                       </button>
@@ -858,13 +858,13 @@ function AddShiftModal({ allStaff, defaultDate, defaultStaffId, weekDays, onClos
 
           {hours > 0 && (
             <p style={{ fontSize: 12, color: '#BDD0E2', textAlign: 'center', margin: 0 }}>
-              <Clock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />{hours} hours
+              <Clock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />{hours} Hours
             </p>
           )}
 
           {/* Notes */}
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#BDD0E2', marginBottom: 4 }}>Notes (optional)</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#BDD0E2', marginBottom: 4 }}>Notes (Optional)</label>
             <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
               placeholder="e.g., Training shift, Cover for John..."
               style={{ ...inputStyle, height: 40 }} />

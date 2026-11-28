@@ -80,7 +80,7 @@ function dedupeSubsByVenue(subs) {
 export default async function handler(req, res) {
     try {
         if (req.method !== 'GET' && req.method !== 'POST') {
-            return res.status(405).json({ error: 'Method not allowed' });
+            return res.status(405).json({ error: 'Method Not Allowed' });
         }
 
         const limit = req.method === 'GET' ? LIMITS.read : LIMITS.auth;
@@ -91,12 +91,12 @@ export default async function handler(req, res) {
             const fwd = req.headers['x-forwarded-for'];
             const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
             const rl = checkMemoryRateLimit(`swvenue:${ip}`, 10, 60000);
-            if (!rl.allowed) return res.status(429).json({ error: 'Too many requests' });
+            if (!rl.allowed) return res.status(429).json({ error: 'Too Many Requests' });
         }
 
         const user = await getAuthedUser(req);
         if (!user) {
-            return res.status(401).json({ error: 'Authentication required' });
+            return res.status(401).json({ error: 'Authentication Required' });
         }
 
         const db = getSupabase();
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
 
             if (subsRes.error) {
                 console.warn('[my-commander-accounts] subs error:', subsRes.error.message);
-                return res.status(500).json({ error: 'Failed to load clubs' });
+                return res.status(500).json({ error: 'Failed To Load Clubs' });
             }
 
             const clubs = dedupeSubsByVenue(subsRes.data);
@@ -205,7 +205,7 @@ export default async function handler(req, res) {
 
         if (ownErr) {
             console.warn('[my-commander-accounts] switch error:', ownErr.message);
-            return res.status(500).json({ error: 'Failed to switch venue' });
+            return res.status(500).json({ error: 'Failed To Switch Venue' });
         }
 
         if (ownSubs?.length) {
@@ -250,10 +250,10 @@ export default async function handler(req, res) {
 
         if (staffErr) {
             console.warn('[my-commander-accounts] staff switch error:', staffErr.message);
-            return res.status(500).json({ error: 'Failed to switch venue' });
+            return res.status(500).json({ error: 'Failed To Switch Venue' });
         }
         if (!staffRow) {
-            return res.status(403).json({ error: 'You do not have access to this venue' });
+            return res.status(403).json({ error: 'You Do Not Have Access To This Venue' });
         }
 
         // The venue must have a live subscription for Commander to operate
@@ -266,7 +266,7 @@ export default async function handler(req, res) {
             .limit(1);
 
         if (vsErr || !venueSubs?.length) {
-            return res.status(403).json({ error: 'This venue does not have an active Commander subscription' });
+            return res.status(403).json({ error: 'This Venue Does Not Have An Active Commander Subscription' });
         }
 
         const subscription = venueSubs[0];
@@ -304,6 +304,6 @@ export default async function handler(req, res) {
     } catch (err) {
         try { reportApiError(err, req); } catch (_e) { console.warn('[App] Handled exception:', _e?.message || _e); }
         console.warn('[API Error] my-commander-accounts:', err);
-        if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
+        if (!res.headersSent) return res.status(500).json({ error: 'Internal Server Error' });
     }
 }

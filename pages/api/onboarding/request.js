@@ -28,13 +28,13 @@ export default async function handler(req, res) {
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
     const rl = checkMemoryRateLimit(`onboard:${ip}`, 3, 60000);
-    if (!rl.allowed) { return res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests' } }); }
+    if (!rl.allowed) { return res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: 'Too Many Requests' } }); }
 
 
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     if (!venueName || !contactName || !email || !phone || !city || !state) {
       return res.status(400).json({
         success: false,
-        error: { code: 'MISSING_FIELDS', message: 'Required fields missing' }
+        error: { code: 'MISSING_FIELDS', message: 'Required Fields Missing' }
       });
     }
 
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'INVALID_EMAIL', message: 'Invalid email format' }
+        error: { code: 'INVALID_EMAIL', message: 'Invalid Email Format' }
       });
     }
 
@@ -177,13 +177,13 @@ export default async function handler(req, res) {
       console.warn('Onboarding request error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to submit request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Submit Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -46,12 +46,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -76,7 +76,7 @@ async function listGroups(req, res) {
     // Filter to user's groups
     if (my_groups === 'true') {
       if (!userId) {
-        return res.status(401).json({ error: 'Authorization required' });
+        return res.status(401).json({ error: 'Authorization Required' });
       }
 
       const { data: memberships, error: membershipError } = await getSupabase()
@@ -141,7 +141,7 @@ async function listGroups(req, res) {
     return res.status(200).json({ groups: (data || []).map(group => toPublicGroup(group)) });
   } catch (error) {
     console.warn('List groups error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -149,7 +149,7 @@ async function createGroup(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -157,7 +157,7 @@ async function createGroup(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const {
@@ -191,13 +191,13 @@ async function createGroup(req, res) {
     } = req.body;
 
     if (!name) {
-      return res.status(400).json({ error: 'Group name is required' });
+      return res.status(400).json({ error: 'Group Name Is Required' });
     }
 
     // ── LOGO HARD REQUIREMENT ───────────────────────────────────────
     if (!profile_photo_url || typeof profile_photo_url !== 'string' || !profile_photo_url.trim()) {
       return res.status(400).json({
-        error: 'Logo upload is required to create a home group',
+        error: 'Logo Upload Is Required To Create A Home Group',
         code: 'LOGO_REQUIRED'
       });
     }
@@ -261,6 +261,6 @@ async function createGroup(req, res) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create group error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

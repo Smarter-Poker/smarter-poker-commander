@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       const { table_number, venue_id } = req.body;
@@ -65,11 +65,11 @@ export default async function handler(req, res) {
           if (error) {
               // 2026-07-25 audit fix: surface update errors instead of swallowing
               console.warn('Heartbeat update error:', error.message);
-              return res.status(500).json({ success: false, error: 'Failed to record heartbeat' });
+              return res.status(500).json({ success: false, error: 'Failed To Record Heartbeat' });
           }
 
           if (!updated) {
-              return res.status(404).json({ success: false, error: 'Device not registered' });
+              return res.status(404).json({ success: false, error: 'Device Not Registered' });
           }
 
           return res.status(200).json({ success: true, timestamp: now });
@@ -82,6 +82,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

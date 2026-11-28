@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const { data, error } = await getSupabase().from('commander_dealers').select('*').eq('id', id).maybeSingle();
-    if (error || !data) return res.status(404).json({ success: false, error: 'Dealer not found' });
+    if (error || !data) return res.status(404).json({ success: false, error: 'Dealer Not Found' });
     return res.json({ success: true, data: { dealer: data } });
   }
 
@@ -33,20 +33,20 @@ export default async function handler(req, res) {
     const updates = req.body;
     delete updates.id; delete updates.venue_id;
     const { data, error } = await getSupabase().from('commander_dealers').update(updates).eq('id', id).select().maybeSingle();
-    if (error || !data) return res.status(404).json({ success: false, error: 'Dealer not found' });
+    if (error || !data) return res.status(404).json({ success: false, error: 'Dealer Not Found' });
     return res.json({ success: true, data: { dealer: data } });
   }
 
   if (req.method === 'DELETE') {
     const { error } = await getSupabase().from('commander_dealers').delete().eq('id', id);
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true });
   }
 
-  return res.status(405).json({ success: false, error: 'Method not allowed' });
+  return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[pages/api/commander/dealers/[id].js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

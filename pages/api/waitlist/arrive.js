@@ -28,7 +28,7 @@ const supabaseAnon = createClient(
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     if (!applyRateLimit(req, res, LIMITS.write)) return;
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Please sign in to signal arrival' }
+        error: { code: 'AUTH_REQUIRED', message: 'Please Sign In To Signal Arrival' }
       });
     }
 
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     if (authError || !user) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_INVALID', message: 'Invalid or expired session' }
+        error: { code: 'AUTH_INVALID', message: 'Invalid Or Expired Session' }
       });
     }
 
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
       console.warn('[arrive] Update error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update arrival status' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Arrival Status' }
       });
     }
 
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[arrive] Error:', err);
     if (!res.headersSent) {
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
   }
 }

@@ -64,7 +64,7 @@ export default function ShiftHandoff() {
     setLoading(true);
     try {
 const res = await commanderFetch(`/api/commander/shift-handoff?venue_id=${staff.venue_id}&limit=30`, { ...(signal instanceof AbortSignal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) setHandoffs(json.data.handoffs);
     } catch (err) { if (err.name !== 'AbortError') console.warn(err); }
@@ -83,7 +83,7 @@ const res = await commanderFetch(`/api/commander/shift-handoff?venue_id=${staff.
 
   const handleSubmit = async () => {
     if (!notes.trim() && !issues.trim()) {
-      setToast({ type: 'error', msg: 'Add notes or issues before submitting' });
+      setToast({ type: 'error', msg: 'Add Notes Or Issues Before Submitting' });
       setTimeout(() => setToast(null), 3000);
       return;
     }
@@ -102,20 +102,20 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
           incoming_staff_name: incomingName.trim() || null
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setToast({ type: 'success', msg: 'Shift handoff submitted' });
+        setToast({ type: 'success', msg: 'Shift Handoff Submitted' });
         setNotes(''); setIssues(''); setVipAlerts(''); setPendingActions(''); setIncomingName('');
         setMode('history');
         fetchHandoffs();
         broadcastChange('staff');
         busEmit.sessionEnd('commander-shift-handoff');
       } else {
-        setToast({ type: 'error', msg: json.error?.message || 'Failed to submit' });
+        setToast({ type: 'error', msg: json.error?.message || 'Failed To Submit' });
       }
     } catch (err) {
-      setToast({ type: 'error', msg: 'Network error' });
+      setToast({ type: 'error', msg: 'Network Error' });
     }
     finally { setSubmitting(false); setTimeout(() => setToast(null), 3000); }
   };
@@ -130,14 +130,14 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
           staff_name: staff.name || staff.display_name || 'Floor Staff'
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setToast({ type: 'success', msg: 'Handoff acknowledged' });
+        setToast({ type: 'success', msg: 'Handoff Acknowledged' });
         fetchHandoffs();
         broadcastChange('staff');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', msg: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', msg: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setTimeout(() => setToast(null), 3000); }
   };
 
@@ -182,7 +182,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
           {mode !== 'menu' && (
             <button onClick={() => setMode('menu')}
               className="flex items-center gap-2 text-[#BDD0E2] hover:text-white text-sm font-medium mb-4 transition-colors">
-              <ArrowLeft size={16} /> Back to Menu
+              <ArrowLeft size={16} /> Back To Menu
             </button>
           )}
 
@@ -247,7 +247,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
               {/* Incoming staff (optional) */}
               <div className="bg-[#0A1829] rounded-xl p-4 border border-[#445E77]">
                 <label className="text-[#BDD0E2] font-semibold text-xs flex items-center gap-1.5 mb-2">
-                  <Users size={14} /> Incoming Staff Name (optional)
+                  <Users size={14} /> Incoming Staff Name (Optional)
                 </label>
                 <input value={incomingName} onChange={e => setIncomingName(e.target.value)}
                   placeholder="Who's Taking Over?"
@@ -270,7 +270,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
                   <AlertTriangle size={14} /> Active Issues
                 </label>
                 <textarea value={issues} onChange={e => setIssues(e.target.value)} rows={3}
-                  placeholder="Player Disputes, Equipment Problems, Short-staffed, Anything Needing Attention..."
+                  placeholder="Player Disputes, Equipment Problems, Short-Staffed, Anything Needing Attention..."
                   className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm resize-y focus:outline-none focus:border-[#EF4444]/50 placeholder-[#65676B]" style={{ fontFamily: 'inherit' }} />
               </div>
 
@@ -290,7 +290,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
                   <ListChecks size={14} /> Pending Actions
                 </label>
                 <textarea value={pendingActions} onChange={e => setPendingActions(e.target.value)} rows={2}
-                  placeholder="Table Changes Planned, Games To Open/close, Promotions To Run..."
+                  placeholder="Table Changes Planned, Games To Open/Close, Promotions To Run..."
                   className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm resize-y focus:outline-none focus:border-[#1981EC]/50 placeholder-[#65676B]" style={{ fontFamily: 'inherit' }} />
               </div>
 
@@ -301,7 +301,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
               </button>
 
               <div className="text-[#65676B] text-xs text-center">
-                Floor snapshot (tables, players, waitlist) is captured automatically
+                Floor Snapshot (Tables, Players, Waitlist) Is Captured Automatically
               </div>
             </div>
           )}
@@ -413,7 +413,7 @@ const res = await commanderFetch('/api/commander/shift-handoff', {
 
                         {h.acknowledged_at && (
                           <div className="mt-3 text-xs text-[#31A24C] font-semibold text-center">
-                            Acknowledged by {h.incoming_staff_name} at {formatTime(h.acknowledged_at)}
+                            Acknowledged By {h.incoming_staff_name} At {formatTime(h.acknowledged_at)}
                           </div>
                         )}
                       </div>

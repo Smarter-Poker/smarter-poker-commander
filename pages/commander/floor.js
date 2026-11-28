@@ -197,7 +197,7 @@ return { };
       busEmit.celebration('confetti');
       setTimeout(() => setSaved(false), 2000);
       broadcastChange('tables');
-    } catch (err) { console.warn('Save error:', err); setToast({ type: 'error', text: 'Action failed: Save. Please try again.' }); }
+    } catch (err) { console.warn('Save error:', err); setToast({ type: 'error', text: 'Action Failed: Save. Please Try Again.' }); }
     finally { setSaving(false); }
   };
 

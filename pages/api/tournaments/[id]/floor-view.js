@@ -226,11 +226,11 @@ export default async function handler(req, res) {
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     const { id: tournamentId } = req.query;
-    if (!tournamentId) return res.status(400).json({ success: false, error: 'Tournament ID required' });
+    if (!tournamentId) return res.status(400).json({ success: false, error: 'Tournament ID Required' });
 
     // null = no opt-in = the legacy payload, every section.
     const include = parseInclude(req.query.include);
@@ -264,7 +264,7 @@ export default async function handler(req, res) {
       ]);
 
       const { data: tournament, error: tErr } = tournamentRes;
-      if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament not found' });
+      if (tErr || !tournament) return res.status(404).json({ success: false, error: 'Tournament Not Found' });
 
       // Venue scope: this payload is the whole floor - every player name,
       // chip count, seat and the alternate queue.
@@ -772,12 +772,12 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data });
     } catch (err) {
       console.warn('Floor view error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

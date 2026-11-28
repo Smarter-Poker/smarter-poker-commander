@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
     // 2026-07-25 audit fix: staff can only read operational data for their own venue.
     if (String(staff.venue_id) !== String(venue_id)) {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' } });
     }
 
     try {
@@ -213,6 +213,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

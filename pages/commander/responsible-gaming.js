@@ -58,7 +58,7 @@ export default function ResponsibleGaming() {
     try {
       // Search members first
       const res = await commanderFetch(`/api/commander/members/search?q=${encodeURIComponent(query)}&venue_id=${venueId}`);
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       const players = json.data || json.members || [];
 
@@ -72,7 +72,7 @@ export default function ResponsibleGaming() {
       for (const player of players.slice(0, 5)) {
         try {
           const checkRes = await commanderFetch(`/api/commander/responsible-gaming/check/${player.user_id || player.id}?venue_id=${venueId}`);
-          if (!checkRes.ok) throw new Error(`Request failed (${checkRes.status})`);
+          if (!checkRes.ok) throw new Error(`Request Failed (${checkRes.status})`);
           const checkJson = await checkRes.json();
           results.push({
             ...player,

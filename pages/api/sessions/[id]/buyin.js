@@ -38,14 +38,14 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Session ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Session ID Required' }
       });
     }
 
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
       if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > MAX_BUYIN) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: `Valid amount required (a positive number up to ${MAX_BUYIN})` }
+          error: { code: 'VALIDATION_ERROR', message: `Valid Amount Required (A Positive Number Up To ${MAX_BUYIN})` }
         });
       }
 
@@ -96,19 +96,19 @@ export default async function handler(req, res) {
         if (rpcError.code === 'P0002') {
           return res.status(404).json({
             success: false,
-            error: { code: 'NOT_FOUND', message: 'Session not found' }
+            error: { code: 'NOT_FOUND', message: 'Session Not Found' }
           });
         }
         if (rpcError.code === 'P0001') {
           return res.status(400).json({
             success: false,
-            error: { code: 'SESSION_ENDED', message: 'Cannot add buy-in to ended session' }
+            error: { code: 'SESSION_ENDED', message: 'Cannot Add Buy-In To Ended Session' }
           });
         }
         console.warn('Session buy-in error:', rpcError);
         return res.status(500).json({
           success: false,
-          error: { code: 'DATABASE_ERROR', message: 'Failed to add buy-in' }
+          error: { code: 'DATABASE_ERROR', message: 'Failed To Add Buy-In' }
         });
       }
 
@@ -126,13 +126,13 @@ export default async function handler(req, res) {
       console.warn('Session buy-in error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

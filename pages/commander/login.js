@@ -414,7 +414,7 @@ export default function CommanderLogin() {
       if (error) throw error;
     } catch (err) {
       console.warn('OAuth Error:', err);
-      setError(err.message || `Failed to sign in with ${provider}`);
+      setError(err.message || `Failed To Sign In With ${provider}`);
       setLoading(false);
     }
   }
@@ -491,7 +491,7 @@ export default function CommanderLogin() {
               fontFamily: 'Inter, sans-serif'
             }}
             className="hover:bg-white/5 transition-colors rounded-lg"
-            title="Continue with SSO"
+            title="Continue With SSO"
           >
             {ssoLoading ? 'Signing In...' : 'Continue As ' + (ssoEmail || 'Smarter.Poker')}
           </button>

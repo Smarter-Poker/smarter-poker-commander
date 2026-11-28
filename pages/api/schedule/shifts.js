@@ -32,12 +32,12 @@ export default async function handler(req, res) {
       if (req.method === 'GET') return handleGet(req, res);
       if (req.method === 'POST') return handlePost(req, res);
       if (req.method === 'DELETE') return handleDelete(req, res);
-      return res.status(405).json({ success: false, error: { message: 'Method not allowed' } });
+      return res.status(405).json({ success: false, error: { message: 'Method Not Allowed' } });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -81,7 +81,7 @@ async function handleGet(req, res) {
         return res.status(200).json({ success: true, data: data || [] });
     } catch (err) {
         console.warn('[Schedule Shifts] GET error:', err);
-        return res.status(500).json({ success: false, error: { message: 'Failed to fetch shifts' } });
+        return res.status(500).json({ success: false, error: { message: 'Failed To Fetch Shifts' } });
     }
 }
 
@@ -128,7 +128,7 @@ async function handlePost(req, res) {
         return res.status(201).json({ success: true, data });
     } catch (err) {
         console.warn('[Schedule Shifts] POST error:', err);
-        return res.status(500).json({ success: false, error: { message: 'Failed to create shift' } });
+        return res.status(500).json({ success: false, error: { message: 'Failed To Create Shift' } });
     }
 }
 
@@ -161,6 +161,6 @@ async function handleDelete(req, res) {
     } catch (err) {
         try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
         console.warn('[Schedule Shifts] DELETE error:', err);
-        return res.status(500).json({ success: false, error: { message: 'Failed to delete shift' } });
+        return res.status(500).json({ success: false, error: { message: 'Failed To Delete Shift' } });
     }
 }

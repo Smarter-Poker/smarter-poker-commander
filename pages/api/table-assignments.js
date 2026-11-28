@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         } catch (e) { console.warn('[App] Handled exception:', e); }
       }
 
-      if (!venueId) return res.status(403).json({ success: false, error: 'Could not determine venue' });
+      if (!venueId) return res.status(403).json({ success: false, error: 'Could Not Determine Venue' });
 
       // Staff identity comes from the verified session, not the raw header.
       const staffUserId = _g.user_id || _g.linked_user_id || _g.id || null;
@@ -68,16 +68,16 @@ export default async function handler(req, res) {
       if (req.method === 'GET') return handleGet(req, res, venueId);
       if (req.method === 'PUT') return handlePut(req, res, venueId, staffUserId);
       if (req.method === 'POST') return handleClose(req, res, venueId, staffUserId);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Table assignment error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -91,7 +91,7 @@ async function handleGet(req, res, venueId) {
     .order('table_number')
         .limit(100)
 
-  if (error) return res.status(500).json({ success: false, error: 'Failed to fetch tables' });
+  if (error) return res.status(500).json({ success: false, error: 'Failed To Fetch Tables' });
 
   // Get active games at this venue (to determine which tables are running cash games)
   const { data: games } = await getSupabase()
@@ -207,7 +207,7 @@ async function handlePut(req, res, venueId, staffUserId) {
     .eq('venue_id', venueId)
     .maybeSingle();
 
-  if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
+  if (!table) return res.status(404).json({ success: false, error: 'Table Not Found' });
 
   // 2026-08-20: refuse to reassign a table out from under live tournament
   // players. Switching a tournament table to cash/inactive nulls tournament_id
@@ -305,7 +305,7 @@ async function handlePut(req, res, venueId, staffUserId) {
 
   if (error) {
     console.warn('Assignment update error:', error);
-    return res.status(500).json({ success: false, error: 'Failed to update table assignment' });
+    return res.status(500).json({ success: false, error: 'Failed To Update Table Assignment' });
   }
 
   return res.status(200).json({ success: true, data: updated });
@@ -323,7 +323,7 @@ async function handleClose(req, res, venueId, staffUserId) {
     .eq('venue_id', venueId)
     .maybeSingle();
 
-  if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
+  if (!table) return res.status(404).json({ success: false, error: 'Table Not Found' });
 
   // 2026-08-20: same guard as the reassignment path. Closing a tournament
   // table nulls tournament_id and deletes its seat rows while live

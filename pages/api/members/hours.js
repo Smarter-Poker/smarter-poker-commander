@@ -195,13 +195,13 @@ export default async function handler(req, res) {
                   data: { players: ranked, total: ranked.length, period, has_session_data: false }
               });
           } catch (fallbackErr) {
-              return res.status(500).json({ success: false, error: 'Failed to fetch hours data' });
+              return res.status(500).json({ success: false, error: 'Failed To Fetch Hours Data' });
           }
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

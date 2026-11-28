@@ -33,7 +33,7 @@ const DOCUMENTATION = [
   {
     id: 'faq',
     title: 'Player FAQ',
-    description: 'Answers to Common Questions About Using Club Commander as a Player.',
+    description: 'Answers To Common Questions About Using Club Commander As A Player.',
     icon: HelpCircle,
     href: '/hub/commander/faq',
     audience: 'Players',
@@ -42,7 +42,7 @@ const DOCUMENTATION = [
   {
     id: 'troubleshooting',
     title: 'Troubleshooting Guide',
-    description: 'Diagnose and Resolve Common Technical Issues with Step-by-step Solutions.',
+    description: 'Diagnose And Resolve Common Technical Issues With Step-By-Step Solutions.',
     icon: AlertTriangle,
     href: '/commander/docs/troubleshooting',
     audience: 'All Staff',

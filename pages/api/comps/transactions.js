@@ -38,12 +38,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -51,7 +51,7 @@ async function listTransactions(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -59,7 +59,7 @@ async function listTransactions(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const {
@@ -143,7 +143,7 @@ async function createTransaction(req, res) {
     const { venue_id, player_id, amount, description, transaction_type = 'bonus' } = req.body;
 
     if (!venue_id || !player_id || amount === undefined) {
-      return res.status(400).json({ success: false, error: 'Venue ID, player ID, and amount are required' });
+      return res.status(400).json({ success: false, error: 'Venue ID, Player ID, And Amount Are Required' });
     }
 
     // 2026-07-25 audit fix: prefer the verified (HMAC-signed) x-staff-session;
@@ -153,13 +153,13 @@ async function createTransaction(req, res) {
     const sessionResult = await verifyStaffSession(req);
     if (sessionResult.staff) {
       if (String(sessionResult.staff.venue_id) !== String(venue_id)) {
-        return res.status(403).json({ success: false, error: 'Not authorized for this venue' });
+        return res.status(403).json({ success: false, error: 'Not Authorized For This Venue' });
       }
       staff = sessionResult.staff;
     } else {
       const authHeader = req.headers.authorization;
       if (!authHeader) {
-        return res.status(401).json({ success: false, error: 'Authorization required' });
+        return res.status(401).json({ success: false, error: 'Authorization Required' });
       }
 
       const token = authHeader.replace('Bearer ', '');
@@ -167,7 +167,7 @@ async function createTransaction(req, res) {
       const user = authData?.user;
 
       if (authError || !user) {
-        return res.status(401).json({ success: false, error: 'Invalid token' });
+        return res.status(401).json({ success: false, error: 'Invalid Token' });
       }
 
       const { data: staffRow } = await getSupabase()
@@ -183,12 +183,12 @@ async function createTransaction(req, res) {
     }
 
     if (!staff) {
-      return res.status(403).json({ success: false, error: 'Staff access required to issue comps' });
+      return res.status(403).json({ success: false, error: 'Staff Access Required To Issue Comps' });
     }
 
     // For adjustments (negative), require dualrate or higher
     if (amount < 0 && !['owner', 'manager', 'dualrate'].includes(staff.role)) {
-      return res.status(403).json({ success: false, error: 'Dual Rate role or higher required for adjustments' });
+      return res.status(403).json({ success: false, error: 'Dual Rate Role Or Higher Required For Adjustments' });
     }
 
     // Use the database function to issue manual comp
@@ -232,6 +232,6 @@ async function createTransaction(req, res) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create transaction error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

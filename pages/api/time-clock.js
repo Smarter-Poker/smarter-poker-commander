@@ -43,12 +43,12 @@ export default async function handler(req, res) {
 
       if (req.method === 'GET') return handleGet(req, res);
       if (req.method === 'POST') return handlePost(req, res);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -117,7 +117,7 @@ async function handleGet(req, res) {
         });
     } catch (err) {
         console.warn('Time clock GET error:', err);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 }
 
@@ -157,11 +157,11 @@ async function handlePost(req, res) {
                     .limit(1);
 
                 if (!linkedStaff?.[0]) {
-                    return res.status(404).json({ success: false, error: 'No active staff member found for this QR code' });
+                    return res.status(404).json({ success: false, error: 'No Active Staff Member Found For This QR Code' });
                 }
                 staff = linkedStaff[0];
             } else {
-                return res.status(404).json({ success: false, error: 'Invalid QR code or staff not found' });
+                return res.status(404).json({ success: false, error: 'Invalid QR Code Or Staff Not Found' });
             }
         }
 
@@ -233,6 +233,6 @@ async function handlePost(req, res) {
     } catch (err) {
         try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
         console.warn('Time clock POST error:', err);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 }

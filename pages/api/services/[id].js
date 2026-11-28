@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Request ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Request ID Required' }
       });
     }
 
@@ -54,14 +54,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -97,7 +97,7 @@ async function handleGet(req, res, requestId) {
     if (error || !request) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Service request not found' }
+        error: { code: 'NOT_FOUND', message: 'Service Request Not Found' }
       });
     }
 
@@ -109,7 +109,7 @@ async function handleGet(req, res, requestId) {
     console.warn('Commander service GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -121,7 +121,7 @@ async function handlePatch(req, res, requestId, staff) {
     if (!staff) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Staff authentication required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Staff Authentication Required' }
       });
     }
 
@@ -137,7 +137,7 @@ async function handlePatch(req, res, requestId, staff) {
     if (fetchError || !request) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Service request not found' }
+        error: { code: 'NOT_FOUND', message: 'Service Request Not Found' }
       });
     }
 
@@ -147,7 +147,7 @@ async function handlePatch(req, res, requestId, staff) {
       if (!VALID_STATUSES.includes(status)) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: `Invalid status. Must be: ${VALID_STATUSES.join(', ')}` }
+          error: { code: 'VALIDATION_ERROR', message: `Invalid Status. Must Be: ${VALID_STATUSES.join(', ')}` }
         });
       }
       updates.status = status;
@@ -167,7 +167,7 @@ async function handlePatch(req, res, requestId, staff) {
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No valid fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Valid Fields To Update' }
       });
     }
 
@@ -182,7 +182,7 @@ async function handlePatch(req, res, requestId, staff) {
       console.warn('Commander service PATCH error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update service request' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Service Request' }
       });
     }
 
@@ -195,7 +195,7 @@ async function handlePatch(req, res, requestId, staff) {
     console.warn('Commander service PATCH error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -216,21 +216,21 @@ async function handleDelete(req, res, requestId) {
     if (fetchError || !request) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Service request not found' }
+        error: { code: 'NOT_FOUND', message: 'Service Request Not Found' }
       });
     }
 
     if (String(request.player_id) !== String(user.id)) {
       return res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'You can only cancel your own service requests' }
+        error: { code: 'FORBIDDEN', message: 'You Can Only Cancel Your Own Service Requests' }
       });
     }
 
     if (['completed', 'cancelled'].includes(request.status)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'INVALID_STATE', message: 'Request is already closed' }
+        error: { code: 'INVALID_STATE', message: 'Request Is Already Closed' }
       });
     }
 
@@ -245,7 +245,7 @@ async function handleDelete(req, res, requestId) {
       console.warn('Commander service DELETE error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to cancel service request' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Cancel Service Request' }
       });
     }
 
@@ -258,7 +258,7 @@ async function handleDelete(req, res, requestId) {
     console.warn('Commander service DELETE error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

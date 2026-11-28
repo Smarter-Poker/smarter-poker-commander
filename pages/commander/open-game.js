@@ -145,7 +145,7 @@ const headers = { 'Content-Type': 'application/json' };
         })
       });
 
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success || gameJson.success) {
         // Broadcast to all other tabs so they update instantly

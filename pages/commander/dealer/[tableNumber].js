@@ -122,7 +122,7 @@ export default function DealerTablet() {
       const headers = { };
       // Fetch table by number (includes mode, tournament_id from assignment system)
       const tableRes = await commanderFetch(`/api/commander/tables/by-number?tableNumber=${tableNumber}`, { headers, signal });
-      if (!tableRes.ok) throw new Error(`Table fetch failed (${tableRes.status})`);
+      if (!tableRes.ok) throw new Error(`Table Fetch Failed (${tableRes.status})`);
       const tableJson = await tableRes.json();
 
       if (!tableJson.success) { setLoading(false); return; }
@@ -134,7 +134,7 @@ export default function DealerTablet() {
       // Fetch current dealer for this table
       try {
         const dealerRes = await commanderFetch(`/api/commander/dealer/current?table=${tableNumber}`, { headers });
-        if (!dealerRes.ok) throw new Error(`Dealer fetch failed (${dealerRes.status})`);
+        if (!dealerRes.ok) throw new Error(`Dealer Fetch Failed (${dealerRes.status})`);
         const dealerJson = await dealerRes.json();
         if (dealerJson.success && dealerJson.data?.dealer) {
           setCurrentDealer(dealerJson.data.dealer);
@@ -154,7 +154,7 @@ export default function DealerTablet() {
             `/api/commander/tournaments/${tbl.tournament_id}/floor-view?include=tournament,clock,stats,alerts,tables,alternates`,
             { headers }
           );
-          if (!tRes.ok) throw new Error(`Tournament fetch failed (${tRes.status})`);
+          if (!tRes.ok) throw new Error(`Tournament Fetch Failed (${tRes.status})`);
           const tJson = await tRes.json();
           if (tJson.success) {
             const tData = tJson.data;
@@ -205,7 +205,7 @@ export default function DealerTablet() {
         setLevelRemaining(null);
         try {
           const sessionsRes = await commanderFetch(`/api/commander/dealer/sessions?table=${tableNumber}`, { headers });
-          if (!sessionsRes.ok) throw new Error(`Sessions fetch failed (${sessionsRes.status})`);
+          if (!sessionsRes.ok) throw new Error(`Sessions Fetch Failed (${sessionsRes.status})`);
           const sessionsJson = await sessionsRes.json();
           if (sessionsJson.success) setSeatedPlayers(sessionsJson.data || []);
         } catch (e) { console.warn('Sessions fetch error:', e); }
@@ -357,7 +357,7 @@ export default function DealerTablet() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qr_code: qrCode, table_number: parseInt(tableNumber), venue_id: vid })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setCurrentDealer(json.data.dealer);
@@ -380,7 +380,7 @@ export default function DealerTablet() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qr_code: qrCode, table_number: parseInt(tableNumber) })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Member Not Found');
       setScannedMember(json.data);
@@ -403,7 +403,7 @@ export default function DealerTablet() {
           time_minutes: scannedMember.time_balance_minutes || 0
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed To Seat Player');
       closeScanner(); await fetchTable();
@@ -763,7 +763,7 @@ export default function DealerTablet() {
       const res = await commanderFetch('/api/commander/floor-calls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ venue_id: vid, table_number: parseInt(tableNumber), reason: 'floor_assistance', description: `Floor requested at Table ${tableNumber}`, priority: 'normal', called_by: 'dealer' })
+        body: JSON.stringify({ venue_id: vid, table_number: parseInt(tableNumber), reason: 'floor_assistance', description: `Floor Requested At Table ${tableNumber}`, priority: 'normal', called_by: 'dealer' })
       });
       if (res.ok) broadcastChange('floor_calls');
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
@@ -1133,7 +1133,7 @@ export default function DealerTablet() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ table_number: parseInt(tableNumber), action: 'increment' })
                 });
-                if (!res.ok) throw new Error(`Request failed (${res.status})`);
+                if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                 const json = await res.json();
                 if (json.success) setHandCount(json.hands_dealt);
               } catch (err) { console.warn('Hand count error:', err); setToast({ type: 'error', text: 'Action Failed: Hand Count. Please Try Again.' }); }

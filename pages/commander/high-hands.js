@@ -86,7 +86,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
           auto_verify: true
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (res.ok && json.high_hand) {
         setMessage({ type: 'success', text: 'High Hand Recorded!' });

@@ -38,12 +38,12 @@ export default async function handler(req, res) {
     if (req.method === 'GET') return handleGet(req, res, staff);
     if (req.method === 'POST') return handlePost(req, res, staff);
     if (req.method === 'PATCH') return handlePatch(req, res, staff);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -95,7 +95,7 @@ async function handleGet(req, res, staff) {
     return res.status(200).json({ success: true, data: transactions, summary });
   } catch (err) {
     console.warn('Cashier GET error:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -109,7 +109,7 @@ async function handlePost(req, res, staff) {
 
     // BUG #252 FIX: Enforce staff can only create transactions in their own venue
     if (staff.venue_id && String(venue_id) !== String(staff.venue_id)) {
-      return res.status(403).json({ success: false, error: 'Cannot create transactions for another venue' });
+      return res.status(403).json({ success: false, error: 'Cannot Create Transactions For Another Venue' });
     }
     if (!VALID_TYPES.includes(type)) {
       return res.status(400).json({ success: false, error: `type must be one of: ${VALID_TYPES.join(', ')}` });
@@ -147,7 +147,7 @@ async function handlePost(req, res, staff) {
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return res.status(500).json({ success: false, error: 'Failed to record transaction' });
+    if (!data) return res.status(500).json({ success: false, error: 'Failed To Record Transaction' });
 
     // Audit log
     await logAction({ action: `cashier_${type}`, category: 'cashier' }, {
@@ -179,7 +179,7 @@ async function handlePost(req, res, staff) {
     return res.status(201).json({ success: true, data, player_totals: playerTotals });
   } catch (err) {
     console.warn('Cashier POST error:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -199,18 +199,18 @@ async function handlePatch(req, res, staff) {
       .maybeSingle();
 
     if (fetchErr || !existing) {
-      return res.status(404).json({ success: false, error: 'Transaction not found' });
+      return res.status(404).json({ success: false, error: 'Transaction Not Found' });
     }
 
     // SAFEGUARD: Prevent double-void - already voided transactions cannot be voided again
     if (existing.voided_at) {
-      return res.status(400).json({ success: false, error: 'Transaction already voided', data: existing });
+      return res.status(400).json({ success: false, error: 'Transaction Already Voided', data: existing });
     }
 
     // SAFEGUARD: Scope to venue - staff can only void transactions in their venue
     // BUG #254 FIX: Always use staff.venue_id, never fall back to req.body
     if (staff.venue_id && existing.venue_id && String(existing.venue_id) !== String(staff.venue_id)) {
-      return res.status(403).json({ success: false, error: 'Cannot void transactions from another venue' });
+      return res.status(403).json({ success: false, error: 'Cannot Void Transactions From Another Venue' });
     }
 
     const { data, error } = await getSupabase()
@@ -240,6 +240,6 @@ async function handlePatch(req, res, staff) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Cashier PATCH error:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

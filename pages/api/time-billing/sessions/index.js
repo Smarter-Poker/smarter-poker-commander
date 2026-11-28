@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
       if (req.method === 'POST') {
         const { player_name, table_number, seat_number, rate_per_hour } = req.body;
-        if (!player_name) return res.status(400).json({ success: false, error: 'Player name required' });
+        if (!player_name) return res.status(400).json({ success: false, error: 'Player Name Required' });
 
         // If no rate provided, look up venue's saved time_billing_rate
         let finalRate = rate_per_hour;
@@ -78,23 +78,23 @@ export default async function handler(req, res) {
 
         if (error) {
           console.warn('Time session create error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
         if (!session) {
-          return res.status(500).json({ success: false, error: 'Failed to create session' });
+          return res.status(500).json({ success: false, error: 'Failed To Create Session' });
         }
         return res.status(201).json({ success: true, data: session });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Time billing error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

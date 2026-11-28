@@ -88,7 +88,7 @@ export default function TDColorUp() {
         `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,tables`,
         { ...(signal ? { signal } : {}) }
       );
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setFloor(json.data);

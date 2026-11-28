@@ -119,7 +119,7 @@ return { 'x-staff-session': staff };
               {formatClientTime(now, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
             </p>
             {minutesUntil !== null && (
-              <p className="text-sm opacity-70">Next rotation in {minutesUntil} min</p>
+              <p className="text-sm opacity-70">Next Rotation In {minutesUntil} Min</p>
             )}
           </div>
         </div>
@@ -171,7 +171,7 @@ return { 'x-staff-session': staff };
                       <div>
                         <p className="text-base font-medium text-white">{d.name || d.first_name}</p>
                         <p className="text-xs text-[#22D3EE]/60">
-                          {d.break_started ? `${Math.floor((now - new Date(d.break_started)) / 60000)}m` : 'On break'}
+                          {d.break_started ? `${Math.floor((now - new Date(d.break_started)) / 60000)}m` : 'On Break'}
                         </p>
                       </div>
                     </div>

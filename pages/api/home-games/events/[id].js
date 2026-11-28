@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     if (!id) {
-      return res.status(400).json({ success: false, error: 'Event ID required' });
+      return res.status(400).json({ success: false, error: 'Event ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -47,12 +47,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -60,7 +60,7 @@ async function getEvent(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -68,7 +68,7 @@ async function getEvent(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const { data: event, error } = await getSupabase()
@@ -86,7 +86,7 @@ async function getEvent(req, res, id) {
       .maybeSingle();
 
     if (error || !event) {
-      return res.status(404).json({ success: false, error: 'Event not found' });
+      return res.status(404).json({ success: false, error: 'Event Not Found' });
     }
 
     // Check if user is a member
@@ -98,7 +98,7 @@ async function getEvent(req, res, id) {
       .maybeSingle();
 
     if (!membership || membership.status !== 'approved') {
-      return res.status(403).json({ success: false, error: 'You are not a member of this group' });
+      return res.status(403).json({ success: false, error: 'You Are Not A Member Of This Group' });
     }
 
     // Find user's RSVP
@@ -144,7 +144,7 @@ async function getEvent(req, res, id) {
     });
   } catch (error) {
     console.warn('Get event error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -152,7 +152,7 @@ async function updateEvent(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -160,7 +160,7 @@ async function updateEvent(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     // Get event
@@ -171,7 +171,7 @@ async function updateEvent(req, res, id) {
       .maybeSingle();
 
     if (!event) {
-      return res.status(404).json({ success: false, error: 'Event not found' });
+      return res.status(404).json({ success: false, error: 'Event Not Found' });
     }
 
     // Check permissions
@@ -188,7 +188,7 @@ async function updateEvent(req, res, id) {
     const isAdmin = membership?.role === 'owner' || membership?.role === 'admin';
 
     if (!isHost && !isAdmin) {
-      return res.status(403).json({ success: false, error: 'Only the host or admins can update this event' });
+      return res.status(403).json({ success: false, error: 'Only The Host Or Admins Can Update This Event' });
     }
 
     const { action } = req.body;
@@ -204,7 +204,7 @@ async function updateEvent(req, res, id) {
 
       if (error) throw error;
 
-      return res.status(200).json({ event: updated, message: 'Game started' });
+      return res.status(200).json({ event: updated, message: 'Game Started' });
     }
 
     if (action === 'complete') {
@@ -247,7 +247,7 @@ async function updateEvent(req, res, id) {
         console.warn(`increment_home_game_stats failed for game ${id}:`, e?.message || e);
       }
 
-      return res.status(200).json({ event: updated, message: 'Game completed' });
+      return res.status(200).json({ event: updated, message: 'Game Completed' });
     }
 
     // Regular update - explicit ALLOW-LIST, same pattern as groups/[id] F67.
@@ -318,7 +318,7 @@ async function updateEvent(req, res, id) {
     return res.status(200).json({ event: updated });
   } catch (error) {
     console.warn('Update event error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -326,7 +326,7 @@ async function cancelEvent(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -334,7 +334,7 @@ async function cancelEvent(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     // Get event
@@ -345,7 +345,7 @@ async function cancelEvent(req, res, id) {
       .maybeSingle();
 
     if (!event) {
-      return res.status(404).json({ success: false, error: 'Event not found' });
+      return res.status(404).json({ success: false, error: 'Event Not Found' });
     }
 
     // Check permissions
@@ -362,7 +362,7 @@ async function cancelEvent(req, res, id) {
     const isAdmin = membership?.role === 'owner' || membership?.role === 'admin';
 
     if (!isHost && !isAdmin) {
-      return res.status(403).json({ success: false, error: 'Only the host or admins can cancel this event' });
+      return res.status(403).json({ success: false, error: 'Only The Host Or Admins Can Cancel This Event' });
     }
 
     const { error } = await getSupabase()
@@ -372,10 +372,10 @@ async function cancelEvent(req, res, id) {
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, message: 'Event cancelled' });
+    return res.status(200).json({ success: true, message: 'Event Cancelled' });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Cancel event error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

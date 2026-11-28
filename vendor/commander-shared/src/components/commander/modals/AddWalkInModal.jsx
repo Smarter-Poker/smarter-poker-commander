@@ -51,7 +51,7 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
           source: 'walk_in'
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
 
@@ -62,10 +62,10 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
         broadcastChange('waitlist');
         broadcastChange('games');
       } else {
-        setError(data.error?.message || 'Failed to add player');
+        setError(data.error?.message || 'Failed To Add Player');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -236,7 +236,7 @@ export default function AddWalkInModal({ isOpen, onClose, onSubmit, venueId, act
             className="w-full h-12 bg-[#10B981] text-white font-semibold rounded-lg hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <UserPlus className="w-5 h-5" />
-            {submitting ? 'Adding...' : 'Add to Waitlist'}
+            {submitting ? 'Adding...' : 'Add To Waitlist'}
           </button>
         </form>
       </div>

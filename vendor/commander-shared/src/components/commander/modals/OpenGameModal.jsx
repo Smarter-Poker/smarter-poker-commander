@@ -60,7 +60,7 @@ export default function OpenGameModal({ isOpen, onClose, onSubmit, tables = [], 
           max_buyin: maxBuyin
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
 
@@ -71,10 +71,10 @@ export default function OpenGameModal({ isOpen, onClose, onSubmit, tables = [], 
         broadcastChange('games');
         broadcastChange('tables');
       } else {
-        setError(data.error?.message || 'Failed to open game');
+        setError(data.error?.message || 'Failed To Open Game');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -229,7 +229,7 @@ export default function OpenGameModal({ isOpen, onClose, onSubmit, tables = [], 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-white mb-1">
-                Min Buy-in
+                Min Buy-In
               </label>
               <input
                 type="number"
@@ -240,7 +240,7 @@ export default function OpenGameModal({ isOpen, onClose, onSubmit, tables = [], 
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-1">
-                Max Buy-in
+                Max Buy-In
               </label>
               <input
                 type="number"

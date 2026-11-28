@@ -171,7 +171,7 @@ describe('Commander Home Games public boundary', () => {
     });
     expect(normalizeGroupUpdates({ visibility: 'friends' })).toEqual({
       updates: null,
-      error: 'Visibility must be private or public',
+      error: 'Visibility Must Be Private Or Public',
     });
 
     const source = read('pages/api/home-games/groups/[id].js');
@@ -268,7 +268,7 @@ describe('Commander Home Games public boundary', () => {
     expect(mapMembershipRpcError({ code: 'P0001', message: 'TARGET_NOT_PENDING' })).toEqual({
       status: 409,
       code: 'TARGET_NOT_PENDING',
-      error: 'This membership request is no longer pending',
+      error: 'This Membership Request Is No Longer Pending',
     });
     expect(mapMembershipRpcError({ code: 'P0001', message: 'ADMIN_CANNOT_MODIFY_PEER' }))
       .toMatchObject({ status: 403, code: 'ADMIN_CANNOT_MODIFY_PEER' });
@@ -543,7 +543,7 @@ describe('Commander Home Games public boundary', () => {
     const source = read('pages/api/home-games/events/[id]/rsvp.js');
     expect(source).toContain('rsvps: normalizedRsvps');
     expect(source).toContain('grouped,');
-    expect(source).toContain('Only the event host or group managers can view RSVPs');
+    expect(source).toContain('Only The Event Host Or Group Managers Can View RSVPs');
     expect(source).toContain('normalizedRsvp.response === \'waitlist\'');
     expect(source).not.toContain('event.rsvp_yes + spotsNeeded');
   });

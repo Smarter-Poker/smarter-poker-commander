@@ -15,10 +15,10 @@ import { commanderFetch, commanderFetchJSON } from '../../src/lib/commander/comm
 import InlineStyle from '../../src/components/commander/shared/InlineStyle';
 
 const RATING_LABELS = {
-  reliability: { label: 'Reliability', desc: 'Shows up, stays committed' },
-  sportsmanship: { label: 'Sportsmanship', desc: 'Handles wins/losses well' },
-  etiquette: { label: 'Etiquette', desc: 'Follows rules, tips dealers' },
-  communication: { label: 'Communication', desc: 'Clear, responsive' }
+  reliability: { label: 'Reliability', desc: 'Shows Up, Stays Committed' },
+  sportsmanship: { label: 'Sportsmanship', desc: 'Handles Wins/Losses Well' },
+  etiquette: { label: 'Etiquette', desc: 'Follows Rules, Tips Dealers' },
+  communication: { label: 'Communication', desc: 'Clear, Responsive' }
 };
 
 export default function PlayerReputation() {
@@ -107,7 +107,7 @@ const res = await commanderFetch('/api/commander/reputation', {
           ...reviewForm
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setShowReviewForm(null);

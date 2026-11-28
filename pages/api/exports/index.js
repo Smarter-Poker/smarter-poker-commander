@@ -35,14 +35,14 @@ async function handler(req, res) {
   }
 
   res.setHeader('Allow', ['GET', 'POST']);
-  return res.status(405).json({ error: 'Method not allowed' });
+  return res.status(405).json({ error: 'Method Not Allowed' });
 }
 
 async function listExports(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -50,7 +50,7 @@ async function listExports(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const { venue_id, status, limit: rawLimit = '20' } = req.query;
@@ -73,7 +73,7 @@ async function listExports(req, res) {
         .maybeSingle();
 
       if (!staff || !['owner', 'manager'].includes(staff.role)) {
-        return res.status(403).json({ error: 'Manager access required' });
+        return res.status(403).json({ error: 'Manager Access Required' });
       }
 
       query = query.eq('venue_id', venue_id);
@@ -93,7 +93,7 @@ async function listExports(req, res) {
   } catch (error) {
     try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('List exports error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -101,7 +101,7 @@ async function createExport(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -109,7 +109,7 @@ async function createExport(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const {
@@ -122,7 +122,7 @@ async function createExport(req, res) {
     } = req.body;
 
     if (!venue_id || !export_type) {
-      return res.status(400).json({ error: 'Venue ID and export type required' });
+      return res.status(400).json({ error: 'Venue ID And Export Type Required' });
     }
 
     // Check if staff
@@ -135,7 +135,7 @@ async function createExport(req, res) {
       .maybeSingle();
 
     if (!staff || !['owner', 'manager'].includes(staff.role)) {
-      return res.status(403).json({ error: 'Manager access required to export data' });
+      return res.status(403).json({ error: 'Manager Access Required To Export Data' });
     }
 
     // Create export job
@@ -182,12 +182,12 @@ async function createExport(req, res) {
 
     return res.status(201).json({
       export: updatedJob,
-      message: 'Export job created'
+      message: 'Export Job Created'
     });
   } catch (error) {
     try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create export error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 

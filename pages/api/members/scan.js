@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   if (!_authResult) return;
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, error: 'Method not allowed' });
+        return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     const { qr_code, venue_id } = req.body;
@@ -53,13 +53,13 @@ export default async function handler(req, res) {
 
     if (error) {
         console.warn('QR scan error:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
     const member = members?.[0];
 
     if (!member) {
-        return res.status(404).json({ success: false, error: 'Member not found' });
+        return res.status(404).json({ success: false, error: 'Member Not Found' });
     }
 
     // Update last visit and increment visit count
@@ -85,6 +85,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[pages/api/commander/members/scan.js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -143,7 +143,7 @@ export default function MembershipKiosk() {
       });
       // HIGH FIX #2e: Add response.ok check before .json()
       if (!res.ok) {
-        const errorText = await res.text().catch(() => 'Unknown error');
+        const errorText = await res.text().catch(() => 'Unknown Error');
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
       const json = await res.json();
@@ -182,7 +182,7 @@ export default function MembershipKiosk() {
       });
       // HIGH FIX #2f: Add response.ok check before .json()
       if (!res.ok) {
-        const errorText = await res.text().catch(() => 'Unknown error');
+        const errorText = await res.text().catch(() => 'Unknown Error');
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
       const json = await res.json();
@@ -224,7 +224,7 @@ export default function MembershipKiosk() {
         setMode('success');
         broadcastChange('waitlist');
       } else {
-        throw new Error('Check-in failed on server');
+        throw new Error('Check-In Failed On Server');
       }
     } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
     finally { setSubmitting(false); }
@@ -244,7 +244,7 @@ export default function MembershipKiosk() {
       });
       // HIGH FIX #2g: Add response.ok check before .json()
       if (!res.ok) {
-        const errorText = await res.text().catch(() => 'Unknown error');
+        const errorText = await res.text().catch(() => 'Unknown Error');
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
       const json = await res.json();
@@ -262,7 +262,7 @@ export default function MembershipKiosk() {
         });
         // HIGH FIX #2h: Add response.ok check before .json()
         if (!wlRes.ok) {
-          const errorText = await wlRes.text().catch(() => 'Unknown error');
+          const errorText = await wlRes.text().catch(() => 'Unknown Error');
           throw new Error(`HTTP ${wlRes.status}: ${errorText}`);
         }
         const wlData = await wlRes.json();
@@ -320,7 +320,7 @@ export default function MembershipKiosk() {
       });
       // HIGH FIX #2i: Add response.ok check before .json()
       if (!res.ok) {
-        const errorText = await res.text().catch(() => 'Unknown error');
+        const errorText = await res.text().catch(() => 'Unknown Error');
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
       const json = await res.json();
@@ -435,7 +435,7 @@ export default function MembershipKiosk() {
         headers: { 'Content-Type': 'application/json', 'x-staff-session': staffHeader },
         body: JSON.stringify({ qr_code: scanQR.trim(), venue_id: venueId })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success || !json.data?.member) {
         setScanError('Card Not Recognized. Please Enter Your Name Manually.');

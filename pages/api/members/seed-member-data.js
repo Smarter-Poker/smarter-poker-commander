@@ -91,7 +91,7 @@ export default async function handler(req, res) {
       const _g = await guardWriteStaff(req, res); if (!_g) return;
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       const { venue_id } = req.body;
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
 
           if (fetchErr) throw fetchErr;
           if (!members || members.length === 0) {
-              return res.status(200).json({ success: true, data: { seeded: 0, message: 'No members found in this venue' } });
+              return res.status(200).json({ success: true, data: { seeded: 0, message: 'No Members Found In This Venue' } });
           }
 
           let seeded = 0;
@@ -173,7 +173,7 @@ export default async function handler(req, res) {
 
           return res.status(200).json({
               success: true,
-              data: { seeded, total: members.length, message: `Seeded ${seeded} of ${members.length} members with simulated data` }
+              data: { seeded, total: members.length, message: `Seeded ${seeded} Of ${members.length} Members With Simulated Data` }
           });
       } catch (err) {
           console.warn('Seed member data error:', err);
@@ -183,6 +183,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

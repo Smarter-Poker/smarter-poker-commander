@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       const { id } = req.query;
 
       if (!id) {
-          return res.status(400).json({ success: false, error: 'Member ID is required' });
+          return res.status(400).json({ success: false, error: 'Member ID Is Required' });
       }
 
       // Venue ownership: the member must belong to the caller's venue.
@@ -65,12 +65,12 @@ export default async function handler(req, res) {
           return handleDelete(req, res, id);
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -82,7 +82,7 @@ async function handleGet(req, res, id) {
         .maybeSingle();
 
     if (error || !member) {
-        return res.status(404).json({ success: false, error: 'Member not found' });
+        return res.status(404).json({ success: false, error: 'Member Not Found' });
     }
 
     return res.status(200).json({ success: true, data: { member } });
@@ -106,7 +106,7 @@ async function handleUpdate(req, res, id) {
     }
 
     if (Object.keys(updates || {}).length === 0) {
-        return res.status(400).json({ success: false, error: 'No fields to update' });
+        return res.status(400).json({ success: false, error: 'No Fields To Update' });
     }
 
     updates.updated_at = new Date().toISOString();
@@ -120,7 +120,7 @@ async function handleUpdate(req, res, id) {
 
     if (error) {
         console.warn('Member update error:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
     return res.status(200).json({ success: true, data: { member } });
@@ -140,7 +140,7 @@ async function handleDelete(req, res, id) {
 
     if (error) {
         console.warn('Member delete error:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
     return res.status(200).json({ success: true, data: { member } });

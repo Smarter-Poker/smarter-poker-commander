@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // ═══ Auth: Extract and verify JWT from Authorization header ═══
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
           return res.status(401).json({
               success: false,
-              error: { code: 'AUTH_REQUIRED', message: 'Please sign in to join the waitlist' }
+              error: { code: 'AUTH_REQUIRED', message: 'Please Sign In To Join The Waitlist' }
           });
       }
 
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
           return res.status(401).json({
               success: false,
-              error: { code: 'AUTH_REQUIRED', message: 'Please sign in to join the waitlist' }
+              error: { code: 'AUTH_REQUIRED', message: 'Please Sign In To Join The Waitlist' }
           });
       }
 
@@ -93,14 +93,14 @@ export default async function handler(req, res) {
           if (venueError || !venue) {
               return res.status(404).json({
                   success: false,
-                  error: { code: 'NOT_FOUND', message: 'Venue not found' }
+                  error: { code: 'NOT_FOUND', message: 'Venue Not Found' }
               });
           }
 
           if (!venue.commander_enabled) {
               return res.status(400).json({
                   success: false,
-                  error: { code: 'VENUE_NOT_COMMANDER', message: 'Venue is not using Commander' }
+                  error: { code: 'VENUE_NOT_COMMANDER', message: 'Venue Is Not Using Commander' }
               });
           }
 
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
           if (existing) {
               return res.status(400).json({
                   success: false,
-                  error: { code: 'ALREADY_ON_WAITLIST', message: 'You are already on this waitlist' }
+                  error: { code: 'ALREADY_ON_WAITLIST', message: 'You Are Already On This Waitlist' }
               });
           }
 
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
               console.warn('Public waitlist join insert error:', insertError);
               return res.status(500).json({
                   success: false,
-                  error: { code: 'DATABASE_ERROR', message: 'Failed to join waitlist' }
+                  error: { code: 'DATABASE_ERROR', message: 'Failed To Join Waitlist' }
               });
           }
 
@@ -270,13 +270,13 @@ export default async function handler(req, res) {
           captureException(error, { action: 'waitlist_public_join', endpoint: '/api/commander/waitlist/public-join' });
           return res.status(500).json({
               success: false,
-              error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+              error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
           });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     try {
         if (req.method !== 'POST') {
             res.setHeader('Allow', ['POST']);
-            return res.status(405).json({ success: false, error: 'Method not allowed' });
+            return res.status(405).json({ success: false, error: 'Method Not Allowed' });
         }
 
         if (!applyRateLimit(req, res, LIMITS.write)) return;
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
 
         const { id: groupId } = req.query;
         if (!groupId || typeof groupId !== 'string' || !UUID_RE.test(groupId)) {
-            return res.status(400).json({ success: false, error: 'Invalid group id' });
+            return res.status(400).json({ success: false, error: 'Invalid Group Id' });
         }
 
         const {
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: 'include_members and include_followers must be boolean' });
         }
         if (!include_members && !include_followers) {
-            return res.status(400).json({ success: false, error: 'At least one audience must be selected' });
+            return res.status(400).json({ success: false, error: 'At Least One Audience Must Be Selected' });
         }
         if (link_path != null && (typeof link_path !== 'string' || link_path.length > 500 || !link_path.startsWith('/'))) {
             return res.status(400).json({ success: false, error: 'link_path must be a relative URL starting with /' });
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
         if (error) {
             // eslint-disable-next-line no-console
             console.warn('[broadcast] RPC error:', error);
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         if (result && result.success === false) {
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
         // eslint-disable-next-line no-console
         console.warn('[broadcast]', err);
         if (!res.headersSent) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
     }
 }

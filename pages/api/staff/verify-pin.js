@@ -105,7 +105,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
     }
 
     try {
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
         res.setHeader('Retry-After', rl.retry);
         return res.status(429).json({
           success: false,
-          error: { code: rl.reason, message: `Too many attempts. Try again in ${rl.retry}s.` }
+          error: { code: rl.reason, message: `Too Many Attempts. Try Again In ${rl.retry}s.` }
         });
       }
 
@@ -131,7 +131,7 @@ export default async function handler(req, res) {
         res.setHeader('Retry-After', venueLock);
         return res.status(429).json({
           success: false,
-          error: { code: 'VENUE_LOCKED_OUT', message: `Too many failed attempts. Try again in ${venueLock}s.` }
+          error: { code: 'VENUE_LOCKED_OUT', message: `Too Many Failed Attempts. Try Again In ${venueLock}s.` }
         });
       }
 
@@ -194,12 +194,12 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       console.warn('Commander verify PIN error:', error);
-      return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+      return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' } });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

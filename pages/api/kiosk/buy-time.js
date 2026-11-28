@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     // Staff auth: kiosk devices must present an HMAC-signed staff session.
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
     const rl = checkMemoryRateLimit(`kiosk:${ip}`, 10, 60000);
-    if (!rl.allowed) { return res.status(429).json({ success: false, error: 'Too many requests' }); }
+    if (!rl.allowed) { return res.status(429).json({ success: false, error: 'Too Many Requests' }); }
 
     const { member_id, minutes, amount, payment_method } = req.body;
 
@@ -65,12 +65,12 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (fetchError || !member) {
-        return res.status(404).json({ success: false, error: 'Member not found' });
+        return res.status(404).json({ success: false, error: 'Member Not Found' });
       }
 
       // Venue scoping: a kiosk may only sell time to members of its own venue.
       if (_staff.venue_id && String(member.venue_id) !== String(_staff.venue_id)) {
-        return res.status(403).json({ success: false, error: 'Cannot buy time for a member at another venue' });
+        return res.status(403).json({ success: false, error: 'Cannot Buy Time For A Member At Another Venue' });
       }
 
       const purchasedMinutes = parseInt(minutes);
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
           error: purchaseError.message || purchaseError
         });
         if (purchaseError.code === 'P0002') {
-          return res.status(404).json({ success: false, error: 'Member not found' });
+          return res.status(404).json({ success: false, error: 'Member Not Found' });
         }
         throw purchaseError;
       }
@@ -163,6 +163,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

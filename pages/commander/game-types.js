@@ -124,7 +124,7 @@ const url = editingId
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         broadcastChange('games');
@@ -303,7 +303,7 @@ const res = await commanderFetch(`/api/commander/game-types?id=${gt.id}&venue_id
                     )}
                     {form.rake_type === 'time' && (
                       <div>
-                        <label className="text-xs text-[#BDD0E2]">Hourly Rate ($/hr)</label>
+                        <label className="text-xs text-[#BDD0E2]">Hourly Rate ($/Hr)</label>
                         <input type="number" value={form.time_rate} step="1"
                           onChange={e => setForm(p => ({ ...p, time_rate: parseFloat(e.target.value) || 0 }))}
                           className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#1981EC]" />

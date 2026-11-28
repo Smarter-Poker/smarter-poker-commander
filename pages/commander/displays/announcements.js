@@ -39,15 +39,15 @@ const ANNOUNCEMENT_TYPES = [
 ];
 
 const TEMPLATES = [
-  { emoji: '', name: 'Happy Hour', title: 'Happy Hour', message: 'Happy hour is now in effect! Enjoy drink specials at the bar.', priority: 'high', type: 'promotion' },
+  { emoji: '', name: 'Happy Hour', title: 'Happy Hour', message: 'Happy Hour Is Now In Effect! Enjoy Drink Specials At The Bar.', priority: 'high', type: 'promotion' },
   { emoji: '', name: 'High Hand Bonus', title: 'High Hand Bonus', message: 'High hand bonus is active! Check the board for the current qualifying hand and prize amount.', priority: 'high', type: 'promotion' },
-  { emoji: '', name: 'Dealer Push', title: 'Dealer Push', message: 'Dealer push in progress. Please have your dealer locks and tips ready.', priority: 'normal', type: 'update' },
-  { emoji: '', name: 'Tournament Starting', title: 'Tournament Starting Soon', message: 'Tournament registration is closing soon! Head to the front desk to register.', priority: 'urgent', type: 'event' },
+  { emoji: '', name: 'Dealer Push', title: 'Dealer Push', message: 'Dealer Push In Progress. Please Have Your Dealer Locks And Tips Ready.', priority: 'normal', type: 'update' },
+  { emoji: '', name: 'Tournament Starting', title: 'Tournament Starting Soon', message: 'Tournament Registration Is Closing Soon! Head To The Front Desk To Register.', priority: 'urgent', type: 'event' },
   { emoji: '', name: 'Food Service', title: 'Food Service Available', message: 'Kitchen is now open! Menus available at your table. Flag down your dealer to place an order.', priority: 'normal', type: 'general' },
   { emoji: '', name: 'New Game Opening', title: 'New Game Opening', message: 'A new game is opening! Check with the floor for available seats.', priority: 'high', type: 'announcement' },
-  { emoji: '', name: 'Last Call', title: 'Last Call', message: 'Last call for drinks and food. Kitchen closes in 30 minutes.', priority: 'normal', type: 'general' },
+  { emoji: '', name: 'Last Call', title: 'Last Call', message: 'Last Call For Drinks And Food. Kitchen Closes In 30 Minutes.', priority: 'normal', type: 'general' },
   { emoji: '', name: 'Table Maintenance', title: 'Table Maintenance', message: 'A table is temporarily closed for maintenance. Players will be moved to available seats.', priority: 'low', type: 'maintenance' },
-  { emoji: '', name: 'Special Promotion', title: 'Special Promotion', message: 'Special promotion running today! Ask the front desk for details.', priority: 'high', type: 'promotion' },
+  { emoji: '', name: 'Special Promotion', title: 'Special Promotion', message: 'Special Promotion Running Today! Ask The Front Desk For Details.', priority: 'high', type: 'promotion' },
   { emoji: '', name: 'Waitlist Update', title: 'Waitlist Update', message: 'Seats are opening up! If you are on the waitlist, please check in with the front desk.', priority: 'normal', type: 'announcement' },
 ];
 
@@ -102,7 +102,7 @@ export default function AnnouncementsDisplay() {
 
     try {
       const settingsRes = await commanderFetch(`/api/commander/settings?venue_id=${venueId}`, { });
-      if (!settingsRes.ok) throw new Error(`Request failed (${settingsRes.status})`);
+      if (!settingsRes.ok) throw new Error(`Request Failed (${settingsRes.status})`);
       const sj = await settingsRes.json();
       if (sj.success) setRoomOpen(sj.data?.room_open ?? true);
     } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
@@ -214,7 +214,7 @@ export default function AnnouncementsDisplay() {
   };
 
   const saveAnnouncement = async () => {
-    if (!formData.message.trim()) return setToast({ type: 'error', text: 'Message is required' });
+    if (!formData.message.trim()) return setToast({ type: 'error', text: 'Message Is Required' });
     setSaving(true);
     try {
       const hdrs = { 'Content-Type': 'application/json' };
@@ -227,19 +227,19 @@ export default function AnnouncementsDisplay() {
         starts_at: formData.starts_at ? new Date(formData.starts_at).toISOString() : null };
       const res = await commanderFetch('/api/commander/announcements', {
         method: editingAnnouncement ? 'PATCH' : 'POST', headers: hdrs, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success) throw new Error(json.error);
       setShowForm(false);
       setEditingAnnouncement(null);
       fetchData(); fetchAllAnnouncements();
       broadcastChange('settings');
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: err.message || 'Failed to save' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: err.message || 'Failed To Save' }); }
     finally { setSaving(false); }
   };
 
   const deleteAnnouncement = async (id) => {
-    if (!confirm('Delete this announcement?')) return;
+    if (!confirm('Delete This Announcement?')) return;
     try {
       const res = await commanderFetch(`/api/commander/announcements?id=${id}`, {
         method: 'DELETE' });
@@ -247,14 +247,14 @@ export default function AnnouncementsDisplay() {
         fetchData(); fetchAllAnnouncements();
         broadcastChange('settings');
       }
-    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action failed. Please check your connection and try again.' }); }
+    } catch (err) { console.warn(err); setToast({ type: 'error', text: 'Action Failed. Please Check Your Connection And Try Again.' }); }
   };
 
   const formatTime = (ts) => {
     if (!ts) return '';
     const d = new Date(ts);
     const diff = Math.floor((new Date() - d) / 60000);
-    if (diff < 1) return 'Just now';
+    if (diff < 1) return 'Just Now';
     if (diff < 60) return `${diff}m ago`;
     if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -342,7 +342,7 @@ export default function AnnouncementsDisplay() {
                     No Announcements
                   </p>
                   <p style={{ fontSize: 16, color: '#3A5873', margin: '0 0 24px' }}>
-                    Click Manage to create your first announcement
+                    Click Manage To Create Your First Announcement
                   </p>
                   <button onClick={(e) => { e.stopPropagation(); setShowPanel(true); }}
                     style={{
@@ -469,7 +469,7 @@ export default function AnnouncementsDisplay() {
                 {allAnnouncements.length === 0 ? (
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
                     <Megaphone size={36} style={{ color: '#2A4560' }} />
-                    <p style={{ fontSize: 13, color: '#93A9C0', margin: 0 }}>No announcements yet</p>
+                    <p style={{ fontSize: 13, color: '#93A9C0', margin: 0 }}>No Announcements Yet</p>
                     <button onClick={openCreate}
                       style={{
                         padding: '10px 20px', borderRadius: 10, background: '#1981EC', border: 'none',
@@ -589,7 +589,7 @@ export default function AnnouncementsDisplay() {
                       border: 'none', color: showTemplates ? '#fff' : '#BDD0E2',
                       fontSize: 13, fontWeight: 600, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    {showTemplates ? 'Hide Templates' : 'Use a Template'}
+                    {showTemplates ? 'Hide Templates' : 'Use A Template'}
                     <ChevronDown size={14} style={{ transform: showTemplates ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                   </button>
                   {showTemplates && (
@@ -627,7 +627,7 @@ export default function AnnouncementsDisplay() {
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Message *
                 </label>
-                <textarea placeholder="Type your announcement message..." value={formData.message}
+                <textarea placeholder="Type Your Announcement Message..." value={formData.message}
                   onChange={e => setFormData(p => ({ ...p, message: e.target.value }))} rows={3}
                   style={{
                     width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560',
@@ -666,7 +666,7 @@ export default function AnnouncementsDisplay() {
                     onChange={e => setFormData(p => ({ ...p, starts_at: e.target.value }))}
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560', background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
                   />
-                  <p style={{ fontSize: 10, color: '#93A9C0', marginTop: 4 }}>Blank = publish now</p>
+                  <p style={{ fontSize: 10, color: '#93A9C0', marginTop: 4 }}>Blank = Publish Now</p>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Expires At</label>
@@ -674,7 +674,7 @@ export default function AnnouncementsDisplay() {
                     onChange={e => setFormData(p => ({ ...p, expires_at: e.target.value }))}
                     style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560', background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
                   />
-                  <p style={{ fontSize: 10, color: '#93A9C0', marginTop: 4 }}>Blank = no expiration</p>
+                  <p style={{ fontSize: 10, color: '#93A9C0', marginTop: 4 }}>Blank = No Expiration</p>
                 </div>
               </div>
 

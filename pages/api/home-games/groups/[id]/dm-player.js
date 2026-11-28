@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     try {
         if (req.method !== 'POST') {
             res.setHeader('Allow', ['POST']);
-            return res.status(405).json({ success: false, error: 'Method not allowed' });
+            return res.status(405).json({ success: false, error: 'Method Not Allowed' });
         }
 
         if (!applyRateLimit(req, res, LIMITS.write)) return;
@@ -61,13 +61,13 @@ export default async function handler(req, res) {
 
         // Validate required fields.
         if (!groupId || typeof groupId !== 'string' || !UUID_RE.test(groupId)) {
-            return res.status(400).json({ success: false, error: 'Invalid group id' });
+            return res.status(400).json({ success: false, error: 'Invalid Group Id' });
         }
         if (!target_user_id || typeof target_user_id !== 'string' || !UUID_RE.test(target_user_id)) {
             return res.status(400).json({ success: false, error: 'target_user_id must be a UUID' });
         }
         if (target_user_id === user.id) {
-            return res.status(400).json({ success: false, error: 'Cannot DM yourself' });
+            return res.status(400).json({ success: false, error: 'Cannot DM Yourself' });
         }
         if (game_id != null && (typeof game_id !== 'string' || !UUID_RE.test(game_id))) {
             return res.status(400).json({ success: false, error: 'Invalid game_id' });
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
         if (error) {
             // eslint-disable-next-line no-console
             console.warn('[dm-player] RPC error:', error);
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         // The RPCs return JSONB with {success, error, conversation_id, ...}.
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
         // eslint-disable-next-line no-console
         console.warn('[dm-player]', err);
         if (!res.headersSent) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
     }
 }

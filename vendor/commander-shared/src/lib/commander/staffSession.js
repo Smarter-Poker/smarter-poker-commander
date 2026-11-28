@@ -184,7 +184,7 @@ export function storeCommanderSession({ subscription, staff_session, user }) {
  *                   {ok: false, status: number, error: string}>}
  */
 export async function mintStaffSession(accessToken, { user, preferredVenueId, timeoutMs = 15000 } = {}) {
-  if (!accessToken) return { ok: false, status: 0, error: 'No Smarter.Poker session token available.' };
+  if (!accessToken) return { ok: false, status: 0, error: 'No Smarter.Poker Session Token Available.' };
 
   const venuePref = preferredVenueId ?? lsGet('commander_active_venue_id') ?? null;
 

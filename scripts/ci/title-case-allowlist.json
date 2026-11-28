@@ -1,0 +1,60 @@
+{
+  "$comment": "Sentence-case texts the Title Case law (tests/unit/titleCase.law.test.js, scripts/title-case-scan.mjs) deliberately leaves alone. Each is a STORED or COMPARED value that happens to read like a label, so changing its case would break data, not fix copy. Add an entry only with the reason the text is a machine value; a real UI label never belongs here.",
+  "entries": [
+    {
+      "file": "pages/commander/high-hands.js",
+      "text": "Four of a Kind",
+      "reason": "hand_type value saved to high_hands rows and a key of RANK_SCORES; existing rows hold this exact text"
+    },
+    {
+      "file": "pages/commander/high-hands.js",
+      "text": "Three of a Kind",
+      "reason": "hand_type value saved to high_hands rows and a key of RANK_SCORES; existing rows hold this exact text"
+    },
+    {
+      "file": "vendor/commander-shared/src/components/commander/promotions/HighHandDisplay.jsx",
+      "text": "Four of a Kind",
+      "reason": "the same stored hand_type value, listed in HAND_RANKS in this component"
+    },
+    {
+      "file": "vendor/commander-shared/src/components/commander/promotions/HighHandDisplay.jsx",
+      "text": "Three of a Kind",
+      "reason": "the same stored hand_type value, listed in HAND_RANKS in this component"
+    },
+    {
+      "file": "vendor/commander-shared/src/components/commander/comps/CompIssueModal.jsx",
+      "text": "Manual comp issued",
+      "reason": "default ledger description written to comp transactions, identical to the server default in pages/api/comps/transactions.js (p_description)"
+    },
+    {
+      "file": "vendor/commander-shared/src/components/commander/comps/CompIssueModal.jsx",
+      "text": "Manual adjustment",
+      "reason": "default ledger description written to comp transactions, identical to the server default in pages/api/comps/transactions.js (p_description)"
+    },
+    {
+      "file": "pages/api/waitlist/[id]/call.js",
+      "text": "Twilio not configured",
+      "reason": "same text is the machine `reason` of the shared Twilio helper (vendor lib/commander/twilio.js, pages/api/waitlist/call.js) returned in sms results"
+    },
+    {
+      "file": "pages/api/waitlist/[id]/call.js",
+      "text": "OneSignal not configured",
+      "reason": "same text is the machine `reason` of the shared push helper (vendor lib/commander/pushNotifications.js)"
+    },
+    {
+      "file": "pages/api/tournaments/[id]/entries/[entryId]/pay.js",
+      "text": "{} Was Already Paid {} . Void That Payment First, Or Send force To Re-Pay.",
+      "reason": "`force` is the literal request field the caller must send; every other word is already Title Case"
+    },
+    {
+      "file": "pages/api/tournaments/[id]/entries/[entryId]/pay.js",
+      "text": "{} Is Already Marked Paid. Send force To Re-Pay.",
+      "reason": "`force` is the literal request field the caller must send; every other word is already Title Case"
+    },
+    {
+      "file": "pages/api/tournaments/[id]/payout.js",
+      "text": "{} Payout {} Saved. {} Could Not Be Written - See skipped.",
+      "reason": "`skipped` names the response field that lists the unwritten rows; every other word is already Title Case"
+    }
+  ]
+}

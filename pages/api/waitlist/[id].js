@@ -56,7 +56,7 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         if (error || !data) {
-          return res.status(404).json({ success: false, error: 'Waitlist entry not found' });
+          return res.status(404).json({ success: false, error: 'Waitlist Entry Not Found' });
         }
 
         const sessionResult = await verifyStaffSession(req);
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         if (fetchErr || !entry) {
-          return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Waitlist entry not found' } });
+          return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Waitlist Entry Not Found' } });
         }
 
         // Auth: Allow staff OR entry owner (player with matching player_id)
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
         }
 
         if (!authorized) {
-          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized to remove this entry' } });
+          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not Authorized To Remove This Entry' } });
         }
 
         // Log to history (non-blocking)
@@ -204,7 +204,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data: { removed: true } });
       } catch (err) {
         console.warn('Waitlist delete error:', err);
-        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' } });
       }
     }
 
@@ -244,7 +244,7 @@ export default async function handler(req, res) {
         }
 
         if (Object.keys(updates || {}).length === 0) {
-          return res.status(400).json({ success: false, error: { code: 'NO_UPDATES', message: 'No valid fields to update' } });
+          return res.status(400).json({ success: false, error: { code: 'NO_UPDATES', message: 'No Valid Fields To Update' } });
         }
 
         const { data, error } = await getSupabase()
@@ -274,15 +274,15 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data });
       } catch (err) {
         console.warn('Waitlist patch error:', err);
-        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' } });
       }
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

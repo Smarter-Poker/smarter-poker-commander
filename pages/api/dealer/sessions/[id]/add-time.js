@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     if (!_staff) return;
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     const { id } = req.query;
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (fetchError || !session) {
-        return res.status(404).json({ success: false, error: 'Active session not found' });
+        return res.status(404).json({ success: false, error: 'Active Session Not Found' });
       }
 
       // TOURNAMENT GUARD: Never add time to tournament sessions
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       if (tableRow?.mode === 'tournament') {
         return res.status(400).json({
           success: false,
-          error: 'Cannot add time to tournament sessions - tournaments pay a one-time seat fee'
+          error: 'Cannot Add Time To Tournament Sessions - Tournaments Pay A One-Time Seat Fee'
         });
       }
 
@@ -163,6 +163,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

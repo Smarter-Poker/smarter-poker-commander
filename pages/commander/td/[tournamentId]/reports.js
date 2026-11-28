@@ -587,17 +587,17 @@ function ReconciliationSection({ data }) {
                 </div>
                 <div className="divide-y divide-[#445E77]">
                     <VarianceRow
-                        label={`Buy-Ins x${Number(expIn.buyins?.count || 0)}`}
+                        label={`Buy-Ins X${Number(expIn.buyins?.count || 0)}`}
                         expected={expIn.buyins?.amount}
                         actual={actIn.by_type?.buyin?.amount}
                     />
                     <VarianceRow
-                        label={`Rebuys x${Number(expIn.rebuys?.count || 0)}`}
+                        label={`Rebuys X${Number(expIn.rebuys?.count || 0)}`}
                         expected={expIn.rebuys?.amount}
                         actual={actIn.by_type?.rebuy?.amount}
                     />
                     <VarianceRow
-                        label={`Add-Ons x${Number(expIn.addons?.count || 0)}`}
+                        label={`Add-Ons X${Number(expIn.addons?.count || 0)}`}
                         expected={expIn.addons?.amount}
                         actual={actIn.by_type?.addon?.amount}
                     />

@@ -41,12 +41,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -62,7 +62,7 @@ async function redeemComps(req, res) {
 
     if (!venue_id || !player_id || !amount || !redemption_type) {
       return res.status(400).json({
-        error: 'Venue ID, player ID, amount, and redemption type are required'
+        error: 'Venue ID, Player ID, Amount, And Redemption Type Are Required'
       });
     }
 
@@ -73,16 +73,16 @@ async function redeemComps(req, res) {
     const sessionResult = await verifyStaffSession(req);
     if (sessionResult.staff) {
       if (String(sessionResult.staff.venue_id) !== String(venue_id)) {
-        return res.status(403).json({ error: 'Not authorized for this venue' });
+        return res.status(403).json({ error: 'Not Authorized For This Venue' });
       }
       staffId = sessionResult.staff.id;
     } else {
       const user = await getUser(req, res);
       if (!user) {
-        return res.status(401).json({ error: 'Authorization required' });
+        return res.status(401).json({ error: 'Authorization Required' });
       }
       if (String(user.id) !== String(player_id)) {
-        return res.status(403).json({ error: 'Staff access required to redeem comps for another player' });
+        return res.status(403).json({ error: 'Staff Access Required To Redeem Comps For Another Player' });
       }
     }
 
@@ -102,7 +102,7 @@ async function redeemComps(req, res) {
         return res.status(400).json({ error: error.message });
       }
       if (error.message.includes('frozen')) {
-        return res.status(403).json({ error: 'Player comp balance is frozen' });
+        return res.status(403).json({ error: 'Player Comp Balance Is Frozen' });
       }
       throw error;
     }
@@ -134,7 +134,7 @@ async function redeemComps(req, res) {
     });
   } catch (error) {
     console.warn('Redeem comps error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -142,7 +142,7 @@ async function listRedemptions(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -150,7 +150,7 @@ async function listRedemptions(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const {
@@ -215,6 +215,6 @@ async function listRedemptions(req, res) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('List redemptions error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

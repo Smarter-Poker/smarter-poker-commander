@@ -108,7 +108,7 @@ export default function TDControlCenter() {
     if (!tournamentId) return;
     try {
       const res = await commanderFetch(`/api/commander/tournaments/${tournamentId}/floor-view`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setFloor(json.data);
@@ -243,7 +243,7 @@ export default function TDControlCenter() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageText, type: 'announcement', duration_seconds: 60 })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       setMessageText('');
       setMessageModal(false);
     } catch (err) {
@@ -262,7 +262,7 @@ export default function TDControlCenter() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !isActive })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success) setToast({ type: 'error', text: json.error || 'Failed To Toggle Hand-For-Hand.' });
       await fetchFloor();
@@ -822,7 +822,7 @@ export default function TDControlCenter() {
                 <span className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Chip Leader</span>
               </div>
               <p className="text-sm font-bold text-white truncate">{chipLeader ? chipLeader.name : '--'}</p>
-              <p className="text-xs text-[#31A24C] font-medium">{chipLeader ? `${formatChips(chipLeader.chips)} chips` : ''}</p>
+              <p className="text-xs text-[#31A24C] font-medium">{chipLeader ? `${formatChips(chipLeader.chips)} Chips` : ''}</p>
             </div>
             <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3">
               <div className="flex items-center gap-1 mb-1">

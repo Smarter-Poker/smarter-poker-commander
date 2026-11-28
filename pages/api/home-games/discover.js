@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', ['GET']);
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     try {
@@ -78,16 +78,16 @@ export default async function handler(req, res) {
         });
       }
 
-      return res.status(400).json({ error: 'Invalid type. Use "groups" or "players"' });
+      return res.status(400).json({ error: 'Invalid Type. Use "Groups" Or "Players"' });
     } catch (error) {
       console.warn('Discovery error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -178,7 +178,7 @@ async function discoverPlayers(req, res, options) {
   } = options;
 
   if (!userId) {
-    return res.status(401).json({ error: 'Login required to discover players' });
+    return res.status(401).json({ error: 'Login Required To Discover Players' });
   }
 
   // Find players with matching preferences who are looking for games

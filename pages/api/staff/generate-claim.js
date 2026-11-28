@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       try {
@@ -63,13 +63,13 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (staffErr || !staff) {
-              return res.status(404).json({ success: false, error: 'Staff member not found' });
+              return res.status(404).json({ success: false, error: 'Staff Member Not Found' });
           }
 
           if (staff.linked_user_id) {
               return res.status(400).json({
                   success: false,
-                  error: 'This staff member is already linked to a Smarter.Poker account',
+                  error: 'This Staff Member Is Already Linked To A Smarter.Poker Account',
               });
           }
 
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 
           if (insertErr) {
               console.warn('Generate claim error:', insertErr);
-              return res.status(500).json({ success: false, error: 'Failed to generate claim code' });
+              return res.status(500).json({ success: false, error: 'Failed To Generate Claim Code' });
           }
 
           // Get venue name for the claim URL display
@@ -120,12 +120,12 @@ export default async function handler(req, res) {
           // Execute audit log after returning response if possible, or just before
       } catch (err) {
           console.warn('Generate claim code error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

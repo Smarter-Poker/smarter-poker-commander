@@ -105,7 +105,7 @@ export default function VenueOnboardingPage() {
 
       // HIGH FIX #2d: Add response.ok check before .json()
       if (!res.ok) {
-        const errorText = await res.text().catch(() => 'Unknown error');
+        const errorText = await res.text().catch(() => 'Unknown Error');
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
 
@@ -113,11 +113,11 @@ export default function VenueOnboardingPage() {
       if (data.success) {
         setSubmitted(true);
       } else {
-        setError(data.message || 'Failed to submit. Please try again.');
+        setError(data.message || 'Failed To Submit. Please Try Again.');
       }
     } catch (err) {
       console.warn('Submit failed:', err);
-      setError('Failed to submit. Please try again.');
+      setError('Failed To Submit. Please Try Again.');
       setSubmitted(false);
     } finally {
       setLoading(false);

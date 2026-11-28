@@ -36,14 +36,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -85,7 +85,7 @@ async function handleGet(req, res) {
       console.warn('Commander staff list error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to fetch staff' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Fetch Staff' }
       });
     }
 
@@ -97,7 +97,7 @@ async function handleGet(req, res) {
     console.warn('Commander staff GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -154,7 +154,7 @@ async function handlePost(req, res) {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Either user_id or display_name (or name) is required'
+          message: 'Either user_id Or display_name (Or Name) Is Required'
         }
       });
     }
@@ -164,7 +164,7 @@ async function handlePost(req, res) {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`
+          message: `Invalid Role. Must Be One Of: ${VALID_ROLES.join(', ')}`
         }
       });
     }
@@ -179,7 +179,7 @@ async function handlePost(req, res) {
     if (venueError || !venue) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Venue not found' }
+        error: { code: 'NOT_FOUND', message: 'Venue Not Found' }
       });
     }
 
@@ -194,7 +194,7 @@ async function handlePost(req, res) {
       if (userError || !user) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'User not found' }
+          error: { code: 'NOT_FOUND', message: 'User Not Found' }
         });
       }
 
@@ -208,7 +208,7 @@ async function handlePost(req, res) {
       if (existing) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'User is already staff at this venue' }
+          error: { code: 'VALIDATION_ERROR', message: 'User Is Already Staff At This Venue' }
         });
       }
     }
@@ -230,7 +230,7 @@ async function handlePost(req, res) {
       if (pinTaken) {
         return res.status(400).json({
           success: false,
-          error: { code: 'DUPLICATE_PIN', message: 'This PIN is already in use by another employee at this venue' }
+          error: { code: 'DUPLICATE_PIN', message: 'This PIN Is Already In Use By Another Employee At This Venue' }
         });
       }
     }
@@ -311,7 +311,7 @@ async function handlePost(req, res) {
       console.warn('Commander staff insert error:', insertError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to add staff member' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Add Staff Member' }
       });
     }
 
@@ -338,7 +338,7 @@ async function handlePost(req, res) {
     console.warn('Commander staff POST error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

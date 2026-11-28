@@ -66,7 +66,7 @@ function mapRpcError(err) {
 
   if (code === '23505') {
     return { status: 409, error: 'SEAT_ALREADY_TAKEN',
-             message: 'That seat was just claimed by someone else.' };
+             message: 'That Seat Was Just Claimed By Someone Else.' };
   }
   if (code === '23514') {
     return { status: 400, error: 'VALIDATION_FAILED', message: raw };
@@ -74,7 +74,7 @@ function mapRpcError(err) {
 
   switch (errName) {
     case 'AUTH_REQUIRED':
-      return { status: 401, error: errName, message: 'Sign in to continue.' };
+      return { status: 401, error: errName, message: 'Sign In To Continue.' };
 
     case 'NOT_A_MEMBER':
     case 'NOT_GROUP_STAFF':
@@ -114,7 +114,7 @@ function mapRpcError(err) {
       if (typeof console !== 'undefined') {
         console.warn('[home-games rpcBridge] unmapped error', code, raw);
       }
-      return { status: 500, error: 'INTERNAL_ERROR', message: 'Something went wrong.' };
+      return { status: 500, error: 'INTERNAL_ERROR', message: 'Something Went Wrong.' };
   }
 }
 

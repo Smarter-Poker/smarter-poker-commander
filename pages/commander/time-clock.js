@@ -45,7 +45,7 @@ export default function TimeClock() {
         if (!venueId) return;
         try {
 const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`, { ...(signal ? { signal } : {}) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const data = await res.json();
             if (data.success) {
                 setEntries(data.data.entries || []);
@@ -91,7 +91,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                 }, 300);
             }
         } catch (err) {
-            setError('Camera access denied. Use manual entry below.');
+            setError('Camera Access Denied. Use Manual Entry Below.');
         }
     }, []);
 
@@ -115,7 +115,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' || '' },
                 body: JSON.stringify({ venue_id: venueId, qr_code: qrCode }) });
-            if (!res.ok) throw new Error('Request failed');
+            if (!res.ok) throw new Error('Request Failed');
             const data = await res.json();
             if (data.success) {
                 setScanResult(data.data);
@@ -125,10 +125,10 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                 // Auto-dismiss after 5 seconds
                 setTimeout(() => setScanResult(null), 5000);
             } else {
-                setError(data.error || 'Failed to process scan');
+                setError(data.error || 'Failed To Process Scan');
             }
         } catch (err) {
-            setError('Network error. Please try again.');
+            setError('Network Error. Please Try Again.');
         }
     };
 
@@ -236,7 +236,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                                             <div className="w-48 h-48 border-2 border-[#10B981] rounded-xl" />
                                         </div>
                                     </div>
-                                    <p className="text-sm text-[#BDD0E2]">Position QR code within the frame</p>
+                                    <p className="text-sm text-[#BDD0E2]">Position QR Code Within The Frame</p>
                                     <button
                                         onClick={stopCamera}
                                         className="cmd-btn cmd-btn-secondary px-6 py-2"
@@ -251,7 +251,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-bold text-white mb-1">Scan Staff QR Code</h2>
-                                        <p className="text-sm text-[#BDD0E2]">Scan to clock in or clock out</p>
+                                        <p className="text-sm text-[#BDD0E2]">Scan To Clock In Or Clock Out</p>
                                     </div>
                                     <button
                                         onClick={startCamera}
@@ -265,7 +265,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
 
                             {/* Manual Entry */}
                             <div className="mt-6 pt-4 border-t border-[#445E77]">
-                                <p className="text-xs text-[#9FB3C8] mb-2">Or enter QR code manually</p>
+                                <p className="text-xs text-[#9FB3C8] mb-2">Or Enter QR Code Manually</p>
                                 <form onSubmit={handleManualSubmit} className="flex gap-2 max-w-sm mx-auto">
                                     <input
                                         type="text"
@@ -302,7 +302,7 @@ const res = await commanderFetch(`/api/commander/time-clock?venue_id=${venueId}`
                             ) : entries.length === 0 ? (
                                 <div className="p-8 text-center">
                                     <Clock className="w-10 h-10 text-[#7F97B0] mx-auto mb-2" />
-                                    <p className="text-[#BDD0E2] text-sm">No clock entries today</p>
+                                    <p className="text-[#BDD0E2] text-sm">No Clock Entries Today</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-[#445E77]">

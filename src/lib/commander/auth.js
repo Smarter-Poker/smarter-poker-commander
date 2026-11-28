@@ -350,7 +350,7 @@ export async function requireStaff(req, res, venueId, allowedRoles = null) {
   if (allowedRoles && !allowedRoles.includes(staff.role)) {
     res.status(403).json({
       success: false,
-      error: { code: 'FORBIDDEN', message: `Requires role: ${allowedRoles.join(' or ')}` },
+      error: { code: 'FORBIDDEN', message: `Requires Role: ${allowedRoles.join(' or ')}` },
     });
     return null;
   }
@@ -445,7 +445,7 @@ export async function verifyStaffSession(req) {
   // Path 2: Owner login - session contains `user_id` + `venue_id`
   if (sessionData.user_id && sessionData.venue_id) {
     if (Date.now() - sessionData.session_ts > OWNER_SESSION_TTL_MS) {
-      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session expired - please sign in again' } };
+      return { error: { status: 401, code: 'SESSION_EXPIRED', message: 'Session Expired - Please Sign In Again' } };
     }
 
     // 2026-08-20 fix: a user can have MULTIPLE staff rows at one venue
@@ -556,7 +556,7 @@ export async function guardOwnerStaff(req, res) {
   if (!user) {
     res.status(401).json({
       success: false,
-      error: { code: 'JWT_REQUIRED', message: 'Valid session token required for this operation' },
+      error: { code: 'JWT_REQUIRED', message: 'Valid Session Token Required For This Operation' },
     });
     return null;
   }
@@ -566,7 +566,7 @@ export async function guardOwnerStaff(req, res) {
   if (!staffUserIds.includes(String(user.id))) {
     res.status(403).json({
       success: false,
-      error: { code: 'FORBIDDEN', message: 'Session identity mismatch' },
+      error: { code: 'FORBIDDEN', message: 'Session Identity Mismatch' },
     });
     return null;
   }
@@ -574,7 +574,7 @@ export async function guardOwnerStaff(req, res) {
   if (!['owner', 'manager'].includes(staff.role)) {
     res.status(403).json({
       success: false,
-      error: { code: 'FORBIDDEN', message: 'Owner or Manager role required' },
+      error: { code: 'FORBIDDEN', message: 'Owner Or Manager Role Required' },
     });
     return null;
   }

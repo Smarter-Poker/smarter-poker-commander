@@ -95,7 +95,7 @@ export default function TDPlayers() {
       const base = `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament,stats,tables,entries,eliminated`;
       const opts = { ...(signal ? { signal } : {}) };
       const res = await commanderFetch(`${base}&entries_limit=${ENTRY_PAGE_SIZE}`, opts);
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (!json.success) return;
       setFloor(json.data);
@@ -239,7 +239,7 @@ export default function TDPlayers() {
   const confirmRebuy = (player) => {
     setConfirmAction({
       type: 'rebuy', player,
-      message: `Rebuy for ${player.player_name}?`,
+      message: `Rebuy For ${player.player_name}?`,
       detail: floor?.tournament?.rebuy_cost ? `Cost: $${floor.tournament.rebuy_cost}, Chips: ${formatChips(floor.tournament.rebuy_chips || floor.tournament.starting_chips)}` : 'Process Rebuy For This Player.',
       color: '#31A24C' });
   };
@@ -439,7 +439,7 @@ export default function TDPlayers() {
   const handleAddon = (player) => {
     setConfirmAction({
       type: 'addon', player,
-      message: `Add-on for ${player.player_name}?`,
+      message: `Add-On For ${player.player_name}?`,
       detail: floor?.tournament?.addon_cost ? `Cost: $${floor.tournament.addon_cost}, Chips: ${formatChips(floor.tournament.addon_chips || floor.tournament.starting_chips)}` : 'Process Add-On For This Player.',
       color: '#5AA9FF' });
   };

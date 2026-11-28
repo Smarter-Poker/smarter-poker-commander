@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       try {
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
 
               if (error) {
                   console.warn('Floor call cancel error:', error);
-                  return res.status(500).json({ success: false, error: 'Failed to cancel floor call' });
+                  return res.status(500).json({ success: false, error: 'Failed To Cancel Floor Call' });
               }
               return res.status(200).json({ success: true, data: { cancelled: true } });
           }
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
               if (age < 60) {
                   return res.status(200).json({
                       success: true,
-                      data: { id: existing[0].id, already_active: true, message: 'Floor call already active' }
+                      data: { id: existing[0].id, already_active: true, message: 'Floor Call Already Active' }
                   });
               }
               // Resolve old call
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
 
           if (error) {
               console.warn('Floor call create error:', error);
-              return res.status(500).json({ success: false, error: 'Failed to create floor call' });
+              return res.status(500).json({ success: false, error: 'Failed To Create Floor Call' });
           }
 
           return res.status(200).json({
@@ -123,12 +123,12 @@ export default async function handler(req, res) {
           });
       } catch (error) {
           console.warn('Floor call error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     // ── Twilio Signature Validation ───────────────────────────────────────────
@@ -42,13 +42,13 @@ export default async function handler(req, res) {
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
     if (!twilioAuthToken) {
       console.warn('TWILIO_AUTH_TOKEN not configured - rejecting webhook');
-      return res.status(500).json({ error: 'Webhook auth token not configured' });
+      return res.status(500).json({ error: 'Webhook Auth Token Not Configured' });
     }
 
     const twilioSignature = req.headers['x-twilio-signature'];
     if (!twilioSignature) {
       console.warn('[twilio-webhook] Missing X-Twilio-Signature header - rejecting');
-      return res.status(403).json({ error: 'Missing webhook signature' });
+      return res.status(403).json({ error: 'Missing Webhook Signature' });
     }
 
     // Reconstruct the URL as Twilio sees it
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
 
     if (!valid) {
       console.warn('[twilio-webhook] Invalid signature - possible spoofed request');
-      return res.status(403).json({ error: 'Invalid webhook signature' });
+      return res.status(403).json({ error: 'Invalid Webhook Signature' });
     }
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
       } = req.body;
 
       if (!MessageSid || !MessageStatus) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: 'Missing Required Fields' });
       }
 
       // Map Twilio status to our status
@@ -149,13 +149,13 @@ export default async function handler(req, res) {
     } catch (error) {
       console.warn('Twilio webhook error:', error);
       // Still return 200 to prevent Twilio from retrying
-      return res.status(200).json({ received: true, error: 'Internal server error' });
+      return res.status(200).json({ received: true, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 

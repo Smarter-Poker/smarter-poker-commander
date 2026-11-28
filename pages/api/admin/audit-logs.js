@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     try {
     const _g = await guardManager(req, res); if (!_g) return;
 
-    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     const { venue_id, page = 1, limit = 50, action, staff_id } = req.query;
     if (!venue_id) return res.status(400).json({ success: false, error: 'venue_id required' });
@@ -41,12 +41,12 @@ export default async function handler(req, res) {
     return res.json({ success: true, data: { logs: data, total: count, page: Number(page), limit: Number(limit) } });
     } catch (err) {
       console.warn('[pages/api/commander/admin/audit-logs.js]', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
   }
 }

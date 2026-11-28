@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     try {
         if (req.method !== 'GET') {
             res.setHeader('Allow', ['GET']);
-            return res.status(405).json({ success: false, error: 'Method not allowed' });
+            return res.status(405).json({ success: false, error: 'Method Not Allowed' });
         }
 
         if (!applyRateLimit(req, res, LIMITS.read)) return;
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
         const { id: groupId } = req.query;
         if (!groupId || typeof groupId !== 'string' || !UUID_RE.test(groupId)) {
-            return res.status(400).json({ success: false, error: 'Invalid group id' });
+            return res.status(400).json({ success: false, error: 'Invalid Group Id' });
         }
 
         const { data: result, error } = await getSupabase().rpc('get_home_group_roster', {
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
             }
             // eslint-disable-next-line no-console
             console.warn('[roster] RPC error:', error);
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         // The legacy RPC exposes member_* names and omits the member row id.
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
 
         if (membershipError || groupError || !group) {
             console.warn('[roster] normalization query failed:', membershipError || groupError);
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         return res.status(200).json({
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
         // eslint-disable-next-line no-console
         console.warn('[roster]', err);
         if (!res.headersSent) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
     }
 }

@@ -40,13 +40,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -81,7 +81,7 @@ async function handleGet(req, res, eventId) {
     console.warn('Get reviews error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch reviews' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Reviews' }
     });
   }
 }
@@ -100,7 +100,7 @@ async function handleCreate(req, res, eventId, _user) {
   if (rating < 1 || rating > 5) {
     return res.status(400).json({
       success: false,
-      error: { code: 'INVALID_RATING', message: 'Rating must be 1-5' }
+      error: { code: 'INVALID_RATING', message: 'Rating Must Be 1-5' }
     });
   }
 
@@ -116,7 +116,7 @@ async function handleCreate(req, res, eventId, _user) {
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: { code: 'ALREADY_REVIEWED', message: 'Already reviewed this game' }
+        error: { code: 'ALREADY_REVIEWED', message: 'Already Reviewed This Game' }
       });
     }
 
@@ -137,14 +137,14 @@ async function handleCreate(req, res, eventId, _user) {
       console.warn('Reviews: RSVP attendance check failed:', rsvpErr);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Attendance check failed' }
+        error: { code: 'SERVER_ERROR', message: 'Attendance Check Failed' }
       });
     }
 
     if (!rsvp || rsvp.response !== 'yes') {
       return res.status(403).json({
         success: false,
-        error: { code: 'NOT_ATTENDED', message: 'Must attend game to review' }
+        error: { code: 'NOT_ATTENDED', message: 'Must Attend Game To Review' }
       });
     }
 
@@ -177,7 +177,7 @@ async function handleCreate(req, res, eventId, _user) {
     console.warn('Create review error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to create review' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Create Review' }
     });
   }
 }

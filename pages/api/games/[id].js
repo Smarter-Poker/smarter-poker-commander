@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Game ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Game ID Required' }
       });
     }
 
@@ -45,14 +45,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -89,7 +89,7 @@ async function handleGet(req, res, gameId) {
     if (error || !game) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Game not found' }
+        error: { code: 'NOT_FOUND', message: 'Game Not Found' }
       });
     }
 
@@ -101,7 +101,7 @@ async function handleGet(req, res, gameId) {
     console.warn('Commander game GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -129,14 +129,14 @@ async function handlePatch(req, res, gameId) {
     if (fetchError || !existingGame) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Game not found' }
+        error: { code: 'NOT_FOUND', message: 'Game Not Found' }
       });
     }
 
     if (existingGame.status === 'closed') {
       return res.status(400).json({
         success: false,
-        error: { code: 'GAME_CLOSED', message: 'Cannot update a closed game' }
+        error: { code: 'GAME_CLOSED', message: 'Cannot Update A Closed Game' }
       });
     }
 
@@ -148,7 +148,7 @@ async function handlePatch(req, res, gameId) {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`
+            message: `Invalid Status. Must Be One Of: ${VALID_STATUSES.join(', ')}`
           }
         });
       }
@@ -176,7 +176,7 @@ async function handlePatch(req, res, gameId) {
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No valid fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Valid Fields To Update' }
       });
     }
 
@@ -191,7 +191,7 @@ async function handlePatch(req, res, gameId) {
       console.warn('Commander game PATCH error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update game' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Game' }
       });
     }
 
@@ -203,7 +203,7 @@ async function handlePatch(req, res, gameId) {
     console.warn('Commander game PATCH error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -229,7 +229,7 @@ async function handleDelete(req, res, gameId) {
     if (fetchError || !game) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Game not found' }
+        error: { code: 'NOT_FOUND', message: 'Game Not Found' }
       });
     }
 
@@ -246,7 +246,7 @@ async function handleDelete(req, res, gameId) {
       console.warn('Commander game DELETE error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to close game' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Close Game' }
       });
     }
 
@@ -263,14 +263,14 @@ async function handleDelete(req, res, gameId) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Game closed successfully' }
+      data: { message: 'Game Closed Successfully' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Commander game DELETE error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

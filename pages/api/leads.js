@@ -28,25 +28,25 @@ export default async function handler(req, res) {
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
     const rl = checkMemoryRateLimit(`leads:${ip}`, 5, 60000);
-    if (!rl.allowed) { return res.status(429).json({ success: false, error: 'Too many requests' }); }
+    if (!rl.allowed) { return res.status(429).json({ success: false, error: 'Too Many Requests' }); }
 
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     try {
       const { email, source, referrer, plan } = req.body;
 
       if (!email) {
-        return res.status(400).json({ success: false, error: 'Email is required' });
+        return res.status(400).json({ success: false, error: 'Email Is Required' });
       }
 
       // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({ success: false, error: 'Invalid email format' });
+        return res.status(400).json({ success: false, error: 'Invalid Email Format' });
       }
 
       // Check if lead already exists
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          message: 'Welcome back!',
+          message: 'Welcome Back!',
           lead_id: existing.id
         });
       }
@@ -94,13 +94,13 @@ export default async function handler(req, res) {
         console.warn('Lead capture error:', error);
         return res.status(200).json({
           success: true,
-          message: 'Thanks for your interest!'
+          message: 'Thanks For Your Interest!'
         });
       }
 
       return res.status(201).json({
         success: true,
-        message: 'Thanks for your interest!',
+        message: 'Thanks For Your Interest!',
         lead_id: lead?.id
       });
     } catch (error) {
@@ -108,13 +108,13 @@ export default async function handler(req, res) {
       // Don't fail the user experience if lead capture fails
       return res.status(200).json({
         success: true,
-        message: 'Thanks for your interest!'
+        message: 'Thanks For Your Interest!'
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

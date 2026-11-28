@@ -48,10 +48,10 @@ export default class CommanderErrorBoundary extends Component {
           <div className="cmd-panel p-8 max-w-md text-center">
             <AlertTriangle className="w-12 h-12 text-[#22D3EE] mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-white mb-2">
-              Something went wrong
+              Something Went Wrong
             </h2>
             <p className="text-sm text-[#9FB3C8] mb-6">
-              {this.props.fallbackMessage || 'An error occurred while loading this page. Please try again.'}
+              {this.props.fallbackMessage || 'An Error Occurred While Loading This Page. Please Try Again.'}
             </p>
             <div className="flex gap-3 justify-center">
               <button

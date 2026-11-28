@@ -48,7 +48,7 @@ export default function SSOPage() {
         return true;
       }
       reportLoginFailure('sso', result?.error || 'completion failed', { status: result?.status });
-      setError(result?.error || 'No active Club Commander subscription found for this account. Please sign up.');
+      setError(result?.error || 'No Active Club Commander Subscription Found For This Account. Please Sign Up.');
       setStatus('error');
       return false;
     }
@@ -66,7 +66,7 @@ export default function SSOPage() {
         } catch { /* fall through to the token exchange */ }
 
         if (!token || !uid) {
-          setError('Invalid SSO link. Please sign in manually.');
+          setError('Invalid SSO Link. Please Sign In Manually.');
           setStatus('error');
           return;
         }
@@ -103,7 +103,7 @@ export default function SSOPage() {
 
         if (otpError || !sessionData?.session) {
           reportLoginFailure('sso', otpError || 'magic link redeemed no session', { status: otpError?.status });
-          setError('Failed to restore session. Please sign in manually.');
+          setError('Failed To Restore Session. Please Sign In Manually.');
           setStatus('error');
           return;
         }
@@ -112,7 +112,7 @@ export default function SSOPage() {
         const accessToken = sessionData.session.access_token;
 
         if (!user) {
-          setError('Session could not be verified. Please sign in manually.');
+          setError('Session Could Not Be Verified. Please Sign In Manually.');
           setStatus('error');
           return;
         }
@@ -122,7 +122,7 @@ export default function SSOPage() {
       } catch (err) {
         console.error('[SSO] Exchange error:', err);
         reportLoginFailure('sso', err);
-        setError('An error occurred during sign-in. Please try again.');
+        setError('An Error Occurred During Sign-In. Please Try Again.');
         setStatus('error');
       }
     }
@@ -150,9 +150,9 @@ export default function SSOPage() {
         {status === 'loading' && (
           <div className="bg-[#0A1829] rounded-xl p-8 border border-[#445E77]">
             <Loader2 className="w-10 h-10 animate-spin text-[#86DAFF] mx-auto mb-4" />
-            <p className="text-[#F2F7FF] font-semibold text-lg mb-2">Signing you in…</p>
+            <p className="text-[#F2F7FF] font-semibold text-lg mb-2">Signing You In…</p>
             <p className="text-[#BDD0E2] text-sm">
-              Completing your Smarter.Poker session transfer.
+              Completing Your Smarter.Poker Session Transfer.
             </p>
           </div>
         )}
@@ -161,7 +161,7 @@ export default function SSOPage() {
           <div className="bg-[#0A1829] rounded-xl p-8 border border-[#445E77]">
             <ShieldCheck className="w-10 h-10 text-green-400 mx-auto mb-4" />
             <p className="text-[#F2F7FF] font-semibold text-lg mb-2">Signed In!</p>
-            <p className="text-[#BDD0E2] text-sm">Redirecting to your dashboard…</p>
+            <p className="text-[#BDD0E2] text-sm">Redirecting To Your Dashboard…</p>
           </div>
         )}
 
@@ -180,7 +180,7 @@ export default function SSOPage() {
         )}
 
         <p className="text-center text-[#65676B] text-xs mt-6">
-          Powered by SMARTER.POKER
+          Powered By SMARTER.POKER
         </p>
       </div>
     </div>

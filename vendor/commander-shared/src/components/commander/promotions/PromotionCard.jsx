@@ -98,10 +98,10 @@ function getTimeRemaining(promotion) {
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    if (days > 7) return { text: `${days} days left`, urgent: false };
-    if (days > 0) return { text: `${days}d ${hours}h left`, urgent: days <= 3 };
-    if (hours > 0) return { text: `${hours}h ${mins}m left`, urgent: true };
-    return { text: `${mins}m left`, urgent: true };
+    if (days > 7) return { text: `${days} Days Left`, urgent: false };
+    if (days > 0) return { text: `${days}d ${hours}h Left`, urgent: days <= 3 };
+    if (hours > 0) return { text: `${hours}h ${mins}m Left`, urgent: true };
+    return { text: `${mins}m Left`, urgent: true };
   }
   return null;
 }

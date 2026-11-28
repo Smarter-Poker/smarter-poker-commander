@@ -504,7 +504,7 @@ export default function TDTablesMap() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ entry_id: entryId, finish_position: floor?.stats?.players_remaining || 0 })
           });
-          if (!elimRes.ok) throw new Error('Request failed');
+          if (!elimRes.ok) throw new Error('Request Failed');
           const elimJson = await elimRes.json();
           // Auto-print receipts if elimination triggered an auto table break
           if (elimJson.success) {
@@ -643,7 +643,7 @@ export default function TDTablesMap() {
                       assignments: autoBreak.assignments
                     })
                   });
-                  if (!res.ok) throw new Error(`Request failed (${res.status})`);
+                  if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                   const json = await res.json();
                   if (json.success && json.data.receipts) {
                     // Print SEAT CHANGE CARDs via shared helper
@@ -990,7 +990,7 @@ export default function TDTablesMap() {
                           const breakSuggestRes = await commanderFetch(`/api/commander/tournaments/${tournamentId}/auto-break?force_table=${selectedTable.table_number}`,
                             {}
                           );
-                          if (!breakSuggestRes.ok) throw new Error(`Request failed (${breakSuggestRes.status})`);
+                          if (!breakSuggestRes.ok) throw new Error(`Request Failed (${breakSuggestRes.status})`);
                           const breakSuggestJson = await breakSuggestRes.json();
 
                           // Use assignments if available - these are now specifically for selectedTable.table_number
@@ -1012,7 +1012,7 @@ export default function TDTablesMap() {
                               assignments
                             })
                           });
-                          if (!res.ok) throw new Error(`Request failed (${res.status})`);
+                          if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                           const json = await res.json();
 
                           // Step 3: Print Potawatomi SEAT CHANGE CARDs

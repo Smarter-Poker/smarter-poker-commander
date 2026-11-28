@@ -30,12 +30,12 @@ export default async function handler(req, res) {
     const { id: groupId } = req.query;
 
     if (!groupId) {
-      return res.status(400).json({ success: false, error: 'Group ID required' });
+      return res.status(400).json({ success: false, error: 'Group ID Required' });
     }
 
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     if (req.method === 'POST') {
@@ -59,12 +59,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['POST', 'DELETE', 'PUT']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -73,7 +73,7 @@ async function subscribe(req, res, groupId, userId) {
     const { device_token, device_type, device_name } = req.body;
 
     if (!device_token) {
-      return res.status(400).json({ success: false, error: 'Device token required' });
+      return res.status(400).json({ success: false, error: 'Device Token Required' });
     }
 
     // Check membership
@@ -85,7 +85,7 @@ async function subscribe(req, res, groupId, userId) {
       .maybeSingle();
 
     if (!membership || membership.status !== 'approved') {
-      return res.status(403).json({ success: false, error: 'You are not a member of this group' });
+      return res.status(403).json({ success: false, error: 'You Are Not A Member Of This Group' });
     }
 
     // Upsert subscription
@@ -109,11 +109,11 @@ async function subscribe(req, res, groupId, userId) {
 
     return res.status(200).json({
       subscription,
-      message: 'Subscribed to push notifications'
+      message: 'Subscribed To Push Notifications'
     });
   } catch (error) {
     console.warn('Subscribe error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -137,11 +137,11 @@ async function unsubscribe(req, res, groupId, userId) {
 
     return res.status(200).json({
       success: true,
-      message: all_devices ? 'Unsubscribed all devices' : 'Unsubscribed device'
+      message: all_devices ? 'Unsubscribed All Devices' : 'Unsubscribed Device'
     });
   } catch (error) {
     console.warn('Unsubscribe error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -163,7 +163,7 @@ async function updatePreferences(req, res, groupId, userId) {
     if (typeof notify_rsvp_updates === 'boolean') updates.notify_rsvp_updates = notify_rsvp_updates;
 
     if (Object.keys(updates || {}).length === 0) {
-      return res.status(400).json({ success: false, error: 'No preferences to update' });
+      return res.status(400).json({ success: false, error: 'No Preferences To Update' });
     }
 
     const { data: membership, error } = await getSupabase()
@@ -178,11 +178,11 @@ async function updatePreferences(req, res, groupId, userId) {
 
     return res.status(200).json({
       membership,
-      message: 'Notification preferences updated'
+      message: 'Notification Preferences Updated'
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Update preferences error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

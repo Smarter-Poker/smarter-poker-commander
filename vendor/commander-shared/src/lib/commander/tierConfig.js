@@ -16,7 +16,7 @@
 // ─────────────────────────────────────────────────────────────────────
 export const COMMANDER_FREE_MODE = true;
 export const COMMANDER_FREE_TAGLINE = 'Free While In Beta';
-export const COMMANDER_FREE_SUBTEXT = 'No credit card required';
+export const COMMANDER_FREE_SUBTEXT = 'No Credit Card Required';
 
 /**
  * UI helper - returns the string to display for a tier's price.
@@ -73,7 +73,7 @@ export const TIERS = {
     [TIER_NAMES.HOME_GAME]: {
         name: 'Home Game',
         price: 99,
-        description: 'Perfect for Home Games and Small Private Events',
+        description: 'Perfect For Home Games And Small Private Events',
         maxTables: 5,
         maxStaff: 3,
         maxSmsPerMonth: 100,
@@ -115,7 +115,7 @@ export const TIERS = {
     [TIER_NAMES.CHARITY]: {
         name: 'Charity',
         price: 199,
-        description: 'Full Operations Suite for Charity Poker Rooms',
+        description: 'Full Operations Suite For Charity Poker Rooms',
         maxTables: 15,
         maxStaff: 10,
         maxSmsPerMonth: 500,
@@ -157,7 +157,7 @@ export const TIERS = {
     [TIER_NAMES.CLUB]: {
         name: 'Club',
         price: 399,
-        description: 'Full Texas-style Card Room with Paid Memberships & Seat Billing',
+        description: 'Full Texas-Style Card Room With Paid Memberships & Seat Billing',
         maxTables: 999,
         maxStaff: 999,
         maxSmsPerMonth: 99999,

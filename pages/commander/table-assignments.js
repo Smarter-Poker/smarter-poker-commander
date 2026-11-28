@@ -79,18 +79,18 @@ return {
   const fetchData = useCallback(async(signal) => {
     try {
       const res = await commanderFetch('/api/commander/table-assignments', { headers: getHeaders() });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setTables(json.data.tables || []);
         setTournaments(json.data.tournaments || []);
       } else {
-        const errMsg = typeof json.error === 'object' ? json.error.message : (json.error || 'Failed to load tables');
+        const errMsg = typeof json.error === 'object' ? json.error.message : (json.error || 'Failed To Load Tables');
         setError(errMsg);
       }
     } catch (err) {
       console.warn(err);
-      setError('Failed to load table data');
+      setError('Failed To Load Table Data');
     }
     finally { setLoading(false); }
   }, []);
@@ -129,7 +129,7 @@ return {
         headers: getHeaders(),
         body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         broadcastChange('tables');
@@ -138,12 +138,12 @@ return {
         setSelectedTable(null);
         await fetchData();
       } else {
-        const errMsg = typeof json.error === 'object' ? json.error.message : (json.error || 'Failed to save assignment');
+        const errMsg = typeof json.error === 'object' ? json.error.message : (json.error || 'Failed To Save Assignment');
         setError(errMsg);
       }
     } catch (err) {
       console.warn(err);
-      setError('Failed to save assignment');
+      setError('Failed To Save Assignment');
     }
     finally { setSaving(false); }
   };
@@ -151,7 +151,7 @@ return {
   const closeTable = async (table) => {
     // Safety check: warn if players are still seated
     if ((table.active_players || 0) > 0) {
-      const confirmed = confirm(`Table ${table.table_number} has ${table.active_players} player${table.active_players !== 1 ? 's' : ''} seated. Close anyway?`);
+      const confirmed = confirm(`Table ${table.table_number} Has ${table.active_players} Player${table.active_players !== 1 ? 's' : ''} Seated. Close Anyway?`);
       if (!confirmed) return;
     }
     setClosing(table.id);
@@ -161,15 +161,15 @@ return {
         headers: getHeaders(),
         body: JSON.stringify({ table_id: table.id })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         broadcastChange('tables');
-        setSuccess(`Table ${table.table_number} closed`);
+        setSuccess(`Table ${table.table_number} Closed`);
         setTimeout(() => setSuccess(null), 3000);
         await fetchData();
       }
-    } catch (err) { console.warn(err); setError('Action failed. Please check your connection and try again.'); }
+    } catch (err) { console.warn(err); setError('Action Failed. Please Check Your Connection And Try Again.'); }
     finally { setClosing(null); }
   };
 
@@ -314,7 +314,7 @@ return {
                     )}
 
                     {mode === 'inactive' && (
-                      <p className="text-[10px] text-[#93A9C0]">{table.max_seats} seats - Not Assigned</p>
+                      <p className="text-[10px] text-[#93A9C0]">{table.max_seats} Seats - Not Assigned</p>
                     )}
                   </div>
 
@@ -355,7 +355,7 @@ return {
               <div className="sticky top-0 bg-[#0A1829] border-b border-[#445E77] px-5 py-4 flex items-center justify-between z-10">
                 <div>
                   <h3 className="text-lg font-bold text-white">Assign Table {selectedTable.table_number}</h3>
-                  <p className="text-xs text-[#BDD0E2]">{selectedTable.table_name} · {selectedTable.max_seats} seats</p>
+                  <p className="text-xs text-[#BDD0E2]">{selectedTable.table_name} · {selectedTable.max_seats} Seats</p>
                 </div>
                 <button onClick={() => setSelectedTable(null)} className="p-2 rounded-lg active:bg-[#132A42]">
                   <X className="w-5 h-5 text-[#BDD0E2]" />
@@ -415,7 +415,7 @@ return {
                       <div className="p-4 bg-[#132A42]/30 rounded-xl text-center">
                         <Trophy className="w-8 h-8 text-[#7F97B0] mx-auto mb-2" />
                         <p className="text-sm text-[#BDD0E2]">No Active Tournaments</p>
-                        <p className="text-xs text-[#93A9C0] mt-1">Table will be marked as tournament-ready</p>
+                        <p className="text-xs text-[#93A9C0] mt-1">Table Will Be Marked As Tournament-Ready</p>
                       </div>
                     ) : (
                       <div className="space-y-2">

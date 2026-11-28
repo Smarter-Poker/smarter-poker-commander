@@ -64,7 +64,7 @@ export default function CompIssueModal({
                   {player.display_name || player.email || 'Player'}
                 </div>
                 <div className="text-sm text-[#9FB3C8]">
-                  Current balance: ${currentBalance.toFixed(2)}
+                  Current Balance: ${currentBalance.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function CompIssueModal({
           {/* Amount */}
           <div>
             <label className="block text-sm text-[#9FB3C8] mb-1">
-              {mode === 'add' ? 'Amount to Issue' : 'Amount to Deduct'}
+              {mode === 'add' ? 'Amount To Issue' : 'Amount To Deduct'}
             </label>
             <div className="relative">
               <DollarSign
@@ -136,7 +136,7 @@ export default function CompIssueModal({
             <div className="flex items-start gap-2 p-3 rounded-lg text-sm bg-[#22D3EE]/10">
               <AlertTriangle size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
               <span className="text-cyan-200">
-                This will result in a negative balance of ${(currentBalance - parseFloat(amount || 0)).toFixed(2)}
+                This Will Result In A Negative Balance Of ${(currentBalance - parseFloat(amount || 0)).toFixed(2)}
               </span>
             </div>
           )}

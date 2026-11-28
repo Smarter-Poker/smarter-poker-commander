@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       if (!venue) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Venue not found' }
+          error: { code: 'NOT_FOUND', message: 'Venue Not Found' }
         });
       }
 
@@ -207,13 +207,13 @@ export default async function handler(req, res) {
       console.warn('Export report error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to export report' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Export Report' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -38,13 +38,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -54,7 +54,7 @@ async function handleGet(req, res) {
   if (!authHeader) {
     return res.status(401).json({
       success: false,
-      error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+      error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
     });
   }
 
@@ -66,7 +66,7 @@ async function handleGet(req, res) {
     if (authError || !user) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Invalid token' }
+        error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' }
       });
     }
 
@@ -100,7 +100,7 @@ async function handleGet(req, res) {
     console.warn('Get limits error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch limits' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Limits' }
     });
   }
 }
@@ -111,7 +111,7 @@ async function handleUpdate(req, res) {
   if (!authHeader) {
     return res.status(401).json({
       success: false,
-      error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+      error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
     });
   }
 
@@ -123,7 +123,7 @@ async function handleUpdate(req, res) {
     if (authError || !user) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Invalid token' }
+        error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' }
       });
     }
 
@@ -168,7 +168,7 @@ async function handleUpdate(req, res) {
     console.warn('Update limits error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to update limits' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Update Limits' }
     });
   }
 }

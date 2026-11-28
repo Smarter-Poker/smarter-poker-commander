@@ -26,8 +26,8 @@ export function withApiErrorHandler(handler) {
         return res.status(500).json({
           success: false,
           error: process.env.NODE_ENV === 'production'
-            ? 'Internal server error'
-            : error?.message || 'Internal server error',
+            ? 'Internal Server Error'
+            : error?.message || 'Internal Server Error',
         });
       }
       return undefined;

@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     try {
     const _g = await guardManager(req, res); if (!_g) return;
 
-    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     // 2026-07-25 audit fix: the table is poker_venues (there is no 'venues'
     // table) filtered to commander-enabled rooms, and the response includes a
@@ -43,12 +43,12 @@ export default async function handler(req, res) {
     return res.json({ success: true, data: { venues, summary } });
     } catch (err) {
       console.warn('[pages/api/commander/admin/venues.js]', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
   }
 }

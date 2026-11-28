@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     const { id: groupId } = req.query;
 
     if (!isHomeGamesUuid(groupId)) {
-      return res.status(400).json({ success: false, error: 'Valid group ID required' });
+      return res.status(400).json({ success: false, error: 'Valid Group ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -66,12 +66,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -79,7 +79,7 @@ async function listMembers(req, res, groupId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -87,7 +87,7 @@ async function listMembers(req, res, groupId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const { status } = req.query;
@@ -111,7 +111,7 @@ async function listMembers(req, res, groupId) {
     if (groupResult.error) throw groupResult.error;
     if (membershipResult.error) throw membershipResult.error;
     if (!groupResult.data) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     const access = resolveGroupMembershipAccess({
@@ -120,7 +120,7 @@ async function listMembers(req, res, groupId) {
       membership: membershipResult.data,
     });
     if (!access.isMember) {
-      return res.status(403).json({ success: false, error: 'You are not a member of this group' });
+      return res.status(403).json({ success: false, error: 'You Are Not A Member Of This Group' });
     }
 
     let query = getSupabase()
@@ -148,7 +148,7 @@ async function listMembers(req, res, groupId) {
     });
   } catch (error) {
     console.warn('List members error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -156,7 +156,7 @@ async function joinOrInvite(req, res, groupId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -164,12 +164,12 @@ async function joinOrInvite(req, res, groupId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const { user_id, invite_code } = req.body || {};
     if (user_id && !isHomeGamesUuid(user_id)) {
-      return res.status(400).json({ success: false, error: 'Valid user_id required' });
+      return res.status(400).json({ success: false, error: 'Valid user_id Required' });
     }
 
     // Get group info
@@ -181,7 +181,7 @@ async function joinOrInvite(req, res, groupId) {
 
     if (groupError) throw groupError;
     if (!group) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     // If inviting another user, check if requester is admin
@@ -200,7 +200,7 @@ async function joinOrInvite(req, res, groupId) {
         membership: myMembership,
       });
       if (!access.isManager) {
-        return res.status(403).json({ success: false, error: 'Only admins can invite members' });
+        return res.status(403).json({ success: false, error: 'Only Admins Can Invite Members' });
       }
 
       // Check if target user exists
@@ -212,7 +212,7 @@ async function joinOrInvite(req, res, groupId) {
       if (targetUserError) throw targetUserError;
 
       if (!targetUser) {
-        return res.status(404).json({ success: false, error: 'User not found' });
+        return res.status(404).json({ success: false, error: 'User Not Found' });
       }
 
       // Invitations are membership creation, so they use the same
@@ -232,7 +232,7 @@ async function joinOrInvite(req, res, groupId) {
         throw inviteError;
       }
       if (!inviteResult?.success) {
-        return res.status(409).json({ success: false, error: 'Member invitation was not applied' });
+        return res.status(409).json({ success: false, error: 'Member Invitation Was Not Applied' });
       }
 
       const { data: member, error } = await getSupabase()
@@ -246,13 +246,13 @@ async function joinOrInvite(req, res, groupId) {
         throw error;
       }
       if (!member) {
-        return res.status(502).json({ success: false, error: 'Invitation succeeded but membership could not be loaded' });
+        return res.status(502).json({ success: false, error: 'Invitation Succeeded But Membership Could Not Be Loaded' });
       }
 
       return res.status(201).json({
         success: true,
         member: toMemberDto(member),
-        message: 'User invited successfully',
+        message: 'User Invited Successfully',
       });
     }
 
@@ -276,19 +276,19 @@ async function joinOrInvite(req, res, groupId) {
     if (!result?.success) {
       switch (result?.error) {
         case 'INVALID_INVITE_CODE':
-          return res.status(403).json({ success: false, error: 'Invite code is incorrect' });
+          return res.status(403).json({ success: false, error: 'Invite Code Is Incorrect' });
         case 'RATE_LIMITED':
-          return res.status(429).json({ success: false, error: 'Too many attempts. Try again in a few minutes.' });
+          return res.status(429).json({ success: false, error: 'Too Many Attempts. Try Again In A Few Minutes.' });
         case 'BANNED':
-          return res.status(403).json({ success: false, error: "You're banned from this group" });
+          return res.status(403).json({ success: false, error: "You're Banned From This Group" });
         case 'DECLINED':
-          return res.status(403).json({ success: false, error: 'The host has declined this membership request' });
+          return res.status(403).json({ success: false, error: 'The Host Has Declined This Membership Request' });
         case 'ALREADY_MEMBER':
-          return res.status(400).json({ success: false, error: 'You are already a member' });
+          return res.status(400).json({ success: false, error: 'You Are Already A Member' });
         case 'PENDING_APPROVAL':
-          return res.status(400).json({ success: false, error: 'Your membership request is pending approval' });
+          return res.status(400).json({ success: false, error: 'Your Membership Request Is Pending Approval' });
         default:
-          return res.status(400).json({ success: false, error: result?.error || 'Failed to join group' });
+          return res.status(400).json({ success: false, error: result?.error || 'Failed To Join Group' });
       }
     }
 
@@ -296,7 +296,7 @@ async function joinOrInvite(req, res, groupId) {
     if (!normalized) {
       return res.status(502).json({
         success: false,
-        error: 'Join service returned an invalid membership state',
+        error: 'Join Service Returned An Invalid Membership State',
       });
     }
 
@@ -309,12 +309,12 @@ async function joinOrInvite(req, res, groupId) {
       member,
       membership: member,
       message: isApproved
-        ? 'You have joined the group'
-        : 'Your membership request is pending approval'
+        ? 'You Have Joined The Group'
+        : 'Your Membership Request Is Pending Approval'
     });
   } catch (error) {
     console.warn('Join/invite error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -322,7 +322,7 @@ async function updateMembership(req, res, groupId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -330,7 +330,7 @@ async function updateMembership(req, res, groupId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const { member_id, action, role } = req.body || {};
@@ -340,7 +340,7 @@ async function updateMembership(req, res, groupId) {
     }
 
     if (!isHomeGamesUuid(member_id)) {
-      return res.status(400).json({ success: false, error: 'Valid member_id required' });
+      return res.status(400).json({ success: false, error: 'Valid member_id Required' });
     }
 
     const [groupResult, membershipResult] = await Promise.all([
@@ -359,7 +359,7 @@ async function updateMembership(req, res, groupId) {
     if (groupResult.error) throw groupResult.error;
     if (membershipResult.error) throw membershipResult.error;
     if (!groupResult.data) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     const access = resolveGroupMembershipAccess({
@@ -368,7 +368,7 @@ async function updateMembership(req, res, groupId) {
       membership: membershipResult.data,
     });
     if (!access.isManager) {
-      return res.status(403).json({ success: false, error: 'Only owners and admins can manage members' });
+      return res.status(403).json({ success: false, error: 'Only Owners And Admins Can Manage Members' });
     }
 
     // Get target membership
@@ -381,16 +381,16 @@ async function updateMembership(req, res, groupId) {
     if (targetMemberError) throw targetMemberError;
 
     if (!targetMember) {
-      return res.status(404).json({ success: false, error: 'Member not found' });
+      return res.status(404).json({ success: false, error: 'Member Not Found' });
     }
 
     const targetIsOwner = targetMember.role === 'owner'
       || targetMember.user_id === groupResult.data.owner_id;
     if (targetIsOwner) {
-      return res.status(403).json({ success: false, error: 'Cannot modify the owner' });
+      return res.status(403).json({ success: false, error: 'Cannot Modify The Owner' });
     }
     if (access.role === 'admin' && targetMember.role === 'admin') {
-      return res.status(403).json({ success: false, error: 'Admins cannot modify another admin' });
+      return res.status(403).json({ success: false, error: 'Admins Cannot Modify Another Admin' });
     }
 
     let rpcAction = null;
@@ -414,10 +414,10 @@ async function updateMembership(req, res, groupId) {
 
       case 'set_role':
         if (!role || !['admin', 'member'].includes(role)) {
-          return res.status(400).json({ success: false, error: 'Valid role required (admin, member)' });
+          return res.status(400).json({ success: false, error: 'Valid Role Required (Admin, Member)' });
         }
         if (role === 'owner') {
-          return res.status(400).json({ success: false, error: 'Cannot assign owner role this way' });
+          return res.status(400).json({ success: false, error: 'Cannot Assign Owner Role This Way' });
         }
         rpcAction = role === 'admin' ? 'promote_admin' : 'demote_member';
         break;
@@ -430,7 +430,7 @@ async function updateMembership(req, res, groupId) {
         break;
 
       default:
-        return res.status(400).json({ success: false, error: 'Invalid action' });
+        return res.status(400).json({ success: false, error: 'Invalid Action' });
     }
 
     // Every privileged member mutation goes through one authenticated,
@@ -451,7 +451,7 @@ async function updateMembership(req, res, groupId) {
       throw rpcError;
     }
     if (!rpcResult?.success) {
-      return res.status(409).json({ success: false, error: 'Membership update was not applied' });
+      return res.status(409).json({ success: false, error: 'Membership Update Was Not Applied' });
     }
 
     const { data: updated, error } = await getSupabase()
@@ -462,13 +462,13 @@ async function updateMembership(req, res, groupId) {
 
     if (error) throw error;
     if (!updated) {
-      return res.status(502).json({ success: false, error: 'Membership was updated but could not be loaded' });
+      return res.status(502).json({ success: false, error: 'Membership Was Updated But Could Not Be Loaded' });
     }
 
     return res.status(200).json({ member: toMemberDto(updated) });
   } catch (error) {
     console.warn('Update membership error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -476,7 +476,7 @@ async function leaveOrRemove(req, res, groupId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -484,7 +484,7 @@ async function leaveOrRemove(req, res, groupId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const intent = parseMembershipDeleteIntent(req.body);
@@ -513,16 +513,16 @@ async function leaveOrRemove(req, res, groupId) {
       if (groupResult.error) throw groupResult.error;
       if (membershipResult.error) throw membershipResult.error;
       if (!groupResult.data) {
-        return res.status(404).json({ success: false, error: 'Group not found' });
+        return res.status(404).json({ success: false, error: 'Group Not Found' });
       }
 
       const myMembership = membershipResult.data;
 
       if (user.id === groupResult.data.owner_id || myMembership?.role === 'owner') {
-        return res.status(400).json({ success: false, error: 'Owner cannot leave. Transfer ownership or delete the group.' });
+        return res.status(400).json({ success: false, error: 'Owner Cannot Leave. Transfer Ownership Or Delete The Group.' });
       }
       if (!myMembership) {
-        return res.status(404).json({ success: false, error: 'You are not a member of this group' });
+        return res.status(404).json({ success: false, error: 'You Are Not A Member Of This Group' });
       }
 
       const userClient = getUserScopedClient(token);
@@ -538,10 +538,10 @@ async function leaveOrRemove(req, res, groupId) {
         throw leaveError;
       }
       if (!leaveResult?.success) {
-        return res.status(409).json({ success: false, error: 'Group leave was not applied' });
+        return res.status(409).json({ success: false, error: 'Group Leave Was Not Applied' });
       }
 
-      return res.status(200).json({ success: true, message: 'You have left the group' });
+      return res.status(200).json({ success: true, message: 'You Have Left The Group' });
     }
 
     const member_id = intent.memberId;
@@ -564,7 +564,7 @@ async function leaveOrRemove(req, res, groupId) {
     if (groupResult.error) throw groupResult.error;
     if (membershipResult.error) throw membershipResult.error;
     if (!groupResult.data) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     const access = resolveGroupMembershipAccess({
@@ -573,7 +573,7 @@ async function leaveOrRemove(req, res, groupId) {
       membership: membershipResult.data,
     });
     if (!access.isManager) {
-      return res.status(403).json({ success: false, error: 'Only owners and admins can remove members' });
+      return res.status(403).json({ success: false, error: 'Only Owners And Admins Can Remove Members' });
     }
 
     const { data: targetMember, error: targetMemberError } = await getSupabase()
@@ -585,18 +585,18 @@ async function leaveOrRemove(req, res, groupId) {
     if (targetMemberError) throw targetMemberError;
 
     if (!targetMember) {
-      return res.status(404).json({ success: false, error: 'Member not found' });
+      return res.status(404).json({ success: false, error: 'Member Not Found' });
     }
 
     if (targetMember.user_id === user.id) {
-      return res.status(400).json({ success: false, error: 'Use the leave action to leave this group' });
+      return res.status(400).json({ success: false, error: 'Use The Leave Action To Leave This Group' });
     }
 
     if (targetMember.role === 'owner' || targetMember.user_id === groupResult.data.owner_id) {
-      return res.status(403).json({ success: false, error: 'Cannot remove the owner' });
+      return res.status(403).json({ success: false, error: 'Cannot Remove The Owner' });
     }
     if (access.role === 'admin' && targetMember.role === 'admin') {
-      return res.status(403).json({ success: false, error: 'Admins cannot remove another admin' });
+      return res.status(403).json({ success: false, error: 'Admins Cannot Remove Another Admin' });
     }
 
     const userClient = getUserScopedClient(token);
@@ -614,13 +614,13 @@ async function leaveOrRemove(req, res, groupId) {
       throw removeError;
     }
     if (!removeResult?.success) {
-      return res.status(409).json({ success: false, error: 'Member removal was not applied' });
+      return res.status(409).json({ success: false, error: 'Member Removal Was Not Applied' });
     }
 
-    return res.status(200).json({ success: true, message: 'Member removed' });
+    return res.status(200).json({ success: true, message: 'Member Removed' });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Leave/remove error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

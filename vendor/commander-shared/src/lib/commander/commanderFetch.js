@@ -123,7 +123,7 @@ export async function commanderFetch(url, opts = {}) {
 export async function commanderFetchJSON(url, opts = {}) {
   const res = await commanderFetch(url, opts);
   if (!res.ok) {
-    let errorMsg = `Request failed (${res.status})`;
+    let errorMsg = `Request Failed (${res.status})`;
     try { const body = await res.json(); errorMsg = body?.error?.message || body?.error || errorMsg; } catch (e) { console.warn('[App] Handled exception:', e); }
     throw new Error(errorMsg);
   }

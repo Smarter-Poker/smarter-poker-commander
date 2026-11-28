@@ -135,10 +135,10 @@ export default function PlayerRating({
       {/* Review Text */}
       <div>
         <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
-          Review (optional)
+          Review (Optional)
         </label>
         {existingReview ? (
-          <p className="text-sm text-white">{existingReview.review_text || 'No written review'}</p>
+          <p className="text-sm text-white">{existingReview.review_text || 'No Written Review'}</p>
         ) : (
           <textarea
             value={reviewText}

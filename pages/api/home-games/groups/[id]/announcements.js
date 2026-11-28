@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const { id: groupId } = req.query;
 
     if (!groupId) {
-      return res.status(400).json({ error: 'Group ID required' });
+      return res.status(400).json({ error: 'Group ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -42,12 +42,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -55,7 +55,7 @@ async function listAnnouncements(req, res, groupId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -63,7 +63,7 @@ async function listAnnouncements(req, res, groupId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     // Check membership
@@ -75,7 +75,7 @@ async function listAnnouncements(req, res, groupId) {
       .maybeSingle();
 
     if (!membership || membership.status !== 'approved') {
-      return res.status(403).json({ error: 'You are not a member of this group' });
+      return res.status(403).json({ error: 'You Are Not A Member Of This Group' });
     }
 
     const rawLimit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
@@ -107,7 +107,7 @@ async function listAnnouncements(req, res, groupId) {
     return res.status(200).json({ announcements: data });
   } catch (error) {
     console.warn('List announcements error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -115,7 +115,7 @@ async function createAnnouncement(req, res, groupId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -123,7 +123,7 @@ async function createAnnouncement(req, res, groupId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     // Check if user is admin
@@ -136,7 +136,7 @@ async function createAnnouncement(req, res, groupId) {
       .maybeSingle();
 
     if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-      return res.status(403).json({ error: 'Only admins can create announcements' });
+      return res.status(403).json({ error: 'Only Admins Can Create Announcements' });
     }
 
     const {
@@ -152,7 +152,7 @@ async function createAnnouncement(req, res, groupId) {
     } = req.body;
 
     if (!title || !message) {
-      return res.status(400).json({ error: 'Title and message are required' });
+      return res.status(400).json({ error: 'Title And Message Are Required' });
     }
 
     const status = send_now ? 'sent' : (scheduled_for ? 'scheduled' : 'draft');
@@ -189,7 +189,7 @@ async function createAnnouncement(req, res, groupId) {
     return res.status(201).json({ announcement });
   } catch (error) {
     console.warn('Create announcement error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 

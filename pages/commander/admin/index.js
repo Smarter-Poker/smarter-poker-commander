@@ -71,7 +71,7 @@ function ApiKeysModal({ isOpen, onClose, venueId, onSuccess }) {
         },
         body: JSON.stringify({ name: newKeyName, venue_id: venueId })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         const created = data.data?.key || {};
@@ -308,7 +308,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
         },
         body: JSON.stringify(settings)
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         onSave?.({ ...venue, ...(data.data?.settings || settings) });
@@ -346,7 +346,7 @@ function VenueSettingsModal({ isOpen, onClose, venue, onSave, onSuccess }) {
           )}
           {/* Comp Rate */}
           <div>
-            <label className="block text-sm font-medium text-[#A9BDD1] mb-2">Comp Rate ($/hr)</label>
+            <label className="block text-sm font-medium text-[#A9BDD1] mb-2">Comp Rate ($/Hr)</label>
             <input
               type="number"
               step="0.25"
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
       // Load venues with summary
       const fetchOpts = () => signal ? { signal } : {};
       const venuesRes = await commanderFetch('/api/commander/admin/venues?summary=true', fetchOpts());
-      if (!venuesRes.ok) throw new Error(`Request failed (${venuesRes.status})`);
+      if (!venuesRes.ok) throw new Error(`Request Failed (${venuesRes.status})`);
       const venuesData = await venuesRes.json();
       // 2026-07-25 audit fix: the API nests under data - read data.venues/data.summary
       if (venuesData.success && venuesData.data?.venues) {
@@ -514,7 +514,7 @@ export default function AdminDashboard() {
 
       // Load exports
       const exportsRes = await commanderFetch('/api/commander/exports', fetchOpts());
-      if (!exportsRes.ok) throw new Error(`Request failed (${exportsRes.status})`);
+      if (!exportsRes.ok) throw new Error(`Request Failed (${exportsRes.status})`);
       const exportsData = await exportsRes.json();
       if (exportsData.exports) {
         setExports(exportsData.exports);
@@ -571,7 +571,7 @@ export default function AdminDashboard() {
           ...formData
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (res.ok && data.export) {
         setExports([data.export, ...exports]);

@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     const { id: leaderboardId } = req.query;
 
     if (!leaderboardId) {
-      return res.status(400).json({ error: 'Leaderboard ID required' });
+      return res.status(400).json({ error: 'Leaderboard ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -54,12 +54,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -120,7 +120,7 @@ async function listEntries(req, res, leaderboardId, staff) {
     return res.status(200).json({ entries: enriched });
   } catch (error) {
     console.warn('List entries error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -141,16 +141,16 @@ async function addOrUpdateEntry(req, res, leaderboardId) {
       .maybeSingle();
 
     if (!leaderboard) {
-      return res.status(404).json({ error: 'Leaderboard not found' });
+      return res.status(404).json({ error: 'Leaderboard Not Found' });
     }
 
     if (leaderboard.status === 'completed') {
-      return res.status(400).json({ error: 'Cannot modify completed leaderboard' });
+      return res.status(400).json({ error: 'Cannot Modify Completed Leaderboard' });
     }
 
     // Verify staff is authorized for this venue
     if (staff.venue_id && staff.venue_id !== leaderboard.venue_id) {
-      return res.status(403).json({ error: 'Not authorized for this venue' });
+      return res.status(403).json({ error: 'Not Authorized For This Venue' });
     }
 
     const { action = 'update' } = req.body;
@@ -170,7 +170,7 @@ async function addOrUpdateEntry(req, res, leaderboardId) {
     } = req.body;
 
     if (!player_id) {
-      return res.status(400).json({ error: 'Player ID required' });
+      return res.status(400).json({ error: 'Player ID Required' });
     }
 
     const entryData = {
@@ -201,7 +201,7 @@ async function addOrUpdateEntry(req, res, leaderboardId) {
     return res.status(200).json({ entry });
   } catch (error) {
     console.warn('Add/update entry error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -216,7 +216,7 @@ async function calculateAllEntries(req, res, leaderboard) {
 
     if (!playerStats || playerStats.length === 0) {
       return res.status(200).json({
-        message: 'No player stats found for this venue',
+        message: 'No Player Stats Found For This Venue',
         entries_updated: 0
       });
     }
@@ -288,13 +288,13 @@ async function calculateAllEntries(req, res, leaderboard) {
     }
 
     return res.status(200).json({
-      message: 'Leaderboard entries calculated',
+      message: 'Leaderboard Entries Calculated',
       entries_updated: entries.length
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Calculate entries error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 

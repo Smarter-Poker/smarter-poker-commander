@@ -27,15 +27,15 @@ export default async function handler(req, res) {
 
     const _g = await guardWriteStaff(req, res); if (!_g) return;
 
-    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
+      if (!user) return res.status(401).json({ success: false, error: 'Invalid Token' });
 
       const { id } = req.query;
 
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
         .eq('id', id)
         .maybeSingle();
 
-      if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+      if (!session) return res.status(404).json({ success: false, error: 'Session Not Found' });
 
       // 2026-08-20 audit fix: the session id was acted on with no venue
       // ownership check, so staff at venue A could close out (and set the
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
       }
 
-      if (session.status !== 'active') return res.status(400).json({ success: false, error: 'Session not active' });
+      if (session.status !== 'active') return res.status(400).json({ success: false, error: 'Session Not Active' });
 
       const endedAt = new Date();
       const hours = (endedAt - new Date(session.started_at)) / 3600000;
@@ -75,17 +75,17 @@ export default async function handler(req, res) {
         .select()
         .maybeSingle();
 
-      if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
-      if (!updated) return res.status(404).json({ success: false, error: 'Session not found' });
+      if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
+      if (!updated) return res.status(404).json({ success: false, error: 'Session Not Found' });
       return res.status(200).json({ success: true, data: updated });
     } catch (err) {
       console.warn('Stop session error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

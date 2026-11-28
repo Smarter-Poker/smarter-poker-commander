@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       if (existing) {
         return res.status(400).json({
           success: false,
-          error: { code: 'ALREADY_STREAMING', message: 'Table is already streaming' }
+          error: { code: 'ALREADY_STREAMING', message: 'Table Is Already Streaming' }
         });
       }
 
@@ -113,13 +113,13 @@ export default async function handler(req, res) {
       console.warn('Start stream error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to start stream' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Start Stream' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

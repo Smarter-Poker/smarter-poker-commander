@@ -60,7 +60,7 @@ let url = `/api/commander/tax/w2g?venue_id=${staff.venue_id}&year=${year}`;
       if (filter === 'generated') url += '&w2g_generated=true';
       // commanderFetch attaches the x-staff-session header guardStaff requires
       const res = await commanderFetch(url, {});
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setEvents(json.data.events);
@@ -78,7 +78,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tax_event_id: eventId })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setToast({ type: 'success', msg: 'W-2G Generated Successfully' });

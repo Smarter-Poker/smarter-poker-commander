@@ -118,7 +118,7 @@ export default function TabletDisplay() {
             const res = await fetch(url);
             // HIGH FIX #2a: Add response.ok check before .json()
             if (!res.ok) {
-                const errorText = await res.text().catch(() => 'Unknown error');
+                const errorText = await res.text().catch(() => 'Unknown Error');
                 throw new Error(`HTTP ${res.status}: ${errorText}`);
             }
             const json = await res.json();
@@ -130,11 +130,11 @@ export default function TabletDisplay() {
                 lastFetchAt.current = Date.now();
                 setError(null);
             } else {
-                setError(json.error || 'Failed to load table data');
+                setError(json.error || 'Failed To Load Table Data');
             }
         } catch (err) {
             console.warn('Tablet fetch error:', err);
-            setError('Connection lost - retrying...');
+            setError('Connection Lost - Retrying...');
         }
         setLoading(false);
     }, [tableNumber, venueId]);

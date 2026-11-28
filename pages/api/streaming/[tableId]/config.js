@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (req.method !== 'PATCH') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       if (tableError || !table) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Table not found' }
+          error: { code: 'NOT_FOUND', message: 'Table Not Found' }
         });
       }
 
@@ -111,13 +111,13 @@ export default async function handler(req, res) {
       console.warn('Update stream config error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to update stream config' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Update Stream Config' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

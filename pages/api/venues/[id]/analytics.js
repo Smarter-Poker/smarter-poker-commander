@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (!venueId) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Venue ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Venue ID Required' }
       });
     }
 
@@ -168,13 +168,13 @@ export default async function handler(req, res) {
       console.warn('Venue analytics error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to fetch analytics' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Analytics' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

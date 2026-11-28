@@ -127,8 +127,8 @@ export default function RSVPManager({
             <Users size={36} className="mx-auto text-[#8FA6BE] mb-2" />
             <p className="text-[#9FB3C8]">
               {searchTerm || filterStatus !== 'all'
-                ? 'No matching RSVPs'
-                : 'No RSVPs yet'}
+                ? 'No Matching RSVPs'
+                : 'No RSVPs Yet'}
             </p>
           </div>
         ) : (

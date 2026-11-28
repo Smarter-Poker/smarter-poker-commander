@@ -26,19 +26,19 @@ export default async function handler(req, res) {
 
     const _g = await guardWriteStaff(req, res); if (!_g) return;
 
-    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
+      if (!user) return res.status(401).json({ success: false, error: 'Invalid Token' });
 
       const { id } = req.query;
       const { amount } = req.body;
-      if (!amount || amount <= 0) return res.status(400).json({ success: false, error: 'Valid amount required' });
+      if (!amount || amount <= 0) return res.status(400).json({ success: false, error: 'Valid Amount Required' });
 
       // 2026-08-20 audit fix: the session id was passed straight to the RPC
       // with no venue ownership check, so staff at venue A could record
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
           .select('id, venue_id')
           .eq('id', id)
           .maybeSingle();
-        if (!owner) return res.status(404).json({ success: false, error: 'Session not found' });
+        if (!owner) return res.status(404).json({ success: false, error: 'Session Not Found' });
         if (String(owner.venue_id) !== String(_g.venue_id)) {
           return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
         }
@@ -68,21 +68,21 @@ export default async function handler(req, res) {
         });
 
       if (error) {
-        if (error.code === 'P0002') return res.status(404).json({ success: false, error: 'Session not found' });
+        if (error.code === 'P0002') return res.status(404).json({ success: false, error: 'Session Not Found' });
         console.warn('Payment error:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
-      if (!updated) return res.status(404).json({ success: false, error: 'Session not found' });
+      if (!updated) return res.status(404).json({ success: false, error: 'Session Not Found' });
       // Response shape unchanged: the full updated commander_table_sessions row.
       return res.status(200).json({ success: true, data: updated });
     } catch (err) {
       console.warn('Payment error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

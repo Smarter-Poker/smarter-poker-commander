@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
         success: false,
         error: {
           code: 'PAYMENTS_NOT_CONFIGURED',
-          message: 'Payment processing is not yet configured. Please contact support.',
+          message: 'Payment Processing Is Not Yet Configured. Please Contact Support.',
           fallback: 'cash'
         }
       });
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       if (!authHeader) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' }
         });
       }
 
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Token' }
         });
       }
 
@@ -91,7 +91,7 @@ export default async function handler(req, res) {
       if (escrowError || !escrow) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Escrow transaction not found or not pending' }
+          error: { code: 'NOT_FOUND', message: 'Escrow Transaction Not Found Or Not Pending' }
         });
       }
 
@@ -162,13 +162,13 @@ export default async function handler(req, res) {
       console.warn('Payment intent error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'PAYMENT_ERROR', message: error.message || 'Failed to create payment' }
+        error: { code: 'PAYMENT_ERROR', message: error.message || 'Failed To Create Payment' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

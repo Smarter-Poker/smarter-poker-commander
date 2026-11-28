@@ -143,7 +143,7 @@ export default async function handler(req, res) {
     if (!tournamentId) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Tournament ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Tournament ID Required' }
       });
     }
 
@@ -160,13 +160,13 @@ export default async function handler(req, res) {
     res.setHeader('Allow', ['GET', 'POST']);
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -215,7 +215,7 @@ async function getClockState(req, res, tournamentId) {
     if (error || !tournament) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Tournament not found' }
+        error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
 
@@ -432,7 +432,7 @@ async function getClockState(req, res, tournamentId) {
     console.warn('Get clock state error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to get clock state' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Get Clock State' }
     });
   }
 }
@@ -453,7 +453,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
     if (fetchError || !tournament) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Tournament not found' }
+        error: { code: 'NOT_FOUND', message: 'Tournament Not Found' }
       });
     }
 
@@ -479,7 +479,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (tournament.status === 'running') {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament already running' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Already Running' }
           });
         }
         updates = {
@@ -509,7 +509,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (tournament.status !== 'running') {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament is not running' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Is Not Running' }
           });
         }
         updates = { status: 'paused' };
@@ -525,7 +525,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (tournament.status !== 'paused') {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament is not paused' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Is Not Paused' }
           });
         }
         updates = { status: 'running' };
@@ -545,7 +545,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (!['running', 'paused'].includes(tournament.status)) {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament is not active' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Is Not Active' }
           });
         }
         // 2026-07-25 audit fix: optional optimistic-concurrency check so multiple
@@ -555,7 +555,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
             Number(tournament.current_level || 0) !== Number(from_level)) {
           return res.status(409).json({
             success: false,
-            error: { code: 'LEVEL_CONFLICT', message: 'Level already advanced by another client' }
+            error: { code: 'LEVEL_CONFLICT', message: 'Level Already Advanced By Another Client' }
           });
         }
         const blindStructure = parseBlindStructure(tournament.blind_structure);
@@ -590,7 +590,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (!['running', 'paused'].includes(tournament.status)) {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament is not active' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Is Not Active' }
           });
         }
         const currentLevelNow = tournament.current_level || 0;
@@ -629,7 +629,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (typeof level !== 'number' || !Number.isInteger(level) || level < 0) {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Valid level required' }
+            error: { code: 'VALIDATION_ERROR', message: 'Valid Level Required' }
           });
         }
         if (structureRows.length > 0 && level > maxLevel) {
@@ -743,7 +743,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (tournament.status !== 'running') {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament is not running' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Is Not Running' }
           });
         }
         updates = { status: 'final_table' };
@@ -753,7 +753,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
         if (!['running', 'paused', 'final_table'].includes(tournament.status)) {
           return res.status(400).json({
             success: false,
-            error: { code: 'VALIDATION_ERROR', message: 'Tournament cannot be ended' }
+            error: { code: 'VALIDATION_ERROR', message: 'Tournament Cannot Be Ended' }
           });
         }
         updates = {
@@ -766,7 +766,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
       default:
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Invalid action' }
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid Action' }
         });
     }
 
@@ -877,7 +877,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
       data: {
         tournament: updated,
         clock: clockState,
-        message: `Tournament ${action} successful`,
+        message: `Tournament ${action} Successful`,
         // Included when a table was automatically broken - frontend uses this to print receipts
         auto_break: autoBreakResult || undefined
       }
@@ -887,7 +887,7 @@ async function handleClockAction(req, res, tournamentId, staff) {
     console.warn('[clock.js] Clock action exception:', error.message, error.stack);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Internal server error' }
+      error: { code: 'SERVER_ERROR', message: 'Internal Server Error' }
     });
   }
 }

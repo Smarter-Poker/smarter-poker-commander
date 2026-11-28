@@ -112,7 +112,7 @@ function CompTransactionList({
                     </div>
                     <div className="text-xs text-[#8FA6BE] truncate">
                       {tx.description || (tx.source_type === 'session'
-                        ? `${tx.hours_played?.toFixed(1)}h played`
+                        ? `${tx.hours_played?.toFixed(1)}h Played`
                         : style.label
                       )}
                     </div>
@@ -143,7 +143,7 @@ function CompTransactionList({
           disabled={isLoading}
           className="w-full py-3 text-center text-sm font-medium text-[#22D3EE] hover:bg-[#132240] rounded-lg transition-colors"
         >
-          {isLoading ? 'Loading...' : 'Load more transactions'}
+          {isLoading ? 'Loading...' : 'Load More Transactions'}
         </button>
       )}
     </div>

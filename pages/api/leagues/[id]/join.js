@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
       });
     }
 
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Invalid token' }
+          error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' }
         });
       }
 
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       if (leagueError || !league) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'League not found' }
+          error: { code: 'NOT_FOUND', message: 'League Not Found' }
         });
       }
 
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       if (existing) {
         return res.status(400).json({
           success: false,
-          error: { code: 'ALREADY_JOINED', message: 'Already a member of this league' }
+          error: { code: 'ALREADY_JOINED', message: 'Already A Member Of This League' }
         });
       }
 
@@ -116,13 +116,13 @@ export default async function handler(req, res) {
       console.warn('Join league error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to join league' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Join League' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -175,11 +175,11 @@ export default function CompSystem() {
           commanderFetch(`/api/commander/members?venue_id=${venueId}&has_comps=true&limit=100`, { headers }).catch(() => ({ ok: false })),
           commanderFetch(`/api/commander/comps/balances?venue_id=${venueId}&history=true`, { headers }).catch(() => ({ ok: false }))
         ]);
-        if (!membersRes || typeof membersRes.json !== 'function') throw new Error('Members fetch failed (network error)');
-        if (!membersRes.ok) throw new Error(`Request failed (${membersRes.status})`);
+        if (!membersRes || typeof membersRes.json !== 'function') throw new Error('Members Fetch Failed (Network Error)');
+        if (!membersRes.ok) throw new Error(`Request Failed (${membersRes.status})`);
         const membersJson = await membersRes.json();
-        if (!logRes || typeof logRes.json !== 'function') throw new Error('Comp log fetch failed (network error)');
-        if (!logRes.ok) throw new Error(`Request failed (${logRes.status})`);
+        if (!logRes || typeof logRes.json !== 'function') throw new Error('Comp Log Fetch Failed (Network Error)');
+        if (!logRes.ok) throw new Error(`Request Failed (${logRes.status})`);
         const logJson = await logRes.json();
 
         const members = membersJson.data?.members || membersJson.data || [];
@@ -229,7 +229,7 @@ export default function CompSystem() {
       const staffSession = getStaffSession();
       if (staffSession) headers['x-staff-session'] = staffSession;
       const res = await commanderFetch(`/api/commander/members/search?q=${encodeURIComponent(q)}&limit=10${venueId ? `&venue_id=${venueId}` : ''}`, { headers });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) setSearchResults(json.data || []);
     } catch (err) { console.warn(err); }
@@ -265,7 +265,7 @@ export default function CompSystem() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ venue_id: venueId, pin_code: pinCode })
       });
-      if (!pinRes.ok) throw new Error(`Request failed (${pinRes.status})`);
+      if (!pinRes.ok) throw new Error(`Request Failed (${pinRes.status})`);
       const pinData = await pinRes.json();
 
       // Check both HTTP status and the 'valid' field from the API
@@ -327,7 +327,7 @@ export default function CompSystem() {
         headers,
         body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         broadcastChange('members');

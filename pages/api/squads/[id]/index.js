@@ -39,13 +39,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -64,7 +64,7 @@ async function handleGet(req, res, id) {
     if (error || !squad) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Squad not found' }
+        error: { code: 'NOT_FOUND', message: 'Squad Not Found' }
       });
     }
 
@@ -95,7 +95,7 @@ async function handleGet(req, res, id) {
     console.warn('Get squad error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch squad' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Squad' }
     });
   }
 }
@@ -112,7 +112,7 @@ async function handleDelete(req, res, id, user) {
     if (!squad) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Squad not found' }
+        error: { code: 'NOT_FOUND', message: 'Squad Not Found' }
       });
     }
 
@@ -120,7 +120,7 @@ async function handleDelete(req, res, id, user) {
     if (String(squad.leader_id) !== String(user.id)) {
       return res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'Only leader can disband squad' }
+        error: { code: 'FORBIDDEN', message: 'Only Leader Can Disband Squad' }
       });
     }
 
@@ -138,14 +138,14 @@ async function handleDelete(req, res, id, user) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Squad disbanded' }
+      data: { message: 'Squad Disbanded' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Delete squad error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to delete squad' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Delete Squad' }
     });
   }
 }

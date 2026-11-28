@@ -205,7 +205,7 @@ export default function TournamentPublic() {
 
       const content = t.status === 'completed'
         ? `Tournament Results: ${t.name} | $${t.buyin_amount || 0} Buy-In | ${entries.length} Entries | $${localPrizePool.toLocaleString()} Prize Pool | ${url}`
-        : `Playing in: ${t.name} | $${t.buyin_amount || 0} Buy-In | ${localActiveEntries.length} Players Remaining | ${url}`;
+        : `Playing In: ${t.name} | $${t.buyin_amount || 0} Buy-In | ${localActiveEntries.length} Players Remaining | ${url}`;
 
       const res = await fetch('/api/social/create-post', {
         method: 'POST',

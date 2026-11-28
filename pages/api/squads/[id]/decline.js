@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
       });
     }
 
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     if (authError || !user) {
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
+        error: { code: 'INVALID_TOKEN', message: 'Invalid Or Expired Token' }
       });
     }
 
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       if (findError || !membership) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Membership not found' }
+          error: { code: 'NOT_FOUND', message: 'Membership Not Found' }
         });
       }
 
@@ -80,19 +80,19 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
-        data: { message: 'Invitation declined' }
+        data: { message: 'Invitation Declined' }
       });
     } catch (error) {
       console.warn('Decline squad invitation error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to decline invitation' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Decline Invitation' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

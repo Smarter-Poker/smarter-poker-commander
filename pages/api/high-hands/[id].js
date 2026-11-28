@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     if (!id) {
-      return res.status(400).json({ success: false, error: 'High hand ID required' });
+      return res.status(400).json({ success: false, error: 'High Hand ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -52,11 +52,11 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     console.warn('[high-hands/id API Error]', err?.message || err, err?.code || '', err?.details || '');
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err?.message || 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err?.message || 'Internal Server Error' });
   }
 }
 
@@ -71,7 +71,7 @@ async function getHighHand(req, res, id, staff) {
     if (error) throw error;
 
     if (!highHand) {
-      return res.status(404).json({ success: false, error: 'High hand not found' });
+      return res.status(404).json({ success: false, error: 'High Hand Not Found' });
     }
 
     if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
@@ -82,7 +82,7 @@ async function getHighHand(req, res, id, staff) {
     return res.status(200).json({ high_hand: highHand });
   } catch (error) {
     console.warn('Get high hand error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -100,11 +100,11 @@ async function updateHighHand(req, res, id, staff) {
       .maybeSingle();
 
     if (getError || !existing) {
-      return res.status(404).json({ success: false, error: 'High hand not found' });
+      return res.status(404).json({ success: false, error: 'High Hand Not Found' });
     }
 
     if (!staff || String(staff.venue_id) !== String(existing.venue_id)) {
-      return res.status(403).json({ success: false, error: 'You are not authorized to update high hands for this venue' });
+      return res.status(403).json({ success: false, error: 'You Are Not Authorized To Update High Hands For This Venue' });
     }
 
     const {
@@ -122,7 +122,7 @@ async function updateHighHand(req, res, id, staff) {
 
     if (action === 'verify') {
       if (existing.verified_at) {
-        return res.status(400).json({ success: false, error: 'High hand already verified' });
+        return res.status(400).json({ success: false, error: 'High Hand Already Verified' });
       }
       updates = {
         verified_by: staff.id,
@@ -160,7 +160,7 @@ async function updateHighHand(req, res, id, staff) {
     return res.status(200).json({ high_hand: highHand });
   } catch (error) {
     console.warn('Update high hand error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -178,20 +178,20 @@ async function deleteHighHand(req, res, id, staff) {
       .maybeSingle();
 
     if (getError || !existing) {
-      return res.status(404).json({ success: false, error: 'High hand not found' });
+      return res.status(404).json({ success: false, error: 'High Hand Not Found' });
     }
 
     if (!staff || String(staff.venue_id) !== String(existing.venue_id)) {
-      return res.status(403).json({ success: false, error: 'You are not authorized to delete high hands for this venue' });
+      return res.status(403).json({ success: false, error: 'You Are Not Authorized To Delete High Hands For This Venue' });
     }
 
     if (!['owner', 'manager'].includes(staff.role)) {
-      return res.status(403).json({ success: false, error: 'Only managers can delete high hands' });
+      return res.status(403).json({ success: false, error: 'Only Managers Can Delete High Hands' });
     }
 
     // Prevent deleting verified high hands
     if (existing.verified_at) {
-      return res.status(400).json({ success: false, error: 'Cannot delete verified high hands' });
+      return res.status(400).json({ success: false, error: 'Cannot Delete Verified High Hands' });
     }
 
     const { error } = await getSupabase()
@@ -201,10 +201,10 @@ async function deleteHighHand(req, res, id, staff) {
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, message: 'High hand deleted' });
+    return res.status(200).json({ success: true, message: 'High Hand Deleted' });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Delete high hand error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

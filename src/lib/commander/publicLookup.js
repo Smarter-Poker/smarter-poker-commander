@@ -62,7 +62,7 @@ export function lookupOutcome({ error, record, noun = 'Record' } = {}) {
       retryAfter: null,
       body: {
         success: false,
-        error: { code: 'NOT_FOUND', message: `${noun} not found` }
+        error: { code: 'NOT_FOUND', message: `${noun} Not Found` }
       }
     };
   }

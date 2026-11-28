@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Table ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Table ID Required' }
       });
     }
 
@@ -46,14 +46,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -95,7 +95,7 @@ async function handleGet(req, res, tableId) {
     if (error || !table) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Table not found' }
+        error: { code: 'NOT_FOUND', message: 'Table Not Found' }
       });
     }
 
@@ -107,7 +107,7 @@ async function handleGet(req, res, tableId) {
     console.warn('Commander table GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -135,7 +135,7 @@ async function handlePatch(req, res, tableId) {
     if (fetchError || !existing) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Table not found' }
+        error: { code: 'NOT_FOUND', message: 'Table Not Found' }
       });
     }
 
@@ -212,14 +212,14 @@ async function handlePatch(req, res, tableId) {
       if (!VALID_STATUSES.includes(status)) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: `Invalid status. Must be: ${VALID_STATUSES.join(', ')}` }
+          error: { code: 'VALIDATION_ERROR', message: `Invalid Status. Must Be: ${VALID_STATUSES.join(', ')}` }
         });
       }
       // Can't change to available if game is running
       if (status === 'available' && existing.current_game_id) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Cannot set to available while game is running' }
+          error: { code: 'VALIDATION_ERROR', message: 'Cannot Set To Available While Game Is Running' }
         });
       }
       updates.status = status;
@@ -228,7 +228,7 @@ async function handlePatch(req, res, tableId) {
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No valid fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Valid Fields To Update' }
       });
     }
 
@@ -243,7 +243,7 @@ async function handlePatch(req, res, tableId) {
       console.warn('Commander table PATCH error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update table' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Table' }
       });
     }
 
@@ -268,7 +268,7 @@ async function handlePatch(req, res, tableId) {
     console.warn('Commander table PATCH error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -294,14 +294,14 @@ async function handleDelete(req, res, tableId) {
     if (fetchError || !table) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Table not found' }
+        error: { code: 'NOT_FOUND', message: 'Table Not Found' }
       });
     }
 
     if (table.current_game_id || table.status === 'in_use') {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Cannot delete table while game is running' }
+        error: { code: 'VALIDATION_ERROR', message: 'Cannot Delete Table While Game Is Running' }
       });
     }
 
@@ -314,7 +314,7 @@ async function handleDelete(req, res, tableId) {
       console.warn('Commander table DELETE error:', deleteError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to delete table' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Delete Table' }
       });
     }
 
@@ -332,14 +332,14 @@ async function handleDelete(req, res, tableId) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Table deleted successfully' }
+      data: { message: 'Table Deleted Successfully' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Commander table DELETE error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
