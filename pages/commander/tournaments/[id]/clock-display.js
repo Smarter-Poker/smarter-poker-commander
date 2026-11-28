@@ -117,7 +117,7 @@ export default function ClockDisplay() {
   // Auto-scroll logic for payouts
   useEffect(() => {
 
-  if (!router.isReady) return null;
+  if (!router.isReady) return; // an effect may only return a cleanup function
 
     if (!payoutViewportRef.current || !payoutContentRef.current) return;
     const checkScroll = () => {

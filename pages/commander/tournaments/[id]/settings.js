@@ -310,7 +310,7 @@ export default function TournamentSettings() {
   // Fetch tournament
   useEffect(() => {
 
-  if (!router.isReady) return null;
+  if (!router.isReady) return; // an effect may only return a cleanup function
 
     if (!id) return;
     const fetch_ = async () => {

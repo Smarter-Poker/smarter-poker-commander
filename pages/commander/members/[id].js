@@ -48,7 +48,7 @@ export default function MemberProfile() {
   useEffect(() => {
     const _c = new AbortController();
 
-  if (!router.isReady) return null;
+  if (!router.isReady) return; // an effect may only return a cleanup function
 
     if (!id) return;
     fetchMember();

@@ -82,7 +82,7 @@ const headers = { };
 
   useEffect(() => {
 
-  if (!router.isReady) return null;
+  if (!router.isReady) return; // an effect may only return a cleanup function
 
     if (!id) return;
     const _c = new AbortController();

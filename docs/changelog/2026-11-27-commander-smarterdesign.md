@@ -57,3 +57,11 @@ the time, and `/commander/members/[id]` throwing when the member does not
 load - both reproduce on untouched main.
 
 Pinned by `tests/unit/smarterdesign.law.test.js`.
+
+## Also fixed while in there
+
+"destroy is not a function": five effects returned a non-function
+(`return null;` on members/[id], table/[id], tournaments/[id]/settings and
+clock-display; `return router.push(...)` on membership-plans). React calls an
+effect's return value on unmount, so member detail blanked with "Application
+error". Pinned by `tests/unit/effectCleanup.law.test.js`.

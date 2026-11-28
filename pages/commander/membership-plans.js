@@ -47,13 +47,16 @@ export default function MembershipPlansPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // An effect may only return a cleanup function: returning router.push()'s
+    // promise made React call it on unmount ("destroy is not a function").
+    const toLogin = () => { router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); };
     const s = getStaffSession();
-    if (!s) return router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+    if (!s) { toLogin(); return; }
     try {
       const sd = JSON.parse(s);
-      if (!sd.venue_id) return router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
+      if (!sd.venue_id) { toLogin(); return; }
       setVenueId(sd.venue_id);
-    } catch { router.push('/commander/login').catch(e => console.warn('[App] Handled promise rejection:', e?.message || e)); }
+    } catch { toLogin(); }
   }, [router]);
 
   useEffect(() => { if (venueId) { const _c = new AbortController(); fetchPlans(_c.signal); return () => _c.abort(); } }, [venueId]);
