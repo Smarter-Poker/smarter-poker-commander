@@ -7,13 +7,13 @@ const ACTION_MAP = {
   chat_message: { icon: MessageSquare, color: '#3B82F6', label: 'Chat Message' },
   sit_down: { icon: User, color: '#10B981', label: 'Seated' },
   stand_up: { icon: User, color: '#EF4444', label: 'Stood Up' },
-  buy_in: { icon: PlusCircle, color: '#F59E0B', label: 'Buy In' },
-  cash_out: { icon: ArrowUpCircle, color: '#6366F1', label: 'Cash Out' },
+  buy_in: { icon: PlusCircle, color: '#22D3EE', label: 'Buy In' },
+  cash_out: { icon: ArrowUpCircle, color: '#3B82F6', label: 'Cash Out' },
   fold: { icon: ArrowDownCircle, color: '#6B7280', label: 'Fold' },
-  bet: { icon: PlusCircle, color: '#8B5CF6', label: 'Bet/Raise' },
+  bet: { icon: PlusCircle, color: '#5AA9FF', label: 'Bet/Raise' },
   check: { icon: Pause, color: '#9CA3AF', label: 'Check' },
   call: { icon: Play, color: '#34D399', label: 'Call' },
-  hand_complete: { icon: Shield, color: '#F59E0B', label: 'Hand Complete' }
+  hand_complete: { icon: Shield, color: '#22D3EE', label: 'Hand Complete' }
 };
 
 /**
@@ -169,7 +169,7 @@ export default function ArenaLedger({ clubId, help = null }) {
       <div className="flex items-start justify-between gap-3 mb-6" data-ledger-controls="">
         <div className="flex flex-1 flex-wrap items-center gap-3 min-w-0">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5E78]" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA6BE]" />
             <input
               type="text"
               placeholder="Search Table Or User..."
@@ -194,7 +194,7 @@ export default function ArenaLedger({ clubId, help = null }) {
 
       {/* Ledger Stream UI */}
       <div className="bg-[#1e293b]/50 border border-[#334155] rounded-xl overflow-hidden shadow-2xl">
-        <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-[#0f172a]/80 border-b border-[#334155] text-xs font-semibold text-[#94a3b8] uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-[#0f172a]/80 border-b border-[#334155] text-xs font-semibold text-[#A9BDD1] uppercase tracking-wider">
           <div className="col-span-2">Time</div>
           <div className="col-span-2">Table ID</div>
           <div className="col-span-2">Actor</div>
@@ -208,7 +208,7 @@ export default function ArenaLedger({ clubId, help = null }) {
               SYNCING LEDGER...
             </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="text-center py-20 text-[#64748B]">
+            <div className="text-center py-20 text-[#9FB3C8]">
               No matching records found.
             </div>
           ) : (
@@ -220,7 +220,7 @@ export default function ArenaLedger({ clubId, help = null }) {
                 return (
                   <div key={log.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-[#334155]/30 transition-colors group">
                     {/* Timestamp */}
-                    <div className="col-span-2 text-xs text-[#64748B] font-mono group-hover:text-[#94a3b8] transition-colors">
+                    <div className="col-span-2 text-xs text-[#9FB3C8] font-mono group-hover:text-[#A9BDD1] transition-colors">
                       {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
                     
@@ -244,7 +244,7 @@ export default function ArenaLedger({ clubId, help = null }) {
                     </div>
 
                     {/* Payload / Amount */}
-                    <div className="col-span-4 text-sm text-[#94a3b8]">
+                    <div className="col-span-4 text-sm text-[#A9BDD1]">
                       {log.amount != null && (
                         <span className="text-[#10B981] font-mono font-bold mr-3">
                           {Number(log.amount) > 0 ? '+' : ''}{Number(log.amount)} chips
@@ -254,7 +254,7 @@ export default function ArenaLedger({ clubId, help = null }) {
                       {log.is_chat ? (
                         <span className="text-[#f1f5f9] italic">"{log.details?.message}"</span>
                       ) : (
-                        <span className="text-xs font-mono text-[#64748B] opacity-80 truncate block">
+                        <span className="text-xs font-mono text-[#9FB3C8] opacity-80 truncate block">
                           {log.details ? JSON.stringify(log.details) : ''}
                         </span>
                       )}

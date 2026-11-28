@@ -212,17 +212,17 @@ export default function TournamentLeaderboards() {
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />
-            <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] pb-16">
+            <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] pb-16">
 
                 {/* Header */}
                 <PageBar
                     title="Tournament Leaderboards"
                     summary="Season Points From Tournament Finishes. Points Are Awarded Automatically When A Tournament Is Finalized From The Director's Final Results Screen. A Finish Scores Into The Season Attached To That Tournament, Or Into This Venue's Active Season When None Is Attached. Keep Exactly One Season Active At A Time."
-                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
                     innerClassName="max-w-3xl mx-auto"
                 >
                     <button onClick={() => setShowCreate(v => !v)}
-                        className="h-11 px-4 rounded-xl bg-[#1877F2] text-white text-sm font-semibold flex items-center gap-2 active:opacity-90 flex-shrink-0">
+                        className="h-11 px-4 rounded-xl bg-[#0C55C0] text-white text-sm font-semibold flex items-center gap-2 active:opacity-90 flex-shrink-0">
                         <Plus className="w-4 h-4" /> {showCreate ? 'Close' : 'New Season'}
                     </button>
                 </PageBar>
@@ -232,8 +232,8 @@ export default function TournamentLeaderboards() {
                     {/* The "how this works" paragraph moved behind the "?"
                         (Dan, 2026-10-17). The live warning stays. */}
                     {activeCount === 0 && !loading && (
-                        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-3">
-                            <p className="text-xs text-[#F59E0B] font-medium">
+                        <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-3">
+                            <p className="text-xs text-[#22D3EE] font-medium">
                                 No Active Season. Create One So Finishes Start Scoring.
                             </p>
                         </div>
@@ -241,75 +241,75 @@ export default function TournamentLeaderboards() {
 
                     {/* Create form */}
                     {showCreate && (
-                        <div className="bg-[#242526] border border-[#1877F2] rounded-xl p-4 space-y-4">
+                        <div className="bg-[#0A1829] border border-[#1981EC] rounded-xl p-4 space-y-4">
                             <h2 className="text-sm font-bold text-white">Create Season</h2>
 
                             <div>
-                                <label className="block text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Season Name</label>
+                                <label className="block text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Season Name</label>
                                 <input type="text" value={form.name}
                                     onChange={e => setForm({ ...form, name: e.target.value })}
                                     placeholder="Fall Points Race"
-                                    className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] text-sm focus:outline-none focus:border-[#1877F2] placeholder-[#6A6B6D]" />
+                                    className="w-full h-12 px-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] text-sm focus:outline-none focus:border-[#1981EC] placeholder-[#93A9C0]" />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Season Start</label>
+                                    <label className="block text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Season Start</label>
                                     <input type="date" value={form.season_start}
                                         onChange={e => setForm({ ...form, season_start: e.target.value })}
-                                        className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] text-sm focus:outline-none focus:border-[#1877F2]" />
+                                        className="w-full h-12 px-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] text-sm focus:outline-none focus:border-[#1981EC]" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Season End</label>
+                                    <label className="block text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Season End</label>
                                     <input type="date" value={form.season_end}
                                         onChange={e => setForm({ ...form, season_end: e.target.value })}
-                                        className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] text-sm focus:outline-none focus:border-[#1877F2]" />
+                                        className="w-full h-12 px-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] text-sm focus:outline-none focus:border-[#1981EC]" />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Points Per Entry</label>
+                                    <label className="block text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Points Per Entry</label>
                                     <input type="number" min="0" value={form.point_for_entry}
                                         onChange={e => setForm({ ...form, point_for_entry: e.target.value })}
-                                        className="w-full h-12 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-[#E4E6EB] text-sm focus:outline-none focus:border-[#1877F2]" />
-                                    <p className="text-[10px] text-[#B0B3B8] mt-1">Awarded To Every Scored Finisher</p>
+                                        className="w-full h-12 px-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-[#F2F7FF] text-sm focus:outline-none focus:border-[#1981EC]" />
+                                    <p className="text-[10px] text-[#BDD0E2] mt-1">Awarded To Every Scored Finisher</p>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Activate On Create</label>
+                                    <label className="block text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Activate On Create</label>
                                     <button onClick={() => setForm({ ...form, is_active: !form.is_active })}
-                                        className={`w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${form.is_active ? 'bg-[#31A24C] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+                                        className={`w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${form.is_active ? 'bg-[#31A24C] text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
                                         {form.is_active ? <Check className="w-4 h-4" /> : <Power className="w-4 h-4" />}
                                         {form.is_active ? 'Active' : 'Inactive'}
                                     </button>
-                                    <p className="text-[10px] text-[#B0B3B8] mt-1">Deactivates Any Other Active Season</p>
+                                    <p className="text-[10px] text-[#BDD0E2] mt-1">Deactivates Any Other Active Season</p>
                                 </div>
                             </div>
 
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="text-xs text-[#B0B3B8] uppercase tracking-wider">Points By Finishing Position</label>
+                                    <label className="text-xs text-[#BDD0E2] uppercase tracking-wider">Points By Finishing Position</label>
                                     <div className="flex gap-2">
                                         <button onClick={removePlace}
-                                            className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-xs font-medium active:bg-[#4A4B4C]">
+                                            className="h-11 px-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-xs font-medium active:bg-[#1B3753]">
                                             Remove Place
                                         </button>
                                         <button onClick={addPlace}
-                                            className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-xs font-medium active:bg-[#4A4B4C]">
+                                            className="h-11 px-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-xs font-medium active:bg-[#1B3753]">
                                             Add Place
                                         </button>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     {form.structure.map((slot, i) => (
-                                        <div key={slot.position || i} className="flex items-center gap-2 bg-[#3A3B3C] rounded-xl px-3 h-12">
-                                            <span className="text-xs text-[#B0B3B8] w-10 flex-shrink-0">
+                                        <div key={slot.position || i} className="flex items-center gap-2 bg-[#132A42] rounded-xl px-3 h-12">
+                                            <span className="text-xs text-[#BDD0E2] w-10 flex-shrink-0">
                                                 {slot.position || i + 1}
                                             </span>
                                             <input type="number" min="0" value={slot.points}
                                                 onChange={e => setStructurePoints(i, e.target.value)}
-                                                className="flex-1 min-w-0 bg-transparent text-[#E4E6EB] text-sm text-right focus:outline-none" />
-                                            <span className="text-[10px] text-[#B0B3B8] flex-shrink-0">Pts</span>
+                                                className="flex-1 min-w-0 bg-transparent text-[#F2F7FF] text-sm text-right focus:outline-none" />
+                                            <span className="text-[10px] text-[#BDD0E2] flex-shrink-0">Pts</span>
                                         </div>
                                     ))}
                                 </div>
@@ -317,11 +317,11 @@ export default function TournamentLeaderboards() {
 
                             <div className="flex gap-2">
                                 <button onClick={() => setShowCreate(false)} disabled={busy}
-                                    className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50">
+                                    className="flex-1 h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:bg-[#1B3753] disabled:opacity-50">
                                     Cancel
                                 </button>
                                 <button onClick={createSeason} disabled={busy}
-                                    className="flex-1 h-12 rounded-xl bg-[#1877F2] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
+                                    className="flex-1 h-12 rounded-xl bg-[#0C55C0] text-white text-sm font-bold flex items-center justify-center gap-2 active:opacity-90 disabled:opacity-50">
                                     {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                                     Create Season
                                 </button>
@@ -332,72 +332,72 @@ export default function TournamentLeaderboards() {
                     {/* Board list */}
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
-                            <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                            <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                         </div>
                     ) : boards.length === 0 ? (
-                        <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-8 text-center">
-                            <Trophy className="w-10 h-10 text-[#3A3B3C] mx-auto mb-3" />
-                            <p className="text-[#B0B3B8] text-sm">No Seasons Yet</p>
-                            <p className="text-[#B0B3B8] text-xs mt-1">Create One To Start Tracking Tournament Points.</p>
+                        <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-8 text-center">
+                            <Trophy className="w-10 h-10 text-[#7F97B0] mx-auto mb-3" />
+                            <p className="text-[#BDD0E2] text-sm">No Seasons Yet</p>
+                            <p className="text-[#BDD0E2] text-xs mt-1">Create One To Start Tracking Tournament Points.</p>
                         </div>
                     ) : boards.map(board => {
                         const isExpanded = expandedId === board.id;
                         const standings = board.standings || [];
                         return (
                             <div key={board.id}
-                                className="bg-[#242526] border border-[#3A3B3C] rounded-xl overflow-hidden"
-                                style={{ borderLeft: `4px solid ${board.is_active ? '#31A24C' : '#3A3B3C'}` }}>
+                                className="bg-[#0A1829] border border-[#445E77] rounded-xl overflow-hidden"
+                                style={{ borderLeft: `4px solid ${board.is_active ? '#31A24C' : '#2A4560'}` }}>
                                 <div className="p-4 flex items-center gap-3">
                                     <button onClick={() => setExpandedId(isExpanded ? null : board.id)}
                                         className="flex-1 min-w-0 text-left">
                                         <div className="flex items-center gap-2">
                                             <h3 className="text-base font-semibold text-white truncate">{board.name}</h3>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${board.is_active ? 'bg-[#31A24C]/15 text-[#31A24C]' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${board.is_active ? 'bg-[#31A24C]/15 text-[#31A24C]' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
                                                 {board.is_active ? 'ACTIVE' : 'INACTIVE'}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-[#B0B3B8] mt-0.5">
+                                        <p className="text-xs text-[#BDD0E2] mt-0.5">
                                             {formatDate(board.season_start)} To {formatDate(board.season_end)},
                                             {' '}{(board.point_for_entry || 0).toLocaleString()} Per Entry,
                                             {' '}{standings.length.toLocaleString()} Player{standings.length === 1 ? '' : 's'}
                                         </p>
                                     </button>
                                     <button onClick={() => toggleActive(board)} disabled={busy}
-                                        className={`h-11 px-3 rounded-xl text-xs font-bold flex-shrink-0 disabled:opacity-50 ${board.is_active ? 'bg-[#3A3B3C] text-[#EF4444]' : 'bg-[#31A24C] text-white'}`}>
+                                        className={`h-11 px-3 rounded-xl text-xs font-bold flex-shrink-0 disabled:opacity-50 ${board.is_active ? 'bg-[#132A42] text-[#EF4444]' : 'bg-[#31A24C] text-white'}`}>
                                         {board.is_active ? 'Deactivate' : 'Activate'}
                                     </button>
                                     <button onClick={() => setExpandedId(isExpanded ? null : board.id)}
                                         className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <ChevronDown className={`w-5 h-5 text-[#B0B3B8] transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                        <ChevronDown className={`w-5 h-5 text-[#BDD0E2] transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                     </button>
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="border-t border-[#3A3B3C]">
+                                    <div className="border-t border-[#445E77]">
                                         {standings.length === 0 ? (
-                                            <p className="px-4 py-6 text-center text-sm text-[#B0B3B8]">
+                                            <p className="px-4 py-6 text-center text-sm text-[#BDD0E2]">
                                                 No Points Awarded Yet. Finalize A Tournament To Populate This Board.
                                             </p>
                                         ) : (
-                                            <div className="divide-y divide-[#3A3B3C]">
+                                            <div className="divide-y divide-[#445E77]">
                                                 {standings.slice(0, 100).map(row => (
                                                     <div key={`${board.id}-${row.player_id || row.player_name}`}
                                                         className="px-4 py-3 flex items-center gap-3">
-                                                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${row.rank === 1 ? 'bg-[#F59E0B]/20 text-[#F59E0B]'
-                                                            : row.rank <= 3 ? 'bg-[#1877F2]/20 text-[#1877F2]'
-                                                                : 'bg-[#3A3B3C] text-[#B0B3B8]'
+                                                        <span className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${row.rank === 1 ? 'bg-[#22D3EE]/20 text-[#22D3EE]'
+                                                            : row.rank <= 3 ? 'bg-[#0C55C0]/20 text-[#86DAFF]'
+                                                                : 'bg-[#132A42] text-[#BDD0E2]'
                                                             }`}>
                                                             {row.rank}
                                                         </span>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-sm text-[#E4E6EB] truncate">{row.player_name || 'Player'}</p>
-                                                            <p className="text-[10px] text-[#B0B3B8]">
+                                                            <p className="text-sm text-[#F2F7FF] truncate">{row.player_name || 'Player'}</p>
+                                                            <p className="text-[10px] text-[#BDD0E2]">
                                                                 {(row.events_played || 0).toLocaleString()} Event{row.events_played === 1 ? '' : 's'}
                                                                 {row.best_finish ? `, Best Finish ${row.best_finish}` : ''}
                                                             </p>
                                                         </div>
                                                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                            <Medal className="w-4 h-4 text-[#F59E0B]" />
+                                                            <Medal className="w-4 h-4 text-[#22D3EE]" />
                                                             <span className="text-sm font-bold text-white">
                                                                 {(row.total_points || 0).toLocaleString()}
                                                             </span>

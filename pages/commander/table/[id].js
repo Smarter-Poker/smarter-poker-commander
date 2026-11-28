@@ -111,7 +111,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A]" style={{ padding: 16 }}>
+    <div className="min-h-screen bg-[#040D18]" style={{ padding: 16 }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <div style={{ background: '#2A2B2C', height: 22, width: 160, borderRadius: 6, marginBottom: 12 }} />
         <SkeletonDark variant="stat-cards" count={3} />
@@ -123,7 +123,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
   );
 
   if (!table) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center text-white">Table Not Found</div>
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center text-white">Table Not Found</div>
   );
 
   const maxSeats = table.max_seats || table.seats || 9;
@@ -160,14 +160,14 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Header */}
-        <div className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5 flex items-center justify-between gap-2" data-page-bar="">
+        <div className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5 flex items-center justify-between gap-2" data-page-bar="">
           <h1 className="sr-only">Table {tableNum}</h1>
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => router.push('/commander/tables')} aria-label="Back To Tables" className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: '#3A3B3C', border: '1px solid #4A4B4C' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
-            <p className="text-xs font-semibold text-[#B0B3B8] min-w-0" role="status">
+            <button onClick={() => router.push('/commander/tables')} aria-label="Back To Tables" className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: '#2A4560', border: '1px solid #3A5873' }}><ArrowLeft className="w-5 h-5 text-white" /></button>
+            <p className="text-xs font-semibold text-[#BDD0E2] min-w-0" role="status">
               T{tableNum} · {table.game_type || 'Cash'} {table.stakes || ''} · {sessions.length}/{maxSeats} Seats
             </p>
           </div>
@@ -176,9 +176,9 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
                 commander_tables status (available / in_use / reserved /
                 maintenance), so every badge fell through to the same grey. */}
             <span className={`text-xs font-bold px-2 py-1 rounded ${table.status === 'in_use' ? 'bg-[#31A24C]/20 text-[#31A24C]' :
-              table.status === 'available' ? 'bg-[#1877F2]/20 text-[#1877F2]' :
+              table.status === 'available' ? 'bg-[#0C55C0]/20 text-[#86DAFF]' :
                 table.status === 'maintenance' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
-                  'bg-[#3A3B3C] text-[#B0B3B8]'
+                  'bg-[#132A42] text-[#BDD0E2]'
               }`}>{
                 table.status === 'in_use' ? 'In Use'
                   : table.status === 'available' ? 'Available'
@@ -186,8 +186,8 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
                       : table.status === 'maintenance' ? 'Maintenance'
                         : table.status
               }</span>
-            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
-              <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh">
+              <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
             </button>
             <PageHelp
               title={`Table ${tableNum}`}
@@ -213,9 +213,9 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
               const session = seatMap[seatNum];
               const pos = getSeatPosition(i, maxSeats);
               const timeLeft = getTimeRemaining(session);
-              const timeColor = timeLeft === null ? '#B0B3B8'
+              const timeColor = timeLeft === null ? '#BDD0E2'
                 : timeLeft <= 0 ? '#EF4444'
-                  : timeLeft <= 15 ? '#F59E0B'
+                  : timeLeft <= 15 ? '#22D3EE'
                     : '#31A24C';
 
               return (
@@ -234,13 +234,13 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
                           {formatCountdown(Math.max(0, timeLeft))}
                         </p>
                       )}
-                      <p className="text-[8px] text-[#B0B3B8]">Seat {seatNum}</p>
+                      <p className="text-[8px] text-[#BDD0E2]">Seat {seatNum}</p>
                     </button>
                   ) : (
                     <button onClick={() => setShowSeatPicker(seatNum)}
-                      className="w-full h-full rounded-full border-2 border-dashed border-[#3A3B3C] flex flex-col items-center justify-center bg-[#242526] active:bg-[#3A3B3C]">
-                      <Plus className="w-4 h-4 text-[#6A6B6D]" />
-                      <p className="text-[8px] text-[#6A6B6D]">Seat {seatNum}</p>
+                      className="w-full h-full rounded-full border-2 border-dashed border-[#445E77] flex flex-col items-center justify-center bg-[#0A1829] active:bg-[#132A42]">
+                      <Plus className="w-4 h-4 text-[#93A9C0]" />
+                      <p className="text-[8px] text-[#93A9C0]">Seat {seatNum}</p>
                     </button>
                   )}
                 </div>
@@ -252,25 +252,25 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
         {/* Seat picker modal */}
         {showSeatPicker && (
           <div className="px-4 pb-4">
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-white">Seat {showSeatPicker} - Seat a Player</h3>
-                <button onClick={() => setShowSeatPicker(null)} className="text-xs text-[#B0B3B8]">Cancel</button>
+                <button onClick={() => setShowSeatPicker(null)} className="text-xs text-[#BDD0E2]">Cancel</button>
               </div>
 
               {waitlist.length > 0 && (
                 <>
-                  <p className="text-xs text-[#B0B3B8] mb-2">From Waitlist:</p>
+                  <p className="text-xs text-[#BDD0E2] mb-2">From Waitlist:</p>
                   <div className="space-y-1 max-h-40 overflow-y-auto mb-3">
                     {waitlist.slice(0, 8).map(w => (
                       <button key={w.id}
                         onClick={() => {
                           router.push(`/commander/dealer/${tableNum}?seat=${showSeatPicker}&player=${w.id}`);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#3A3B3C] text-left active:bg-[#4A4B4C]">
-                        <UserPlus className="w-4 h-4 text-[#1877F2]" />
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#132A42] text-left active:bg-[#1B3753]">
+                        <UserPlus className="w-4 h-4 text-[#86DAFF]" />
                         <span className="text-sm text-white">{w.player_name || w.name}</span>
-                        <span className="text-[10px] text-[#B0B3B8] ml-auto">{w.game_type}</span>
+                        <span className="text-[10px] text-[#BDD0E2] ml-auto">{w.game_type}</span>
                       </button>
                     ))}
                   </div>
@@ -278,7 +278,7 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
               )}
 
               <button onClick={() => router.push(`/commander/dealer/${tableNum}?seat=${showSeatPicker}`)}
-                className="w-full py-3 rounded-lg bg-[#1877F2] text-white text-sm font-semibold active:bg-[#1565D8]">
+                className="w-full py-3 rounded-lg bg-[#0C55C0] text-white text-sm font-semibold active:bg-[#0A4AA8]">
                 Open Dealer View
               </button>
             </div>
@@ -286,11 +286,11 @@ const res = await commanderFetch(`/api/commander/dealer/sessions/${sessionId}/en
         )}
 
         {/* Legend */}
-        <div className="px-4 py-3 flex items-center justify-center gap-4 text-[10px] text-[#B0B3B8]">
+        <div className="px-4 py-3 flex items-center justify-center gap-4 text-[10px] text-[#BDD0E2]">
           <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#31A24C]" /> {'>'}15m</span>
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#F59E0B]" /> {'<'}15m</span>
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#22D3EE]" /> {'<'}15m</span>
           <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#EF4444]" /> Expired</span>
-          <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full border border-dashed border-[#3A3B3C]" /> Empty</span>
+          <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full border border-dashed border-[#445E77]" /> Empty</span>
         </div>
       </div>
       <style>{`

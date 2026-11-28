@@ -39,9 +39,9 @@ const FIELD_DEFAULTS = {
 
 const TIERS = [
     { value: 'daily', label: 'Daily', desc: 'Single-day access pass', color: '#3B82F6' },
-    { value: 'weekly', label: 'Weekly', desc: '7-day membership', color: '#F59E0B' },
+    { value: 'weekly', label: 'Weekly', desc: '7-day membership', color: '#22D3EE' },
     { value: 'monthly', label: 'Monthly', desc: '30-day membership', color: '#10B981' },
-    { value: 'yearly', label: 'Yearly', desc: 'Full year membership', color: '#A855F7' },
+    { value: 'yearly', label: 'Yearly', desc: 'Full year membership', color: '#5AA9FF' },
 ];
 
 export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
@@ -284,20 +284,20 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60" onClick={handleClose} />
 
-            <div className="relative bg-[#242526] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#3A3B3C] shadow-2xl">
+            <div className="relative bg-[#0A1829] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#445E77] shadow-2xl">
                 {/* Header */}
-                <div className="sticky top-0 bg-[#242526] border-b border-[#3A3B3C] p-4 flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-[#0A1829] border-b border-[#445E77] p-4 flex items-center justify-between z-10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#1877F2]/10 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-[#1877F2]" />
+                        <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-[#86DAFF]" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-[#E4E6EB]">New Club Member</h2>
-                            <p className="text-xs text-[#B0B3B8]">Step {step} of 4</p>
+                            <h2 className="text-lg font-bold text-[#F2F7FF]">New Club Member</h2>
+                            <p className="text-xs text-[#BDD0E2]">Step {step} of 4</p>
                         </div>
                     </div>
-                    <button onClick={handleClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-                        <X className="w-5 h-5 text-[#B0B3B8]" />
+                    <button onClick={handleClose} className="p-2 hover:bg-[#132A42] rounded-lg">
+                        <X className="w-5 h-5 text-[#BDD0E2]" />
                     </button>
                 </div>
 
@@ -305,7 +305,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                 <div className="px-4 pt-3">
                     <div className="flex gap-1">
                         {[1, 2, 3, 4].map(s => (
-                            <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= step ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'
+                            <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= step ? 'bg-[#0C55C0]' : 'bg-[#132A42]'
                                 }`} />
                         ))}
                     </div>
@@ -324,33 +324,33 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     {/* Step 1: ID & Personal Info */}
                     {step === 1 && (
                         <>
-                            <p className="text-sm text-[#B0B3B8] font-medium">Identification</p>
+                            <p className="text-sm text-[#BDD0E2] font-medium">Identification</p>
 
                             {/* ID capture: camera or hardware scanner, both optional */}
-                            <div className="bg-[#18191A] rounded-lg p-4 space-y-3">
+                            <div className="bg-[#040D18] rounded-lg p-4 space-y-3">
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => { setIdNotice(null); setShowIdCapture(true); }}
-                                        className="py-5 px-3 border-2 border-dashed border-[#3A3B3C] rounded-lg flex flex-col items-center gap-2 hover:border-[#1877F2] transition-colors"
+                                        className="py-5 px-3 border-2 border-dashed border-[#445E77] rounded-lg flex flex-col items-center gap-2 hover:border-[#1981EC] transition-colors"
                                     >
-                                        <ScanLine className="w-7 h-7 text-[#1877F2]" />
-                                        <span className="text-sm font-medium text-[#E4E6EB]">Scan ID</span>
-                                        <span className="text-xs text-[#8A8D91] text-center">Camera - Front And Back</span>
+                                        <ScanLine className="w-7 h-7 text-[#86DAFF]" />
+                                        <span className="text-sm font-medium text-[#F2F7FF]">Scan ID</span>
+                                        <span className="text-xs text-[#9FB3C8] text-center">Camera - Front And Back</span>
                                     </button>
                                     <button
                                         onClick={() => { setIdNotice(null); setWedgeOpen(true); }}
-                                        className="py-5 px-3 border-2 border-dashed border-[#3A3B3C] rounded-lg flex flex-col items-center gap-2 hover:border-[#1877F2] transition-colors"
+                                        className="py-5 px-3 border-2 border-dashed border-[#445E77] rounded-lg flex flex-col items-center gap-2 hover:border-[#1981EC] transition-colors"
                                     >
-                                        <Keyboard className="w-7 h-7 text-[#B0B3B8]" />
-                                        <span className="text-sm font-medium text-[#E4E6EB]">ID Scanner</span>
-                                        <span className="text-xs text-[#8A8D91] text-center">Hardware Reader</span>
+                                        <Keyboard className="w-7 h-7 text-[#BDD0E2]" />
+                                        <span className="text-sm font-medium text-[#F2F7FF]">ID Scanner</span>
+                                        <span className="text-xs text-[#9FB3C8] text-center">Hardware Reader</span>
                                     </button>
                                 </div>
 
                                 {/* Keyboard-wedge target. Cleared the moment it parses. */}
                                 {wedgeOpen && (
                                     <div className="space-y-2">
-                                        <p className="text-xs text-[#B0B3B8]">
+                                        <p className="text-xs text-[#BDD0E2]">
                                             Swipe Or Scan The ID Now. The Reader Types Into The Box Below.
                                         </p>
                                         <textarea
@@ -358,26 +358,26 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                                             rows={2}
                                             onChange={(e) => handleWedgeInput(e.target.value)}
                                             onBlur={() => { if (wedgeRef.current) wedgeRef.current.value = ''; }}
-                                            className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#1877F2] rounded-lg text-[#E4E6EB] text-xs font-mono focus:outline-none resize-none"
+                                            className="w-full px-3 py-2.5 bg-[#132A42] border border-[#1981EC] rounded-lg text-[#F2F7FF] text-xs font-mono focus:outline-none resize-none"
                                             placeholder="Waiting For The ID Scanner..."
                                             aria-label="ID scanner input"
                                         />
                                         <button onClick={() => { if (wedgeRef.current) wedgeRef.current.value = ''; setWedgeOpen(false); }}
-                                            className="text-xs text-[#B0B3B8]">Cancel</button>
+                                            className="text-xs text-[#BDD0E2]">Cancel</button>
                                     </div>
                                 )}
 
                                 {idNotice && (
                                     <div className={`p-2.5 rounded-lg flex items-start gap-2 border ${idNotice.tone === 'ok'
                                         ? 'bg-[#31A24C]/10 border-[#31A24C]/30'
-                                        : 'bg-[#F59E0B]/10 border-[#F59E0B]/30'}`}>
+                                        : 'bg-[#22D3EE]/10 border-[#22D3EE]/30'}`}>
                                         {idNotice.tone === 'ok'
                                             ? <ShieldCheck className="w-4 h-4 text-[#31A24C] flex-shrink-0 mt-0.5" />
-                                            : <AlertCircle className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5" />}
-                                        <p className={`text-xs ${idNotice.tone === 'ok' ? 'text-[#31A24C]' : 'text-[#F59E0B]'}`}>
+                                            : <AlertCircle className="w-4 h-4 text-[#22D3EE] flex-shrink-0 mt-0.5" />}
+                                        <p className={`text-xs ${idNotice.tone === 'ok' ? 'text-[#31A24C]' : 'text-[#22D3EE]'}`}>
                                             {idNotice.text}
                                             {idSource && idNotice.tone === 'ok' && (
-                                                <span className="text-[#8A8D91]">
+                                                <span className="text-[#9FB3C8]">
                                                     {idSource === 'camera' ? ' Image Discarded.' : ''}
                                                 </span>
                                             )}
@@ -387,15 +387,15 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
 
                                 {/* Member photo. A headshot for the member record, kept
                                     separate from ID capture so the two are never confused. */}
-                                <div className="border-t border-[#3A3B3C] pt-3">
+                                <div className="border-t border-[#445E77] pt-3">
                                     {showCamera ? (
                                         <div className="space-y-3">
                                             <video ref={videoRef} autoPlay playsInline className="w-full rounded-lg bg-black" />
                                             <div className="flex gap-2">
-                                                <button onClick={capturePhoto} className="flex-1 py-2 bg-[#1877F2] text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                                <button onClick={capturePhoto} className="flex-1 py-2 bg-[#0C55C0] text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
                                                     <Camera className="w-4 h-4" /> Capture Photo
                                                 </button>
-                                                <button onClick={stopCamera} className="px-4 py-2 bg-[#3A3B3C] text-[#B0B3B8] rounded-lg text-sm">
+                                                <button onClick={stopCamera} className="px-4 py-2 bg-[#132A42] text-[#BDD0E2] rounded-lg text-sm">
                                                     Cancel
                                                 </button>
                                             </div>
@@ -403,13 +403,13 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                                     ) : form.photo_url ? (
                                         <div className="text-center space-y-2">
                                             <img src={form.photo_url} alt="Member" className="w-32 h-32 object-cover rounded-full mx-auto" />
-                                            <button onClick={() => updateForm('photo_url', '')} className="text-xs text-[#1877F2]">Remove Photo</button>
+                                            <button onClick={() => updateForm('photo_url', '')} className="text-xs text-[#86DAFF]">Remove Photo</button>
                                         </div>
                                     ) : (
-                                        <button onClick={startCamera} className="w-full py-3 flex items-center justify-center gap-2 text-sm text-[#B0B3B8] hover:text-[#E4E6EB]">
+                                        <button onClick={startCamera} className="w-full py-3 flex items-center justify-center gap-2 text-sm text-[#BDD0E2] hover:text-[#F2F7FF]">
                                             <Camera className="w-4 h-4" />
                                             Take Member Photo
-                                            <span className="text-xs text-[#8A8D91]">- Optional</span>
+                                            <span className="text-xs text-[#9FB3C8]">- Optional</span>
                                         </button>
                                     )}
                                 </div>
@@ -418,60 +418,60 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                             {/* Name Fields */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">First Name *</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">First Name *</label>
                                     <input type="text" value={form.first_name} onChange={e => updateForm('first_name', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                         placeholder="John" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">Last Name *</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">Last Name *</label>
                                     <input type="text" value={form.last_name} onChange={e => updateForm('last_name', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                         placeholder="Smith" />
                                 </div>
                             </div>
 
                             {/* DOB */}
                             <div>
-                                <label className="block text-xs text-[#B0B3B8] mb-1 flex items-center gap-1">
+                                <label className="block text-xs text-[#BDD0E2] mb-1 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" /> Date of Birth
                                 </label>
                                 <input type="date" value={form.date_of_birth} onChange={e => updateForm('date_of_birth', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none" />
+                                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none" />
                             </div>
 
                             {/* ID Info */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1 flex items-center gap-1">
+                                    <label className="block text-xs text-[#BDD0E2] mb-1 flex items-center gap-1">
                                         <CreditCard className="w-3 h-3" /> ID Type
                                     </label>
                                     <select value={form.id_type} onChange={e => updateForm('id_type', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none">
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none">
                                         {ID_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">ID Number</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">ID Number</label>
                                     <input type="text" value={form.id_number} onChange={e => updateForm('id_number', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                         placeholder="DL12345678" />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">Issuing State</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">Issuing State</label>
                                     <select value={form.id_state} onChange={e => updateForm('id_state', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none">
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none">
                                         <option value="">Select...</option>
                                         {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">ID Expiry</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">ID Expiry</label>
                                     <input type="date" value={form.id_expiry} onChange={e => updateForm('id_expiry', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none" />
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none" />
                                 </div>
                             </div>
                         </>
@@ -480,66 +480,66 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     {/* Step 2: Contact & Address */}
                     {step === 2 && (
                         <>
-                            <p className="text-sm text-[#B0B3B8] font-medium">Contact Information</p>
+                            <p className="text-sm text-[#BDD0E2] font-medium">Contact Information</p>
 
                             <div>
-                                <label className="block text-xs text-[#B0B3B8] mb-1 flex items-center gap-1">
+                                <label className="block text-xs text-[#BDD0E2] mb-1 flex items-center gap-1">
                                     <Mail className="w-3 h-3" /> Email
                                 </label>
                                 <input type="email" value={form.email} onChange={e => updateForm('email', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                     placeholder="john@example.com" />
                             </div>
 
                             <div>
-                                <label className="block text-xs text-[#B0B3B8] mb-1 flex items-center gap-1">
+                                <label className="block text-xs text-[#BDD0E2] mb-1 flex items-center gap-1">
                                     <Phone className="w-3 h-3" /> Phone
                                 </label>
                                 <input type="tel" value={form.phone} onChange={e => updateForm('phone', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                     placeholder="(555) 123-4567" />
                             </div>
 
-                            <p className="text-sm text-[#B0B3B8] font-medium mt-4 flex items-center gap-1">
+                            <p className="text-sm text-[#BDD0E2] font-medium mt-4 flex items-center gap-1">
                                 <MapPin className="w-3 h-3" /> Address
                             </p>
 
                             <div>
-                                <label className="block text-xs text-[#B0B3B8] mb-1">Street</label>
+                                <label className="block text-xs text-[#BDD0E2] mb-1">Street</label>
                                 <input type="text" value={form.address_street} onChange={e => updateForm('address_street', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                     placeholder="123 Main St" />
                             </div>
 
                             <div className="grid grid-cols-4 gap-3">
                                 <div className="col-span-2">
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">City</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">City</label>
                                     <input type="text" value={form.address_city} onChange={e => updateForm('address_city', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                         placeholder="City" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">State</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">State</label>
                                     <select value={form.address_state} onChange={e => updateForm('address_state', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none">
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none">
                                         <option value="">--</option>
                                         {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[#B0B3B8] mb-1">ZIP</label>
+                                    <label className="block text-xs text-[#BDD0E2] mb-1">ZIP</label>
                                     <input type="text" value={form.address_zip} onChange={e => updateForm('address_zip', e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none"
+                                        className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none"
                                         placeholder="40202" maxLength={10} />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs text-[#B0B3B8] mb-1 flex items-center gap-1">
+                                <label className="block text-xs text-[#BDD0E2] mb-1 flex items-center gap-1">
                                     <FileText className="w-3 h-3" /> Notes
                                 </label>
                                 <textarea value={form.notes} onChange={e => updateForm('notes', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] text-sm focus:border-[#1877F2] focus:outline-none resize-none"
+                                    className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none resize-none"
                                     rows={2} placeholder="Optional Notes About This Member..." />
                             </div>
                         </>
@@ -548,7 +548,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     {/* Step 3: Membership Tier */}
                     {step === 3 && (
                         <>
-                            <p className="text-sm text-[#B0B3B8] font-medium flex items-center gap-1">
+                            <p className="text-sm text-[#BDD0E2] font-medium flex items-center gap-1">
                                 <Shield className="w-3 h-3" /> Select Membership Tier
                             </p>
 
@@ -556,18 +556,18 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                                 {TIERS.map(tier => (
                                     <button key={tier.value} onClick={() => updateForm('membership_tier', tier.value)}
                                         className={`w-full p-4 rounded-xl border-2 text-left transition-all ${form.membership_tier === tier.value
-                                            ? 'border-[#1877F2] bg-[#1877F2]/5'
-                                            : 'border-[#3A3B3C] bg-[#18191A] hover:border-[#4E4F50]'
+                                            ? 'border-[#1981EC] bg-[#0C55C0]/5'
+                                            : 'border-[#445E77] bg-[#040D18] hover:border-[#5A7590]'
                                             }`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${form.membership_tier === tier.value ? 'border-[#1877F2] bg-[#1877F2]' : 'border-[#8A8D91]'
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${form.membership_tier === tier.value ? 'border-[#1981EC] bg-[#0C55C0]' : 'border-[#9FB3C8]'
                                                     }`}>
                                                     {form.membership_tier === tier.value && <Check className="w-3 h-3 text-white" />}
                                                 </div>
                                                 <div>
-                                                    <div className="font-semibold text-[#E4E6EB]">{tier.label}</div>
-                                                    <div className="text-xs text-[#B0B3B8]">{tier.desc}</div>
+                                                    <div className="font-semibold text-[#F2F7FF]">{tier.label}</div>
+                                                    <div className="text-xs text-[#BDD0E2]">{tier.desc}</div>
                                                 </div>
                                             </div>
                                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tier.color }} />
@@ -581,19 +581,19 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     {/* Step 4: Review & Confirm */}
                     {step === 4 && (
                         <>
-                            <p className="text-sm text-[#B0B3B8] font-medium">Review Member Information</p>
+                            <p className="text-sm text-[#BDD0E2] font-medium">Review Member Information</p>
 
-                            <div className="bg-[#18191A] rounded-xl p-4 space-y-3">
+                            <div className="bg-[#040D18] rounded-xl p-4 space-y-3">
                                 {/* Photo */}
                                 {form.photo_url && (
                                     <div className="text-center">
-                                        <img src={form.photo_url} alt="Member" className="w-24 h-24 object-cover rounded-full mx-auto border-2 border-[#3A3B3C]" />
+                                        <img src={form.photo_url} alt="Member" className="w-24 h-24 object-cover rounded-full mx-auto border-2 border-[#445E77]" />
                                     </div>
                                 )}
 
                                 {/* Name */}
                                 <div className="text-center">
-                                    <h3 className="text-xl font-bold text-[#E4E6EB]">{form.first_name} {form.last_name}</h3>
+                                    <h3 className="text-xl font-bold text-[#F2F7FF]">{form.first_name} {form.last_name}</h3>
                                     <span className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium"
                                         style={{
                                             backgroundColor: TIERS.find(t => t.value === form.membership_tier)?.color + '20',
@@ -606,19 +606,19 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                                 {/* Details Grid */}
                                 <div className="grid grid-cols-2 gap-2 text-sm">
                                     {form.date_of_birth && (
-                                        <div><span className="text-[#8A8D91]">DOB:</span> <span className="text-[#E4E6EB]">{form.date_of_birth}</span></div>
+                                        <div><span className="text-[#9FB3C8]">DOB:</span> <span className="text-[#F2F7FF]">{form.date_of_birth}</span></div>
                                     )}
                                     {form.id_number && (
-                                        <div><span className="text-[#8A8D91]">ID:</span> <span className="text-[#E4E6EB]">{form.id_number}</span></div>
+                                        <div><span className="text-[#9FB3C8]">ID:</span> <span className="text-[#F2F7FF]">{form.id_number}</span></div>
                                     )}
                                     {form.email && (
-                                        <div><span className="text-[#8A8D91]">Email:</span> <span className="text-[#E4E6EB]">{form.email}</span></div>
+                                        <div><span className="text-[#9FB3C8]">Email:</span> <span className="text-[#F2F7FF]">{form.email}</span></div>
                                     )}
                                     {form.phone && (
-                                        <div><span className="text-[#8A8D91]">Phone:</span> <span className="text-[#E4E6EB]">{form.phone}</span></div>
+                                        <div><span className="text-[#9FB3C8]">Phone:</span> <span className="text-[#F2F7FF]">{form.phone}</span></div>
                                     )}
                                     {form.address_city && (
-                                        <div className="col-span-2"><span className="text-[#8A8D91]">Address:</span> <span className="text-[#E4E6EB]">{form.address_street}{form.address_street && ', '}{form.address_city}, {form.address_state} {form.address_zip}</span></div>
+                                        <div className="col-span-2"><span className="text-[#9FB3C8]">Address:</span> <span className="text-[#F2F7FF]">{form.address_street}{form.address_street && ', '}{form.address_city}, {form.address_state} {form.address_zip}</span></div>
                                     )}
                                 </div>
                             </div>
@@ -627,9 +627,9 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                 </div>
 
                 {/* Footer / Navigation */}
-                <div className="sticky bottom-0 bg-[#242526] border-t border-[#3A3B3C] p-4 flex items-center justify-between">
+                <div className="sticky bottom-0 bg-[#0A1829] border-t border-[#445E77] p-4 flex items-center justify-between">
                     {step > 1 ? (
-                        <button onClick={prevStep} className="flex items-center gap-1 px-4 py-2.5 text-[#B0B3B8] hover:bg-[#3A3B3C] rounded-lg text-sm font-medium">
+                        <button onClick={prevStep} className="flex items-center gap-1 px-4 py-2.5 text-[#BDD0E2] hover:bg-[#132A42] rounded-lg text-sm font-medium">
                             <ChevronLeft className="w-4 h-4" /> Back
                         </button>
                     ) : (
@@ -637,12 +637,12 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     )}
 
                     {step < 4 ? (
-                        <button onClick={nextStep} className="flex items-center gap-1 px-6 py-2.5 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg text-sm font-medium">
+                        <button onClick={nextStep} className="flex items-center gap-1 px-6 py-2.5 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg text-sm font-medium">
                             Next <ChevronRight className="w-4 h-4" />
                         </button>
                     ) : (
                         <button onClick={handleSubmit} disabled={submitting}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-[#31A24C] hover:bg-[#2b8f43] disabled:bg-[#3A3B3C] text-white rounded-lg text-sm font-medium">
+                            className="flex items-center gap-2 px-6 py-2.5 bg-[#31A24C] hover:bg-[#2b8f43] disabled:bg-[#132A42] text-white rounded-lg text-sm font-medium">
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                             {submitting ? 'Creating...' : 'Create Member'}
                         </button>

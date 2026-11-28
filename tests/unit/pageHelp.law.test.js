@@ -86,9 +86,12 @@ function visibleSource(src) {
 
 describe('PageHelp contract', () => {
   it('is an accessible 44px "?" button that opens a bottom docked non-modal panel', () => {
-    expect(help).toMatch(/aria-label="Page Help"/);
-    expect(help).toMatch(/w-11 h-11 rounded-full/);
-    expect(help).toMatch(/border-\[#1877F2\]/);
+    // #SMARTERDESIGN (2026-11-27): the one painted chrome "?", page-specific
+    // accessible name, 44px target (.sd-header-help / .cmd-page-help).
+    expect(help).toMatch(/aria-label=\{`Help For \$\{pageTitle \|\| 'This Page'\}`\}/);
+    expect(help).toMatch(/<img src=\{SD_HEADER_HELP_ICON\}/);
+    expect(help).toMatch(/embedded \? 'sd-header-help' : `cmd-page-help/);
+    expect(help).not.toMatch(/<span aria-hidden="true">\?<\/span>/);
     expect(help).toMatch(/role="dialog"/);
     expect(help).toMatch(/aria-modal="false"/);
     expect(help).toMatch(/bottom: 'max\(12px, env\(safe-area-inset-bottom\)\)'/);
@@ -117,7 +120,7 @@ describe('PageHelp contract', () => {
     expect(help).toMatch(/prefers-reduced-motion: reduce/);
     expect(help).toMatch(/block: 'center'/);
     expect(help).toMatch(/useEffect\(\(\) => clearTutorialFocus, \[\]\)/);
-    expect(css).toMatch(/\[data-tutorial-focus\]\s*\{\s*outline: 2px solid #1877F2 !important;/);
+    expect(css).toMatch(/\[data-tutorial-focus\]\s*\{\s*outline: 2px solid #1981EC !important;/);
   });
 
   it('builds a tour from the page when no steps are passed, skipping row and dialog headings', () => {
@@ -127,7 +130,7 @@ describe('PageHelp contract', () => {
   });
 
   it('PageBar hides the title, keeps live children and pins the help top right', () => {
-    expect(bar).toMatch(/<Heading className="sr-only">\{title\}<\/Heading>/);
+    expect(bar).toMatch(/underHeader \? null : <Heading className="sr-only">\{title\}<\/Heading>/);
     expect(bar).toMatch(/<PageHelp title=\{title\} summary=\{summary\} steps=\{steps\} className="order-last" \/>/);
     expect(bar).toMatch(/flex-wrap/);
   });

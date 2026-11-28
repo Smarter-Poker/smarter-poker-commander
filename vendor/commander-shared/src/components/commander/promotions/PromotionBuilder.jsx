@@ -13,9 +13,9 @@ const PROMOTION_TYPES = [
   { value: 'high_hand', label: 'High Hand', description: 'Award Best Hand Each Period', color: '#22C55E', icon: Star },
   { value: 'bad_beat', label: 'Bad Beat', description: 'Jackpot for Qualifying Bad Beats', color: '#EF4444', icon: Zap },
   { value: 'splash_pot', label: 'Splash Pot', description: 'Random Pot Bonuses', color: '#3B82F6', icon: DollarSign },
-  { value: 'happy_hour', label: 'Happy Hour', description: 'Time-based Bonus Rewards', color: '#F59E0B', icon: Clock },
-  { value: 'new_player', label: 'New Player', description: 'First-time Player Bonus', color: '#8B5CF6', icon: Gift },
-  { value: 'referral', label: 'Referral', description: 'Refer a Friend Rewards', color: '#EC4899', icon: Gift },
+  { value: 'happy_hour', label: 'Happy Hour', description: 'Time-based Bonus Rewards', color: '#22D3EE', icon: Clock },
+  { value: 'new_player', label: 'New Player', description: 'First-time Player Bonus', color: '#5AA9FF', icon: Gift },
+  { value: 'referral', label: 'Referral', description: 'Refer a Friend Rewards', color: '#38BDF8', icon: Gift },
   { value: 'loyalty', label: 'Loyalty', description: 'Reward Returning Players', color: '#22D3EE', icon: Star },
   { value: 'drawing', label: 'Drawing', description: 'Raffle / Drawing Entry', color: '#F97316', icon: Gift },
   { value: 'custom', label: 'Custom', description: 'Define Your Own Promotion', color: '#6B7280', icon: Settings }
@@ -167,7 +167,7 @@ export default function PromotionBuilder({
                     ? 'bg-[#22D3EE]/20 text-[#22D3EE]'
                     : isDone
                       ? 'text-[#10B981] hover:bg-[#132240]'
-                      : 'text-[#4A5E78]'
+                      : 'text-[#8FA6BE]'
                     }`}
                 >
                   {isDone ? (
@@ -178,7 +178,7 @@ export default function PromotionBuilder({
                   <span className="hidden sm:inline">{s.label}</span>
                 </button>
                 {i < STEPS.length - 1 && (
-                  <ChevronRight size={16} className="text-[#4A5E78] mx-1" />
+                  <ChevronRight size={16} className="text-[#8FA6BE] mx-1" />
                 )}
               </div>
             );
@@ -195,7 +195,7 @@ export default function PromotionBuilder({
               <h3 className="text-lg font-semibold text-white">Choose Promotion Type</h3>
               <button
                 onClick={() => setUseTemplate(!useTemplate)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${useTemplate ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-[#F59E0B]' : 'border-[#4A5E78] text-[#64748B]'
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${useTemplate ? 'border-[#22D3EE] bg-[#22D3EE]/10 text-[#22D3EE]' : 'border-[#445E77] text-[#9FB3C8]'
                   }`}
               >
                 <Sparkles size={14} />
@@ -203,7 +203,7 @@ export default function PromotionBuilder({
               </button>
             </div>
             {useTemplate && (
-              <p className="text-xs text-[#64748B] mb-3 -mt-2">Selecting a type will auto-fill recommended settings. You can edit everything on the next steps.</p>
+              <p className="text-xs text-[#9FB3C8] mb-3 -mt-2">Selecting a type will auto-fill recommended settings. You can edit everything on the next steps.</p>
             )}
             <div className="grid grid-cols-3 gap-3">
               {PROMOTION_TYPES.map(type => {
@@ -237,12 +237,12 @@ export default function PromotionBuilder({
                     }}
                     className={`p-4 rounded-lg border text-left transition-colors ${isSelected
                       ? 'border-[#22D3EE] bg-[#22D3EE]/10'
-                      : 'border-[#4A5E78] hover:border-[#64748B]'
+                      : 'border-[#445E77] hover:border-[#9FB3C8]'
                       }`}
                   >
                     <Icon size={24} style={{ color: type.color }} />
                     <p className="font-medium text-white mt-2">{type.label}</p>
-                    <p className="text-xs text-[#64748B] mt-1">{type.description}</p>
+                    <p className="text-xs text-[#9FB3C8] mt-1">{type.description}</p>
                   </button>
                 );
               })}
@@ -256,7 +256,7 @@ export default function PromotionBuilder({
             <h3 className="text-lg font-semibold text-white">Promotion Details</h3>
 
             <div>
-              <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
                 Name <span className="text-[#EF4444]">*</span>
               </label>
               <input
@@ -269,7 +269,7 @@ export default function PromotionBuilder({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Description</label>
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => updateField('description', e.target.value)}
@@ -279,7 +279,7 @@ export default function PromotionBuilder({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Game Types</label>
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Game Types</label>
               <div className="flex gap-2 flex-wrap">
                 {GAME_TYPE_OPTIONS.map(opt => (
                   <button
@@ -287,7 +287,7 @@ export default function PromotionBuilder({
                     onClick={() => toggleGameType(opt.value)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${formData.game_types.includes(opt.value)
                       ? 'border-[#22D3EE] bg-[#22D3EE]/10 text-[#22D3EE]'
-                      : 'border-[#4A5E78] text-[#64748B] hover:border-[#64748B]'
+                      : 'border-[#445E77] text-[#9FB3C8] hover:border-[#9FB3C8]'
                       }`}
                   >
                     {opt.label}
@@ -298,7 +298,7 @@ export default function PromotionBuilder({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Min Stakes</label>
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Min Stakes</label>
                 <input
                   type="text"
                   value={formData.min_stakes}
@@ -309,7 +309,7 @@ export default function PromotionBuilder({
               </div>
               {(formData.promotion_type === 'high_hand' || formData.promotion_type === 'bad_beat') && (
                 <div>
-                  <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Qualifying Hand</label>
+                  <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Qualifying Hand</label>
                   <input
                     type="text"
                     value={formData.qualifying_hand}
@@ -322,7 +322,7 @@ export default function PromotionBuilder({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Image URL (optional)</label>
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Image URL (optional)</label>
               <div className="flex gap-2">
                 <input
                   type="url"
@@ -332,7 +332,7 @@ export default function PromotionBuilder({
                   className="flex-1 cmd-input"
                 />
                 {formData.image_url && (
-                  <div style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', border: '1px solid #4A5E78', flexShrink: 0 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', border: '1px solid #445E77', flexShrink: 0 }}>
                     <img src={formData.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
                   </div>
                 )}
@@ -347,7 +347,7 @@ export default function PromotionBuilder({
             <h3 className="text-lg font-semibold text-white">Prize Configuration</h3>
 
             <div>
-              <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Prize Type</label>
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Prize Type</label>
               <div className="flex gap-2 flex-wrap">
                 {PRIZE_TYPES.map(opt => (
                   <button
@@ -355,7 +355,7 @@ export default function PromotionBuilder({
                     onClick={() => updateField('prize_type', opt.value)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${formData.prize_type === opt.value
                       ? 'border-[#22D3EE] bg-[#22D3EE]/10 text-[#22D3EE]'
-                      : 'border-[#4A5E78] text-[#64748B] hover:border-[#64748B]'
+                      : 'border-[#445E77] text-[#9FB3C8] hover:border-[#9FB3C8]'
                       }`}
                   >
                     {opt.label}
@@ -366,7 +366,7 @@ export default function PromotionBuilder({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
                   Prize Amount ($)
                 </label>
                 <input
@@ -379,7 +379,7 @@ export default function PromotionBuilder({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
                   Max Winners
                 </label>
                 <input
@@ -393,7 +393,7 @@ export default function PromotionBuilder({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
                 Prize Description
               </label>
               <input
@@ -410,9 +410,9 @@ export default function PromotionBuilder({
                 type="checkbox"
                 checked={formData.is_featured}
                 onChange={(e) => updateField('is_featured', e.target.checked)}
-                className="w-5 h-5 rounded border-[#4A5E78]"
+                className="w-5 h-5 rounded border-[#445E77]"
               />
-              <span className="text-sm text-[#94A3B8]">Feature This Promotion (shown Prominently)</span>
+              <span className="text-sm text-[#A9BDD1]">Feature This Promotion (shown Prominently)</span>
             </label>
           </div>
         )}
@@ -424,7 +424,7 @@ export default function PromotionBuilder({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
                   Start Date <span className="text-[#EF4444]">*</span>
                 </label>
                 <input
@@ -435,7 +435,7 @@ export default function PromotionBuilder({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">End Date</label>
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">End Date</label>
                 <input
                   type="date"
                   value={formData.end_date}
@@ -447,7 +447,7 @@ export default function PromotionBuilder({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Start Time</label>
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Start Time</label>
                 <input
                   type="time"
                   value={formData.start_time}
@@ -456,7 +456,7 @@ export default function PromotionBuilder({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">End Time</label>
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">End Time</label>
                 <input
                   type="time"
                   value={formData.end_time}
@@ -471,14 +471,14 @@ export default function PromotionBuilder({
                 type="checkbox"
                 checked={formData.is_recurring}
                 onChange={(e) => updateField('is_recurring', e.target.checked)}
-                className="w-5 h-5 rounded border-[#4A5E78]"
+                className="w-5 h-5 rounded border-[#445E77]"
               />
-              <span className="text-sm text-[#94A3B8]">Recurring Promotion</span>
+              <span className="text-sm text-[#A9BDD1]">Recurring Promotion</span>
             </label>
 
             {formData.is_recurring && (
               <div>
-                <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">Repeat On</label>
+                <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Repeat On</label>
                 <div className="flex gap-2">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
                     <button
@@ -486,7 +486,7 @@ export default function PromotionBuilder({
                       onClick={() => toggleDay(i)}
                       className={`w-10 h-10 rounded-lg text-xs font-medium border transition-colors ${formData.recurring_days.includes(i)
                         ? 'border-[#22D3EE] bg-[#22D3EE]/10 text-[#22D3EE]'
-                        : 'border-[#4A5E78] text-[#64748B] hover:border-[#64748B]'
+                        : 'border-[#445E77] text-[#9FB3C8] hover:border-[#9FB3C8]'
                         }`}
                     >
                       {day}
@@ -513,44 +513,44 @@ export default function PromotionBuilder({
 
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div>
-                  <span className="text-[#64748B]">Name:</span>
+                  <span className="text-[#9FB3C8]">Name:</span>
                   <span className="text-white ml-2">{formData.name}</span>
                 </div>
                 {formData.description && (
                   <div className="col-span-2">
-                    <span className="text-[#64748B]">Description:</span>
+                    <span className="text-[#9FB3C8]">Description:</span>
                     <span className="text-white ml-2">{formData.description}</span>
                   </div>
                 )}
                 <div>
-                  <span className="text-[#64748B]">Prize:</span>
+                  <span className="text-[#9FB3C8]">Prize:</span>
                   <span className="text-[#10B981] ml-2">
                     {formData.prize_amount ? `$${formData.prize_amount}` : formData.prize_description || '-'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Prize Type:</span>
+                  <span className="text-[#9FB3C8]">Prize Type:</span>
                   <span className="text-white ml-2">{formData.prize_type}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Max Winners:</span>
+                  <span className="text-[#9FB3C8]">Max Winners:</span>
                   <span className="text-white ml-2">{formData.max_winners}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Games:</span>
+                  <span className="text-[#9FB3C8]">Games:</span>
                   <span className="text-white ml-2">{formData.game_types.join(', ')}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Start:</span>
+                  <span className="text-[#9FB3C8]">Start:</span>
                   <span className="text-white ml-2">{formData.start_date || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">End:</span>
+                  <span className="text-[#9FB3C8]">End:</span>
                   <span className="text-white ml-2">{formData.end_date || 'Ongoing'}</span>
                 </div>
                 {formData.is_recurring && (
                   <div className="col-span-2">
-                    <span className="text-[#64748B]">Recurring:</span>
+                    <span className="text-[#9FB3C8]">Recurring:</span>
                     <span className="text-white ml-2">
                       {formData.recurring_days.map(d =>
                         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]
@@ -560,7 +560,7 @@ export default function PromotionBuilder({
                 )}
                 {formData.is_featured && (
                   <div className="col-span-2">
-                    <span className="text-[#F59E0B]">Featured Promotion</span>
+                    <span className="text-[#22D3EE]">Featured Promotion</span>
                   </div>
                 )}
               </div>
@@ -575,7 +575,7 @@ export default function PromotionBuilder({
           <button
             onClick={() => setStep(step - 1)}
             className="flex items-center gap-2 px-6 h-12 border rounded-xl font-medium"
-            style={{ borderColor: '#4A5E78', color: '#64748B' }}
+            style={{ borderColor: '#445E77', color: '#9FB3C8' }}
           >
             <ChevronLeft size={18} />
             Back
@@ -584,7 +584,7 @@ export default function PromotionBuilder({
           <button
             onClick={onCancel}
             className="flex items-center gap-2 px-6 h-12 border rounded-xl font-medium"
-            style={{ borderColor: '#4A5E78', color: '#64748B' }}
+            style={{ borderColor: '#445E77', color: '#9FB3C8' }}
           >
             <X size={18} />
             Cancel

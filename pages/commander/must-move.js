@@ -131,19 +131,19 @@ export default function MustMoveManager() {
         description="Club Commander Must-Move Games Management."
         noindex={true}
       />
-      <div style={{ minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: '#040D18', color: '#F2F7FF', fontFamily: "var(--font-inter), sans-serif" }}>
         {/* Header */}
         <div style={{
-          background: '#242526', borderBottom: '1px solid #3A3B3C',
+          background: '#0A1829', borderBottom: '1px solid #2A4560',
           padding: '6px 20px',
           display: 'flex', alignItems: 'center', gap: 12 }} data-page-bar="">
           <h1 className="sr-only">Must-Move Games</h1>
-          <p role="status" style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#B0B3B8', margin: 0 }}>
+          <p role="status" style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#BDD0E2', margin: 0 }}>
             {data?.total_active || 0} Active Games · {groups.length} Must-Move Group{groups.length !== 1 ? 's' : ''}
           </p>
           <button onClick={() => fetchData()} aria-label="Refresh" style={{
-            width: 44, height: 44, borderRadius: 8, background: '#3A3B3C', border: '1px solid #4E4F50',
-            cursor: 'pointer', color: '#B0B3B8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            width: 44, height: 44, borderRadius: 8, background: '#2A4560', border: '1px solid #3A5873',
+            cursor: 'pointer', color: '#BDD0E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <RefreshCw size={16} />
           </button>
           <PageHelp
@@ -167,18 +167,18 @@ export default function MustMoveManager() {
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-            <Loader2 size={32} color="#1877F2" className="animate-spin" />
+            <Loader2 size={32} color="#1981EC" className="animate-spin" />
           </div>
         ) : (
           <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* How Chain-Based Must-Move Works */}
             <div style={{
-              background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)',
+              background: 'rgba(34, 211, 238,0.06)', border: '1px solid rgba(34, 211, 238,0.2)',
               borderRadius: 14, padding: '14px 16px' }}>
-              <p style={{ fontSize: 13, color: '#B0B3B8', margin: 0, lineHeight: 1.6 }}>
-                <span style={{ color: '#F59E0B', fontWeight: 700 }}>Chain Movement:</span> Players Move
-                <strong style={{ color: '#F59E0B' }}> One Table At A Time</strong> Toward The Main Game.
+              <p style={{ fontSize: 13, color: '#BDD0E2', margin: 0, lineHeight: 1.6 }}>
+                <span style={{ color: '#22D3EE', fontWeight: 700 }}>Chain Movement:</span> Players Move
+                <strong style={{ color: '#22D3EE' }}> One Table At A Time</strong> Toward The Main Game.
                 Example: Table 7 → Table 4 → Table 1 (Main). The Longest-Sitting Player Moves First.
               </p>
             </div>
@@ -191,17 +191,17 @@ export default function MustMoveManager() {
 
               return (
                 <div key={gi} style={{
-                  background: '#242526', border: '1px solid #3A3B3C',
+                  background: '#0A1829', border: '1px solid #2A4560',
                   borderRadius: 14, overflow: 'hidden' }}>
                   {/* Group Header */}
                   <div style={{
-                    padding: '14px 18px', borderBottom: '1px solid #3A3B3C',
+                    padding: '14px 18px', borderBottom: '1px solid #2A4560',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: '#E4E6EB' }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#F2F7FF' }}>
                         {gameLabel}
                       </div>
-                      <div style={{ fontSize: 12, color: '#8A8D91', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: '#9FB3C8', marginTop: 2 }}>
                         {chain.length} Table{chain.length !== 1 ? 's' : ''} Running · Chain: {chain.map(g => `T${g.table_number}`).join(' → ')}
                       </div>
                     </div>
@@ -209,8 +209,8 @@ export default function MustMoveManager() {
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 4,
                         padding: '4px 10px', borderRadius: 8,
-                        background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
-                        color: '#A78BFA', fontSize: 11, fontWeight: 700 }}>
+                        background: 'rgba(90, 169, 255,0.12)', border: '1px solid rgba(90, 169, 255,0.3)',
+                        color: '#93C5FD', fontSize: 11, fontWeight: 700 }}>
                         <List size={12} /> {group.waitlist_count} Waiting
                       </div>
                     )}
@@ -239,8 +239,8 @@ export default function MustMoveManager() {
                           {/* Table Card */}
                           <div style={{
                             width: 280, minHeight: 200,
-                            border: `1px solid ${isMain ? 'rgba(49,162,76,0.4)' : isLinked ? 'rgba(245,158,11,0.3)' : '#3A3B3C'}`,
-                            background: isMain ? 'rgba(49,162,76,0.06)' : isLinked ? 'rgba(245,158,11,0.04)' : '#2D2E2F',
+                            border: `1px solid ${isMain ? 'rgba(49,162,76,0.4)' : isLinked ? 'rgba(34, 211, 238,0.3)' : '#2A4560'}`,
+                            background: isMain ? 'rgba(49,162,76,0.06)' : isLinked ? 'rgba(34, 211, 238,0.04)' : '#2D2E2F',
                             borderRadius: 12,
                             display: 'flex', flexDirection: 'column',
                             overflow: 'hidden' }}>
@@ -250,21 +250,21 @@ export default function MustMoveManager() {
                               borderBottom: `1px solid ${isMain ? 'rgba(49,162,76,0.2)' : 'rgba(58,59,60,0.6)'}`,
                               display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {isMain ? <Crown size={16} color="#31A24C" /> : <ArrowRightLeft size={14} color="#F59E0B" />}
+                                {isMain ? <Crown size={16} color="#31A24C" /> : <ArrowRightLeft size={14} color="#22D3EE" />}
                                 <div>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: '#E4E6EB' }}>
+                                  <div style={{ fontSize: 14, fontWeight: 700, color: '#F2F7FF' }}>
                                     Table {game.table_number}
                                   </div>
                                   <div style={{
                                     fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-                                    color: isMain ? '#4ADE80' : '#F59E0B',
+                                    color: isMain ? '#4ADE80' : '#22D3EE',
                                     textTransform: 'uppercase' }}>
                                     {isMain ? 'Main Game' : `${ordinal(chainIdx)} Table → T${targetGame?.table_number}`}
                                   </div>
                                 </div>
                               </div>
                               <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: 16, fontWeight: 800, color: '#E4E6EB' }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: '#F2F7FF' }}>
                                   {game.player_count}/{game.max_seats}
                                 </div>
                                 {!isMain && (
@@ -290,14 +290,14 @@ export default function MustMoveManager() {
                                 <div style={{ textAlign: 'center', padding: '16px 0' }}>
                                   <Crown size={28} color="#31A24C" style={{ margin: '0 auto 8px' }} />
                                   <div style={{ fontSize: 13, fontWeight: 700, color: '#4ADE80' }}>Featured Game</div>
-                                  <div style={{ fontSize: 11, color: '#8A8D91', marginTop: 4 }}>
+                                  <div style={{ fontSize: 11, color: '#9FB3C8', marginTop: 4 }}>
                                     Players Move Here
                                   </div>
                                 </div>
                               ) : isLinked && game.seats.length > 0 ? (
                                 <>
                                   <div style={{
-                                    fontSize: 10, fontWeight: 700, color: '#8A8D91',
+                                    fontSize: 10, fontWeight: 700, color: '#9FB3C8',
                                     textTransform: 'uppercase', letterSpacing: 0.8,
                                     marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                                     <Users size={10} /> {gameLabel} Must Move List
@@ -309,31 +309,31 @@ export default function MustMoveManager() {
                                         <div key={seat.id} style={{
                                           display: 'flex', alignItems: 'center', gap: 6,
                                           padding: '6px 8px', borderRadius: 8,
-                                          background: isNext ? 'rgba(24,119,242,0.1)' : 'transparent',
-                                          border: isNext ? '1px solid rgba(24,119,242,0.25)' : '1px solid transparent' }}>
+                                          background: isNext ? 'rgba(25, 129, 236,0.1)' : 'transparent',
+                                          border: isNext ? '1px solid rgba(25, 129, 236,0.25)' : '1px solid transparent' }}>
                                           <div style={{
                                             width: 20, height: 20, borderRadius: 5,
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             fontSize: 10, fontWeight: 800, flexShrink: 0,
-                                            background: isNext ? '#1877F2' : '#3A3B3C',
-                                            color: isNext ? '#fff' : '#8A8D91' }}>
+                                            background: isNext ? '#1981EC' : '#2A4560',
+                                            color: isNext ? '#fff' : '#9FB3C8' }}>
                                             {idx + 1}
                                           </div>
                                           <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{
                                               fontSize: 12, fontWeight: isNext ? 700 : 500,
-                                              color: isNext ? '#E4E6EB' : '#B0B3B8',
+                                              color: isNext ? '#F2F7FF' : '#BDD0E2',
                                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                               {seat.player_name || 'Unknown'}
                                             </div>
-                                            <div style={{ fontSize: 9, color: '#8A8D91' }}>
+                                            <div style={{ fontSize: 9, color: '#9FB3C8' }}>
                                               Seat {seat.seat_number} · {timeAgo(seat.seated_at)}
                                             </div>
                                           </div>
                                           {isNext && (
                                             <div style={{
                                               padding: '2px 6px', borderRadius: 4,
-                                              background: targetOpenSeats > 0 ? '#1877F2' : 'rgba(239,68,68,0.15)',
+                                              background: targetOpenSeats > 0 ? '#1981EC' : 'rgba(239,68,68,0.15)',
                                               color: targetOpenSeats > 0 ? '#fff' : '#F87171',
                                               fontSize: 9, fontWeight: 800, textTransform: 'uppercase',
                                               whiteSpace: 'nowrap' }}>
@@ -347,12 +347,12 @@ export default function MustMoveManager() {
                                 </>
                               ) : isLinked ? (
                                 <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                                  <Users size={24} color="#3A3B3C" style={{ margin: '0 auto 6px' }} />
-                                  <div style={{ fontSize: 12, color: '#8A8D91' }}>No Players Seated</div>
+                                  <Users size={24} color="#2A4560" style={{ margin: '0 auto 6px' }} />
+                                  <div style={{ fontSize: 12, color: '#9FB3C8' }}>No Players Seated</div>
                                 </div>
                               ) : (
                                 <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                                  <div style={{ fontSize: 12, color: '#8A8D91' }}>Not Linked</div>
+                                  <div style={{ fontSize: 12, color: '#9FB3C8' }}>Not Linked</div>
                                 </div>
                               )}
                             </div>
@@ -369,8 +369,8 @@ export default function MustMoveManager() {
                                       style={{
                                         flex: 1, padding: '8px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700,
                                         cursor: canMove ? 'pointer' : 'not-allowed',
-                                        background: canMove ? '#1877F2' : '#3A3B3C',
-                                        color: canMove ? '#fff' : '#8A8D91',
+                                        background: canMove ? '#1981EC' : '#2A4560',
+                                        color: canMove ? '#fff' : '#9FB3C8',
                                         border: 'none',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                                         opacity: moveLoading === game.id ? 0.6 : 1 }}>
@@ -385,7 +385,7 @@ export default function MustMoveManager() {
                                       disabled={actionLoading === game.id}
                                       style={{
                                         padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-                                        background: '#3A3B3C', color: '#B0B3B8',
+                                        background: '#2A4560', color: '#BDD0E2',
                                         border: 'none', fontSize: 11, fontWeight: 600,
                                         display: 'flex', alignItems: 'center', gap: 3 }}>
                                       {actionLoading === game.id ? <Loader2 size={10} className="animate-spin" /> : <Unlink size={10} />}
@@ -393,7 +393,7 @@ export default function MustMoveManager() {
                                     </button>
                                   </>
                                 ) : (
-                                  <div style={{ fontSize: 11, color: '#8A8D91', padding: '4px 0' }}>Auto-Linked On Refresh</div>
+                                  <div style={{ fontSize: 11, color: '#9FB3C8', padding: '4px 0' }}>Auto-Linked On Refresh</div>
                                 )}
                               </div>
                             )}
@@ -406,8 +406,8 @@ export default function MustMoveManager() {
                               padding: '0 8px', flexShrink: 0 }}>
                               <div style={{
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                                <ChevronRight size={20} color="#F59E0B" />
-                                <div style={{ fontSize: 9, color: '#8A8D91', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                <ChevronRight size={20} color="#22D3EE" />
+                                <div style={{ fontSize: 9, color: '#9FB3C8', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                   Move
                                 </div>
                               </div>
@@ -421,11 +421,11 @@ export default function MustMoveManager() {
               );
             }) : (
               <div style={{
-                background: '#242526', border: '1px solid #3A3B3C',
+                background: '#0A1829', border: '1px solid #2A4560',
                 borderRadius: 14, padding: 40, textAlign: 'center' }}>
-                <ArrowRightLeft size={40} color="#3A3B3C" style={{ margin: '0 auto 12px' }} />
-                <p style={{ color: '#B0B3B8', fontSize: 14, margin: '0 0 4px' }}>No Must-Move Games Active</p>
-                <p style={{ color: '#8A8D91', fontSize: 12, margin: 0 }}>
+                <ArrowRightLeft size={40} color="#2A4560" style={{ margin: '0 auto 12px' }} />
+                <p style={{ color: '#BDD0E2', fontSize: 14, margin: '0 0 4px' }}>No Must-Move Games Active</p>
+                <p style={{ color: '#9FB3C8', fontSize: 12, margin: 0 }}>
                   Must-Move Activates When 2+ Tables Run The Same Game Type And Stakes
                 </p>
               </div>
@@ -434,10 +434,10 @@ export default function MustMoveManager() {
             {/* Single-Table Games */}
             {singles.length > 0 && (
               <div style={{
-                background: '#242526', border: '1px solid #3A3B3C',
+                background: '#0A1829', border: '1px solid #2A4560',
                 borderRadius: 14, padding: 16 }}>
                 <div style={{
-                  fontSize: 13, fontWeight: 700, color: '#B0B3B8',
+                  fontSize: 13, fontWeight: 700, color: '#BDD0E2',
                   marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Hash size={14} /> Single-Table Games ({singles.length})
                 </div>
@@ -445,14 +445,14 @@ export default function MustMoveManager() {
                   {singles.map(g => (
                     <div key={g.id} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 12px', background: '#3A3B3C', borderRadius: 8 }}>
+                      padding: '10px 12px', background: '#2A4560', borderRadius: 8 }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#E4E6EB' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#F2F7FF' }}>
                           {GAME_LABELS[g.game_type] || g.game_type} {g.stakes}
                         </div>
-                        <div style={{ fontSize: 11, color: '#8A8D91' }}>Table {g.table_number}</div>
+                        <div style={{ fontSize: 11, color: '#9FB3C8' }}>Table {g.table_number}</div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#E4E6EB' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#F2F7FF' }}>
                         {g.player_count}/{g.max_seats}
                       </div>
                     </div>

@@ -150,7 +150,7 @@ export default function PromotionEditor({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto cmd-panel cmd-corner-lights">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-[#4A5E78] bg-[#132240] rounded-t-xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-[#445E77] bg-[#132240] rounded-t-xl">
           <h2 className="text-lg font-semibold text-white">
             {promotion ? 'Edit Promotion' : 'New Promotion'}
           </h2>
@@ -158,17 +158,17 @@ export default function PromotionEditor({
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-[#132240] transition-colors"
           >
-            <X size={20} className="text-[#64748B]" />
+            <X size={20} className="text-[#9FB3C8]" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[#64748B] uppercase">Basic Information</h3>
+            <h3 className="text-sm font-medium text-[#9FB3C8] uppercase">Basic Information</h3>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-1">Name *</label>
+              <label className="block text-sm text-[#9FB3C8] mb-1">Name *</label>
               <input
                 type="text"
                 value={formData.name}
@@ -180,7 +180,7 @@ export default function PromotionEditor({
             </div>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-1">Description</label>
+              <label className="block text-sm text-[#9FB3C8] mb-1">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
@@ -192,7 +192,7 @@ export default function PromotionEditor({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Promotion Type *</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Promotion Type *</label>
                 <select
                   value={formData.promotion_type}
                   onChange={(e) => handleChange('promotion_type', e.target.value)}
@@ -206,7 +206,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Status</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Status</label>
                 <select
                   value={formData.status}
                   onChange={(e) => handleChange('status', e.target.value)}
@@ -224,14 +224,14 @@ export default function PromotionEditor({
 
           {/* Prize */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[#64748B] uppercase flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#9FB3C8] uppercase flex items-center gap-2">
               <DollarSign size={14} />
               Prize Details
             </h3>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Prize Type</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Prize Type</label>
                 <select
                   value={formData.prize_type}
                   onChange={(e) => handleChange('prize_type', e.target.value)}
@@ -244,7 +244,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Prize Value</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Prize Value</label>
                 <input
                   type="number"
                   value={formData.prize_value}
@@ -255,7 +255,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Description</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Description</label>
                 <input
                   type="text"
                   value={formData.prize_description}
@@ -269,14 +269,14 @@ export default function PromotionEditor({
 
           {/* Schedule */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[#64748B] uppercase flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#9FB3C8] uppercase flex items-center gap-2">
               <Calendar size={14} />
               Schedule
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Start Date</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Start Date</label>
                 <input
                   type="date"
                   value={formData.start_date}
@@ -286,7 +286,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">End Date</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">End Date</label>
                 <input
                   type="date"
                   value={formData.end_date}
@@ -298,7 +298,7 @@ export default function PromotionEditor({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Start Time</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Start Time</label>
                 <input
                   type="time"
                   value={formData.start_time}
@@ -308,7 +308,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">End Time</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">End Time</label>
                 <input
                   type="time"
                   value={formData.end_time}
@@ -319,7 +319,7 @@ export default function PromotionEditor({
             </div>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-2">Days Of Week</label>
+              <label className="block text-sm text-[#9FB3C8] mb-2">Days Of Week</label>
               <div className="flex gap-2">
                 {DAYS_OF_WEEK.map(day => (
                   <button
@@ -328,7 +328,7 @@ export default function PromotionEditor({
                     onClick={() => handleDayToggle(day.value)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${formData.days_of_week.includes(day.value)
                       ? 'bg-[#22D3EE] text-white'
-                      : 'bg-[#0D192E] text-[#64748B]'
+                      : 'bg-[#0D192E] text-[#9FB3C8]'
                       }`}
                   >
                     {day.label}
@@ -342,7 +342,7 @@ export default function PromotionEditor({
                 type="checkbox"
                 checked={formData.is_recurring}
                 onChange={(e) => handleChange('is_recurring', e.target.checked)}
-                className="w-4 h-4 rounded text-[#22D3EE] focus:ring-[#22D3EE] border-[#4A5E78]"
+                className="w-4 h-4 rounded text-[#22D3EE] focus:ring-[#22D3EE] border-[#445E77]"
               />
               <span className="text-sm text-gray-300">Recurring Promotion</span>
             </label>
@@ -350,11 +350,11 @@ export default function PromotionEditor({
 
           {/* Requirements */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[#64748B] uppercase">Requirements</h3>
+            <h3 className="text-sm font-medium text-[#9FB3C8] uppercase">Requirements</h3>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Min Stakes</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Min Stakes</label>
                 <input
                   type="text"
                   value={formData.min_stakes}
@@ -365,7 +365,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Min Hours</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Min Hours</label>
                 <input
                   type="number"
                   step="0.5"
@@ -377,7 +377,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#64748B] mb-1">Min Buy-in</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Min Buy-in</label>
                 <input
                   type="number"
                   value={formData.min_buyin}
@@ -389,7 +389,7 @@ export default function PromotionEditor({
             </div>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-2">Eligible Games</label>
+              <label className="block text-sm text-[#9FB3C8] mb-2">Eligible Games</label>
               <div className="flex flex-wrap gap-2">
                 {GAME_TYPES.map(game => (
                   <button
@@ -398,7 +398,7 @@ export default function PromotionEditor({
                     onClick={() => handleGameTypeToggle(game.value)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${formData.game_types.includes(game.value)
                       ? 'bg-[#22D3EE] text-white'
-                      : 'bg-[#0D192E] text-[#64748B]'
+                      : 'bg-[#0D192E] text-[#9FB3C8]'
                       }`}
                   >
                     {game.label}
@@ -408,7 +408,7 @@ export default function PromotionEditor({
             </div>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-1">Qualifying Hands</label>
+              <label className="block text-sm text-[#9FB3C8] mb-1">Qualifying Hands</label>
               <input
                 type="text"
                 value={formData.qualifying_hands}
@@ -421,20 +421,20 @@ export default function PromotionEditor({
 
           {/* Options */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-[#64748B] uppercase">Options</h3>
+            <h3 className="text-sm font-medium text-[#9FB3C8] uppercase">Options</h3>
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.is_featured}
                 onChange={(e) => handleChange('is_featured', e.target.checked)}
-                className="w-4 h-4 rounded text-[#22D3EE] focus:ring-[#22D3EE] border-[#4A5E78]"
+                className="w-4 h-4 rounded text-[#22D3EE] focus:ring-[#22D3EE] border-[#445E77]"
               />
               <span className="text-sm text-gray-300">Featured Promotion (highlighted)</span>
             </label>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-1">Terms & Conditions</label>
+              <label className="block text-sm text-[#9FB3C8] mb-1">Terms & Conditions</label>
               <textarea
                 value={formData.terms_conditions}
                 onChange={(e) => handleChange('terms_conditions', e.target.value)}
@@ -445,7 +445,7 @@ export default function PromotionEditor({
             </div>
 
             <div>
-              <label className="block text-sm text-[#64748B] mb-1">Image URL (optional)</label>
+              <label className="block text-sm text-[#9FB3C8] mb-1">Image URL (optional)</label>
               <div className="flex gap-2">
                 <input
                   type="url"
@@ -455,7 +455,7 @@ export default function PromotionEditor({
                   placeholder="https://example.com/promo-image.jpg"
                 />
                 {formData.image_url && (
-                  <div style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', border: '1px solid #4A5E78', flexShrink: 0 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', border: '1px solid #445E77', flexShrink: 0 }}>
                     <img src={formData.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
                   </div>
                 )}
@@ -464,7 +464,7 @@ export default function PromotionEditor({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#4A5E78]">
+          <div className="flex items-center justify-between pt-4 border-t border-[#445E77]">
             {promotion && onDelete ? (
               <button
                 type="button"

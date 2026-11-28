@@ -32,7 +32,7 @@ export default function CompIssueModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
       <div className="w-full max-w-md cmd-panel cmd-corner-lights">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h2 className="text-lg font-semibold text-white">
             {mode === 'add' ? 'Issue Comps' : 'Adjust Comps'}
           </h2>
@@ -40,7 +40,7 @@ export default function CompIssueModal({
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-[#132240] transition-colors"
           >
-            <X size={20} className="text-[#64748B]" />
+            <X size={20} className="text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -56,14 +56,14 @@ export default function CompIssueModal({
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#0D192E]">
-                  <User size={20} className="text-[#64748B]" />
+                  <User size={20} className="text-[#9FB3C8]" />
                 </div>
               )}
               <div>
                 <div className="font-medium text-white">
                   {player.display_name || player.email || 'Player'}
                 </div>
-                <div className="text-sm text-[#64748B]">
+                <div className="text-sm text-[#9FB3C8]">
                   Current balance: ${currentBalance.toFixed(2)}
                 </div>
               </div>
@@ -76,7 +76,7 @@ export default function CompIssueModal({
               type="button"
               onClick={() => setMode('add')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
-                mode === 'add' ? 'text-white' : 'text-[#64748B]'
+                mode === 'add' ? 'text-white' : 'text-[#9FB3C8]'
               }`}
               style={{ backgroundColor: mode === 'add' ? '#22C55E' : 'transparent' }}
             >
@@ -87,7 +87,7 @@ export default function CompIssueModal({
               type="button"
               onClick={() => setMode('adjust')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
-                mode === 'adjust' ? 'text-white' : 'text-[#64748B]'
+                mode === 'adjust' ? 'text-white' : 'text-[#9FB3C8]'
               }`}
               style={{ backgroundColor: mode === 'adjust' ? '#EF4444' : 'transparent' }}
             >
@@ -98,13 +98,13 @@ export default function CompIssueModal({
 
           {/* Amount */}
           <div>
-            <label className="block text-sm text-[#64748B] mb-1">
+            <label className="block text-sm text-[#9FB3C8] mb-1">
               {mode === 'add' ? 'Amount to Issue' : 'Amount to Deduct'}
             </label>
             <div className="relative">
               <DollarSign
                 size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5E78]"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA6BE]"
               />
               <input
                 type="number"
@@ -121,7 +121,7 @@ export default function CompIssueModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-[#64748B] mb-1">Reason / Description</label>
+            <label className="block text-sm text-[#9FB3C8] mb-1">Reason / Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -133,9 +133,9 @@ export default function CompIssueModal({
 
           {/* Warning for adjustments */}
           {mode === 'adjust' && parseFloat(amount) > currentBalance && (
-            <div className="flex items-start gap-2 p-3 rounded-lg text-sm bg-[#F59E0B]/10">
-              <AlertTriangle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
-              <span className="text-yellow-200">
+            <div className="flex items-start gap-2 p-3 rounded-lg text-sm bg-[#22D3EE]/10">
+              <AlertTriangle size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+              <span className="text-cyan-200">
                 This will result in a negative balance of ${(currentBalance - parseFloat(amount || 0)).toFixed(2)}
               </span>
             </div>
@@ -143,7 +143,7 @@ export default function CompIssueModal({
 
           {/* Preview */}
           <div className="p-3 rounded-lg text-center bg-[#0B1426]">
-            <div className="text-sm text-[#64748B] mb-1">New Balance</div>
+            <div className="text-sm text-[#9FB3C8] mb-1">New Balance</div>
             <div className={`text-2xl font-bold ${
               mode === 'adjust'
                 ? 'text-red-400'

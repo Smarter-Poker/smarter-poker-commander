@@ -23,12 +23,12 @@ function getSupabase() {
 
 // Tournament-themed gradient backgrounds
 const TOURNAMENT_GRADIENTS = {
-    registered: 'linear-gradient(135deg, #1877F2 0%, #0A5DC2 100%)',
-    chip_update: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+    registered: 'linear-gradient(135deg, #1981EC 0%, #0A5DC2 100%)',
+    chip_update: 'linear-gradient(135deg, #22D3EE 0%, #0EA5C6 100%)',
     itm: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
     final_table: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)',
-    winner: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #F59E0B 100%)',
-    bubble: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+    winner: 'linear-gradient(135deg, #22D3EE 0%, #22D3EE 50%, #22D3EE 100%)',
+    bubble: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
     custom: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
 };
 

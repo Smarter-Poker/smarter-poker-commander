@@ -24,6 +24,7 @@
  *   sticky     - keep the bar pinned to the top while scrolling
  */
 import PageHelp from './PageHelp';
+import { usePageHelpHost } from './PageHelpHost';
 
 export default function PageBar({
   title,
@@ -38,17 +39,22 @@ export default function PageBar({
   sticky = false,
 }) {
   const Heading = titleAs === 'h2' ? 'h2' : 'h1';
+  // #SMARTERDESIGN (2026-11-27): under a page image header the visible h1 is
+  // the header's; this bar becomes the page's toolbar and its "?" content
+  // moves to the header's painted "?".
+  const host = usePageHelpHost();
+  const underHeader = !!(host && host.hasHeader);
   return (
     <header
-      className={`cmd-page-bar ${sticky ? 'sticky top-0 z-30' : ''} ${className}`}
+      className={`cmd-page-bar ${underHeader ? 'cmd-page-bar--toolbar' : ''} ${sticky ? 'sticky top-0 z-30' : ''} ${className}`}
       style={style}
       data-page-bar=""
     >
       <div className={`flex items-start justify-between gap-2.5 min-h-[44px] ${innerClassName}`}>
-        <Heading className="sr-only">{title}</Heading>
+        {underHeader ? null : <Heading className="sr-only">{title}</Heading>}
         <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0 min-h-[44px]">
           {status ? (
-            <span className="text-xs font-semibold text-[#B0B3B8] min-w-0" role="status">
+            <span className="text-xs font-semibold text-[#BDD0E2] min-w-0" role="status">
               {status}
             </span>
           ) : null}

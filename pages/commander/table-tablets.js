@@ -22,8 +22,8 @@ import PageBar from '../../src/components/commander/shared/PageBar';
 
 const STATUS_BADGE = {
     in_use: { bg: '#31A24C', label: 'Active' },
-    available: { bg: '#1877F2', label: 'Open' },
-    reserved: { bg: '#F59E0B', label: 'Reserved' },
+    available: { bg: '#1981EC', label: 'Open' },
+    reserved: { bg: '#22D3EE', label: 'Reserved' },
     maintenance: { bg: '#6B7280', label: 'Maint.' } };
 
 // Full game type name mapping - never show abbreviations to dealers
@@ -87,7 +87,7 @@ function formatTime(seconds) {
 function getTimerColor(seconds) {
     if (seconds <= 0) return '#EF4444';
     if (seconds <= 300) return '#EF4444';   // < 5 min - red
-    if (seconds <= 900) return '#F59E0B';   // < 15 min - yellow
+    if (seconds <= 900) return '#22D3EE';   // < 15 min - yellow
     return '#31A24C';                       // green
 }
 
@@ -1172,7 +1172,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             {venueName || ''}{venueName ? ' · ' : ''}TABLE {tNum}
                         </div>
                         {isTournamentTable(table) && (table.tournament?.name || table._tournamentData?.name) && (
-                            <div style={{ fontSize: isFullscreen ? 16 : 12, fontWeight: 900, color: '#FFD700', letterSpacing: 0.5, marginBottom: 4, textShadow: '0 0 12px rgba(255,215,0,0.3)' }}>
+                            <div style={{ fontSize: isFullscreen ? 16 : 12, fontWeight: 900, color: '#22D3EE', letterSpacing: 0.5, marginBottom: 4, textShadow: '0 0 12px rgba(34, 211, 238,0.3)' }}>
                                 {table.tournament?.name || table._tournamentData?.name}
                             </div>
                         )}
@@ -1183,7 +1183,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             {formatStakes(game?.stakes || table.stakes)}
                         </div>
                         {table.table_purpose && (
-                            <div style={{ fontSize: isFullscreen ? 11 : 9, fontWeight: 800, marginTop: 6, padding: '2px 10px', borderRadius: 4, display: 'inline-block', letterSpacing: 1.5, textTransform: 'uppercase', background: isTournamentTable(table) ? 'rgba(255,215,0,0.25)' : table.table_purpose === 'must_move' ? 'rgba(245,158,11,0.3)' : 'rgba(24,119,242,0.25)', color: isTournamentTable(table) ? '#FFD700' : table.table_purpose === 'must_move' ? '#F59E0B' : '#1877F2', border: `1px solid ${isTournamentTable(table) ? 'rgba(255,215,0,0.5)' : table.table_purpose === 'must_move' ? 'rgba(245,158,11,0.5)' : 'rgba(24,119,242,0.4)'}` }}>
+                            <div style={{ fontSize: isFullscreen ? 11 : 9, fontWeight: 800, marginTop: 6, padding: '2px 10px', borderRadius: 4, display: 'inline-block', letterSpacing: 1.5, textTransform: 'uppercase', background: isTournamentTable(table) ? 'rgba(34, 211, 238,0.25)' : table.table_purpose === 'must_move' ? 'rgba(34, 211, 238,0.3)' : 'rgba(25, 129, 236,0.25)', color: isTournamentTable(table) ? '#22D3EE' : table.table_purpose === 'must_move' ? '#22D3EE' : '#1981EC', border: `1px solid ${isTournamentTable(table) ? 'rgba(34, 211, 238,0.5)' : table.table_purpose === 'must_move' ? 'rgba(34, 211, 238,0.5)' : 'rgba(25, 129, 236,0.4)'}` }}>
                                 {isTournamentTable(table) ? 'Tournament' : table.table_purpose === 'must_move' ? 'Must Move' : 'Main Game'}
                             </div>
                         )}
@@ -1206,16 +1206,16 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     background: 'rgba(36,37,38,0.9)',
                                     borderRadius: 12,
                                     padding: '5px 10px 5px 5px',
-                                    border: `2px solid ${isFullscreen ? 'rgba(24,119,242,0.8)' : 'rgba(24,119,242,0.6)'}`,
+                                    border: `2px solid ${isFullscreen ? 'rgba(25, 129, 236,0.8)' : 'rgba(25, 129, 236,0.6)'}`,
                                     backdropFilter: 'blur(6px)',
                                     minWidth: isFullscreen ? 80 : 70 }}>
                                     {/* D avatar circle */}
                                     <div style={{
                                         width: avatarSize, height: avatarSize, borderRadius: '50%', flexShrink: 0,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        background: 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)',
-                                        border: '2px solid #1877F2',
-                                        boxShadow: '0 2px 12px rgba(0,0,0,0.6), 0 0 16px rgba(24,119,242,0.4)',
+                                        background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)',
+                                        border: '2px solid #1981EC',
+                                        boxShadow: '0 2px 12px rgba(0,0,0,0.6), 0 0 16px rgba(25, 129, 236,0.4)',
                                         fontSize: isFullscreen ? 28 : 24, fontWeight: 900, color: '#fff' }}>
                                         D
                                     </div>
@@ -1223,12 +1223,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     <div style={{ overflow: 'hidden' }}>
                                         <div style={{
                                             fontSize, fontWeight: 600, lineHeight: 1.2,
-                                            color: '#E4E6EB',
+                                            color: '#F2F7FF',
                                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                             maxWidth: nameMaxWidth }}>
                                             {dealerName}
                                         </div>
-                                        <div style={{ fontSize: isFullscreen ? 11 : 10, fontWeight: 700, color: '#1877F2', lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                        <div style={{ fontSize: isFullscreen ? 11 : 10, fontWeight: 700, color: '#1981EC', lineHeight: 1.2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                             {isFullscreen ? 'Tap to Scan' : 'Dealer'}
                                         </div>
                                     </div>
@@ -1263,7 +1263,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             if (seat.taken.time_remaining != null) {
                                 const rem = isPausedOrBreak ? Math.max(0, seat.taken.time_remaining) : adjustTime(seat.taken.time_remaining);
                                 timerText = rem <= 0 ? 'EXPIRED' : (isPausedOrBreak ? `⏸ ${formatTime(rem)}` : formatTime(rem));
-                                timerColor = isPausedOrBreak ? '#8A8D91' : getTimerColor(rem);
+                                timerColor = isPausedOrBreak ? '#9FB3C8' : getTimerColor(rem);
                             }
                         }
 
@@ -1313,7 +1313,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     borderRadius: 12,
                                     padding: '5px 10px 5px 5px',
                                     border: `2px solid ${isOccupied
-                                        ? (memberActive ? 'rgba(49,162,76,0.7)' : seat.taken?.membership_status ? 'rgba(239,68,68,0.5)' : 'rgba(24,119,242,0.5)')
+                                        ? (memberActive ? 'rgba(49,162,76,0.7)' : seat.taken?.membership_status ? 'rgba(239,68,68,0.5)' : 'rgba(25, 129, 236,0.5)')
                                         : 'rgba(62,64,66,0.6)'}`,
                                     backdropFilter: 'blur(6px)',
                                     minWidth: isFullscreen ? 80 : 70 }}>
@@ -1322,16 +1322,16 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     width: avatarSize, height: avatarSize, borderRadius: '50%', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     background: isOccupied
-                                        ? 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)'
+                                        ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)'
                                         : 'rgba(255,255,255,0.06)',
                                     border: `2px solid ${isOccupied
-                                        ? (memberActive ? '#31A24C' : seat.taken?.membership_status ? '#EF4444' : '#1877F2')
+                                        ? (memberActive ? '#31A24C' : seat.taken?.membership_status ? '#EF4444' : '#1981EC')
                                         : 'rgba(62,64,66,0.5)'}`,
                                     overflow: 'hidden' }}>
                                     {isOccupied ? (
                                         <span style={{ fontSize: isFullscreen ? 24 : 20, fontWeight: 800, color: '#fff' }}>{firstName.charAt(0).toUpperCase()}</span>
                                     ) : (
-                                        <span style={{ fontSize: isFullscreen ? 18 : 16, fontWeight: 600, color: movingPlayer && isFullscreen ? '#22c55e' : '#B0B3B8' }}>{seat.number}</span>
+                                        <span style={{ fontSize: isFullscreen ? 18 : 16, fontWeight: 600, color: movingPlayer && isFullscreen ? '#22c55e' : '#BDD0E2' }}>{seat.number}</span>
                                     )}
                                     {/* Missed Blinds Sticker - overlays top-right of avatar */}
                                     {isOccupied && (seat.taken?.missed_blinds || 0) > 0 && (
@@ -1340,7 +1340,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                             width: isFullscreen ? 22 : 18, height: isFullscreen ? 22 : 18,
                                             borderRadius: '50%',
                                             background: (seat.taken.missed_blinds >= 2) ? '#EF4444' : '#F97316',
-                                            border: '2px solid #242526',
+                                            border: '2px solid #0A1829',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             fontSize: isFullscreen ? 10 : 8, fontWeight: 900, color: '#fff',
                                             boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
@@ -1353,7 +1353,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 <div style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
                                     <div style={{
                                         fontSize, fontWeight: 600, lineHeight: 1.2,
-                                        color: isOccupied ? '#E4E6EB' : (movingPlayer && isFullscreen ? '#22c55e' : '#B0B3B8'),
+                                        color: isOccupied ? '#F2F7FF' : (movingPlayer && isFullscreen ? '#22c55e' : '#BDD0E2'),
                                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                         maxWidth: nameMaxWidth, position: 'relative' }}>
                                         {isOccupied ? fullName : (movingPlayer && isFullscreen ? 'Move here' : (isFullscreen ? 'Open' : 'Open'))}
@@ -1361,7 +1361,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     </div>
                                     {/* Session Status (Paused / Meal Break) */}
                                     {isOccupied && seat.taken?.session_status && seat.taken.session_status !== 'active' && (
-                                        <div style={{ fontSize: isFullscreen ? 11 : 10, fontWeight: 700, color: seat.taken.session_status === 'meal_break' ? '#22c55e' : '#F59E0B', lineHeight: 1.2 }}>
+                                        <div style={{ fontSize: isFullscreen ? 11 : 10, fontWeight: 700, color: seat.taken.session_status === 'meal_break' ? '#22c55e' : '#22D3EE', lineHeight: 1.2 }}>
                                             {seat.taken.session_status === 'paused' ? '⏸️ PAUSED' : '🍽️ MEAL BREAK'}
                                         </div>
                                     )}
@@ -1376,7 +1376,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         </div>
                                     )}
                                     {isOccupied && seat.taken?.time_balance_minutes > 0 && (
-                                        <div style={{ fontSize: isFullscreen ? 11 : 10, color: '#1877F2', fontWeight: 600 }}>
+                                        <div style={{ fontSize: isFullscreen ? 11 : 10, color: '#1981EC', fontWeight: 600 }}>
                                             {Math.floor(seat.taken.time_balance_minutes / 60)}h bal
                                         </div>
                                     )}
@@ -1392,7 +1392,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
     return (
         <CommanderLayout title="Table Tablets | Commander" backHref="/commander/dashboard?card=floor">
             <SEOHead title="Commander - Table Tablets" description="Dealer tablet view for all tables." noindex={true} />
-            <div style={{ minHeight: '100vh', background: '#1a1f22', color: '#E4E6EB', fontFamily: 'Inter, sans-serif' }}>
+            <div style={{ minHeight: '100vh', background: '#1a1f22', color: '#F2F7FF', fontFamily: 'Inter, sans-serif' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px' }}>
 
                     {/* Header */}
@@ -1404,21 +1404,21 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                     />
 
                     {/* ── Tablet Assignment Panel ────────── */}
-                    <div style={{ background: '#242526', border: '1px solid #3A3B3C', borderRadius: 14, marginBottom: 16, overflow: 'hidden' }}>
+                    <div style={{ background: '#0A1829', border: '1px solid #2A4560', borderRadius: 14, marginBottom: 16, overflow: 'hidden' }}>
                         <button
                             onClick={() => setShowAssignPanel(!showAssignPanel)}
                             style={{
                                 width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                background: 'transparent', border: 'none', cursor: 'pointer', color: '#E4E6EB' }}
+                                background: 'transparent', border: 'none', cursor: 'pointer', color: '#F2F7FF' }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <Link2 size={16} color="#1877F2" />
+                                <Link2 size={16} color="#1981EC" />
                                 <span style={{ fontSize: 14, fontWeight: 700 }}>Tablet Assignment</span>
                             </div>
-                            {showAssignPanel ? <ChevronUp size={16} color="#B0B3B8" /> : <ChevronDown size={16} color="#B0B3B8" />}
+                            {showAssignPanel ? <ChevronUp size={16} color="#BDD0E2" /> : <ChevronDown size={16} color="#BDD0E2" />}
                         </button>
                         {showAssignPanel && (
-                            <div style={{ padding: '0 16px 16px', borderTop: '1px solid #3A3B3C' }}>
+                            <div style={{ padding: '0 16px 16px', borderTop: '1px solid #2A4560' }}>
                                 <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
                                     {tables.map(table => {
                                         const tNum = table.table_number || table.number;
@@ -1429,15 +1429,15 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         return (
                                             <div key={tNum} style={{
                                                 display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-                                                background: '#1a1b1d', border: '1px solid #3A3B3C', borderRadius: 10 }}>
+                                                background: '#1a1b1d', border: '1px solid #2A4560', borderRadius: 10 }}>
                                                 {/* Online indicator */}
                                                 <div style={{
                                                     width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                                                    background: isOnline ? '#31A24C' : '#4E4F50',
+                                                    background: isOnline ? '#31A24C' : '#3A5873',
                                                     boxShadow: isOnline ? '0 0 6px rgba(49,162,76,0.5)' : 'none' }} title={isOnline ? 'Tablet Online' : 'Tablet Offline'} />
                                                 {/* Table info */}
                                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: 13, fontWeight: 700, color: '#E4E6EB' }}>Table {tNum}</div>
+                                                    <div style={{ fontSize: 13, fontWeight: 700, color: '#F2F7FF' }}>Table {tNum}</div>
                                                     <div style={{ fontSize: 10, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         /commander/tablet/{tNum}
                                                     </div>
@@ -1447,8 +1447,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                     onClick={() => copyTabletUrl(tNum)}
                                                     style={{
                                                         padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600,
-                                                        background: isCopied ? '#31A24C' : '#3A3B3C',
-                                                        color: isCopied ? '#fff' : '#B0B3B8',
+                                                        background: isCopied ? '#31A24C' : '#2A4560',
+                                                        color: isCopied ? '#fff' : '#BDD0E2',
                                                         border: 'none', cursor: 'pointer',
                                                         display: 'flex', alignItems: 'center', gap: 4,
                                                         transition: 'all 0.2s' }}
@@ -1460,8 +1460,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                     target="_blank" rel="noopener noreferrer"
                                                     style={{
                                                         padding: '6px 10px', borderRadius: 8,
-                                                        background: 'rgba(24,119,242,0.1)', border: '1px solid rgba(24,119,242,0.3)',
-                                                        color: '#1877F2', textDecoration: 'none',
+                                                        background: 'rgba(25, 129, 236,0.1)', border: '1px solid rgba(25, 129, 236,0.3)',
+                                                        color: '#1981EC', textDecoration: 'none',
                                                         display: 'flex', alignItems: 'center' }}
                                                     title="Preview in new tab"
                                                 >
@@ -1477,14 +1477,14 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
 
                     {loading ? (
                         <div style={{ padding: '80px 0', textAlign: 'center' }}>
-                            <Loader2 size={32} color="#1877F2" style={{ animation: 'spin 1s linear infinite' }} />
+                            <Loader2 size={32} color="#1981EC" style={{ animation: 'spin 1s linear infinite' }} />
                         </div>
                     ) : tables.length === 0 ? (
-                        <div style={{ background: '#242526', border: '1px solid #3A3B3C', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-                            <Monitor size={48} color="#4A5E78" style={{ margin: '0 auto 12px' }} />
-                            <p style={{ color: '#64748B', marginBottom: 16 }}>No tables configured</p>
+                        <div style={{ background: '#0A1829', border: '1px solid #2A4560', borderRadius: 16, padding: 40, textAlign: 'center' }}>
+                            <Monitor size={48} color="#445E77" style={{ margin: '0 auto 12px' }} />
+                            <p style={{ color: '#9FB3C8', marginBottom: 16 }}>No tables configured</p>
                             <button onClick={() => router.push('/commander/tables')}
-                                style={{ padding: '10px 20px', background: '#1877F2', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}>
+                                style={{ padding: '10px 20px', background: '#1981EC', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}>
                                 Go to Tables & Floor
                             </button>
                         </div>
@@ -1493,7 +1493,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             {/* ACTIVE TOURNAMENT TABLES - amber section */}
                             {activeTournamentTables.length > 0 && (
                                 <>
-                                    <h2 style={{ fontSize: 15, fontWeight: 700, color: '#FFD700', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <h2 style={{ fontSize: 15, fontWeight: 700, color: '#22D3EE', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <Trophy size={20} /> Tournament Tables ({activeTournamentTables.length})
                                     </h2>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 8, marginBottom: 16 }}>
@@ -1507,13 +1507,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                 <div key={table.id || tNum}
                                                     onClick={() => setFullscreenTable(table)}
                                                     style={{
-                                                        background: '#1a1a2e', border: '2px solid rgba(255,215,0,0.5)', borderRadius: 16,
+                                                        background: '#1a1a2e', border: '2px solid rgba(34, 211, 238,0.5)', borderRadius: 16,
                                                         cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' }}>
 
                                                     {/* Table header - tournament amber gradient */}
                                                     <div style={{
                                                         padding: '6px 12px',
-                                                        background: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
+                                                        background: 'linear-gradient(135deg, #22D3EE 0%, #3A8FC0 100%)',
                                                         color: '#fff',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                         <div>
@@ -1550,7 +1550,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             {/* ACTIVE CASH TABLES - expanded cards with full table visual */}
                             {activeCashTables.length > 0 && (
                                 <>
-                                    <h2 style={{ fontSize: 14, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <h2 style={{ fontSize: 14, fontWeight: 700, color: '#BDD0E2', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <Timer size={14} /> Active Cash Tables ({activeCashTables.length})
                                     </h2>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -1564,13 +1564,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                 <div key={table.id || tNum}
                                                     onClick={() => setFullscreenTable(table)}
                                                     style={{
-                                                        background: '#1a1a2e', border: '2px solid rgba(24,119,242,0.3)', borderRadius: 16,
+                                                        background: '#1a1a2e', border: '2px solid rgba(25, 129, 236,0.3)', borderRadius: 16,
                                                         cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' }}>
 
                                                     {/* Table header - game info bar */}
                                                     <div style={{
                                                         padding: '12px 16px',
-                                                        background: 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)',
+                                                        background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)',
                                                         color: '#fff',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                         <div>
@@ -1615,7 +1615,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             {/* IDLE TABLES - compact grid */}
                             {idleTables.length > 0 && (
                                 <>
-                                    <h2 style={{ fontSize: 14, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <h2 style={{ fontSize: 14, fontWeight: 700, color: '#BDD0E2', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <Armchair size={14} /> Available Tables ({idleTables.length})
                                     </h2>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
@@ -1626,7 +1626,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                             return (
                                                 <button key={table.id || tNum} onClick={() => setFullscreenTable(table)}
                                                     style={{
-                                                        background: '#242526', border: '1px solid #3A3B3C', borderRadius: 12,
+                                                        background: '#0A1829', border: '1px solid #2A4560', borderRadius: 12,
                                                         padding: '14px 12px', cursor: 'pointer', textAlign: 'left',
                                                         display: 'flex', flexDirection: 'column', gap: 6, transition: 'border-color 0.2s' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -1637,7 +1637,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                             {statusCfg.label}
                                                         </span>
                                                     </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#64748B' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#9FB3C8' }}>
                                                         <Armchair size={12} /> {maxSeats} seats
                                                         {table.table_name && table.table_name !== `Table ${tNum}` && (
                                                             <span>- {table.table_name}</span>
@@ -1656,7 +1656,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
 
             <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        button:hover { border-color: rgba(24,119,242,0.4) !important; }
+        button:hover { border-color: rgba(25, 129, 236,0.4) !important; }
         @keyframes fullscreenIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.08); opacity: 0.85; } }
       `}</style>
@@ -1997,7 +1997,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         <div style={{
                             position: 'absolute', top: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 10001,
                             padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
-                            background: 'rgba(24,119,242,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
+                            background: 'rgba(25, 129, 236,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
                             boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                             Moving {movingPlayer.player_name} - tap an empty seat
                             <button onClick={() => { haptic(); setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
@@ -2012,13 +2012,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
             {showPlayerMenu && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10002, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => { haptic('light'); setShowPlayerMenu(null); }}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: '24px', width: '90%', maxWidth: 340, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#0A1829', borderRadius: 20, padding: '24px', width: '90%', maxWidth: 340, border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 10px', background: 'linear-gradient(135deg, #1877F2, #1565c0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: '#fff' }}>
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto 10px', background: 'linear-gradient(135deg, #1981EC, #1565c0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: '#fff' }}>
                                 {(showPlayerMenu.taken?.player_name || 'P').charAt(0).toUpperCase()}
                             </div>
                             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#fff' }}>{showPlayerMenu.taken?.player_name || 'Player'}</h3>
-                            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#8A8D91' }}>Seat {showPlayerMenu.number} · Table {showPlayerMenu.tableNumber}</p>
+                            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9FB3C8' }}>Seat {showPlayerMenu.number} · Table {showPlayerMenu.tableNumber}</p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {(() => {
@@ -2029,29 +2029,29 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 const pName = showPlayerMenu.taken?.player_name || 'Player';
                                 const iconSize = 16;
                                 const actions = isTournMenu ? [
-                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1877F2', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
+                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
                                     { label: 'Bust Player', icon: React.createElement(Skull, { size: iconSize }), color: '#EF4444', action: async () => { if (!confirm('Bust ' + pName + '?')) return; if (entryId && tournId) { await bustTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
-                                    { label: 'Update Chip Count', icon: React.createElement(Coins, { size: iconSize }), color: '#FFD700', action: () => { setChipCountInput(''); } },
+                                    { label: 'Update Chip Count', icon: React.createElement(Coins, { size: iconSize }), color: '#22D3EE', action: () => { setChipCountInput(''); } },
                                     { label: 'Rebuy', icon: React.createElement(Coins, { size: iconSize }), color: '#31A24C', action: async () => { if (entryId && tournId) { await rebuyTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
                                     { label: 'Add-On', icon: React.createElement(Coins, { size: iconSize }), color: '#22c55e', action: async () => { if (entryId && tournId) { await addonTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
                                     ...(lastBustedEntry && lastBustedEntry.tournament_id === tournId
-                                        ? [{ label: `Undo Bust, ${lastBustedEntry.player_name}`, icon: React.createElement(Clock, { size: iconSize }), color: '#8A8D91', action: async () => { await restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); } }]
+                                        ? [{ label: `Undo Bust, ${lastBustedEntry.player_name}`, icon: React.createElement(Clock, { size: iconSize }), color: '#9FB3C8', action: async () => { await restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); } }]
                                         : []),
                                 ] : [
-                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1877F2', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
+                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
                                     { label: 'Remove Player', icon: React.createElement(XCircle, { size: iconSize }), color: '#EF4444', action: () => removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number) },
                                     ...(showPlayerMenu.taken?.session_status === 'paused' || showPlayerMenu.taken?.session_status === 'meal_break'
                                         ? [{ label: 'Resume Timer', icon: React.createElement(Clock, { size: iconSize }), color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'resume'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' resumed' }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
-                                        : [{ label: 'Pause Timer', icon: React.createElement(Timer, { size: iconSize }), color: '#F59E0B', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'pause'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' paused' }); } else { setToast({ type: 'error', text: json.error || 'Pause failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
+                                        : [{ label: 'Pause Timer', icon: React.createElement(Timer, { size: iconSize }), color: '#22D3EE', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'pause'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' paused' }); } else { setToast({ type: 'error', text: json.error || 'Pause failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
                                     ),
                                     { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = json.data.missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: json.data.player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed blind #' + count + ' for ' + json.data.player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
-                                    { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#8B5CF6', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + json.data.player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
+                                    { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#5AA9FF', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + json.data.player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
                                     { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes to add for ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (json.data.player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed to add time' }); } setShowPlayerMenu(null); fetchAll(); } },
                                 ];
                                 return actions.map((btn, i) => (
                                     React.createElement('button', {
                                         key: i, onClick: () => { haptic(); btn.action(); }, disabled: playerActionLoading,
-                                        style: { padding: '14px 16px', borderRadius: 12, border: '1px solid #3A3B3C', borderLeft: `3px solid ${btn.color}`, cursor: 'pointer', background: '#3A3B3C', color: '#E4E6EB', fontSize: 15, fontWeight: 700, textAlign: 'left', display: 'flex', alignItems: 'center', transition: 'background 0.15s' }
+                                        style: { padding: '14px 16px', borderRadius: 12, border: '1px solid #2A4560', borderLeft: `3px solid ${btn.color}`, cursor: 'pointer', background: '#2A4560', color: '#F2F7FF', fontSize: 15, fontWeight: 700, textAlign: 'left', display: 'flex', alignItems: 'center', transition: 'background 0.15s' }
                                     }, btn.label)
                                 ));
                             })()}
@@ -2061,12 +2061,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             const backspace = () => { const raw = (chipCountInput || '').replace(/[^0-9]/g, ''); if (!raw) return; const trimmed = raw.slice(0, -1); setChipCountInput(trimmed ? parseInt(trimmed).toLocaleString() : ''); };
                             const clearAll = () => setChipCountInput('');
                             const rawVal = parseInt((chipCountInput || '').replace(/[^0-9]/g, ''));
-                            const kBtn = { minHeight: 56, borderRadius: 10, border: '1px solid #3A3B3C', background: '#2A2B2C', color: '#E4E6EB', fontSize: 22, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.1s' };
+                            const kBtn = { minHeight: 56, borderRadius: 10, border: '1px solid #2A4560', background: '#2A2B2C', color: '#F2F7FF', fontSize: 22, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.1s' };
                             return (
                                 <div style={{ marginTop: 16 }}>
                                     {/* Chip count display */}
-                                    <div style={{ padding: '14px 16px', borderRadius: 12, border: '2px solid #FFD700', background: '#18191A', marginBottom: 10, textAlign: 'center', minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <span style={{ fontSize: chipCountInput ? 28 : 16, fontWeight: 800, color: chipCountInput ? '#FFD700' : '#555', letterSpacing: 2, fontVariantNumeric: 'tabular-nums' }}>
+                                    <div style={{ padding: '14px 16px', borderRadius: 12, border: '2px solid #22D3EE', background: '#040D18', marginBottom: 10, textAlign: 'center', minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span style={{ fontSize: chipCountInput ? 28 : 16, fontWeight: 800, color: chipCountInput ? '#22D3EE' : '#555', letterSpacing: 2, fontVariantNumeric: 'tabular-nums' }}>
                                             {chipCountInput || 'Enter chip count'}
                                         </span>
                                     </div>
@@ -2077,7 +2077,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         ))}
                                         <button onClick={() => { haptic('light'); clearAll(); }} style={{ ...kBtn, color: '#EF4444', fontSize: 14, fontWeight: 800 }}>CLR</button>
                                         <button onClick={() => { haptic('light'); appendDigit('0'); }} style={kBtn}>0</button>
-                                        <button onClick={() => { haptic('light'); backspace(); }} style={{ ...kBtn, color: '#F59E0B', fontSize: 18 }}>⌫</button>
+                                        <button onClick={() => { haptic('light'); backspace(); }} style={{ ...kBtn, color: '#22D3EE', fontSize: 18 }}>⌫</button>
                                     </div>
                                     {/* Save button */}
                                     <button disabled={!rawVal || isNaN(rawVal) || playerActionLoading} onClick={async () => {
@@ -2093,13 +2093,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         }
                                         setChipCountInput(null);
                                         setShowPlayerMenu(null);
-                                    }} style={{ width: '100%', marginTop: 10, padding: '14px', borderRadius: 12, background: (!rawVal || isNaN(rawVal)) ? '#3A3B3C' : '#FFD700', border: 'none', color: (!rawVal || isNaN(rawVal)) ? '#666' : '#000', fontSize: 16, fontWeight: 800, cursor: (!rawVal || isNaN(rawVal)) ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+                                    }} style={{ width: '100%', marginTop: 10, padding: '14px', borderRadius: 12, background: (!rawVal || isNaN(rawVal)) ? '#2A4560' : '#22D3EE', border: 'none', color: (!rawVal || isNaN(rawVal)) ? '#666' : '#000', fontSize: 16, fontWeight: 800, cursor: (!rawVal || isNaN(rawVal)) ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
                                         {playerActionLoading ? 'Saving...' : `Save - ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} chips`}
                                     </button>
                                 </div>
                             );
                         })()}
-                        <button onClick={() => { haptic('light'); setShowPlayerMenu(null); setChipCountInput(null); }} style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 12, background: '#3A3B3C', border: 'none', color: '#8A8D91', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={() => { haptic('light'); setShowPlayerMenu(null); setChipCountInput(null); }} style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 12, background: '#2A4560', border: 'none', color: '#9FB3C8', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
                     </div>
                 </div>
             )}
@@ -2108,23 +2108,23 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
             {tournamentNotice && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10004, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => { haptic('light'); setTournamentNotice(null); }}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#0A1829', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                         <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 800, color: '#fff' }}>{tournamentNotice.title}</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
                             {(tournamentNotice.lines || []).map((line, i) => (
-                                <p key={i} style={{ margin: 0, fontSize: 14, color: '#B0B3B8', lineHeight: 1.45 }}>{line}</p>
+                                <p key={i} style={{ margin: 0, fontSize: 14, color: '#BDD0E2', lineHeight: 1.45 }}>{line}</p>
                             ))}
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
                             {lastBustedEntry && (
                                 <button onClick={() => { haptic(); restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); }}
                                     disabled={playerActionLoading}
-                                    style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#3A3B3C', border: '1px solid #4E4F50', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                    style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#2A4560', border: '1px solid #3A5873', color: '#F2F7FF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                                     Undo Bust
                                 </button>
                             )}
                             <button onClick={() => { haptic('light'); setTournamentNotice(null); }}
-                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#1877F2', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#1981EC', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                                 Got It
                             </button>
                         </div>
@@ -2136,15 +2136,15 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
             {restoreConfirm && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => { haptic('light'); setRestoreConfirm(null); }}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: '#242526', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', textAlign: 'center' }}>
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', margin: '0 auto 12px', background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <AlertTriangle size={28} color="#F59E0B" />
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#0A1829', borderRadius: 20, padding: 24, width: '90%', maxWidth: 380, border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', textAlign: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', margin: '0 auto 12px', background: 'rgba(34, 211, 238,0.1)', border: '2px solid rgba(34, 211, 238,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <AlertTriangle size={28} color="#22D3EE" />
                         </div>
                         <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#fff' }}>Payout Already Recorded</h3>
-                        <p style={{ margin: '0 0 20px', fontSize: 14, color: '#B0B3B8', lineHeight: 1.45 }}>{restoreConfirm.message}</p>
+                        <p style={{ margin: '0 0 20px', fontSize: 14, color: '#BDD0E2', lineHeight: 1.45 }}>{restoreConfirm.message}</p>
                         <div style={{ display: 'flex', gap: 10 }}>
                             <button onClick={() => { haptic('light'); setRestoreConfirm(null); }}
-                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#3A3B3C', border: 'none', color: '#E4E6EB', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                                style={{ flex: 1, padding: '13px', borderRadius: 12, background: '#2A4560', border: 'none', color: '#F2F7FF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                                 Cancel
                             </button>
                             <button onClick={() => { haptic('heavy'); restoreTournamentEntry(restoreConfirm.tournament_id, restoreConfirm.entry_id, restoreConfirm.player_name, true); }}
@@ -2163,9 +2163,9 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                     <div style={{ textAlign: 'center', marginBottom: 20 }}>
                         <div style={{ fontSize: 36, marginBottom: 8 }}><ScanLine size={36} color="#10B981" /></div>
                         <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Scan Player for Seat {seatScanner.seatNumber}</h3>
-                        <p style={{ fontSize: 13, color: '#8A8D91', margin: '6px 0 0' }}>Hold QR code in front of camera</p>
+                        <p style={{ fontSize: 13, color: '#9FB3C8', margin: '6px 0 0' }}>Hold QR code in front of camera</p>
                     </div>
-                    <div style={{ width: '90%', maxWidth: 400, aspectRatio: '4/3', borderRadius: 16, overflow: 'hidden', border: '3px solid #1877F2', position: 'relative' }}>
+                    <div style={{ width: '90%', maxWidth: 400, aspectRatio: '4/3', borderRadius: 16, overflow: 'hidden', border: '3px solid #1981EC', position: 'relative' }}>
                         <video ref={seatScannerVideoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
                     </div>
                     {/* Manual entry removed - scan only */}
@@ -2178,16 +2178,16 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div onClick={() => { haptic('light'); closeDealerScan(); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }} />
                     <div style={{
-                        position: 'relative', background: '#242526', borderRadius: 16,
+                        position: 'relative', background: '#0A1829', borderRadius: 16,
                         width: '90%', maxWidth: 400, padding: 24,
-                        border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+                        border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                             <div>
                                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>Dealer Scan-In</h3>
-                                <p style={{ margin: 0, fontSize: 12, color: '#B0B3B8' }}>Table {scanningTable}</p>
+                                <p style={{ margin: 0, fontSize: 12, color: '#BDD0E2' }}>Table {scanningTable}</p>
                             </div>
                             <button onClick={() => { haptic('light'); closeDealerScan(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                                <X size={20} color="#B0B3B8" />
+                                <X size={20} color="#BDD0E2" />
                             </button>
                         </div>
 
@@ -2215,7 +2215,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                             style={{ width: '100%', borderRadius: 12, background: '#000', marginBottom: 12 }}
                                         />
                                         <button onClick={() => { haptic(); stopDealerCamera(); }}
-                                            style={{ padding: '8px 20px', background: '#3A3B3C', color: '#E4E6EB', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                                            style={{ padding: '8px 20px', background: '#2A4560', color: '#F2F7FF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                                             Cancel
                                         </button>
                                     </div>
@@ -2224,7 +2224,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         <div style={{ width: 64, height: 64, background: 'rgba(16,185,129,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                                             <ScanLine size={32} color="#10B981" />
                                         </div>
-                                        <p style={{ fontSize: 13, color: '#B0B3B8', marginBottom: 16 }}>Scan dealer QR code to assign</p>
+                                        <p style={{ fontSize: 13, color: '#BDD0E2', marginBottom: 16 }}>Scan dealer QR code to assign</p>
                                         <button onClick={startDealerCamera}
                                             style={{ padding: '10px 24px', background: '#10B981', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                                             <Camera size={16} /> Open Scanner
@@ -2244,9 +2244,9 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 <div style={{ position: 'fixed', inset: 0, zIndex: 20000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div onClick={() => { haptic('light'); setShowPinModal(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)' }} />
                     <div style={{
-                        position: 'relative', background: '#242526', borderRadius: 20,
+                        position: 'relative', background: '#0A1829', borderRadius: 20,
                         width: '90%', maxWidth: 360, padding: 32,
-                        border: '2px solid #3A3B3C', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                        border: '2px solid #2A4560', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                         {/* Header */}
                         <div style={{ textAlign: 'center', marginBottom: 24 }}>
                             <div style={{
@@ -2256,7 +2256,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 <ShieldCheck size={32} color="#EF4444" />
                             </div>
                             <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#fff' }}>Unlock Tablet</h3>
-                            <p style={{ margin: '6px 0 0', fontSize: 13, color: '#8A8D91' }}>
+                            <p style={{ margin: '6px 0 0', fontSize: 13, color: '#9FB3C8' }}>
                                 Enter manager or owner PIN to unlock
                             </p>
                         </div>
@@ -2267,8 +2267,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             {[0, 1, 2, 3].map(i => (
                                 <div key={i} style={{
                                     width: 40, height: 48, borderRadius: 10,
-                                    background: pinValue.length > i ? '#1877F2' : '#3A3B3C',
-                                    border: `2px solid ${pinValue.length > i ? '#1877F2' : '#4E4F50'}`,
+                                    background: pinValue.length > i ? '#1981EC' : '#2A4560',
+                                    border: `2px solid ${pinValue.length > i ? '#1981EC' : '#3A5873'}`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     transition: 'all 0.15s' }}>
                                     {pinValue.length > i && (
@@ -2301,9 +2301,9 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     }}
                                     style={{
                                         padding: '16px 0', borderRadius: 12,
-                                        background: key === null ? 'transparent' : key === 'del' ? '#3A3B3C' : '#3A3B3C',
-                                        border: key === null ? 'none' : '1px solid #4E4F50',
-                                        color: '#E4E6EB', fontSize: key === 'del' ? 14 : 22, fontWeight: 700,
+                                        background: key === null ? 'transparent' : key === 'del' ? '#2A4560' : '#2A4560',
+                                        border: key === null ? 'none' : '1px solid #3A5873',
+                                        color: '#F2F7FF', fontSize: key === 'del' ? 14 : 22, fontWeight: 700,
                                         cursor: key === null ? 'default' : 'pointer',
                                         visibility: key === null ? 'hidden' : 'visible',
                                         transition: 'background 0.15s' }}
@@ -2319,7 +2319,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             disabled={pinLoading || pinValue.length !== 4}
                             style={{
                                 width: '100%', padding: '14px', borderRadius: 12,
-                                background: pinValue.length === 4 ? '#EF4444' : '#3A3B3C',
+                                background: pinValue.length === 4 ? '#EF4444' : '#2A4560',
                                 color: '#fff', border: 'none', fontSize: 16, fontWeight: 700,
                                 cursor: pinValue.length === 4 ? 'pointer' : 'not-allowed',
                                 opacity: pinLoading ? 0.7 : 1,
@@ -2339,7 +2339,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             style={{
                                 width: '100%', padding: '10px', marginTop: 8,
                                 background: 'transparent', border: 'none', borderRadius: 8,
-                                color: '#8A8D91', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                                color: '#9FB3C8', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                         >
                             Cancel
                         </button>

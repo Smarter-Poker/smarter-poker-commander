@@ -15,8 +15,8 @@ import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
 const PLATFORMS = [
   { id: 'youtube', label: 'YouTube', icon: Youtube, color: '#FF0000' },
-  { id: 'twitch', label: 'Twitch', icon: Twitch, color: '#9146FF' },
-  { id: 'facebook', label: 'Facebook', icon: Facebook, color: '#1877F2' }
+  { id: 'twitch', label: 'Twitch', icon: Twitch, color: '#5AA9FF' },
+  { id: 'facebook', label: 'Facebook', icon: Facebook, color: '#1981EC' }
 ];
 
 function StreamCard({ stream, onStart, onStop, onConfigure }) {
@@ -25,7 +25,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
   return (
     <div className="cmd-panel overflow-hidden">
       {/* Preview Area */}
-      <div className={`h-40 flex items-center justify-center ${isLive ? 'bg-[#1F2937]' : 'bg-[#3A3B3C]'}`}>
+      <div className={`h-40 flex items-center justify-center ${isLive ? 'bg-[#1F2937]' : 'bg-[#132A42]'}`}>
         {isLive ? (
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-[#EF4444] mb-2">
@@ -35,7 +35,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
             <p className="text-white text-sm">{stream.viewer_count || 0} viewers</p>
           </div>
         ) : (
-          <Video className="w-12 h-12 text-[#3A3B3C]" />
+          <Video className="w-12 h-12 text-[#7F97B0]" />
         )}
       </div>
 
@@ -43,7 +43,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="font-semibold text-white">Table {stream.table_number}</h3>
-            <p className="text-sm text-[#B0B3B8]">{stream.game_info || 'No game'}</p>
+            <p className="text-sm text-[#BDD0E2]">{stream.game_info || 'No game'}</p>
           </div>
           {isLive && (
             <span className="px-2 py-1 bg-[#EF4444]/10 text-[#EF4444] text-xs font-medium rounded flex items-center gap-1">
@@ -71,7 +71,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
               );
             })}
             {stream.delay_minutes > 0 && (
-              <span className="text-xs text-[#B0B3B8] flex items-center gap-1">
+              <span className="text-xs text-[#BDD0E2] flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {stream.delay_minutes}m delay
               </span>
@@ -81,7 +81,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
 
         {/* Duration */}
         {isLive && stream.started_at && (
-          <p className="text-sm text-[#B0B3B8] mb-3">
+          <p className="text-sm text-[#BDD0E2] mb-3">
             Streaming for {Math.round((Date.now() - new Date(stream.started_at).getTime()) / 60000)} minutes
           </p>
         )}
@@ -151,9 +151,9 @@ function ConfigureModal({ stream, onSave, onClose }) {
           <h2 className="text-xl font-bold text-white">Stream Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#3A3B3C] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#132A42] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -173,15 +173,15 @@ function ConfigureModal({ stream, onSave, onClose }) {
                     onClick={() => togglePlatform(platform.id)}
                     className={`flex-1 py-3 rounded-lg border flex flex-col items-center gap-1 transition-colors ${isSelected
                       ? 'border-2'
-                      : 'border-[#3A3B3C]'
+                      : 'border-[#445E77]'
                       }`}
                     style={{
                       borderColor: isSelected ? platform.color : undefined,
                       backgroundColor: isSelected ? `${platform.color}10` : undefined
                     }}
                   >
-                    <Icon className="w-5 h-5" style={{ color: isSelected ? platform.color : '#B0B3B8' }} />
-                    <span className="text-xs" style={{ color: isSelected ? platform.color : '#B0B3B8' }}>
+                    <Icon className="w-5 h-5" style={{ color: isSelected ? platform.color : '#BDD0E2' }} />
+                    <span className="text-xs" style={{ color: isSelected ? platform.color : '#BDD0E2' }}>
                       {platform.label}
                     </span>
                   </button>
@@ -201,8 +201,8 @@ function ConfigureModal({ stream, onSave, onClose }) {
                   key={mins}
                   onClick={() => setConfig(prev => ({ ...prev, delay_minutes: mins }))}
                   className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${config.delay_minutes === mins
-                    ? 'border-[#1877F2] bg-[#1877F2]/5 text-[#1877F2]'
-                    : 'border-[#3A3B3C] text-[#B0B3B8]'
+                    ? 'border-[#1981EC] bg-[#0C55C0]/5 text-[#86DAFF]'
+                    : 'border-[#445E77] text-[#BDD0E2]'
                     }`}
                 >
                   {mins}m
@@ -222,7 +222,7 @@ function ConfigureModal({ stream, onSave, onClose }) {
                 { key: 'showPlayerNames', label: 'Show Player Names' },
                 { key: 'showChipCounts', label: 'Show Chip Counts' }
               ].map(option => (
-                <label key={option.key} className="flex items-center justify-between p-3 bg-[#18191A] rounded-lg">
+                <label key={option.key} className="flex items-center justify-between p-3 bg-[#040D18] rounded-lg">
                   <span className="text-white">{option.label}</span>
                   <input
                     type="checkbox"
@@ -234,7 +234,7 @@ function ConfigureModal({ stream, onSave, onClose }) {
                         [option.key]: e.target.checked
                       }
                     }))}
-                    className="w-5 h-5 rounded border-[#3A3B3C] text-[#1877F2] focus:ring-[#1877F2]"
+                    className="w-5 h-5 rounded border-[#445E77] text-[#86DAFF] focus:ring-[#1981EC]"
                   />
                 </label>
               ))}
@@ -391,7 +391,7 @@ const res = await commanderFetch(`/api/commander/streaming/${tableId}/config`, {
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -403,7 +403,7 @@ const res = await commanderFetch(`/api/commander/streaming/${tableId}/config`, {
         <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
             </div>
           ) : (
             <>
@@ -448,8 +448,8 @@ const res = await commanderFetch(`/api/commander/streaming/${tableId}/config`, {
 
               {streams.length === 0 && (
                 <div className="cmd-panel p-8 text-center">
-                  <Video className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                  <p className="text-[#B0B3B8]">No Tables Configured For Streaming</p>
+                  <Video className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                  <p className="text-[#BDD0E2]">No Tables Configured For Streaming</p>
                 </div>
               )}
             </>

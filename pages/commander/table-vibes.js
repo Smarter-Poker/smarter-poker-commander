@@ -18,7 +18,7 @@ const VIBE_COLORS = {
   'Social Game': { bg: '#ECFDF5', text: '#065F46', border: '#10B981', emoji: '😊' },
   'Grinder Table': { bg: '#F0F2F5', text: '#374151', border: '#6B7280', emoji: '🧊' },
   'Fast Game': { bg: '#EBF5FF', text: '#1E40AF', border: '#3B82F6', emoji: '⚡' },
-  'Relaxed Pace': { bg: '#FFFBEB', text: '#92400E', border: '#F59E0B', emoji: '🐢' },
+  'Relaxed Pace': { bg: '#FFFBEB', text: '#92400E', border: '#22D3EE', emoji: '🐢' },
   'Aggressive Game': { bg: '#FEF2F2', text: '#991B1B', border: '#EF4444', emoji: '💪' },
   'Standard Game': { bg: '#F9FAFB', text: '#4B5563', border: '#D1D5DB', emoji: '♠️' }
 };
@@ -91,14 +91,14 @@ useEffect(() => {    const _c = new AbortController();
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {[{ v: 7, l: '7D' }, { v: 14, l: '14D' }, { v: 30, l: '30D' }, { v: 90, l: '90D' }].map(r => (
               <button key={r.v} onClick={() => setDays(r.v)}
-                style={{ flex: 1, padding: '8px 0', border: '2px solid', borderColor: days === r.v ? '#1877F2' : '#CED0D4', borderRadius: 8, background: days === r.v ? '#EBF5FF' : 'white', color: days === r.v ? '#1877F2' : '#65676B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '8px 0', border: '2px solid', borderColor: days === r.v ? '#1981EC' : '#CED0D4', borderRadius: 8, background: days === r.v ? '#EBF5FF' : 'white', color: days === r.v ? '#1981EC' : '#65676B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 {r.l}
               </button>
             ))}
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
+            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
           ) : vibes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               No table ratings yet - players rate tables after sessions
@@ -108,7 +108,7 @@ useEffect(() => {    const _c = new AbortController();
               {vibes.map(v => {
                 const vc = VIBE_COLORS[v.vibe] || VIBE_COLORS['Standard Game'];
                 return (
-                  <div key={v.table_number} style={{ background: 'white', borderRadius: 12, border: '2px solid #E4E6EB', overflow: 'hidden' }}>
+                  <div key={v.table_number} style={{ background: 'white', borderRadius: 12, border: '2px solid #F2F7FF', overflow: 'hidden' }}>
                     <div style={{ padding: 14 }}>
                       {/* Header */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>

@@ -121,7 +121,7 @@ const res = await commanderFetch('/api/commander/reputation', {
 
   const scoreColor = (score) => {
     if (score >= 4) return '#10B981';
-    if (score >= 3) return '#F59E0B';
+    if (score >= 3) return '#22D3EE';
     if (score >= 2) return '#EF4444';
     return '#6B7280';
   };
@@ -133,7 +133,7 @@ const res = await commanderFetch('/api/commander/reputation', {
         {[1, 2, 3, 4, 5].map(n => (
           <button key={n} onClick={() => onChange(n)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-            <Star size={18} fill={n <= value ? '#F59E0B' : 'none'} color={n <= value ? '#F59E0B' : '#D1D5DB'} />
+            <Star size={18} fill={n <= value ? '#22D3EE' : 'none'} color={n <= value ? '#22D3EE' : '#D1D5DB'} />
           </button>
         ))}
       </div>
@@ -150,7 +150,7 @@ const res = await commanderFetch('/api/commander/reputation', {
       <div style={{ minHeight: '100vh', background: '#F0F2F5', fontFamily: 'Inter, system-ui, sans-serif' }}>
         <div style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
+            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
           ) : scores.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               No Player Reputations Yet. Use The Players Page To Add Reviews.
@@ -161,7 +161,7 @@ const res = await commanderFetch('/api/commander/reputation', {
                 const isExpanded = expandedId === s.player_id;
                 const reviews = expandedReviews[s.player_id] || [];
                 return (
-                  <div key={s.player_id} style={{ background: 'white', borderRadius: 10, border: '2px solid #E4E6EB', overflow: 'hidden' }}>
+                  <div key={s.player_id} style={{ background: 'white', borderRadius: 10, border: '2px solid #F2F7FF', overflow: 'hidden' }}>
                     <button onClick={() => toggleExpand(s.player_id)}
                       style={{ width: '100%', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
                       {/* Score badge */}
@@ -175,7 +175,7 @@ const res = await commanderFetch('/api/commander/reputation', {
                       {/* Mini stars */}
                       <div style={{ display: 'flex', gap: 1 }}>
                         {[1, 2, 3, 4, 5].map(n => (
-                          <Star key={n} size={12} fill={n <= Math.round(s.overall_score) ? '#F59E0B' : 'none'} color={n <= Math.round(s.overall_score) ? '#F59E0B' : '#D1D5DB'} />
+                          <Star key={n} size={12} fill={n <= Math.round(s.overall_score) ? '#22D3EE' : 'none'} color={n <= Math.round(s.overall_score) ? '#22D3EE' : '#D1D5DB'} />
                         ))}
                       </div>
                       {isExpanded ? <ChevronUp size={16} color="#65676B" /> : <ChevronDown size={16} color="#65676B" />}
@@ -229,7 +229,7 @@ const res = await commanderFetch('/api/commander/reputation', {
 
                         {/* Add review button */}
                         {showReviewForm === s.player_id ? (
-                          <div style={{ background: '#F9FAFB', borderRadius: 10, padding: 12, border: '2px solid #E4E6EB' }}>
+                          <div style={{ background: '#F9FAFB', borderRadius: 10, padding: 12, border: '2px solid #F2F7FF' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: '#1C2526' }}>Add Review</span>
                               <button onClick={() => setShowReviewForm(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} color="#65676B" /></button>
@@ -248,13 +248,13 @@ const res = await commanderFetch('/api/commander/reputation', {
                               rows={2} placeholder="Comments (Optional)"
                               style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '2px solid #CED0D4', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', marginBottom: 8 }} />
                             <button onClick={submitReview} disabled={submitting}
-                              style={{ width: '100%', background: '#1877F2', color: 'white', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                              style={{ width: '100%', background: '#1981EC', color: 'white', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                               {submitting ? <Loader2 size={16} className="spin" /> : <Send size={16} />} Submit Review
                             </button>
                           </div>
                         ) : (
                           <button onClick={() => setShowReviewForm(s.player_id)}
-                            style={{ width: '100%', background: '#EBF5FF', color: '#1877F2', border: '2px solid #1877F2', borderRadius: 8, padding: '8px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            style={{ width: '100%', background: '#EBF5FF', color: '#1981EC', border: '2px solid #1981EC', borderRadius: 8, padding: '8px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <Plus size={14} /> Add Review
                           </button>
                         )}

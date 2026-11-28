@@ -33,17 +33,17 @@ export default function RetiredRoute({ to, title, replacedBy }) {
   }, [router, to]);
 
   return (
-    <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex items-center justify-center px-4">
-      <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-6 text-center max-w-sm w-full">
-        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin mx-auto mb-3" />
+    <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] flex items-center justify-center px-4">
+      <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-6 text-center max-w-sm w-full">
+        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin mx-auto mb-3" />
         <p className="text-sm font-semibold text-white">{title || 'This Screen'} Has Moved</p>
-        <p className="text-xs text-[#B0B3B8] mt-1">
+        <p className="text-xs text-[#BDD0E2] mt-1">
           Taking You To {replacedBy || 'The New Screen'}. Update Your Bookmark When You Get There.
         </p>
         {to && (
           <button
             onClick={() => router.replace(to)}
-            className="w-full h-11 mt-4 rounded-xl bg-[#1877F2] text-white text-sm font-bold active:opacity-90"
+            className="w-full h-11 mt-4 rounded-xl bg-[#0C55C0] text-white text-sm font-bold active:opacity-90"
           >
             Go Now
           </button>

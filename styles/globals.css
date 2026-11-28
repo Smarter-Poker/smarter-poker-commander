@@ -4,19 +4,19 @@
 
 /* ── Commander Design System ────────────────────────────────── */
 :root {
-  --cmd-bg: #18191A;
-  --cmd-surface: #242526;
-  --cmd-surface-2: #2D2E30;
-  --cmd-border: #3A3B3C;
-  --cmd-border-2: #4E4F50;
-  --cmd-text: #E4E6EB;
-  --cmd-muted: #B0B3B8;
-  --cmd-subtle: #8A8D91;
-  --cmd-accent: #1877F2;
-  --cmd-accent-hover: #1664D9;
+  --cmd-bg: #040D18;
+  --cmd-surface: #0A1829;
+  --cmd-surface-2: #0F2236;
+  --cmd-border: #2A4560;
+  --cmd-border-2: #3A5873;
+  --cmd-text: #F2F7FF;
+  --cmd-muted: #BDD0E2;
+  --cmd-subtle: #9FB3C8;
+  --cmd-accent: #1981EC;
+  --cmd-accent-hover: #0A4AA8;
   --cmd-danger: #F02849;
   --cmd-success: #42B72A;
-  --cmd-gold: #F5A623;
+  --cmd-gold: #22D3EE;
   --cmd-cyan: #22D3EE;
 }
 
@@ -134,7 +134,7 @@ body {
    The part of the page the current tutorial step is talking about. Set and
    cleared by src/components/commander/shared/PageHelp.jsx. */
 [data-tutorial-focus] {
-  outline: 2px solid #1877F2 !important;
+  outline: 2px solid #1981EC !important;
   outline-offset: 4px;
   scroll-margin: 96px 0 240px;
 }

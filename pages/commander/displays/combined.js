@@ -143,7 +143,7 @@ return { 'x-staff-session': staff };
         className="h-screen bg-black text-white font-['Inter'] select-none overflow-hidden flex flex-col">
 
         {/* Thin header */}
-        <div className="bg-[#1877F2] px-4 py-2 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#0C55C0] px-4 py-2 flex items-center justify-between flex-shrink-0">
           <span className="text-sm font-bold tracking-wider">SMARTER.POKER</span>
           <span className="text-lg font-mono font-bold tabular-nums">
             {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
@@ -171,7 +171,7 @@ return { 'x-staff-session': staff };
 
         {/* Dealer Push/Break + Promo Ticker */}
         <DealerTicker
-          accentColor="#1877F2"
+          accentColor="#1981EC"
           bgColor="#000"
           fontSize={16}
           borderColor="rgba(255,255,255,0.1)"
@@ -190,7 +190,7 @@ function ClockPanel({ data, seconds }) {
     </div>
   );
 
-  const timeColor = seconds < 60 ? '#EF4444' : seconds < 120 ? '#F59E0B' : '#FFFFFF';
+  const timeColor = seconds < 60 ? '#EF4444' : seconds < 120 ? '#22D3EE' : '#FFFFFF';
   const level = data.levels?.[data.current_level] || {};
 
   return (
@@ -207,7 +207,7 @@ function ClockPanel({ data, seconds }) {
         <div className="mt-2 px-4 py-1 bg-[#EF4444] rounded-full text-sm font-bold animate-pulse">HAND FOR HAND</div>
       )}
       {data.is_break && (
-        <div className="mt-2 px-4 py-1 bg-[#F59E0B] rounded-full text-sm font-bold text-black animate-pulse">BREAK</div>
+        <div className="mt-2 px-4 py-1 bg-[#22D3EE] rounded-full text-sm font-bold text-black animate-pulse">BREAK</div>
       )}
       <div className="mt-3 flex gap-4 text-xs text-white/40">
         <span>Players: <strong className="text-white/70">{data.stats?.players_remaining || 0}</strong></span>
@@ -238,7 +238,7 @@ function WaitlistPanel({ entries }) {
             <div key={game}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-bold text-white/60">{game}</span>
-                <span className="text-xs text-[#1877F2]">{players.length}</span>
+                <span className="text-xs text-[#86DAFF]">{players.length}</span>
               </div>
               <div className="space-y-0.5">
                 {players.slice(0, 8).map((p, i) => (
@@ -279,7 +279,7 @@ function TablesPanel({ tables }) {
             return (
               <div key={t.id || t.table_number}
                 className={`rounded-lg p-2 text-center border ${open > 0 ? 'bg-[#31A24C]/10 border-[#31A24C]/30' :
-                  seated > 0 ? 'bg-[#1877F2]/10 border-[#1877F2]/30' :
+                  seated > 0 ? 'bg-[#0C55C0]/10 border-[#1981EC]/30' :
                     'bg-white/5 border-white/10'
                   }`}>
                 <p className="text-base font-bold text-white">T{t.table_number}</p>
@@ -312,12 +312,12 @@ function PromotionsPanel({ promotions }) {
         <p className="text-xl text-white/15">No Active Promotions</p>
       ) : (
         <div className="text-center">
-          <p className="text-xs text-[#F59E0B] font-bold uppercase tracking-wider mb-1">
+          <p className="text-xs text-[#22D3EE] font-bold uppercase tracking-wider mb-1">
             {promo.type?.replace('_', ' ') || 'PROMOTION'}
           </p>
           <p className="text-2xl font-bold text-white mb-2">{promo.name || promo.title}</p>
           {(promo.prize_amount || promo.jackpot_amount) && (
-            <p className="text-4xl font-bold text-[#F59E0B]">
+            <p className="text-4xl font-bold text-[#22D3EE]">
               ${(promo.prize_amount || promo.jackpot_amount || 0).toLocaleString()}
             </p>
           )}

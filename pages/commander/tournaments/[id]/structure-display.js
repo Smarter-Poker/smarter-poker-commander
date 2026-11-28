@@ -104,7 +104,7 @@ export default function StructureDisplay() {
         className="h-screen bg-black text-white font-['Inter'] select-none flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#1877F2] px-8 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#0C55C0] px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-2xl font-bold">{tournament?.name || 'Tournament Structure'}</h1>
             <p className="text-sm opacity-80">
@@ -132,22 +132,22 @@ export default function StructureDisplay() {
               if (level.is_break) {
                 return (
                   <div key={i} ref={isCurrent ? currentRef : null}
-                    className={`grid grid-cols-[60px_1fr_80px] gap-4 px-4 py-3 rounded-lg ${isCurrent ? 'bg-[#F59E0B]/20 border border-[#F59E0B]/50 current-level' :
-                      isPast ? 'opacity-30' : 'bg-[#F59E0B]/5'
+                    className={`grid grid-cols-[60px_1fr_80px] gap-4 px-4 py-3 rounded-lg ${isCurrent ? 'bg-[#22D3EE]/20 border border-[#22D3EE]/50 current-level' :
+                      isPast ? 'opacity-30' : 'bg-[#22D3EE]/5'
                       }`}>
-                    <span className="text-[#F59E0B] font-bold">BRK</span>
-                    <span className="text-[#F59E0B]">{level.label || 'Break'}</span>
-                    <span className="text-right text-[#F59E0B]">{(level.duration ?? level.duration_minutes ?? 0)}m</span>
+                    <span className="text-[#22D3EE] font-bold">BRK</span>
+                    <span className="text-[#22D3EE]">{level.label || 'Break'}</span>
+                    <span className="text-right text-[#22D3EE]">{(level.duration ?? level.duration_minutes ?? 0)}m</span>
                   </div>
                 );
               }
 
               return (
                 <div key={i} ref={isCurrent ? currentRef : null}
-                  className={`grid grid-cols-[60px_1fr_1fr_1fr_80px] gap-4 px-4 py-3 rounded-lg ${isCurrent ? 'bg-[#1877F2]/20 border-2 border-[#1877F2] current-level text-white' :
+                  className={`grid grid-cols-[60px_1fr_1fr_1fr_80px] gap-4 px-4 py-3 rounded-lg ${isCurrent ? 'bg-[#0C55C0]/20 border-2 border-[#1981EC] current-level text-white' :
                     isPast ? 'opacity-30' : 'bg-white/2 hover:bg-white/5'
                     }`}>
-                  <span className={`font-bold ${isCurrent ? 'text-[#1877F2]' : 'text-white/60'}`}>{levelNum}</span>
+                  <span className={`font-bold ${isCurrent ? 'text-[#86DAFF]' : 'text-white/60'}`}>{levelNum}</span>
                   <span className={`text-lg font-medium ${isCurrent ? 'text-white font-bold' : ''}`}>{level.small_blind?.toLocaleString()}</span>
                   <span className={`text-lg font-medium ${isCurrent ? 'text-white font-bold' : ''}`}>{level.big_blind?.toLocaleString()}</span>
                   <span className={`text-lg ${level.ante > 0 ? '' : 'text-white/20'} ${isCurrent ? 'font-bold' : ''}`}>
@@ -162,7 +162,7 @@ export default function StructureDisplay() {
 
         {/* Dealer Push/Break + Promo Ticker */}
         <DealerTicker
-          accentColor="#1877F2"
+          accentColor="#1981EC"
           bgColor="#000"
           fontSize={16}
           borderColor="rgba(255,255,255,0.1)"

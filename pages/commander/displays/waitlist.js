@@ -26,8 +26,8 @@ const ROTATE_INTERVAL = 10000;
 
 // Default customization - matches desk.js exactly
 const DEFAULT_CUSTOM = {
-  headerColor: '#B8860B',
-  accentColor: '#D4AF37',
+  headerColor: '#3A8FC0',
+  accentColor: '#86DAFF',
   bgColor: '#000000',
   cardBgColor: '#050505',
   textColor: '#E0E0E0',
@@ -320,7 +320,7 @@ const staffData = getStaffData();
                               {titleCase(entry.player_name)}
                             </span>
                             {isWeb && !isCheckedIn && webMinutesLeft !== null && !isExpired && (
-                              <span style={{ fontSize: '12px', color: webMinutesLeft <= 10 ? '#F59E0B' : '#64748B', fontWeight: 600 }}>
+                              <span style={{ fontSize: '12px', color: webMinutesLeft <= 10 ? '#22D3EE' : '#9FB3C8', fontWeight: 600 }}>
                                 {webMinutesLeft}m
                               </span>
                             )}

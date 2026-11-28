@@ -54,7 +54,7 @@ export default function QuickActions({
       label: 'Announce',
       icon: Bell,
       onClick: onSendAnnouncement,
-      color: 'bg-[#F59E0B]',
+      color: 'bg-[#22D3EE]',
       show: permissions.send_notifications !== false
     },
     {
@@ -62,7 +62,7 @@ export default function QuickActions({
       label: 'New Member',
       icon: Contact,
       onClick: onNewMember,
-      color: 'bg-[#8B5CF6]',
+      color: 'bg-[#5AA9FF]',
       show: true
     },
     {

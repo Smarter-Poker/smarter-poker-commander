@@ -1,0 +1,207 @@
+/* #SMARTERDESIGN. These nine-slice rims are the original Club Arena console
+   assets. Only their edges are painted; type and figures remain live DOM. */
+.smarterdesign, .bankroll-modal {
+  --sd-ink: #040d18;
+  --sd-surface: #0a1829;
+  --sd-text: #f2f7ff;
+  --sd-silver: #bdd0e2;
+  --sd-ice: #86daff;
+  --sd-line: #445e77;
+  --sd-navy: linear-gradient(155deg, #182d43 0%, #0b1c2c 43%, #050e18 87%);
+  --sd-control: linear-gradient(180deg, #263f58, #112338 39%, #071420 77%, #12283c);
+  --sd-cobalt: linear-gradient(180deg, #1981ec, #0c55c0 26%, #07377e 76%, #125bba);
+  --sd-type: var(--font-rajdhani, 'Arial Narrow'), 'Arial Narrow', sans-serif;
+  color: var(--sd-text);
+  font-family: var(--font-inter, Inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+.smarterdesign { min-width: 0; }
+
+.sd-masthead, .sd-panel, .smarterdesign .bankroll-modal {
+  box-sizing: border-box;
+  min-width: 0;
+  color: var(--sd-text, #f2f7ff);
+  background: var(--sd-navy, #091828);
+  border: 5px solid transparent;
+  border-image: url('/images/smarterdesign/chrome-readout.webp') 21 / 8px stretch;
+}
+.sd-masthead {
+  position: relative;
+  padding: clamp(9px, 2vw, 18px) clamp(13px, 3vw, 30px);
+  background: radial-gradient(ellipse at 22% 110%, #153b64, transparent 63%), linear-gradient(115deg, #0c2035, #071322 58%, #040b14);
+}
+.sd-masthead h1, h1.sd-masthead {
+  color: #f1f7ff;
+  font-family: var(--sd-type);
+  font-size: clamp(1.8rem, 4.9vw, 3rem);
+  font-weight: 750;
+  line-height: 1.06;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 0 #243951, 0 3px 6px #020914;
+}
+.sd-panel { padding: clamp(10px, 2.3vw, 22px); }
+/* THE IMAGE-HEADER "?" (Dan, 2026-11-27, BINDING). Every image header uses the
+   one painted chrome "?" (src/components/smarterdesign/headerHelp.js), tucked
+   into the upper-right corner as close to the rim as it can sit WITHOUT
+   touching it. The geometry is arithmetic, not eyeballing:
+     icon edge = painted rim + 3px clear of it, on both top and right.
+   The painted rim is the OPAQUE part of the nine-slice, not the border-image
+   width: chrome-readout.webp paints 9 of its 21px slice, so drawn at 8px the
+   chrome is 3.43px (3.5px) and the rest of the slice is transparent. Measuring
+   from the 8px box left a visible 8px gap. The button is positioned from the
+   header's padding edge, which sits inside the CSS border, and the 36px icon
+   is centred in a 44px touch target, so the offset subtracts both (it is
+   negative: the invisible hit area overlaps the border, the icon never does).
+   A header with a different rim declares --sd-help-rim (painted chrome width)
+   and/or --sd-help-border (its CSS border width).
+   Pinned by __tests__/image-header-help-icon.law.test.mjs. */
+.sd-header-help {
+  --sd-help-icon: 36px;
+  --sd-help-gap: 3px;
+  --sd-help-at: calc(var(--sd-help-rim, 3.5px) - var(--sd-help-border, 5px) + var(--sd-help-gap) - (44px - var(--sd-help-icon)) / 2);
+  position: absolute;
+  z-index: 3;
+  top: var(--sd-help-at);
+  right: var(--sd-help-at);
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.sd-header-help > img {
+  display: block;
+  width: var(--sd-help-icon);
+  height: auto;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 2px 3px #000000b3);
+}
+.sd-header-help:active > img { transform: scale(.94); }
+/* The focus ring hugs the icon so even the ring stays clear of the rim. The
+   site's focus indicator is premium.css's box-shadow ring (a global
+   `button:focus { outline: none !important }` removes outlines), and on a 44px
+   target that ring spilled 4px over the frame. Here the ring is drawn on a
+   36px circle exactly behind the icon instead. Tripled class outranks both the
+   premium ring and the .smarterdesign focus rule. */
+.sd-header-help::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #94deff;
+  opacity: 0;
+  pointer-events: none;
+}
+.sd-header-help.sd-header-help.sd-header-help:focus-visible { box-shadow: none; outline: none; }
+.sd-header-help.sd-header-help.sd-header-help:focus-visible::after { opacity: 1; }
+/* No page skin may box the painted "?". Page-wide button rules (Training's
+   bevel and chrome layer, the store's square focus outline and radius 0) kept
+   outranking this control with !important plus higher specificity. Important
+   declarations in a cascade layer beat every unlayered important declaration
+   whatever its specificity, so this layer is the control's last word on its
+   own skin. Geometry stays above, driven by the --sd-help-* frame numbers. */
+@layer sd-header-help {
+  .sd-header-help,
+  .sd-header-help:hover,
+  .sd-header-help:active,
+  .sd-header-help:focus,
+  .sd-header-help:focus-visible {
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+  .sd-header-help::after {
+    inset: 4px !important;
+    border-radius: 50% !important;
+    box-shadow: 0 0 0 2px #94deff !important;
+  }
+}
+/* "Back To Dashboard" is never inside an image header: it sits directly above
+   it (Dan, 2026-11-27). BankrollImageHeader renders this row from its `back`
+   prop so no page can put the link back inside the frame. */
+.sd-header-back { display: flex; align-items: center; margin: 0 0 8px; }
+.sd-header-back > a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.sd-section-title {
+  margin: 0 0 .7rem;
+  color: var(--sd-text, #f2f7ff);
+  font: 700 clamp(1.12rem, 2.5vw, 1.55rem)/1.15 var(--sd-type, sans-serif);
+  letter-spacing: .015em;
+}
+.sd-button, .sd-tabs > :is(a, button), .bankroll-sidebar .bankroll-sidebar-item.sd-button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 0;
+  padding: 5px 11px;
+  align-content: center;
+  border: 3px solid transparent;
+  border-image: url('/images/smarterdesign/chrome-row.webp') 13 / 4px stretch;
+  background: var(--sd-control, #0e2236);
+  color: var(--sd-text, #f2f7ff);
+  font-family: var(--sd-type, sans-serif);
+  font-weight: 700;
+  line-height: 1.18;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.sd-button:is(.active, .sd-primary, [aria-pressed="true"], [aria-selected="true"], [aria-current="page"]),
+.sd-tabs > :is(.active, [aria-current="page"], [aria-selected="true"], [aria-pressed="true"]),
+.bankroll-sidebar .bankroll-sidebar-item.sd-button.active {
+  color: #fff;
+  border-image-source: url('/images/smarterdesign/chrome-active-v2.webp');
+  border-image-slice: 11;
+  background: var(--sd-cobalt, #0c4ea9);
+  /* The cobalt fills inside the bevel only. chrome-active-v2 carries its glow
+     as real transparency (chrome-active.webp had it painted onto opaque navy,
+     which read as a black box over every image-header scene), so the fill
+     must not paint square corners under the rounded rim. */
+  background-clip: padding-box;
+}
+.sd-button:active, .sd-tabs > :is(a,button):active { filter: brightness(.89); }
+.sd-button:disabled { color: #a7b7c8; background: #13202c; cursor: default; }
+.smarterdesign :is(button, a, input, textarea, select, summary, [tabindex]):focus-visible,
+.bankroll-modal :is(button, a, input, textarea, select, summary):focus-visible {
+  outline: 2px solid #9ee3ff;
+  outline-offset: 2px;
+}
+.sd-metric {
+  min-width: 0;
+  color: var(--sd-text, #f2f7ff);
+  background: var(--sd-navy, #0b1929);
+  border: 3px solid transparent;
+  border-image: url('/images/smarterdesign/chrome-stat.webp') 11 / 4px stretch;
+  padding: .65rem .85rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.smarterdesign :is(select, option) { color-scheme: dark; }
+@media (prefers-reduced-motion: reduce) {
+  .smarterdesign *, .smarterdesign *::before, .smarterdesign *::after,
+  .bankroll-modal *, .bankroll-modal *::before, .bankroll-modal *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

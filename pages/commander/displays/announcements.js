@@ -21,9 +21,9 @@ import { useConfirmAction } from "../../../src/components/commander/shared/Confi
 
 const PRIORITY_CONFIG = {
   urgent: { color: '#EF4444', label: 'Urgent', bg: 'rgba(239,68,68,0.15)', bgAlpha: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.5)', text: '#EF4444', pulse: true },
-  high: { color: '#F59E0B', label: 'Important', bg: 'rgba(245,158,11,0.12)', bgAlpha: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.4)', text: '#F59E0B', pulse: false },
-  normal: { color: '#1877F2', label: 'Normal', bg: 'rgba(24,119,242,0.08)', bgAlpha: 'rgba(24,119,242,0.08)', border: 'rgba(24,119,242,0.25)', text: '#1877F2', pulse: false },
-  low: { color: '#6A6B6D', label: 'Low', bg: 'rgba(255,255,255,0.04)', bgAlpha: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', text: '#6A6B6D', pulse: false } };
+  high: { color: '#22D3EE', label: 'Important', bg: 'rgba(34, 211, 238,0.12)', bgAlpha: 'rgba(34, 211, 238,0.12)', border: 'rgba(34, 211, 238,0.4)', text: '#22D3EE', pulse: false },
+  normal: { color: '#1981EC', label: 'Normal', bg: 'rgba(25, 129, 236,0.08)', bgAlpha: 'rgba(25, 129, 236,0.08)', border: 'rgba(25, 129, 236,0.25)', text: '#1981EC', pulse: false },
+  low: { color: '#93A9C0', label: 'Low', bg: 'rgba(255,255,255,0.04)', bgAlpha: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', text: '#93A9C0', pulse: false } };
 
 const ANNOUNCEMENT_TYPES = [
   { value: 'general', label: 'General' },
@@ -276,17 +276,17 @@ export default function AnnouncementsDisplay() {
 
       <div onClick={goFullscreen}
         style={{
-          height: '100vh', background: '#18191A', color: '#E4E6EB',
+          height: '100vh', background: '#040D18', color: '#F2F7FF',
           fontFamily: "var(--font-inter), sans-serif", userSelect: 'none',
           overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
         {/* ─── HEADER BAR ─── SmarterPoker Dark */}
         <div style={{
           padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: '#242526', borderBottom: '1px solid #3A3B3C' }}>
+          background: '#0A1829', borderBottom: '1px solid #2A4560' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Megaphone size={24} style={{ color: '#1877F2' }} />
-            <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', margin: 0, color: '#E4E6EB' }}>
+            <Megaphone size={24} style={{ color: '#1981EC' }} />
+            <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', margin: 0, color: '#F2F7FF' }}>
               Announcements
             </h1>
             <span style={{
@@ -297,25 +297,25 @@ export default function AnnouncementsDisplay() {
               {roomOpen ? 'ROOM OPEN' : 'ROOM CLOSED'}
             </span>
             {announcements.length > 0 && (
-              <span style={{ padding: '4px 12px', borderRadius: 20, background: '#3A3B3C', fontSize: 12, fontWeight: 600, color: '#B0B3B8' }}>
+              <span style={{ padding: '4px 12px', borderRadius: 20, background: '#2A4560', fontSize: 12, fontWeight: 600, color: '#BDD0E2' }}>
                 {announcements.length} Active
               </span>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', margin: 0, fontVariantNumeric: 'tabular-nums', color: '#E4E6EB' }}>
+              <p style={{ fontSize: 28, fontWeight: 700, fontFamily: 'monospace', margin: 0, fontVariantNumeric: 'tabular-nums', color: '#F2F7FF' }}>
                 {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
               </p>
-              <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>
+              <p style={{ fontSize: 12, color: '#BDD0E2', margin: 0 }}>
                 {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
             </div>
             {/* ─── MANAGE BUTTON ─── */}
             <button onClick={(e) => { e.stopPropagation(); setShowPanel(!showPanel); }}
               style={{
-                padding: '10px 18px', borderRadius: 10, border: '1px solid #3A3B3C', cursor: 'pointer',
-                background: showPanel ? '#1877F2' : '#3A3B3C', color: showPanel ? '#fff' : '#B0B3B8',
+                padding: '10px 18px', borderRadius: 10, border: '1px solid #2A4560', cursor: 'pointer',
+                background: showPanel ? '#1981EC' : '#2A4560', color: showPanel ? '#fff' : '#BDD0E2',
                 display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600,
                 transition: 'all 0.2s' }}>
               <Settings size={16} /> Manage
@@ -331,16 +331,16 @@ export default function AnnouncementsDisplay() {
             {announcements.length === 0 ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <Megaphone size={64} style={{ color: '#3A3B3C', marginBottom: 16 }} />
-                  <p style={{ fontSize: 28, fontWeight: 800, color: '#3A3B3C', margin: '0 0 8px' }}>
+                  <Megaphone size={64} style={{ color: '#2A4560', marginBottom: 16 }} />
+                  <p style={{ fontSize: 28, fontWeight: 800, color: '#2A4560', margin: '0 0 8px' }}>
                     No Announcements
                   </p>
-                  <p style={{ fontSize: 16, color: '#4A4B4C', margin: '0 0 24px' }}>
+                  <p style={{ fontSize: 16, color: '#3A5873', margin: '0 0 24px' }}>
                     Click Manage to create your first announcement
                   </p>
                   <button onClick={(e) => { e.stopPropagation(); setShowPanel(true); }}
                     style={{
-                      padding: '12px 24px', borderRadius: 10, background: '#1877F2', border: 'none',
+                      padding: '12px 24px', borderRadius: 10, background: '#1981EC', border: 'none',
                       color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600,
                       display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                     <Plus size={16} /> Create Announcement
@@ -358,7 +358,7 @@ export default function AnnouncementsDisplay() {
                       <div key={a.id || i}
                         className={`announcement-card ${cfg.pulse ? 'urgent-pulse' : ''}`}
                         style={{
-                          background: '#242526', border: `1px solid #3A3B3C`,
+                          background: '#0A1829', border: `1px solid #2A4560`,
                           borderLeft: `4px solid ${cfg.color}`,
                           borderRadius: 14, padding: '24px 28px',
                           animationDelay: `${i * 0.1}s`,
@@ -375,16 +375,16 @@ export default function AnnouncementsDisplay() {
                               </span>
                             )}
                             {a.title && (
-                              <span style={{ fontSize: 16, fontWeight: 700, color: '#E4E6EB', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                              <span style={{ fontSize: 16, fontWeight: 700, color: '#F2F7FF', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                 {a.title}
                               </span>
                             )}
                           </div>
-                          <p style={{ fontSize: 20, fontWeight: 500, margin: 0, lineHeight: 1.4, color: '#B0B3B8' }}>
+                          <p style={{ fontSize: 20, fontWeight: 500, margin: 0, lineHeight: 1.4, color: '#BDD0E2' }}>
                             {a.message || a.content}
                           </p>
                         </div>
-                        <span style={{ fontSize: 12, color: '#6A6B6D', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 12, color: '#93A9C0', flexShrink: 0, whiteSpace: 'nowrap' }}>
                           {a.created_at ? new Date(a.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
                         </span>
                       </div>
@@ -396,7 +396,7 @@ export default function AnnouncementsDisplay() {
                     {Array.from({ length: totalPages }).map((_, i) => (
                       <div key={i} style={{
                         width: currentPage === i ? 24 : 8, height: 8, borderRadius: 4, transition: 'all 0.3s',
-                        background: currentPage === i ? '#1877F2' : '#3A3B3C' }} />
+                        background: currentPage === i ? '#1981EC' : '#2A4560' }} />
                     ))}
                   </div>
                 )}
@@ -408,49 +408,49 @@ export default function AnnouncementsDisplay() {
           {showPanel && (
             <div className="mgmt-panel" onClick={(e) => e.stopPropagation()}
               style={{
-                width: 400, background: '#242526', borderLeft: '1px solid #3A3B3C',
+                width: 400, background: '#0A1829', borderLeft: '1px solid #2A4560',
                 display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {/* Panel Header */}
               <div style={{
-                padding: '16px 20px', borderBottom: '1px solid #3A3B3C',
+                padding: '16px 20px', borderBottom: '1px solid #2A4560',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#E4E6EB', margin: 0 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>
                   Manage Announcements
                 </h3>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => { fetchAllAnnouncements(); fetchData(); }}
-                    style={{ padding: 6, borderRadius: 8, background: '#3A3B3C', border: 'none', color: '#B0B3B8', cursor: 'pointer' }}>
+                    style={{ padding: 6, borderRadius: 8, background: '#2A4560', border: 'none', color: '#BDD0E2', cursor: 'pointer' }}>
                     <RefreshCw size={14} />
                   </button>
                   <button onClick={openCreate}
                     style={{
-                      padding: '6px 14px', borderRadius: 8, background: '#1877F2', border: 'none',
+                      padding: '6px 14px', borderRadius: 8, background: '#1981EC', border: 'none',
                       color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
                       fontSize: 12, fontWeight: 600 }}>
                     <Plus size={13} /> New
                   </button>
                   <button onClick={() => setShowPanel(false)}
-                    style={{ padding: 6, borderRadius: 8, background: '#3A3B3C', border: 'none', color: '#B0B3B8', cursor: 'pointer' }}>
+                    style={{ padding: 6, borderRadius: 8, background: '#2A4560', border: 'none', color: '#BDD0E2', cursor: 'pointer' }}>
                     <X size={14} />
                   </button>
                 </div>
               </div>
 
               {/* ─── QUICK TEMPLATES ─── */}
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #3A3B3C' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#6A6B6D', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 8px' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #2A4560' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#93A9C0', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 8px' }}>
                   Quick Templates
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {TEMPLATES.map((tpl, i) => (
                     <button key={i} onClick={() => { applyTemplate(tpl); setShowForm(true); setEditingAnnouncement(null); }}
                       style={{
-                        padding: '8px 10px', borderRadius: 8, background: '#18191A', border: '1px solid #3A3B3C',
-                        color: '#E4E6EB', cursor: 'pointer', textAlign: 'left',
+                        padding: '8px 10px', borderRadius: 8, background: '#040D18', border: '1px solid #2A4560',
+                        color: '#F2F7FF', cursor: 'pointer', textAlign: 'left',
                         display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500,
                         transition: 'border-color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = '#1877F2'}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = '#3A3B3C'}>
+                      onMouseEnter={e => e.currentTarget.style.borderColor = '#1981EC'}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = '#2A4560'}>
                       <span style={{ fontSize: 16 }}>{tpl.emoji}</span>
                       <span>{tpl.name}</span>
                     </button>
@@ -462,11 +462,11 @@ export default function AnnouncementsDisplay() {
               <div style={{ flex: 1, overflow: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {allAnnouncements.length === 0 ? (
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-                    <Megaphone size={36} style={{ color: '#3A3B3C' }} />
-                    <p style={{ fontSize: 13, color: '#6A6B6D', margin: 0 }}>No announcements yet</p>
+                    <Megaphone size={36} style={{ color: '#2A4560' }} />
+                    <p style={{ fontSize: 13, color: '#93A9C0', margin: 0 }}>No announcements yet</p>
                     <button onClick={openCreate}
                       style={{
-                        padding: '10px 20px', borderRadius: 10, background: '#1877F2', border: 'none',
+                        padding: '10px 20px', borderRadius: 10, background: '#1981EC', border: 'none',
                         color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Plus size={14} /> Create First Announcement
@@ -478,7 +478,7 @@ export default function AnnouncementsDisplay() {
                     const isScheduled = a.starts_at && new Date(a.starts_at) > new Date();
                     return (
                       <div key={a.id} style={{
-                        background: '#18191A', border: '1px solid #3A3B3C', borderRadius: 12,
+                        background: '#040D18', border: '1px solid #2A4560', borderRadius: 12,
                         padding: 12, borderLeft: `3px solid ${pcfg.color}` }}>
                         {/* Badge row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -486,28 +486,28 @@ export default function AnnouncementsDisplay() {
                             fontSize: 9, fontWeight: 700, color: pcfg.color, textTransform: 'uppercase',
                             letterSpacing: 0.8, padding: '2px 6px', borderRadius: 4, background: pcfg.bg }}>{pcfg.label}</span>
                           <span style={{
-                            fontSize: 9, fontWeight: 600, color: '#6A6B6D', textTransform: 'uppercase',
+                            fontSize: 9, fontWeight: 600, color: '#93A9C0', textTransform: 'uppercase',
                             letterSpacing: 0.5, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.05)' }}>{a.type || 'general'}</span>
                           {isScheduled && (
                             <span style={{
-                              fontSize: 9, fontWeight: 700, color: '#A855F7', textTransform: 'uppercase',
-                              letterSpacing: 0.5, padding: '2px 6px', borderRadius: 4, background: 'rgba(168,85,247,0.15)' }}>Scheduled</span>
+                              fontSize: 9, fontWeight: 700, color: '#5AA9FF', textTransform: 'uppercase',
+                              letterSpacing: 0.5, padding: '2px 6px', borderRadius: 4, background: 'rgba(90, 169, 255,0.15)' }}>Scheduled</span>
                           )}
-                          <span style={{ fontSize: 9, color: '#6A6B6D', marginLeft: 'auto' }}>
+                          <span style={{ fontSize: 9, color: '#93A9C0', marginLeft: 'auto' }}>
                             {isScheduled
                               ? `Starts ${new Date(a.starts_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
                               : formatTime(a.created_at)}
                           </span>
                         </div>
                         {/* Title */}
-                        {a.title && <p style={{ fontSize: 13, fontWeight: 700, color: '#E4E6EB', margin: '0 0 2px' }}>{a.title}</p>}
+                        {a.title && <p style={{ fontSize: 13, fontWeight: 700, color: '#F2F7FF', margin: '0 0 2px' }}>{a.title}</p>}
                         {/* Message */}
-                        <p style={{ fontSize: 12, color: '#B0B3B8', margin: '0 0 8px', lineHeight: 1.4 }}>
+                        <p style={{ fontSize: 12, color: '#BDD0E2', margin: '0 0 8px', lineHeight: 1.4 }}>
                           {a.message?.length > 100 ? a.message.slice(0, 100) + '...' : a.message}
                         </p>
                         {/* Expires */}
                         {a.expires_at && (
-                          <p style={{ fontSize: 10, color: '#6A6B6D', margin: '0 0 8px' }}>
+                          <p style={{ fontSize: 10, color: '#93A9C0', margin: '0 0 8px' }}>
                             Expires: {new Date(a.expires_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </p>
                         )}
@@ -515,8 +515,8 @@ export default function AnnouncementsDisplay() {
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button onClick={() => openEdit(a)}
                             style={{
-                              flex: 1, padding: '6px', borderRadius: 6, background: '#3A3B3C', border: 'none',
-                              color: '#B0B3B8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                              flex: 1, padding: '6px', borderRadius: 6, background: '#2A4560', border: 'none',
+                              color: '#BDD0E2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                               fontSize: 11, fontWeight: 600 }}>
                             <Edit3 size={11} /> Edit
                           </button>
@@ -538,14 +538,14 @@ export default function AnnouncementsDisplay() {
         </div>
 
         {/* Dealer Ticker */}
-        <DealerTicker accentColor="#1877F2" bgColor="#242526" fontSize={16} borderColor="#3A3B3C" speed={60} showBorder={true} />
+        <DealerTicker accentColor="#1981EC" bgColor="#0A1829" fontSize={16} borderColor="#2A4560" speed={60} showBorder={true} />
 
         {/* Bottom bar */}
         <div style={{
-          borderTop: '1px solid #3A3B3C', padding: '10px 32px', background: '#242526',
+          borderTop: '1px solid #2A4560', padding: '10px 32px', background: '#0A1829',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <p style={{ fontSize: 13, color: '#6A6B6D', margin: 0 }}>See The Front Desk For Assistance</p>
-          <p style={{ fontSize: 11, color: '#4A4B4C', letterSpacing: 1.5, margin: 0 }}>Powered By Smarter.Poker</p>
+          <p style={{ fontSize: 13, color: '#93A9C0', margin: 0 }}>See The Front Desk For Assistance</p>
+          <p style={{ fontSize: 11, color: '#3A5873', letterSpacing: 1.5, margin: 0 }}>Powered By Smarter.Poker</p>
         </div>
       </div>
 
@@ -556,17 +556,17 @@ export default function AnnouncementsDisplay() {
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div style={{
-            background: '#242526', borderRadius: 16, width: '100%', maxWidth: 480,
-            border: '1px solid #3A3B3C', maxHeight: '90vh', overflow: 'auto' }}>
+            background: '#0A1829', borderRadius: 16, width: '100%', maxWidth: 480,
+            border: '1px solid #2A4560', maxHeight: '90vh', overflow: 'auto' }}>
             {/* Modal Header */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 20px', borderBottom: '1px solid #3A3B3C' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E4E6EB', margin: 0 }}>
+              padding: '16px 20px', borderBottom: '1px solid #2A4560' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>
                 {editingAnnouncement ? 'Edit Announcement' : 'New Announcement'}
               </h2>
               <button onClick={() => { setShowForm(false); setEditingAnnouncement(null); }}
-                style={{ background: 'none', border: 'none', color: '#B0B3B8', cursor: 'pointer', padding: 4 }}>
+                style={{ background: 'none', border: 'none', color: '#BDD0E2', cursor: 'pointer', padding: 4 }}>
                 <X size={20} />
               </button>
             </div>
@@ -579,8 +579,8 @@ export default function AnnouncementsDisplay() {
                   <button onClick={() => setShowTemplates(!showTemplates)}
                     style={{
                       width: '100%', padding: '10px 14px', borderRadius: 10,
-                      background: showTemplates ? '#1877F2' : '#3A3B3C',
-                      border: 'none', color: showTemplates ? '#fff' : '#B0B3B8',
+                      background: showTemplates ? '#1981EC' : '#2A4560',
+                      border: 'none', color: showTemplates ? '#fff' : '#BDD0E2',
                       fontSize: 13, fontWeight: 600, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     {showTemplates ? 'Hide Templates' : 'Use a Template'}
@@ -591,8 +591,8 @@ export default function AnnouncementsDisplay() {
                       {TEMPLATES.map((tpl, i) => (
                         <button key={i} onClick={() => applyTemplate(tpl)}
                           style={{
-                            padding: '10px 12px', borderRadius: 10, background: '#18191A', border: '1px solid #3A3B3C',
-                            color: '#E4E6EB', cursor: 'pointer', textAlign: 'left',
+                            padding: '10px 12px', borderRadius: 10, background: '#040D18', border: '1px solid #2A4560',
+                            color: '#F2F7FF', cursor: 'pointer', textAlign: 'left',
                             display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 500 }}>
                           <span style={{ fontSize: 18 }}>{tpl.emoji}</span>
                           <span>{tpl.name}</span>
@@ -605,27 +605,27 @@ export default function AnnouncementsDisplay() {
 
               {/* Title */}
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Title (Optional)
                 </label>
                 <input type="text" placeholder="e.g. Happy Hour Starting Now" value={formData.title}
                   onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
                   style={{
-                    width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #3A3B3C',
-                    background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                    width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560',
+                    background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
 
               {/* Message */}
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Message *
                 </label>
                 <textarea placeholder="Type your announcement message..." value={formData.message}
                   onChange={e => setFormData(p => ({ ...p, message: e.target.value }))} rows={3}
                   style={{
-                    width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #3A3B3C',
-                    background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none',
+                    width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560',
+                    background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none',
                     resize: 'vertical', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
                 />
               </div>
@@ -633,18 +633,18 @@ export default function AnnouncementsDisplay() {
               {/* Priority + Type */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Priority</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Priority</label>
                   <select value={formData.priority} onChange={e => setFormData(p => ({ ...p, priority: e.target.value }))}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #3A3B3C', background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none', cursor: 'pointer' }}>
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560', background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', cursor: 'pointer' }}>
                     {Object.entries(PRIORITY_CONFIG || {}).map(([val, cfg]) => (
                       <option key={val} value={val}>{cfg.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Type</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Type</label>
                   <select value={formData.type} onChange={e => setFormData(p => ({ ...p, type: e.target.value }))}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #3A3B3C', background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none', cursor: 'pointer' }}>
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560', background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', cursor: 'pointer' }}>
                     {ANNOUNCEMENT_TYPES.map(t => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
@@ -655,20 +655,20 @@ export default function AnnouncementsDisplay() {
               {/* Scheduling */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Starts At</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Starts At</label>
                   <input type="datetime-local" value={formData.starts_at}
                     onChange={e => setFormData(p => ({ ...p, starts_at: e.target.value }))}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #3A3B3C', background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560', background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
                   />
-                  <p style={{ fontSize: 10, color: '#6A6B6D', marginTop: 4 }}>Blank = publish now</p>
+                  <p style={{ fontSize: 10, color: '#93A9C0', marginTop: 4 }}>Blank = publish now</p>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Expires At</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Expires At</label>
                   <input type="datetime-local" value={formData.expires_at}
                     onChange={e => setFormData(p => ({ ...p, expires_at: e.target.value }))}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #3A3B3C', background: '#18191A', color: '#E4E6EB', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #2A4560', background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
                   />
-                  <p style={{ fontSize: 10, color: '#6A6B6D', marginTop: 4 }}>Blank = no expiration</p>
+                  <p style={{ fontSize: 10, color: '#93A9C0', marginTop: 4 }}>Blank = no expiration</p>
                 </div>
               </div>
 
@@ -678,22 +678,22 @@ export default function AnnouncementsDisplay() {
                   background: (PRIORITY_CONFIG[formData.priority] || PRIORITY_CONFIG.normal).bg,
                   border: `1px solid ${(PRIORITY_CONFIG[formData.priority] || PRIORITY_CONFIG.normal).color}30`,
                   borderRadius: 10, padding: 12 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: '#6A6B6D', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Preview</p>
-                  {formData.title && <p style={{ fontSize: 13, fontWeight: 700, color: '#E4E6EB', margin: '0 0 2px' }}>{formData.title}</p>}
-                  <p style={{ fontSize: 13, color: '#B0B3B8', margin: 0 }}>{formData.message}</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: '#93A9C0', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Preview</p>
+                  {formData.title && <p style={{ fontSize: 13, fontWeight: 700, color: '#F2F7FF', margin: '0 0 2px' }}>{formData.title}</p>}
+                  <p style={{ fontSize: 13, color: '#BDD0E2', margin: 0 }}>{formData.message}</p>
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div style={{ display: 'flex', gap: 10, padding: '16px 20px', borderTop: '1px solid #3A3B3C' }}>
+            <div style={{ display: 'flex', gap: 10, padding: '16px 20px', borderTop: '1px solid #2A4560' }}>
               <button onClick={() => { setShowForm(false); setEditingAnnouncement(null); }}
-                style={{ flex: 1, padding: '12px', borderRadius: 10, background: '#3A3B3C', border: 'none', color: '#B0B3B8', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '12px', borderRadius: 10, background: '#2A4560', border: 'none', color: '#BDD0E2', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 Cancel
               </button>
               <button onClick={saveAnnouncement} disabled={saving}
                 style={{
-                  flex: 1, padding: '12px', borderRadius: 10, background: '#1877F2', border: 'none',
+                  flex: 1, padding: '12px', borderRadius: 10, background: '#1981EC', border: 'none',
                   color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   opacity: saving ? 0.6 : 1 }}>

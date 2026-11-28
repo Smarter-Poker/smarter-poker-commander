@@ -21,7 +21,7 @@ function PeakHoursGrid({ analytics }) {
   return (
     <div className="cmd-panel p-6">
       <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-        <Clock className="w-5 h-5 text-[#F59E0B]" />
+        <Clock className="w-5 h-5 text-[#22D3EE]" />
         Peak Hours Heatmap
       </h3>
       <div className="grid grid-cols-12 gap-1">
@@ -34,24 +34,24 @@ function PeakHoursGrid({ analytics }) {
                 className="w-full aspect-square rounded-sm transition-colors"
                 style={{
                   backgroundColor: intensity > 0
-                    ? `rgba(24, 119, 242, ${0.15 + intensity * 0.85})`
-                    : '#3A3B3C'
+                    ? `rgba(25, 129, 236, ${0.15 + intensity * 0.85})`
+                    : '#2A4560'
                 }}
                 title={`${h}: ${count} Sessions`}
               />
               {hour % 3 === 0 && (
-                <span className="text-[10px] text-[#B0B3B8]">{h}</span>
+                <span className="text-[10px] text-[#BDD0E2]">{h}</span>
               )}
             </div>
           );
         })}
       </div>
       <div className="flex items-center gap-2 mt-3">
-        <span className="text-xs text-[#B0B3B8]">Less</span>
+        <span className="text-xs text-[#BDD0E2]">Less</span>
         {[0.15, 0.35, 0.55, 0.75, 1].map((opacity, i) => (
-          <div key={i} className="w-3 h-3 rounded-sm" style={{ backgroundColor: `rgba(24, 119, 242, ${opacity})` }} />
+          <div key={i} className="w-3 h-3 rounded-sm" style={{ backgroundColor: `rgba(25, 129, 236, ${opacity})` }} />
         ))}
-        <span className="text-xs text-[#B0B3B8]">More</span>
+        <span className="text-xs text-[#BDD0E2]">More</span>
       </div>
     </div>
   );
@@ -66,7 +66,7 @@ function ActivityTrendLine({ dailyData }) {
         <TrendingUp className="w-5 h-5 text-[#31A24C]" />
         Activity Trend
       </h3>
-      <p className="text-sm text-[#B0B3B8]">Not Enough Data For Trend Visualization</p>
+      <p className="text-sm text-[#BDD0E2]">Not Enough Data For Trend Visualization</p>
     </div>
   );
 
@@ -95,22 +95,22 @@ function ActivityTrendLine({ dailyData }) {
         {/* Gradient fill */}
         <defs>
           <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1877F2" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#1877F2" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="#1981EC" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#1981EC" stopOpacity="0.02" />
           </linearGradient>
         </defs>
         <polygon points={areaPoints.join(' ')} fill="url(#trendGrad)" />
-        <polyline points={points.join(' ')} fill="none" stroke="#1877F2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={points.join(' ')} fill="none" stroke="#1981EC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         {/* Data point dots */}
         {data.map((d, i) => {
           const x = padding + (i / (data.length - 1)) * usableW;
           const y = padding + usableH - (d.value / maxVal) * usableH;
-          return <circle key={i} cx={x} cy={y} r="3.5" fill="#1877F2" stroke="#18191A" strokeWidth="1.5" />;
+          return <circle key={i} cx={x} cy={y} r="3.5" fill="#1981EC" stroke="#040D18" strokeWidth="1.5" />;
         })}
       </svg>
       <div className="flex justify-between mt-2">
         {data.map((d, i) => (
-          <span key={i} className="text-[10px] text-[#B0B3B8]">{d.label}</span>
+          <span key={i} className="text-[10px] text-[#BDD0E2]">{d.label}</span>
         ))}
       </div>
     </div>
@@ -122,7 +122,7 @@ import { busEmit } from '../../src/engine/EventBus';
 import { getStaffSession } from '../../src/lib/commander/clientAuth';
 import { commanderFetch } from '../../src/lib/commander/commanderFetch';
 
-function StatCard({ title, value, change, icon: Icon, color = '#1877F2' }) {
+function StatCard({ title, value, change, icon: Icon, color = '#1981EC' }) {
   const hasChange = change !== undefined && change !== null;
   const isPositive = hasChange && change >= 0;
 
@@ -136,7 +136,7 @@ function StatCard({ title, value, change, icon: Icon, color = '#1877F2' }) {
           <Icon className="w-5 h-5" style={{ color }} />
         </div>
         {change === null ? (
-          <span className="text-sm font-medium text-[#B0B3B8]">N/A</span>
+          <span className="text-sm font-medium text-[#BDD0E2]">N/A</span>
         ) : hasChange ? (
           <div className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-[#31A24C]' : 'text-[#EF4444]'}`}>
             {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
@@ -145,7 +145,7 @@ function StatCard({ title, value, change, icon: Icon, color = '#1877F2' }) {
         ) : null}
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-sm text-[#B0B3B8]">{title}</p>
+      <p className="text-sm text-[#BDD0E2]">{title}</p>
     </div>
   );
 }
@@ -157,10 +157,10 @@ function SimpleBarChart({ data, label }) {
     <div className="space-y-2">
       {(data || []).map((item, index) => (
         <div key={index} className="flex items-center gap-3">
-          <span className="text-sm text-[#B0B3B8] w-12">{item.label}</span>
-          <div className="flex-1 h-6 bg-[#3A3B3C] rounded overflow-hidden">
+          <span className="text-sm text-[#BDD0E2] w-12">{item.label}</span>
+          <div className="flex-1 h-6 bg-[#132A42] rounded overflow-hidden">
             <div
-              className="h-full bg-[#1877F2] rounded transition-all duration-500"
+              className="h-full bg-[#0C55C0] rounded transition-all duration-500"
               style={{ width: `${(item.value / maxValue) * 100}%` }}
             />
           </div>
@@ -176,20 +176,20 @@ function TopPlayersTable({ players }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-[#3A3B3C]">
-            <th className="text-left py-3 px-4 text-sm font-medium text-[#B0B3B8]">Player</th>
-            <th className="text-right py-3 px-4 text-sm font-medium text-[#B0B3B8]">Sessions</th>
-            <th className="text-right py-3 px-4 text-sm font-medium text-[#B0B3B8]">Hours</th>
-            <th className="text-right py-3 px-4 text-sm font-medium text-[#B0B3B8]">Buy-Ins</th>
+          <tr className="border-b border-[#445E77]">
+            <th className="text-left py-3 px-4 text-sm font-medium text-[#BDD0E2]">Player</th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-[#BDD0E2]">Sessions</th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-[#BDD0E2]">Hours</th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-[#BDD0E2]">Buy-Ins</th>
           </tr>
         </thead>
         <tbody>
           {players.map((player, index) => (
-            <tr key={player.id || index} className="border-b border-[#3A3B3C] last:border-b-0">
+            <tr key={player.id || index} className="border-b border-[#445E77] last:border-b-0">
               <td className="py-3 px-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#1877F2]/10 flex items-center justify-center">
-                    <span className="text-sm font-medium text-[#1877F2]">{index + 1}</span>
+                  <div className="w-8 h-8 rounded-full bg-[#0C55C0]/10 flex items-center justify-center">
+                    <span className="text-sm font-medium text-[#86DAFF]">{index + 1}</span>
                   </div>
                   <span className="font-medium text-white">{player.name}</span>
                 </div>
@@ -378,7 +378,7 @@ const headers = { };
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -401,8 +401,8 @@ const headers = { };
                   key={p}
                   onClick={() => setPeriod(p)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${period === p
-                    ? 'bg-[#3A3B3C] text-[#1877F2] border-2 border-[#1877F2]'
-                    : 'bg-[#242526] text-[#B0B3B8] border-2 border-[#3A3B3C] hover:bg-[#3A3B3C]'
+                    ? 'bg-[#132A42] text-[#86DAFF] border-2 border-[#1981EC]'
+                    : 'bg-[#0A1829] text-[#BDD0E2] border-2 border-[#445E77] hover:bg-[#132A42]'
                     }`}
                 >
                   {p}
@@ -414,7 +414,7 @@ const headers = { };
           <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
             {loading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
               </div>
             ) : (
               <>
@@ -425,7 +425,7 @@ const headers = { };
                     value={stats.totalPlayers}
                     change={stats.playersChange}
                     icon={Users}
-                    color="#1877F2"
+                    color="#1981EC"
                   />
                   <StatCard
                     title="Total Sessions"
@@ -439,14 +439,14 @@ const headers = { };
                     value={`${stats.totalHours}h`}
                     change={stats.hoursChange}
                     icon={Clock}
-                    color="#1877F2"
+                    color="#1981EC"
                   />
                   <StatCard
                     title="Total Buy-Ins"
                     value={`$${stats.totalBuyins.toLocaleString()}`}
                     change={stats.buyinsChange}
                     icon={DollarSign}
-                    color="#F59E0B"
+                    color="#22D3EE"
                   />
                 </div>
 
@@ -455,7 +455,7 @@ const headers = { };
                   {/* Daily Sessions */}
                   <div className="cmd-panel p-6">
                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-[#1877F2]" />
+                      <BarChart3 className="w-5 h-5 text-[#86DAFF]" />
                       Daily Sessions
                     </h3>
                     <SimpleBarChart data={stats.dailyData} label="Sessions" />
@@ -464,7 +464,7 @@ const headers = { };
                   {/* Game Type Breakdown */}
                   <div className="cmd-panel p-6">
                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                      <Trophy className="w-5 h-5 text-[#22D3EE]" />
                       Game Type Breakdown
                     </h3>
                     <SimpleBarChart data={stats.gameTypeBreakdown} label="Sessions" />
@@ -475,31 +475,31 @@ const headers = { };
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="cmd-panel p-4 text-center">
                     <p className="text-2xl font-bold text-white">{stats.avgSessionLength}h</p>
-                    <p className="text-sm text-[#B0B3B8]">Avg Session</p>
+                    <p className="text-sm text-[#BDD0E2]">Avg Session</p>
                   </div>
                   <div className="cmd-panel p-4 text-center">
                     <p className="text-2xl font-bold text-white">{stats.peakHour}</p>
-                    <p className="text-sm text-[#B0B3B8]">Peak Hour</p>
+                    <p className="text-sm text-[#BDD0E2]">Peak Hour</p>
                   </div>
                   <div className="cmd-panel p-4 text-center">
                     <p className="text-2xl font-bold text-white">
                       ${stats.totalSessions > 0 ? Math.round(stats.totalBuyins / stats.totalSessions) : 0}
                     </p>
-                    <p className="text-sm text-[#B0B3B8]">Avg Buy-In</p>
+                    <p className="text-sm text-[#BDD0E2]">Avg Buy-In</p>
                   </div>
                   <div className="cmd-panel p-4 text-center">
                     <p className="text-2xl font-bold text-white">
                       {stats.totalPlayers > 0 ? (stats.totalSessions / stats.totalPlayers).toFixed(1) : 0}
                     </p>
-                    <p className="text-sm text-[#B0B3B8]">Sessions/Player</p>
+                    <p className="text-sm text-[#BDD0E2]">Sessions/Player</p>
                   </div>
                 </div>
 
                 {/* Top Players */}
                 <div className="cmd-panel">
-                  <div className="p-4 border-b border-[#3A3B3C]">
+                  <div className="p-4 border-b border-[#445E77]">
                     <h3 className="font-semibold text-white flex items-center gap-2">
-                      <Users className="w-5 h-5 text-[#1877F2]" />
+                      <Users className="w-5 h-5 text-[#86DAFF]" />
                       Top Players
                     </h3>
                   </div>

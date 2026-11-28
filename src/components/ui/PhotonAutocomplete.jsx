@@ -174,7 +174,7 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
         {/* Loading Spinner or Clear Button */}
         <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
           {isLoading ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1877F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1981EC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
               <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
@@ -183,7 +183,7 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
             <button
               type="button"
               onClick={clearInput}
-              style={{ background: 'none', border: 'none', color: '#8A8D91', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'none', border: 'none', color: '#9FB3C8', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -201,8 +201,8 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
           top: '100%',
           left: 0,
           right: 0,
-          background: '#242526', // Slightly lighter than #18191A page background
-          border: '1px solid #3A3B3C',
+          background: '#0A1829', // Slightly lighter than #040D18 page background
+          border: '1px solid #2A4560',
           borderRadius: '8px',
           marginTop: '6px',
           padding: '6px 0',
@@ -234,16 +234,16 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
                   style={{
                     padding: '10px 16px',
                     cursor: 'pointer',
-                    background: isSelected ? '#3A3B3C' : 'transparent',
+                    background: isSelected ? '#2A4560' : 'transparent',
                     borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
                     transition: 'background 0.1s ease'
                   }}
                 >
-                  <div style={{ color: '#E4E6EB', fontSize: '15px', fontWeight: 500, fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ color: '#F2F7FF', fontSize: '15px', fontWeight: 500, fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {primaryLabel}
                   </div>
                   {secondaryLabel && (
-                    <div style={{ color: '#B0B3B8', fontSize: '13px', marginTop: '2px', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ color: '#BDD0E2', fontSize: '13px', marginTop: '2px', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {secondaryLabel}
                     </div>
                   )}
@@ -251,11 +251,11 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
               );
             })
           ) : query.length >= 3 && !isLoading ? (
-            <li style={{ padding: '12px 16px', color: '#8A8D91', fontSize: '14px', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            <li style={{ padding: '12px 16px', color: '#9FB3C8', fontSize: '14px', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
               No matching addresses found.
             </li>
           ) : query.length > 0 && query.length < 3 ? (
-            <li style={{ padding: '12px 16px', color: '#8A8D91', fontSize: '14px', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            <li style={{ padding: '12px 16px', color: '#9FB3C8', fontSize: '14px', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
               Type at least 3 characters to search...
             </li>
           ) : null}

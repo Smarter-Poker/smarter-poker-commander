@@ -116,7 +116,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -152,7 +152,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
 
               {/* Target Selection */}
               <div>
-                <label className="block text-sm font-medium text-[#B0B3B8] mb-2">
+                <label className="block text-sm font-medium text-[#BDD0E2] mb-2">
                   Send To
                 </label>
                 <div className="flex gap-2">
@@ -166,8 +166,8 @@ const res = await commanderFetch('/api/commander/notifications/send', {
                       type="button"
                       onClick={() => setSendTo(value)}
                       className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${sendTo === value
-                        ? 'bg-[#1877F2] text-white'
-                        : 'bg-[#3A3B3C] text-white hover:bg-[#3A3B3C]'
+                        ? 'bg-[#0C55C0] text-white'
+                        : 'bg-[#132A42] text-white hover:bg-[#132A42]'
                         }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -179,7 +179,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
 
               {/* Quick Messages */}
               <div>
-                <label className="block text-sm font-medium text-[#B0B3B8] mb-2">
+                <label className="block text-sm font-medium text-[#BDD0E2] mb-2">
                   Quick Messages
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -188,7 +188,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
                       key={item.label}
                       type="button"
                       onClick={() => handleQuickMessage(item.message)}
-                      className="px-3 py-1.5 bg-[#3A3B3C] text-white text-sm rounded-full hover:bg-[#3A3B3C] transition-colors"
+                      className="px-3 py-1.5 bg-[#132A42] text-white text-sm rounded-full hover:bg-[#132A42] transition-colors"
                     >
                       {item.label}
                     </button>
@@ -198,7 +198,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
 
               {/* Message Input */}
               <div>
-                <label className="block text-sm font-medium text-[#B0B3B8] mb-2">
+                <label className="block text-sm font-medium text-[#BDD0E2] mb-2">
                   Message
                 </label>
                 <textarea
@@ -208,7 +208,7 @@ const res = await commanderFetch('/api/commander/notifications/send', {
                   rows={3}
                   className="w-full px-3 py-2 cmd-input resize-none"
                 />
-                <p className="text-xs text-[#3A3B3C] mt-1">
+                <p className="text-xs text-[#7F97B0] mt-1">
                   {message.length}/160 Characters
                 </p>
               </div>
@@ -236,14 +236,14 @@ const res = await commanderFetch('/api/commander/notifications/send', {
             {/* Recent Announcements */}
             {recentAnnouncements.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wide mb-3">
+                <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wide mb-3">
                   Recent Announcements
                 </h2>
-                <div className="cmd-panel divide-y divide-[#3A3B3C]">
+                <div className="cmd-panel divide-y divide-[#445E77]">
                   {recentAnnouncements.map((ann) => (
                     <div key={ann.id} className="p-4">
                       <p className="text-white">{ann.message}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-[#B0B3B8]">
+                      <div className="flex items-center gap-4 mt-2 text-xs text-[#BDD0E2]">
                         <span>Sent To {ann.sent_count} Players</span>
                         <span>{new Date(ann.sent_at).toLocaleTimeString()}</span>
                       </div>

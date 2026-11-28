@@ -25,21 +25,21 @@ import PageBar from '../../src/components/commander/shared/PageBar';
 
 const EVENT_TYPES = {
   check_in: { icon: UserCheck, color: '#31A24C', label: 'Check In' },
-  check_out: { icon: LogOut, color: '#B0B3B8', label: 'Check Out' },
-  seated: { icon: Users, color: '#1877F2', label: 'Seated' },
+  check_out: { icon: LogOut, color: '#BDD0E2', label: 'Check Out' },
+  seated: { icon: Users, color: '#1981EC', label: 'Seated' },
   removed: { icon: XCircle, color: '#EF4444', label: 'Removed' },
-  time_purchased: { icon: DollarSign, color: '#F59E0B', label: 'Time Purchase' },
+  time_purchased: { icon: DollarSign, color: '#22D3EE', label: 'Time Purchase' },
   time_expired: { icon: Timer, color: '#EF4444', label: 'Time Expired' },
-  time_low: { icon: Clock, color: '#F59E0B', label: 'Low Time' },
+  time_low: { icon: Clock, color: '#22D3EE', label: 'Low Time' },
   table_opened: { icon: Play, color: '#31A24C', label: 'Table Opened' },
-  table_closed: { icon: Pause, color: '#B0B3B8', label: 'Table Closed' },
-  waitlist_added: { icon: Clock, color: '#1877F2', label: 'Waitlist' },
+  table_closed: { icon: Pause, color: '#BDD0E2', label: 'Table Closed' },
+  waitlist_added: { icon: Clock, color: '#1981EC', label: 'Waitlist' },
   waitlist_called: { icon: Bell, color: '#31A24C', label: 'Called' },
   incident: { icon: AlertTriangle, color: '#EF4444', label: 'Incident' },
-  floor_call: { icon: AlertTriangle, color: '#F59E0B', label: 'Floor Call' },
-  announcement: { icon: Bell, color: '#1877F2', label: 'Announcement' },
+  floor_call: { icon: AlertTriangle, color: '#22D3EE', label: 'Floor Call' },
+  announcement: { icon: Bell, color: '#1981EC', label: 'Announcement' },
   clock_in: { icon: LogIn, color: '#31A24C', label: 'Staff In' },
-  clock_out: { icon: LogOut, color: '#B0B3B8', label: 'Staff Out' }
+  clock_out: { icon: LogOut, color: '#BDD0E2', label: 'Staff Out' }
 };
 
 function timeAgo(dateStr) {
@@ -159,16 +159,16 @@ export default function ActivityFeed() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Header */}
         <PageBar
           title="Activity Feed"
           summary="Real-Time Room Events. Filter By Type, Newest First, Updating Live."
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
-          <button onClick={fetchEvents} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={fetchEvents} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
@@ -182,7 +182,7 @@ export default function ActivityFeed() {
             { key: 'time', label: 'Time' }
           ].map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${filter === f.key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${filter === f.key ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'
                 }`}>{f.label}</button>
           ))}
         </div>
@@ -190,11 +190,11 @@ export default function ActivityFeed() {
         {/* Events */}
         {loading ? (
           <div className="py-20 flex justify-center">
-            <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
           </div>
         ) : filteredEvents.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-[#B0B3B8]">No Activity Yet</p>
+            <p className="text-[#BDD0E2]">No Activity Yet</p>
           </div>
         ) : (
           <div className="px-4 pb-6 space-y-1">
@@ -202,16 +202,16 @@ export default function ActivityFeed() {
               const config = EVENT_TYPES[event.type] || EVENT_TYPES.check_in;
               const Icon = config.icon;
               return (
-                <div key={event.id} className="flex items-start gap-3 py-2.5 border-b border-[#3A3B3C]/50">
+                <div key={event.id} className="flex items-start gap-3 py-2.5 border-b border-[#445E77]/50">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: `${config.color}15` }}>
                     <Icon className="w-4 h-4" style={{ color: config.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white">{event.message}</p>
-                    {event.detail && <p className="text-xs text-[#B0B3B8]">{event.detail}</p>}
+                    {event.detail && <p className="text-xs text-[#BDD0E2]">{event.detail}</p>}
                   </div>
-                  <span className="text-[10px] text-[#B0B3B8] flex-shrink-0 pt-0.5">{timeAgo(event.timestamp)}</span>
+                  <span className="text-[10px] text-[#BDD0E2] flex-shrink-0 pt-0.5">{timeAgo(event.timestamp)}</span>
                 </div>
               );
             })}

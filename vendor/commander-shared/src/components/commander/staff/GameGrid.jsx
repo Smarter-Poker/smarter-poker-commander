@@ -9,7 +9,7 @@ export default function GameGrid({ games = [], onGameSelect, onOpenGame }) {
   if (games.length === 0) {
     return (
       <div className="cmd-panel p-8 text-center">
-        <div className="text-[#64748B] mb-4">
+        <div className="text-[#9FB3C8] mb-4">
           <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p className="text-lg font-medium">No Active Games</p>
           <p className="text-sm">Open A Game To Get Started</p>
@@ -41,7 +41,7 @@ export default function GameGrid({ games = [], onGameSelect, onOpenGame }) {
 
 function GameCard({ game, onClick }) {
   const statusColors = {
-    waiting: 'bg-[#F59E0B] text-white',
+    waiting: 'bg-[#22D3EE] text-white',
     running: 'bg-[#10B981] text-white',
     breaking: 'bg-[#6B7280] text-white',
     closed: 'bg-[#EF4444] text-white'
@@ -67,13 +67,13 @@ function GameCard({ game, onClick }) {
             </span>
           </div>
           {game.commander_tables && (
-            <p className="text-sm text-[#64748B] mt-1">
+            <p className="text-sm text-[#9FB3C8] mt-1">
               Table {game.commander_tables.table_number}
               {game.commander_tables.table_name && ` - ${game.commander_tables.table_name}`}
             </p>
           )}
         </div>
-        <ChevronRight className="w-5 h-5 text-[#64748B]" />
+        <ChevronRight className="w-5 h-5 text-[#9FB3C8]" />
       </div>
 
       <div className="flex items-center gap-4">
@@ -88,7 +88,7 @@ function GameCard({ game, onClick }) {
         )}
       </div>
 
-      <div className="mt-3 h-2 bg-[#4A5E78] rounded-full overflow-hidden">
+      <div className="mt-3 h-2 bg-[#445E77] rounded-full overflow-hidden">
         <div
           className="h-full bg-[#22D3EE] transition-all"
           style={{ width: `${seatPercentage}%` }}
@@ -96,7 +96,7 @@ function GameCard({ game, onClick }) {
       </div>
 
       {game.is_must_move && (
-        <div className="mt-2 text-xs text-[#F59E0B] font-medium">
+        <div className="mt-2 text-xs text-[#22D3EE] font-medium">
           Must-Move Game
         </div>
       )}

@@ -107,17 +107,17 @@ export default function WaitlistStatus() {
   }, [id, fetchStatus]);
 
   if (loading) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-6">
       <div className="text-center">
         <XCircle className="w-16 h-16 text-[#EF4444] mx-auto mb-4" />
         <h2 className="text-xl font-bold text-white mb-2">{error}</h2>
-        <p className="text-sm text-[#B0B3B8]">This Link May Have Expired.</p>
+        <p className="text-sm text-[#BDD0E2]">This Link May Have Expired.</p>
       </div>
     </div>
   );
@@ -136,7 +136,7 @@ export default function WaitlistStatus() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
 
           {/* Player name */}
@@ -144,7 +144,7 @@ export default function WaitlistStatus() {
             <h1 className="text-2xl font-bold text-white">
               {entry?.player_name || entry?.name || 'Player'}
             </h1>
-            <p className="text-sm text-[#B0B3B8] mt-1">{entry?.game_type || 'Cash Game'}</p>
+            <p className="text-sm text-[#BDD0E2] mt-1">{entry?.game_type || 'Cash Game'}</p>
           </div>
 
           {/* CALLED - urgent notification */}
@@ -161,12 +161,12 @@ export default function WaitlistStatus() {
 
           {/* SEATED - done */}
           {isSeated && (
-            <div className="bg-[#1877F2]/10 border-2 border-[#1877F2]/40 rounded-2xl p-6 text-center">
-              <CheckCircle2 className="w-12 h-12 text-[#1877F2] mx-auto mb-3" />
+            <div className="bg-[#0C55C0]/10 border-2 border-[#1981EC]/40 rounded-2xl p-6 text-center">
+              <CheckCircle2 className="w-12 h-12 text-[#86DAFF] mx-auto mb-3" />
               <h2 className="text-2xl font-bold text-white">Seated</h2>
-              <p className="text-[#B0B3B8] mt-1">You've Been Seated. Enjoy Your Game!</p>
+              <p className="text-[#BDD0E2] mt-1">You've Been Seated. Enjoy Your Game!</p>
               {entry?.table_number && (
-                <p className="text-lg font-bold text-[#1877F2] mt-3">Table {entry.table_number}</p>
+                <p className="text-lg font-bold text-[#86DAFF] mt-3">Table {entry.table_number}</p>
               )}
             </div>
           )}
@@ -174,27 +174,27 @@ export default function WaitlistStatus() {
           {/* WAITING - show position */}
           {isWaiting && (
             <>
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl p-8 text-center">
-                <p className="text-sm text-[#B0B3B8] mb-2">Your Position</p>
-                <p className="text-7xl font-bold text-[#1877F2]">{position || '-'}</p>
-                <p className="text-sm text-[#B0B3B8] mt-2">
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl p-8 text-center">
+                <p className="text-sm text-[#BDD0E2] mb-2">Your Position</p>
+                <p className="text-7xl font-bold text-[#86DAFF]">{position || '-'}</p>
+                <p className="text-sm text-[#BDD0E2] mt-2">
                   {position === 1 ? "You're next!" : position ? `${position - 1} ahead of you` : 'Calculating...'}
                 </p>
               </div>
 
               {estWait && (
-                <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center gap-3">
-                  <Clock className="w-6 h-6 text-[#F59E0B]" />
+                <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-4 flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-[#22D3EE]" />
                   <div>
                     <p className="text-base font-semibold text-white">~{estWait} min estimated</p>
-                    <p className="text-xs text-[#B0B3B8]">We'll Notify You When Called</p>
+                    <p className="text-xs text-[#BDD0E2]">We'll Notify You When Called</p>
                   </div>
                 </div>
               )}
 
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 text-center">
-                <p className="text-xs text-[#B0B3B8]">Live Updates Active</p>
-                <p className="text-xs text-[#B0B3B8] mt-1">Position Updates Instantly</p>
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4 text-center">
+                <p className="text-xs text-[#BDD0E2]">Live Updates Active</p>
+                <p className="text-xs text-[#BDD0E2] mt-1">Position Updates Instantly</p>
               </div>
             </>
           )}
@@ -206,7 +206,7 @@ export default function WaitlistStatus() {
               <h2 className="text-xl font-bold text-white">
                 {status === 'passed' ? 'Seat Passed' : status === 'expired' ? 'Entry Expired' : 'Removed'}
               </h2>
-              <p className="text-[#B0B3B8] mt-2">
+              <p className="text-[#BDD0E2] mt-2">
                 {status === 'passed'
                   ? 'Your seat was passed. Visit the desk to rejoin.'
                   : 'Your waitlist entry is no longer active.'}
@@ -216,7 +216,7 @@ export default function WaitlistStatus() {
 
           {/* Join time */}
           {entry?.created_at && (
-            <p className="text-center text-xs text-[#B0B3B8]">
+            <p className="text-center text-xs text-[#BDD0E2]">
               Joined at {new Date(entry.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </p>
           )}

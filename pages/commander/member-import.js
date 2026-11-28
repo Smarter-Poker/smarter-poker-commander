@@ -166,14 +166,14 @@ const res = await commanderFetch('/api/commander/members', {
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
           {/* Header */}
           <PageBar
             title="Import Members"
             summary="Bring Your Existing Member List Into Commander In Five Steps: Upload A CSV File, Match Its Columns To Member Fields, Review The Preview, Import, Then Check The Results."
             status={`Step ${step} Of 5`}
-            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
           />
 
           <div className="p-4 max-w-lg mx-auto space-y-4">
@@ -181,23 +181,23 @@ const res = await commanderFetch('/api/commander/members', {
             {/* STEP 1: Upload */}
             {step === 1 && (
               <>
-                <div className="border-2 border-dashed border-[#3A3B3C] rounded-2xl p-10 text-center"
+                <div className="border-2 border-dashed border-[#445E77] rounded-2xl p-10 text-center"
                   onClick={() => fileRef.current?.click()}>
-                  <Upload className="w-12 h-12 text-[#B0B3B8] mx-auto mb-4" />
+                  <Upload className="w-12 h-12 text-[#BDD0E2] mx-auto mb-4" />
                   <h2 className="text-xl font-bold text-white mb-2">Upload CSV File</h2>
-                  <p className="text-sm text-[#B0B3B8] mb-4">
+                  <p className="text-sm text-[#BDD0E2] mb-4">
                     Drag And Drop Or Tap To Select A .csv File With Member Data
                   </p>
-                  <button className="px-6 py-3 bg-[#1877F2] text-white rounded-xl font-semibold active:bg-[#1565D8]">
+                  <button className="px-6 py-3 bg-[#0C55C0] text-white rounded-xl font-semibold active:bg-[#0A4AA8]">
                     Choose File
                   </button>
                   <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
                 </div>
 
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
-                  <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-2">Expected Format</p>
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
+                  <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-2">Expected Format</p>
                   <p className="text-sm text-white mb-2">CSV With Headers. Required: First Name, Last Name</p>
-                  <p className="text-xs text-[#B0B3B8]">Optional: Phone, Email, Member Number, Tier, Notes, Address</p>
+                  <p className="text-xs text-[#BDD0E2]">Optional: Phone, Email, Member Number, Tier, Notes, Address</p>
                 </div>
               </>
             )}
@@ -207,21 +207,21 @@ const res = await commanderFetch('/api/commander/members', {
               <>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-white">Map Columns</h2>
-                  <span className="text-xs text-[#B0B3B8]">{csvData.rows.length} Rows Found</span>
+                  <span className="text-xs text-[#BDD0E2]">{csvData.rows.length} Rows Found</span>
                 </div>
 
                 <div className="space-y-2">
                   {csvData.headers.map((header, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-[#242526] border border-[#3A3B3C] rounded-xl px-4 py-3">
+                    <div key={idx} className="flex items-center gap-3 bg-[#0A1829] border border-[#445E77] rounded-xl px-4 py-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{header}</p>
-                        <p className="text-[10px] text-[#B0B3B8] truncate">
+                        <p className="text-[10px] text-[#BDD0E2] truncate">
                           E.g. {csvData.rows[0]?.[idx] || '-'}
                         </p>
                       </div>
                       <select value={mapping[idx] || ''}
                         onChange={e => setMapping({ ...mapping, [idx]: e.target.value })}
-                        className="bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg px-3 py-2 text-sm text-[#E4E6EB] focus:outline-none focus:border-[#1877F2]">
+                        className="bg-[#132A42] border border-[#5A7590] rounded-lg px-3 py-2 text-sm text-[#F2F7FF] focus:outline-none focus:border-[#1981EC]">
                         <option value="">Skip</option>
                         {ALL_FIELDS.map(f => (
                           <option key={f} value={f}>{f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
@@ -239,7 +239,7 @@ const res = await commanderFetch('/api/commander/members', {
                 )}
 
                 <button onClick={() => setStep(3)} disabled={!hasRequired}
-                  className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8] disabled:opacity-30">
+                  className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8] disabled:opacity-30">
                   Preview <ChevronRight className="w-5 h-5" />
                 </button>
               </>
@@ -249,18 +249,18 @@ const res = await commanderFetch('/api/commander/members', {
             {step === 3 && (
               <>
                 <h2 className="text-xl font-bold text-white">Preview Import</h2>
-                <p className="text-sm text-[#B0B3B8]">
+                <p className="text-sm text-[#BDD0E2]">
                   {getMappedRows().length} Valid Rows Will Be Imported. Showing First 5:
                 </p>
 
                 <div className="space-y-2">
                   {previewRows.map((row, i) => (
-                    <div key={i} className="bg-[#242526] border border-[#3A3B3C] rounded-xl px-4 py-3">
+                    <div key={i} className="bg-[#0A1829] border border-[#445E77] rounded-xl px-4 py-3">
                       <p className="text-sm font-medium text-white">{row.first_name} {row.last_name}</p>
                       <div className="flex flex-wrap gap-2 mt-1">
-                        {row.phone && <span className="text-[10px] text-[#B0B3B8] bg-[#3A3B3C] px-2 py-0.5 rounded">{row.phone}</span>}
-                        {row.email && <span className="text-[10px] text-[#B0B3B8] bg-[#3A3B3C] px-2 py-0.5 rounded">{row.email}</span>}
-                        {row.member_number && <span className="text-[10px] text-[#B0B3B8] bg-[#3A3B3C] px-2 py-0.5 rounded">#{row.member_number}</span>}
+                        {row.phone && <span className="text-[10px] text-[#BDD0E2] bg-[#132A42] px-2 py-0.5 rounded">{row.phone}</span>}
+                        {row.email && <span className="text-[10px] text-[#BDD0E2] bg-[#132A42] px-2 py-0.5 rounded">{row.email}</span>}
+                        {row.member_number && <span className="text-[10px] text-[#BDD0E2] bg-[#132A42] px-2 py-0.5 rounded">#{row.member_number}</span>}
                       </div>
                     </div>
                   ))}
@@ -276,12 +276,12 @@ const res = await commanderFetch('/api/commander/members', {
             {/* STEP 4: Importing */}
             {step === 4 && (
               <div className="py-12 text-center">
-                <Loader2 className="w-12 h-12 text-[#1877F2] animate-spin mx-auto mb-6" />
+                <Loader2 className="w-12 h-12 text-[#86DAFF] animate-spin mx-auto mb-6" />
                 <h2 className="text-xl font-bold text-white mb-2">Importing Members...</h2>
-                <div className="w-full bg-[#3A3B3C] rounded-full h-3 mb-2">
-                  <div className="bg-[#1877F2] h-3 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                <div className="w-full bg-[#132A42] rounded-full h-3 mb-2">
+                  <div className="bg-[#0C55C0] h-3 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
                 </div>
-                <p className="text-sm text-[#B0B3B8]">{progress}% Complete</p>
+                <p className="text-sm text-[#BDD0E2]">{progress}% Complete</p>
               </div>
             )}
 
@@ -296,15 +296,15 @@ const res = await commanderFetch('/api/commander/members', {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-[#31A24C]">{results.imported}</p>
-                    <p className="text-[10px] text-[#B0B3B8]">Imported</p>
+                    <p className="text-[10px] text-[#BDD0E2]">Imported</p>
                   </div>
-                  <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-[#F59E0B]">{results.skipped}</p>
-                    <p className="text-[10px] text-[#B0B3B8]">Skipped</p>
+                  <div className="bg-[#22D3EE]/10 border border-[#22D3EE]/30 rounded-xl p-3 text-center">
+                    <p className="text-2xl font-bold text-[#22D3EE]">{results.skipped}</p>
+                    <p className="text-[10px] text-[#BDD0E2]">Skipped</p>
                   </div>
                   <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-[#EF4444]">{results.errors.length}</p>
-                    <p className="text-[10px] text-[#B0B3B8]">Errors</p>
+                    <p className="text-[10px] text-[#BDD0E2]">Errors</p>
                   </div>
                 </div>
 
@@ -317,7 +317,7 @@ const res = await commanderFetch('/api/commander/members', {
                 )}
 
                 <button onClick={() => router.push('/commander/members')}
-                  className="w-full py-4 rounded-xl bg-[#1877F2] text-white text-lg font-semibold active:bg-[#1565D8]">
+                  className="w-full py-4 rounded-xl bg-[#0C55C0] text-white text-lg font-semibold active:bg-[#0A4AA8]">
                   View Members
                 </button>
               </div>

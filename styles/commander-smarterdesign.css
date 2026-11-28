@@ -1,0 +1,389 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   CLUB COMMANDER #SMARTERDESIGN SKIN (Dan, 2026-11-27)
+
+   "CLUB COMMANDER NEEDS THE SAME #SMARTERDESIGN UPGRADE TO EVERY SINGLE PAGE,
+   SUBPAGE, BUTTON AND EVERYTHING ELSE, EXACTLY LIKE WE'VE DONE FOR EVERY OTHER
+   WORLD HUB PAGE."
+
+   The standard is World Hub docs/SMARTERDESIGN.md; the primitives are
+   styles/smarterdesign.css (copied from World Hub, same nine-slice chrome).
+   Colours were moved at their source by scripts/smarterdesign-palette.mjs, so
+   every page now paints with the #SMARTERDESIGN tokens. This file turns those
+   source colours into the material: one continuous steel rim per surface,
+   cobalt bevels on primary actions, the chrome row on secondary actions, ink
+   inputs with an ice focus, and the page image header.
+
+   Surfaces are recognised by their migrated colours:
+     #0A1829  card / panel surface       (was #0A1829)
+     #132A42  control fill               (was #2A4560)
+     #0C55C0  primary action             (was #1981EC)
+   A nested surface gets a hairline, never a second rim (one frame per
+   surface). Pinned by tests/integrity/smarterdesign.test.mjs.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sd-ink: #040d18;
+  --sd-surface: #0a1829;
+  --sd-text: #f2f7ff;
+  --sd-silver: #bdd0e2;
+  --sd-ice: #86daff;
+  --sd-line: #445e77;
+  --sd-navy: linear-gradient(155deg, #182d43 0%, #0b1c2c 43%, #050e18 87%);
+  --sd-control: linear-gradient(180deg, #263f58, #112338 39%, #071420 77%, #12283c);
+  --sd-cobalt: linear-gradient(180deg, #1981ec, #0c55c0 26%, #07377e 76%, #125bba);
+  --sd-type: var(--font-rajdhani, 'Arial Narrow'), 'Arial Narrow', sans-serif;
+}
+
+html, body { background-color: var(--sd-ink); }
+body.cmd-sd {
+  background:
+    radial-gradient(ellipse at 50% -10%, #12304f 0, transparent 55%),
+    var(--sd-ink);
+  background-attachment: fixed;
+}
+
+/* ── Type ────────────────────────────────────────────────────────────── */
+.cmd-sd :is(h1, h2, h3):not(.cmd-sd-header__title) {
+  font-family: var(--sd-type);
+  letter-spacing: .01em;
+}
+.cmd-sd :is(h2, h3) { font-weight: 700; }
+.cmd-sd :is(table, .tabular-nums, [data-amount]) { font-variant-numeric: tabular-nums; }
+
+/* ── Page image header (BankrollImageHeader geometry, World Hub) ────────── */
+.cmd-sd-header-wrap {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: clamp(8px, 1.6vw, 16px) clamp(8px, 2vw, 24px) clamp(6px, 1vw, 10px);
+}
+.cmd-sd-header.cmd-sd-header {
+  --seal-size: clamp(62px, 8.5vw, 96px);
+  isolation: isolate;
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: clamp(110px, 14vw, 149px);
+  display: grid;
+  grid-template-columns: var(--seal-size) minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: clamp(9px, 1.8vw, 23px);
+  padding: clamp(13px, 2vw, 23px) clamp(13px, 2.5vw, 30px);
+  overflow: hidden;
+  background: radial-gradient(ellipse at 20% 102%, #233f63 0, #102337 38%, #07121e 78%);
+}
+.cmd-sd-header__scene {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: -1;
+  width: 57%;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 63% 53%;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #0002 18%, #0006 43%, #0009 68%, #000);
+  mask-image: linear-gradient(90deg, transparent, #0002 18%, #0006 43%, #0009 68%, #000);
+  pointer-events: none;
+}
+.cmd-sd-header__seal {
+  display: grid;
+  place-items: center;
+  width: var(--seal-size);
+  height: var(--seal-size);
+  padding: clamp(3px, .4vw, 5px);
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: conic-gradient(from 25deg, #6d94b1, #d8e7f3 12%, #3c5369 23%, #0d263b 35%, #a6c8e0 50%, #465d72 64%, #f4f9ff 78%, #234968 90%, #6d94b1);
+  box-shadow: 0 0 0 1px #09121c, 0 0 0 2px #92aac0, 0 2px 9px #01060fbb;
+}
+.cmd-sd-header__seal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #06101b;
+}
+.cmd-sd-header__copy { position: relative; min-width: 0; padding-right: 38px; }
+.cmd-sd-header__parent {
+  margin: 0 0 3px;
+  color: #b4dff4;
+  font-size: clamp(.75rem, 1vw, .87rem);
+  font-weight: 750;
+  letter-spacing: .055em;
+}
+.cmd-sd-header .cmd-sd-header__title {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  color: #f3f7fc;
+  -webkit-text-fill-color: #f3f7fc;
+  background: none;
+  font-family: var(--sd-type);
+  font-weight: 700;
+  font-style: italic;
+  font-size: clamp(1.85rem, 4.5vw, 3.45rem);
+  line-height: 1.02;
+  letter-spacing: -.03em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 3px #020911, 0 0 8px #061321;
+}
+@media (max-width: 600px) {
+  .cmd-sd-header.cmd-sd-header { --seal-size: clamp(49px, 14vw, 75px); gap: 10px; padding: 13px 12px; }
+  .cmd-sd-header__scene {
+    width: 58%;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #0002 22%, #0006 52%, #0009 76%, #000f);
+    mask-image: linear-gradient(90deg, transparent, #0002 22%, #0006 52%, #0009 76%, #000f);
+  }
+  .cmd-sd-header .cmd-sd-header__title { font-size: clamp(1.7rem, 7vw, 2.55rem); }
+  .cmd-sd-header__copy { padding-right: 49px; }
+}
+
+/* A PageBar under an image header is the page's toolbar: no second frame,
+   and it collapses when the page put nothing in it. */
+.cmd-page-bar--toolbar:not(:has(> div > div > *)) { display: none; }
+
+/* The page's own "?" when it has no image header (TV/kiosk routes keep the
+   painted icon, inline). */
+.cmd-sd .cmd-page-help {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.cmd-sd .cmd-page-help > img { width: 36px; height: auto; filter: drop-shadow(0 2px 3px #000000b3); }
+
+/* ── Surfaces: one continuous steel rim ──────────────────────────────── */
+.cmd-sd :is(.bg-\[\#0A1829\], .cmd-card):is(.border, .border-2, [class*="rounded"]),
+.cmd-sd .cmd-tutorial-panel {
+  border-style: solid;
+  border-width: 5px;
+  border-color: transparent;
+  border-image: url('/images/smarterdesign/chrome-readout.webp') 21 / 8px stretch;
+  background-color: var(--sd-surface);
+  background-image: var(--sd-navy);
+}
+/* A surface inside a surface: hairline only (one frame per surface). */
+.cmd-sd :is(.bg-\[\#0A1829\], .cmd-card) :is(.bg-\[\#0A1829\], .cmd-card):is(.border, .border-2, [class*="rounded"]) {
+  border-image: none;
+  border-width: 1px;
+  border-color: var(--sd-line);
+  background-image: none;
+}
+/* Dividers and hairlines read as the steel line. */
+.cmd-sd :is(.border-\[\#445E77\]) { border-color: var(--sd-line); }
+
+/* ── Primary actions: cobalt bevel ───────────────────────────────────── */
+.cmd-sd :is(button, a, [role="button"], label).bg-\[\#0C55C0\],
+.cmd-sd .cmd-btn-primary {
+  border-style: solid;
+  border-width: 3px;
+  border-color: transparent;
+  border-image: url('/images/smarterdesign/chrome-active-v2.webp') 11 / 4px stretch;
+  background-color: #0c55c0;
+  background-image: var(--sd-cobalt);
+  background-clip: padding-box;
+  color: #fff;
+  font-family: var(--sd-type);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.cmd-sd :is(button, a, [role="button"]).bg-\[\#0C55C0\]:hover,
+.cmd-sd .cmd-btn-primary:hover { filter: brightness(1.08); }
+
+/* ── Secondary actions and chips: chrome row ─────────────────────────── */
+.cmd-sd :is(button, a[class*="rounded"], [role="button"], [role="tab"]):is(.bg-\[\#132A42\], .bg-\[\#1B3753\], .bg-\[\#0A1829\]):not(.cmd-page-help) {
+  border-style: solid;
+  border-width: 3px;
+  border-color: transparent;
+  border-image: url('/images/smarterdesign/chrome-row.webp') 13 / 4px stretch;
+  background-color: #0e2236;
+  background-image: var(--sd-control);
+  color: var(--sd-text);
+}
+/* Selected tab / chip / toggle: cobalt. */
+.cmd-sd :is(button, a, [role="tab"]):is([aria-selected="true"], [aria-pressed="true"], [aria-current="page"]) {
+  border-image: url('/images/smarterdesign/chrome-active-v2.webp') 11 / 4px stretch;
+  background-image: var(--sd-cobalt);
+  background-clip: padding-box;
+  color: #fff;
+}
+.cmd-sd :is(button, a, [role="button"]):active { filter: brightness(.89); }
+.cmd-sd button:disabled { cursor: default; filter: saturate(.55) brightness(.85); }
+
+/* ── Inputs ──────────────────────────────────────────────────────────── */
+.cmd-sd :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea, .cmd-input) {
+  color: var(--sd-text);
+  background-color: #071420;
+  border-color: var(--sd-line);
+  color-scheme: dark;
+}
+.cmd-sd :is(input, select, textarea, .cmd-input)::placeholder { color: #8fa6be; }
+.cmd-sd :is(input, select, textarea, .cmd-input):focus {
+  outline: none;
+  border-color: #86daff;
+  box-shadow: 0 0 0 2px #86daff55;
+}
+.cmd-sd :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: #1981ec; }
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+.cmd-sd table thead th { color: var(--sd-silver); font-family: var(--sd-type); letter-spacing: .03em; }
+.cmd-sd table tbody tr { border-color: #1d3550; }
+
+/* ── Dialogs and overlays ────────────────────────────────────────────── */
+.cmd-sd [role="dialog"] :is(h2, h3) { color: var(--sd-text); }
+
+/* ── Focus ───────────────────────────────────────────────────────────── */
+.cmd-sd :is(button, a, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid #9ee3ff;
+  outline-offset: 2px;
+}
+
+/* Tutorial highlight in the #SMARTERDESIGN ice. */
+.cmd-sd [data-tutorial-focus] { outline-color: #86daff !important; }
+
+@media print {
+  body.cmd-sd { background: #fff; }
+  .cmd-sd-header-wrap { display: none; }
+}
+
+/* ── Inline-styled controls and surfaces ─────────────────────────────────
+   Many pages paint with style={{ background: ... }}. The palette migration
+   moved those colours too, so they are recognised here in both serialised
+   forms: server-rendered ("background:#1981EC") and browser-normalised
+   ("background: rgb(25, 129, 236)"). Inline styles outrank sheets, hence
+   !important on the material only (never on layout). */
+.cmd-sd :is(button, a, [role="button"]):is(
+  [style*="background:#1981EC" i], [style*="background: #1981EC" i],
+  [style*="background:#0C55C0" i], [style*="background: #0C55C0" i],
+  [style*="background: rgb(25, 129, 236)"], [style*="background-color: rgb(25, 129, 236)"],
+  [style*="background: rgb(12, 85, 192)"], [style*="background-color: rgb(12, 85, 192)"]) {
+  border: 3px solid transparent !important;
+  border-image: url('/images/smarterdesign/chrome-active-v2.webp') 11 / 4px stretch !important;
+  background: var(--sd-cobalt) padding-box !important;
+  color: #fff !important;
+  font-family: var(--sd-type);
+  letter-spacing: .02em;
+}
+.cmd-sd :is(button, a, [role="button"]):is(
+  [style*="background:#2A4560" i], [style*="background: #2A4560" i],
+  [style*="background:#132A42" i], [style*="background: #132A42" i],
+  [style*="background:#3A5873" i], [style*="background: #3A5873" i],
+  [style*="background: rgb(42, 69, 96)"], [style*="background: rgb(19, 42, 66)"],
+  [style*="background: rgb(58, 88, 115)"]) {
+  border: 3px solid transparent !important;
+  border-image: url('/images/smarterdesign/chrome-row.webp') 13 / 4px stretch !important;
+  background: var(--sd-control) !important;
+  color: var(--sd-text) !important;
+}
+.cmd-sd :is(div, section, article, form):is(
+  [style*="background:#0A1829" i], [style*="background: #0A1829" i],
+  [style*="background: rgb(10, 24, 41)"], [style*="background-color: rgb(10, 24, 41)"]):is(
+  [style*="border-radius"], [style*="borderRadius"]) {
+  border: 5px solid transparent !important;
+  border-image: url('/images/smarterdesign/chrome-readout.webp') 21 / 8px stretch !important;
+  background: var(--sd-navy) !important;
+}
+
+/* ── Cashier actions (replaces the painted metal panel image) ──────────── */
+.cmd-cashier-actions {
+  display: grid;
+  gap: 10px;
+  margin: 10px 8px 0;
+}
+.cmd-cashier-action.sd-button {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 8px 16px;
+  text-align: left;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  letter-spacing: .01em;
+}
+.cmd-cashier-action__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #e9f6ff;
+  background: radial-gradient(circle at 35% 30%, #2e5a85, #0b2238 70%);
+  box-shadow: 0 0 0 1px #09121c, 0 0 0 2px #7f9bb4;
+}
+.cmd-cashier-action__label { min-width: 0; overflow-wrap: anywhere; }
+
+/* ── Club page popup (vendored CommanderLayout) ──────────────────────── */
+.cmd-clubpage { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px; }
+.cmd-clubpage__scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .7); }
+.cmd-clubpage__card { position: relative; width: min(100%, 440px); display: grid; gap: 12px; text-align: center; }
+.cmd-clubpage__icon { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2e5a85, #0b2238 70%); box-shadow: 0 0 0 1px #09121c, 0 0 0 2px #92aac0; }
+.cmd-clubpage__title { margin: 0; color: var(--sd-text); font: 700 1.5rem/1.1 var(--sd-type); }
+.cmd-clubpage__body { margin: 0; color: var(--sd-silver); line-height: 1.5; }
+.cmd-clubpage__body strong { color: var(--sd-text); }
+.cmd-clubpage__actions { display: grid; gap: 10px; }
+
+/* ── PIN security gate (vendored CommanderLayout classes) ─────────────── */
+.cmd-sd .cmd-pin-gate-overlay { background: rgba(2, 7, 14, .82) !important; backdrop-filter: blur(6px); }
+.cmd-sd .cmd-pin-gate-modal {
+  border: 5px solid transparent !important;
+  border-image: url('/images/smarterdesign/chrome-readout.webp') 21 / 8px stretch !important;
+  background: var(--sd-navy) !important;
+  box-shadow: 0 18px 48px #000a !important;
+  border-radius: 0 !important;
+}
+.cmd-sd .cmd-pin-gate-icon {
+  background: radial-gradient(circle at 35% 30%, #2e5a85, #0b2238 70%) !important;
+  box-shadow: 0 0 0 1px #09121c, 0 0 0 2px #92aac0 !important;
+  border-radius: 50% !important;
+}
+.cmd-sd .cmd-pin-gate-title { font-family: var(--sd-type) !important; color: var(--sd-text) !important; letter-spacing: .06em !important; }
+.cmd-sd .cmd-pin-gate-subtitle { font-family: inherit !important; color: var(--sd-silver) !important; }
+.cmd-sd .cmd-pin-gate-input { background: #071420 !important; border-color: var(--sd-line) !important; color: var(--sd-text) !important; }
+.cmd-sd .cmd-pin-gate-btn {
+  border: 3px solid transparent !important;
+  border-image: url('/images/smarterdesign/chrome-active-v2.webp') 11 / 4px stretch !important;
+  background: var(--sd-cobalt) padding-box !important;
+  color: #fff !important;
+  font-family: var(--sd-type) !important;
+}
+.cmd-sd .cmd-pin-gate-back {
+  border: 3px solid transparent !important;
+  border-image: url('/images/smarterdesign/chrome-row.webp') 13 / 4px stretch !important;
+  background: var(--sd-control) !important;
+  color: var(--sd-text) !important;
+}
+.cmd-print-card-row { padding: 12px 8px 4px; }
+.cmd-print-card.sd-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 56px; font-size: 1.15rem; }
+
+/* ── Player kiosk welcome (replaces kiosk-welcome.png) ─────────────────── */
+.cmd-kiosk-home { display: grid; place-items: center; width: 100vw; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+.cmd-kiosk-welcome { width: min(100%, 620px); display: grid; gap: 10px; text-align: center; padding: clamp(24px, 5vw, 48px) !important; }
+.cmd-kiosk-welcome__title { margin: 0; color: #f3f7fc; font: italic 700 clamp(3rem, 9vw, 5.2rem)/1 var(--sd-type); letter-spacing: -.02em; text-shadow: 0 2px 3px #020911, 0 0 8px #061321; }
+.cmd-kiosk-welcome__sub { margin: 0 0 14px; color: var(--sd-silver); font-size: clamp(1.1rem, 2.6vw, 1.5rem); font-weight: 600; }
+.cmd-kiosk-welcome__actions { display: grid; gap: 14px; }
+.cmd-kiosk-action.sd-button { display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 84px; font-size: clamp(1.4rem, 3.6vw, 2rem); }
+
+/* ── TV display title bars (displays/*, tournament boards) ─────────────────
+   Full-width bars that were a flat brand-blue band become the #SMARTERDESIGN
+   masthead: ink-to-cobalt glow, steel rim, white condensed type. Still a
+   strong band for room-distance reading. */
+.cmd-sd div.justify-between:is(.bg-\[\#0C55C0\], .from-\[\#0C55C0\]) {
+  border: 5px solid transparent;
+  border-image: url('/images/smarterdesign/chrome-readout.webp') 21 / 8px stretch;
+  background: radial-gradient(ellipse at 18% 120%, #1b5cab, transparent 60%), linear-gradient(115deg, #0c2035, #071322 58%, #040b14);
+  color: #f1f7ff;
+  font-family: var(--sd-type);
+}

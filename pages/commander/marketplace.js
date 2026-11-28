@@ -71,10 +71,10 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h3 className="text-lg font-semibold text-white">Request Equipment Rental</h3>
-          <button onClick={onClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={onClose} className="p-2 hover:bg-[#132A42] rounded-lg">
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -82,18 +82,18 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
           <div className="p-8 text-center">
             <CheckCircle className="w-12 h-12 text-[#31A24C] mx-auto mb-3" />
             <p className="font-semibold text-white">Rental Request Sent</p>
-            <p className="text-sm text-[#B0B3B8]">The Equipment Owner Will Be Notified</p>
+            <p className="text-sm text-[#BDD0E2]">The Equipment Owner Will Be Notified</p>
           </div>
         ) : (
           <>
             <div className="p-4 space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-[#3A3B3C] rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-[#132A42] rounded-lg">
                 <div className="w-12 h-12 bg-[#31A24C]/10 rounded-lg flex items-center justify-center">
                   <Package className="w-6 h-6 text-[#31A24C]" />
                 </div>
                 <div>
                   <p className="font-semibold text-white">{equipment.name}</p>
-                  <p className="text-sm text-[#B0B3B8]">${equipment.daily_rate}/day</p>
+                  <p className="text-sm text-[#BDD0E2]">${equipment.daily_rate}/day</p>
                 </div>
               </div>
 
@@ -119,13 +119,13 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
                 />
               </div>
 
-              <div className="p-3 bg-[#18191A] rounded-lg">
+              <div className="p-3 bg-[#040D18] rounded-lg">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#B0B3B8]">Duration</span>
+                  <span className="text-[#BDD0E2]">Duration</span>
                   <span className="font-medium text-white">{days} Day{days > 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-1">
-                  <span className="text-[#B0B3B8]">Estimated Cost</span>
+                  <span className="text-[#BDD0E2]">Estimated Cost</span>
                   <span className="font-semibold text-white">
                     ${(equipment.daily_rate || 50) * days}
                   </span>
@@ -144,7 +144,7 @@ const res = await commanderFetch(`/api/commander/marketplace/equipment/${equipme
               </div>
             </div>
 
-            <div className="p-4 border-t border-[#3A3B3C]">
+            <div className="p-4 border-t border-[#445E77]">
               <button
                 onClick={handleSubmit}
                 disabled={!formData.start_date || !formData.end_date || submitting}
@@ -215,10 +215,10 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h3 className="text-lg font-semibold text-white">Book Dealer</h3>
-          <button onClick={onClose} className="p-2 hover:bg-[#3A3B3C] rounded-lg">
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={onClose} className="p-2 hover:bg-[#132A42] rounded-lg">
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -226,18 +226,18 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
           <div className="p-8 text-center">
             <CheckCircle className="w-12 h-12 text-[#31A24C] mx-auto mb-3" />
             <p className="font-semibold text-white">Booking Request Sent</p>
-            <p className="text-sm text-[#B0B3B8]">{dealer.name} Will Be Notified</p>
+            <p className="text-sm text-[#BDD0E2]">{dealer.name} Will Be Notified</p>
           </div>
         ) : (
           <>
             <div className="p-4 space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-[#3A3B3C] rounded-lg">
-                <div className="w-12 h-12 bg-[#1877F2]/10 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-[#1877F2]" />
+              <div className="flex items-center gap-3 p-3 bg-[#132A42] rounded-lg">
+                <div className="w-12 h-12 bg-[#0C55C0]/10 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-[#86DAFF]" />
                 </div>
                 <div>
                   <p className="font-semibold text-white">{dealer.name}</p>
-                  <p className="text-sm text-[#B0B3B8]">${dealer.hourly_rate}/hr</p>
+                  <p className="text-sm text-[#BDD0E2]">${dealer.hourly_rate}/hr</p>
                 </div>
               </div>
 
@@ -275,9 +275,9 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
                 </div>
               </div>
 
-              <div className="p-3 bg-[#18191A] rounded-lg">
+              <div className="p-3 bg-[#040D18] rounded-lg">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#B0B3B8]">Estimated Cost</span>
+                  <span className="text-[#BDD0E2]">Estimated Cost</span>
                   <span className="font-semibold text-white">
                     ${(dealer.hourly_rate || 25) * formData.hours}
                   </span>
@@ -296,7 +296,7 @@ const res = await commanderFetch(`/api/commander/marketplace/dealers/${dealer.id
               </div>
             </div>
 
-            <div className="p-4 border-t border-[#3A3B3C]">
+            <div className="p-4 border-t border-[#445E77]">
               <button
                 onClick={handleSubmit}
                 disabled={!formData.date || submitting}
@@ -318,11 +318,11 @@ function DealerCard({ dealer, onBook }) {
     <div className="cmd-panel p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-[#1877F2]/10 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#0C55C0]/10 rounded-full flex items-center justify-center">
             {dealer.profiles?.avatar_url ? (
               <img src={dealer.profiles.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" loading="lazy" />
             ) : (
-              <Users className="w-6 h-6 text-[#1877F2]" />
+              <Users className="w-6 h-6 text-[#86DAFF]" />
             )}
           </div>
           <div>
@@ -333,11 +333,11 @@ function DealerCard({ dealer, onBook }) {
               )}
             </div>
             {dealer.rating && (
-              <div className="flex items-center gap-1 text-sm text-[#F59E0B]">
+              <div className="flex items-center gap-1 text-sm text-[#22D3EE]">
                 <Star className="w-4 h-4 fill-current" />
                 <span>{dealer.rating.toFixed(1)}</span>
                 {dealer.reviews_count && (
-                  <span className="text-[#B0B3B8]">({dealer.reviews_count})</span>
+                  <span className="text-[#BDD0E2]">({dealer.reviews_count})</span>
                 )}
               </div>
             )}
@@ -346,27 +346,27 @@ function DealerCard({ dealer, onBook }) {
         <div className="text-right">
           <p className="font-semibold text-white">${dealer.hourly_rate}/hr</p>
           {dealer.experience_years && (
-            <p className="text-xs text-[#B0B3B8]">{dealer.experience_years}+ Years</p>
+            <p className="text-xs text-[#BDD0E2]">{dealer.experience_years}+ Years</p>
           )}
         </div>
       </div>
 
       {dealer.bio && (
-        <p className="text-sm text-[#B0B3B8] mb-3 line-clamp-2">{dealer.bio}</p>
+        <p className="text-sm text-[#BDD0E2] mb-3 line-clamp-2">{dealer.bio}</p>
       )}
 
       <div className="flex flex-wrap gap-2 mb-3">
         {(dealer.games_offered || []).slice(0, 4).map((game) => (
           <span
             key={game}
-            className="px-2 py-1 bg-[#3A3B3C] rounded text-xs font-medium text-white uppercase"
+            className="px-2 py-1 bg-[#132A42] rounded text-xs font-medium text-white uppercase"
           >
             {game}
           </span>
         ))}
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-[#B0B3B8] mb-4">
+      <div className="flex items-center gap-4 text-sm text-[#BDD0E2] mb-4">
         {dealer.service_area && (
           <span className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
@@ -400,7 +400,7 @@ function EquipmentCard({ equipment, onRent }) {
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-white">{equipment.name}</h3>
-          <p className="text-sm text-[#B0B3B8]">{equipment.category}</p>
+          <p className="text-sm text-[#BDD0E2]">{equipment.category}</p>
         </div>
         <div className="text-right">
           <p className="font-semibold text-white">${equipment.daily_rate}/day</p>
@@ -408,10 +408,10 @@ function EquipmentCard({ equipment, onRent }) {
       </div>
 
       {equipment.description && (
-        <p className="text-sm text-[#B0B3B8] mb-3 line-clamp-2">{equipment.description}</p>
+        <p className="text-sm text-[#BDD0E2] mb-3 line-clamp-2">{equipment.description}</p>
       )}
 
-      <div className="flex items-center gap-4 text-sm text-[#B0B3B8] mb-4">
+      <div className="flex items-center gap-4 text-sm text-[#BDD0E2] mb-4">
         <span className="flex items-center gap-1">
           <MapPin className="w-4 h-4" />
           {equipment.location || 'Local Pickup'}
@@ -523,7 +523,7 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -539,12 +539,12 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
 
         <div className="cmd-page">
           <header className="cmd-header-bar sticky top-0 z-40">
-            <div className="max-w-4xl mx-auto px-4 flex gap-1 border-t border-[#3A3B3C]">
+            <div className="max-w-4xl mx-auto px-4 flex gap-1 border-t border-[#445E77]">
               <button
                 onClick={() => setActiveTab('dealers')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dealers'
-                  ? 'border-[#1877F2] text-[#1877F2]'
-                  : 'border-transparent text-[#B0B3B8] hover:text-white'
+                  ? 'border-[#1981EC] text-[#86DAFF]'
+                  : 'border-transparent text-[#BDD0E2] hover:text-white'
                   }`}
               >
                 <Users className="w-4 h-4 inline-block mr-2" />
@@ -554,7 +554,7 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
                 onClick={() => setActiveTab('equipment')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'equipment'
                   ? 'border-[#31A24C] text-[#31A24C]'
-                  : 'border-transparent text-[#B0B3B8] hover:text-white'
+                  : 'border-transparent text-[#BDD0E2] hover:text-white'
                   }`}
               >
                 <Package className="w-4 h-4 inline-block mr-2" />
@@ -566,7 +566,7 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
           <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#B0B3B8]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#BDD0E2]" />
               <input
                 type="text"
                 value={searchTerm}
@@ -578,14 +578,14 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
 
             {loading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
               </div>
             ) : activeTab === 'dealers' ? (
               filteredDealers.length === 0 ? (
                 <div className="cmd-panel p-8 text-center">
-                  <Users className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                  <p className="text-[#B0B3B8]">No Dealers Found</p>
-                  <p className="text-sm text-[#3A3B3C] mt-1">Try Adjusting Your Search</p>
+                  <Users className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                  <p className="text-[#BDD0E2]">No Dealers Found</p>
+                  <p className="text-sm text-[#7F97B0] mt-1">Try Adjusting Your Search</p>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
@@ -601,9 +601,9 @@ const data = await commanderFetchJSON('/api/commander/marketplace/equipment?limi
             ) : (
               filteredEquipment.length === 0 ? (
                 <div className="cmd-panel p-8 text-center">
-                  <Package className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                  <p className="text-[#B0B3B8]">No Equipment Found</p>
-                  <p className="text-sm text-[#3A3B3C] mt-1">Try Adjusting Your Search</p>
+                  <Package className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                  <p className="text-[#BDD0E2]">No Equipment Found</p>
+                  <p className="text-sm text-[#7F97B0] mt-1">Try Adjusting Your Search</p>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">

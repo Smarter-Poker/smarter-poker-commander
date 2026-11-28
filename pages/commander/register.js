@@ -147,7 +147,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     if (!showCalib) return {};
     
     return {
-      style: { cursor: 'move', outline: (idKey.startsWith('dot_') || idKey.startsWith('check')) ? 'none' : (activeCalib === idKey ? '2px dashed #1877F2' : '2px dotted rgba(255,255,255,0.5)') },
+      style: { cursor: 'move', outline: (idKey.startsWith('dot_') || idKey.startsWith('check')) ? 'none' : (activeCalib === idKey ? '2px dashed #1981EC' : '2px dotted rgba(255,255,255,0.5)') },
       onPointerDown: (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -668,7 +668,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
     window.location.href = '/commander/login';
   };
 
-  const inputClass = "w-full px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-lg text-[#E4E6EB] placeholder-[#8A8D91] focus:border-[#1877F2] focus:ring-2 focus:ring-[#1877F2]/20 focus:outline-none";
+  const inputClass = "w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] placeholder-[#9FB3C8] focus:border-[#1981EC] focus:ring-2 focus:ring-[#1981EC]/20 focus:outline-none";
 
   // Progress bar steps. When tier is locked we skip the "Select Plan" step
   // and show 3 circles instead of 4. Internal step state stays 1/2/4 so the
@@ -693,11 +693,11 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
   // wizard doesn't flash before we know whether to redirect.
   if (!preCheckDone) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
         <Head><title>{headerTitle}</title></Head>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#3A3B3C] border-t-[#1877F2] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#8A8D91] text-sm">Checking Your Commander Access...</p>
+          <div className="w-12 h-12 border-4 border-[#445E77] border-t-[#1981EC] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#9FB3C8] text-sm">Checking Your Commander Access...</p>
         </div>
       </div>
     );
@@ -737,7 +737,7 @@ const CalibrationPanel = () => {
     };
 
     return (
-      <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.9)', padding: 20, zIndex: 9999, color: 'white', border: '1px solid #1877F2', borderRadius: 8, width: 300}}>
+      <div style={{position: 'fixed', top: 10, right: 10, background: 'rgba(0,0,0,0.9)', padding: 20, zIndex: 9999, color: 'white', border: '1px solid #1981EC', borderRadius: 8, width: 300}}>
         <div style={{marginBottom: 10}}><b>UI Calibrator</b></div>
         <select value={activeCalib} onChange={e => { setActiveCalib(e.target.value); setCalib(liveCalib.current); }} style={{color:'black', marginBottom:10, width: '100%', padding: 4}}>
           {Object.keys(calib).map(k => <option key={k} value={k}>{k}</option>)}
@@ -770,7 +770,7 @@ const CalibrationPanel = () => {
             navigator.clipboard.writeText(JSON.stringify(liveCalib.current, null, 2));
             alert("Settings copied to clipboard! Paste them to the AI.");
           }}
-          style={{marginTop: 10, width: '100%', padding: '10px', background: '#1877F2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
+          style={{marginTop: 10, width: '100%', padding: '10px', background: '#1981EC', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
         >
           Save & Copy Settings
         </button>
@@ -907,7 +907,7 @@ const CalibrationPanel = () => {
                   pointerEvents: showCalib ? 'auto' : 'none',
                   zIndex: 9
                 }}>
-                  <span className="text-[#1877F2] font-bold">✓</span>
+                  <span className="text-[#86DAFF] font-bold">✓</span>
                 </div>
               )}
 
@@ -1389,8 +1389,8 @@ const CalibrationPanel = () => {
                     // Or maybe no background at all, just a border? Wait, if I use NO overlay, how do they know?
                     // I will use a very subtle white background
                     background: 'transparent',
-                    border: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '2px solid #1877F2' : 'none',
-                    boxShadow: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '0 0 10px #1877F2, inset 0 0 10px rgba(24,119,242,0.5)' : 'none',
+                    border: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '2px solid #1981EC' : 'none',
+                    boxShadow: clubInfo.gamesOffered.includes({'NLH': 'NLH', 'PLO': 'PLO', 'PLO8': 'PLO8', 'LIMIT HE': 'Limit HE', 'STUD': 'Stud', 'MIXED': 'Mixed', 'TOURNAMENTS': 'Tournaments'}[label]) ? '0 0 10px #1981EC, inset 0 0 10px rgba(25, 129, 236,0.5)' : 'none',
                     borderRadius: '20px',
                     cursor: 'pointer',
                     zIndex: 10
@@ -1490,9 +1490,9 @@ const CalibrationPanel = () => {
               height: `${calib.plan_home.h}%`,
               ...(showCalib ? getDraggableProps('plan_home').style : {}),
               background: 'transparent',
-              border: selectedTier === 'home_game' ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'home_game' ? '2px solid #1981EC' : 'none',
               borderRadius: '8px',
-              boxShadow: selectedTier === 'home_game' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'home_game' ? 'inset 0 0 15px rgba(25, 129, 236, 0.4), 0 0 10px rgba(25, 129, 236, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
@@ -1508,7 +1508,7 @@ const CalibrationPanel = () => {
                  transform: 'translateY(-50%)',
                  width: `${calib.dot_home.w}%`,
                  height: `${calib.dot_home.h}%`,
-                 backgroundColor: '#1877F2',
+                 backgroundColor: '#1981EC',
                  borderRadius: '50%',
                  pointerEvents: showCalib ? 'auto' : 'none'
                }} />
@@ -1529,9 +1529,9 @@ const CalibrationPanel = () => {
               height: `${calib.plan_charity.h}%`,
               ...(showCalib ? getDraggableProps('plan_charity').style : {}),
               background: 'transparent',
-              border: selectedTier === 'charity' ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'charity' ? '2px solid #1981EC' : 'none',
               borderRadius: '8px',
-              boxShadow: selectedTier === 'charity' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'charity' ? 'inset 0 0 15px rgba(25, 129, 236, 0.4), 0 0 10px rgba(25, 129, 236, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
@@ -1546,7 +1546,7 @@ const CalibrationPanel = () => {
                  transform: 'translateY(-50%)',
                  width: `${calib.dot_charity.w}%`,
                  height: `${calib.dot_charity.h}%`,
-                 backgroundColor: '#1877F2',
+                 backgroundColor: '#1981EC',
                  borderRadius: '50%',
                  pointerEvents: showCalib ? 'auto' : 'none'
                }} />
@@ -1567,9 +1567,9 @@ const CalibrationPanel = () => {
               height: `${calib.plan_club.h}%`,
               ...(showCalib ? getDraggableProps('plan_club').style : {}),
               background: 'transparent',
-              border: selectedTier === 'club' ? '2px solid #1877F2' : 'none',
+              border: selectedTier === 'club' ? '2px solid #1981EC' : 'none',
               borderRadius: '8px',
-              boxShadow: selectedTier === 'club' ? 'inset 0 0 15px rgba(24, 119, 242, 0.4), 0 0 10px rgba(24, 119, 242, 0.4)' : 'none',
+              boxShadow: selectedTier === 'club' ? 'inset 0 0 15px rgba(25, 129, 236, 0.4), 0 0 10px rgba(25, 129, 236, 0.4)' : 'none',
               cursor: 'pointer',
               zIndex: 10
             }}
@@ -1584,7 +1584,7 @@ const CalibrationPanel = () => {
                  transform: 'translateY(-50%)',
                  width: `${calib.dot_club.w}%`,
                  height: `${calib.dot_club.h}%`,
-                 backgroundColor: '#1877F2',
+                 backgroundColor: '#1981EC',
                  borderRadius: '50%',
                  pointerEvents: showCalib ? 'auto' : 'none'
                }} />
@@ -1624,7 +1624,7 @@ const CalibrationPanel = () => {
               pointerEvents: showCalib ? 'auto' : 'none',
               zIndex: 9
             }}>
-              <span className="text-[#1877F2] font-bold" style={{ fontSize: `${calib.checkmark.w}vw` }}>✓</span>
+              <span className="text-[#86DAFF] font-bold" style={{ fontSize: `${calib.checkmark.w}vw` }}>✓</span>
             </div>
           )}
 
@@ -1728,7 +1728,7 @@ const CalibrationPanel = () => {
             position: 'absolute',
             top: '57.8%',
             left: '28%',
-            color: '#E4E6EB',
+            color: '#F2F7FF',
             fontSize: 'min(17px, 3vw)',
             fontFamily: 'Inter, sans-serif',
             zIndex: 10
@@ -1741,7 +1741,7 @@ const CalibrationPanel = () => {
             position: 'absolute',
             top: '69.5%',
             left: '28%',
-            color: '#E4E6EB',
+            color: '#F2F7FF',
             fontSize: 'min(17px, 3vw)',
             fontFamily: 'Inter, sans-serif',
             zIndex: 10
@@ -1754,7 +1754,7 @@ const CalibrationPanel = () => {
             position: 'absolute',
             top: '73%',
             left: '28%',
-            color: '#E4E6EB',
+            color: '#F2F7FF',
             fontSize: 'min(17px, 3vw)',
             fontFamily: 'Inter, sans-serif',
             zIndex: 10
@@ -1796,7 +1796,7 @@ const CalibrationPanel = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#18191A]">
+    <div className="min-h-screen bg-[#040D18]">
       <Head><title>{headerTitle}</title></Head>
       <style>{`
         @keyframes slideUpFade {
@@ -1812,7 +1812,7 @@ const CalibrationPanel = () => {
         {/* Logo */}
         <div className="text-center mb-6">
           <Image src="/images/club-commander-logo.jpg" alt="Club Commander" width={1584} height={656} className="w-full max-w-md mx-auto rounded-lg" />
-          <p className="text-[#B0B3B8] mt-4">{headerSubtitle}</p>
+          <p className="text-[#BDD0E2] mt-4">{headerSubtitle}</p>
           {/* Entry-port indicator - same signup screen is reached from
               Social Pages, Poker Near Me, and Club Commander. Surface the
               `from` query so users see continuity across surfaces. */}
@@ -1824,9 +1824,9 @@ const CalibrationPanel = () => {
                         : null;
             if (!label) return null;
             return (
-              <div className="inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-[#1877F2]/10 border border-[#1877F2]/30">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1877F2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                <span className="text-xs font-semibold text-[#1877F2] uppercase tracking-wide">{label}</span>
+              <div className="inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-[#0C55C0]/10 border border-[#1981EC]/30">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1981EC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                <span className="text-xs font-semibold text-[#86DAFF] uppercase tracking-wide">{label}</span>
               </div>
             );
           })()}
@@ -1834,19 +1834,19 @@ const CalibrationPanel = () => {
 
         {/* Progress Steps */}
         <div className="flex justify-between items-center mb-8 relative">
-          <div className="absolute top-5 left-0 right-0 h-0.5 bg-[#3A3B3C]">
-            <div className="h-full bg-[#1877F2] transition-all" style={{ width: `${((displayStep - 1) / (steps.length - 1)) * 100}%` }} />
+          <div className="absolute top-5 left-0 right-0 h-0.5 bg-[#132A42]">
+            <div className="h-full bg-[#0C55C0] transition-all" style={{ width: `${((displayStep - 1) / (steps.length - 1)) * 100}%` }} />
           </div>
           {steps.map((label, idx) => (
             <div key={label} className="relative z-10 flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${displayStep > idx + 1 ? 'bg-[#31A24C] text-white' : displayStep === idx + 1 ? 'bg-[#1877F2] text-white ring-4 ring-[#1877F2]/30' : 'bg-[#3A3B3C] text-[#8A8D91]'}`}>{idx + 1}</div>
-              <span className={`text-xs mt-2 ${displayStep === idx + 1 ? 'text-[#E4E6EB]' : 'text-[#8A8D91]'}`}>{label}</span>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${displayStep > idx + 1 ? 'bg-[#31A24C] text-white' : displayStep === idx + 1 ? 'bg-[#0C55C0] text-white ring-4 ring-[#1981EC]/30' : 'bg-[#132A42] text-[#9FB3C8]'}`}>{idx + 1}</div>
+              <span className={`text-xs mt-2 ${displayStep === idx + 1 ? 'text-[#F2F7FF]' : 'text-[#9FB3C8]'}`}>{label}</span>
             </div>
           ))}
         </div>
 
         {/* Form Card */}
-        <div className="bg-[#242526] rounded-xl p-8 border border-[#3A3B3C]">
+        <div className="bg-[#0A1829] rounded-xl p-8 border border-[#445E77]">
           {error && <div className="mb-6 p-4 bg-[#F02849]/10 border border-[#F02849]/30 rounded-lg text-[#F02849]">{error}</div>}
 
           {/* ═══════════════════════════════════════════════════════════ */}
@@ -1854,15 +1854,15 @@ const CalibrationPanel = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 1 && (
             <div className="space-y-4 animate-step">
-              <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">Create Your Account</h2>
-              <p className="text-sm text-[#8A8D91] mb-4">
+              <h2 className="text-xl font-bold text-[#F2F7FF] mb-6">Create Your Account</h2>
+              <p className="text-sm text-[#9FB3C8] mb-4">
                 {isHomeGameFlow
                   ? 'First, Set Up Your Login. Next You’ll Add Your Home Game Details.'
                   : 'First, Set Up Your Login Credentials. You Can Add Venue Details Next.'}
               </p>
 
               <div>
-                <label className="block text-sm text-[#B0B3B8] mb-1.5">Your Full Name *</label>
+                <label className="block text-sm text-[#BDD0E2] mb-1.5">Your Full Name *</label>
                 <div className="relative">
                   <input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} className={inputClass} placeholder={isHomeGameFlow ? 'Host Name' : 'Owner Or Manager Name'} style={{ paddingRight: '40px' }} />
                   {ownerName.trim().length >= 2 && (
@@ -1872,7 +1872,7 @@ const CalibrationPanel = () => {
               </div>
               <input type="text" name="website_url" value={honeypot} onChange={e => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
               <div>
-                <label className="block text-sm text-[#B0B3B8] mb-1.5">Email Address *</label>
+                <label className="block text-sm text-[#BDD0E2] mb-1.5">Email Address *</label>
                 <div className="relative">
                   <input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} className={inputClass} placeholder="This Will Be Your Login Email" style={{ paddingRight: '40px' }} />
                   {ownerEmail.includes('@') && ownerEmail.includes('.') && ownerEmail.length > 5 && (
@@ -1881,7 +1881,7 @@ const CalibrationPanel = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-[#B0B3B8] mb-1.5">Phone Number *</label>
+                <label className="block text-sm text-[#BDD0E2] mb-1.5">Phone Number *</label>
                 <div className="relative">
                   <input type="tel" value={ownerPhone} onChange={handlePhoneChange(setOwnerPhone)} className={inputClass} placeholder="(555) 555-5555" style={{ paddingRight: '40px' }} />
                   {ownerPhone && isValidPhoneNumber(ownerPhone, 'US') && (
@@ -1891,18 +1891,18 @@ const CalibrationPanel = () => {
               </div>
 
               {/* Existing account toggle */}
-              <div className="flex items-center gap-3 p-4 bg-[#3A3B3C]/40 rounded-lg">
+              <div className="flex items-center gap-3 p-4 bg-[#132A42]/40 rounded-lg">
                 <input type="checkbox" id="existingAccount" checked={existingAccount} onChange={e => setExistingAccount(e.target.checked)} className="w-4 h-4 rounded" />
-                <label htmlFor="existingAccount" className="text-sm text-[#B0B3B8]">I Already Have A Smarter.Poker Account With This Email</label>
+                <label htmlFor="existingAccount" className="text-sm text-[#BDD0E2]">I Already Have A Smarter.Poker Account With This Email</label>
               </div>
 
               {!existingAccount && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#B0B3B8] mb-1.5">Create Password *</label>
+                    <label className="block text-sm text-[#BDD0E2] mb-1.5">Create Password *</label>
                     <div className="relative">
                       <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className={inputClass} style={{ paddingRight: '40px' }} placeholder="Min 8 Characters" />
-                      <button type="button" tabIndex="-1" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8D91] hover:text-[#E4E6EB]">
+                      <button type="button" tabIndex="-1" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9FB3C8] hover:text-[#F2F7FF]">
                         {showPassword ? (
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                         ) : (
@@ -1913,7 +1913,7 @@ const CalibrationPanel = () => {
                     <PasswordStrength password={password} />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#B0B3B8] mb-1.5">Confirm Password *</label>
+                    <label className="block text-sm text-[#BDD0E2] mb-1.5">Confirm Password *</label>
                     <div className="relative">
                       <input type={showPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} style={{ paddingRight: '40px' }} />
                     </div>
@@ -1922,8 +1922,8 @@ const CalibrationPanel = () => {
               )}
 
               {/* Promo Code */}
-              <div className="border-t border-[#3A3B3C] pt-6 mt-6">
-                <label className="block text-sm text-[#B0B3B8] mb-1.5">Promo Code (Optional)</label>
+              <div className="border-t border-[#445E77] pt-6 mt-6">
+                <label className="block text-sm text-[#BDD0E2] mb-1.5">Promo Code (Optional)</label>
                 <div className="flex gap-3">
                   <div className="relative flex-1">
                     <input
@@ -1935,13 +1935,13 @@ const CalibrationPanel = () => {
                     />
                     {promoStatus === 'valid' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#31A24C] text-lg">✓</span>}
                     {promoStatus === 'invalid' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#F02849] text-lg">✗</span>}
-                    {promoStatus === 'checking' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8D91] text-sm">...</span>}
+                    {promoStatus === 'checking' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9FB3C8] text-sm">...</span>}
                   </div>
                   <button
                     type="button"
                     onClick={() => validatePromoCode(promoCode)}
                     disabled={!promoCode.trim() || promoStatus === 'checking'}
-                    className="px-5 py-3 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg font-semibold text-sm disabled:opacity-40"
+                    className="px-5 py-3 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg font-semibold text-sm disabled:opacity-40"
                   >
                     Apply
                   </button>
@@ -1960,17 +1960,17 @@ const CalibrationPanel = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 2 && (
             <div className="space-y-4 animate-step">
-              <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">
+              <h2 className="text-xl font-bold text-[#F2F7FF] mb-6">
                 {isHomeGameFlow ? 'Home Game Details' : 'Venue Details'}
               </h2>
-              <p className="text-sm text-[#8A8D91] mb-4">
+              <p className="text-sm text-[#9FB3C8] mb-4">
                 {isHomeGameFlow
                   ? 'Tell Us About Your Home Game. Only Name, City, And State Are Required - You Can Add More Details After Setup.'
                   : 'Tell Us About Your Poker Room. Address Is Optional For Home Games And Charity Events.'}
               </p>
 
               <div>
-                <label className="block text-sm text-[#B0B3B8] mb-1.5">
+                <label className="block text-sm text-[#BDD0E2] mb-1.5">
                   {isHomeGameFlow ? 'Home Game Name *' : 'Club/Venue Name *'}
                 </label>
                 <div className="relative">
@@ -1982,7 +1982,7 @@ const CalibrationPanel = () => {
               </div>
 
               <div>
-                <label className="block text-sm text-[#B0B3B8] mb-1.5">Search Location {(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
+                <label className="block text-sm text-[#BDD0E2] mb-1.5">Search Location {(isAddressRequired || isHomeGameFlow) ? ' *' : ''}</label>
                 <PhotonAutocomplete
                   onPlaceSelected={handlePlaceSelected}
                   defaultValue={clubInfo.address || clubInfo.city}
@@ -1993,8 +1993,8 @@ const CalibrationPanel = () => {
                 />
                 
                 {(clubInfo.city || clubInfo.address) && (
-                  <div className="mt-3 p-3 bg-[#3A3B3C]/40 rounded-lg text-sm text-[#E4E6EB]">
-                    <span className="block text-[#B0B3B8] text-xs uppercase tracking-wider mb-1">Extracted Details:</span>
+                  <div className="mt-3 p-3 bg-[#132A42]/40 rounded-lg text-sm text-[#F2F7FF]">
+                    <span className="block text-[#BDD0E2] text-xs uppercase tracking-wider mb-1">Extracted Details:</span>
                     {clubInfo.address && <div>{clubInfo.address}</div>}
                     {clubInfo.city && <div>{clubInfo.city}, {clubInfo.state} {clubInfo.zip}</div>}
                   </div>
@@ -2004,32 +2004,32 @@ const CalibrationPanel = () => {
               {!isHomeGameFlow && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Venue Phone</label><input type="tel" name="phone" value={clubInfo.phone} onChange={handleClubInfoChange} className={inputClass} placeholder="If Different From Your Phone" /></div>
-                    <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Website</label><input type="url" name="website" value={clubInfo.website} onChange={handleClubInfoChange} className={inputClass} /></div>
+                    <div><label className="block text-sm text-[#BDD0E2] mb-1.5">Venue Phone</label><input type="tel" name="phone" value={clubInfo.phone} onChange={handleClubInfoChange} className={inputClass} placeholder="If Different From Your Phone" /></div>
+                    <div><label className="block text-sm text-[#BDD0E2] mb-1.5">Website</label><input type="url" name="website" value={clubInfo.website} onChange={handleClubInfoChange} className={inputClass} /></div>
                   </div>
-                  <div><label className="block text-sm text-[#B0B3B8] mb-1.5">Number Of Tables</label><input type="number" name="tables" value={clubInfo.tables} onChange={handleClubInfoChange} className={inputClass} /></div>
+                  <div><label className="block text-sm text-[#BDD0E2] mb-1.5">Number Of Tables</label><input type="number" name="tables" value={clubInfo.tables} onChange={handleClubInfoChange} className={inputClass} /></div>
                 </>
               )}
 
               <div>
-                <label className="block text-sm text-[#B0B3B8] mb-2">Games Offered</label>
+                <label className="block text-sm text-[#BDD0E2] mb-2">Games Offered</label>
                 <div className="flex flex-wrap gap-2">
                   {['NLH', 'PLO', 'PLO8', 'Limit HE', 'Stud', 'Mixed', 'Tournaments'].map(game => (
-                    <button key={game} type="button" onClick={() => handleGameToggle(game)} className={`px-4 py-2 rounded-full text-sm ${clubInfo.gamesOffered.includes(game) ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>{game}</button>
+                    <button key={game} type="button" onClick={() => handleGameToggle(game)} className={`px-4 py-2 rounded-full text-sm ${clubInfo.gamesOffered.includes(game) ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}>{game}</button>
                   ))}
                 </div>
               </div>
 
               {/* Inline terms + plan summary when tier is locked (step 3 is skipped) */}
               {lockedTier && (
-                <div className="border-t border-[#3A3B3C] pt-5 mt-5 space-y-4">
-                  <div className="p-4 bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl text-[#E4E6EB] text-sm">
+                <div className="border-t border-[#445E77] pt-5 mt-5 space-y-4">
+                  <div className="p-4 bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl text-[#F2F7FF] text-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="font-semibold mb-1">
                           {TIERS[lockedTier].name} Tier - {COMMANDER_FREE_MODE ? COMMANDER_FREE_TAGLINE : '100% Free To Start'}
                         </div>
-                        <div className="text-[#B0B3B8] text-xs">
+                        <div className="text-[#BDD0E2] text-xs">
                           {COMMANDER_FREE_MODE
                             ? 'All Commander features are free while in beta. No credit card required.'
                             : 'No credit card required. You can upgrade anytime.'}
@@ -2038,15 +2038,15 @@ const CalibrationPanel = () => {
                       <div className="text-right whitespace-nowrap">
                         <span className="text-2xl font-bold">{displayTierPrice(lockedTier)}</span>
                         {!COMMANDER_FREE_MODE && (
-                          <span className="text-[#8A8D91]">/mo after trial</span>
+                          <span className="text-[#9FB3C8]">/mo after trial</span>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <input type="checkbox" id="terms-inline" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-1 w-4 h-4 rounded" />
-                    <label htmlFor="terms-inline" className="text-sm text-[#B0B3B8]">
-                      I Agree To The <Link href="/terms" className="text-[#1877F2]">Terms</Link> And <Link href="/terms" className="text-[#1877F2]">Privacy Policy</Link>
+                    <label htmlFor="terms-inline" className="text-sm text-[#BDD0E2]">
+                      I Agree To The <Link href="/terms" className="text-[#86DAFF]">Terms</Link> And <Link href="/terms" className="text-[#86DAFF]">Privacy Policy</Link>
                     </label>
                   </div>
                 </div>
@@ -2059,28 +2059,28 @@ const CalibrationPanel = () => {
           {/* ═══════════════════════════════════════════════════════════ */}
           {step === 3 && !lockedTier && (
             <div className="space-y-6 animate-step">
-              <h2 className="text-xl font-bold text-[#E4E6EB] mb-6">Select Your Plan</h2>
+              <h2 className="text-xl font-bold text-[#F2F7FF] mb-6">Select Your Plan</h2>
               <div className="grid gap-4">
                 {Object.entries(TIERS || {}).map(([key, tier]) => (
-                  <div key={key} onClick={() => setSelectedTier(key)} className={`relative p-5 rounded-xl border-2 cursor-pointer ${selectedTier === key ? 'border-[#1877F2] bg-[#1877F2]/10' : 'border-[#3A3B3C] bg-[#3A3B3C]/30'}`}>
-                    {tier.popular && <span className="absolute -top-3 left-4 px-3 py-1 bg-[#1877F2] text-white text-xs rounded-full">Most Popular</span>}
+                  <div key={key} onClick={() => setSelectedTier(key)} className={`relative p-5 rounded-xl border-2 cursor-pointer ${selectedTier === key ? 'border-[#1981EC] bg-[#0C55C0]/10' : 'border-[#445E77] bg-[#132A42]/30'}`}>
+                    {tier.popular && <span className="absolute -top-3 left-4 px-3 py-1 bg-[#0C55C0] text-white text-xs rounded-full">Most Popular</span>}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedTier === key ? 'border-[#1877F2] bg-[#1877F2]' : 'border-[#8A8D91]'}`}>{selectedTier === key && <span className="text-white text-xs">✓</span>}</div>
-                        <div><div className="font-semibold text-[#E4E6EB]">{tier.name}</div><div className="text-sm text-[#B0B3B8]">{tier.tables} tables, {tier.staff} staff</div></div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedTier === key ? 'border-[#1981EC] bg-[#0C55C0]' : 'border-[#9FB3C8]'}`}>{selectedTier === key && <span className="text-white text-xs">✓</span>}</div>
+                        <div><div className="font-semibold text-[#F2F7FF]">{tier.name}</div><div className="text-sm text-[#BDD0E2]">{tier.tables} tables, {tier.staff} staff</div></div>
                       </div>
                       <div className="text-right">
-                        <span className="text-2xl font-bold text-[#E4E6EB]">{displayTierPrice(key)}</span>
-                        <span className="text-[#8A8D91]">{displayTierPeriod(key)}</span>
+                        <span className="text-2xl font-bold text-[#F2F7FF]">{displayTierPrice(key)}</span>
+                        <span className="text-[#9FB3C8]">{displayTierPeriod(key)}</span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="p-4 bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl text-center text-[#E4E6EB]">
+              <div className="p-4 bg-[#31A24C]/10 border border-[#31A24C]/30 rounded-xl text-center text-[#F2F7FF]">
                 <span className="font-semibold">{displayTierTrialTagline()}</span> - {COMMANDER_FREE_SUBTEXT}
               </div>
-              <div className="flex items-start gap-3"><input type="checkbox" id="terms" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-1 w-4 h-4 rounded" /><label htmlFor="terms" className="text-sm text-[#B0B3B8]">I Agree To The <Link href="/terms" className="text-[#1877F2]">Terms</Link> And <Link href="/terms" className="text-[#1877F2]">Privacy Policy</Link></label></div>
+              <div className="flex items-start gap-3"><input type="checkbox" id="terms" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-1 w-4 h-4 rounded" /><label htmlFor="terms" className="text-sm text-[#BDD0E2]">I Agree To The <Link href="/terms" className="text-[#86DAFF]">Terms</Link> And <Link href="/terms" className="text-[#86DAFF]">Privacy Policy</Link></label></div>
             </div>
           )}
 
@@ -2090,34 +2090,34 @@ const CalibrationPanel = () => {
           {step === 4 && (
             <div className="text-center space-y-6 animate-step">
               <div className="w-20 h-20 bg-[#31A24C] rounded-full flex items-center justify-center mx-auto text-4xl text-white">✓</div>
-              <h2 className="text-2xl font-bold text-[#E4E6EB]">
+              <h2 className="text-2xl font-bold text-[#F2F7FF]">
                 {isHomeGameFlow ? 'You’re All Set!' : 'Welcome To Club Commander!'}
               </h2>
-              <p className="text-[#B0B3B8]">
+              <p className="text-[#BDD0E2]">
                 {isHomeGameFlow
                   ? 'Your Home Games Host Account Is Active. Let’s Create Your First Home Game.'
                   : (COMMANDER_FREE_MODE
                       ? `Your Account Has Been Created. ${COMMANDER_FREE_TAGLINE} - All Features Unlocked.`
                       : 'Your Account Has Been Created. Your 14-day Trial Starts Now.')}
               </p>
-              <div className="bg-[#1877F2]/10 border border-[#1877F2]/30 rounded-xl p-4 text-left">
-                <p className="text-sm text-[#B0B3B8] mb-1">Login Email:</p>
-                <p className="text-[#E4E6EB] font-semibold">{ownerEmail}</p>
-                <p className="text-xs text-[#8A8D91] mt-2">
+              <div className="bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl p-4 text-left">
+                <p className="text-sm text-[#BDD0E2] mb-1">Login Email:</p>
+                <p className="text-[#F2F7FF] font-semibold">{ownerEmail}</p>
+                <p className="text-xs text-[#9FB3C8] mt-2">
                   {existingAccount
                     ? 'Sign in using Google or your existing Smarter.Poker password.'
                     : 'Use this email and your password to sign in at the login page.'}
                 </p>
               </div>
               {registrationResult && !isHomeGameFlow && (
-                <div className="bg-[#3A3B3C] rounded-xl p-5 text-left">
+                <div className="bg-[#132A42] rounded-xl p-5 text-left">
                   <div className="flex justify-between mb-2">
-                    <span className="text-[#8A8D91]">Venue ID:</span>
-                    <span className="text-[#E4E6EB] font-mono">{registrationResult.venueId}</span>
+                    <span className="text-[#9FB3C8]">Venue ID:</span>
+                    <span className="text-[#F2F7FF] font-mono">{registrationResult.venueId}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8A8D91]">Plan:</span>
-                    <span className="text-[#E4E6EB]">
+                    <span className="text-[#9FB3C8]">Plan:</span>
+                    <span className="text-[#F2F7FF]">
                       {selectedTier}{COMMANDER_FREE_MODE ? ` (${COMMANDER_FREE_TAGLINE})` : ' (14-day trial)'}
                     </span>
                   </div>
@@ -2125,7 +2125,7 @@ const CalibrationPanel = () => {
               )}
               <button
                 onClick={handleCompletionCta}
-                className="w-full py-4 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-xl font-semibold text-lg"
+                className="w-full py-4 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-xl font-semibold text-lg"
               >
                 {queryReturn
                   ? (isHomeGameFlow ? 'Continue To Create Your Home Game' : 'Continue')
@@ -2137,18 +2137,18 @@ const CalibrationPanel = () => {
           {/* Navigation Buttons */}
           {step === 1 && (
             <div className="flex justify-end mt-8">
-              <button onClick={nextStep} className="px-8 py-3 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg font-semibold">
+              <button onClick={nextStep} className="px-8 py-3 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg font-semibold">
                 {isHomeGameFlow ? 'Continue To Home Game Details' : 'Continue To Venue Details'}
               </button>
             </div>
           )}
           {step === 2 && (
             <div className="flex justify-between mt-8">
-              <button onClick={prevStep} className="px-6 py-3 rounded-lg bg-[#3A3B3C] text-[#E4E6EB] hover:bg-[#4E4F50]">Back</button>
+              <button onClick={prevStep} className="px-6 py-3 rounded-lg bg-[#132A42] text-[#F2F7FF] hover:bg-[#1B3753]">Back</button>
               <button
                 onClick={nextStep}
                 disabled={loading || (lockedTier && !agreedToTerms)}
-                className="px-8 py-3 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg font-semibold disabled:opacity-50"
+                className="px-8 py-3 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg font-semibold disabled:opacity-50"
               >
                 {lockedTier
                   ? (loading ? 'Creating...' : (isHomeGameFlow ? 'Create My Home Games Host Account' : 'Create Account'))
@@ -2158,8 +2158,8 @@ const CalibrationPanel = () => {
           )}
           {step === 3 && !lockedTier && (
             <div className="flex justify-between mt-8">
-              <button onClick={prevStep} className="px-6 py-3 rounded-lg bg-[#3A3B3C] text-[#E4E6EB] hover:bg-[#4E4F50]">Back</button>
-              <button onClick={handleSubmit} disabled={loading || !agreedToTerms} className="px-8 py-3 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg font-semibold disabled:opacity-50">
+              <button onClick={prevStep} className="px-6 py-3 rounded-lg bg-[#132A42] text-[#F2F7FF] hover:bg-[#1B3753]">Back</button>
+              <button onClick={handleSubmit} disabled={loading || !agreedToTerms} className="px-8 py-3 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg font-semibold disabled:opacity-50">
                 {loading
                   ? 'Creating...'
                   : (COMMANDER_FREE_MODE ? 'Create Free Account' : 'Start Free Trial')}
@@ -2170,8 +2170,8 @@ const CalibrationPanel = () => {
 
         {/* Already have account link */}
         <div className="text-center mt-6">
-          <Link href="/commander/login" className="text-[#B0B3B8] hover:text-[#E4E6EB]">
-            Already Have A Club Commander Account? <span className="text-[#1877F2]">Sign In</span>
+          <Link href="/commander/login" className="text-[#BDD0E2] hover:text-[#F2F7FF]">
+            Already Have A Club Commander Account? <span className="text-[#86DAFF]">Sign In</span>
           </Link>
         </div>
 

@@ -46,11 +46,11 @@ export default class CommanderErrorBoundary extends Component {
       return (
         <div className="cmd-page flex items-center justify-center min-h-screen">
           <div className="cmd-panel p-8 max-w-md text-center">
-            <AlertTriangle className="w-12 h-12 text-[#F59E0B] mx-auto mb-4" />
+            <AlertTriangle className="w-12 h-12 text-[#22D3EE] mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-white mb-2">
               Something went wrong
             </h2>
-            <p className="text-sm text-[#64748B] mb-6">
+            <p className="text-sm text-[#9FB3C8] mb-6">
               {this.props.fallbackMessage || 'An error occurred while loading this page. Please try again.'}
             </p>
             <div className="flex gap-3 justify-center">
@@ -63,7 +63,7 @@ export default class CommanderErrorBoundary extends Component {
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="flex items-center gap-2 px-4 py-2 border border-[#4A5E78] text-[#64748B] rounded-lg font-medium hover:bg-[#132240] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-[#445E77] text-[#9FB3C8] rounded-lg font-medium hover:bg-[#132240] transition-colors"
               >
                 <Home className="w-4 h-4" />
                 Dashboard

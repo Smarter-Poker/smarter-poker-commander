@@ -109,14 +109,14 @@ export default function MustMoveModal({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#8B5CF6] rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#5AA9FF] rounded-lg flex items-center justify-center">
               <Link2 className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Must-Move Setup</h2>
-              <p className="text-sm text-[#64748B]">
+              <p className="text-sm text-[#9FB3C8]">
                 {game.stakes} {game.game_type?.toUpperCase()} - Table {game.table_number}
               </p>
             </div>
@@ -125,7 +125,7 @@ export default function MustMoveModal({
             onClick={onClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -139,7 +139,7 @@ export default function MustMoveModal({
 
           {/* Info box */}
           <div className="p-3 bg-[#0D192E] rounded-lg">
-            <p className="text-sm text-[#64748B]">
+            <p className="text-sm text-[#9FB3C8]">
               When the main game is full, new players are seated at the must-move game.
               As seats open in the main game, players move up in order.
             </p>
@@ -148,21 +148,21 @@ export default function MustMoveModal({
           {linkedGame ? (
             // Already linked - show unlink option
             <div className="space-y-4">
-              <div className="p-4 bg-[#8B5CF6]/10 rounded-lg">
-                <p className="text-sm font-medium text-[#8B5CF6] mb-2">Currently Linked</p>
+              <div className="p-4 bg-[#5AA9FF]/10 rounded-lg">
+                <p className="text-sm font-medium text-[#5AA9FF] mb-2">Currently Linked</p>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 p-3 bg-[#0B1426] rounded-lg border border-[#4A5E78]">
+                  <div className="flex-1 p-3 bg-[#0B1426] rounded-lg border border-[#445E77]">
                     <p className="font-medium text-white">
                       Table {game.table_number}
                     </p>
-                    <p className="text-sm text-[#64748B]">Main Game</p>
+                    <p className="text-sm text-[#9FB3C8]">Main Game</p>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-[#8B5CF6]" />
-                  <div className="flex-1 p-3 bg-[#0B1426] rounded-lg border border-[#4A5E78]">
+                  <ArrowRight className="w-5 h-5 text-[#5AA9FF]" />
+                  <div className="flex-1 p-3 bg-[#0B1426] rounded-lg border border-[#445E77]">
                     <p className="font-medium text-white">
                       Table {linkedGame.table_number}
                     </p>
-                    <p className="text-sm text-[#64748B]">Must-Move</p>
+                    <p className="text-sm text-[#9FB3C8]">Must-Move</p>
                   </div>
                 </div>
               </div>
@@ -190,9 +190,9 @@ export default function MustMoveModal({
             <div className="space-y-4">
               {availableGames.length === 0 ? (
                 <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-[#4A5E78] mx-auto mb-2" />
-                  <p className="text-[#64748B]">No Compatible Games Available</p>
-                  <p className="text-sm text-[#4A5E78] mt-1">
+                  <Users className="w-12 h-12 text-[#8FA6BE] mx-auto mb-2" />
+                  <p className="text-[#9FB3C8]">No Compatible Games Available</p>
+                  <p className="text-sm text-[#8FA6BE] mt-1">
                     Open another {game.stakes} {game.game_type?.toUpperCase()} game first
                   </p>
                 </div>
@@ -208,7 +208,7 @@ export default function MustMoveModal({
                           key={g.id}
                           onClick={() => setSelectedGameId(g.id)}
                           className={`w-full p-3 rounded-lg text-left transition-colors ${selectedGameId === g.id
-                              ? 'bg-[#8B5CF6] text-white'
+                              ? 'bg-[#5AA9FF] text-white'
                               : 'bg-[#0D192E] text-white hover:bg-[#132240]'
                             }`}
                         >
@@ -217,7 +217,7 @@ export default function MustMoveModal({
                               <p className="font-medium">
                                 {g.table_name || `Table ${g.table_number}`}
                               </p>
-                              <p className={`text-sm ${selectedGameId === g.id ? 'text-white/80' : 'text-[#64748B]'}`}>
+                              <p className={`text-sm ${selectedGameId === g.id ? 'text-white/80' : 'text-[#9FB3C8]'}`}>
                                 {g.player_count || 0}/{g.max_players} players
                               </p>
                             </div>
@@ -233,7 +233,7 @@ export default function MustMoveModal({
                   <button
                     onClick={handleLink}
                     disabled={!selectedGameId || submitting}
-                    className="w-full h-12 bg-[#8B5CF6] text-white font-semibold rounded-lg hover:bg-[#7C3AED] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-[#5AA9FF] text-white font-semibold rounded-lg hover:bg-[#3B82F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {submitting ? (
                       <>

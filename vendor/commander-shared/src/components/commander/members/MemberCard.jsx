@@ -13,10 +13,10 @@ import { useRef } from 'react';
 import { Printer } from 'lucide-react';
 
 const TIER_COLORS = {
-    standard: { bg: '#3A3B3C', text: '#E4E6EB', accent: '#1877F2' },
-    gold: { bg: '#78350F', text: '#FEF3C7', accent: '#F59E0B' },
-    platinum: { bg: '#1E293B', text: '#F1F5F9', accent: '#94A3B8' },
-    vip: { bg: '#2E1065', text: '#F3E8FF', accent: '#A855F7' },
+    standard: { bg: '#2A4560', text: '#F2F7FF', accent: '#1981EC' },
+    gold: { bg: '#78350F', text: '#E0F2FE', accent: '#22D3EE' },
+    platinum: { bg: '#1E293B', text: '#F1F5F9', accent: '#A9BDD1' },
+    vip: { bg: '#0B1E3A', text: '#F3E8FF', accent: '#5AA9FF' },
 };
 
 export default function MemberCard({ member, venueName, qrCodeUrl, onPrint }) {
@@ -132,7 +132,7 @@ export default function MemberCard({ member, venueName, qrCodeUrl, onPrint }) {
 
             {/* Print Button */}
             <button onClick={handlePrint}
-                className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 bg-[#1877F2] hover:bg-[#1664d9] text-white rounded-lg text-sm font-medium transition-colors">
+                className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 bg-[#0C55C0] hover:bg-[#0A4AA8] text-white rounded-lg text-sm font-medium transition-colors">
                 <Printer className="w-4 h-4" />
                 Print Card
             </button>

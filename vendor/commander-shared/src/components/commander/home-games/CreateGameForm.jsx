@@ -91,7 +91,7 @@ export default function CreateGameForm({
 
   const renderField = (label, field, type = 'text', props = {}) => (
     <div>
-      <label className="block text-sm font-medium mb-1.5 text-[#94A3B8]">
+      <label className="block text-sm font-medium mb-1.5 text-[#A9BDD1]">
         {label} {props.required && <span className="text-[#EF4444]">*</span>}
       </label>
       {type === 'textarea' ? (
@@ -130,7 +130,7 @@ export default function CreateGameForm({
     <div className="space-y-6">
       {/* Basic Info */}
       <div className="cmd-panel p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#4A5E78] mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8FA6BE] mb-4">
           Game Details
         </h3>
         <div className="space-y-4">
@@ -150,7 +150,7 @@ export default function CreateGameForm({
 
       {/* Schedule */}
       <div className="cmd-panel p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#4A5E78] mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8FA6BE] mb-4">
           Schedule
         </h3>
         <div className="grid grid-cols-3 gap-4">
@@ -162,7 +162,7 @@ export default function CreateGameForm({
 
       {/* Location */}
       <div className="cmd-panel p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#4A5E78] mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8FA6BE] mb-4">
           Location
         </h3>
         <div className="space-y-4">
@@ -172,7 +172,7 @@ export default function CreateGameForm({
             {renderField('State', 'state', 'text', { placeholder: 'TX', required: true })}
             {renderField('ZIP', 'zip', 'text', { placeholder: '78701' })}
           </div>
-          <p className="text-xs text-[#4A5E78]">
+          <p className="text-xs text-[#8FA6BE]">
             Address is only shown to approved players
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function CreateGameForm({
 
       {/* Visibility */}
       <div className="cmd-panel p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#4A5E78] mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8FA6BE] mb-4">
           Visibility
         </h3>
         <div className="space-y-2">
@@ -193,18 +193,18 @@ export default function CreateGameForm({
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
                   formData.visibility === opt.value
                     ? 'border-[#22D3EE] bg-[#22D3EE]/10'
-                    : 'border-[#4A5E78] hover:border-[#64748B]'
+                    : 'border-[#445E77] hover:border-[#9FB3C8]'
                 }`}
               >
                 <Icon
                   size={20}
-                  className={formData.visibility === opt.value ? 'text-[#22D3EE]' : 'text-[#64748B]'}
+                  className={formData.visibility === opt.value ? 'text-[#22D3EE]' : 'text-[#9FB3C8]'}
                 />
                 <div>
                   <span className={`font-medium ${formData.visibility === opt.value ? 'text-[#22D3EE]' : 'text-white'}`}>
                     {opt.label}
                   </span>
-                  <p className="text-xs text-[#64748B]">{opt.description}</p>
+                  <p className="text-xs text-[#9FB3C8]">{opt.description}</p>
                 </div>
               </button>
             );
@@ -217,25 +217,25 @@ export default function CreateGameForm({
               type="checkbox"
               checked={formData.requires_approval}
               onChange={(e) => updateField('requires_approval', e.target.checked)}
-              className="w-5 h-5 rounded border-[#4A5E78]"
+              className="w-5 h-5 rounded border-[#445E77]"
             />
-            <span className="text-sm text-[#94A3B8]">Require Host Approval For RSVPs</span>
+            <span className="text-sm text-[#A9BDD1]">Require Host Approval For RSVPs</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.allow_guests}
               onChange={(e) => updateField('allow_guests', e.target.checked)}
-              className="w-5 h-5 rounded border-[#4A5E78]"
+              className="w-5 h-5 rounded border-[#445E77]"
             />
-            <span className="text-sm text-[#94A3B8]">Allow Players To Bring Guests</span>
+            <span className="text-sm text-[#A9BDD1]">Allow Players To Bring Guests</span>
           </label>
         </div>
       </div>
 
       {/* Notes */}
       <div className="cmd-panel p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#4A5E78] mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[#8FA6BE] mb-4">
           Additional Notes
         </h3>
         {renderField('House Rules / Notes', 'notes', 'textarea', {
@@ -248,7 +248,7 @@ export default function CreateGameForm({
         <button
           onClick={onCancel}
           className="flex-1 h-12 border rounded-xl font-medium flex items-center justify-center gap-2"
-          style={{ borderColor: '#4A5E78', color: '#64748B' }}
+          style={{ borderColor: '#445E77', color: '#9FB3C8' }}
         >
           <X size={18} />
           Cancel

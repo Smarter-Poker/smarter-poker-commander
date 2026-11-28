@@ -18,18 +18,18 @@ import { busEmit } from '../../../src/engine/EventBus';
 import SEOHead from '../../../src/components/seo/SEOHead';
 
 const PROMO_TYPE_STYLES = {
-  high_hand: { bg: 'from-yellow-900/40 to-yellow-700/20', accent: '#F59E0B', label: 'HIGH HAND' },
+  high_hand: { bg: 'from-cyan-900/40 to-cyan-700/20', accent: '#22D3EE', label: 'HIGH HAND' },
   bad_beat: { bg: 'from-red-900/40 to-red-700/20', accent: '#EF4444', label: 'BAD BEAT JACKPOT' },
-  splash_pot: { bg: 'from-blue-900/40 to-blue-700/20', accent: '#1877F2', label: 'SPLASH POT' },
-  happy_hour: { bg: 'from-amber-900/40 to-amber-700/20', accent: '#F59E0B', label: 'HAPPY HOUR' },
-  new_player: { bg: 'from-purple-900/40 to-purple-700/20', accent: '#8B5CF6', label: 'NEW PLAYER BONUS' },
-  referral: { bg: 'from-pink-900/40 to-pink-700/20', accent: '#EC4899', label: 'REFERRAL BONUS' },
+  splash_pot: { bg: 'from-blue-900/40 to-blue-700/20', accent: '#1981EC', label: 'SPLASH POT' },
+  happy_hour: { bg: 'from-cyan-900/40 to-cyan-700/20', accent: '#22D3EE', label: 'HAPPY HOUR' },
+  new_player: { bg: 'from-sky-900/40 to-sky-700/20', accent: '#5AA9FF', label: 'NEW PLAYER BONUS' },
+  referral: { bg: 'from-sky-900/40 to-sky-700/20', accent: '#38BDF8', label: 'REFERRAL BONUS' },
   loyalty: { bg: 'from-cyan-900/40 to-cyan-700/20', accent: '#22D3EE', label: 'LOYALTY REWARD' },
   drawing: { bg: 'from-orange-900/40 to-orange-700/20', accent: '#F97316', label: 'DRAWING' },
   tournament_bonus: { bg: 'from-green-900/40 to-green-700/20', accent: '#10B981', label: 'TOURNAMENT BONUS' },
-  cash_back: { bg: 'from-indigo-900/40 to-indigo-700/20', accent: '#6366F1', label: 'CASH BACK' },
+  cash_back: { bg: 'from-indigo-900/40 to-indigo-700/20', accent: '#3B82F6', label: 'CASH BACK' },
   custom: { bg: 'from-gray-900/40 to-gray-700/20', accent: '#9CA3AF', label: 'PROMOTION' },
-  default: { bg: 'from-blue-900/40 to-blue-700/20', accent: '#1877F2', label: 'PROMOTION' }
+  default: { bg: 'from-blue-900/40 to-blue-700/20', accent: '#1981EC', label: 'PROMOTION' }
 };
 
 export default function PromotionsDisplay() {
@@ -172,7 +172,7 @@ export default function PromotionsDisplay() {
         .shimmer { animation: shimmer 3s ease-in-out infinite; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .slide-in { animation: slideIn 0.6s ease-out; }
-        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 30px rgba(24,119,242,0.3); } 50% { box-shadow: 0 0 60px rgba(24,119,242,0.5); } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 30px rgba(25, 129, 236,0.3); } 50% { box-shadow: 0 0 60px rgba(25, 129, 236,0.5); } }
         .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
       `}</style>
 
@@ -181,7 +181,7 @@ export default function PromotionsDisplay() {
 
         {/* ── CLUB BRANDING HEADER ── */}
         <div style={{
-          background: 'linear-gradient(135deg, #1877F2 0%, #0D47A1 100%)',
+          background: 'linear-gradient(135deg, #1981EC 0%, #0D47A1 100%)',
           padding: '16px 32px',
           display: 'flex',
           alignItems: 'center',
@@ -338,7 +338,7 @@ export default function PromotionsDisplay() {
         {promotions.length > 1 && (
           <div className="flex justify-center gap-3 pb-4">
             {promotions.map((_, i) => (
-              <div key={i} className={`h-3 rounded-full transition-all ${i === currentIndex ? 'bg-[#1877F2] w-10' : 'bg-white/20 w-3'
+              <div key={i} className={`h-3 rounded-full transition-all ${i === currentIndex ? 'bg-[#0C55C0] w-10' : 'bg-white/20 w-3'
                 }`} />
             ))}
           </div>
@@ -346,7 +346,7 @@ export default function PromotionsDisplay() {
 
         {/* ── DEALER TICKER - 2x size, raised up, 100% slower ── */}
         <DealerTicker
-          accentColor="#F59E0B"
+          accentColor="#22D3EE"
           bgColor="rgba(0,0,0,0.95)"
           fontSize={36}
           borderColor="rgba(255,255,255,0.15)"

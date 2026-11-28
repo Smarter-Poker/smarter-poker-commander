@@ -258,24 +258,24 @@ export default function TDReports() {
     return (
         <CommanderLayout title="Reports">
             <SEOHead title="TD Reports" />
-            <div className="min-h-screen bg-[#18191A] pb-24">
+            <div className="min-h-screen bg-[#040D18] pb-24">
                 {/* Header */}
                 <PageBar
                     title="Reports"
                     summary="Reports For This Tournament In Four Tabs: Registration, Cashier, Activity And Drawer. Drawer Reconciles The Money Taken Against What Should Be There. Print The Drawer Report Or Download Any Tab As CSV."
-                    className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+                    className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
                     innerClassName="max-w-2xl mx-auto"
                     sticky
                 >
                         <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                             {tab === 'reconciliation' && (
                                 <button onClick={printReconciliation} disabled={busy || loading || !reportData?.variance}
-                                    className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                                    className="h-11 px-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />} Print
                                 </button>
                             )}
                             <button onClick={exportCSV} disabled={loading || !reportData}
-                                className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
+                                className="h-11 px-3 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-medium flex items-center gap-2 active:scale-95 disabled:opacity-50">
                                 <Download className="w-4 h-4" /> CSV
                             </button>
                         </div>
@@ -287,17 +287,17 @@ export default function TDReports() {
                         seventh entry drops every nav target below the 44px
                         minimum at 375px. */}
                     <button onClick={() => navigateTo('/results')}
-                        className="w-full bg-[#242526] border border-[#3A3B3C] rounded-xl p-4 flex items-center justify-between active:bg-[#3A3B3C] transition-colors">
+                        className="w-full bg-[#0A1829] border border-[#445E77] rounded-xl p-4 flex items-center justify-between active:bg-[#132A42] transition-colors">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#F59E0B]/20 flex items-center justify-center flex-shrink-0">
-                                <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                            <div className="w-10 h-10 rounded-full bg-[#22D3EE]/20 flex items-center justify-center flex-shrink-0">
+                                <Trophy className="w-5 h-5 text-[#22D3EE]" />
                             </div>
                             <div className="flex flex-col items-start">
                                 <span className="text-white font-semibold text-base">Final Results</span>
-                                <span className="text-[#B0B3B8] text-xs text-left">Finishing Order, Payouts And Finalize</span>
+                                <span className="text-[#BDD0E2] text-xs text-left">Finishing Order, Payouts And Finalize</span>
                             </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-[#B0B3B8] flex-shrink-0" />
+                        <ChevronRight className="w-5 h-5 text-[#BDD0E2] flex-shrink-0" />
                     </button>
 
                     {/* Tabs */}
@@ -306,7 +306,7 @@ export default function TDReports() {
                             const Icon = t.icon;
                             return (
                                 <button key={t.key} onClick={() => setTab(t.key)}
-                                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${tab === t.key ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
+                                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${tab === t.key ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'
                                         }`}>
                                     <Icon className="w-4 h-4" />
                                     {t.label}
@@ -317,7 +317,7 @@ export default function TDReports() {
 
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
-                            <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+                            <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
                         </div>
                     ) : (
                         <>
@@ -328,27 +328,27 @@ export default function TDReports() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <SummaryCard label="Entries" value={reportData.summary?.total_entries || 0} />
                                         <SummaryCard label="Prize Pool" value={formatMoney(reportData.summary?.prize_pool)} color="#31A24C" />
-                                        <SummaryCard label="House Fees" value={formatMoney(reportData.summary?.house_fees)} color="#F59E0B" />
+                                        <SummaryCard label="House Fees" value={formatMoney(reportData.summary?.house_fees)} color="#22D3EE" />
                                         <SummaryCard label="Rebuys" value={reportData.summary?.total_rebuys || 0} />
                                     </div>
 
                                     {/* Entries Table */}
-                                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                                        <div className="px-4 py-2 border-b border-[#3A3B3C]">
-                                            <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Entry Details</h3>
+                                    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                                        <div className="px-4 py-2 border-b border-[#445E77]">
+                                            <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Entry Details</h3>
                                         </div>
-                                        <div className="divide-y divide-[#3A3B3C]">
+                                        <div className="divide-y divide-[#445E77]">
                                             {(reportData.entries || []).map((e, i) => (
                                                 <div key={e.id || i} className="px-4 py-2.5 flex items-center gap-3">
                                                     {/* Bagged gets its own colour: still in the event, but not playing right now. */}
                                                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${e.status === 'eliminated' ? 'bg-[#EF4444]' :
-                                                        e.status === 'winner' ? 'bg-[#F59E0B]' :
-                                                            e.status === 'bagged' ? 'bg-[#F59E0B]' :
-                                                                ['active', 'seated'].includes(e.status) ? 'bg-[#31A24C]' : 'bg-[#1877F2]'
+                                                        e.status === 'winner' ? 'bg-[#22D3EE]' :
+                                                            e.status === 'bagged' ? 'bg-[#22D3EE]' :
+                                                                ['active', 'seated'].includes(e.status) ? 'bg-[#31A24C]' : 'bg-[#0C55C0]'
                                                         }`} />
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm text-[#E4E6EB] truncate">{e.profiles?.display_name || e.player_name || 'Unknown'}</p>
-                                                        <p className="text-[10px] text-[#B0B3B8]">
+                                                        <p className="text-sm text-[#F2F7FF] truncate">{e.profiles?.display_name || e.player_name || 'Unknown'}</p>
+                                                        <p className="text-[10px] text-[#BDD0E2]">
                                                             T{e.table_number || '?'}-S{e.seat_number || '?'} | {e.payment_method || 'unknown'} | {e.rebuy_count || 0}R
                                                             {e.addon_taken ? ' +A' : ''}
                                                         </p>
@@ -357,7 +357,7 @@ export default function TDReports() {
                                                         {e.payout_amount ? (
                                                             <p className="text-sm font-bold text-[#31A24C]">{formatMoney(e.payout_amount)}</p>
                                                         ) : null}
-                                                        <p className="text-[10px] text-[#B0B3B8]">
+                                                        <p className="text-[10px] text-[#BDD0E2]">
                                                             {e.registered_at ? new Date(e.registered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                                         </p>
                                                     </div>
@@ -373,18 +373,18 @@ export default function TDReports() {
                                 <div className="space-y-4">
                                     <SummaryCard label="Total Collected" value={formatMoney(reportData.total_collected)} color="#31A24C" />
 
-                                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                                        <div className="px-4 py-2 border-b border-[#3A3B3C]">
-                                            <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Cashier Breakdown</h3>
+                                    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                                        <div className="px-4 py-2 border-b border-[#445E77]">
+                                            <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Cashier Breakdown</h3>
                                         </div>
-                                        <div className="divide-y divide-[#3A3B3C]">
+                                        <div className="divide-y divide-[#445E77]">
                                             {(reportData.cashiers || []).map((c, i) => (
                                                 <div key={c.cashier_id || i} className="px-4 py-3">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <p className="text-sm font-medium text-[#E4E6EB]">{c.cashier_name}</p>
+                                                        <p className="text-sm font-medium text-[#F2F7FF]">{c.cashier_name}</p>
                                                         <p className="text-sm font-bold text-[#31A24C]">{formatMoney(c.total_cash)}</p>
                                                     </div>
-                                                    <div className="flex gap-4 text-[10px] text-[#B0B3B8]">
+                                                    <div className="flex gap-4 text-[10px] text-[#BDD0E2]">
                                                         <span>{c.entries_count} Entries</span>
                                                         <span>{c.rebuys_count} Rebuys</span>
                                                         <span>{c.addons_count} Add-Ons</span>
@@ -392,7 +392,7 @@ export default function TDReports() {
                                                     </div>
                                                     <div className="flex gap-2 mt-1.5">
                                                         {Object.entries(c.payment_methods || {}).map(([method, amount]) => (
-                                                            <span key={method} className="px-2 py-0.5 rounded bg-[#3A3B3C] text-[10px] text-[#B0B3B8]">
+                                                            <span key={method} className="px-2 py-0.5 rounded bg-[#132A42] text-[10px] text-[#BDD0E2]">
                                                                 {method}: {formatMoney(amount)}
                                                             </span>
                                                         ))}
@@ -400,7 +400,7 @@ export default function TDReports() {
                                                 </div>
                                             ))}
                                             {(reportData.cashiers || []).length === 0 && (
-                                                <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">No Cashier Data Recorded</div>
+                                                <div className="px-4 py-8 text-center text-[#BDD0E2] text-sm">No Cashier Data Recorded</div>
                                             )}
                                         </div>
                                     </div>
@@ -412,33 +412,33 @@ export default function TDReports() {
                                 <div className="space-y-4">
                                     <SummaryCard label="Total Events" value={reportData.total_events || 0} />
 
-                                    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                                        <div className="divide-y divide-[#3A3B3C]">
+                                    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                                        <div className="divide-y divide-[#445E77]">
                                             {(reportData.activities || []).slice(0, 100).map((a, i) => (
                                                 <div key={i} className="px-4 py-2.5 flex items-center gap-3">
                                                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${a.type === 'elimination' ? 'bg-[#EF4444]' :
                                                         a.type === 'registration' ? 'bg-[#31A24C]' :
-                                                            a.type === 'rebuy' ? 'bg-[#F59E0B]' : 'bg-[#1877F2]'
+                                                            a.type === 'rebuy' ? 'bg-[#22D3EE]' : 'bg-[#0C55C0]'
                                                         }`} />
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm text-[#E4E6EB]">
+                                                        <p className="text-sm text-[#F2F7FF]">
                                                             <span className="font-medium">{a.player_name}</span>
                                                         </p>
-                                                        <p className="text-[10px] text-[#B0B3B8]">{a.details}</p>
+                                                        <p className="text-[10px] text-[#BDD0E2]">{a.details}</p>
                                                     </div>
                                                     <div className="text-right flex-shrink-0">
                                                         <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-medium ${a.type === 'elimination' ? 'bg-[#EF4444]/10 text-[#EF4444]' :
                                                             a.type === 'registration' ? 'bg-[#31A24C]/10 text-[#31A24C]' :
-                                                                'bg-[#F59E0B]/10 text-[#F59E0B]'
+                                                                'bg-[#22D3EE]/10 text-[#22D3EE]'
                                                             }`}>{a.type}</span>
-                                                        <p className="text-[10px] text-[#B0B3B8] mt-0.5">
+                                                        <p className="text-[10px] text-[#BDD0E2] mt-0.5">
                                                             {a.timestamp ? new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                                         </p>
                                                     </div>
                                                 </div>
                                             ))}
                                             {(reportData.activities || []).length === 0 && (
-                                                <div className="px-4 py-8 text-center text-[#B0B3B8] text-sm">No Activity Yet</div>
+                                                <div className="px-4 py-8 text-center text-[#BDD0E2] text-sm">No Activity Yet</div>
                                             )}
                                         </div>
                                     </div>
@@ -450,7 +450,7 @@ export default function TDReports() {
                                 <ReconciliationSection data={reportData} />
                             )}
                             {tab === 'reconciliation' && !reportData && (
-                                <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] px-4 py-8 text-center text-[#B0B3B8] text-sm">
+                                <div className="bg-[#0A1829] rounded-xl border border-[#445E77] px-4 py-8 text-center text-[#BDD0E2] text-sm">
                                     The Cash Drawer Could Not Be Reconciled For This Tournament.
                                 </div>
                             )}
@@ -468,14 +468,14 @@ export default function TDReports() {
                 )}
 
                 {/* Bottom Nav */}
-                <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+                <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
                     <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
                         {NAV_ITEMS.map(item => {
                             const Icon = NAV_ICONS[item.key];
                             const isActive = item.key === 'reports';
                             return (
                                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'}`}>
+                                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'}`}>
                                     <Icon className="w-5 h-5" />
                                     <span className="text-[9px] font-medium">{item.label}</span>
                                 </button>
@@ -490,9 +490,9 @@ export default function TDReports() {
 
 function SummaryCard({ label, value, color }) {
     return (
-        <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3 text-center">
-            <p className="text-xs text-[#B0B3B8] uppercase tracking-wider">{label}</p>
-            <p className="text-lg font-bold" style={{ color: color || '#E4E6EB' }}>{value}</p>
+        <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3 text-center">
+            <p className="text-xs text-[#BDD0E2] uppercase tracking-wider">{label}</p>
+            <p className="text-lg font-bold" style={{ color: color || '#F2F7FF' }}>{value}</p>
         </div>
     );
 }
@@ -503,12 +503,12 @@ function VarianceRow({ label, expected, actual }) {
     const balanced = Math.abs(diff) <= 0.01;
     return (
         <div className="flex items-center gap-2 px-4 py-2.5 text-sm">
-            <span className="flex-1 min-w-0 truncate text-[#E4E6EB]">{label}</span>
-            <span className="w-20 text-right text-[#B0B3B8] tabular-nums">{formatMoney(expected)}</span>
-            <span className="w-20 text-right text-[#E4E6EB] tabular-nums">{formatMoney(actual)}</span>
+            <span className="flex-1 min-w-0 truncate text-[#F2F7FF]">{label}</span>
+            <span className="w-20 text-right text-[#BDD0E2] tabular-nums">{formatMoney(expected)}</span>
+            <span className="w-20 text-right text-[#F2F7FF] tabular-nums">{formatMoney(actual)}</span>
             <span
                 className="w-20 text-right font-bold tabular-nums"
-                style={{ color: balanced ? '#B0B3B8' : '#EF4444' }}
+                style={{ color: balanced ? '#BDD0E2' : '#EF4444' }}
             >
                 {balanced ? '--' : formatSigned(diff)}
             </span>
@@ -553,7 +553,7 @@ function ReconciliationSection({ data }) {
                     {balanced
                         ? <CheckCircle2 className="w-5 h-5 text-[#31A24C]" />
                         : <AlertTriangle className="w-5 h-5 text-[#EF4444]" />}
-                    <p className="text-xs uppercase tracking-wider text-[#B0B3B8]">Cash Drawer</p>
+                    <p className="text-xs uppercase tracking-wider text-[#BDD0E2]">Cash Drawer</p>
                 </div>
                 <p className="text-3xl font-bold" style={{ color: balanced ? '#31A24C' : '#EF4444' }}>
                     {balanced ? 'Balanced' : formatSigned(overShort)}
@@ -574,18 +574,18 @@ function ReconciliationSection({ data }) {
             </div>
 
             {/* Cash in */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-[#B0B3B8]" />
-                    <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider flex-1">Cash In</h3>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                <div className="px-4 py-2 border-b border-[#445E77] flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-[#BDD0E2]" />
+                    <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider flex-1">Cash In</h3>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-wider text-[#B0B3B8] border-b border-[#3A3B3C]">
+                <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-wider text-[#BDD0E2] border-b border-[#445E77]">
                     <span className="flex-1">Bucket</span>
                     <span className="w-20 text-right">Expected</span>
                     <span className="w-20 text-right">Actual</span>
                     <span className="w-20 text-right">Diff</span>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                     <VarianceRow
                         label={`Buy-Ins x${Number(expIn.buyins?.count || 0)}`}
                         expected={expIn.buyins?.amount}
@@ -604,9 +604,9 @@ function ReconciliationSection({ data }) {
                     <VarianceRow label="Total In" expected={expIn.total} actual={actIn.total} />
                 </div>
                 {methods.length > 0 && (
-                    <div className="px-4 py-2.5 border-t border-[#3A3B3C] flex flex-wrap gap-2">
+                    <div className="px-4 py-2.5 border-t border-[#445E77] flex flex-wrap gap-2">
                         {methods.map(([method, m]) => (
-                            <span key={method} className="px-2 py-0.5 rounded bg-[#3A3B3C] text-[10px] text-[#B0B3B8]">
+                            <span key={method} className="px-2 py-0.5 rounded bg-[#132A42] text-[10px] text-[#BDD0E2]">
                                 {method}: {formatMoney(m?.amount)}
                             </span>
                         ))}
@@ -615,11 +615,11 @@ function ReconciliationSection({ data }) {
             </div>
 
             {/* Pool derivation */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 space-y-2">
-                <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider mb-1">Pool Derivation</h3>
-                <DerivationRow label="House Fees" value={formatMoney(derivation.house_fees)} color="#F59E0B" />
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 space-y-2">
+                <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider mb-1">Pool Derivation</h3>
+                <DerivationRow label="House Fees" value={formatMoney(derivation.house_fees)} color="#22D3EE" />
                 {Number(derivation.bounty_pool_collected) > 0 && (
-                    <DerivationRow label="Bounty Pool" value={formatMoney(derivation.bounty_pool_collected)} color="#F59E0B" />
+                    <DerivationRow label="Bounty Pool" value={formatMoney(derivation.bounty_pool_collected)} color="#22D3EE" />
                 )}
                 <DerivationRow label="Prize Pool Collected" value={formatMoney(derivation.prize_pool_collected)} />
                 {Number(derivation.overlay) > 0 && (
@@ -629,17 +629,17 @@ function ReconciliationSection({ data }) {
             </div>
 
             {/* Cash out */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                <div className="px-4 py-2 border-b border-[#3A3B3C]">
-                    <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Cash Out</h3>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                <div className="px-4 py-2 border-b border-[#445E77]">
+                    <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Cash Out</h3>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-wider text-[#B0B3B8] border-b border-[#3A3B3C]">
+                <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-wider text-[#BDD0E2] border-b border-[#445E77]">
                     <span className="flex-1">Bucket</span>
                     <span className="w-20 text-right">Expected</span>
                     <span className="w-20 text-right">Actual</span>
                     <span className="w-20 text-right">Diff</span>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                     <VarianceRow label="Payouts" expected={expOut.payouts} actual={actOut.by_type?.payout?.amount} />
                     {Number(expOut.bounty_winnings) > 0 && (
                         <VarianceRow label="Bounty Winnings" expected={expOut.bounty_winnings} actual={0} />
@@ -649,23 +649,23 @@ function ReconciliationSection({ data }) {
             </div>
 
             {/* Discrepancies */}
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Discrepancies</h3>
-                    <span className="text-[10px] text-[#B0B3B8]">{discrepancies.length}</span>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                <div className="px-4 py-2 border-b border-[#445E77] flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Discrepancies</h3>
+                    <span className="text-[10px] text-[#BDD0E2]">{discrepancies.length}</span>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                     {discrepancies.length === 0 ? (
                         <div className="px-4 py-6 text-center text-sm text-[#31A24C]">Nothing To Investigate</div>
                     ) : discrepancies.map((d, i) => (
                         <div key={`${d.code}-${i}`} className="px-4 py-3 flex items-start gap-3">
                             <div
                                 className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
-                                style={{ background: d.severity === 'error' ? '#EF4444' : '#F59E0B' }}
+                                style={{ background: d.severity === 'error' ? '#EF4444' : '#22D3EE' }}
                             />
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm text-[#E4E6EB]">{d.message}</p>
-                                <p className="text-[10px] text-[#B0B3B8] mt-0.5">{d.code}</p>
+                                <p className="text-sm text-[#F2F7FF]">{d.message}</p>
+                                <p className="text-[10px] text-[#BDD0E2] mt-0.5">{d.code}</p>
                             </div>
                         </div>
                     ))}
@@ -674,26 +674,26 @@ function ReconciliationSection({ data }) {
 
             {/* Unpaid in the money */}
             {unpaid.length > 0 && (
-                <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-                    <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">Unpaid In The Money</h3>
-                        <span className="text-[10px] text-[#B0B3B8]">{unpaid.length}</span>
+                <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+                    <div className="px-4 py-2 border-b border-[#445E77] flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">Unpaid In The Money</h3>
+                        <span className="text-[10px] text-[#BDD0E2]">{unpaid.length}</span>
                     </div>
-                    <div className="divide-y divide-[#3A3B3C]">
+                    <div className="divide-y divide-[#445E77]">
                         {unpaid.map(u => (
                             <div key={u.entry_id} className="px-4 py-3 flex items-center gap-3">
-                                <span className="w-10 text-xs font-bold text-[#B0B3B8] flex-shrink-0">
+                                <span className="w-10 text-xs font-bold text-[#BDD0E2] flex-shrink-0">
                                     {ordinal(u.finish_position)}
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-[#E4E6EB] truncate">{u.player_name}</p>
+                                    <p className="text-sm text-[#F2F7FF] truncate">{u.player_name}</p>
                                     {Number(u.bounty_winnings) > 0 && (
-                                        <p className="text-[10px] text-[#F59E0B]">
+                                        <p className="text-[10px] text-[#22D3EE]">
                                             Plus {formatMoney(u.bounty_winnings)} Bounty
                                         </p>
                                     )}
                                 </div>
-                                <span className="text-sm font-bold text-[#F59E0B] flex-shrink-0">
+                                <span className="text-sm font-bold text-[#22D3EE] flex-shrink-0">
                                     {formatMoney(Number(u.payout_amount) > 0 ? u.payout_amount : u.scheduled_amount)}
                                 </span>
                             </div>
@@ -717,8 +717,8 @@ function ReconciliationSection({ data }) {
                             <div key={x.entry_id} className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-[#E4E6EB] truncate">{x.player_name}</p>
-                                        <p className="text-[10px] text-[#B0B3B8]">
+                                        <p className="text-sm text-[#F2F7FF] truncate">{x.player_name}</p>
+                                        <p className="text-[10px] text-[#BDD0E2]">
                                             Gross {formatMoney(x.gross_amount)}, Buy-In {formatMoney(x.buy_in)}
                                         </p>
                                     </div>
@@ -729,7 +729,7 @@ function ReconciliationSection({ data }) {
                             </div>
                         ))}
                     </div>
-                    <p className="px-4 py-2.5 text-[11px] text-[#E4E6EB] border-t border-[#EF4444]/20">
+                    <p className="px-4 py-2.5 text-[11px] text-[#F2F7FF] border-t border-[#EF4444]/20">
                         Reportable Amount Is Net Of That Entry Buy-In. Collect The Taxpayer Identification
                         Number Before The Player Leaves The Building.
                     </p>
@@ -742,8 +742,8 @@ function ReconciliationSection({ data }) {
 function DerivationRow({ label, value, color }) {
     return (
         <div className="flex items-center justify-between">
-            <span className="text-sm text-[#B0B3B8]">{label}</span>
-            <span className="text-sm font-bold tabular-nums" style={{ color: color || '#E4E6EB' }}>{value}</span>
+            <span className="text-sm text-[#BDD0E2]">{label}</span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: color || '#F2F7FF' }}>{value}</span>
         </div>
     );
 }

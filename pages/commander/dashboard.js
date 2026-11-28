@@ -1,13 +1,18 @@
 /**
- * Commander Staff Dashboard - 4-Card Main Menu
- * Industrial metal card interface with sub-feature navigation
+ * Commander Staff Dashboard - /commander/dashboard
+ *
+ * #SMARTERDESIGN (Dan, 2026-11-27): six steel-rimmed section panels, each
+ * with its seal, a live title and its feature buttons, all on one screen.
+ * Replaces the six painted console cards (baked lettering, orange/red/green
+ * neon) and their drill-in screen of painted icon tiles. Same links, role
+ * filtering, tier locks, Hard Stop banner and upgrade flow.
  * NO EMOJIS - Lucide icons only
  */
 import { useState, useEffect, useCallback } from 'react';
 import { busEmit } from '../../src/engine/EventBus';
 import { useRouter } from 'next/router';
 import SEOHead from '../../src/components/seo/SEOHead';
-import { ArrowLeft, Lock, Crown, StopCircle } from 'lucide-react';
+import { Lock, StopCircle, Activity, Award, BadgeCheck, BarChart3, Bell, BellRing, Building2, CalendarClock, CalendarDays, ClipboardList, Clock, DollarSign, Download, FileBarChart, FileText, Gauge, Gavel, Gift, HardDriveDownload, HeartHandshake, Hourglass, Info, Landmark, LayoutDashboard, LayoutGrid, LayoutTemplate, LineChart, ListOrdered, Map, Medal, Megaphone, Monitor, Moon, MoveRight, PieChart, PlusCircle, Receipt, Repeat, RotateCw, Rss, Settings, ShieldAlert, Shuffle, SlidersHorizontal, Spade, Sparkles, Star, Store, Tablet, Tag, Ticket, Timer, TrendingDown, Trophy, Tv, Upload, UserCheck, UserCog, UserSquare, Users, Video, Wrench } from 'lucide-react';
 import CommanderLayout from '../../src/components/commander/shared/CommanderLayout';
 import { supabase } from '../../src/lib/supabase';
 // Dashboard uses real-time sync primarily to instantly reflect hard stop or setting changes
@@ -32,22 +37,20 @@ const CARDS = [
     id: 'waitlist',
     title: 'Waitlist',
     subtitle: 'Players, Memberships, Kiosk',
-    image: '/images/commander/card-waitlist.webp',
-    glow: '#22D3EE',
+    seal: '/images/smarterdesign/headers/players-seal.webp',
     features: [
-      { label: 'Desk View', href: '/commander/waitlist/desk', icon: '/images/commander/icons/wl-desk-view.png' },
-      { label: 'Player Maintenance', href: '/commander/members', icon: '/images/commander/icons/wl-player-maintenance.png' },
-      { label: 'Player Kiosk', href: '/commander/kiosk', icon: '/images/commander/icons/wl-player-kiosk.png' },
-      { label: 'Member Import', href: '/commander/member-import', icon: '/images/commander/icons/wl-member-import.png' },
-      { label: 'Membership Plans', href: '/commander/membership-plans', icon: '/images/commander/icons/mg-membership-plans.png' },
-      { label: 'Player Display', href: '/commander/displays/waitlist', icon: '/images/commander/icons/wl-player-view.png' },
+      { label: 'Desk View', href: '/commander/waitlist/desk', Icon: ClipboardList },
+      { label: 'Player Maintenance', href: '/commander/members', Icon: UserCog },
+      { label: 'Player Kiosk', href: '/commander/kiosk', Icon: Tablet },
+      { label: 'Member Import', href: '/commander/member-import', Icon: Upload },
+      { label: 'Membership Plans', href: '/commander/membership-plans', Icon: BadgeCheck },
+      { label: 'Player Display', href: '/commander/displays/waitlist', Icon: Monitor },
     ] },
   {
     id: 'tournaments',
     title: 'Tournaments & Events',
     subtitle: 'Tournaments, Leagues & Free Rolls, Clock',
-    image: '/images/commander/card-tournaments.webp',
-    glow: '#F59E0B',
+    seal: '/images/smarterdesign/headers/poker_mtt-seal.webp',
     features: [
       // 2026-08-20 consolidation. Two labels here were flatly wrong and sent
       // staff to the opposite screen from the one they read:
@@ -56,96 +59,92 @@ const CARDS = [
       //   board including the clock.
       //   "Tournament Controls" pointed at the month calendar. It is now
       //   labelled Tournament Calendar, which is what that page is.
-      { label: 'Tournament Manager', href: '/commander/tournaments', icon: '/images/commander/icons/tn-registration.png' },
-      { label: 'Tournament Templates', href: '/commander/tournament-settings', icon: '/images/commander/icons/tn-settings.png?v=3' },
-      { label: 'TV Displays', href: '/commander/displays', icon: '/images/commander/icons/tn-clock.png' },
-      { label: 'Leagues', href: '/commander/leagues', icon: '/images/commander/icons/tn-leagues-freerolls.png?v=2' },
-      { label: 'Clock Setup', href: '/commander/clock-setup', icon: '/images/commander/icons/tn-clock-setup.png' },
-      { label: 'Free Rolls', href: '/commander/leagues', icon: '/images/commander/icons/tn-freerolls.webp' },
-      { label: 'Tournament Calendar', href: '/commander/tournament-maintenance', icon: '/images/commander/icons/tn-controls-new.webp' },
-      { label: 'Tournament Director', href: '/commander/tournament-controls', icon: '/images/commander/icons/tn-director.webp' },
+      { label: 'Tournament Manager', href: '/commander/tournaments', Icon: Trophy },
+      { label: 'Tournament Templates', href: '/commander/tournament-settings', Icon: LayoutTemplate },
+      { label: 'TV Displays', href: '/commander/displays', Icon: Tv },
+      { label: 'Leagues', href: '/commander/leagues', Icon: Medal },
+      { label: 'Clock Setup', href: '/commander/clock-setup', Icon: Timer },
+      { label: 'Free Rolls', href: '/commander/leagues', Icon: Ticket },
+      { label: 'Tournament Calendar', href: '/commander/tournament-maintenance', Icon: CalendarDays },
+      { label: 'Tournament Director', href: '/commander/tournament-controls', Icon: Gavel },
     ] },
   {
     id: 'floor',
     title: 'Tables & Floor',
     subtitle: 'Tables, Dealers, Floor Ops',
-    image: '/images/commander/card-floor.webp',
-    glow: '#10B981',
+    seal: '/images/smarterdesign/headers/casino_table-seal.webp',
     features: [
-      { label: 'Tables & Floor', href: '/commander/tables', icon: '/images/commander/icons/mg-tables.png' },
-      { label: 'Table Assignments', href: '/commander/table-assignments', icon: '/images/commander/icons/mg-table-assignments.png' },
-      { label: 'Floor Map', href: '/commander/floor', icon: '/images/commander/icons/mg-floor-map.png' },
-      { label: 'Open Cash Game', href: '/commander/open-game', icon: '/images/commander/icons/mg-open-game.png' },
-      { label: 'Must-Move Games', href: '/commander/must-move', icon: '/images/commander/icons/mg-must-move.png' },
-      { label: 'Floor Calls', href: '/commander/floor-calls', icon: '/images/commander/icons/mg-floor-calls.png' },
-      { label: 'Dealer Rotation', href: '/commander/dealer-rotation', icon: '/images/commander/icons/mg-dealer-rotation.png' },
-      { label: 'Table Tablets', href: '/commander/table-tablets', icon: '/images/commander/icons/mg-table-tablets.png?v=5' },
+      { label: 'Tables & Floor', href: '/commander/tables', Icon: LayoutGrid },
+      { label: 'Table Assignments', href: '/commander/table-assignments', Icon: Shuffle },
+      { label: 'Floor Map', href: '/commander/floor', Icon: Map },
+      { label: 'Open Cash Game', href: '/commander/open-game', Icon: PlusCircle },
+      { label: 'Must-Move Games', href: '/commander/must-move', Icon: MoveRight },
+      { label: 'Floor Calls', href: '/commander/floor-calls', Icon: BellRing },
+      { label: 'Dealer Rotation', href: '/commander/dealer-rotation', Icon: RotateCw },
+      { label: 'Table Tablets', href: '/commander/table-tablets', Icon: Tablet },
     ] },
   {
     id: 'staff',
     title: 'Staff & Operations',
     subtitle: 'Employees, Schedule, Config',
-    image: '/images/commander/card-staff.webp',
-    glow: '#EF4444',
+    seal: '/images/smarterdesign/headers/staking-profile-seal.webp',
     features: [
-      { label: 'Cashier', href: '/commander/cashier', icon: '/images/commander/icons/mg-cashier.png' },
-      { label: 'Employee Maintenance', href: '/commander/staff', icon: '/images/commander/icons/mg-employee.png' },
-      { label: 'Clock In / Out', href: '/commander/time-clock', icon: '/images/commander/icons/mg-time-clock.png' },
-      { label: 'Poker Room Functions', href: '/commander/poker-room', icon: '/images/commander/icons/mg-poker-room.png' },
-      { label: 'Staff Schedule', href: '/commander/schedule', icon: '/images/commander/icons/mg-staff-schedule.png' },
-      { label: 'Shift Handoff', href: '/commander/shift-handoff', icon: '/images/commander/icons/mg-shift-handoff.png' },
-      { label: 'Time Billing', href: '/commander/time-billing', icon: '/images/commander/icons/mg-time-billing.png' },
-      { label: 'Incidents', href: '/commander/incidents', icon: '/images/commander/icons/mg-incidents.png' },
-      { label: 'Daily Presets', href: '/commander/room-presets', icon: '/images/commander/icons/mg-room-presets.png' },
+      { label: 'Cashier', href: '/commander/cashier', Icon: Landmark },
+      { label: 'Employee Maintenance', href: '/commander/staff', Icon: Users },
+      { label: 'Clock In / Out', href: '/commander/time-clock', Icon: Clock },
+      { label: 'Poker Room Functions', href: '/commander/poker-room', Icon: Building2 },
+      { label: 'Staff Schedule', href: '/commander/schedule', Icon: CalendarClock },
+      { label: 'Shift Handoff', href: '/commander/shift-handoff', Icon: Repeat },
+      { label: 'Time Billing', href: '/commander/time-billing', Icon: Hourglass },
+      { label: 'Incidents', href: '/commander/incidents', Icon: ShieldAlert },
+      { label: 'Daily Presets', href: '/commander/room-presets', Icon: SlidersHorizontal },
     ] },
   {
     id: 'displays',
     title: 'Promotions & Displays',
     subtitle: 'TV Screens, Streaming, Alerts',
-    image: '/images/commander/card-displays.webp',
-    glow: '#22D3EE',
+    seal: '/images/smarterdesign/headers/sports-seal.webp',
     features: [
-      { label: 'TV Displays', href: '/commander/displays', icon: '/images/commander/icons/mg-tv-displays.png' },
-      { label: 'Comps', href: '/commander/comps', icon: '/images/commander/icons/mg-comps.png' },
-      { label: 'Display: Announcements', href: '/commander/displays/announcements', icon: '/images/commander/icons/mg-display-announcements.png' },
-      { label: 'Display: Promotions', href: '/commander/displays/promotions', icon: '/images/commander/icons/mg-display-promotions.png' },
-      { label: 'Display: Leaderboard', href: '/commander/displays/leaderboard', icon: '/images/commander/icons/mg-display-leaderboard.png' },
-      { label: 'Leaderboard Builder', href: '/commander/leaderboard-builder', icon: '/images/commander/icons/mg-leaderboard-builder.png?v=5' },
-      { label: 'Display: Combined', href: '/commander/displays/combined', icon: '/images/commander/icons/mg-display-combined.png' },
-      { label: 'Streaming', href: '/commander/streaming', icon: '/images/commander/icons/mg-streaming.png' },
-      { label: 'Notifications', href: '/commander/notifications', icon: '/images/commander/icons/mg-notifications.png' },
-      { label: 'Promotions', href: '/commander/promotions', icon: '/images/commander/icons/mg-promotions.png' },
-      { label: 'Display: Dealers', href: '/commander/displays/dealers', icon: '/images/commander/icons/mg-display-dealers.png' },
-      { label: 'High Hands', href: '/commander/high-hands', icon: '/images/commander/icons/mg-high-hands.png' },
+      { label: 'TV Displays', href: '/commander/displays', Icon: Tv },
+      { label: 'Comps', href: '/commander/comps', Icon: Gift },
+      { label: 'Display: Announcements', href: '/commander/displays/announcements', Icon: Megaphone },
+      { label: 'Display: Promotions', href: '/commander/displays/promotions', Icon: Sparkles },
+      { label: 'Display: Leaderboard', href: '/commander/displays/leaderboard', Icon: ListOrdered },
+      { label: 'Leaderboard Builder', href: '/commander/leaderboard-builder', Icon: Wrench },
+      { label: 'Display: Combined', href: '/commander/displays/combined', Icon: LayoutDashboard },
+      { label: 'Streaming', href: '/commander/streaming', Icon: Video },
+      { label: 'Notifications', href: '/commander/notifications', Icon: Bell },
+      { label: 'Promotions', href: '/commander/promotions', Icon: Tag },
+      { label: 'Display: Dealers', href: '/commander/displays/dealers', Icon: UserSquare },
+      { label: 'High Hands', href: '/commander/high-hands', Icon: Spade },
     ] },
   {
     id: 'reports',
     title: 'Reports & System',
     subtitle: 'Analytics, Configuration, Data',
-    image: '/images/commander/card-reports.webp',
-    glow: '#94A3B8',
+    seal: '/images/smarterdesign/headers/reports-seal.webp',
     features: [
-      { label: 'Reports Hub', href: '/commander/reports', icon: '/images/commander/icons/rp-player.png' },
-      { label: 'Tournament Results', href: '/commander/reports/tournament-results', icon: '/images/commander/icons/rp-tournament.png' },
-      { label: 'Daily Summary', href: '/commander/reports/daily-summary', icon: '/images/commander/icons/rp-daily-summary.png' },
-      { label: 'Revenue Report', href: '/commander/reports/revenue', icon: '/images/commander/icons/rp-revenue.png' },
-      { label: 'Staff Activity', href: '/commander/reports/staff-activity', icon: '/images/commander/icons/rp-activity.png' },
-      { label: 'Player Activity', href: '/commander/reports/player-activity', icon: '/images/commander/icons/rp-player-activity.png' },
-      { label: 'Analytics', href: '/commander/analytics', icon: '/images/commander/icons/rp-custom.png' },
-      { label: 'Analytics Daily', href: '/commander/reports/analytics-daily', icon: '/images/commander/icons/rp-analytics-daily.png' },
-      { label: 'Table Utilization', href: '/commander/reports/table-utilization', icon: '/images/commander/icons/rp-table-utilization.png' },
-      { label: 'Waitlist Metrics', href: '/commander/reports/waitlist-metrics', icon: '/images/commander/icons/rp-waitlist.png' },
-      { label: 'Tax / W-2G', href: '/commander/reports/tax-compliance', icon: '/images/commander/icons/rp-tax.png' },
-      { label: 'Activity Feed', href: '/commander/activity', icon: '/images/commander/icons/rp-activity-feed.png' },
-      { label: 'Churn Prediction', href: '/commander/churn-prediction', icon: '/images/commander/icons/rp-churn-prediction.png' },
-      { label: 'Configuration', href: '/commander/settings', icon: '/images/commander/icons/rp-setups.png' },
-      { label: 'System Info', href: '/commander/system-info', icon: '/images/commander/icons/rp-system.png' },
-      { label: 'Close Day', href: '/commander/close-day', icon: '/images/commander/icons/rp-close-day.png' },
-      { label: 'Exports', href: '/commander/exports', icon: '/images/commander/icons/rp-config.png' },
-      { label: 'Downloads', href: '/commander/downloads', icon: '/images/commander/icons/rp-downloads.png' },
-      { label: 'Responsible Gaming', href: '/commander/responsible-gaming', icon: '/images/commander/icons/rp-responsible-gaming.png' },
-      { label: 'Marketplace', href: '/commander/marketplace', icon: '/images/commander/icons/rp-marketplace.png' },
-      { label: 'Reputation', href: '/commander/reputation', icon: '/images/commander/icons/rp-reputation.png' },
+      { label: 'Reports Hub', href: '/commander/reports', Icon: FileBarChart },
+      { label: 'Tournament Results', href: '/commander/reports/tournament-results', Icon: Award },
+      { label: 'Daily Summary', href: '/commander/reports/daily-summary', Icon: FileText },
+      { label: 'Revenue Report', href: '/commander/reports/revenue', Icon: DollarSign },
+      { label: 'Staff Activity', href: '/commander/reports/staff-activity', Icon: UserCheck },
+      { label: 'Player Activity', href: '/commander/reports/player-activity', Icon: Activity },
+      { label: 'Analytics', href: '/commander/analytics', Icon: BarChart3 },
+      { label: 'Analytics Daily', href: '/commander/reports/analytics-daily', Icon: LineChart },
+      { label: 'Table Utilization', href: '/commander/reports/table-utilization', Icon: PieChart },
+      { label: 'Waitlist Metrics', href: '/commander/reports/waitlist-metrics', Icon: Gauge },
+      { label: 'Tax / W-2G', href: '/commander/reports/tax-compliance', Icon: Receipt },
+      { label: 'Activity Feed', href: '/commander/activity', Icon: Rss },
+      { label: 'Churn Prediction', href: '/commander/churn-prediction', Icon: TrendingDown },
+      { label: 'Configuration', href: '/commander/settings', Icon: Settings },
+      { label: 'System Info', href: '/commander/system-info', Icon: Info },
+      { label: 'Close Day', href: '/commander/close-day', Icon: Moon },
+      { label: 'Exports', href: '/commander/exports', Icon: Download },
+      { label: 'Downloads', href: '/commander/downloads', Icon: HardDriveDownload },
+      { label: 'Responsible Gaming', href: '/commander/responsible-gaming', Icon: HeartHandshake },
+      { label: 'Marketplace', href: '/commander/marketplace', Icon: Store },
+      { label: 'Reputation', href: '/commander/reputation', Icon: Star },
     ] },
 ];
 
@@ -159,6 +158,13 @@ export default function CommanderDashboard() {
   const [currentTier, setCurrentTier] = useState('home_game');
   const [showUpgradeModal, setShowUpgradeModal] = useState(null);
   const [hardStop, setHardStop] = useState(null); // { enabled, time, minutesLeft }
+
+  // Old ?card=<id> links (and bookmarks) land on that section.
+  useEffect(() => {
+    if (!activeCard || !staff) return;
+    const el = document.getElementById(`dashboard-${activeCard}`);
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start' });
+  }, [activeCard, staff]);
 
   // Auto-open card from ?card= query param (for back navigation)
   useEffect(() => {
@@ -292,12 +298,10 @@ const venueId = staff?.venue_id;
   };
 
   if (!staff) return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#666', fontSize: 14 }}>Loading...</div>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: '#BDD0E2', fontSize: 14 }} role="status">Loading...</div>
     </div>
   );
-
-  const openCard = CARDS.find(c => c.id === activeCard);
 
   // ── Role-based filtering ──
   const staffRole = staff?.role || 'dealer';
@@ -307,397 +311,104 @@ const venueId = staff?.venue_id;
 
   return (
     <CommanderLayout title="Club Commander | Dashboard" backHref="/commander/dashboard" hideBack={true}>
-      <>
-        <SEOHead
-          title="Commander Dashboard - Room Overview"
-          description="Club Commander Poker Room Management Tool."
-          noindex={true}
-        />
+      <SEOHead
+        title="Commander Dashboard - Room Overview"
+        description="Club Commander Poker Room Management Tool."
+        noindex={true}
+      />
+      <div className="cmd-dashboard">
+        {/* Hard Stop Countdown Banner */}
+        {hardStop && hardStop.minutesLeft <= 30 && (
+          <div className={`cmd-hardstop ${hardStop.minutesLeft <= 15 ? 'is-urgent' : ''} ${hardStop.minutesLeft <= 5 ? 'is-pulsing' : ''}`} role="status">
+            <StopCircle size={16} aria-hidden="true" />
+            <span>Hard Stop In {hardStop.minutesLeft} Min. All Games Close At {hardStop.timeFormatted}</span>
+          </div>
+        )}
 
-        <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap');
-
-        .cmd-dashboard {
-          min-height: 100vh;
-          background: #0a0a0a;
-          font-family: 'Inter', sans-serif;
-        }
-
-        /* ── TOP BAR ── */
-        .cmd-topbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 20px;
-          background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
-          border-bottom: 2px solid #333;
-        }
-        .cmd-topbar-title {
-          font-family: 'Orbitron', sans-serif;
-          font-size: 16px;
-          font-weight: 700;
-          color: #fff;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-        }
-        .cmd-topbar-venue {
-          font-size: 11px;
-          color: #888;
-          margin-top: 2px;
-        }
-
-        /* ── 6-CARD GRID ── */
-        .cmd-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 18px;
-          padding: 20px;
-          max-width: 1100px;
-          margin: 0 auto;
-          height: calc(100vh - 65px);
-          grid-template-rows: 1fr 1fr 1fr;
-        }
-        @media (max-width: 640px) {
-          .cmd-grid {
-            grid-template-columns: 1fr;
-            grid-template-rows: repeat(6, minmax(160px, 1fr));
-            gap: 14px;
-            padding: 14px;
-            height: auto;
-            min-height: calc(100vh - 65px);
-          }
-        }
-
-        /* ── CARD ── */
-        .cmd-dashboard-card {
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s, filter 0.3s;
-}
-        .cmd-dashboard-card:hover {
-          transform: scale(1.02);
-          filter: brightness(1.15);
-        }
-        .cmd-dashboard-card img {
-          width: 100%;
-          height: auto;
-          display: block;
-        }
-        
-
-        /* ── OPENED CARD VIEW ── */
-        .cmd-open {
-          position: fixed;
-          inset: 0;
-          z-index: 100;
-          background: #0a0a0a;
-          display: flex;
-          flex-direction: column;
-          animation: cmdFadeIn 0.3s ease;
-        }
-        @keyframes cmdFadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes cmdPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .cmd-open-header {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 16px 20px;
-          border-bottom: 2px solid #333;
-          background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
-          flex-shrink: 0;
-        }
-        .cmd-open-back {
-          background: none;
-          border: 2px solid #555;
-          border-radius: 10px;
-          padding: 8px 14px;
-          color: #ccc;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-        .cmd-open-back:hover {
-          border-color: #777;
-          color: #fff;
-        }
-        .cmd-open-title {
-          font-family: 'Orbitron', sans-serif;
-          font-size: 22px;
-          font-weight: 900;
-          color: #fff;
-          text-transform: capitalize;
-          letter-spacing: 3px;
-        }
-
-        /* ── SUB-FEATURE BUTTONS ── */
-        .cmd-features {
-          flex: 1;
-          overflow-y: auto;
-          padding: 24px 20px;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-          align-content: start;
-          max-width: 700px;
-          margin: 0 auto;
-          width: 100%;
-        }
-        /* 3-column grid for cards with 7-12 features */
-        .cmd-features-3col {
-          grid-template-columns: 1fr 1fr 1fr !important;
-          max-width: 900px !important;
-          gap: 12px !important;
-        }
-        /* 4-column grid for cards with 13+ features */
-        .cmd-features-4col {
-          grid-template-columns: 1fr 1fr 1fr 1fr !important;
-          max-width: 1050px !important;
-          gap: 10px !important;
-        }
-        @media (max-width: 900px) {
-          .cmd-features-3col {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .cmd-features-4col {
-            grid-template-columns: 1fr 1fr 1fr !important;
-          }
-        }
-        @media (max-width: 640px) {
-          .cmd-features-3col {
-            grid-template-columns: 1fr 1fr !important;
-            gap: 10px !important;
-          }
-          .cmd-features-4col {
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-          }
-        }
-        @media (max-width: 480px) {
-          .cmd-features {
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            padding: 16px;
-          }
-          .cmd-features-3col,
-          .cmd-features-4col {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-        .cmd-features-stacked {
-          grid-template-columns: 1fr !important;
-          max-width: 90% !important;
-          gap: 24px !important;
-          justify-items: center;
-        }
-        .cmd-features-stacked .cmd-feature-btn {
-          width: 100%;
-          max-width: 600px;
-          min-height: 200px;
-        }
-        .cmd-features-stacked .cmd-feature-btn img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        .cmd-feature-btn {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          padding: 0;
-          border-radius: 14px;
-          cursor: pointer;
-          transition: all 0.25s;
-          border: none;
-          overflow: hidden;
-          background: transparent;
-        }
-        .cmd-feature-btn img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          display: block;
-        }
-        .cmd-feature-btn:hover {
-          transform: translateY(-3px) scale(1.03);
-          filter: brightness(1.1);
-        }
-        .cmd-feature-btn:active {
-          transform: translateY(0) scale(1);
-        }
-      `}</style>
-
-        <div className="cmd-dashboard">
-          {/* Hard Stop Countdown Banner */}
-          {hardStop && hardStop.minutesLeft <= 30 && !activeCard && (
-            <div style={{
-              padding: '10px 20px',
-              background: hardStop.minutesLeft <= 15
-                ? 'linear-gradient(90deg, rgba(239,68,68,0.2), rgba(239,68,68,0.1))'
-                : 'linear-gradient(90deg, rgba(245,158,11,0.2), rgba(245,158,11,0.1))',
-              borderBottom: `2px solid ${hardStop.minutesLeft <= 15 ? '#EF444440' : '#F59E0B40'}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              justifyContent: 'center',
-              animation: hardStop.minutesLeft <= 5 ? 'cmdPulse 2s infinite' : 'none'
-            }}>
-              <StopCircle size={16} color={hardStop.minutesLeft <= 15 ? '#EF4444' : '#F59E0B'} />
-              <span style={{
-                color: hardStop.minutesLeft <= 15 ? '#EF4444' : '#F59E0B',
-                fontWeight: 700,
-                fontSize: 13,
-                fontFamily: 'Inter, sans-serif'
-              }}>
-                Hard Stop In {hardStop.minutesLeft} Min. All Games Close At {hardStop.timeFormatted}
-              </span>
-            </div>
-          )}
-
-          {/* ── MAIN: 4-CARD GRID ── */}
-          {!activeCard && (
-            <div className="cmd-grid">
-              {filteredCards.map(card => (
-                <div
-                  key={card.id}
-                  className="cmd-dashboard-card"
-                  onClick={() => { setActiveCard(card.id); router.push(`/commander/dashboard?card=${card.id}`, undefined, { shallow: true }); }}
-                >
-                  <img src={card.image} alt={card.title} loading="lazy" decoding="async" />
-                  
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── OPENED CARD: sub-features ── */}
-          {openCard && (() => {
-            const filtered = openCard.features.filter(f => canRoleAccessRoute(staffRole, f.href));
-            if (filtered.length === 0) return null;
-            return (
-              <div className="cmd-open">
-                <div className="cmd-open-header">
-                  <button className="cmd-open-back" onClick={() => { setActiveCard(null); router.replace('/commander/dashboard', undefined, { shallow: true }); }}>
-                    <ArrowLeft size={16} /> Back
-                  </button>
-                  <div className="cmd-open-title" style={{ color: openCard.glow }}>
-                    {openCard.headerTitle || openCard.title}
-                  </div>
-                </div>
-                <div className={`cmd-features ${filtered.length > 12 ? 'cmd-features-4col' : filtered.length > 6 ? 'cmd-features-3col' : ''}`}>
-                  {filtered.map((feat, i) => {
-                    const isLocked = !canAccessRoute(currentTier, feat.href);
-                    return (
-                      <button
-                        key={i}
-                        className="cmd-feature-btn"
-                        style={{
-                          '--glow': openCard.glow,
-                          '--glow-dim': `${openCard.glow}30`,
-                          opacity: isLocked ? 0.4 : 1,
-                          filter: isLocked ? 'grayscale(0.6)' : 'none' }}
-                        onClick={() => handleFeatureClick(feat)}
-                      >
-                        <img src={feat.icon} alt={feat.label} loading="lazy" decoding="async" />
-                        {isLocked && (
-                          <div style={{
-                            position: 'absolute', inset: 0, display: 'flex',
-                            alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.55)', borderRadius: 14 }}>
-                            <div style={{
-                              background: 'rgba(0,0,0,0.7)', borderRadius: 8,
-                              padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 5,
-                              border: '2px solid rgba(245,158,11,0.3)' }}>
-                              <Lock size={14} color="#F59E0B" />
-                              <span style={{ color: '#F59E0B', fontSize: 11, fontWeight: 700, letterSpacing: 0.5 }}>UPGRADE</span>
-                            </div>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+        <div className="cmd-sections">
+          {filteredCards.map((card) => (
+            <section
+              key={card.id}
+              id={`dashboard-${card.id}`}
+              className={`sd-panel cmd-section ${activeCard === card.id ? 'is-target' : ''}`}
+              aria-labelledby={`dashboard-${card.id}-title`}
+            >
+              <div className="cmd-section__head">
+                <span className="cmd-section__seal" aria-hidden="true"><img src={card.seal} alt="" width="176" height="176" loading="lazy" decoding="async" /></span>
+                <div className="cmd-section__copy">
+                  <h2 id={`dashboard-${card.id}-title`} className="sd-section-title cmd-section__title">{card.title}</h2>
+                  <p className="cmd-section__sub">{card.subtitle}</p>
                 </div>
               </div>
-            );
-          })()}
-
-          {/* ── UPGRADE MODAL ── */}
-          {showUpgradeModal && (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div onClick={() => setShowUpgradeModal(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
-              <div style={{
-                position: 'relative', 
-                width: '90%', 
-                maxWidth: 500, 
-                aspectRatio: '600 / 480',
-                backgroundImage: 'url(/images/upgrade_modal_bg.png)',
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                fontFamily: 'Inter, sans-serif'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '44.5%',
-                  left: '10%',
-                  right: '10%',
-                  textAlign: 'center',
-                  color: '#FFFFFF',
-                  fontSize: 'clamp(12px, 3vw, 15px)',
-                  lineHeight: 1.6,
-                  textTransform: 'capitalize',
-                  letterSpacing: '0.5px',
-                  fontWeight: 600
-                }}>
-                  {showUpgradeModal.label} Requires An Upgrade To<br/>
-                  The <span style={{ color: '#60A5FA', fontWeight: 700 }}>{showUpgradeModal.upgradeTierName}</span> Plan ${showUpgradeModal.upgradePrice} Per Month.
-                </div>
-                
-                {/* Invisible Upgrade Button */}
-                <div 
-                  onClick={() => { setShowUpgradeModal(null); router.push('/commander/settings?tab=subscription'); }}
-                  style={{
-                    position: 'absolute',
-                    top: '55%', /* Adjusted based on image */
-                    left: '20%',
-                    right: '20%',
-                    height: '14%',
-                    cursor: 'pointer'
-                  }}
-                />
-
-                {/* Invisible Maybe Later Button */}
-                <div 
-                  onClick={() => setShowUpgradeModal(null)}
-                  style={{
-                    position: 'absolute',
-                    top: '71%', /* Adjusted based on image */
-                    left: '20%',
-                    right: '20%',
-                    height: '14%',
-                    cursor: 'pointer'
-                  }}
-                />
+              <div className="cmd-section__grid">
+                {card.features.map((feat) => {
+                  const isLocked = !canAccessRoute(currentTier, feat.href);
+                  const { Icon } = feat;
+                  return (
+                    <button
+                      key={`${feat.label}-${feat.href}`}
+                      type="button"
+                      className={`sd-button cmd-feature ${isLocked ? 'is-locked' : ''}`}
+                      onClick={() => handleFeatureClick(feat)}
+                      aria-label={isLocked ? `${feat.label} (Upgrade Required)` : feat.label}
+                    >
+                      <span className="cmd-feature__icon" aria-hidden="true"><Icon size={20} /></span>
+                      <span className="cmd-feature__label">{feat.label}</span>
+                      {isLocked ? <span className="cmd-feature__lock"><Lock size={12} aria-hidden="true" /> Upgrade</span> : null}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-          )}
+            </section>
+          ))}
         </div>
-      </>
+
+        {/* ── UPGRADE DIALOG (was a painted image with invisible buttons) ── */}
+        {showUpgradeModal && (
+          <div className="cmd-upgrade" role="presentation">
+            <div className="cmd-upgrade__scrim" onClick={() => setShowUpgradeModal(null)} />
+            <div className="sd-panel cmd-upgrade__card" role="dialog" aria-modal="true" aria-labelledby="cmd-upgrade-title">
+              <h2 id="cmd-upgrade-title" className="sd-section-title">Upgrade Required</h2>
+              <p className="cmd-upgrade__body">
+                {showUpgradeModal.label} Requires The <strong>{showUpgradeModal.upgradeTierName}</strong> Plan
+                {showUpgradeModal.upgradePrice ? <> At ${showUpgradeModal.upgradePrice} Per Month</> : null}.
+              </p>
+              <div className="cmd-upgrade__actions">
+                <button type="button" className="sd-button" onClick={() => setShowUpgradeModal(null)}>Maybe Later</button>
+                <button type="button" className="sd-button sd-primary" autoFocus onClick={() => { setShowUpgradeModal(null); router.push('/commander/settings?tab=subscription'); }}>View Plans</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <style>{`
+        .cmd-dashboard { max-width: 1600px; margin: 0 auto; padding: 0 clamp(8px, 2vw, 24px) 96px; }
+        .cmd-hardstop { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 10px; padding: 10px 16px; border: 1px solid #22D3EE55; border-radius: 10px; background: #22D3EE14; color: #86DAFF; font-weight: 700; font-size: 13px; }
+        .cmd-hardstop.is-urgent { border-color: #EF444466; background: #EF44441a; color: #FCA5A5; }
+        .cmd-hardstop.is-pulsing { animation: cmdPulse 2s infinite; }
+        @keyframes cmdPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+        .cmd-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: clamp(10px, 1.6vw, 18px); }
+        .cmd-section { display: grid; align-content: start; gap: 12px; scroll-margin-top: 90px; }
+        .cmd-section.is-target { box-shadow: 0 0 0 2px #86DAFF66; }
+        .cmd-section__head { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 12px; }
+        .cmd-section__seal { display: grid; place-items: center; width: 52px; height: 52px; padding: 3px; box-sizing: border-box; border-radius: 50%; background: conic-gradient(from 25deg, #6d94b1, #d8e7f3 12%, #3c5369 23%, #0d263b 35%, #a6c8e0 50%, #465d72 64%, #f4f9ff 78%, #234968 90%, #6d94b1); box-shadow: 0 0 0 1px #09121c, 0 0 0 2px #92aac0; }
+        .cmd-section__seal img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #06101b; }
+        .cmd-section__title.sd-section-title { margin: 0; }
+        .cmd-section__sub { margin: 2px 0 0; color: #BDD0E2; font-size: .82rem; }
+        .cmd-section__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        .cmd-feature.sd-button { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 52px; padding: 6px 10px; text-align: left; font-size: .98rem; }
+        .cmd-feature__icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: #E9F6FF; background: radial-gradient(circle at 35% 30%, #2e5a85, #0b2238 70%); box-shadow: 0 0 0 1px #09121c, 0 0 0 1.5px #7f9bb4; }
+        .cmd-feature__label { min-width: 0; overflow-wrap: anywhere; }
+        .cmd-feature.is-locked { opacity: .62; }
+        .cmd-feature__lock { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 4px; justify-self: start; padding: 1px 7px; border: 1px solid #22D3EE66; border-radius: 999px; color: #86DAFF; font-size: .7rem; letter-spacing: .04em; }
+        .cmd-upgrade { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px; }
+        .cmd-upgrade__scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, .7); }
+        .cmd-upgrade__card { position: relative; width: min(100%, 460px); display: grid; gap: 12px; }
+        .cmd-upgrade__body { margin: 0; color: #BDD0E2; line-height: 1.55; }
+        .cmd-upgrade__body strong { color: #86DAFF; }
+        .cmd-upgrade__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (prefers-reduced-motion: reduce) { .cmd-hardstop.is-pulsing { animation: none; } }
+      `}</style>
     </CommanderLayout>
   );
 }

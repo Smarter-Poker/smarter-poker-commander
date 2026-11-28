@@ -582,7 +582,7 @@ export default function CommanderLogin() {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
-              className="text-[#8A8D91] hover:text-[#E4E6EB] transition-colors"
+              className="text-[#9FB3C8] hover:text-[#F2F7FF] transition-colors"
               title="Toggle Password Visibility"
             >
               {showPassword ? (
@@ -662,9 +662,9 @@ export default function CommanderLogin() {
                 left: '26%',
                 width: '48%',
                 textAlign: 'center',
-                color: '#ff3366',
+                color: '#38BDF8',
                 backgroundColor: 'rgba(20, 0, 0, 0.95)',
-                border: '1px solid rgba(255, 51, 102, 0.3)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
                 padding: '8px',
                 borderRadius: '6px',
                 fontSize: '15px',

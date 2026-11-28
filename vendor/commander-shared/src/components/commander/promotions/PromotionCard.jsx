@@ -36,15 +36,15 @@ const PROMOTION_TYPE_ICONS = {
 };
 
 const PROMOTION_TYPE_COLORS = {
-  high_hand: '#F59E0B',
+  high_hand: '#22D3EE',
   bad_beat: '#EF4444',
-  splash_pot: '#1877F2',
-  happy_hour: '#F59E0B',
-  new_player: '#8B5CF6',
-  referral: '#EC4899',
+  splash_pot: '#1981EC',
+  happy_hour: '#22D3EE',
+  new_player: '#5AA9FF',
+  referral: '#38BDF8',
   loyalty: '#22D3EE',
   tournament_bonus: '#10B981',
-  cash_back: '#6366F1',
+  cash_back: '#3B82F6',
   drawing: '#F97316',
   custom: '#6B7280',
   other: '#6B7280'
@@ -54,7 +54,7 @@ const STATUS_STYLES = {
   draft: { bg: 'rgba(107,114,128,0.15)', text: '#9CA3AF', border: 'rgba(107,114,128,0.3)', label: 'Draft' },
   scheduled: { bg: 'rgba(59,130,246,0.15)', text: '#60A5FA', border: 'rgba(59,130,246,0.3)', label: 'Scheduled' },
   active: { bg: 'rgba(34,197,94,0.15)', text: '#4ADE80', border: 'rgba(34,197,94,0.3)', label: 'Active' },
-  paused: { bg: 'rgba(245,158,11,0.15)', text: '#FBBF24', border: 'rgba(245,158,11,0.3)', label: 'Paused' },
+  paused: { bg: 'rgba(34, 211, 238,0.15)', text: '#22D3EE', border: 'rgba(34, 211, 238,0.3)', label: 'Paused' },
   expired: { bg: 'rgba(239,68,68,0.15)', text: '#F87171', border: 'rgba(239,68,68,0.3)', label: 'Expired' },
   completed: { bg: 'rgba(107,114,128,0.15)', text: '#9CA3AF', border: 'rgba(107,114,128,0.3)', label: 'Completed' },
   cancelled: { bg: 'rgba(239,68,68,0.15)', text: '#F87171', border: 'rgba(239,68,68,0.3)', label: 'Cancelled' }
@@ -146,8 +146,8 @@ export default function PromotionCard({
     return (
       <div
         style={{
-          background: '#242526',
-          border: '1px solid #3A3B3C',
+          background: '#0A1829',
+          border: '1px solid #2A4560',
           borderRadius: 10,
           padding: '12px 14px',
           cursor: 'pointer',
@@ -155,7 +155,7 @@ export default function PromotionCard({
         }}
         onClick={() => onEdit?.(promotion)}
         onMouseEnter={e => e.currentTarget.style.borderColor = typeColor}
-        onMouseLeave={e => e.currentTarget.style.borderColor = '#3A3B3C'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = '#2A4560'}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -163,7 +163,7 @@ export default function PromotionCard({
               width: 8, height: 8, borderRadius: '50%',
               background: typeColor, flexShrink: 0,
             }} />
-            <span style={{ fontWeight: 600, color: '#E4E6EB', fontSize: 14 }}>{promotion.name}</span>
+            <span style={{ fontWeight: 600, color: '#F2F7FF', fontSize: 14 }}>{promotion.name}</span>
           </div>
           <span style={{
             fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
@@ -174,7 +174,7 @@ export default function PromotionCard({
             {statusStyle.label}
           </span>
         </div>
-        <div style={{ marginTop: 4, fontSize: 12, color: '#8A8D91' }}>
+        <div style={{ marginTop: 4, fontSize: 12, color: '#9FB3C8' }}>
           {PROMOTION_TYPE_LABELS[promotion.promotion_type]} - {formatPrize()}
         </div>
       </div>
@@ -183,8 +183,8 @@ export default function PromotionCard({
 
   return (
     <div style={{
-      background: '#242526',
-      border: '1px solid #3A3B3C',
+      background: '#0A1829',
+      border: '1px solid #2A4560',
       borderRadius: 14,
       overflow: 'hidden',
       transition: 'border-color 0.2s, box-shadow 0.2s',
@@ -195,7 +195,7 @@ export default function PromotionCard({
         e.currentTarget.style.boxShadow = `0 4px 20px ${typeColor}15`;
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderColor = '#3A3B3C';
+        e.currentTarget.style.borderColor = '#2A4560';
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
@@ -203,7 +203,7 @@ export default function PromotionCard({
       {promotion.image_url && (
         <div style={{
           width: '100%', height: 120, overflow: 'hidden',
-          borderBottom: '1px solid #3A3B3C',
+          borderBottom: '1px solid #2A4560',
         }}>
           <img
             src={promotion.image_url}
@@ -217,7 +217,7 @@ export default function PromotionCard({
       {/* ── Header ── */}
       <div style={{
         padding: '16px 18px 14px',
-        borderBottom: '1px solid #3A3B3C',
+        borderBottom: '1px solid #2A4560',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
@@ -233,7 +233,7 @@ export default function PromotionCard({
           {/* Name + Type */}
           <div style={{ minWidth: 0, flex: 1 }}>
             <h3 style={{
-              fontSize: 15, fontWeight: 700, color: '#E4E6EB', margin: 0,
+              fontSize: 15, fontWeight: 700, color: '#F2F7FF', margin: 0,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               lineHeight: 1.3,
             }}>
@@ -248,7 +248,7 @@ export default function PromotionCard({
         {/* Status + Featured */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {promotion.is_featured && (
-            <Star size={14} color="#F59E0B" fill="#F59E0B" />
+            <Star size={14} color="#22D3EE" fill="#22D3EE" />
           )}
           <span style={{
             fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
@@ -267,7 +267,7 @@ export default function PromotionCard({
       {promotion.description && (
         <div style={{ padding: '10px 18px', borderBottom: '1px solid rgba(58,59,60,0.5)' }}>
           <p style={{
-            fontSize: 13, color: '#B0B3B8', lineHeight: 1.5, margin: 0,
+            fontSize: 13, color: '#BDD0E2', lineHeight: 1.5, margin: 0,
             overflow: 'hidden', textOverflow: 'ellipsis',
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           }}>
@@ -281,15 +281,15 @@ export default function PromotionCard({
         {/* Prize Row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <DollarSign size={14} color="#31A24C" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#8A8D91', flexShrink: 0 }}>Prize:</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#E4E6EB' }}>{formatPrize()}</span>
+          <span style={{ fontSize: 12, color: '#9FB3C8', flexShrink: 0 }}>Prize:</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#F2F7FF' }}>{formatPrize()}</span>
         </div>
 
         {/* Date Range */}
         {(promotion.start_date || promotion.end_date) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Calendar size={14} color="#1877F2" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: '#8A8D91' }}>
+            <Calendar size={14} color="#1981EC" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: '#9FB3C8' }}>
               {formatDate(promotion.start_date)} - {formatDate(promotion.end_date)}
             </span>
           </div>
@@ -316,8 +316,8 @@ export default function PromotionCard({
         {/* Requirements */}
         {(promotion.min_stakes || promotion.qualifying_hands) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Trophy size={14} color="#F59E0B" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: '#8A8D91' }}>
+            <Trophy size={14} color="#22D3EE" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: '#9FB3C8' }}>
               {promotion.min_stakes && `Min Stakes: ${promotion.min_stakes}`}
               {promotion.min_stakes && promotion.qualifying_hands && ' · '}
               {promotion.qualifying_hands}
@@ -331,14 +331,14 @@ export default function PromotionCard({
           paddingTop: 10, borderTop: '1px solid rgba(58,59,60,0.5)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Users size={13} color="#8A8D91" />
-            <span style={{ fontSize: 12, color: '#8A8D91' }}>
+            <Users size={13} color="#9FB3C8" />
+            <span style={{ fontSize: 12, color: '#9FB3C8' }}>
               {promotion.total_awarded || 0} Awarded
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <DollarSign size={13} color="#8A8D91" />
-            <span style={{ fontSize: 12, color: '#8A8D91' }}>
+            <DollarSign size={13} color="#9FB3C8" />
+            <span style={{ fontSize: 12, color: '#9FB3C8' }}>
               ${(promotion.total_value_awarded || 0).toLocaleString()} Total
             </span>
           </div>
@@ -349,7 +349,7 @@ export default function PromotionCard({
       {(onEdit || onViewAwards || onDuplicate) && (
         <div style={{
           display: 'flex', gap: 0,
-          borderTop: '1px solid #3A3B3C',
+          borderTop: '1px solid #2A4560',
         }}>
           {onEdit && (
             <button
@@ -357,12 +357,12 @@ export default function PromotionCard({
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 padding: '12px 16px', border: 'none', cursor: 'pointer',
-                background: 'transparent', color: '#1877F2',
+                background: 'transparent', color: '#1981EC',
                 fontSize: 13, fontWeight: 600,
                 transition: 'background 0.15s',
-                borderRight: '1px solid #3A3B3C',
+                borderRight: '1px solid #2A4560',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(24,119,242,0.08)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(25, 129, 236,0.08)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <Edit3 size={14} />
@@ -378,7 +378,7 @@ export default function PromotionCard({
                 background: 'transparent', color: '#22D3EE',
                 fontSize: 13, fontWeight: 600,
                 transition: 'background 0.15s',
-                borderRight: onViewAwards ? '1px solid #3A3B3C' : 'none',
+                borderRight: onViewAwards ? '1px solid #2A4560' : 'none',
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,211,238,0.08)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -393,7 +393,7 @@ export default function PromotionCard({
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 padding: '12px 16px', border: 'none', cursor: 'pointer',
-                background: 'transparent', color: '#B0B3B8',
+                background: 'transparent', color: '#BDD0E2',
                 fontSize: 13, fontWeight: 600,
                 transition: 'background 0.15s',
               }}

@@ -31,7 +31,7 @@ function StatCard({ icon: Icon, label, value, change, changeLabel, color = '#22D
         </div>
         {change !== undefined && change !== null && (
           <div className={`flex items-center gap-1 text-xs ${
-            isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-[#4A5E78]'
+            isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-[#8FA6BE]'
           }`}>
             {isPositive ? <TrendingUp size={14} /> : isNegative ? <TrendingDown size={14} /> : null}
             {Math.abs(change).toFixed(1)}%
@@ -40,9 +40,9 @@ function StatCard({ icon: Icon, label, value, change, changeLabel, color = '#22D
       </div>
       <div className="mt-3">
         <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="text-sm text-[#64748B]">{label}</div>
+        <div className="text-sm text-[#9FB3C8]">{label}</div>
         {changeLabel && (
-          <div className="text-xs text-[#4A5E78] mt-1">{changeLabel}</div>
+          <div className="text-xs text-[#8FA6BE] mt-1">{changeLabel}</div>
         )}
       </div>
     </div>
@@ -183,7 +183,7 @@ function AnalyticsDashboard({
           label="Unique Players"
           value={summary.unique_players?.toLocaleString() || '0'}
           change={trends.players}
-          color="#8B5CF6"
+          color="#5AA9FF"
         />
         <StatCard
           icon={Clock}
@@ -197,7 +197,7 @@ function AnalyticsDashboard({
           label="Total Buy-Ins"
           value={`$${(summary.total_buyin || 0).toLocaleString()}`}
           change={trends.buyin}
-          color="#F59E0B"
+          color="#22D3EE"
         />
       </div>
 
@@ -206,60 +206,60 @@ function AnalyticsDashboard({
         {/* Sessions Chart */}
         <div className="cmd-panel p-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-[#64748B]">Sessions</span>
+            <span className="text-sm font-medium text-[#9FB3C8]">Sessions</span>
             <Activity size={16} className="text-[#22D3EE]" />
           </div>
           <MiniChart data={chartData.sessions} color="#3B82F6" />
-          <div className="text-xs text-[#4A5E78] mt-2">Last 14 Days</div>
+          <div className="text-xs text-[#8FA6BE] mt-2">Last 14 Days</div>
         </div>
 
         {/* Players Chart */}
         <div className="cmd-panel p-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-[#64748B]">Players</span>
-            <Users size={16} className="text-purple-400" />
+            <span className="text-sm font-medium text-[#9FB3C8]">Players</span>
+            <Users size={16} className="text-sky-400" />
           </div>
-          <MiniChart data={chartData.players} color="#8B5CF6" />
-          <div className="text-xs text-[#4A5E78] mt-2">Last 14 Days</div>
+          <MiniChart data={chartData.players} color="#5AA9FF" />
+          <div className="text-xs text-[#8FA6BE] mt-2">Last 14 Days</div>
         </div>
 
         {/* Hours Chart */}
         <div className="cmd-panel p-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-[#64748B]">Play Hours</span>
+            <span className="text-sm font-medium text-[#9FB3C8]">Play Hours</span>
             <Clock size={16} className="text-green-400" />
           </div>
           <MiniChart data={chartData.hours} color="#10B981" />
-          <div className="text-xs text-[#4A5E78] mt-2">Last 14 Days</div>
+          <div className="text-xs text-[#8FA6BE] mt-2">Last 14 Days</div>
         </div>
       </div>
 
       {/* Additional Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="cmd-panel p-4">
-          <div className="flex items-center gap-2 text-[#64748B] mb-2">
-            <Trophy size={16} className="text-yellow-400" />
+          <div className="flex items-center gap-2 text-[#9FB3C8] mb-2">
+            <Trophy size={16} className="text-cyan-400" />
             <span className="text-sm">Tournaments</span>
           </div>
           <div className="text-xl font-bold text-white">
             {summary.tournaments_run || 0}
           </div>
-          <div className="text-xs text-[#4A5E78]">Tournaments Run</div>
+          <div className="text-xs text-[#8FA6BE]">Tournaments Run</div>
         </div>
 
         <div className="cmd-panel p-4">
-          <div className="flex items-center gap-2 text-[#64748B] mb-2">
-            <Gift size={16} className="text-pink-400" />
+          <div className="flex items-center gap-2 text-[#9FB3C8] mb-2">
+            <Gift size={16} className="text-sky-400" />
             <span className="text-sm">Promotions</span>
           </div>
           <div className="text-xl font-bold text-white">
             {summary.promotions_awarded || 0}
           </div>
-          <div className="text-xs text-[#4A5E78]">Awards Given</div>
+          <div className="text-xs text-[#8FA6BE]">Awards Given</div>
         </div>
 
         <div className="cmd-panel p-4">
-          <div className="flex items-center gap-2 text-[#64748B] mb-2">
+          <div className="flex items-center gap-2 text-[#9FB3C8] mb-2">
             <Clock size={16} className="text-cyan-400" />
             <span className="text-sm">Avg Session</span>
           </div>
@@ -268,11 +268,11 @@ function AnalyticsDashboard({
               ? (analytics.reduce((sum, d) => sum + (parseFloat(d.avg_session_hours) || 0), 0) / analytics.length).toFixed(1)
               : '0'}h
           </div>
-          <div className="text-xs text-[#4A5E78]">Average Duration</div>
+          <div className="text-xs text-[#8FA6BE]">Average Duration</div>
         </div>
 
         <div className="cmd-panel p-4">
-          <div className="flex items-center gap-2 text-[#64748B] mb-2">
+          <div className="flex items-center gap-2 text-[#9FB3C8] mb-2">
             <DollarSign size={16} className="text-emerald-400" />
             <span className="text-sm">Avg Buy-in</span>
           </div>
@@ -281,20 +281,20 @@ function AnalyticsDashboard({
               ? Math.round(analytics.reduce((sum, d) => sum + (d.avg_buyin || 0), 0) / analytics.length)
               : 0}
           </div>
-          <div className="text-xs text-[#4A5E78]">Per Session</div>
+          <div className="text-xs text-[#8FA6BE]">Per Session</div>
         </div>
       </div>
 
       {/* Daily Breakdown Table */}
       {analytics.length > 0 && (
         <div className="cmd-panel overflow-hidden">
-          <div className="p-4 border-b border-[#4A5E78]">
+          <div className="p-4 border-b border-[#445E77]">
             <h3 className="font-medium text-white">Daily Breakdown</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs text-[#4A5E78] border-b border-[#4A5E78]">
+                <tr className="text-left text-xs text-[#8FA6BE] border-b border-[#445E77]">
                   <th className="px-4 py-3 font-medium">Date</th>
                   <th className="px-4 py-3 font-medium text-right">Sessions</th>
                   <th className="px-4 py-3 font-medium text-right">Players</th>
@@ -302,7 +302,7 @@ function AnalyticsDashboard({
                   <th className="px-4 py-3 font-medium text-right">Buy-ins</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#4A5E78]">
+              <tbody className="divide-y divide-[#445E77]">
                 {analytics.slice(0, 7).map((day) => (
                   <tr key={day.date} className="text-sm">
                     <td className="px-4 py-3 text-gray-300">

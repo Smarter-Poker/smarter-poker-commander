@@ -104,7 +104,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               description="Club Commander Poker Room Management Tool."
               noindex={true}
             />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* The subtitle and the Wireless HDMI setup list moved behind the "?"
             (Dan, 2026-10-17). */}
@@ -117,7 +117,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
 
         {/* Waitlist Display */}
         <div className="px-4 pb-3" data-tour="dsp-first">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Waitlist Display
           </h2>
           <DisplayCard
@@ -129,18 +129,18 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
             copied={copied}
             onCopy={copyUrl}
             onOpen={openDisplay}
-            color="#1877F2"
+            color="#1981EC"
           />
         </div>
 
         {/* Tournament Clock Displays */}
         <div className="px-4 pb-3">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Tournament Clocks
           </h2>
 
           {loading ? (
-            <div className="py-8 text-center"><Loader2 className="w-6 h-6 text-[#1877F2] animate-spin mx-auto" /></div>
+            <div className="py-8 text-center"><Loader2 className="w-6 h-6 text-[#86DAFF] animate-spin mx-auto" /></div>
           ) : activeTournaments.length > 0 ? (
             <div className="space-y-2">
               {activeTournaments.map(t => (
@@ -159,17 +159,17 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               ))}
             </div>
           ) : (
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-6 text-center">
-              <Clock className="w-8 h-8 text-[#3A3B3C] mx-auto mb-2" />
-              <p className="text-sm text-[#B0B3B8]">No Active Tournaments</p>
-              <p className="text-xs text-[#B0B3B8]/60 mt-1">Start A Tournament To Enable Clock Display</p>
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-6 text-center">
+              <Clock className="w-8 h-8 text-[#7F97B0] mx-auto mb-2" />
+              <p className="text-sm text-[#BDD0E2]">No Active Tournaments</p>
+              <p className="text-xs text-[#BDD0E2]/60 mt-1">Start A Tournament To Enable Clock Display</p>
             </div>
           )}
         </div>
 
         {/* Room Displays */}
         <div className="px-4 pb-3">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Room Displays
           </h2>
           <div className="space-y-2">
@@ -182,7 +182,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               copied={copied}
               onCopy={copyUrl}
               onOpen={openDisplay}
-              color="#F59E0B"
+              color="#22D3EE"
             />
             <DisplayCard
               icon={Monitor}
@@ -201,10 +201,10 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
 
         {/* Player / Table Displays */}
         <div className="px-4 pb-3">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Player Table Displays
           </h2>
-          <p className="text-xs text-[#B0B3B8] mb-2">
+          <p className="text-xs text-[#BDD0E2] mb-2">
             Mount at each table - players see their time counting down. URL per table.
           </p>
           <div className="space-y-2">
@@ -227,7 +227,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
 
         {/* Staff Displays */}
         <div className="px-4 pb-3">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Staff Displays
           </h2>
           <div className="space-y-2">
@@ -240,14 +240,14 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               copied={copied}
               onCopy={copyUrl}
               onOpen={openDisplay}
-              color="#F59E0B"
+              color="#22D3EE"
             />
           </div>
         </div>
 
         {/* Lobby & Leaderboard */}
         <div className="px-4 pb-3">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Lobby & Leaderboard
           </h2>
           <div className="space-y-2">
@@ -260,7 +260,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               copied={copied}
               onCopy={copyUrl}
               onOpen={openDisplay}
-              color="#1877F2"
+              color="#1981EC"
             />
             <DisplayCard
               icon={Trophy}
@@ -271,7 +271,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               copied={copied}
               onCopy={copyUrl}
               onOpen={openDisplay}
-              color="#F59E0B"
+              color="#22D3EE"
             />
           </div>
         </div>
@@ -279,7 +279,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
         {/* Tournament Displays */}
         {activeTournaments.length > 0 && (
           <div className="px-4 pb-3">
-            <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+            <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
               Tournament Displays
             </h2>
             <div className="space-y-2">
@@ -294,7 +294,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                     copied={copied}
                     onCopy={copyUrl}
                     onOpen={openDisplay}
-                    color="#A855F7"
+                    color="#5AA9FF"
                   />
                   <div className="h-2" />
                   <DisplayCard
@@ -316,7 +316,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
 
         {/* Combined Displays */}
         <div className="px-4 pb-4">
-          <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider mb-2">
+          <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider mb-2">
             Combined Displays
           </h2>
           <div className="space-y-2">
@@ -331,7 +331,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                   copied={copied}
                   onCopy={copyUrl}
                   onOpen={openDisplay}
-                  color="#1877F2"
+                  color="#1981EC"
                 />
                 <DisplayCard
                   icon={Tv}
@@ -342,7 +342,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
                   copied={copied}
                   onCopy={copyUrl}
                   onOpen={openDisplay}
-                  color="#F59E0B"
+                  color="#22D3EE"
                 />
                 <DisplayCard
                   icon={Tv}
@@ -366,7 +366,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
               copied={copied}
               onCopy={copyUrl}
               onOpen={openDisplay}
-              color="#B0B3B8"
+              color="#BDD0E2"
             />
           </div>
         </div>
@@ -377,7 +377,7 @@ const json = await commanderFetchJSON('/api/commander/tournaments', {
 
 function DisplayCard({ icon: Icon, title, description, url, path, copied, onCopy, onOpen, color }) {
   return (
-    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
       <div className="flex items-start gap-3 mb-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: `${color}15` }}>
@@ -385,18 +385,18 @@ function DisplayCard({ icon: Icon, title, description, url, path, copied, onCopy
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-base font-semibold text-white">{title}</p>
-          <p className="text-xs text-[#B0B3B8]">{description}</p>
+          <p className="text-xs text-[#BDD0E2]">{description}</p>
         </div>
       </div>
 
       {/* URL display */}
-      <div className="bg-[#3A3B3C]/50 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
-        <code className="text-xs text-[#B0B3B8] flex-1 truncate">{url}</code>
+      <div className="bg-[#132A42]/50 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+        <code className="text-xs text-[#BDD0E2] flex-1 truncate">{url}</code>
         <button onClick={() => onCopy(url)}
-          className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C]">
+          className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#132A42] flex items-center justify-center active:bg-[#1B3753]">
           {copied === url
             ? <CheckCircle2 className="w-4 h-4 text-[#31A24C]" />
-            : <Copy className="w-4 h-4 text-[#B0B3B8]" />
+            : <Copy className="w-4 h-4 text-[#BDD0E2]" />
           }
         </button>
       </div>
@@ -404,12 +404,12 @@ function DisplayCard({ icon: Icon, title, description, url, path, copied, onCopy
       {/* Actions */}
       <div className="flex gap-2">
         <button onClick={() => onOpen(path)}
-          className="flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1565D8]"
+          className="flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 active:bg-[#0A4AA8]"
           style={{ backgroundColor: color, color: 'white' }}>
           <ExternalLink className="w-4 h-4" /> Open Display
         </button>
         <button onClick={() => onOpen(`${path}?preview=1`)}
-          className="px-4 py-2.5 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-sm font-medium active:bg-[#4A4B4C]">
+          className="px-4 py-2.5 rounded-lg bg-[#132A42] text-[#BDD0E2] text-sm font-medium active:bg-[#1B3753]">
           Preview
         </button>
       </div>

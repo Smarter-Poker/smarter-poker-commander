@@ -377,12 +377,12 @@ export default function TDRegisterPlayer() {
         if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); }
     }, [message]);
 
-    if (loading) return <div style={{ minHeight: '100vh', background: '#18191A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={32} color="#1877F2" style={{ animation: 'spin 1s linear infinite' }} /></div>;
+    if (loading) return <div style={{ minHeight: '100vh', background: '#040D18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={32} color="#1981EC" style={{ animation: 'spin 1s linear infinite' }} /></div>;
 
     return (
         <CommanderLayout title="Commander - Register Player" backHref={`/commander/td/${tournamentId}`}>
             <SEOHead title="Commander - Register Player" description="Club Commander Poker Room Management Tool." noindex={true} />
-            <div style={{ minHeight: '100vh', background: '#18191A', color: '#E4E6EB', fontFamily: "var(--font-inter), -apple-system, sans-serif", padding: '16px' }}>
+            <div style={{ minHeight: '100vh', background: '#040D18', color: '#F2F7FF', fontFamily: "var(--font-inter), -apple-system, sans-serif", padding: '16px' }}>
 
                 {/* Header */}
                 <PageBar
@@ -415,8 +415,8 @@ export default function TDRegisterPlayer() {
                 {/* Seat assignment receipt - what the register endpoint actually returned */}
                 {lastResult && (
                     <div style={{
-                        background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12,
-                        border: `1px solid ${lastResult.isAlternate ? 'rgba(245,158,11,0.4)' : 'rgba(49,162,76,0.4)'}` }}>
+                        background: '#0A1829', borderRadius: 12, padding: 16, marginBottom: 12,
+                        border: `1px solid ${lastResult.isAlternate ? 'rgba(34, 211, 238,0.4)' : 'rgba(49,162,76,0.4)'}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                             <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', margin: 0 }}>
                                 {lastResult.playerName}
@@ -424,15 +424,15 @@ export default function TDRegisterPlayer() {
                             <button
                                 onClick={() => setLastResult(null)}
                                 aria-label="Dismiss"
-                                style={{ width: 32, height: 32, borderRadius: 8, background: '#3A3B3C', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <X size={14} color="#B0B3B8" />
+                                style={{ width: 32, height: 32, borderRadius: 8, background: '#2A4560', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={14} color="#BDD0E2" />
                             </button>
                         </div>
 
                         {lastResult.isAlternate ? (
-                            <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.12)' }}>
-                                <p style={{ fontSize: 13, fontWeight: 700, color: '#F59E0B', margin: 0 }}>On The Alternates List</p>
-                                <p style={{ fontSize: 11, color: '#B0B3B8', margin: '4px 0 0' }}>
+                            <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(34, 211, 238,0.12)' }}>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: '#22D3EE', margin: 0 }}>On The Alternates List</p>
+                                <p style={{ fontSize: 11, color: '#BDD0E2', margin: '4px 0 0' }}>
                                     The Field Is Full. This Player Is Seated As Soon As A Seat Opens.
                                 </p>
                             </div>
@@ -440,7 +440,7 @@ export default function TDRegisterPlayer() {
                             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', padding: '4px 0 2px' }}>
                                 {[{ label: 'Table', value: lastResult.tableNumber }, { label: 'Seat', value: lastResult.seatNumber }].map(b => (
                                     <div key={b.label} style={{ textAlign: 'center' }}>
-                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>{b.label}</p>
+                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#BDD0E2', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>{b.label}</p>
                                         <div style={{
                                             minWidth: 72, minHeight: 60, border: '2px solid #31A24C', borderRadius: 10,
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -451,14 +451,14 @@ export default function TDRegisterPlayer() {
                                 ))}
                             </div>
                         ) : (
-                            <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>
+                            <p style={{ fontSize: 12, color: '#BDD0E2', margin: 0 }}>
                                 Registered. Seat Is Assigned By The Seat Draw.
                             </p>
                         )}
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 }}>
-                            <Printer size={13} color={lastResult.printed ? '#31A24C' : '#F59E0B'} />
-                            <span style={{ fontSize: 11, color: lastResult.printed ? '#31A24C' : '#F59E0B' }}>
+                            <Printer size={13} color={lastResult.printed ? '#31A24C' : '#22D3EE'} />
+                            <span style={{ fontSize: 11, color: lastResult.printed ? '#31A24C' : '#22D3EE' }}>
                                 {lastResult.printed
                                     ? 'Buy-In Receipt Queued At The Print Station'
                                     : 'Receipt Could Not Be Queued. Reprint From The Print Station.'}
@@ -471,10 +471,10 @@ export default function TDRegisterPlayer() {
                             onClick={() => printBuyinReceiptsHere(lastResult)}
                             style={{
                                 width: '100%', minHeight: 44, marginTop: 10, borderRadius: 10,
-                                background: '#3A3B3C', border: '1px solid #4A4B4C', color: '#E4E6EB',
+                                background: '#2A4560', border: '1px solid #3A5873', color: '#F2F7FF',
                                 fontSize: 13, fontWeight: 700, cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                            <Printer size={15} color="#1877F2" />
+                            <Printer size={15} color="#1981EC" />
                             Print Receipts Here
                         </button>
                     </div>
@@ -482,25 +482,25 @@ export default function TDRegisterPlayer() {
 
                 {/* Tournament summary */}
                 {tournament && (
-                    <div style={{ background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #3A3B3C', display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <Trophy size={20} color="#1877F2" />
+                    <div style={{ background: '#0A1829', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #2A4560', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <Trophy size={20} color="#1981EC" />
                         <div style={{ flex: 1 }}>
                             <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', margin: 0 }}>{tournament.name || 'Tournament'}</p>
                             <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
                                 {tournament.buyin_amount > 0 && <span style={{ fontSize: 11, color: '#31A24C' }}><DollarSign size={11} style={{ display: 'inline' }} /> ${tournament.buyin_amount}{tournament.buyin_fee > 0 ? ` + $${tournament.buyin_fee}` : ''}</span>}
-                                {tournament.starting_chips > 0 && <span style={{ fontSize: 11, color: '#B0B3B8' }}>{Number(tournament.starting_chips).toLocaleString()} Chips</span>}
+                                {tournament.starting_chips > 0 && <span style={{ fontSize: 11, color: '#BDD0E2' }}>{Number(tournament.starting_chips).toLocaleString()} Chips</span>}
                             </div>
                         </div>
                     </div>
                 )}
 
                 {/* Step 1: Select Player */}
-                <div style={{ background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #3A3B3C' }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: '#B0B3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ background: '#0A1829', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #2A4560' }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#BDD0E2', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                         Select Player
                     </p>
                     {selectedPlayer ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1877F2', borderRadius: 10, padding: '10px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1981EC', borderRadius: 10, padding: '10px 14px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <Users size={18} color="#fff" />
                                 <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{selectedPlayer.player_name}</span>
@@ -512,23 +512,23 @@ export default function TDRegisterPlayer() {
                     ) : (
                         <>
                             <div style={{ position: 'relative', marginBottom: 8 }}>
-                                <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#B0B3B8' }} />
+                                <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#BDD0E2' }} />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                     placeholder="Search by Name or Phone..."
                                     style={{
-                                        width: '100%', background: '#3A3B3C', border: '1px solid #4A4B4C', borderRadius: 10,
-                                        padding: '10px 12px 10px 38px', color: '#E4E6EB', fontSize: 14, fontWeight: 500,
+                                        width: '100%', background: '#2A4560', border: '1px solid #3A5873', borderRadius: 10,
+                                        padding: '10px 12px 10px 38px', color: '#F2F7FF', fontSize: 14, fontWeight: 500,
                                         outline: 'none', boxSizing: 'border-box' }}
                                 />
                                 {searchQuery && (
                                     <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                                        <X size={16} color="#B0B3B8" />
+                                        <X size={16} color="#BDD0E2" />
                                     </button>
                                 )}
-                                {searchLoading && <Loader2 size={16} style={{ position: 'absolute', right: 36, top: '50%', transform: 'translateY(-50%)', color: '#1877F2', animation: 'spin 1s linear infinite' }} />}
+                                {searchLoading && <Loader2 size={16} style={{ position: 'absolute', right: 36, top: '50%', transform: 'translateY(-50%)', color: '#1981EC', animation: 'spin 1s linear infinite' }} />}
                             </div>
                             {searchResults.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -536,13 +536,13 @@ export default function TDRegisterPlayer() {
                                         const name = m.name || `${m.first_name || ''} ${m.last_name || ''}`.trim();
                                         return (
                                             <button key={m.id} onClick={() => selectPlayer(m)}
-                                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(58,59,60,0.5)', border: '1px solid #4A4B4C', cursor: 'pointer', textAlign: 'left', color: '#E4E6EB' }}>
-                                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(24,119,242,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#1877F2' }}>{(name[0] || '?').toUpperCase()}</span>
+                                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(58,59,60,0.5)', border: '1px solid #3A5873', cursor: 'pointer', textAlign: 'left', color: '#F2F7FF' }}>
+                                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(25, 129, 236,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#1981EC' }}>{(name[0] || '?').toUpperCase()}</span>
                                                 </div>
                                                 <div>
                                                     <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{name}</p>
-                                                    <p style={{ fontSize: 10, color: '#B0B3B8', margin: 0 }}>{m.phone || 'No Phone'}</p>
+                                                    <p style={{ fontSize: 10, color: '#BDD0E2', margin: 0 }}>{m.phone || 'No Phone'}</p>
                                                 </div>
                                             </button>
                                         );
@@ -550,24 +550,24 @@ export default function TDRegisterPlayer() {
                                 </div>
                             )}
                             {searchQuery.length >= 2 && searchResults.length === 0 && !searchLoading && (
-                                <p style={{ textAlign: 'center', fontSize: 13, color: '#B0B3B8', padding: '12px 0' }}>No Players Found</p>
+                                <p style={{ textAlign: 'center', fontSize: 13, color: '#BDD0E2', padding: '12px 0' }}>No Players Found</p>
                             )}
                         </>
                     )}
                 </div>
 
                 {/* ===== CASH WAITLIST CONVERSION ===== */}
-                <div style={{ background: '#242526', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #3A3B3C' }}>
+                <div style={{ background: '#0A1829', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #2A4560' }}>
                     <button
                         onClick={toggleWaitlistOpen}
                         style={{
                             width: '100%', minHeight: 44, background: 'none', border: 'none', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, color: '#E4E6EB' }}>
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, color: '#F2F7FF' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <ListChecks size={16} color="#F59E0B" />
+                            <ListChecks size={16} color="#22D3EE" />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>Convert From Cash Waitlist</span>
                         </span>
-                        <span style={{ fontSize: 11, color: '#B0B3B8' }}>
+                        <span style={{ fontSize: 11, color: '#BDD0E2' }}>
                             {waitlistOpen ? 'Hide' : (waitlist.length > 0 ? `${waitlist.length.toLocaleString()} Waiting` : 'Show')}
                         </span>
                     </button>
@@ -575,9 +575,9 @@ export default function TDRegisterPlayer() {
                     {waitlistOpen && (
                         <div style={{ marginTop: 12 }}>
                             {waitlistLoading ? (
-                                <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>Loading Waitlist...</p>
+                                <p style={{ fontSize: 12, color: '#BDD0E2', margin: 0 }}>Loading Waitlist...</p>
                             ) : waitlist.length === 0 ? (
-                                <p style={{ fontSize: 12, color: '#B0B3B8', margin: 0 }}>Nobody Is On The Cash Waitlist Right Now.</p>
+                                <p style={{ fontSize: 12, color: '#BDD0E2', margin: 0 }}>Nobody Is On The Cash Waitlist Right Now.</p>
                             ) : (
                                 <>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
@@ -592,14 +592,14 @@ export default function TDRegisterPlayer() {
                                                     style={{
                                                         display: 'flex', alignItems: 'center', gap: 10, minHeight: 44,
                                                         padding: '8px 12px', borderRadius: 10, textAlign: 'left',
-                                                        background: checked ? 'rgba(24,119,242,0.18)' : 'rgba(58,59,60,0.5)',
-                                                        border: `1px solid ${checked ? '#1877F2' : '#4A4B4C'}`,
+                                                        background: checked ? 'rgba(25, 129, 236,0.18)' : 'rgba(58,59,60,0.5)',
+                                                        border: `1px solid ${checked ? '#1981EC' : '#3A5873'}`,
                                                         cursor: linked ? 'pointer' : 'not-allowed',
-                                                        opacity: linked ? 1 : 0.5, color: '#E4E6EB' }}>
+                                                        opacity: linked ? 1 : 0.5, color: '#F2F7FF' }}>
                                                     <div style={{
                                                         width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                                                        border: `1px solid ${checked ? '#1877F2' : '#6A6B6D'}`,
-                                                        background: checked ? '#1877F2' : 'transparent',
+                                                        border: `1px solid ${checked ? '#1981EC' : '#93A9C0'}`,
+                                                        background: checked ? '#1981EC' : 'transparent',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                         {checked && <CheckCircle2 size={14} color="#fff" />}
                                                     </div>
@@ -607,7 +607,7 @@ export default function TDRegisterPlayer() {
                                                         <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
                                                             {w.player_name || 'Walk-In'}
                                                         </p>
-                                                        <p style={{ fontSize: 10, color: '#B0B3B8', margin: 0 }}>
+                                                        <p style={{ fontSize: 10, color: '#BDD0E2', margin: 0 }}>
                                                             {[w.game_type, w.stakes].filter(Boolean).join(' ')}
                                                             {w.position != null ? `, Position ${Number(w.position).toLocaleString()}` : ''}
                                                             {linked ? '' : ', No Player Account'}
@@ -623,8 +623,8 @@ export default function TDRegisterPlayer() {
                                         disabled={selectedWaitlist.length === 0 || converting}
                                         style={{
                                             width: '100%', minHeight: 44, marginTop: 10, borderRadius: 10, border: 'none',
-                                            background: selectedWaitlist.length > 0 ? '#F59E0B' : '#3A3B3C',
-                                            color: selectedWaitlist.length > 0 ? '#18191A' : '#B0B3B8',
+                                            background: selectedWaitlist.length > 0 ? '#22D3EE' : '#2A4560',
+                                            color: selectedWaitlist.length > 0 ? '#040D18' : '#BDD0E2',
                                             fontSize: 14, fontWeight: 700,
                                             cursor: selectedWaitlist.length > 0 && !converting ? 'pointer' : 'not-allowed',
                                             opacity: selectedWaitlist.length > 0 && !converting ? 1 : 0.6,
@@ -636,14 +636,14 @@ export default function TDRegisterPlayer() {
                                             ? 'Converting...'
                                             : `Register ${selectedWaitlist.length.toLocaleString()} Selected Into This Tournament`}
                                     </button>
-                                    <p style={{ fontSize: 10, color: '#B0B3B8', margin: '6px 0 0' }}>
+                                    <p style={{ fontSize: 10, color: '#BDD0E2', margin: '6px 0 0' }}>
                                         Each Conversion Charges The Buy-In And Runs The Normal Registration, Including The Seat Draw.
                                     </p>
                                 </>
                             )}
 
                             {convertResult && (
-                                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #3A3B3C' }}>
+                                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #2A4560' }}>
                                     {convertResult.converted?.map(c => (
                                         <p key={c.waitlist_id} style={{ fontSize: 11, color: '#31A24C', margin: '0 0 2px' }}>
                                             {c.player_name} Registered
@@ -653,7 +653,7 @@ export default function TDRegisterPlayer() {
                                         </p>
                                     ))}
                                     {convertResult.skipped?.map(s => (
-                                        <p key={s.waitlist_id} style={{ fontSize: 11, color: '#F59E0B', margin: '0 0 2px' }}>
+                                        <p key={s.waitlist_id} style={{ fontSize: 11, color: '#22D3EE', margin: '0 0 2px' }}>
                                             {s.player_name} Skipped: {s.message}
                                         </p>
                                     ))}
@@ -669,7 +669,7 @@ export default function TDRegisterPlayer() {
                     disabled={!selectedPlayer || registering}
                     style={{
                         width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', cursor: 'pointer',
-                        background: selectedPlayer ? '#31A24C' : '#3A3B3C',
+                        background: selectedPlayer ? '#31A24C' : '#2A4560',
                         color: '#fff', fontSize: 15, fontWeight: 700,
                         opacity: selectedPlayer && !registering ? 1 : 0.5,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
@@ -682,7 +682,7 @@ export default function TDRegisterPlayer() {
             <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         input::placeholder { color: #666; }
-        input:focus { border-color: #1877F2 !important; }
+        input:focus { border-color: #1981EC !important; }
       `}</style>
         </CommanderLayout>
     );

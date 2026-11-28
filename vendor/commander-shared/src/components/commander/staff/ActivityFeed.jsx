@@ -21,7 +21,7 @@ const ACTIVITY_COLORS = {
   player_removed: 'text-[#EF4444] bg-[#EF4444]/10',
   game_started: 'text-[#10B981] bg-[#10B981]/10',
   game_closed: 'text-[#6B7280] bg-[#6B7280]/10',
-  player_called: 'text-[#F59E0B] bg-[#F59E0B]/10',
+  player_called: 'text-[#22D3EE] bg-[#22D3EE]/10',
   default: 'text-[#6B7280] bg-[#6B7280]/10'
 };
 
@@ -31,18 +31,18 @@ export default function ActivityFeed({ activities = [], maxItems = 10 }) {
   if (displayActivities.length === 0) {
     return (
       <div className="cmd-panel p-6 text-center">
-        <Clock className="w-8 h-8 mx-auto mb-2 text-[#64748B] opacity-50" />
-        <p className="text-[#64748B] text-sm">No Recent Activity</p>
+        <Clock className="w-8 h-8 mx-auto mb-2 text-[#9FB3C8] opacity-50" />
+        <p className="text-[#9FB3C8] text-sm">No Recent Activity</p>
       </div>
     );
   }
 
   return (
     <div className="cmd-panel overflow-hidden">
-      <div className="p-4 border-b border-[#4A5E78]">
+      <div className="p-4 border-b border-[#445E77]">
         <h3 className="font-semibold text-white">Recent Activity</h3>
       </div>
-      <div className="divide-y divide-[#4A5E78] max-h-[400px] overflow-y-auto">
+      <div className="divide-y divide-[#445E77] max-h-[400px] overflow-y-auto">
         {displayActivities.map((activity, index) => (
           <ActivityItem key={activity.id || index} activity={activity} />
         ))}
@@ -67,11 +67,11 @@ function ActivityItem({ activity }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white">{activity.message}</p>
         {activity.details && (
-          <p className="text-xs text-[#64748B] mt-0.5">{activity.details}</p>
+          <p className="text-xs text-[#9FB3C8] mt-0.5">{activity.details}</p>
         )}
       </div>
       {timeAgo && (
-        <span className="text-xs text-[#64748B] whitespace-nowrap">{timeAgo}</span>
+        <span className="text-xs text-[#9FB3C8] whitespace-nowrap">{timeAgo}</span>
       )}
     </div>
   );

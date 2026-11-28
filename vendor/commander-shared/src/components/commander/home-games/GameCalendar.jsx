@@ -129,7 +129,7 @@ export default function GameCalendar({
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigateMonth(-1)}
-            className="p-2 rounded-lg hover:bg-[#132240] text-[#64748B] hover:text-white transition-colors"
+            className="p-2 rounded-lg hover:bg-[#132240] text-[#9FB3C8] hover:text-white transition-colors"
           >
             <ChevronLeft size={20} />
           </button>
@@ -146,7 +146,7 @@ export default function GameCalendar({
           </div>
           <button
             onClick={() => navigateMonth(1)}
-            className="p-2 rounded-lg hover:bg-[#132240] text-[#64748B] hover:text-white transition-colors"
+            className="p-2 rounded-lg hover:bg-[#132240] text-[#9FB3C8] hover:text-white transition-colors"
           >
             <ChevronRight size={20} />
           </button>
@@ -155,7 +155,7 @@ export default function GameCalendar({
         {/* Weekday Headers */}
         <div className="grid grid-cols-7 gap-1 mb-1">
           {WEEKDAYS.map(day => (
-            <div key={day} className="text-center text-xs font-medium text-[#4A5E78] py-2">
+            <div key={day} className="text-center text-xs font-medium text-[#8FA6BE] py-2">
               {day}
             </div>
           ))}
@@ -177,7 +177,7 @@ export default function GameCalendar({
                 onClick={() => handleSelectDate(date)}
                 className={`relative h-10 rounded-lg text-sm font-medium transition-colors ${
                   !item.isCurrentMonth
-                    ? 'text-[#4A5E78]/50'
+                    ? 'text-[#8FA6BE]/50'
                     : isSelected
                     ? 'bg-[#22D3EE] text-white'
                     : isToday
@@ -204,7 +204,7 @@ export default function GameCalendar({
       {/* Events for Selected Date */}
       {viewSelectedDate && (
         <div>
-          <h4 className="text-sm font-medium text-[#64748B] mb-2">
+          <h4 className="text-sm font-medium text-[#9FB3C8] mb-2">
             {isSameDay(viewSelectedDate, today)
               ? 'Today'
               : viewSelectedDate.toLocaleDateString('en-US', {
@@ -216,8 +216,8 @@ export default function GameCalendar({
 
           {selectedDateEvents.length === 0 ? (
             <div className="cmd-panel p-6 text-center">
-              <Calendar size={28} className="mx-auto text-[#4A5E78] mb-2" />
-              <p className="text-sm text-[#64748B]">No Games Scheduled</p>
+              <Calendar size={28} className="mx-auto text-[#8FA6BE] mb-2" />
+              <p className="text-sm text-[#9FB3C8]">No Games Scheduled</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -236,7 +236,7 @@ export default function GameCalendar({
                     </div>
                     <div className="flex-1 min-w-0">
                       <h5 className="font-medium text-white truncate">{event.title}</h5>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-[#64748B]">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-[#9FB3C8]">
                         {event.start_time && (
                           <span className="flex items-center gap-1">
                             <Clock size={12} />
@@ -257,7 +257,7 @@ export default function GameCalendar({
                         )}
                       </div>
                       {event.city && event.state && (
-                        <p className="text-xs text-[#4A5E78] mt-1 flex items-center gap-1">
+                        <p className="text-xs text-[#8FA6BE] mt-1 flex items-center gap-1">
                           <MapPin size={12} />
                           {event.city}, {event.state}
                         </p>

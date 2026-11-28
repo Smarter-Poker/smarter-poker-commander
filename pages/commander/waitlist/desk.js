@@ -36,8 +36,8 @@ const ROTATE_INTERVAL = 10000;
 
 // Default customization - the classic gold theme
 const DEFAULT_CUSTOM = {
-  headerColor: '#B8860B',
-  accentColor: '#D4AF37',
+  headerColor: '#3A8FC0',
+  accentColor: '#86DAFF',
   bgColor: '#000000',
   cardBgColor: '#050505',
   textColor: '#E0E0E0',
@@ -206,7 +206,7 @@ const res = await commanderFetch(`/api/commander/waitlist/${entry.id}/call`, {
       busEmit.waitlistPlayerCalled(entry.player_name, entry.game_type);
       await fetchData();
       broadcastChange('waitlist');
-      busEmit.screenFlash('#1877F2', 300);
+      busEmit.screenFlash('#1981EC', 300);
       setTimeout(() => setSmsStatus(null), 3000);
     } catch (err) { console.warn('Call error:', err); setSmsStatus({ type: 'none', text: 'Network error' }); setTimeout(() => setSmsStatus(null), 3000); }
     finally { setCallLoading(null); setActionLock(null); }
@@ -563,7 +563,7 @@ const parts = gameLabel.split(' ');
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#18191A', padding: '16px' }}>
+      <div style={{ minHeight: '100vh', background: '#040D18', padding: '16px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ background: '#2A2B2C', height: 24, width: 200, borderRadius: 6, marginBottom: 16 }} />
           <SkeletonDark variant="stat-cards" count={3} />
@@ -733,7 +733,7 @@ const parts = gameLabel.split(' ');
                                   {titleCase(entry.player_name)}
                                 </span>
                                 {isWeb && !isCheckedIn && webMinutesLeft !== null && !isExpired && (
-                                  <span style={{ fontSize: '12px', color: webMinutesLeft <= 10 ? '#F59E0B' : '#64748B', fontWeight: 600 }}>
+                                  <span style={{ fontSize: '12px', color: webMinutesLeft <= 10 ? '#22D3EE' : '#9FB3C8', fontWeight: 600 }}>
                                     {webMinutesLeft}m
                                   </span>
                                 )}
@@ -1077,7 +1077,7 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
 
                           {/* Dealer */}
                           <div style={{ position: 'absolute', top: dealerPos.top, left: dealerPos.left, transform: 'translate(-50%, -50%)', textAlign: 'center', width: 70, zIndex: 3 }}>
-                            <div style={{ width: 50, height: 50, borderRadius: '50%', margin: '0 auto 2px', background: 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)', border: '2px solid #E4E6EB', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.6)', fontSize: 22, fontWeight: 900, color: '#fff' }}>D</div>
+                            <div style={{ width: 50, height: 50, borderRadius: '50%', margin: '0 auto 2px', background: 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)', border: '2px solid #F2F7FF', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.6)', fontSize: 22, fontWeight: 900, color: '#fff' }}>D</div>
                           </div>
 
                           {/* Player Seats */}
@@ -1104,15 +1104,15 @@ const res = await commanderFetch('/api/commander/games/must-move-status', {
                                   display: 'flex', flexDirection: badgeDirection, alignItems: 'center', gap: 6,
                                   background: 'rgba(36,37,38,0.9)', borderRadius: 12,
                                   padding: '4px 10px 4px 4px',
-                                  border: '2px solid rgba(24,119,242,0.5)',
+                                  border: '2px solid rgba(25, 129, 236,0.5)',
                                   backdropFilter: 'blur(6px)', minWidth: 60 }}>
                                   <div style={{
                                     width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                                    background: 'linear-gradient(135deg, #1877F2, #1565c0)',
-                                    border: '2px solid rgba(24,119,242,0.6)',
+                                    background: 'linear-gradient(135deg, #1981EC, #1565c0)',
+                                    border: '2px solid rgba(25, 129, 236,0.6)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: 18, fontWeight: 800, color: '#fff' }}>{initial}</div>
-                                  <div style={{ fontSize: 11, fontWeight: 600, color: '#E4E6EB', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: '#F2F7FF', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {firstName}
                                   </div>
                                 </div>
@@ -1429,7 +1429,7 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Settings size={20} color="#D4AF37" />
+            <Settings size={20} color="#86DAFF" />
             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#fff' }}>Desk Customization</h3>
           </div>
           <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#222', border: '1px solid #444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#888' }}>
@@ -1443,8 +1443,8 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               style={{
                 flex: 1, padding: '10px 8px', background: 'transparent', border: 'none',
-                borderBottom: activeTab === t.id ? '2px solid #D4AF37' : '2px solid transparent',
-                color: activeTab === t.id ? '#D4AF37' : '#888', fontSize: '13px',
+                borderBottom: activeTab === t.id ? '2px solid #86DAFF' : '2px solid transparent',
+                color: activeTab === t.id ? '#86DAFF' : '#888', fontSize: '13px',
                 fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
               }}>
               {t.label}
@@ -1496,10 +1496,10 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
                     disabled={uploading}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
-                      background: 'linear-gradient(180deg, #1a1a1a, #0a0a0a)', border: '2px solid #D4AF37',
-                      borderRadius: '8px', color: '#D4AF37', fontSize: '14px', fontWeight: 700,
+                      background: 'linear-gradient(180deg, #1a1a1a, #0a0a0a)', border: '2px solid #86DAFF',
+                      borderRadius: '8px', color: '#86DAFF', fontSize: '14px', fontWeight: 700,
                       cursor: uploading ? 'wait' : 'pointer',
-                      boxShadow: '0 2px 8px rgba(212,175,55,0.2)',
+                      boxShadow: '0 2px 8px rgba(134, 218, 255,0.2)',
                       opacity: uploading ? 0.6 : 1
                     }}
                   >
@@ -1567,7 +1567,7 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
                     update('gameTypes', [...(draft.gameTypes || []), newGame.trim()]);
                     setNewGame('');
                   }
-                }} style={{ padding: '8px 14px', background: '#D4AF37', color: '#000', borderRadius: '4px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                }} style={{ padding: '8px 14px', background: '#86DAFF', color: '#000', borderRadius: '4px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Plus size={14} /> Add
                 </button>
               </div>
@@ -1581,7 +1581,7 @@ function DeskSettingsModal({ custom, onSave, onClose, onUpdate }) {
           <button onClick={onClose} style={{ padding: '10px 20px', background: '#222', border: '1px solid #444', borderRadius: '6px', color: '#ccc', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
             Cancel
           </button>
-          <button onClick={() => onSave(draft)} style={{ padding: '10px 24px', background: '#D4AF37', border: 'none', borderRadius: '6px', color: '#000', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={() => onSave(draft)} style={{ padding: '10px 24px', background: '#86DAFF', border: 'none', borderRadius: '6px', color: '#000', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
             Save Settings
           </button>
         </div>

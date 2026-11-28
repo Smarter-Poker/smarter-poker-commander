@@ -119,7 +119,7 @@ export default async function handler(req, res) {
             rake_percent: rake_percent || 5.00,
             rake_cap: rake_cap || 15.00,
             time_rate: time_rate || 0,
-            color: color || '#1877F2',
+            color: color || '#1981EC',
             notes: notes || null,
             sort_order: sort_order || 0
           })

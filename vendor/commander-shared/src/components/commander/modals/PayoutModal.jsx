@@ -164,7 +164,7 @@ export default function PayoutModal({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#4A5E78]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#10B981] rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
@@ -177,7 +177,7 @@ export default function PayoutModal({
             onClick={onClose}
             className="p-2 hover:bg-[#132240] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#64748B]" />
+            <X className="w-5 h-5 text-[#9FB3C8]" />
           </button>
         </div>
 
@@ -192,13 +192,13 @@ export default function PayoutModal({
           {/* Prize Pool Summary */}
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-[#10B981]/10 rounded-lg">
-              <p className="text-sm text-[#64748B]">Prize Pool</p>
+              <p className="text-sm text-[#9FB3C8]">Prize Pool</p>
               <p className="text-2xl font-bold text-[#10B981]">
                 ${prizePool.toLocaleString()}
               </p>
             </div>
             <div className="p-4 bg-[#22D3EE]/10 rounded-lg">
-              <p className="text-sm text-[#64748B]">Entries</p>
+              <p className="text-sm text-[#9FB3C8]">Entries</p>
               <p className="text-2xl font-bold text-[#22D3EE]">
                 {entries.length || tournament.current_entries || 0}
               </p>
@@ -253,10 +253,10 @@ export default function PayoutModal({
                       }`}
                   >
                     <div className="w-8 h-8 bg-[#0B1426] rounded-full flex items-center justify-center">
-                      <Trophy className={`w-4 h-4 ${payout.position === 1 ? 'text-[#F59E0B]' :
-                        payout.position === 2 ? 'text-[#4A5E78]' :
-                          payout.position === 3 ? 'text-[#B45309]' :
-                            'text-[#64748B]'
+                      <Trophy className={`w-4 h-4 ${payout.position === 1 ? 'text-[#22D3EE]' :
+                        payout.position === 2 ? 'text-[#8FA6BE]' :
+                          payout.position === 3 ? 'text-[#0E7490]' :
+                            'text-[#9FB3C8]'
                         }`} />
                     </div>
 
@@ -266,7 +266,7 @@ export default function PayoutModal({
                           {payout.position}{payout.position === 1 ? 'st' : payout.position === 2 ? 'nd' : payout.position === 3 ? 'rd' : 'th'}
                         </span>
                         {finisher && (
-                          <span className="text-sm text-[#64748B]">
+                          <span className="text-sm text-[#9FB3C8]">
                             - {finisher.player_name || finisher.profiles?.display_name}
                           </span>
                         )}
@@ -282,7 +282,7 @@ export default function PayoutModal({
                       min="0"
                       max="100"
                     />
-                    <span className="text-sm text-[#64748B] w-6">%</span>
+                    <span className="text-sm text-[#9FB3C8] w-6">%</span>
 
                     <div className="w-24 text-right">
                       <span className="font-semibold text-[#10B981] text-lg">
@@ -295,7 +295,7 @@ export default function PayoutModal({
                         onClick={() => markAsPaid(payout.position)}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isPaid
                           ? 'bg-[#10B981] text-white'
-                          : 'border border-[#4A5E78] text-[#64748B] hover:bg-[#132240]'
+                          : 'border border-[#445E77] text-[#9FB3C8] hover:bg-[#132240]'
                           }`}
                       >
                         <Check className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function PayoutModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#4A5E78]">
+        <div className="p-4 border-t border-[#445E77]">
           <button
             onClick={handleSaveStructure}
             disabled={Math.abs(totalPercentage - 100) > 0.5 || submitting}

@@ -132,20 +132,20 @@ export default function TDDealers() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" />
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#18191A] flex items-center justify-center p-4">
-        <div className="bg-[#242526] rounded-xl p-6 text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-[#F59E0B] mx-auto mb-3" />
-          <p className="text-[#E4E6EB] text-lg mb-4">{error || 'Tournament Not Found'}</p>
+      <div className="min-h-screen bg-[#040D18] flex items-center justify-center p-4">
+        <div className="bg-[#0A1829] rounded-xl p-6 text-center max-w-md">
+          <AlertTriangle className="w-10 h-10 text-[#22D3EE] mx-auto mb-3" />
+          <p className="text-[#F2F7FF] text-lg mb-4">{error || 'Tournament Not Found'}</p>
           <button onClick={() => navigateTo('')}
-            className="px-6 py-3 bg-[#1877F2] text-white rounded-lg text-base font-medium">
+            className="px-6 py-3 bg-[#0C55C0] text-white rounded-lg text-base font-medium">
             Back To Control Center
           </button>
         </div>
@@ -166,25 +166,25 @@ export default function TDDealers() {
         noindex={true}
       />
 
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] pb-24 font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] pb-24 font-['Inter']">
 
         {/* ===== HEADER ===== */}
         <PageBar
           title="Dealer Rotation"
           summary="Which Dealer Is On Which Table And For How Long. Dealers Push On The Interval Shown And Overdue Tables Are Flagged. Push Every Dealer Up One Table In One Tap. While The Clock Is On Break, Pushing Waits Until You Confirm."
           status={`${manned.toLocaleString()} Of ${tables.length.toLocaleString()} Table${tables.length === 1 ? '' : 's'} Manned, Push Every ${limit.toLocaleString()} Minutes`}
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
-          <button onClick={() => fetchDealers()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" title="Refresh" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={() => fetchDealers()} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" title="Refresh" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
         {/* ===== BREAK BANNER ===== */}
         {data.alerts?.on_break && (
-          <div className="mx-4 mt-3 rounded-xl border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 flex items-center gap-2">
-            <Coffee className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
-            <p className="text-xs text-[#F59E0B] font-medium">
+          <div className="mx-4 mt-3 rounded-xl border border-[#22D3EE]/40 bg-[#22D3EE]/10 px-3 py-2 flex items-center gap-2">
+            <Coffee className="w-4 h-4 text-[#22D3EE] flex-shrink-0" />
+            <p className="text-xs text-[#22D3EE] font-medium">
               The Clock Is On Break. Pushing Is Held Back Until You Confirm.
             </p>
           </div>
@@ -200,7 +200,7 @@ export default function TDDealers() {
               </p>
             </div>
             {overLimit.map(o => (
-              <p key={`over-${o.table_number}`} className="text-xs text-[#E4E6EB]">
+              <p key={`over-${o.table_number}`} className="text-xs text-[#F2F7FF]">
                 Table {o.table_number}: {o.dealer_name}, {Number(o.minutes_down || 0).toLocaleString()} Minutes Down
               </p>
             ))}
@@ -212,14 +212,14 @@ export default function TDDealers() {
           <button
             onClick={() => push({ action: 'push_all' })}
             disabled={busy === 'push_all' || manned === 0}
-            className="w-full min-h-[52px] rounded-xl bg-[#1877F2] text-white text-base font-semibold flex items-center justify-center gap-2 active:bg-[#1565D8] disabled:opacity-50">
+            className="w-full min-h-[52px] rounded-xl bg-[#0C55C0] text-white text-base font-semibold flex items-center justify-center gap-2 active:bg-[#0A4AA8] disabled:opacity-50">
             {busy === 'push_all'
               ? <Loader2 className="w-5 h-5 animate-spin" />
               : <ArrowRightLeft className="w-5 h-5" />}
             {busy === 'push_all' ? 'Pushing...' : 'Push Every Dealer Up One Table'}
           </button>
           {manned === 0 && (
-            <p className="text-xs text-[#B0B3B8] mt-2">
+            <p className="text-xs text-[#BDD0E2] mt-2">
               No Dealers Are Down On This Tournament Yet. Bring One In From A Table Below.
             </p>
           )}
@@ -228,8 +228,8 @@ export default function TDDealers() {
         {/* ===== TABLES ===== */}
         <div className="px-4 pt-3 space-y-2">
           {tables.length === 0 && (
-            <div className="bg-[#242526] border border-[#3A3B3C] rounded-xl p-4">
-              <p className="text-sm text-[#B0B3B8]">
+            <div className="bg-[#0A1829] border border-[#445E77] rounded-xl p-4">
+              <p className="text-sm text-[#BDD0E2]">
                 No Tables Are Assigned To This Tournament. Assign Tables From The Control Center First.
               </p>
             </div>
@@ -241,7 +241,7 @@ export default function TDDealers() {
             const isBusy = busy === `table-${t.table_number}`;
             return (
               <div key={t.table_id}
-                className={`bg-[#242526] rounded-xl border p-3 ${over ? 'border-[#EF4444]/50' : 'border-[#3A3B3C]'}`}>
+                className={`bg-[#0A1829] rounded-xl border p-3 ${over ? 'border-[#EF4444]/50' : 'border-[#445E77]'}`}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-white">
@@ -249,26 +249,26 @@ export default function TDDealers() {
                     </p>
                     {d ? (
                       <>
-                        <p className="text-sm text-[#E4E6EB] truncate">{d.dealer_name}</p>
-                        <p className={`text-xs font-medium ${over ? 'text-[#EF4444]' : 'text-[#B0B3B8]'}`}>
+                        <p className="text-sm text-[#F2F7FF] truncate">{d.dealer_name}</p>
+                        <p className={`text-xs font-medium ${over ? 'text-[#EF4444]' : 'text-[#BDD0E2]'}`}>
                           {Number(d.minutes_down || 0).toLocaleString()} Minute{d.minutes_down === 1 ? '' : 's'} Down
                           {over ? ', Push Overdue' : ''}
                         </p>
                       </>
                     ) : (
-                      <p className="text-xs text-[#F59E0B] font-medium">No Dealer Down</p>
+                      <p className="text-xs text-[#22D3EE] font-medium">No Dealer Down</p>
                     )}
                   </div>
 
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     {t.next_dealer ? (
-                      <span className="text-[11px] text-[#B0B3B8] text-right">
+                      <span className="text-[11px] text-[#BDD0E2] text-right">
                         Next: {t.next_dealer.dealer_name}
                         <br />
                         From Table {t.next_dealer.from_table_number}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-[#B0B3B8]">Next: Nobody</span>
+                      <span className="text-[11px] text-[#BDD0E2]">Next: Nobody</span>
                     )}
                   </div>
                 </div>
@@ -277,28 +277,28 @@ export default function TDDealers() {
                   <button
                     onClick={() => push({ action: 'push_table', tableNumber: t.table_number })}
                     disabled={isBusy || !t.next_dealer}
-                    className="flex-1 min-h-[44px] rounded-lg bg-[#3A3B3C] text-[#E4E6EB] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-40">
+                    className="flex-1 min-h-[44px] rounded-lg bg-[#132A42] text-[#F2F7FF] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-40">
                     {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
                     Push This Table
                   </button>
                   <button
                     onClick={() => setAssignTable(assignTable === t.table_number ? null : t.table_number)}
-                    className="flex-1 min-h-[44px] rounded-lg bg-[#1877F2]/10 border border-[#1877F2]/30 text-[#1877F2] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#1877F2]/20">
+                    className="flex-1 min-h-[44px] rounded-lg bg-[#0C55C0]/10 border border-[#1981EC]/30 text-[#86DAFF] text-sm font-medium flex items-center justify-center gap-2 active:bg-[#0C55C0]/20">
                     <UserPlus className="w-4 h-4" />
                     Bring A Dealer In
                   </button>
                 </div>
 
                 {assignTable === t.table_number && (
-                  <div className="mt-2 border-t border-[#3A3B3C] pt-2 space-y-1 max-h-56 overflow-y-auto">
+                  <div className="mt-2 border-t border-[#445E77] pt-2 space-y-1 max-h-56 overflow-y-auto">
                     {[...(data.available_dealers || []), ...(data.on_break_dealers || [])].length === 0 ? (
-                      <p className="text-xs text-[#B0B3B8]">Every Active Dealer Is Already Down On A Table.</p>
+                      <p className="text-xs text-[#BDD0E2]">Every Active Dealer Is Already Down On A Table.</p>
                     ) : (
                       <>
                         {(data.available_dealers || []).map(dealer => (
                           <button key={dealer.id}
                             onClick={() => push({ action: 'push_table', tableNumber: t.table_number, dealerId: dealer.id })}
-                            className="w-full min-h-[44px] px-3 rounded-lg bg-[#3A3B3C] text-left text-sm text-[#E4E6EB] flex items-center justify-between active:bg-[#4A4B4C]">
+                            className="w-full min-h-[44px] px-3 rounded-lg bg-[#132A42] text-left text-sm text-[#F2F7FF] flex items-center justify-between active:bg-[#1B3753]">
                             <span className="truncate">{dealer.name}</span>
                             <span className="text-[11px] text-[#31A24C] flex-shrink-0">Available</span>
                           </button>
@@ -306,9 +306,9 @@ export default function TDDealers() {
                         {(data.on_break_dealers || []).map(dealer => (
                           <button key={dealer.id}
                             onClick={() => push({ action: 'push_table', tableNumber: t.table_number, dealerId: dealer.id })}
-                            className="w-full min-h-[44px] px-3 rounded-lg bg-[#3A3B3C] text-left text-sm text-[#E4E6EB] flex items-center justify-between active:bg-[#4A4B4C]">
+                            className="w-full min-h-[44px] px-3 rounded-lg bg-[#132A42] text-left text-sm text-[#F2F7FF] flex items-center justify-between active:bg-[#1B3753]">
                             <span className="truncate">{dealer.name}</span>
-                            <span className="text-[11px] text-[#F59E0B] flex-shrink-0">
+                            <span className="text-[11px] text-[#22D3EE] flex-shrink-0">
                               On Break {dealer.minutes_on_break != null ? `${Number(dealer.minutes_on_break).toLocaleString()}m` : ''}
                             </span>
                           </button>
@@ -325,20 +325,20 @@ export default function TDDealers() {
         {/* ===== BREAK CONFIRM ===== */}
         {breakConfirm && (
           <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4 w-full max-w-md">
+            <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4 w-full max-w-md">
               <div className="flex items-center gap-2 mb-2">
-                <Coffee className="w-5 h-5 text-[#F59E0B]" />
+                <Coffee className="w-5 h-5 text-[#22D3EE]" />
                 <p className="text-base font-bold text-white">The Clock Is On Break</p>
               </div>
-              <p className="text-sm text-[#B0B3B8] mb-4">{breakConfirm.message}</p>
+              <p className="text-sm text-[#BDD0E2] mb-4">{breakConfirm.message}</p>
               <div className="flex gap-2">
                 <button onClick={() => setBreakConfirm(null)}
-                  className="flex-1 min-h-[44px] rounded-lg bg-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold">
+                  className="flex-1 min-h-[44px] rounded-lg bg-[#132A42] text-[#F2F7FF] text-sm font-semibold">
                   Wait
                 </button>
                 <button
                   onClick={() => push({ ...breakConfirm, force: true })}
-                  className="flex-1 min-h-[44px] rounded-lg bg-[#F59E0B] text-[#18191A] text-sm font-semibold">
+                  className="flex-1 min-h-[44px] rounded-lg bg-[#22D3EE] text-[#040D18] text-sm font-semibold">
                   Push Anyway
                 </button>
               </div>
@@ -361,13 +361,13 @@ export default function TDDealers() {
         )}
 
         {/* ===== BOTTOM NAV BAR ===== */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
           <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
               return (
                 <button key={item.key} onClick={() => navigateTo(item.path)}
-                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg text-[#B0B3B8] active:text-[#E4E6EB]">
+                  className="flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg text-[#BDD0E2] active:text-[#F2F7FF]">
                   <Icon className="w-5 h-5" />
                   <span className="text-[10px] font-medium">{item.label}</span>
                 </button>

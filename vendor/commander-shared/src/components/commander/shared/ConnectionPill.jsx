@@ -23,7 +23,7 @@ export default function ConnectionPill({ conn, showWhenLive = true }) {
     if (isLive && !showWhenLive) return null;
 
     const label = isLive ? 'Live' : (status === 'connecting' ? 'Connecting' : 'Reconnecting');
-    const color = isLive ? '#31A24C' : '#F59E0B';
+    const color = isLive ? '#31A24C' : '#22D3EE';
 
     return (
         <span

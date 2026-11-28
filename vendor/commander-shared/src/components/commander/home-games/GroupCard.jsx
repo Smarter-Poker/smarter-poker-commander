@@ -29,13 +29,13 @@ export default function GroupCard({
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-white">{group.name}</h3>
             {group.is_private ? (
-              <Lock className="w-4 h-4 text-[#64748B]" />
+              <Lock className="w-4 h-4 text-[#9FB3C8]" />
             ) : (
               <Globe className="w-4 h-4 text-[#10B981]" />
             )}
           </div>
           {group.description && (
-            <p className="text-sm text-[#64748B] mt-1 line-clamp-2">
+            <p className="text-sm text-[#9FB3C8] mt-1 line-clamp-2">
               {group.description}
             </p>
           )}
@@ -49,7 +49,7 @@ export default function GroupCard({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-3 text-sm text-[#64748B]">
+      <div className="flex flex-wrap gap-3 text-sm text-[#9FB3C8]">
         <span className="flex items-center gap-1">
           <Users className="w-4 h-4" />
           {group.member_count} member{group.member_count !== 1 ? 's' : ''}
@@ -70,7 +70,7 @@ export default function GroupCard({
         )}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-[#4A5E78] flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-[#445E77] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="px-2 py-1 bg-[#0D192E] rounded text-xs font-medium text-white">
             {gameType}
@@ -95,7 +95,7 @@ export default function GroupCard({
         )}
 
         {group.my_membership?.status === 'pending' && (
-          <span className="px-3 py-1 bg-[#F59E0B]/10 text-[#D97706] text-sm font-medium rounded-lg">
+          <span className="px-3 py-1 bg-[#22D3EE]/10 text-[#0EA5C6] text-sm font-medium rounded-lg">
             Pending
           </span>
         )}
@@ -123,9 +123,9 @@ export function GroupCardCompact({ group, onClick }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h4 className="font-medium text-white truncate">{group.name}</h4>
-          {group.is_private && <Lock className="w-3 h-3 text-[#64748B]" />}
+          {group.is_private && <Lock className="w-3 h-3 text-[#9FB3C8]" />}
         </div>
-        <p className="text-sm text-[#64748B]">
+        <p className="text-sm text-[#9FB3C8]">
           {group.member_count} members
           {group.city && ` • ${group.city}`}
         </p>

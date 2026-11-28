@@ -79,7 +79,7 @@ function lateRegCloseDate(blindStructure, currentLevelIdx, remainingSeconds, lat
 }
 
 const DEFAULT_THEME = {
-  background: '#0D192E', text: '#ffffff', accent: '#1877F2',
+  background: '#0D192E', text: '#ffffff', accent: '#1981EC',
   blinds: '#ffffff', headerBg: 'rgba(0,0,0,0.3)' };
 
 // Display screens for cycling
@@ -540,7 +540,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
               ← Prev Level
             </button>
             {data?.clock?.clock_state?.status === 'running' ? (
-              <button style={{ ...S.controlBtn, ...S.controlBtnPrimary, background: 'rgba(245,158,11,0.3)', borderColor: '#F59E0B' }} onClick={() => clockAction('pause')} disabled={actionLoading}>
+              <button style={{ ...S.controlBtn, ...S.controlBtnPrimary, background: 'rgba(34, 211, 238,0.3)', borderColor: '#22D3EE' }} onClick={() => clockAction('pause')} disabled={actionLoading}>
                 Pause
               </button>
             ) : (
@@ -548,10 +548,10 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                 Resume
               </button>
             )}
-            <button style={{ ...S.controlBtn, background: 'rgba(24,119,242,0.3)', borderColor: '#1877F2' }} onClick={() => clockAction('next_level')} disabled={actionLoading}>
+            <button style={{ ...S.controlBtn, background: 'rgba(25, 129, 236,0.3)', borderColor: '#1981EC' }} onClick={() => clockAction('next_level')} disabled={actionLoading}>
               Next Level →
             </button>
-            <button style={{ ...S.controlBtn, background: 'rgba(139,92,246,0.3)', borderColor: '#8B5CF6' }} onClick={() => { setHandTimerSeconds(60); setHandTimerActive(true); }}>
+            <button style={{ ...S.controlBtn, background: 'rgba(90, 169, 255,0.3)', borderColor: '#5AA9FF' }} onClick={() => { setHandTimerSeconds(60); setHandTimerActive(true); }}>
               Hand Timer
             </button>
             {/* Screen selector */}
@@ -564,8 +564,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
               ].map(({ key, label }) => (
                 <button key={key} onClick={() => setActiveScreen(key)} style={{
                   ...S.controlBtn, padding: '8px 14px', fontSize: 13,
-                  background: activeScreen === key ? 'rgba(24,119,242,0.4)' : 'rgba(255,255,255,0.1)',
-                  borderColor: activeScreen === key ? '#1877F2' : 'rgba(255,255,255,0.2)' }}>{label}</button>
+                  background: activeScreen === key ? 'rgba(25, 129, 236,0.4)' : 'rgba(255,255,255,0.1)',
+                  borderColor: activeScreen === key ? '#1981EC' : 'rgba(255,255,255,0.2)' }}>{label}</button>
               ))}
             </div>
             {/* Chop / ICM toggles */}
@@ -738,7 +738,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                   <React.Fragment key={i}>
                     <span style={{ opacity: 0.5, textAlign: 'right' }}>{place}</span>
                     <span>-</span>
-                    <span style={{ color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#fff' }}>{formatMoney(amount)}</span>
+                    <span style={{ color: i === 0 ? '#22D3EE' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#fff' }}>{formatMoney(amount)}</span>
                   </React.Fragment>
                 );
               })}
@@ -764,11 +764,11 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                 const isCurrent = rowIdx === currentLevelIdx;
                 return (
                   <React.Fragment key={i}>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff', fontWeight: isCurrent ? 800 : 600 }}>{level.is_break ? (level.label || 'Break') : levelNum}</span>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.is_break ? '-' : (level.small_blind || 0).toLocaleString()}</span>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.is_break ? '-' : (level.big_blind || 0).toLocaleString()}</span>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{level.is_break ? '-' : (level.ante || 0).toLocaleString()}</span>
-                    <span style={{ color: isCurrent ? '#1877F2' : '#fff' }}>{(level.duration ?? level.duration_minutes) || '-'}m</span>
+                    <span style={{ color: isCurrent ? '#1981EC' : '#fff', fontWeight: isCurrent ? 800 : 600 }}>{level.is_break ? (level.label || 'Break') : levelNum}</span>
+                    <span style={{ color: isCurrent ? '#1981EC' : '#fff' }}>{level.is_break ? '-' : (level.small_blind || 0).toLocaleString()}</span>
+                    <span style={{ color: isCurrent ? '#1981EC' : '#fff' }}>{level.is_break ? '-' : (level.big_blind || 0).toLocaleString()}</span>
+                    <span style={{ color: isCurrent ? '#1981EC' : '#fff' }}>{level.is_break ? '-' : (level.ante || 0).toLocaleString()}</span>
+                    <span style={{ color: isCurrent ? '#1981EC' : '#fff' }}>{(level.duration ?? level.duration_minutes) || '-'}m</span>
                   </React.Fragment>
                 );
               })}
@@ -792,8 +792,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                   color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>ICM</button>
                 <button onClick={() => setChopMode('chip_chop')} style={{
                   padding: '6px 16px', borderRadius: 6, border: '2px solid',
-                  borderColor: chopMode === 'chip_chop' ? '#1877F2' : 'rgba(255,255,255,0.2)',
-                  background: chopMode === 'chip_chop' ? 'rgba(24,119,242,0.3)' : 'rgba(255,255,255,0.05)',
+                  borderColor: chopMode === 'chip_chop' ? '#1981EC' : 'rgba(255,255,255,0.2)',
+                  background: chopMode === 'chip_chop' ? 'rgba(25, 129, 236,0.3)' : 'rgba(255,255,255,0.05)',
                   color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Chip Chop</button>
               </div>
             </div>
@@ -807,8 +807,8 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                 const stacks = (stats.player_stacks || []).filter(p => p.chips > 0).sort((a, b) => b.chips - a.chips);
                 setEditableStacks(stacks.map(p => ({ name: p.name || 'Player', chips: p.chips })));
               }} style={{
-                padding: '6px 14px', borderRadius: 6, border: '2px solid rgba(24,119,242,0.5)',
-                background: 'rgba(24,119,242,0.15)', color: '#1877F2', fontSize: 12,
+                padding: '6px 14px', borderRadius: 6, border: '2px solid rgba(25, 129, 236,0.5)',
+                background: 'rgba(25, 129, 236,0.15)', color: '#1981EC', fontSize: 12,
                 fontWeight: 700, cursor: 'pointer' }}>Load From Tournament</button>
               <button onClick={() => {
                 setEditableStacks([...editableStacks, { name: `Player ${editableStacks.length + 1}`, chips: 0 }]);
@@ -828,7 +828,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                   <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.4 }}>PLAYER</span>
                   <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.4 }}>CHIPS</span>
                   <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.4, color: '#31A24C' }}>{chopMode === 'icm' ? 'ICM VALUE' : 'CHOP VALUE'}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.4, color: '#1877F2' }}>{chopMode === 'icm' ? 'CHIP CHOP' : 'VS ICM'}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.4, color: '#1981EC' }}>{chopMode === 'icm' ? 'CHIP CHOP' : 'VS ICM'}</span>
                   <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.4 }}>EQUITY</span>
                   <span></span>
                 </div>
@@ -881,7 +881,7 @@ const res = await commanderFetch(`/api/commander/tournaments/${id}/clock`, {
                         <span style={{ color: '#31A24C', fontWeight: 700, fontSize: 15, textAlign: 'right' }}>
                           {isValid && icmRow ? formatMoney(chopMode === 'icm' ? icmRow.equity : chopRow?.chop || 0) : '-'}
                         </span>
-                        <span style={{ color: '#1877F2', fontWeight: 700, fontSize: 15, textAlign: 'right' }}>
+                        <span style={{ color: '#1981EC', fontWeight: 700, fontSize: 15, textAlign: 'right' }}>
                           {isValid && chopRow ? formatMoney(chopMode === 'icm' ? chopRow.chop : icmRow?.equity || 0) : '-'}
                         </span>
                         <span style={{ opacity: 0.6, fontSize: 13, textAlign: 'right' }}>
@@ -1073,9 +1073,9 @@ const S = {
   chipLeaderChips: {
     fontSize: 13, fontWeight: 700, color: '#31A24C', whiteSpace: 'nowrap' },
   breakBanner: {
-    position: 'absolute', top: 8, background: 'rgba(245,158,11,0.2)',
-    border: '2px solid rgba(245,158,11,0.5)', padding: '8px 32px', borderRadius: 8,
-    color: '#F59E0B', fontSize: 28, fontWeight: 800, letterSpacing: 4, zIndex: 10
+    position: 'absolute', top: 8, background: 'rgba(34, 211, 238,0.2)',
+    border: '2px solid rgba(34, 211, 238,0.5)', padding: '8px 32px', borderRadius: 8,
+    color: '#22D3EE', fontSize: 28, fontWeight: 800, letterSpacing: 4, zIndex: 10
   },
   h4hBanner: {
     position: 'absolute', top: 8, background: 'rgba(239,68,68,0.2)',
@@ -1086,12 +1086,12 @@ const S = {
   // 2026-07-25 audit fix: banner style for staff floor messages
   messageBanner: {
     flexShrink: 0, textAlign: 'center', padding: '10px 24px',
-    background: 'rgba(24,119,242,0.25)', borderBottom: '2px solid rgba(24,119,242,0.5)',
+    background: 'rgba(25, 129, 236,0.25)', borderBottom: '2px solid rgba(25, 129, 236,0.5)',
     color: '#fff', fontSize: 28, fontWeight: 800, letterSpacing: 1
   },
   pausedBanner: {
-    background: 'rgba(245,158,11,0.2)', border: '2px solid rgba(245,158,11,0.5)',
-    padding: '6px 28px', borderRadius: 8, color: '#F59E0B', fontSize: 24,
+    background: 'rgba(34, 211, 238,0.2)', border: '2px solid rgba(34, 211, 238,0.5)',
+    padding: '6px 28px', borderRadius: 8, color: '#22D3EE', fontSize: 24,
     fontWeight: 800, letterSpacing: 4, marginTop: 4
   },
   controlBar: {

@@ -30,12 +30,12 @@ const US_STATES = [
 ];
 
 const ROLES = [
-  { value: 'owner', label: 'Owner', color: 'bg-[#7C3AED] text-white' },
+  { value: 'owner', label: 'Owner', color: 'bg-[#3B82F6] text-white' },
   { value: 'manager', label: 'Manager', color: 'bg-[#2563EB] text-white' },
   { value: 'dualrate', label: 'Dual Rate', color: 'bg-[#0D9488] text-white' },
   { value: 'floor', label: 'Floor', color: 'bg-[#059669] text-white' },
-  { value: 'brush', label: 'Brush', color: 'bg-[#D97706] text-white' },
-  { value: 'cashier', label: 'Cashier', color: 'bg-[#7C3AED]/80 text-white' },
+  { value: 'brush', label: 'Brush', color: 'bg-[#0EA5C6] text-white' },
+  { value: 'cashier', label: 'Cashier', color: 'bg-[#3B82F6]/80 text-white' },
   { value: 'dealer', label: 'Dealer', color: 'bg-[#6B7280] text-white' },
   { value: 'security', label: 'Security', color: 'bg-[#DC2626] text-white' },
 ];
@@ -202,7 +202,7 @@ const res = await commanderFetch('/api/commander/staff', {
           .badge-role {
             font-size: 12px;
             font-weight: 600;
-            color: #1877F2;
+            color: #1981EC;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 12px;
@@ -326,7 +326,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
   if (!currentStaff || loading) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -361,8 +361,8 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
         {/* Main Content */}
         <main className="max-w-4xl mx-auto px-4 py-6">
           {!canManageStaff && (
-            <div className="mb-6 p-4 bg-[#F59E0B]/10 rounded-xl">
-              <p className="text-sm text-[#F59E0B]">
+            <div className="mb-6 p-4 bg-[#22D3EE]/10 rounded-xl">
+              <p className="text-sm text-[#22D3EE]">
                 You don't have permission to manage staff.
               </p>
             </div>
@@ -370,9 +370,9 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
 
           {staffList.length === 0 ? (
             <div className="cmd-panel p-8 text-center">
-              <User className="w-12 h-12 text-[#3A3B3C] mx-auto mb-4" />
+              <User className="w-12 h-12 text-[#7F97B0] mx-auto mb-4" />
               <h2 className="text-lg font-semibold text-white mb-2">No Staff Yet</h2>
-              <p className="text-[#B0B3B8] mb-4">Add Staff Members To Manage Your Venue</p>
+              <p className="text-[#BDD0E2] mb-4">Add Staff Members To Manage Your Venue</p>
               {canManageStaff && (
                 <button
                   onClick={() => setShowAddModal(true)}
@@ -386,7 +386,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
             <>
               {/* Search Bar */}
               <div className="mb-4 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#B0B3B8]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#BDD0E2]" />
                 <input
                   type="text"
                   placeholder="Search staff by name or role..."
@@ -396,9 +396,9 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                 />
               </div>
 
-              <div className="cmd-panel divide-y divide-[#3A3B3C]">
+              <div className="cmd-panel divide-y divide-[#445E77]">
                 {paginatedStaff.length === 0 ? (
-                  <div className="p-8 text-center text-[#B0B3B8]">No staff matched your search</div>
+                  <div className="p-8 text-center text-[#BDD0E2]">No staff matched your search</div>
                 ) : (
                   paginatedStaff.map((staff) => {
                     const role = ROLES.find(r => r.value === staff.role) || ROLES[4];
@@ -408,8 +408,8 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                         className="p-4 flex items-center justify-between"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-[#3A3B3C] rounded-full flex items-center justify-center">
-                            <User className="w-6 h-6 text-[#B0B3B8]" />
+                          <div className="w-12 h-12 bg-[#132A42] rounded-full flex items-center justify-center">
+                            <User className="w-6 h-6 text-[#BDD0E2]" />
                           </div>
                           <div>
                             <h3 className="font-semibold text-white">
@@ -425,13 +425,13 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                                 const canReveal = isAdmin || isSelf;
                                 const isRevealed = revealedPinId === staff.id;
                                 return (
-                                  <span className="inline-flex items-center gap-1 text-xs text-[#B0B3B8]">
+                                  <span className="inline-flex items-center gap-1 text-xs text-[#BDD0E2]">
                                     PIN: {isRevealed ? staff.pin_code : '****'}
                                     {canReveal && (
                                       <button
                                         type="button"
                                         onClick={() => setRevealedPinId(isRevealed ? null : staff.id)}
-                                        className="p-0.5 hover:text-[#1877F2] transition-colors"
+                                        className="p-0.5 hover:text-[#86DAFF] transition-colors"
                                         title={isRevealed ? 'Hide PIN' : 'Show PIN'}
                                       >
                                         {isRevealed
@@ -449,7 +449,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                                 <CheckCircle className="w-3 h-3" /> Linked
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-[#65676B] rounded-full bg-[#3A3B3C]/50">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-[#65676B] rounded-full bg-[#132A42]/50">
                                 Not linked
                               </span>
                             )}
@@ -460,11 +460,11 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                           <div className="flex gap-2">
                             {!staff.linked_user_id && (
                               linkCodeData?.staffId === staff.id ? (
-                                <div className="flex items-center gap-2 px-2 py-1 bg-[#1877F2]/10 rounded-lg border border-[#1877F2]/30">
-                                  <span className="text-xs font-mono font-bold text-[#1877F2] tracking-wider">{linkCodeData.token}</span>
+                                <div className="flex items-center gap-2 px-2 py-1 bg-[#0C55C0]/10 rounded-lg border border-[#1981EC]/30">
+                                  <span className="text-xs font-mono font-bold text-[#86DAFF] tracking-wider">{linkCodeData.token}</span>
                                   <button
                                     onClick={() => { navigator.clipboard.writeText(linkCodeData.url); }}
-                                    className="p-1 text-[#1877F2] hover:bg-[#1877F2]/20 rounded transition-colors"
+                                    className="p-1 text-[#86DAFF] hover:bg-[#0C55C0]/20 rounded transition-colors"
                                     title="Copy claim URL"
                                   >
                                     <Copy className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                                 <button
                                   onClick={() => handleGenerateLinkCode(staff.id)}
                                   disabled={linkCodeLoading === staff.id}
-                                  className="p-2 text-[#1877F2] hover:bg-[#1877F2]/10 rounded-lg transition-colors"
+                                  className="p-2 text-[#86DAFF] hover:bg-[#0C55C0]/10 rounded-lg transition-colors"
                                   title="Generate link code for employee"
                                 >
                                   <Link2 className="w-4 h-4" />
@@ -483,7 +483,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                             )}
                             <button
                               onClick={() => setEditingStaff(staff)}
-                              className="p-2 text-[#B0B3B8] hover:bg-[#3A3B3C] rounded-lg transition-colors"
+                              className="p-2 text-[#BDD0E2] hover:bg-[#132A42] rounded-lg transition-colors"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -633,15 +633,15 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="cmd-panel cmd-corner-lights w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-[#3A3B3C]">
+        <div className="flex items-center justify-between p-4 border-b border-[#445E77]">
           <h2 className="text-lg font-semibold text-white">
             {isEditing ? 'Edit Staff' : 'Add Employee'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#3A3B3C] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#132A42] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -669,7 +669,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
           {/* Email (optional) */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
-              Email <span className="text-[#6A6B6D]">(optional)</span>
+              Email <span className="text-[#93A9C0]">(optional)</span>
             </label>
             <input
               type="email"
@@ -683,7 +683,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
           {/* Phone (optional) */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
-              Phone <span className="text-[#6A6B6D]">(optional)</span>
+              Phone <span className="text-[#93A9C0]">(optional)</span>
             </label>
             <input
               type="tel"
@@ -695,13 +695,13 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
           </div>
 
           {/* Government ID */}
-          <div className="border border-[#3A3B3C] rounded-lg p-3 space-y-3">
-            <p className="text-sm font-medium text-[#B0B3B8] flex items-center gap-1.5">
+          <div className="border border-[#445E77] rounded-lg p-3 space-y-3">
+            <p className="text-sm font-medium text-[#BDD0E2] flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5" /> Government ID
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-[#B0B3B8] mb-1">ID Type</label>
+                <label className="block text-xs text-[#BDD0E2] mb-1">ID Type</label>
                 <select
                   value={idType}
                   onChange={(e) => setIdType(e.target.value)}
@@ -711,7 +711,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-[#B0B3B8] mb-1">ID Number</label>
+                <label className="block text-xs text-[#BDD0E2] mb-1">ID Number</label>
                 <input
                   type="text"
                   value={idNumber}
@@ -723,7 +723,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-[#B0B3B8] mb-1">State</label>
+                <label className="block text-xs text-[#BDD0E2] mb-1">State</label>
                 <select
                   value={idState}
                   onChange={(e) => setIdState(e.target.value)}
@@ -734,7 +734,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-[#B0B3B8] mb-1">ID Expiry</label>
+                <label className="block text-xs text-[#BDD0E2] mb-1">ID Expiry</label>
                 <input
                   type="date"
                   value={idExpiry}
@@ -743,7 +743,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
                 />
               </div>
               <div>
-                <label className="block text-xs text-[#B0B3B8] mb-1">DOB</label>
+                <label className="block text-xs text-[#BDD0E2] mb-1">DOB</label>
                 <input
                   type="date"
                   value={dateOfBirth}
@@ -756,10 +756,10 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
 
           {/* QR Code (show when editing) */}
           {isEditing && staff?.qr_code && (
-            <div className="flex items-center gap-3 p-3 bg-[#18191A] rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-[#040D18] rounded-lg">
               <QrCode className="w-5 h-5 text-[#10B981]" />
               <div>
-                <p className="text-xs text-[#B0B3B8]">Staff QR Code</p>
+                <p className="text-xs text-[#BDD0E2]">Staff QR Code</p>
                 <p className="text-sm text-white font-mono">{staff.qr_code}</p>
               </div>
             </div>
@@ -777,8 +777,8 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
                   type="button"
                   onClick={() => setRole(r.value)}
                   className={`p-3 rounded-lg text-sm font-medium transition-colors ${role === r.value
-                    ? 'bg-[#1877F2] text-white'
-                    : 'bg-[#3A3B3C] text-white hover:bg-[#4A4B4C]'
+                    ? 'bg-[#0C55C0] text-white'
+                    : 'bg-[#132A42] text-white hover:bg-[#1B3753]'
                     }`}
                 >
                   {r.label}
@@ -812,18 +812,18 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
               <p className="text-xs text-[#31A24C] mt-1">✓ PIN available</p>
             )}
             {pinCode.length > 0 && pinCode.length < 4 && (
-              <p className="text-xs text-[#B0B3B8] mt-1">Enter {4 - pinCode.length} more digit{4 - pinCode.length > 1 ? 's' : ''}</p>
+              <p className="text-xs text-[#BDD0E2] mt-1">Enter {4 - pinCode.length} more digit{4 - pinCode.length > 1 ? 's' : ''}</p>
             )}
-            <p className="text-xs text-[#F59E0B] mt-1">🔒 Required for all financial transactions</p>
+            <p className="text-xs text-[#22D3EE] mt-1">🔒 Required for all financial transactions</p>
           </div>
 
           {/* Active Toggle */}
-          <div className="flex items-center justify-between p-3 bg-[#3A3B3C] rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-[#132A42] rounded-lg">
             <span className="font-medium text-white">Active</span>
             <button
               type="button"
               onClick={() => setIsActive(!isActive)}
-              className={`w-12 h-7 rounded-full transition-colors relative ${isActive ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'
+              className={`w-12 h-7 rounded-full transition-colors relative ${isActive ? 'bg-[#0C55C0]' : 'bg-[#132A42]'
                 }`}
             >
               <span

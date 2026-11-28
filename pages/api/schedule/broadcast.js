@@ -173,7 +173,7 @@ export default async function handler(req, res) {
                       try {
                           const htmlBody = `
                               <div style="font-family: Inter, -apple-system, sans-serif; max-width: 600px; margin: 0 auto;">
-                                  <div style="background: #1877F2; padding: 20px; text-align: center;">
+                                  <div style="background: #1981EC; padding: 20px; text-align: center;">
                                       <h1 style="color: white; margin: 0; font-size: 24px;">Club Commander</h1>
                                   </div>
                                   <div style="padding: 30px; background: #F9FAFB;">

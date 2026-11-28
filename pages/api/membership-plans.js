@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         },
         {
           tier: 'monthly', name: 'Monthly Membership', description: '30-Day Access Pass',
-          color: '#F59E0B', sort_order: 2,
+          color: '#22D3EE', sort_order: 2,
           price_daily: null, price_weekly: null, price_monthly: 25, price_yearly: null,
           comp_multiplier: 1.0, seat_fee_discount_pct: 0, tournament_discount_pct: 0,
           priority_waitlist: false, reserved_seating: false,
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         },
         {
           tier: 'yearly', name: 'Yearly Membership', description: 'Full-Year Access Pass',
-          color: '#8B5CF6', sort_order: 3,
+          color: '#5AA9FF', sort_order: 3,
           price_daily: null, price_weekly: null, price_monthly: null, price_yearly: 199,
           comp_multiplier: 1.0, seat_fee_discount_pct: 0, tournament_discount_pct: 0,
           priority_waitlist: false, reserved_seating: false,
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
       .from('commander_membership_plans')
       .insert({
         venue_id: parseInt(venue_id),
-        tier, name, description, color: color || '#1877F2',
+        tier, name, description, color: color || '#1981EC',
         sort_order: sort_order || 0,
         price_daily: price_daily || null,
         price_weekly: price_weekly || null,

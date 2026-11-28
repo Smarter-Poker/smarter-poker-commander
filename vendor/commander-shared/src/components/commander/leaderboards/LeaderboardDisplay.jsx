@@ -7,9 +7,9 @@ import React from 'react';
 import { Trophy, Medal, Calendar, Users, Award, ChevronRight } from 'lucide-react';
 
 const RANK_STYLES = {
-  1: { bg: '#FEF3C7', text: '#92400E', icon: '#F59E0B' },
+  1: { bg: '#E0F2FE', text: '#92400E', icon: '#22D3EE' },
   2: { bg: '#E5E7EB', text: '#374151', icon: '#9CA3AF' },
-  3: { bg: '#FED7AA', text: '#9A3412', icon: '#F97316' }
+  3: { bg: '#E0F2FE', text: '#9A3412', icon: '#F97316' }
 };
 
 function LeaderboardDisplay({
@@ -66,11 +66,11 @@ function LeaderboardDisplay({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#0D192E]">
-              <Trophy size={20} className="text-yellow-400" />
+              <Trophy size={20} className="text-cyan-400" />
             </div>
             <div>
               <h3 className="font-medium text-white">{leaderboard.name}</h3>
-              <div className="flex items-center gap-2 text-xs text-[#4A5E78]">
+              <div className="flex items-center gap-2 text-xs text-[#8FA6BE]">
                 <span
                   className="px-2 py-0.5 rounded-full"
                   style={{ backgroundColor: `${getStatusColor(leaderboard.status)}20`, color: getStatusColor(leaderboard.status) }}
@@ -81,7 +81,7 @@ function LeaderboardDisplay({
               </div>
             </div>
           </div>
-          <ChevronRight size={20} className="text-[#4A5E78]" />
+          <ChevronRight size={20} className="text-[#8FA6BE]" />
         </div>
       </div>
     );
@@ -90,15 +90,15 @@ function LeaderboardDisplay({
   return (
     <div className="cmd-panel overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-[#4A5E78]">
+      <div className="p-4 border-b border-[#445E77]">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#0D192E]">
-              <Trophy size={24} className="text-yellow-400" />
+              <Trophy size={24} className="text-cyan-400" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">{leaderboard.name}</h2>
-              <div className="flex items-center gap-3 text-sm text-[#64748B] mt-1">
+              <div className="flex items-center gap-3 text-sm text-[#9FB3C8] mt-1">
                 <span className="flex items-center gap-1">
                   <Calendar size={14} />
                   {formatDate(leaderboard.start_date)} - {formatDate(leaderboard.end_date)}
@@ -122,13 +122,13 @@ function LeaderboardDisplay({
         </div>
 
         {leaderboard.description && (
-          <p className="mt-3 text-sm text-[#64748B]">{leaderboard.description}</p>
+          <p className="mt-3 text-sm text-[#9FB3C8]">{leaderboard.description}</p>
         )}
 
         {/* Prizes */}
         {leaderboard.prizes && leaderboard.prizes.length > 0 && (
           <div className="mt-4 flex items-center gap-4">
-            <span className="text-sm text-[#4A5E78]">Prizes:</span>
+            <span className="text-sm text-[#8FA6BE]">Prizes:</span>
             <div className="flex items-center gap-3">
               {leaderboard.prizes.slice(0, 3).map((prize, idx) => (
                 <span
@@ -139,7 +139,7 @@ function LeaderboardDisplay({
                 </span>
               ))}
               {leaderboard.prizes.length > 3 && (
-                <span className="text-xs text-[#4A5E78]">+{leaderboard.prizes.length - 3} more</span>
+                <span className="text-xs text-[#8FA6BE]">+{leaderboard.prizes.length - 3} more</span>
               )}
             </div>
           </div>
@@ -160,9 +160,9 @@ function LeaderboardDisplay({
       )}
 
       {/* Rankings */}
-      <div className="divide-y divide-[#4A5E78]">
+      <div className="divide-y divide-[#445E77]">
         {entries.length === 0 ? (
-          <div className="p-8 text-center text-[#4A5E78]">
+          <div className="p-8 text-center text-[#8FA6BE]">
             No entries yet
           </div>
         ) : (
@@ -202,7 +202,7 @@ function LeaderboardDisplay({
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#0D192E] text-[#64748B]">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#0D192E] text-[#9FB3C8]">
                         {entry.profiles?.display_name?.[0]?.toUpperCase() || '?'}
                       </div>
                     )}
@@ -216,7 +216,7 @@ function LeaderboardDisplay({
                 <div className="text-right">
                   <div className="font-medium text-white">{formatScore(entry)}</div>
                   {entry.prize_won && (
-                    <div className="flex items-center gap-1 text-xs text-yellow-400">
+                    <div className="flex items-center gap-1 text-xs text-cyan-400">
                       <Award size={12} />
                       {entry.prize_won}
                     </div>
@@ -232,7 +232,7 @@ function LeaderboardDisplay({
       {entries.length > 10 && onViewDetails && (
         <button
           onClick={() => onViewDetails(leaderboard)}
-          className="w-full py-3 text-center text-sm font-medium text-[#22D3EE] hover:bg-[#132240] transition-colors border-t border-[#4A5E78]"
+          className="w-full py-3 text-center text-sm font-medium text-[#22D3EE] hover:bg-[#132240] transition-colors border-t border-[#445E77]"
         >
           View all {entries.length} participants
         </button>

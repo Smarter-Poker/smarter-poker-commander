@@ -16,8 +16,8 @@ export default function CompBalanceCard({
   if (!balance) {
     return (
       <div className="cmd-panel p-4 text-center">
-        <Wallet size={24} className="mx-auto text-[#4A5E78] mb-2" />
-        <p className="text-[#64748B] text-sm">No Comp Balance</p>
+        <Wallet size={24} className="mx-auto text-[#8FA6BE] mb-2" />
+        <p className="text-[#9FB3C8] text-sm">No Comp Balance</p>
       </div>
     );
   }
@@ -37,7 +37,7 @@ export default function CompBalanceCard({
             <Wallet size={20} className="text-green-400" />
           </div>
           <div>
-            <div className="text-xs text-[#64748B]">Comp Balance</div>
+            <div className="text-xs text-[#9FB3C8]">Comp Balance</div>
             <div className="text-lg font-bold text-white">
               ${currentBalance.toFixed(2)}
             </div>
@@ -58,7 +58,7 @@ export default function CompBalanceCard({
   return (
     <div className="cmd-panel overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-[#4A5E78]">
+      <div className="p-4 border-b border-[#445E77]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
@@ -70,7 +70,7 @@ export default function CompBalanceCard({
             <div>
               <h3 className="font-semibold text-white">Comp Balance</h3>
               {venueName && (
-                <p className="text-sm text-[#64748B]">{venueName}</p>
+                <p className="text-sm text-[#9FB3C8]">{venueName}</p>
               )}
             </div>
           </div>
@@ -88,13 +88,13 @@ export default function CompBalanceCard({
         <div className="text-4xl font-bold text-green-400">
           ${currentBalance.toFixed(2)}
         </div>
-        <div className="text-sm text-[#4A5E78] mt-1">Available Balance</div>
+        <div className="text-sm text-[#8FA6BE] mt-1">Available Balance</div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-px bg-[#4A5E78]">
+      <div className="grid grid-cols-2 gap-px bg-[#445E77]">
         <div className="p-4 text-center bg-[#132240]">
-          <div className="flex items-center justify-center gap-1 text-[#64748B] mb-1">
+          <div className="flex items-center justify-center gap-1 text-[#9FB3C8] mb-1">
             <TrendingUp size={14} />
             <span className="text-xs">Lifetime Earned</span>
           </div>
@@ -103,7 +103,7 @@ export default function CompBalanceCard({
           </div>
         </div>
         <div className="p-4 text-center bg-[#132240]">
-          <div className="flex items-center justify-center gap-1 text-[#64748B] mb-1">
+          <div className="flex items-center justify-center gap-1 text-[#9FB3C8] mb-1">
             <Gift size={14} />
             <span className="text-xs">Total Redeemed</span>
           </div>
@@ -115,7 +115,7 @@ export default function CompBalanceCard({
 
       {/* Last Activity */}
       {(balance.last_earned_at || balance.last_redeemed_at) && (
-        <div className="px-4 py-3 border-t border-[#4A5E78] text-xs text-[#4A5E78]">
+        <div className="px-4 py-3 border-t border-[#445E77] text-xs text-[#8FA6BE]">
           {balance.last_earned_at && (
             <div>Last earned: {new Date(balance.last_earned_at).toLocaleDateString()}</div>
           )}
@@ -124,7 +124,7 @@ export default function CompBalanceCard({
 
       {/* Actions */}
       {(onViewHistory || onRedeem) && (
-        <div className="p-4 flex gap-2 border-t border-[#4A5E78] bg-[#0B1426]">
+        <div className="p-4 flex gap-2 border-t border-[#445E77] bg-[#0B1426]">
           {onViewHistory && (
             <button
               onClick={onViewHistory}

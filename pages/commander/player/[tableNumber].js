@@ -77,10 +77,10 @@ function getSeatPositions(count) {
 }
 
 function getTimeColor(seconds) {
-  if (seconds === null || seconds === undefined) return '#3A3B3C';
+  if (seconds === null || seconds === undefined) return '#2A4560';
   if (seconds <= 0) return '#EF4444';
   if (seconds <= 300) return '#EF4444';
-  if (seconds <= 900) return '#F59E0B';
+  if (seconds <= 900) return '#22D3EE';
   return '#31A24C';
 }
 
@@ -179,7 +179,7 @@ function QRScannerModal({ onScan, onClose, title, subtitle }) {
       <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>
         {title || 'Scan Card'}
       </h2>
-      <p style={{ color: '#B0B3B8', fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>
+      <p style={{ color: '#BDD0E2', fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>
         {subtitle || 'Hold The Member Card QR Code In Front Of The Camera'}
       </p>
 
@@ -228,7 +228,7 @@ function QRScannerModal({ onScan, onClose, title, subtitle }) {
 
       <button onClick={onClose} style={{
         marginTop: '24px', padding: '12px 32px', background: 'transparent',
-        color: '#B0B3B8', border: '2px solid #3A3B3C', borderRadius: '10px',
+        color: '#BDD0E2', border: '2px solid #2A4560', borderRadius: '10px',
         cursor: 'pointer', fontWeight: 600, fontSize: '16px'
       }}>Cancel</button>
     </div>
@@ -264,7 +264,7 @@ function PlayerInfoModal({ player, venueType, onRemove, onClose }) {
           </div>
           <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>{player.player_name}</p>
           {player.membership_tier && (
-            <p style={{ fontSize: '12px', color: '#B0B3B8', marginTop: '4px' }}>
+            <p style={{ fontSize: '12px', color: '#BDD0E2', marginTop: '4px' }}>
               {player.membership_tier} Member
             </p>
           )}
@@ -274,7 +274,7 @@ function PlayerInfoModal({ player, venueType, onRemove, onClose }) {
           background: `${color}10`, borderRadius: '12px', border: `1px solid ${color}30`,
           padding: '16px', textAlign: 'center', marginBottom: '16px'
         }}>
-          <p style={{ fontSize: '12px', color: '#B0B3B8', marginBottom: '4px' }}>
+          <p style={{ fontSize: '12px', color: '#BDD0E2', marginBottom: '4px' }}>
             {isTexas ? 'Time Remaining' : 'Playing For'}
           </p>
           <p style={{ fontSize: '32px', fontFamily: 'monospace', fontWeight: 700, color }}>
@@ -285,7 +285,7 @@ function PlayerInfoModal({ player, venueType, onRemove, onClose }) {
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={onClose} style={{
             flex: 1, padding: '12px', borderRadius: '10px',
-            background: '#3A3B3C', color: '#fff', border: 'none',
+            background: '#2A4560', color: '#fff', border: 'none',
             fontWeight: 600, fontSize: '14px', cursor: 'pointer'
           }}>Close</button>
 
@@ -597,7 +597,7 @@ export default function PlayerTableDisplay() {
         className="h-screen bg-[#0A0A0A] text-white font-['Inter'] select-none overflow-hidden flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#1877F2] px-6 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#0C55C0] px-6 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Table {tableNumber}</h1>
             <span className="text-sm opacity-80">
@@ -645,7 +645,7 @@ export default function PlayerTableDisplay() {
                   <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
                     {dealer.name}
                   </p>
-                  <p style={{ fontSize: '11px', color: '#B0B3B8', lineHeight: 1.2 }}>
+                  <p style={{ fontSize: '11px', color: '#BDD0E2', lineHeight: 1.2 }}>
                     Dealer · {formatDealerTime(dealer.started_at)}
                   </p>
                 </>
@@ -675,7 +675,7 @@ export default function PlayerTableDisplay() {
               style={{
                 padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
                 fontWeight: 600, fontSize: '13px', border: 'none',
-                background: dealer ? '#3A3B3C' : '#22D3EE',
+                background: dealer ? '#2A4560' : '#22D3EE',
                 color: dealer ? '#fff' : '#000',
                 transition: 'all 0.2s'
               }}

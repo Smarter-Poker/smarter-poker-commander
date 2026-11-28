@@ -431,7 +431,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
     finally { setMemberSaving(null); }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen bg-[#040D18] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>;
 
   return (
     <CommanderLayout title="Time Billing" backHref="/commander/dashboard">
@@ -440,44 +440,44 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
 
         {/* Sub-header with stats and actions */}
         <PageBar
           title="Time Billing"
           summary="Charge Players By The Hour. Start A Session When A Player Sits, End It When They Leave, And Collect What Is Due. The Bar Shows What Is Due Now, Active Sessions And What Has Been Collected."
-          className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
         >
           <div className="flex-1" role="status">
-            <p className="text-lg font-bold text-white leading-none">{formatMoney(totalActive)} <span className="text-xs text-[#B0B3B8] font-normal">Due</span></p>
-            <p className="text-xs text-[#B0B3B8] mt-0.5">{activeSessions.length} Active · {formatMoney(totalCollected)} Collected</p>
+            <p className="text-lg font-bold text-white leading-none">{formatMoney(totalActive)} <span className="text-xs text-[#BDD0E2] font-normal">Due</span></p>
+            <p className="text-xs text-[#BDD0E2] mt-0.5">{activeSessions.length} Active · {formatMoney(totalCollected)} Collected</p>
           </div>
-          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
-            <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+          <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh">
+            <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </PageBar>
 
         {/* Session management: start, filter, active/completed list */}
         <div className="px-4 py-3 space-y-3">
           {/* Start a new session */}
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-3">
               <Play className="w-5 h-5 text-[#31A24C]" />
               <h3 className="text-sm font-bold text-white">Start Session</h3>
               <div className="flex-1" />
-              <span className="text-[10px] text-[#B0B3B8]">{formatMoney(pricing.time_billing_rate)}/hr</span>
+              <span className="text-[10px] text-[#BDD0E2]">{formatMoney(pricing.time_billing_rate)}/hr</span>
             </div>
             <div className="grid grid-cols-12 gap-2">
               <input type="text" value={startForm.player_name} placeholder="Player name"
                 onChange={e => setStartForm(f => ({ ...f, player_name: e.target.value }))}
                 onKeyDown={e => { if (e.key === 'Enter') handleStartSession(); }}
-                className="col-span-6 px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm focus:outline-none focus:border-[#1877F2]" />
+                className="col-span-6 px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm focus:outline-none focus:border-[#1981EC]" />
               <input type="number" value={startForm.table_number} placeholder="Table" min={1}
                 onChange={e => setStartForm(f => ({ ...f, table_number: e.target.value }))}
-                className="col-span-2 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1877F2]" />
+                className="col-span-2 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1981EC]" />
               <input type="number" value={startForm.seat_number} placeholder="Seat" min={1}
                 onChange={e => setStartForm(f => ({ ...f, seat_number: e.target.value }))}
-                className="col-span-2 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1877F2]" />
+                className="col-span-2 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-sm text-center focus:outline-none focus:border-[#1981EC]" />
               <button onClick={handleStartSession} disabled={starting || !startForm.player_name.trim()}
                 className="col-span-2 flex items-center justify-center px-2 py-2 rounded-lg bg-[#31A24C] text-white text-sm font-bold disabled:opacity-50">
                 {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start'}
@@ -488,18 +488,18 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
           {/* Active / Completed filter */}
           <div className="flex gap-2">
             <button onClick={() => setFilter('active')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${filter === 'active' ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${filter === 'active' ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
               Active ({activeSessions.length})
             </button>
             <button onClick={() => setFilter('completed')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${filter === 'completed' ? 'bg-[#1877F2] text-white' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${filter === 'completed' ? 'bg-[#0C55C0] text-white' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
               Completed ({completedSessions.length})
             </button>
           </div>
 
           {/* Session list */}
           {filtered.length === 0 ? (
-            <p className="text-xs text-[#64748B] text-center py-6">No {filter} sessions</p>
+            <p className="text-xs text-[#9FB3C8] text-center py-6">No {filter} sessions</p>
           ) : (
             <div className="space-y-2">
               {filtered.map(s => {
@@ -508,11 +508,11 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                   : calculateCharge(s.started_at, s.rate_per_hour || pricing.time_billing_rate || 0);
                 const paid = parseFloat(s.amount_paid || 0);
                 return (
-                  <div key={s.id} className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-3">
+                  <div key={s.id} className="bg-[#0A1829] rounded-xl border border-[#445E77] p-3">
                     <div className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate">{s.player_name}</p>
-                        <p className="text-[11px] text-[#B0B3B8]">
+                        <p className="text-[11px] text-[#BDD0E2]">
                           T{s.table_number || '-'} S{s.seat_number || '-'} · {s.status === 'completed' ? `${s.duration_minutes || 0}m` : formatDuration(s.started_at)}
                           {' · '}{formatMoney(s.rate_per_hour || pricing.time_billing_rate || 0)}/hr
                         </p>
@@ -546,14 +546,14 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
         {/* Pricing & Packages */}
         <div className="px-4 py-3 space-y-3">
           {/* Hourly Rate + Auto-Comp */}
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-5 h-5 text-[#1877F2]" />
+              <DollarSign className="w-5 h-5 text-[#86DAFF]" />
               <h3 className="text-sm font-bold text-white">Pricing</h3>
               <div className="flex-1" />
               {pricingDirty && (
                 <button onClick={savePricing} disabled={pricingSaving}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1877F2] text-white text-xs font-medium disabled:opacity-50">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0C55C0] text-white text-xs font-medium disabled:opacity-50">
                   {pricingSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                   Save
                 </button>
@@ -561,30 +561,30 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-[#B0B3B8] block mb-1">Time Rate ($/hour)</label>
+                <label className="text-[10px] text-[#BDD0E2] block mb-1">Time Rate ($/hour)</label>
                 <input type="number" value={pricing.time_billing_rate} min={1} max={100}
                   onChange={e => { setPricing(p => ({ ...p, time_billing_rate: parseInt(e.target.value) || 1 })); setPricingDirty(true); }}
-                  className="w-full px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-lg font-mono text-center focus:outline-none focus:border-[#1877F2]" />
+                  className="w-full px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-lg font-mono text-center focus:outline-none focus:border-[#1981EC]" />
               </div>
               <div>
-                <label className="text-[10px] text-[#B0B3B8] block mb-1">Auto-Comp ($/hour played)</label>
+                <label className="text-[10px] text-[#BDD0E2] block mb-1">Auto-Comp ($/hour played)</label>
                 <input type="number" value={pricing.auto_comp_rate} min={0} max={25}
                   onChange={e => { setPricing(p => ({ ...p, auto_comp_rate: parseFloat(e.target.value) || 0 })); setPricingDirty(true); }}
-                  className="w-full px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-lg font-mono text-center focus:outline-none focus:border-[#1877F2]" />
+                  className="w-full px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-lg font-mono text-center focus:outline-none focus:border-[#1981EC]" />
               </div>
             </div>
           </div>
 
           {/* Bulk Time Packages */}
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Package className="w-5 h-5 text-[#F59E0B]" />
+              <Package className="w-5 h-5 text-[#22D3EE]" />
               <h3 className="text-sm font-bold text-white">Bulk Time Packages</h3>
-              <p className="text-[10px] text-[#B0B3B8]">(deals for bulk purchases)</p>
+              <p className="text-[10px] text-[#BDD0E2]">(deals for bulk purchases)</p>
               <div className="flex-1" />
               {pricingDirty && (
                 <button onClick={savePricing} disabled={pricingSaving}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1877F2] text-white text-xs font-medium disabled:opacity-50 mr-1">
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0C55C0] text-white text-xs font-medium disabled:opacity-50 mr-1">
                   {pricingSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                   Save
                 </button>
@@ -595,20 +595,20 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                   bulk_time_packages: [...(p.bulk_time_packages || []), { name: '', hours: 5, price: 50 }]
                 }));
                 setPricingDirty(true);
-              }} className="px-2.5 py-1 rounded-lg bg-[#3A3B3C] text-[#1877F2] text-xs font-medium">
+              }} className="px-2.5 py-1 rounded-lg bg-[#132A42] text-[#86DAFF] text-xs font-medium">
                 + Add
               </button>
             </div>
 
             {(!pricing.bulk_time_packages || pricing.bulk_time_packages.length === 0) ? (
-              <p className="text-xs text-[#64748B] text-center py-3">No bulk packages - click + Add to create a deal</p>
+              <p className="text-xs text-[#9FB3C8] text-center py-3">No bulk packages - click + Add to create a deal</p>
             ) : (
               <div className="space-y-3">
                 {pricing.bulk_time_packages.map((pkg, idx) => {
                   const perHr = pkg.hours > 0 ? (pkg.price / pkg.hours) : 0;
                   const isDiscount = perHr > 0 && perHr < pricing.time_billing_rate;
                   return (
-                    <div key={idx} className="bg-[#18191A] rounded-lg p-3">
+                    <div key={idx} className="bg-[#040D18] rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <input type="text" value={pkg.name} placeholder={`e.g. ${pkg.hours || 5}-Hour Deal`}
                           onChange={e => {
@@ -617,7 +617,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                             setPricing(p => ({ ...p, bulk_time_packages: pkgs }));
                             setPricingDirty(true);
                           }}
-                          className="flex-1 px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-white text-sm focus:outline-none focus:border-[#1877F2]" />
+                          className="flex-1 px-2 py-1.5 bg-[#132A42] border border-[#5A7590] rounded text-white text-sm focus:outline-none focus:border-[#1981EC]" />
                         <button onClick={() => {
                           setPricing(p => ({
                             ...p,
@@ -630,7 +630,7 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[9px] text-[#64748B] block mb-0.5">Hours</label>
+                          <label className="text-[9px] text-[#9FB3C8] block mb-0.5">Hours</label>
                           <input type="number" value={pkg.hours} min={1} max={100}
                             onChange={e => {
                               const pkgs = [...pricing.bulk_time_packages];
@@ -638,10 +638,10 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                               setPricing(p => ({ ...p, bulk_time_packages: pkgs }));
                               setPricingDirty(true);
                             }}
-                            className="w-full px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-white text-sm text-center focus:outline-none focus:border-[#1877F2]" />
+                            className="w-full px-2 py-1.5 bg-[#132A42] border border-[#5A7590] rounded text-white text-sm text-center focus:outline-none focus:border-[#1981EC]" />
                         </div>
                         <div>
-                          <label className="text-[9px] text-[#64748B] block mb-0.5">Price ($)</label>
+                          <label className="text-[9px] text-[#9FB3C8] block mb-0.5">Price ($)</label>
                           <input type="number" value={pkg.price} min={0} step={0.01}
                             onChange={e => {
                               const pkgs = [...pricing.bulk_time_packages];
@@ -649,11 +649,11 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                               setPricing(p => ({ ...p, bulk_time_packages: pkgs }));
                               setPricingDirty(true);
                             }}
-                            className="w-full px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-white text-sm text-center focus:outline-none focus:border-[#1877F2]" />
+                            className="w-full px-2 py-1.5 bg-[#132A42] border border-[#5A7590] rounded text-white text-sm text-center focus:outline-none focus:border-[#1981EC]" />
                         </div>
                         <div>
-                          <label className="text-[9px] text-[#64748B] block mb-0.5">Eff. Rate</label>
-                          <div className={`px-2 py-1.5 rounded text-sm text-center font-mono ${isDiscount ? 'bg-[#31A24C]/10 text-[#31A24C] font-bold' : 'bg-[#3A3B3C] text-[#B0B3B8]'}`}>
+                          <label className="text-[9px] text-[#9FB3C8] block mb-0.5">Eff. Rate</label>
+                          <div className={`px-2 py-1.5 rounded text-sm text-center font-mono ${isDiscount ? 'bg-[#31A24C]/10 text-[#31A24C] font-bold' : 'bg-[#132A42] text-[#BDD0E2]'}`}>
                             ${perHr.toFixed(2)}/hr
                           </div>
                         </div>
@@ -673,29 +673,29 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
 
         {/* Membership Pricing Section */}
         <div className="px-4 py-3">
-          <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] p-4">
+          <div className="bg-[#0A1829] rounded-xl border border-[#445E77] p-4">
             <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-[#8B5CF6]" />
+              <Clock className="w-5 h-5 text-[#5AA9FF]" />
               <h3 className="text-sm font-bold text-white">Membership Pricing</h3>
-              <p className="text-[10px] text-[#B0B3B8]">(saved to venue settings)</p>
+              <p className="text-[10px] text-[#BDD0E2]">(saved to venue settings)</p>
             </div>
             {memberPlans.length === 0 ? (
-              <p className="text-xs text-[#64748B] text-center py-3">No membership plans configured</p>
+              <p className="text-xs text-[#9FB3C8] text-center py-3">No membership plans configured</p>
             ) : (
               <div className="space-y-3">
                 {memberPlans.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map(plan => {
                   const tierLabels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
-                  const tierColors = { daily: '#22D3EE', weekly: '#31A24C', monthly: '#F59E0B', yearly: '#8B5CF6' };
+                  const tierColors = { daily: '#22D3EE', weekly: '#31A24C', monthly: '#22D3EE', yearly: '#5AA9FF' };
                   const priceField = plan.tier === 'daily' ? 'price_daily' : plan.tier === 'weekly' ? 'price_weekly' : plan.tier === 'monthly' ? 'price_monthly' : 'price_yearly';
                   const price = plan[priceField];
                   const isDirty = memberDirty[plan.id];
                   return (
-                    <div key={plan.id} className="bg-[#18191A] rounded-lg p-3">
+                    <div key={plan.id} className="bg-[#040D18] rounded-lg p-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full" style={{ background: tierColors[plan.tier] || '#1877F2' }} />
+                        <div className="w-3 h-3 rounded-full" style={{ background: tierColors[plan.tier] || '#1981EC' }} />
                         <span className="text-sm font-bold text-white flex-1">{tierLabels[plan.tier] || plan.name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-[#B0B3B8]">$</span>
+                          <span className="text-xs text-[#BDD0E2]">$</span>
                           <input type="number" step="0.01" min="0"
                             value={price != null ? price : ''}
                             onChange={e => {
@@ -703,11 +703,11 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
                               setMemberPlans(prev => prev.map(p => p.id === plan.id ? { ...p, [priceField]: v === '' ? null : parseFloat(v) } : p));
                               setMemberDirty(prev => ({ ...prev, [plan.id]: true }));
                             }}
-                            className="w-24 px-2 py-1.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-white text-lg font-mono text-center focus:outline-none focus:border-[#1877F2]" />
+                            className="w-24 px-2 py-1.5 bg-[#132A42] border border-[#5A7590] rounded text-white text-lg font-mono text-center focus:outline-none focus:border-[#1981EC]" />
                           {isDirty && (
                             <button onClick={() => saveMemberPrice(plan, priceField, plan[priceField])}
                               disabled={memberSaving === plan.id}
-                              className="px-3 py-1.5 rounded-lg bg-[#1877F2] text-white text-xs font-medium disabled:opacity-50 flex items-center gap-1">
+                              className="px-3 py-1.5 rounded-lg bg-[#0C55C0] text-white text-xs font-medium disabled:opacity-50 flex items-center gap-1">
                               {memberSaving === plan.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                               Save
                             </button>
@@ -730,17 +730,17 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
       {payModal && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4"
           onClick={() => { setPayModal(null); setPayAmount(''); }}>
-          <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-4">
               <CreditCard className="w-5 h-5 text-[#31A24C]" />
               <h3 className="text-base font-bold text-white flex-1">Record Payment</h3>
-              <button onClick={() => { setPayModal(null); setPayAmount(''); }} className="p-1 text-[#B0B3B8]"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setPayModal(null); setPayAmount(''); }} className="p-1 text-[#BDD0E2]"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-[#B0B3B8] mb-3">{payModal.player_name} - T{payModal.table_number || '-'} S{payModal.seat_number || '-'}</p>
-            <label className="text-[10px] text-[#B0B3B8] block mb-1">Amount ($)</label>
+            <p className="text-xs text-[#BDD0E2] mb-3">{payModal.player_name} - T{payModal.table_number || '-'} S{payModal.seat_number || '-'}</p>
+            <label className="text-[10px] text-[#BDD0E2] block mb-1">Amount ($)</label>
             <input type="number" min="0" step="0.01" value={payAmount} autoFocus
               onChange={e => setPayAmount(e.target.value)}
-              className="w-full px-3 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-white text-2xl font-mono text-center focus:outline-none focus:border-[#1877F2] mb-4" />
+              className="w-full px-3 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-white text-2xl font-mono text-center focus:outline-none focus:border-[#1981EC] mb-4" />
             <button onClick={() => requestPinFor('payment')} disabled={!payAmount || parseFloat(payAmount) <= 0}
               className="w-full py-3 rounded-lg bg-[#31A24C] text-white text-sm font-bold disabled:opacity-50">
               Confirm Payment
@@ -752,31 +752,31 @@ const res = await commanderFetch(`/api/commander/membership-plans?venue_id=${ven
       {/* PIN KEYPAD MODAL */}
       {pinStep && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-5 w-full max-w-xs">
+          <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] p-5 w-full max-w-xs">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-bold text-white">Enter Staff PIN</h3>
-              <button onClick={() => { setPinStep(false); setPinDigits(''); setPinError(''); setPendingAction(null); }} className="p-1 text-[#B0B3B8]"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setPinStep(false); setPinDigits(''); setPinError(''); setPendingAction(null); }} className="p-1 text-[#BDD0E2]"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-[11px] text-[#B0B3B8] mb-4">{pendingAction?.type === 'stop' ? 'Authorize stopping this session' : 'Authorize this payment'}</p>
+            <p className="text-[11px] text-[#BDD0E2] mb-4">{pendingAction?.type === 'stop' ? 'Authorize stopping this session' : 'Authorize this payment'}</p>
             <div className="flex justify-center gap-3 mb-4">
               {[0, 1, 2, 3].map(i => (
-                <div key={i} className={`w-4 h-4 rounded-full ${i < pinDigits.length ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`} />
+                <div key={i} className={`w-4 h-4 rounded-full ${i < pinDigits.length ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`} />
               ))}
             </div>
             {pinError && <p className="text-center text-xs text-[#EF4444] mb-3">{pinError}</p>}
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
                 <button key={n} onClick={() => handlePinDigit(String(n))} disabled={pinVerifying}
-                  className="py-3 rounded-lg bg-[#3A3B3C] text-white text-lg font-bold active:bg-[#4A4B4C] disabled:opacity-50">{n}</button>
+                  className="py-3 rounded-lg bg-[#132A42] text-white text-lg font-bold active:bg-[#1B3753] disabled:opacity-50">{n}</button>
               ))}
               <button onClick={() => setPinDigits('')} disabled={pinVerifying}
-                className="py-3 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C] disabled:opacity-50">Clear</button>
+                className="py-3 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs font-medium active:bg-[#1B3753] disabled:opacity-50">Clear</button>
               <button onClick={() => handlePinDigit('0')} disabled={pinVerifying}
-                className="py-3 rounded-lg bg-[#3A3B3C] text-white text-lg font-bold active:bg-[#4A4B4C] disabled:opacity-50">0</button>
+                className="py-3 rounded-lg bg-[#132A42] text-white text-lg font-bold active:bg-[#1B3753] disabled:opacity-50">0</button>
               <button onClick={() => setPinDigits(d => d.slice(0, -1))} disabled={pinVerifying}
-                className="py-3 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium active:bg-[#4A4B4C] disabled:opacity-50">Del</button>
+                className="py-3 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs font-medium active:bg-[#1B3753] disabled:opacity-50">Del</button>
             </div>
-            {pinVerifying && <div className="flex justify-center mt-4"><Loader2 className="w-5 h-5 text-[#1877F2] animate-spin" /></div>}
+            {pinVerifying && <div className="flex justify-center mt-4"><Loader2 className="w-5 h-5 text-[#86DAFF] animate-spin" /></div>}
           </div>
         </div>
       )}

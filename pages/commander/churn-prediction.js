@@ -68,7 +68,7 @@ export default function ChurnPrediction() {
 
   const riskColor = (risk) => {
     if (risk === 'high') return { bg: '#FEF2F2', text: '#991B1B', bar: '#EF4444' };
-    if (risk === 'medium') return { bg: '#FEF3C7', text: '#92400E', bar: '#F59E0B' };
+    if (risk === 'medium') return { bg: '#E0F2FE', text: '#92400E', bar: '#22D3EE' };
     return { bg: '#ECFDF5', text: '#065F46', bar: '#10B981' };
   };
 
@@ -83,7 +83,7 @@ export default function ChurnPrediction() {
         <PageBar
           title="Player Churn Prediction"
           summary="AI Analysis Of At-Risk Players. Each Player Gets A Risk Level From Their Recent Visit Pattern, So You Can Reach Out Before They Stop Coming In."
-          style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px' }}
+          style={{ background: '#0A1829', borderBottom: '1px solid #2A4560', padding: '6px 16px' }}
         />
 
         <div style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
@@ -91,12 +91,12 @@ export default function ChurnPrediction() {
           {summary && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
               {[
-                { label: 'Analyzed', val: summary.total_players_analyzed, color: '#1877F2', icon: Users },
+                { label: 'Analyzed', val: summary.total_players_analyzed, color: '#1981EC', icon: Users },
                 { label: 'High Risk', val: summary.high_risk, color: '#EF4444', icon: AlertTriangle },
-                { label: 'Medium', val: summary.medium_risk, color: '#F59E0B', icon: TrendingDown },
+                { label: 'Medium', val: summary.medium_risk, color: '#22D3EE', icon: TrendingDown },
                 { label: 'Low Risk', val: summary.low_risk, color: '#10B981', icon: Users },
               ].map(c => (
-                <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 10, border: '2px solid #E4E6EB', textAlign: 'center' }}>
+                <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 10, border: '2px solid #F2F7FF', textAlign: 'center' }}>
                   <c.icon size={16} color={c.color} style={{ margin: '0 auto 4px' }} />
                   <div style={{ fontSize: 20, fontWeight: 800, color: '#1C2526' }}>{c.val}</div>
                   <div style={{ fontSize: 10, color: '#65676B' }}>{c.label}</div>
@@ -113,14 +113,14 @@ export default function ChurnPrediction() {
               { v: 'medium', l: 'Medium Risk' }
             ].map(f => (
               <button key={f.v} onClick={() => setFilter(f.v)}
-                style={{ flex: 1, padding: '8px 0', border: '2px solid', borderColor: filter === f.v ? '#1877F2' : '#CED0D4', borderRadius: 8, background: filter === f.v ? '#EBF5FF' : 'white', color: filter === f.v ? '#1877F2' : '#65676B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '8px 0', border: '2px solid', borderColor: filter === f.v ? '#1981EC' : '#CED0D4', borderRadius: 8, background: filter === f.v ? '#EBF5FF' : 'white', color: filter === f.v ? '#1981EC' : '#65676B', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 {f.l}
               </button>
             ))}
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
+            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               {filter === 'all' ? 'No Player Data To Analyze. Need At Least 2 Sessions Per Player' : `No ${filter} Risk Players`}
@@ -131,7 +131,7 @@ export default function ChurnPrediction() {
                 const rc = riskColor(p.risk);
                 const isExpanded = expandedId === p.player_id;
                 return (
-                  <div key={p.player_id} style={{ background: 'white', borderRadius: 10, border: `2px solid ${p.risk === 'high' ? '#FCA5A5' : '#E4E6EB'}`, overflow: 'hidden' }}>
+                  <div key={p.player_id} style={{ background: 'white', borderRadius: 10, border: `2px solid ${p.risk === 'high' ? '#FCA5A5' : '#F2F7FF'}`, overflow: 'hidden' }}>
                     <button onClick={() => setExpandedId(isExpanded ? null : p.player_id)}
                       style={{ width: '100%', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
                       {/* Risk gauge */}

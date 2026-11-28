@@ -23,8 +23,8 @@ function StarRating({ value, onChange, size = 24, readonly = false }) {
         >
           <Star
             size={size}
-            fill={(hovered || value) >= star ? '#F59E0B' : 'transparent'}
-            className={(hovered || value) >= star ? 'text-[#F59E0B]' : 'text-[#4A5E78]'}
+            fill={(hovered || value) >= star ? '#22D3EE' : 'transparent'}
+            className={(hovered || value) >= star ? 'text-[#22D3EE]' : 'text-[#8FA6BE]'}
           />
         </button>
       ))}
@@ -64,9 +64,9 @@ export default function PlayerRating({
   if (submitted && !existingReview) {
     return (
       <div className="cmd-panel p-6 text-center">
-        <Star size={36} className="mx-auto text-[#F59E0B] mb-2" fill="#F59E0B" />
+        <Star size={36} className="mx-auto text-[#22D3EE] mb-2" fill="#22D3EE" />
         <h3 className="text-lg font-medium text-white">Thanks For Your Review</h3>
-        <p className="text-sm text-[#64748B] mt-1">Your Feedback Helps The Community</p>
+        <p className="text-sm text-[#9FB3C8] mt-1">Your Feedback Helps The Community</p>
       </div>
     );
   }
@@ -78,13 +78,13 @@ export default function PlayerRating({
           {existingReview ? 'Your Review' : 'Rate This Game'}
         </h3>
         {event && (
-          <p className="text-sm text-[#64748B] mt-1">{event.title}</p>
+          <p className="text-sm text-[#9FB3C8] mt-1">{event.title}</p>
         )}
       </div>
 
       {/* Overall Rating */}
       <div>
-        <label className="block text-sm font-medium text-[#94A3B8] mb-2">
+        <label className="block text-sm font-medium text-[#A9BDD1] mb-2">
           Overall Rating <span className="text-[#EF4444]">*</span>
         </label>
         <StarRating
@@ -98,7 +98,7 @@ export default function PlayerRating({
       {/* Sub-ratings */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-medium text-[#64748B] mb-1.5">
+          <label className="block text-xs font-medium text-[#9FB3C8] mb-1.5">
             Game Quality
           </label>
           <StarRating
@@ -109,7 +109,7 @@ export default function PlayerRating({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#64748B] mb-1.5">
+          <label className="block text-xs font-medium text-[#9FB3C8] mb-1.5">
             Host
           </label>
           <StarRating
@@ -120,7 +120,7 @@ export default function PlayerRating({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#64748B] mb-1.5">
+          <label className="block text-xs font-medium text-[#9FB3C8] mb-1.5">
             Location
           </label>
           <StarRating
@@ -134,7 +134,7 @@ export default function PlayerRating({
 
       {/* Review Text */}
       <div>
-        <label className="block text-sm font-medium text-[#94A3B8] mb-1.5">
+        <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">
           Review (optional)
         </label>
         {existingReview ? (
@@ -149,7 +149,7 @@ export default function PlayerRating({
           />
         )}
         {!existingReview && (
-          <p className="text-xs text-[#4A5E78] mt-1 text-right">{reviewText.length}/500</p>
+          <p className="text-xs text-[#8FA6BE] mt-1 text-right">{reviewText.length}/500</p>
         )}
       </div>
 
@@ -185,14 +185,14 @@ export function ReviewCard({ review }) {
               className="w-10 h-10 rounded-full object-cover"
             />
           ) : (
-            <User size={18} className="text-[#64748B]" />
+            <User size={18} className="text-[#9FB3C8]" />
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <span className="font-medium text-white">{playerName}</span>
             {review.created_at && (
-              <span className="text-xs text-[#4A5E78]">
+              <span className="text-xs text-[#8FA6BE]">
                 {new Date(review.created_at).toLocaleDateString()}
               </span>
             )}
@@ -201,10 +201,10 @@ export function ReviewCard({ review }) {
             <StarRating value={review.rating} readonly size={16} />
           </div>
           {review.review_text && (
-            <p className="text-sm text-[#94A3B8] mt-2">{review.review_text}</p>
+            <p className="text-sm text-[#A9BDD1] mt-2">{review.review_text}</p>
           )}
           {(review.game_quality || review.host_rating || review.location_rating) && (
-            <div className="flex gap-4 mt-2 text-xs text-[#64748B]">
+            <div className="flex gap-4 mt-2 text-xs text-[#9FB3C8]">
               {review.game_quality && <span>Game: {review.game_quality}/5</span>}
               {review.host_rating && <span>Host: {review.host_rating}/5</span>}
               {review.location_rating && <span>Location: {review.location_rating}/5</span>}

@@ -50,7 +50,7 @@ const json = await commanderFetchJSON('/api/commander/system-info');
   function StatusBadge({ status }) {
     if (status === 'healthy') return <span className="flex items-center gap-1.5 text-[#31A24C] text-sm"><CheckCircle className="w-4 h-4" /> Healthy</span>;
     if (status === 'error') return <span className="flex items-center gap-1.5 text-[#EF4444] text-sm"><XCircle className="w-4 h-4" /> Error</span>;
-    return <span className="flex items-center gap-1.5 text-[#F59E0B] text-sm"><AlertTriangle className="w-4 h-4" /> Warning</span>;
+    return <span className="flex items-center gap-1.5 text-[#22D3EE] text-sm"><AlertTriangle className="w-4 h-4" /> Warning</span>;
   }
 
   return (
@@ -61,36 +61,36 @@ const json = await commanderFetchJSON('/api/commander/system-info');
                 description="Club Commander Poker Room Management Tool."
                 noindex={true}
             />
-      <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+      <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
         <PageBar
           title="System Information"
           summary="Version, Platform And Health Details For Your Commander Setup. Share This Page With Support When Something Is Not Working. Refresh Reloads The Latest Details."
           status={venueName}
-          className="bg-[#242526] border-b border-[#3A3B3C] sticky top-0 z-50 px-4 py-1.5"
+          className="bg-[#0A1829] border-b border-[#445E77] sticky top-0 z-50 px-4 py-1.5"
           innerClassName="max-w-3xl mx-auto"
         >
           <button onClick={() => fetchInfo(true)} disabled={refreshing} aria-label="Refresh"
-            className="w-11 h-11 flex items-center justify-center hover:bg-[#3A3B3C] rounded-lg ml-auto">
-            <RefreshCw className={`w-5 h-5 text-[#B0B3B8] ${refreshing ? 'animate-spin' : ''}`} />
+            className="w-11 h-11 flex items-center justify-center hover:bg-[#132A42] rounded-lg ml-auto">
+            <RefreshCw className={`w-5 h-5 text-[#BDD0E2] ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </PageBar>
 
         <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {loading ? (
-            <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#1877F2] mx-auto" /></div>
+            <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#86DAFF] mx-auto" /></div>
           ) : !info ? (
-            <div className="py-16 text-center text-[#B0B3B8]">Failed To Load System Information</div>
+            <div className="py-16 text-center text-[#BDD0E2]">Failed To Load System Information</div>
           ) : (
             <>
               {/* Version & Platform */}
-              <section className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#1877F2]/10 rounded-lg flex items-center justify-center">
-                    <Server className="w-5 h-5 text-[#1877F2]" />
+              <section className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center">
+                    <Server className="w-5 h-5 text-[#86DAFF]" />
                   </div>
                   <h2 className="font-semibold text-white">Platform</h2>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                   <InfoRow label="Platform" value={info.platform} />
                   <InfoRow label="Version" value={`v${info.version}`} />
                   <InfoRow label="Build Date" value={info.build_date} />
@@ -102,14 +102,14 @@ const json = await commanderFetchJSON('/api/commander/system-info');
 
               {/* Venue */}
               {info.venue && (
-                <section className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                  <div className="p-4 border-b border-[#3A3B3C] flex items-center gap-3">
+                <section className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                  <div className="p-4 border-b border-[#445E77] flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#31A24C]/10 rounded-lg flex items-center justify-center">
                       <Layout className="w-5 h-5 text-[#31A24C]" />
                     </div>
                     <h2 className="font-semibold text-white">Venue</h2>
                   </div>
-                  <div className="divide-y divide-[#3A3B3C]">
+                  <div className="divide-y divide-[#445E77]">
                     <InfoRow label="Name" value={info.venue.name} />
                     <InfoRow label="Venue ID" value={String(info.venue.id)} mono />
                     <InfoRow label="Created" value={new Date(info.venue.created_at).toLocaleDateString()} />
@@ -118,23 +118,23 @@ const json = await commanderFetchJSON('/api/commander/system-info');
               )}
 
               {/* Health Checks */}
-              <section className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#F59E0B]/10 rounded-lg flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-[#F59E0B]" />
+              <section className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#22D3EE]/10 rounded-lg flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-[#22D3EE]" />
                   </div>
                   <h2 className="font-semibold text-white">Health Checks</h2>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                   {Object.entries(info.health || {}).map(([key, check]) => (
                     <div key={key} className="p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {key === 'database' && <Database className="w-5 h-5 text-[#B0B3B8]" />}
-                        {key === 'api' && <Wifi className="w-5 h-5 text-[#B0B3B8]" />}
-                        {!['database', 'api'].includes(key) && <Shield className="w-5 h-5 text-[#B0B3B8]" />}
+                        {key === 'database' && <Database className="w-5 h-5 text-[#BDD0E2]" />}
+                        {key === 'api' && <Wifi className="w-5 h-5 text-[#BDD0E2]" />}
+                        {!['database', 'api'].includes(key) && <Shield className="w-5 h-5 text-[#BDD0E2]" />}
                         <div>
                           <p className="font-medium text-white capitalize">{key.replace(/_/g, ' ')}</p>
-                          {check.latency_ms > 0 && <p className="text-xs text-[#B0B3B8]">{check.latency_ms}ms latency</p>}
+                          {check.latency_ms > 0 && <p className="text-xs text-[#BDD0E2]">{check.latency_ms}ms latency</p>}
                           {check.error && <p className="text-xs text-[#EF4444]">{check.error}</p>}
                         </div>
                       </div>
@@ -145,23 +145,23 @@ const json = await commanderFetchJSON('/api/commander/system-info');
               </section>
 
               {/* Resource Counts */}
-              <section className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#8B5CF6]/10 rounded-lg flex items-center justify-center">
-                    <Gamepad2 className="w-5 h-5 text-[#8B5CF6]" />
+              <section className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#5AA9FF]/10 rounded-lg flex items-center justify-center">
+                    <Gamepad2 className="w-5 h-5 text-[#5AA9FF]" />
                   </div>
                   <h2 className="font-semibold text-white">Resources</h2>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-y sm:divide-y-0 divide-[#3A3B3C]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-y sm:divide-y-0 divide-[#445E77]">
                   {[
                     { label: 'Tables', value: info.counts.tables, icon: Layout },
                     { label: 'Active Staff', value: info.counts.active_staff, icon: Users },
                     { label: 'Active Games', value: info.counts.active_games, icon: Gamepad2 },
                     { label: 'Members', value: info.counts.total_members, icon: Users },
                   ].map(item => (
-                    <div key={item.label} className="p-4 text-center border-r border-[#3A3B3C] last:border-r-0">
+                    <div key={item.label} className="p-4 text-center border-r border-[#445E77] last:border-r-0">
                       <p className="text-2xl font-bold text-white">{item.value}</p>
-                      <p className="text-xs text-[#B0B3B8] uppercase mt-1">{item.label}</p>
+                      <p className="text-xs text-[#BDD0E2] uppercase mt-1">{item.label}</p>
                     </div>
                   ))}
                 </div>
@@ -169,23 +169,23 @@ const json = await commanderFetchJSON('/api/commander/system-info');
 
               {/* Recent System Log */}
               {info.recent_log && info.recent_log.length > 0 && (
-                <section className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                  <div className="p-4 border-b border-[#3A3B3C] flex items-center gap-3">
+                <section className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                  <div className="p-4 border-b border-[#445E77] flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#EF4444]/10 rounded-lg flex items-center justify-center">
                       <Clock className="w-5 h-5 text-[#EF4444]" />
                     </div>
                     <h2 className="font-semibold text-white">Recent System Log</h2>
                   </div>
-                  <div className="divide-y divide-[#3A3B3C] max-h-80 overflow-y-auto">
+                  <div className="divide-y divide-[#445E77] max-h-80 overflow-y-auto">
                     {info.recent_log.map(entry => (
                       <div key={entry.id} className="p-3 px-4">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-white font-medium">{entry.action.replace(/_/g, ' ')}</span>
-                          <span className="text-xs text-[#B0B3B8]">
+                          <span className="text-xs text-[#BDD0E2]">
                             {new Date(entry.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </span>
                         </div>
-                        {entry.performed_by_name && <p className="text-xs text-[#B0B3B8]">by {entry.performed_by_name}</p>}
+                        {entry.performed_by_name && <p className="text-xs text-[#BDD0E2]">by {entry.performed_by_name}</p>}
                       </div>
                     ))}
                   </div>
@@ -193,27 +193,27 @@ const json = await commanderFetchJSON('/api/commander/system-info');
               )}
 
               {/* Support */}
-              <section className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center gap-3">
+              <section className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center gap-3">
                   <div className="w-10 h-10 bg-[#14B8A6]/10 rounded-lg flex items-center justify-center">
                     <HelpCircle className="w-5 h-5 text-[#14B8A6]" />
                   </div>
                   <h2 className="font-semibold text-white">Support</h2>
                 </div>
-                <div className="divide-y divide-[#3A3B3C]">
+                <div className="divide-y divide-[#445E77]">
                   <a href="https://smarter.poker/support" target="_blank" rel="noopener noreferrer"
-                    className="p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors">
+                    className="p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors">
                     <span className="text-sm text-white">Support Center</span>
-                    <ExternalLink className="w-4 h-4 text-[#B0B3B8]" />
+                    <ExternalLink className="w-4 h-4 text-[#BDD0E2]" />
                   </a>
                   <a href="mailto:support@smarter.poker"
-                    className="p-4 flex items-center justify-between hover:bg-[#18191A] transition-colors">
+                    className="p-4 flex items-center justify-between hover:bg-[#040D18] transition-colors">
                     <span className="text-sm text-white">Email Support</span>
-                    <span className="text-xs text-[#B0B3B8]">support@smarter.poker</span>
+                    <span className="text-xs text-[#BDD0E2]">support@smarter.poker</span>
                   </a>
                   <div className="p-4 flex items-center justify-between">
                     <span className="text-sm text-white">Staff User</span>
-                    <span className="text-xs text-[#B0B3B8]">{staff?.name || 'Unknown'} ({staff?.role || 'staff'})</span>
+                    <span className="text-xs text-[#BDD0E2]">{staff?.name || 'Unknown'} ({staff?.role || 'staff'})</span>
                   </div>
                 </div>
               </section>
@@ -231,7 +231,7 @@ const json = await commanderFetchJSON('/api/commander/system-info');
 function InfoRow({ label, value, badge, mono }) {
   return (
     <div className="p-4 flex items-center justify-between">
-      <span className="text-sm text-[#B0B3B8]">{label}</span>
+      <span className="text-sm text-[#BDD0E2]">{label}</span>
       {badge ? (
         <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[#31A24C]/10 text-[#31A24C] uppercase">{value}</span>
       ) : (

@@ -372,12 +372,12 @@ const res = await commanderFetch('/api/commander/settings', {
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
           <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
             {canManage && !showForm && (
               <div className="flex justify-end">
                 <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white rounded-xl text-sm font-medium">
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0C55C0] text-white rounded-xl text-sm font-medium">
                   <Plus className="w-4 h-4" /> New Preset
                 </button>
               </div>
@@ -388,20 +388,20 @@ const res = await commanderFetch('/api/commander/settings', {
 
             {/* Hard Stop - Charity + Club only */}
             {canHardStop && (
-              <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#EF4444]/10 rounded-lg flex items-center justify-center">
                       <StopCircle className="w-5 h-5 text-[#EF4444]" />
                     </div>
                     <div>
                       <h2 className="font-semibold text-white">Hard Stop</h2>
-                      <p className="text-xs text-[#B0B3B8]">Auto-Close All Cash Games At A Set Time</p>
+                      <p className="text-xs text-[#BDD0E2]">Auto-Close All Cash Games At A Set Time</p>
                     </div>
                   </div>
                   {hardStopDirty && (
                     <button onClick={handleHardStopSave} disabled={hardStopSaving}
-                      className="px-4 py-2 bg-[#1877F2] text-white rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50">
+                      className="px-4 py-2 bg-[#0C55C0] text-white rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50">
                       {hardStopSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save
                     </button>
                   )}
@@ -410,10 +410,10 @@ const res = await commanderFetch('/api/commander/settings', {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-white">Enable Hard Stop</p>
-                      <p className="text-sm text-[#B0B3B8]">Automatically Close All Games And Log Out Players At The Scheduled Time</p>
+                      <p className="text-sm text-[#BDD0E2]">Automatically Close All Games And Log Out Players At The Scheduled Time</p>
                     </div>
                     <button onClick={() => { setHardStopEnabled(!hardStopEnabled); setHardStopDirty(true); }}
-                      className={`w-12 h-7 rounded-full transition-colors relative ${hardStopEnabled ? 'bg-[#1877F2]' : 'bg-[#3A3B3C]'}`}>
+                      className={`w-12 h-7 rounded-full transition-colors relative ${hardStopEnabled ? 'bg-[#0C55C0]' : 'bg-[#132A42]'}`}>
                       <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${hardStopEnabled ? 'right-1' : 'left-1'}`} />
                     </button>
                   </div>
@@ -422,15 +422,15 @@ const res = await commanderFetch('/api/commander/settings', {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-white">Stop Time</p>
-                          <p className="text-sm text-[#B0B3B8]">All Cash Games End At This Time</p>
+                          <p className="text-sm text-[#BDD0E2]">All Cash Games End At This Time</p>
                         </div>
                         <input type="time" value={hardStopTime} onChange={(e) => { setHardStopTime(e.target.value); setHardStopDirty(true); }}
-                          className="h-10 px-3 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white text-center focus:outline-none focus:border-[#1877F2]"
+                          className="h-10 px-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white text-center focus:outline-none focus:border-[#1981EC]"
                           style={{ colorScheme: 'dark' }} />
                       </div>
-                      <div className="p-3 bg-[#F59E0B]/10 rounded-lg flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-[#F59E0B] mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-[#F59E0B]">
+                      <div className="p-3 bg-[#22D3EE]/10 rounded-lg flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-[#22D3EE] mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-[#22D3EE]">
                           At {hardStopTime ? new Date(`2000-01-01T${hardStopTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'The Set Time'}, All Open Tables Will Be Closed, All Active Sessions Ended, And The Room Set To Closed.
                         </p>
                       </div>
@@ -442,15 +442,15 @@ const res = await commanderFetch('/api/commander/settings', {
 
             {/* Hourly Comp Rate */}
             {hasFeature(currentTier, 'comps') && (
-              <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#31A24C]/15 flex items-center justify-center">
                       <DollarSign className="w-5 h-5 text-[#31A24C]" />
                     </div>
                     <div>
                       <h2 className="font-semibold text-white">Hourly Comp Rate</h2>
-                      <p className="text-xs text-[#B0B3B8]">Auto-Award Comps To All Seated Players Per Hour</p>
+                      <p className="text-xs text-[#BDD0E2]">Auto-Award Comps To All Seated Players Per Hour</p>
                     </div>
                   </div>
                   {autoCompDirty && (
@@ -462,13 +462,13 @@ const res = await commanderFetch('/api/commander/settings', {
                 </div>
                 <div className="p-4 space-y-4">
                   <div>
-                    <p className="text-sm text-[#B0B3B8] mb-2">Select Rate Per Hour Of Play</p>
+                    <p className="text-sm text-[#BDD0E2] mb-2">Select Rate Per Hour Of Play</p>
                     <div className="flex flex-wrap gap-2">
                       {[0, 0.5, 1, 1.5, 2].map(rate => (
                         <button key={rate} onClick={() => { setAutoCompRate(rate); setAutoCompDirty(true); }}
                           className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${autoCompRate === rate
                             ? 'bg-[#31A24C]/20 border-[#31A24C] text-[#31A24C]'
-                            : 'bg-[#3A3B3C] border-[#4A4B4C] text-[#B0B3B8] hover:border-[#31A24C]/50'
+                            : 'bg-[#132A42] border-[#5A7590] text-[#BDD0E2] hover:border-[#31A24C]/50'
                             }`}>
                           {rate === 0 ? 'Off' : `$${rate.toFixed(2)}/hr`}
                         </button>
@@ -476,13 +476,13 @@ const res = await commanderFetch('/api/commander/settings', {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-sm text-[#B0B3B8]">Custom:</p>
-                    <div className="flex items-center bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl overflow-hidden">
-                      <span className="pl-3 text-sm text-[#B0B3B8]">$</span>
+                    <p className="text-sm text-[#BDD0E2]">Custom:</p>
+                    <div className="flex items-center bg-[#132A42] border border-[#5A7590] rounded-xl overflow-hidden">
+                      <span className="pl-3 text-sm text-[#BDD0E2]">$</span>
                       <input type="number" value={autoCompRate || ''} onChange={(e) => { setAutoCompRate(parseFloat(e.target.value) || 0); setAutoCompDirty(true); }}
                         step="0.25" min="0" max="50" placeholder="0.00"
                         className="w-20 px-2 py-2 bg-transparent text-sm text-white focus:outline-none" />
-                      <span className="pr-3 text-sm text-[#B0B3B8]">/hr</span>
+                      <span className="pr-3 text-sm text-[#BDD0E2]">/hr</span>
                     </div>
                   </div>
                   {autoCompRate > 0 && (
@@ -507,49 +507,49 @@ const res = await commanderFetch('/api/commander/settings', {
                 CREATE / EDIT DAILY PRESET FORM
             ════════════════════════════════════════════════════════════════ */}
             {showForm && (
-              <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
+                <div className="p-4 border-b border-[#445E77] flex items-center justify-between">
                   <h2 className="font-semibold text-white">{editingId ? 'Edit Daily Preset' : 'Create Daily Preset'}</h2>
-                  <button onClick={() => { setShowForm(false); setEditingId(null); }} className="p-1 hover:bg-[#3A3B3C] rounded"><X className="w-5 h-5 text-[#B0B3B8]" /></button>
+                  <button onClick={() => { setShowForm(false); setEditingId(null); }} className="p-1 hover:bg-[#132A42] rounded"><X className="w-5 h-5 text-[#BDD0E2]" /></button>
                 </div>
                 <div className="p-4 space-y-6">
                   {/* Name + Description */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-[#B0B3B8] uppercase">Preset Name *</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase">Preset Name *</label>
                       <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                        placeholder="Friday Night" className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
+                        placeholder="Friday Night" className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#B0B3B8] uppercase">Description</label>
+                      <label className="text-xs text-[#BDD0E2] uppercase">Description</label>
                       <input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                        placeholder="Peak Hours Config" className="w-full mt-1 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#1877F2]" />
+                        placeholder="Peak Hours Config" className="w-full mt-1 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#1981EC]" />
                     </div>
                   </div>
 
                   {/* ── SECTION 1: TABLE CONFIGURATION ── */}
-                  <div className="border border-[#3A3B3C] rounded-xl overflow-hidden">
-                    <div className="p-3 bg-[#1877F2]/5 border-b border-[#3A3B3C] flex items-center justify-between">
+                  <div className="border border-[#445E77] rounded-xl overflow-hidden">
+                    <div className="p-3 bg-[#0C55C0]/5 border-b border-[#445E77] flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Layout className="w-4 h-4 text-[#1877F2]" />
+                        <Layout className="w-4 h-4 text-[#86DAFF]" />
                         <span className="text-sm font-semibold text-white">Tables</span>
-                        {form.tables.length > 0 && <span className="text-xs text-[#B0B3B8]">({getTotalTables(form.tables)} Total)</span>}
+                        {form.tables.length > 0 && <span className="text-xs text-[#BDD0E2]">({getTotalTables(form.tables)} Total)</span>}
                       </div>
-                      <button onClick={addTableRow} className="text-xs text-[#1877F2] hover:text-[#1877F2]/80 flex items-center gap-1">
+                      <button onClick={addTableRow} className="text-xs text-[#86DAFF] hover:text-[#86DAFF]/80 flex items-center gap-1">
                         <Plus className="w-3 h-3" /> Add
                       </button>
                     </div>
                     <div className="p-3">
                       {form.tables.length === 0 ? (
-                        <p className="text-center text-sm text-[#B0B3B8] py-4">No Tables Configured</p>
+                        <p className="text-center text-sm text-[#BDD0E2] py-4">No Tables Configured</p>
                       ) : (
                         <div className="space-y-2">
                           {form.tables.map((row, idx) => (
-                            <div key={idx} className="bg-[#3A3B3C]/30 rounded-xl p-3 space-y-2">
+                            <div key={idx} className="bg-[#132A42]/30 rounded-xl p-3 space-y-2">
                               <div className="flex items-center gap-2">
                                 {gameTypes.length > 0 ? (
                                   <select value={row.game_type_id || ''} onChange={e => updateTableRow(idx, 'game_type_id', e.target.value)}
-                                    className="flex-1 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white">
+                                    className="flex-1 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white">
                                     <option value="">{row.short_code ? `${row.short_code} ${row.stakes || ''}`.trim() : 'Select Game Type...'}</option>
                                     {gameTypes.map(gt => (
                                       <option key={gt.id} value={gt.id}>{gt.short_code} - {gt.name} {gt.stakes}</option>
@@ -558,16 +558,16 @@ const res = await commanderFetch('/api/commander/settings', {
                                 ) : (
                                   <div className="flex-1 flex gap-2">
                                     <input value={row.short_code || ''} onChange={e => updateTableRow(idx, 'short_code', e.target.value.toUpperCase())}
-                                      placeholder="NLH" className="w-20 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white text-center placeholder-[#6A6B6D]" />
+                                      placeholder="NLH" className="w-20 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white text-center placeholder-[#93A9C0]" />
                                     <input value={row.stakes || ''} onChange={e => updateTableRow(idx, 'stakes', e.target.value)}
-                                      placeholder="1/3" className="flex-1 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white placeholder-[#6A6B6D]" />
+                                      placeholder="1/3" className="flex-1 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white placeholder-[#93A9C0]" />
                                   </div>
                                 )}
                                 <div className="w-20">
                                   <input type="number" value={row.count || 1} min={1} max={20}
                                     onChange={e => updateTableRow(idx, 'count', parseInt(e.target.value) || 1)}
-                                    className="w-full px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white text-center" />
-                                  <p className="text-[10px] text-[#B0B3B8] text-center mt-0.5">Tables</p>
+                                    className="w-full px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white text-center" />
+                                  <p className="text-[10px] text-[#BDD0E2] text-center mt-0.5">Tables</p>
                                 </div>
                                 <button onClick={() => removeTableRow(idx)} className="p-1.5 hover:bg-[#EF4444]/10 rounded-lg">
                                   <X className="w-4 h-4 text-[#EF4444]" />
@@ -577,19 +577,19 @@ const res = await commanderFetch('/api/commander/settings', {
                               {!row.game_type_id && row.short_code && gameTypes.length > 0 && (
                                 <div className="flex gap-2 pl-1">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] text-[#B0B3B8] uppercase">Game:</span>
+                                    <span className="text-[10px] text-[#BDD0E2] uppercase">Game:</span>
                                     <input value={row.short_code || ''} onChange={e => updateTableRow(idx, 'short_code', e.target.value.toUpperCase())}
-                                      className="w-16 px-2 py-1 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-xs text-white text-center" />
+                                      className="w-16 px-2 py-1 bg-[#132A42] border border-[#5A7590] rounded text-xs text-white text-center" />
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] text-[#B0B3B8] uppercase">Stakes:</span>
+                                    <span className="text-[10px] text-[#BDD0E2] uppercase">Stakes:</span>
                                     <input value={row.stakes || ''} onChange={e => updateTableRow(idx, 'stakes', e.target.value)}
-                                      className="w-20 px-2 py-1 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-xs text-white text-center" />
+                                      className="w-20 px-2 py-1 bg-[#132A42] border border-[#5A7590] rounded text-xs text-white text-center" />
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] text-[#B0B3B8] uppercase">Name:</span>
+                                    <span className="text-[10px] text-[#BDD0E2] uppercase">Name:</span>
                                     <input value={row.game_type_name || ''} onChange={e => updateTableRow(idx, 'game_type_name', e.target.value)}
-                                      placeholder="No Limit Hold'em" className="flex-1 px-2 py-1 bg-[#3A3B3C] border border-[#4A4B4C] rounded text-xs text-white placeholder-[#6A6B6D]" />
+                                      placeholder="No Limit Hold'em" className="flex-1 px-2 py-1 bg-[#132A42] border border-[#5A7590] rounded text-xs text-white placeholder-[#93A9C0]" />
                                   </div>
                                 </div>
                               )}
@@ -601,33 +601,33 @@ const res = await commanderFetch('/api/commander/settings', {
                   </div>
 
                   {/* ── SECTION 2: PROMOTIONS ── */}
-                  <div className="border border-[#3A3B3C] rounded-xl overflow-hidden">
-                    <div className="p-3 bg-[#31A24C]/5 border-b border-[#3A3B3C] flex items-center gap-2">
+                  <div className="border border-[#445E77] rounded-xl overflow-hidden">
+                    <div className="p-3 bg-[#31A24C]/5 border-b border-[#445E77] flex items-center gap-2">
                       <Gift className="w-4 h-4 text-[#31A24C]" />
                       <span className="text-sm font-semibold text-white">Promotions To Activate</span>
-                      {form.promotions.length > 0 && <span className="text-xs text-[#B0B3B8]">({form.promotions.length} Selected)</span>}
+                      {form.promotions.length > 0 && <span className="text-xs text-[#BDD0E2]">({form.promotions.length} Selected)</span>}
                     </div>
                     <div className="p-3">
                       {promotions.length === 0 ? (
-                        <p className="text-center text-sm text-[#B0B3B8] py-4">No Promotions Created Yet. Create Promotions First On The Promotions Page.</p>
+                        <p className="text-center text-sm text-[#BDD0E2] py-4">No Promotions Created Yet. Create Promotions First On The Promotions Page.</p>
                       ) : (
                         <div className="space-y-1.5">
                           {promotions.map(promo => (
                             <button key={promo.id} onClick={() => togglePromotion(promo.id)}
                               className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${form.promotions.includes(promo.id)
                                 ? 'bg-[#31A24C]/10 border border-[#31A24C]'
-                                : 'bg-[#3A3B3C]/30 border border-transparent hover:border-[#4A4B4C]'
+                                : 'bg-[#132A42]/30 border border-transparent hover:border-[#5A7590]'
                                 }`}>
                               <div className="flex items-center gap-3 text-left">
                                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${form.promotions.includes(promo.id)
                                   ? 'bg-[#31A24C] border-[#31A24C]'
-                                  : 'border-[#4A4B4C]'
+                                  : 'border-[#5A7590]'
                                   }`}>
                                   {form.promotions.includes(promo.id) && <CheckCircle className="w-3 h-3 text-white" />}
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium text-white">{promo.name}</p>
-                                  <p className="text-xs text-[#B0B3B8]">{promo.promotion_type?.replace(/_/g, ' ')}</p>
+                                  <p className="text-xs text-[#BDD0E2]">{promo.promotion_type?.replace(/_/g, ' ')}</p>
                                 </div>
                               </div>
                               {promo.is_active && <span className="text-[10px] text-[#31A24C] font-medium">Active</span>}
@@ -639,49 +639,49 @@ const res = await commanderFetch('/api/commander/settings', {
                   </div>
 
                   {/* ── SECTION 3: TOURNAMENTS ── */}
-                  <div className="border border-[#3A3B3C] rounded-xl overflow-hidden">
-                    <div className="p-3 bg-[#F59E0B]/5 border-b border-[#3A3B3C] flex items-center justify-between">
+                  <div className="border border-[#445E77] rounded-xl overflow-hidden">
+                    <div className="p-3 bg-[#22D3EE]/5 border-b border-[#445E77] flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Trophy className="w-4 h-4 text-[#F59E0B]" />
+                        <Trophy className="w-4 h-4 text-[#22D3EE]" />
                         <span className="text-sm font-semibold text-white">Tournaments To Create</span>
-                        {form.tournaments.length > 0 && <span className="text-xs text-[#B0B3B8]">({form.tournaments.length})</span>}
+                        {form.tournaments.length > 0 && <span className="text-xs text-[#BDD0E2]">({form.tournaments.length})</span>}
                       </div>
-                      <button onClick={addTournament} className="text-xs text-[#F59E0B] hover:text-[#F59E0B]/80 flex items-center gap-1">
+                      <button onClick={addTournament} className="text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 flex items-center gap-1">
                         <Plus className="w-3 h-3" /> Add
                       </button>
                     </div>
                     <div className="p-3">
                       {form.tournaments.length === 0 ? (
-                        <p className="text-center text-sm text-[#B0B3B8] py-4">No Tournaments Configured</p>
+                        <p className="text-center text-sm text-[#BDD0E2] py-4">No Tournaments Configured</p>
                       ) : (
                         <div className="space-y-3">
                           {form.tournaments.map((tmpl, idx) => (
-                            <div key={idx} className="bg-[#3A3B3C]/30 rounded-xl p-3 space-y-3">
+                            <div key={idx} className="bg-[#132A42]/30 rounded-xl p-3 space-y-3">
                               <div className="flex items-center justify-between">
-                                <span className="text-xs text-[#F59E0B] font-bold uppercase">Tournament {idx + 1}</span>
+                                <span className="text-xs text-[#22D3EE] font-bold uppercase">Tournament {idx + 1}</span>
                                 <button onClick={() => removeTournament(idx)} className="p-1 hover:bg-[#EF4444]/10 rounded">
                                   <X className="w-4 h-4 text-[#EF4444]" />
                                 </button>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-[10px] text-[#B0B3B8] uppercase">Name *</label>
+                                  <label className="text-[10px] text-[#BDD0E2] uppercase">Name *</label>
                                   <input value={tmpl.name} onChange={e => updateTournament(idx, 'name', e.target.value)}
                                     placeholder="$200 NLH Freezeout"
-                                    className="w-full mt-0.5 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white placeholder-[#6A6B6D] focus:outline-none focus:border-[#F59E0B]" />
+                                    className="w-full mt-0.5 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white placeholder-[#93A9C0] focus:outline-none focus:border-[#22D3EE]" />
                                 </div>
                                 <div>
-                                  <label className="text-[10px] text-[#B0B3B8] uppercase">Start Time</label>
+                                  <label className="text-[10px] text-[#BDD0E2] uppercase">Start Time</label>
                                   <input type="time" value={tmpl.start_time} onChange={e => updateTournament(idx, 'start_time', e.target.value)}
-                                    className="w-full mt-0.5 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                                    className="w-full mt-0.5 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white focus:outline-none focus:border-[#22D3EE]"
                                     style={{ colorScheme: 'dark' }} />
                                 </div>
                               </div>
                               <div className="grid grid-cols-4 gap-2">
                                 <div>
-                                  <label className="text-[10px] text-[#B0B3B8] uppercase">Type</label>
+                                  <label className="text-[10px] text-[#BDD0E2] uppercase">Type</label>
                                   <select value={tmpl.tournament_type} onChange={e => updateTournament(idx, 'tournament_type', e.target.value)}
-                                    className="w-full mt-0.5 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-xs text-white">
+                                    className="w-full mt-0.5 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-xs text-white">
                                     <option value="freezeout">Freezeout</option>
                                     <option value="rebuy">Rebuy</option>
                                     <option value="bounty">Bounty</option>
@@ -690,19 +690,19 @@ const res = await commanderFetch('/api/commander/settings', {
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-[10px] text-[#B0B3B8] uppercase">Buy-In $</label>
+                                  <label className="text-[10px] text-[#BDD0E2] uppercase">Buy-In $</label>
                                   <input type="number" value={tmpl.buyin_amount || ''} onChange={e => updateTournament(idx, 'buyin_amount', parseInt(e.target.value) || 0)}
-                                    className="w-full mt-0.5 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#F59E0B]" />
+                                    className="w-full mt-0.5 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#22D3EE]" />
                                 </div>
                                 <div>
-                                  <label className="text-[10px] text-[#B0B3B8] uppercase">Starting Chips</label>
+                                  <label className="text-[10px] text-[#BDD0E2] uppercase">Starting Chips</label>
                                   <input type="number" value={tmpl.starting_chips || ''} onChange={e => updateTournament(idx, 'starting_chips', parseInt(e.target.value) || 10000)}
-                                    className="w-full mt-0.5 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#F59E0B]" />
+                                    className="w-full mt-0.5 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#22D3EE]" />
                                 </div>
                                 <div>
-                                  <label className="text-[10px] text-[#B0B3B8] uppercase">GTD Pool $</label>
+                                  <label className="text-[10px] text-[#BDD0E2] uppercase">GTD Pool $</label>
                                   <input type="number" value={tmpl.guaranteed_pool || ''} onChange={e => updateTournament(idx, 'guaranteed_pool', parseInt(e.target.value) || 0)}
-                                    className="w-full mt-0.5 px-2 py-2 bg-[#3A3B3C] border border-[#4A4B4C] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#F59E0B]" />
+                                    className="w-full mt-0.5 px-2 py-2 bg-[#132A42] border border-[#5A7590] rounded-lg text-sm text-white text-center focus:outline-none focus:border-[#22D3EE]" />
                                 </div>
                               </div>
                             </div>
@@ -713,29 +713,29 @@ const res = await commanderFetch('/api/commander/settings', {
                   </div>
 
                   {/* ── SCHEDULE (optional) ── */}
-                  <div className="border border-[#3A3B3C] rounded-xl overflow-hidden">
-                    <div className="p-3 bg-[#8B5CF6]/5 border-b border-[#3A3B3C] flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-[#8B5CF6]" />
+                  <div className="border border-[#445E77] rounded-xl overflow-hidden">
+                    <div className="p-3 bg-[#5AA9FF]/5 border-b border-[#445E77] flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#5AA9FF]" />
                       <span className="text-sm font-semibold text-white">Auto-Launch Schedule</span>
-                      <span className="text-xs text-[#B0B3B8]">(Optional)</span>
+                      <span className="text-xs text-[#BDD0E2]">(Optional)</span>
                     </div>
                     <div className="p-3 space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="flex-1">
-                          <label className="text-[10px] text-[#B0B3B8] uppercase">Launch Time</label>
+                          <label className="text-[10px] text-[#BDD0E2] uppercase">Launch Time</label>
                           <input type="time" value={form.start_time} onChange={e => setForm(p => ({ ...p, start_time: e.target.value }))}
-                            className="w-full mt-0.5 px-3 py-2.5 bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl text-sm text-white focus:outline-none focus:border-[#8B5CF6]"
+                            className="w-full mt-0.5 px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-xl text-sm text-white focus:outline-none focus:border-[#5AA9FF]"
                             style={{ colorScheme: 'dark' }} />
                         </div>
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#B0B3B8] uppercase mb-1.5 block">Active Days</label>
+                        <label className="text-[10px] text-[#BDD0E2] uppercase mb-1.5 block">Active Days</label>
                         <div className="flex gap-2">
                           {DAY_LABELS.map((label, idx) => (
                             <button key={idx} onClick={() => toggleDay(idx)}
                               className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${form.day_of_week.includes(idx)
-                                ? 'bg-[#8B5CF6]/20 border border-[#8B5CF6] text-[#8B5CF6]'
-                                : 'bg-[#3A3B3C] border border-[#4A4B4C] text-[#B0B3B8] hover:border-[#8B5CF6]/50'
+                                ? 'bg-[#5AA9FF]/20 border border-[#5AA9FF] text-[#5AA9FF]'
+                                : 'bg-[#132A42] border border-[#5A7590] text-[#BDD0E2] hover:border-[#5AA9FF]/50'
                                 }`}>
                               {label}
                             </button>
@@ -743,9 +743,9 @@ const res = await commanderFetch('/api/commander/settings', {
                         </div>
                       </div>
                       {form.start_time && form.day_of_week.length > 0 && (
-                        <div className="p-3 bg-[#8B5CF6]/10 rounded-lg flex items-start gap-2">
-                          <Clock className="w-4 h-4 text-[#8B5CF6] mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-[#8B5CF6]">
+                        <div className="p-3 bg-[#5AA9FF]/10 rounded-lg flex items-start gap-2">
+                          <Clock className="w-4 h-4 text-[#5AA9FF] mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-[#5AA9FF]">
                             This Preset Will Auto-Launch At <strong>{new Date(`2000-01-01T${form.start_time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</strong> On {form.day_of_week.map(d => DAY_LABELS[d]).join(', ')}
                           </p>
                         </div>
@@ -755,10 +755,10 @@ const res = await commanderFetch('/api/commander/settings', {
 
                   {/* Save / Cancel */}
                   <div className="flex gap-3 pt-2">
-                    <button onClick={handleSave} className="flex-1 py-3 bg-[#1877F2] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2">
+                    <button onClick={handleSave} className="flex-1 py-3 bg-[#0C55C0] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2">
                       <Save className="w-4 h-4" /> {editingId ? 'Update Preset' : 'Save Preset'}
                     </button>
-                    <button onClick={() => { setShowForm(false); setEditingId(null); }} className="px-6 py-3 bg-[#3A3B3C] text-[#B0B3B8] rounded-xl text-sm">Cancel</button>
+                    <button onClick={() => { setShowForm(false); setEditingId(null); }} className="px-6 py-3 bg-[#132A42] text-[#BDD0E2] rounded-xl text-sm">Cancel</button>
                   </div>
                 </div>
               </div>
@@ -768,15 +768,15 @@ const res = await commanderFetch('/api/commander/settings', {
                 PRESETS LIST
             ════════════════════════════════════════════════════════════════ */}
             {loading ? (
-              <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#1877F2] mx-auto" /></div>
+              <div className="py-16 text-center"><Loader2 className="w-8 h-8 animate-spin text-[#86DAFF] mx-auto" /></div>
             ) : presets.length === 0 && !showForm ? (
-              <div className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-12 text-center">
-                <Layout className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
+              <div className="bg-[#0A1829] rounded-2xl border border-[#445E77] p-12 text-center">
+                <Layout className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-white mb-1">No Daily Presets Yet</h3>
-                <p className="text-sm text-[#B0B3B8] mb-4">Create Presets To Launch Your Entire Room With One Click</p>
+                <p className="text-sm text-[#BDD0E2] mb-4">Create Presets To Launch Your Entire Room With One Click</p>
                 {canManage && (
                   <button onClick={() => { resetForm(); setShowForm(true); }}
-                    className="px-6 py-2.5 bg-[#1877F2] text-white rounded-xl text-sm font-medium">
+                    className="px-6 py-2.5 bg-[#0C55C0] text-white rounded-xl text-sm font-medium">
                     <Plus className="w-4 h-4 inline mr-2" /> Create First Preset
                   </button>
                 )}
@@ -791,20 +791,20 @@ const res = await commanderFetch('/api/commander/settings', {
                   const hasSchedule = schedule?.start_time && schedule?.day_of_week?.length > 0;
 
                   return (
-                    <div key={preset.id} className="bg-[#242526] rounded-2xl border border-[#3A3B3C] overflow-hidden">
+                    <div key={preset.id} className="bg-[#0A1829] rounded-2xl border border-[#445E77] overflow-hidden">
                       <div className="p-4">
                         {/* Header */}
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h3 className="font-semibold text-white text-lg">{preset.name}</h3>
-                            {preset.description && <p className="text-xs text-[#B0B3B8] mt-0.5">{preset.description}</p>}
+                            {preset.description && <p className="text-xs text-[#BDD0E2] mt-0.5">{preset.description}</p>}
                           </div>
                         </div>
 
                         {/* Summary badges */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {tableCount > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1877F2]/10 text-[#1877F2] text-xs font-medium">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0C55C0]/10 text-[#86DAFF] text-xs font-medium">
                               <Layout className="w-3 h-3" /> {tableCount} Table{tableCount !== 1 ? 's' : ''}
                             </span>
                           )}
@@ -814,12 +814,12 @@ const res = await commanderFetch('/api/commander/settings', {
                             </span>
                           )}
                           {tourneyCount > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#F59E0B]/10 text-[#F59E0B] text-xs font-medium">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#22D3EE]/10 text-[#22D3EE] text-xs font-medium">
                               <Trophy className="w-3 h-3" /> {tourneyCount} Tourney{tourneyCount !== 1 ? 's' : ''}
                             </span>
                           )}
                           {hasSchedule && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] text-xs font-medium">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#5AA9FF]/10 text-[#5AA9FF] text-xs font-medium">
                               <Clock className="w-3 h-3" /> {new Date(`2000-01-01T${schedule.start_time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                               {' '}{schedule.day_of_week.map(d => DAY_LABELS[d]).join(', ')}
                             </span>
@@ -831,8 +831,8 @@ const res = await commanderFetch('/api/commander/settings', {
                           <div className="space-y-1 mb-3">
                             {(preset.tables || []).map((t, i) => (
                               <div key={i} className="flex items-center justify-between text-sm">
-                                <span className="text-[#E4E6EB]">{t.short_code || t.game_type_name} {t.stakes}</span>
-                                <span className="text-[#B0B3B8]">×{t.count || 1}</span>
+                                <span className="text-[#F2F7FF]">{t.short_code || t.game_type_name} {t.stakes}</span>
+                                <span className="text-[#BDD0E2]">×{t.count || 1}</span>
                               </div>
                             ))}
                           </div>
@@ -843,8 +843,8 @@ const res = await commanderFetch('/api/commander/settings', {
                           <div className="space-y-1 mb-3">
                             {(preset.tournaments || []).map((t, i) => (
                               <div key={i} className="flex items-center justify-between text-sm">
-                                <span className="text-[#E4E6EB]">{t.name || 'Tournament'}</span>
-                                <span className="text-[#B0B3B8]">${t.buyin_amount || 0}{t.start_time ? ` @ ${new Date(`2000-01-01T${t.start_time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}</span>
+                                <span className="text-[#F2F7FF]">{t.name || 'Tournament'}</span>
+                                <span className="text-[#BDD0E2]">${t.buyin_amount || 0}{t.start_time ? ` @ ${new Date(`2000-01-01T${t.start_time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}</span>
                               </div>
                             ))}
                           </div>
@@ -853,14 +853,14 @@ const res = await commanderFetch('/api/commander/settings', {
                         {/* Promotion names */}
                         {promoCount > 0 && (
                           <div className="mb-3">
-                            <p className="text-xs text-[#B0B3B8]">
+                            <p className="text-xs text-[#BDD0E2]">
                               Promos: {(preset.promotions || []).map(id => getPromoName(id)).join(', ')}
                             </p>
                           </div>
                         )}
 
                         {preset.last_applied_at && (
-                          <p className="text-[10px] text-[#B0B3B8] mb-3">
+                          <p className="text-[10px] text-[#BDD0E2] mb-3">
                             Last Launched: {new Date(preset.last_applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </p>
                         )}
@@ -874,10 +874,10 @@ const res = await commanderFetch('/api/commander/settings', {
                           </button>
                           {canManage && (
                             <>
-                              <button onClick={() => startEdit(preset)} className="p-2.5 bg-[#3A3B3C] rounded-xl hover:bg-[#4A4B4C]">
-                                <Edit2 className="w-4 h-4 text-[#B0B3B8]" />
+                              <button onClick={() => startEdit(preset)} className="p-2.5 bg-[#132A42] rounded-xl hover:bg-[#1B3753]">
+                                <Edit2 className="w-4 h-4 text-[#BDD0E2]" />
                               </button>
-                              <button onClick={() => handleDelete(preset)} className="p-2.5 bg-[#3A3B3C] rounded-xl hover:bg-[#EF4444]/10">
+                              <button onClick={() => handleDelete(preset)} className="p-2.5 bg-[#132A42] rounded-xl hover:bg-[#EF4444]/10">
                                 <Trash2 className="w-4 h-4 text-[#EF4444]" />
                               </button>
                             </>
@@ -895,18 +895,18 @@ const res = await commanderFetch('/api/commander/settings', {
             ════════════════════════════════════════════════════════════════ */}
             <div className="mt-8">
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-[#3A3B3C]" />
-                <span className="text-xs text-[#B0B3B8] font-semibold uppercase tracking-wider">Starter Templates</span>
-                <div className="flex-1 h-px bg-[#3A3B3C]" />
+                <div className="flex-1 h-px bg-[#132A42]" />
+                <span className="text-xs text-[#BDD0E2] font-semibold uppercase tracking-wider">Starter Templates</span>
+                <div className="flex-1 h-px bg-[#132A42]" />
               </div>
-              <p className="text-sm text-[#B0B3B8] text-center mb-4">Quick-Start Configurations, Click To Use As A Starting Point</p>
+              <p className="text-sm text-[#BDD0E2] text-center mb-4">Quick-Start Configurations, Click To Use As A Starting Point</p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[
                   {
                     name: 'Weeknight Cash',
                     description: 'Standard Evening Session, 3 Tables For Regular Weeknight Traffic',
                     icon: 'Night',
-                    color: '#1877F2',
+                    color: '#1981EC',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/3', count: 2, max_players: 9 },
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '2/5', count: 1, max_players: 9 }
@@ -931,7 +931,7 @@ const res = await commanderFetch('/api/commander/settings', {
                     name: 'Tournament Thursday',
                     description: 'Cash Game + Weekly Freezeout Tournament Combo',
                     icon: 'Trophy',
-                    color: '#F59E0B',
+                    color: '#22D3EE',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '1/2', count: 2, max_players: 9 }
                     ],
@@ -944,7 +944,7 @@ const res = await commanderFetch('/api/commander/settings', {
                     name: 'High Stakes Night',
                     description: '3 Premium Tables For High-Roller Action',
                     icon: 'Premium',
-                    color: '#8B5CF6',
+                    color: '#5AA9FF',
                     tables: [
                       { game_type_name: 'No Limit Hold\'em', short_code: 'NLH', stakes: '5/10', count: 2, max_players: 9 },
                       { game_type_name: 'Pot Limit Omaha', short_code: 'PLO', stakes: '5/10', count: 1, max_players: 9 }
@@ -978,12 +978,12 @@ const res = await commanderFetch('/api/commander/settings', {
                     tournaments: []
                   }
                 ].map((tmpl, idx) => (
-                  <div key={idx} className="bg-[#242526] rounded-2xl border border-[#3A3B3C] p-4 flex flex-col">
+                  <div key={idx} className="bg-[#0A1829] rounded-2xl border border-[#445E77] p-4 flex flex-col">
                     <div className="flex items-start gap-3 mb-3">
                       <span className="text-2xl">{tmpl.icon}</span>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-white text-sm">{tmpl.name}</h4>
-                        <p className="text-xs text-[#B0B3B8] mt-0.5 line-clamp-2">{tmpl.description}</p>
+                        <p className="text-xs text-[#BDD0E2] mt-0.5 line-clamp-2">{tmpl.description}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-3">
@@ -993,7 +993,7 @@ const res = await commanderFetch('/api/commander/settings', {
                         </span>
                       ))}
                       {tmpl.tournaments.map((t, i) => (
-                        <span key={`t${i}`} className="text-[10px] px-2 py-0.5 rounded-md bg-[#F59E0B]/10 text-[#F59E0B] font-medium">
+                        <span key={`t${i}`} className="text-[10px] px-2 py-0.5 rounded-md bg-[#22D3EE]/10 text-[#22D3EE] font-medium">
                           Tournament: {t.name}
                         </span>
                       ))}

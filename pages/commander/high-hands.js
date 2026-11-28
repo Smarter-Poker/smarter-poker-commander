@@ -138,15 +138,15 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
           description="Club Commander Poker Room Management Tool."
           noindex={true}
         />
-        <div className="min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter']">
+        <div className="min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter']">
           <PageBar
             title="High Hands"
             summary="Today's High Hands. The Current Leader Is Shown At The Top. Record A High Hand As It Happens, Verify It, And See The History Below."
             status={`${todayHands.length} Today`}
-            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
           >
-            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C] ml-auto" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#B0B3B8]" /></button>
-            <button onClick={() => setShowForm(true)} className="px-3 min-h-[44px] rounded-lg bg-[#1877F2] text-white text-sm font-medium flex items-center gap-1.5 active:bg-[#1565D8]">
+            <button onClick={fetchData} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42] ml-auto" aria-label="Refresh"><RefreshCw className="w-5 h-5 text-[#BDD0E2]" /></button>
+            <button onClick={() => setShowForm(true)} className="px-3 min-h-[44px] rounded-lg bg-[#0C55C0] text-white text-sm font-medium flex items-center gap-1.5 active:bg-[#0A4AA8]">
               <Plus className="w-4 h-4" /> Record
             </button>
           </PageBar>
@@ -157,42 +157,42 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>
+            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>
           ) : (
             <div className="px-4 py-4 space-y-4">
               {/* Current Leader */}
-              <div className="bg-gradient-to-br from-[#F59E0B]/20 to-[#F59E0B]/5 border border-[#F59E0B]/30 rounded-2xl p-5 text-center">
-                <Crown className="w-8 h-8 text-[#F59E0B] mx-auto mb-2" />
-                <p className="text-xs text-[#B0B3B8] uppercase tracking-wider mb-1">Current High Hand</p>
+              <div className="bg-gradient-to-br from-[#22D3EE]/20 to-[#22D3EE]/5 border border-[#22D3EE]/30 rounded-2xl p-5 text-center">
+                <Crown className="w-8 h-8 text-[#22D3EE] mx-auto mb-2" />
+                <p className="text-xs text-[#BDD0E2] uppercase tracking-wider mb-1">Current High Hand</p>
                 {currentHigh ? (
                   <>
                     <p className="text-2xl font-bold text-white">{currentHigh.hand_description || currentHigh.notes || currentHigh.hand_rank}</p>
-                    <p className="text-sm text-[#F59E0B] mt-1">
+                    <p className="text-sm text-[#22D3EE] mt-1">
                       {currentHigh.player_name || currentHigh.profiles?.display_name || 'Unknown'}
                       {currentHigh.prize_amount > 0 && ` - $${currentHigh.prize_amount}`}
                     </p>
                   </>
                 ) : (
-                  <p className="text-lg text-[#6A6B6D]">No Qualifying Hands Today</p>
+                  <p className="text-lg text-[#93A9C0]">No Qualifying Hands Today</p>
                 )}
               </div>
 
               {/* Today's hands */}
-              <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#445E77] flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white">Today&apos;s Hands</h3>
-                  <span className="text-xs text-[#B0B3B8]">{todayHands.length} Recorded</span>
+                  <span className="text-xs text-[#BDD0E2]">{todayHands.length} Recorded</span>
                 </div>
                 {todayHands.length > 0 ? (
-                  <div className="divide-y divide-[#3A3B3C]">
+                  <div className="divide-y divide-[#445E77]">
                     {todayHands.map(h => (
                       <div key={h.id} className="px-4 py-3 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#F59E0B]/15 flex items-center justify-center shrink-0">
-                          <Star className="w-5 h-5 text-[#F59E0B]" />
+                        <div className="w-10 h-10 rounded-full bg-[#22D3EE]/15 flex items-center justify-center shrink-0">
+                          <Star className="w-5 h-5 text-[#22D3EE]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">{h.hand_description || h.notes || h.hand_rank}</p>
-                          <p className="text-xs text-[#B0B3B8]">
+                          <p className="text-xs text-[#BDD0E2]">
                             {h.player_name || h.profiles?.display_name || 'Unknown'}
                             {h.table_number && ` • T${h.table_number}`}
                             {h.prize_amount > 0 && ` • $${h.prize_amount}`}
@@ -215,22 +215,22 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
                     ))}
                   </div>
                 ) : (
-                  <div className="py-8 text-center text-[#6A6B6D] text-sm">No Hands Recorded Today</div>
+                  <div className="py-8 text-center text-[#93A9C0] text-sm">No Hands Recorded Today</div>
                 )}
               </div>
 
               {/* History */}
               {highHands.filter(h => !h.created_at?.startsWith(today)).length > 0 && (
-                <div className="bg-[#242526] border border-[#3A3B3C] rounded-2xl overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[#3A3B3C]">
+                <div className="bg-[#0A1829] border border-[#445E77] rounded-2xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#445E77]">
                     <h3 className="text-sm font-bold text-white">Previous Hands</h3>
                   </div>
-                  <div className="divide-y divide-[#3A3B3C]">
+                  <div className="divide-y divide-[#445E77]">
                     {highHands.filter(h => !h.created_at?.startsWith(today)).slice(0, 20).map(h => (
                       <div key={h.id} className="px-4 py-2.5 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-[#E4E6EB] truncate">{h.hand_description || h.notes || h.hand_rank}</p>
-                          <p className="text-xs text-[#6A6B6D]">
+                          <p className="text-sm text-[#F2F7FF] truncate">{h.hand_description || h.notes || h.hand_rank}</p>
+                          <p className="text-xs text-[#93A9C0]">
                             {h.player_name || h.profiles?.display_name || 'Unknown'} •{' '}
                             {h.created_at ? new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                           </p>
@@ -247,50 +247,50 @@ const res = await commanderFetch(`/api/commander/high-hands/${id}`, {
           {/* Record Form Modal */}
           {showForm && (
             <div className="fixed inset-0 bg-black/70 z-50 flex items-end">
-              <div className="bg-[#242526] w-full rounded-t-3xl max-h-[85vh] overflow-y-auto">
-                <div className="px-4 py-4 border-b border-[#3A3B3C] flex items-center justify-between">
+              <div className="bg-[#0A1829] w-full rounded-t-3xl max-h-[85vh] overflow-y-auto">
+                <div className="px-4 py-4 border-b border-[#445E77] flex items-center justify-between">
                   <h2 className="text-lg font-bold text-white">Record High Hand</h2>
-                  <button onClick={() => setShowForm(false)} className="p-2 rounded-lg active:bg-[#3A3B3C]"><X className="w-5 h-5 text-[#B0B3B8]" /></button>
+                  <button onClick={() => setShowForm(false)} className="p-2 rounded-lg active:bg-[#132A42]"><X className="w-5 h-5 text-[#BDD0E2]" /></button>
                 </div>
                 <div className="p-4 space-y-4">
                   <div>
-                    <label className="text-xs text-[#B0B3B8] mb-1.5 block">Player Name *</label>
+                    <label className="text-xs text-[#BDD0E2] mb-1.5 block">Player Name *</label>
                     <input type="text" value={form.player_name} onChange={e => setForm({ ...form, player_name: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-xl text-white focus:border-[#1877F2] focus:outline-none"
+                      className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-white focus:border-[#1981EC] focus:outline-none"
                       placeholder="Player Name" />
                   </div>
                   <div>
-                    <label className="text-xs text-[#B0B3B8] mb-1.5 block">Hand Rank *</label>
+                    <label className="text-xs text-[#BDD0E2] mb-1.5 block">Hand Rank *</label>
                     <div className="grid grid-cols-3 gap-2">
                       {HAND_RANKS.map(rank => (
                         <button key={rank} onClick={() => setForm({ ...form, hand_rank: rank })}
-                          className={`py-2.5 rounded-xl text-xs font-semibold ${form.hand_rank === rank ? 'bg-[#F59E0B] text-black' : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
+                          className={`py-2.5 rounded-xl text-xs font-semibold ${form.hand_rank === rank ? 'bg-[#22D3EE] text-black' : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'
                             }`}>{rank}</button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-[#B0B3B8] mb-1.5 block">Description (Cards)</label>
+                    <label className="text-xs text-[#BDD0E2] mb-1.5 block">Description (Cards)</label>
                     <input type="text" value={form.hand_description} onChange={e => setForm({ ...form, hand_description: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-xl text-white focus:border-[#1877F2] focus:outline-none"
+                      className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-white focus:border-[#1981EC] focus:outline-none"
                       placeholder="E.g., Aces Full Of Kings, Quad Jacks" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-[#B0B3B8] mb-1.5 block">Table #</label>
+                      <label className="text-xs text-[#BDD0E2] mb-1.5 block">Table #</label>
                       <input type="number" value={form.table_number} onChange={e => setForm({ ...form, table_number: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-xl text-white focus:border-[#1877F2] focus:outline-none"
+                        className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-white focus:border-[#1981EC] focus:outline-none"
                         placeholder="Table" />
                     </div>
                     <div>
-                      <label className="text-xs text-[#B0B3B8] mb-1.5 block">Prize $</label>
+                      <label className="text-xs text-[#BDD0E2] mb-1.5 block">Prize $</label>
                       <input type="number" step="0.01" value={form.prize_amount} onChange={e => setForm({ ...form, prize_amount: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#3A3B3C] border border-[#4E4F50] rounded-xl text-white focus:border-[#1877F2] focus:outline-none"
+                        className="w-full px-4 py-3 bg-[#132A42] border border-[#5A7590] rounded-xl text-white focus:border-[#1981EC] focus:outline-none"
                         placeholder="0.00" />
                     </div>
                   </div>
                   <button onClick={handleSubmit} disabled={submitting || !form.player_name || !form.hand_rank}
-                    className="w-full py-4 rounded-xl bg-[#F59E0B] text-black font-bold text-base flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50">
+                    className="w-full py-4 rounded-xl bg-[#22D3EE] text-black font-bold text-base flex items-center justify-center gap-2 active:bg-[#0EA5C6] disabled:opacity-50">
                     {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trophy className="w-5 h-5" />}
                     Record High Hand
                   </button>

@@ -101,7 +101,7 @@ export default function VenueQRCodePage() {
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <div className="animate-pulse text-[#B0B3B8]">Loading...</div>
+        <div className="animate-pulse text-[#BDD0E2]">Loading...</div>
       </div>
     );
   }
@@ -112,14 +112,14 @@ export default function VenueQRCodePage() {
         className="min-h-screen bg-white flex flex-col items-center justify-center p-8 cursor-pointer"
         onClick={toggleFullscreen}
       >
-        <h1 className="text-4xl font-bold text-[#1877F2] mb-2">{venue?.name}</h1>
-        <p className="text-xl text-[#B0B3B8] mb-8">Scan To Check In</p>
+        <h1 className="text-4xl font-bold text-[#86DAFF] mb-2">{venue?.name}</h1>
+        <p className="text-xl text-[#BDD0E2] mb-8">Scan To Check In</p>
         <img
           src={getQRCodeUrl(400)}
           alt="Check-In QR Code"
           className="w-96 h-96"
          loading="lazy" />
-        <p className="text-sm text-[#3A3B3C] mt-8">Tap Anywhere To Exit Fullscreen</p>
+        <p className="text-sm text-[#7F97B0] mt-8">Tap Anywhere To Exit Fullscreen</p>
       </div>
     );
   }
@@ -147,8 +147,8 @@ export default function VenueQRCodePage() {
           <main className="max-w-2xl mx-auto px-4 py-8">
             {/* QR Code Display */}
             <div className="cmd-panel p-8 text-center">
-              <div className="w-20 h-20 bg-[#1877F2]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <QrCode className="w-10 h-10 text-[#1877F2]" />
+              <div className="w-20 h-20 bg-[#0C55C0]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <QrCode className="w-10 h-10 text-[#86DAFF]" />
               </div>
 
               <h2 className="text-xl font-bold text-white mb-6">
@@ -169,8 +169,8 @@ export default function VenueQRCodePage() {
               </div>
 
               {/* URL Display */}
-              <div className="bg-[#3A3B3C] rounded-lg p-3 mb-6">
-                <p className="text-xs text-[#B0B3B8] mb-1">Check-In URL</p>
+              <div className="bg-[#132A42] rounded-lg p-3 mb-6">
+                <p className="text-xs text-[#BDD0E2] mb-1">Check-In URL</p>
                 <p className="text-sm text-white font-mono break-all">{qrUrl}</p>
               </div>
 

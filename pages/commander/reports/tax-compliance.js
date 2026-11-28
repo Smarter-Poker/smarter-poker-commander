@@ -241,10 +241,10 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
         <PageBar
           title="Tax Compliance / W-2G"
           summary="Tournament Wins Reporting And Withholding. Tournament Wins Of 5,000 Or More Are Listed Here. Generate A W-2G For Each One, And It Opens Ready To Print."
-          style={{ background: '#242526', borderBottom: '1px solid #3A3B3C', padding: '6px 16px' }}
+          style={{ background: '#0A1829', borderBottom: '1px solid #2A4560', padding: '6px 16px' }}
         >
           <button onClick={() => router.push('/commander/reports')} aria-label="Back To Reports" style={{ background: 'white', border: 'none', borderRadius: 8, width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
-            <ArrowLeft size={20} color="#1877F2" />
+            <ArrowLeft size={20} color="#1981EC" />
           </button>
         </PageBar>
 
@@ -264,7 +264,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
             </select>
             {['all', 'pending', 'generated'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                style={{ padding: '8px 14px', border: '2px solid', borderColor: filter === f ? '#1877F2' : '#CED0D4', borderRadius: 8, background: filter === f ? '#EBF5FF' : 'white', color: filter === f ? '#1877F2' : '#1C2526', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
+                style={{ padding: '8px 14px', border: '2px solid', borderColor: filter === f ? '#1981EC' : '#CED0D4', borderRadius: 8, background: filter === f ? '#EBF5FF' : 'white', color: filter === f ? '#1981EC' : '#1C2526', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
                 {f}
               </button>
             ))}
@@ -274,12 +274,12 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
           {summary && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 16 }}>
               {[
-                { label: 'Total Events', val: summary.total_events, color: '#1877F2', icon: FileText },
+                { label: 'Total Events', val: summary.total_events, color: '#1981EC', icon: FileText },
                 { label: 'Gross Winnings', val: formatMoney(summary.total_gross), color: '#31A24C', icon: DollarSign },
                 { label: 'Total Withholding', val: formatMoney(summary.total_withholding), color: '#EF4444', icon: DollarSign },
-                { label: 'W-2G Pending', val: summary.w2g_pending_count, color: '#F59E0B', icon: AlertTriangle }
+                { label: 'W-2G Pending', val: summary.w2g_pending_count, color: '#22D3EE', icon: AlertTriangle }
               ].map(c => (
-                <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 14, border: '2px solid #E4E6EB' }}>
+                <div key={c.label} style={{ background: 'white', borderRadius: 10, padding: 14, border: '2px solid #F2F7FF' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <c.icon size={14} color={c.color} />
                     <span style={{ fontSize: 12, color: '#65676B', fontWeight: 600 }}>{c.label}</span>
@@ -291,14 +291,14 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
           )}
 
           {/* IRS Notice */}
-          <div style={{ background: '#FEF3C7', border: '2px solid #F59E0B', borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>
+          <div style={{ background: '#E0F2FE', border: '2px solid #22D3EE', borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>
             <strong>IRS Requirement:</strong> Form W-2G Must Be Issued For Poker Tournament Winnings Of $5,000 Or More (Net Of Buy-In).
             Federal Withholding Rate Is 24%. The Venue Must File Copy A With The IRS And Provide Copy B To The Winner.
           </div>
 
           {/* Events List */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1877F2" className="spin" /></div>
+            <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} color="#1981EC" className="spin" /></div>
           ) : events.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#65676B', background: 'white', borderRadius: 12 }}>
               No Taxable Events For {year}
@@ -310,11 +310,11 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
                 const isPending = !evt.w2g_generated && evt.withholding_required;
                 return (
                   <>
-                    <div key={evt.id} style={{ background: 'white', borderRadius: 10, border: isPending ? '2px solid #F59E0B' : '2px solid #E4E6EB', overflow: 'hidden' }}>
+                    <div key={evt.id} style={{ background: 'white', borderRadius: 10, border: isPending ? '2px solid #22D3EE' : '2px solid #F2F7FF', overflow: 'hidden' }}>
                       <button onClick={() => setExpandedId(isExpanded ? null : evt.id)}
                         style={{ width: '100%', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 8, background: evt.w2g_generated ? '#DEF7EC' : '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          {evt.w2g_generated ? <CheckCircle2 size={18} color="#03543F" /> : <AlertTriangle size={18} color="#D97706" />}
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: evt.w2g_generated ? '#DEF7EC' : '#E0F2FE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {evt.w2g_generated ? <CheckCircle2 size={18} color="#03543F" /> : <AlertTriangle size={18} color="#0EA5C6" />}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: 14, color: '#1C2526' }}>{evt.player_name}</div>
@@ -322,7 +322,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div style={{ fontWeight: 800, fontSize: 16, color: '#31A24C' }}>{formatMoney(evt.gross_amount)}</div>
-                          <div style={{ fontSize: 11, color: evt.w2g_generated ? '#03543F' : '#D97706', fontWeight: 600 }}>
+                          <div style={{ fontSize: 11, color: evt.w2g_generated ? '#03543F' : '#0EA5C6', fontWeight: 600 }}>
                             {evt.w2g_generated ? 'W-2G FILED' : 'PENDING'}
                           </div>
                         </div>
@@ -330,7 +330,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
                       </button>
 
                       {isExpanded && (
-                        <div style={{ padding: '0 14px 14px', borderTop: '2px solid #E4E6EB' }}>
+                        <div style={{ padding: '0 14px 14px', borderTop: '2px solid #F2F7FF' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
                             <div style={{ padding: 10, background: '#F9FAFB', borderRadius: 8, textAlign: 'center' }}>
                               <div style={{ fontSize: 11, color: '#65676B', fontWeight: 600 }}>GROSS</div>
@@ -363,7 +363,7 @@ const res = await commanderFetch('/api/commander/tax/w2g', {
                           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                             {!evt.w2g_generated ? (
                               <button onClick={() => handleGenerate(evt.id)} disabled={generating === evt.id}
-                                style={{ flex: 1, background: '#1877F2', color: 'white', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: generating === evt.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: generating === evt.id ? 0.7 : 1 }}>
+                                style={{ flex: 1, background: '#1981EC', color: 'white', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: generating === evt.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: generating === evt.id ? 0.7 : 1 }}>
                                 {generating === evt.id ? <Loader2 size={16} className="spin" /> : <FileText size={16} />}
                                 Generate W-2G
                               </button>

@@ -44,7 +44,7 @@ function formatTime(seconds) {
 function getTimerColor(seconds) {
     if (seconds <= 0) return '#EF4444';
     if (seconds <= 300) return '#EF4444';
-    if (seconds <= 900) return '#F59E0B';
+    if (seconds <= 900) return '#22D3EE';
     return '#31A24C';
 }
 
@@ -333,8 +333,8 @@ export default function TabletDisplay() {
         <div style={fullScreenStyle}>
             <Head><title>Table {tableNumber} | Tablet</title></Head>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                <div style={{ width: 48, height: 48, border: '4px solid #1877F2', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                <div style={{ color: '#8A8D91', fontSize: 16.5, fontWeight: 600 }}>Loading Table {tableNumber}...</div>
+                <div style={{ width: 48, height: 48, border: '4px solid #1981EC', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                <div style={{ color: '#9FB3C8', fontSize: 16.5, fontWeight: 600 }}>Loading Table {tableNumber}...</div>
             </div>
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -358,13 +358,13 @@ export default function TabletDisplay() {
                     <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         gap: 16, padding: '10px 24px',
-                        background: 'rgba(20,20,20,0.92)', borderBottom: '1px solid rgba(255,215,0,0.25)',
+                        background: 'rgba(20,20,20,0.92)', borderBottom: '1px solid rgba(34, 211, 238,0.25)',
                         flexShrink: 0, zIndex: 10 }}>
                         <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 2 }}>
                                 {venueName || 'Poker Room'} · Table {tableNum}
                             </div>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: '#FFD700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: '#22D3EE', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {tournamentName || 'Tournament'}
                             </div>
                         </div>
@@ -373,12 +373,12 @@ export default function TabletDisplay() {
                                 <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
                                     {isBreakLevel ? 'Status' : 'Level'}
                                 </div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: '#E4E6EB' }}>{levelLabel}</div>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: '#F2F7FF' }}>{levelLabel}</div>
                             </div>
                             {!isBreakLevel && blindsLabel && (
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Blinds</div>
-                                    <div style={{ fontSize: 20, fontWeight: 800, color: '#E4E6EB' }}>{blindsLabel}</div>
+                                    <div style={{ fontSize: 20, fontWeight: 800, color: '#F2F7FF' }}>{blindsLabel}</div>
                                 </div>
                             )}
                             <div style={{ textAlign: 'center' }}>
@@ -413,7 +413,7 @@ export default function TabletDisplay() {
                                     </div>
                                     {isTournamentTable ? (
                                         <>
-                                            <div style={{ fontSize: 30, fontWeight: 900, color: '#FFD700', letterSpacing: 0.5 }}>
+                                            <div style={{ fontSize: 30, fontWeight: 900, color: '#22D3EE', letterSpacing: 0.5 }}>
                                                 {tournamentName || 'Tournament'}
                                             </div>
                                             <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.75)', marginTop: 4, fontWeight: 700 }}>
@@ -437,7 +437,7 @@ export default function TabletDisplay() {
                                                 {stakes}
                                             </div>
                                             {!isActive && (
-                                                <div style={{ fontSize: 14, color: '#1877F2', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                                                <div style={{ fontSize: 14, color: '#1981EC', fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
                                                     Table Open
                                                 </div>
                                             )}
@@ -451,10 +451,10 @@ export default function TabletDisplay() {
                                     transform: 'translate(-50%, -50%)', textAlign: 'center', width: 100, zIndex: 3 }}>
                                     <div style={{
                                         width: 76, height: 76, borderRadius: '50%', margin: '0 auto 6px',
-                                        background: dealer ? 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)' : 'rgba(62,64,66,0.5)',
-                                        border: '3px solid #E4E6EB',
+                                        background: dealer ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)' : 'rgba(62,64,66,0.5)',
+                                        border: '3px solid #F2F7FF',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: '0 2px 16px rgba(0,0,0,0.6), 0 0 20px rgba(24,119,242,0.3)',
+                                        boxShadow: '0 2px 16px rgba(0,0,0,0.6), 0 0 20px rgba(25, 129, 236,0.3)',
                                         overflow: 'hidden' }}>
                                         {dealer?.photo_url ? (
                                             <img src={dealer.photo_url} alt={dealer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -462,7 +462,7 @@ export default function TabletDisplay() {
                                             <span style={{ fontSize: 34, fontWeight: 900, color: '#fff' }}>D</span>
                                         )}
                                     </div>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: dealer ? '#1877F2' : '#6B7280', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: dealer ? '#1981EC' : '#6B7280', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {dealer?.name || 'No Dealer'}
                                     </div>
                                 </div>
@@ -493,7 +493,7 @@ export default function TabletDisplay() {
                                     const isExpired = seat.player?.is_expired;
                                     const isCritical = seat.player?.is_critical;
                                     const borderColor = isOccupied
-                                        ? (isExpired ? '#EF4444' : isCritical ? '#F59E0B' : 'rgba(24,119,242,0.5)')
+                                        ? (isExpired ? '#EF4444' : isCritical ? '#22D3EE' : 'rgba(25, 129, 236,0.5)')
                                         : 'rgba(62,64,66,0.5)';
 
                                     return (
@@ -515,7 +515,7 @@ export default function TabletDisplay() {
                                                 width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 background: isOccupied
-                                                    ? 'linear-gradient(135deg, #1877F2 0%, #1565c0 100%)'
+                                                    ? 'linear-gradient(135deg, #1981EC 0%, #1565c0 100%)'
                                                     : 'rgba(255,255,255,0.06)',
                                                 border: `2px solid ${borderColor}`,
                                                 overflow: 'hidden' }}>
@@ -529,14 +529,14 @@ export default function TabletDisplay() {
                                             <div style={{ overflow: 'hidden', textAlign: isRightSide ? 'right' : 'left' }}>
                                                 <div style={{
                                                     fontSize: 15, fontWeight: 600, lineHeight: 1.2,
-                                                    color: isOccupied ? '#E4E6EB' : '#6B7280',
+                                                    color: isOccupied ? '#F2F7FF' : '#6B7280',
                                                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                                     maxWidth: 140 }}>
                                                     {isOccupied ? fullName : 'Open'}
                                                 </div>
                                                 {isOccupied && seat.player?.is_tournament_player && (
                                                     <div style={{
-                                                        fontSize: 14, fontWeight: 700, color: '#FFD700',
+                                                        fontSize: 14, fontWeight: 700, color: '#22D3EE',
                                                         fontFamily: 'monospace', lineHeight: 1.3 }}>
                                                         {Number(seat.player.current_chips || 0).toLocaleString()}
                                                     </div>
@@ -554,7 +554,7 @@ export default function TabletDisplay() {
                                                     </div>
                                                 )}
                                                 {isOccupied && seat.player?.membership_tier && (
-                                                    <div style={{ fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>
+                                                    <div style={{ fontSize: 11, color: '#5AA9FF', fontWeight: 600 }}>
                                                         {seat.player.membership_tier}
                                                     </div>
                                                 )}
@@ -579,7 +579,7 @@ export default function TabletDisplay() {
                         {[...tickerItems, ...tickerItems].map((item, i) => (
                             <span key={i} style={{
                                 display: 'inline-block', padding: '0 40px',
-                                fontSize: 16, fontWeight: 600, color: '#E4E6EB', letterSpacing: 0.3 }}>
+                                fontSize: 16, fontWeight: 600, color: '#F2F7FF', letterSpacing: 0.3 }}>
                                 {item}
                             </span>
                         ))}
@@ -619,6 +619,6 @@ export default function TabletDisplay() {
 const fullScreenStyle = {
     position: 'fixed', inset: 0,
     display: 'flex', flexDirection: 'column',
-    background: '#0A0A0A', color: '#E4E6EB',
+    background: '#0A0A0A', color: '#F2F7FF',
     fontFamily: 'Inter, sans-serif',
     overflow: 'hidden' };

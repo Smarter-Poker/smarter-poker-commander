@@ -571,7 +571,7 @@ export async function registerPlayerForTournament({ tournamentId, body = {}, sta
             author_id: player_id,
             content: `Just Registered For ${tournament.name}! Let's Go!`,
             media_type: 'text',
-            background_color: 'linear-gradient(135deg, #1877F2 0%, #0A5DC2 100%)'
+            background_color: 'linear-gradient(135deg, #1981EC 0%, #0A5DC2 100%)'
           });
       } catch (err) {
         console.warn('[register.js] Auto-story failed:', err.message);

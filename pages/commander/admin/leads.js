@@ -19,10 +19,10 @@ import PageHelp from '../../../src/components/commander/shared/PageHelp';
 
 const STATUS_CONFIG = {
   new: { label: 'New', color: 'bg-blue-500', textColor: 'text-blue-400' },
-  contacted: { label: 'Contacted', color: 'bg-purple-500', textColor: 'text-purple-400' },
-  demo_scheduled: { label: 'Demo Scheduled', color: 'bg-yellow-500', textColor: 'text-yellow-400' },
+  contacted: { label: 'Contacted', color: 'bg-sky-500', textColor: 'text-sky-400' },
+  demo_scheduled: { label: 'Demo Scheduled', color: 'bg-cyan-500', textColor: 'text-cyan-400' },
   demo_completed: { label: 'Demo Completed', color: 'bg-orange-500', textColor: 'text-orange-400' },
-  negotiating: { label: 'Negotiating', color: 'bg-pink-500', textColor: 'text-pink-400' },
+  negotiating: { label: 'Negotiating', color: 'bg-sky-500', textColor: 'text-sky-400' },
   signed: { label: 'Signed', color: 'bg-cyan-500', textColor: 'text-cyan-400' },
   setup: { label: 'In Setup', color: 'bg-teal-500', textColor: 'text-teal-400' },
   live: { label: 'Live', color: 'bg-green-500', textColor: 'text-green-400' },
@@ -134,14 +134,14 @@ const res = await commanderFetch('/api/commander/admin/leads', {
         <header className="cmd-header-bar sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/commander/admin" className="text-[#B0B3B8] hover:text-white">
+              <Link href="/commander/admin" className="text-[#BDD0E2] hover:text-white">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
               <h1 className="sr-only">Lead Management</h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B0B3B8]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#BDD0E2]" />
                 <input
                   type="text"
                   placeholder="Search Leads..."
@@ -163,27 +163,27 @@ const res = await commanderFetch('/api/commander/admin/leads', {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
             <div className="cmd-panel p-4">
               <div className="text-2xl font-bold text-white">{totalLeads}</div>
-              <div className="text-sm text-[#B0B3B8]">Total Leads</div>
+              <div className="text-sm text-[#BDD0E2]">Total Leads</div>
             </div>
             <div className="cmd-panel p-4">
               <div className="text-2xl font-bold text-blue-400">{stats.new || 0}</div>
-              <div className="text-sm text-[#B0B3B8]">New</div>
+              <div className="text-sm text-[#BDD0E2]">New</div>
             </div>
             <div className="cmd-panel p-4">
-              <div className="text-2xl font-bold text-yellow-400">{stats.demo_scheduled || 0}</div>
-              <div className="text-sm text-[#B0B3B8]">Demos Scheduled</div>
+              <div className="text-2xl font-bold text-cyan-400">{stats.demo_scheduled || 0}</div>
+              <div className="text-sm text-[#BDD0E2]">Demos Scheduled</div>
             </div>
             <div className="cmd-panel p-4">
               <div className="text-2xl font-bold text-cyan-400">{stats.signed || 0}</div>
-              <div className="text-sm text-[#B0B3B8]">Signed</div>
+              <div className="text-sm text-[#BDD0E2]">Signed</div>
             </div>
             <div className="cmd-panel p-4">
               <div className="text-2xl font-bold text-green-400">{stats.live || 0}</div>
-              <div className="text-sm text-[#B0B3B8]">Live</div>
+              <div className="text-sm text-[#BDD0E2]">Live</div>
             </div>
             <div className="cmd-panel p-4">
-              <div className="text-2xl font-bold text-[#1877F2]">{conversionRate.toFixed(1)}%</div>
-              <div className="text-sm text-[#B0B3B8]">Conversion</div>
+              <div className="text-2xl font-bold text-[#86DAFF]">{conversionRate.toFixed(1)}%</div>
+              <div className="text-sm text-[#BDD0E2]">Conversion</div>
             </div>
           </div>
 
@@ -192,8 +192,8 @@ const res = await commanderFetch('/api/commander/admin/leads', {
             <button
               onClick={() => setStatusFilter('all')}
               className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${statusFilter === 'all'
-                ? 'bg-[#1877F2] text-[#0F172A]'
-                : 'bg-[#1E293B] text-[#94A3B8] hover:text-white'
+                ? 'bg-[#0C55C0] text-[#0F172A]'
+                : 'bg-[#1E293B] text-[#A9BDD1] hover:text-white'
                 }`}
             >
               All ({totalLeads})
@@ -203,8 +203,8 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                 key={key}
                 onClick={() => setStatusFilter(key)}
                 className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors flex items-center gap-2 ${statusFilter === key
-                  ? 'bg-[#1877F2] text-[#0F172A]'
-                  : 'bg-[#1E293B] text-[#94A3B8] hover:text-white'
+                  ? 'bg-[#0C55C0] text-[#0F172A]'
+                  : 'bg-[#1E293B] text-[#A9BDD1] hover:text-white'
                   }`}
               >
                 <span className={`w-2 h-2 rounded-full ${config.color}`} />
@@ -216,11 +216,11 @@ const res = await commanderFetch('/api/commander/admin/leads', {
           {/* Leads Table */}
           <div className="cmd-panel overflow-hidden">
             {loading ? (
-              <div className="p-8 text-center text-[#B0B3B8]">Loading Leads...</div>
+              <div className="p-8 text-center text-[#BDD0E2]">Loading Leads...</div>
             ) : error ? (
               <div className="p-8 text-center text-red-400">{error}</div>
             ) : filteredLeads.length === 0 ? (
-              <div className="p-8 text-center text-[#B0B3B8]">
+              <div className="p-8 text-center text-[#BDD0E2]">
                 {searchTerm ? `No Leads Matching "${searchTerm}"` : 'No Leads Found'}
               </div>
             ) : (
@@ -228,25 +228,25 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                 <table className="w-full">
                   <thead className="bg-[#1E293B] border-b border-[#374151]">
                     <tr>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Venue
                       </th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Contact
                       </th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Location
                       </th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Tables
                       </th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Status
                       </th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Created
                       </th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-[#B0B3B8]">
+                      <th className="text-right px-4 py-3 text-sm font-medium text-[#BDD0E2]">
                         Actions
                       </th>
                     </tr>
@@ -265,11 +265,11 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-[#374151] rounded-lg flex items-center justify-center">
-                                  <Building2 className="w-5 h-5 text-[#B0B3B8]" />
+                                  <Building2 className="w-5 h-5 text-[#BDD0E2]" />
                                 </div>
                                 <div>
                                   <div className="font-medium text-white">{lead.venue_name}</div>
-                                  <div className="text-sm text-[#B0B3B8]">
+                                  <div className="text-sm text-[#BDD0E2]">
                                     {lead.current_system || 'No Current System'}
                                   </div>
                                 </div>
@@ -277,15 +277,15 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                             </td>
                             <td className="px-4 py-3">
                               <div className="text-white">{lead.contact_name}</div>
-                              <div className="text-sm text-[#B0B3B8]">{lead.email}</div>
+                              <div className="text-sm text-[#BDD0E2]">{lead.email}</div>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center gap-1 text-[#94A3B8]">
+                              <div className="flex items-center gap-1 text-[#A9BDD1]">
                                 <MapPin className="w-4 h-4" />
                                 {lead.city}, {lead.state}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-[#94A3B8]">{lead.table_count || '-'}</td>
+                            <td className="px-4 py-3 text-[#A9BDD1]">{lead.table_count || '-'}</td>
                             <td className="px-4 py-3">
                               <div className="relative">
                                 <button
@@ -319,7 +319,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-[#B0B3B8] text-sm">
+                            <td className="px-4 py-3 text-[#BDD0E2] text-sm">
                               {new Date(lead.created_at).toLocaleDateString()}
                             </td>
                             <td className="px-4 py-3 text-right">
@@ -328,7 +328,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                                   e.stopPropagation();
                                   setSelectedLead(lead);
                                 }}
-                                className="text-[#B0B3B8] hover:text-white"
+                                className="text-[#BDD0E2] hover:text-white"
                               >
                                 <MoreVertical className="w-5 h-5" />
                               </button>
@@ -351,13 +351,13 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h2 className="text-xl font-bold text-white">{selectedLead.venue_name}</h2>
-                    <p className="text-[#B0B3B8]">
+                    <p className="text-[#BDD0E2]">
                       {selectedLead.city}, {selectedLead.state}
                     </p>
                   </div>
                   <button
                     onClick={() => setSelectedLead(null)}
-                    className="text-[#B0B3B8] hover:text-white"
+                    className="text-[#BDD0E2] hover:text-white"
                   >
                     <XCircle className="w-6 h-6" />
                   </button>
@@ -367,20 +367,20 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                   {/* Contact Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-sm text-[#B0B3B8] mb-1">Contact</div>
+                      <div className="text-sm text-[#BDD0E2] mb-1">Contact</div>
                       <div className="text-white">{selectedLead.contact_name}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-[#B0B3B8] mb-1">Tables</div>
+                      <div className="text-sm text-[#BDD0E2] mb-1">Tables</div>
                       <div className="text-white">{selectedLead.table_count || 'Not Specified'}</div>
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-sm text-[#B0B3B8] mb-1">Email</div>
+                    <div className="text-sm text-[#BDD0E2] mb-1">Email</div>
                     <a
                       href={`mailto:${selectedLead.email}`}
-                      className="text-[#1877F2] hover:underline flex items-center gap-2"
+                      className="text-[#86DAFF] hover:underline flex items-center gap-2"
                     >
                       <Mail className="w-4 h-4" />
                       {selectedLead.email}
@@ -388,10 +388,10 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                   </div>
 
                   <div>
-                    <div className="text-sm text-[#B0B3B8] mb-1">Phone</div>
+                    <div className="text-sm text-[#BDD0E2] mb-1">Phone</div>
                     <a
                       href={`tel:${selectedLead.phone}`}
-                      className="text-[#1877F2] hover:underline flex items-center gap-2"
+                      className="text-[#86DAFF] hover:underline flex items-center gap-2"
                     >
                       <Phone className="w-4 h-4" />
                       {selectedLead.phone}
@@ -400,20 +400,20 @@ const res = await commanderFetch('/api/commander/admin/leads', {
 
                   {selectedLead.current_system && (
                     <div>
-                      <div className="text-sm text-[#B0B3B8] mb-1">Current System</div>
+                      <div className="text-sm text-[#BDD0E2] mb-1">Current System</div>
                       <div className="text-white">{selectedLead.current_system}</div>
                     </div>
                   )}
 
                   {selectedLead.notes && (
                     <div>
-                      <div className="text-sm text-[#B0B3B8] mb-1">Notes</div>
-                      <div className="text-[#94A3B8] whitespace-pre-wrap">{selectedLead.notes}</div>
+                      <div className="text-sm text-[#BDD0E2] mb-1">Notes</div>
+                      <div className="text-[#A9BDD1] whitespace-pre-wrap">{selectedLead.notes}</div>
                     </div>
                   )}
 
                   <div>
-                    <div className="text-sm text-[#B0B3B8] mb-1">Created</div>
+                    <div className="text-sm text-[#BDD0E2] mb-1">Created</div>
                     <div className="text-white">
                       {new Date(selectedLead.created_at).toLocaleString()}
                     </div>
@@ -421,7 +421,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
 
                   {/* Status Update */}
                   <div className="border-t border-[#374151] pt-4 mt-4">
-                    <div className="text-sm text-[#B0B3B8] mb-2">Update Status</div>
+                    <div className="text-sm text-[#BDD0E2] mb-2">Update Status</div>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(STATUS_CONFIG || {})
                         .slice(0, 6)
@@ -434,7 +434,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
                             }}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${selectedLead.status === key
                               ? `${config.color}/20 border-current ${config.textColor}`
-                              : 'border-[#374151] text-[#94A3B8] hover:text-white hover:border-[#B0B3B8]'
+                              : 'border-[#374151] text-[#A9BDD1] hover:text-white hover:border-[#BDD0E2]'
                               }`}
                           >
                             <span className={`w-2 h-2 rounded-full ${config.color}`} />

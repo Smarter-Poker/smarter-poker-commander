@@ -16,8 +16,8 @@ export default function SessionTracker({
   if (activeSessions.length === 0) {
     return (
       <div className="cmd-panel p-6 text-center">
-        <User className="w-8 h-8 mx-auto mb-2 text-[#64748B] opacity-50" />
-        <p className="text-[#64748B]">No Active Sessions</p>
+        <User className="w-8 h-8 mx-auto mb-2 text-[#9FB3C8] opacity-50" />
+        <p className="text-[#9FB3C8]">No Active Sessions</p>
       </div>
     );
   }
@@ -40,24 +40,24 @@ export default function SessionTracker({
         <div className="grid grid-cols-3 gap-4">
           <div className="cmd-panel p-4 text-center">
             <p className="text-2xl font-bold text-[#22D3EE]">{summary.total}</p>
-            <p className="text-sm text-[#64748B]">Active</p>
+            <p className="text-sm text-[#9FB3C8]">Active</p>
           </div>
           <div className="cmd-panel p-4 text-center">
             <p className="text-2xl font-bold text-white">{summary.avgDuration}m</p>
-            <p className="text-sm text-[#64748B]">Avg Time</p>
+            <p className="text-sm text-[#9FB3C8]">Avg Time</p>
           </div>
           <div className="cmd-panel p-4 text-center">
             <p className="text-2xl font-bold text-[#10B981]">${summary.totalBuyin}</p>
-            <p className="text-sm text-[#64748B]">Total Buy-in</p>
+            <p className="text-sm text-[#9FB3C8]">Total Buy-in</p>
           </div>
         </div>
       )}
 
       <div className="cmd-panel overflow-hidden">
-        <div className="p-4 border-b border-[#4A5E78]">
+        <div className="p-4 border-b border-[#445E77]">
           <h3 className="font-semibold text-white">Active Sessions</h3>
         </div>
-        <div className="divide-y divide-[#4A5E78] max-h-[400px] overflow-y-auto">
+        <div className="divide-y divide-[#445E77] max-h-[400px] overflow-y-auto">
           {activeSessions.map((session) => (
             <SessionRow
               key={session.id}
@@ -100,7 +100,7 @@ function SessionRow({ session, onCheckout, onView }) {
         </div>
         <div>
           <p className="font-medium text-white">{playerName}</p>
-          <div className="flex items-center gap-3 text-sm text-[#64748B]">
+          <div className="flex items-center gap-3 text-sm text-[#9FB3C8]">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatDuration(duration)}
@@ -120,7 +120,7 @@ function SessionRow({ session, onCheckout, onView }) {
 
       <button
         onClick={onCheckout}
-        className="p-3 rounded-lg border border-[#4A5E78] text-[#64748B] hover:border-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+        className="p-3 rounded-lg border border-[#445E77] text-[#9FB3C8] hover:border-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
         title="Check Out Player"
       >
         <LogOut className="w-5 h-5" />

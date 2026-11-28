@@ -72,7 +72,7 @@ export default function DocumentationIndexPage() {
           {/* Hero */}
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Club Commander Documentation</h2>
-            <p className="text-[#94A3B8] max-w-2xl mx-auto">
+            <p className="text-[#A9BDD1] max-w-2xl mx-auto">
               Everything you need to know about using Club Commander. Select a guide below based on your role.
             </p>
           </div>
@@ -85,19 +85,19 @@ export default function DocumentationIndexPage() {
                 <Link
                   key={doc.id}
                   href={doc.href}
-                  className="cmd-panel p-6 hover:border-[#1877F2]/50 transition-colors group"
+                  className="cmd-panel p-6 hover:border-[#1981EC]/50 transition-colors group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#1877F2]/10 rounded-lg flex items-center justify-center group-hover:bg-[#1877F2]/20 transition-colors">
-                      <Icon className="w-6 h-6 text-[#1877F2]" />
+                    <div className="w-12 h-12 bg-[#0C55C0]/10 rounded-lg flex items-center justify-center group-hover:bg-[#0C55C0]/20 transition-colors">
+                      <Icon className="w-6 h-6 text-[#86DAFF]" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-[#1877F2] transition-colors">
+                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-[#86DAFF] transition-colors">
                         {doc.title}
                       </h3>
-                      <p className="text-[#B0B3B8] text-sm mb-3">{doc.description}</p>
+                      <p className="text-[#BDD0E2] text-sm mb-3">{doc.description}</p>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs bg-[#374151] text-[#94A3B8] px-2 py-1 rounded">
+                        <span className="text-xs bg-[#374151] text-[#A9BDD1] px-2 py-1 rounded">
                           {doc.audience}
                         </span>
                       </div>
@@ -105,13 +105,13 @@ export default function DocumentationIndexPage() {
                         {doc.sections.slice(0, 4).map((section, idx) => (
                           <span
                             key={idx}
-                            className="text-xs text-[#B0B3B8] bg-[#1E293B] px-2 py-0.5 rounded"
+                            className="text-xs text-[#BDD0E2] bg-[#1E293B] px-2 py-0.5 rounded"
                           >
                             {section}
                           </span>
                         ))}
                         {doc.sections.length > 4 && (
-                          <span className="text-xs text-[#B0B3B8]">
+                          <span className="text-xs text-[#BDD0E2]">
                             +{doc.sections.length - 4} more
                           </span>
                         )}
@@ -140,9 +140,9 @@ export default function DocumentationIndexPage() {
                     {...linkProps}
                     className="flex items-center gap-3 p-3 bg-[#1E293B] rounded-lg hover:bg-[#374151] transition-colors"
                   >
-                    <Icon className="w-5 h-5 text-[#B0B3B8]" />
-                    <span className="text-[#94A3B8]">{link.label}</span>
-                    {link.external && <ExternalLink className="w-4 h-4 text-[#B0B3B8] ml-auto" />}
+                    <Icon className="w-5 h-5 text-[#BDD0E2]" />
+                    <span className="text-[#A9BDD1]">{link.label}</span>
+                    {link.external && <ExternalLink className="w-4 h-4 text-[#BDD0E2] ml-auto" />}
                   </LinkComponent>
                 );
               })}
@@ -151,7 +151,7 @@ export default function DocumentationIndexPage() {
 
           {/* Need Help */}
           <div className="text-center mt-12">
-            <p className="text-[#B0B3B8] mb-4">Can't Find What You're Looking For?</p>
+            <p className="text-[#BDD0E2] mb-4">Can't Find What You're Looking For?</p>
             <a
               href="mailto:support@smarter.poker"
               className="cmd-btn cmd-btn-primary inline-flex items-center gap-2"

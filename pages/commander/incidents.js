@@ -26,9 +26,9 @@ const INCIDENT_TYPES = [
 
 const SEVERITY_LEVELS = [
   { value: 'low', label: 'Low', color: '#31A24C', icon: Shield },
-  { value: 'medium', label: 'Medium', color: '#F59E0B', icon: AlertTriangle },
+  { value: 'medium', label: 'Medium', color: '#22D3EE', icon: AlertTriangle },
   { value: 'high', label: 'High', color: '#EF4444', icon: Flame },
-  { value: 'critical', label: 'Critical', color: '#7C3AED', icon: Zap }
+  { value: 'critical', label: 'Critical', color: '#3B82F6', icon: Zap }
 ];
 
 function IncidentCard({ incident, onClick }) {
@@ -47,8 +47,8 @@ function IncidentCard({ incident, onClick }) {
     <button onClick={onClick}
       className="w-full text-left transition-all active:scale-[0.99]"
       style={{
-        background: '#242526',
-        border: `2px solid ${incident.resolved ? '#3A3B3C' : `${sev.color}30`}`,
+        background: '#0A1829',
+        border: `2px solid ${incident.resolved ? '#2A4560' : `${sev.color}30`}`,
         borderRadius: 12,
         padding: 14,
         borderLeft: `4px solid ${incident.resolved ? '#31A24C' : sev.color}` }}>
@@ -66,8 +66,8 @@ function IncidentCard({ incident, onClick }) {
             {incident.severity?.toUpperCase()}
           </span>
           <span style={{
-            background: '#3A3B3C',
-            color: '#B0B3B8',
+            background: '#2A4560',
+            color: '#BDD0E2',
             padding: '2px 8px',
             borderRadius: 6,
             fontSize: 11,
@@ -104,7 +104,7 @@ function IncidentCard({ incident, onClick }) {
         {incident.description}
       </p>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#B0B3B8', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#BDD0E2', flexWrap: 'wrap' }}>
         {incident.table_number && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <MapPin size={13} /> T{incident.table_number}
@@ -146,18 +146,18 @@ function CreateIncidentModal({ onSubmit, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-      <div style={{ width: '100%', maxWidth: 480, background: '#242526', borderRadius: 16, border: '2px solid #3A3B3C', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: 480, background: '#0A1829', borderRadius: 16, border: '2px solid #2A4560', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>Report Incident</h2>
-          <button onClick={onClose} style={{ background: '#3A3B3C', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer' }}>
-            <X size={18} color="#B0B3B8" />
+          <button onClick={onClose} style={{ background: '#2A4560', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer' }}>
+            <X size={18} color="#BDD0E2" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Incident Type */}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6 }}>Type Of Incident</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6 }}>Type Of Incident</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               {INCIDENT_TYPES.map(type => (
                 <button key={type.value} type="button"
@@ -165,9 +165,9 @@ function CreateIncidentModal({ onSubmit, onClose }) {
                   style={{
                     padding: '10px 12px',
                     borderRadius: 8,
-                    border: `2px solid ${formData.incident_type === type.value ? '#1877F2' : '#3A3B3C'}`,
-                    background: formData.incident_type === type.value ? '#1877F215' : '#18191A',
-                    color: formData.incident_type === type.value ? '#1877F2' : '#B0B3B8',
+                    border: `2px solid ${formData.incident_type === type.value ? '#1981EC' : '#2A4560'}`,
+                    background: formData.incident_type === type.value ? '#1981EC15' : '#040D18',
+                    color: formData.incident_type === type.value ? '#1981EC' : '#BDD0E2',
                     cursor: 'pointer',
                     fontSize: 13,
                     fontWeight: 600,
@@ -180,7 +180,7 @@ function CreateIncidentModal({ onSubmit, onClose }) {
 
           {/* Severity */}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6 }}>Severity Level</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6 }}>Severity Level</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
               {SEVERITY_LEVELS.map(level => (
                 <button key={level.value} type="button"
@@ -188,8 +188,8 @@ function CreateIncidentModal({ onSubmit, onClose }) {
                   style={{
                     padding: '8px 4px',
                     borderRadius: 8,
-                    border: `2px solid ${formData.severity === level.value ? level.color : '#3A3B3C'}`,
-                    background: formData.severity === level.value ? `${level.color}15` : '#18191A',
+                    border: `2px solid ${formData.severity === level.value ? level.color : '#2A4560'}`,
+                    background: formData.severity === level.value ? `${level.color}15` : '#040D18',
                     color: formData.severity === level.value ? level.color : '#65676B',
                     cursor: 'pointer',
                     fontSize: 12,
@@ -204,34 +204,34 @@ function CreateIncidentModal({ onSubmit, onClose }) {
           {/* Table + Players row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6 }}>Table #</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6 }}>Table #</label>
               <input type="text" value={formData.table_number}
                 onChange={(e) => setFormData(prev => ({ ...prev, table_number: e.target.value }))}
                 placeholder="E.g. 5"
-                style={{ width: '100%', height: 44, padding: '0 12px', background: '#18191A', border: '2px solid #3A3B3C', borderRadius: 8, color: 'white', fontSize: 14, boxSizing: 'border-box' }} />
+                style={{ width: '100%', height: 44, padding: '0 12px', background: '#040D18', border: '2px solid #2A4560', borderRadius: 8, color: 'white', fontSize: 14, boxSizing: 'border-box' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6 }}>Players Involved</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6 }}>Players Involved</label>
               <input type="text" value={formData.players_involved}
                 onChange={(e) => setFormData(prev => ({ ...prev, players_involved: e.target.value }))}
                 placeholder="John D., Mike S."
-                style={{ width: '100%', height: 44, padding: '0 12px', background: '#18191A', border: '2px solid #3A3B3C', borderRadius: 8, color: 'white', fontSize: 14, boxSizing: 'border-box' }} />
+                style={{ width: '100%', height: 44, padding: '0 12px', background: '#040D18', border: '2px solid #2A4560', borderRadius: 8, color: 'white', fontSize: 14, boxSizing: 'border-box' }} />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#B0B3B8', marginBottom: 6 }}>Description *</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#BDD0E2', marginBottom: 6 }}>Description *</label>
             <textarea value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe What Happened..."
               rows={4} required
-              style={{ width: '100%', padding: '10px 12px', background: '#18191A', border: '2px solid #3A3B3C', borderRadius: 8, color: 'white', fontSize: 14, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+              style={{ width: '100%', padding: '10px 12px', background: '#040D18', border: '2px solid #2A4560', borderRadius: 8, color: 'white', fontSize: 14, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
           </div>
 
           <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
             <button type="button" onClick={onClose}
-              style={{ flex: 1, height: 44, background: '#3A3B3C', color: '#B0B3B8', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              style={{ flex: 1, height: 44, background: '#2A4560', color: '#BDD0E2', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               Cancel
             </button>
             <button type="submit" disabled={loading || !formData.description}
@@ -260,11 +260,11 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-      <div style={{ width: '100%', maxWidth: 480, background: '#242526', borderRadius: 16, border: `2px solid ${sev.color}30`, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: 480, background: '#0A1829', borderRadius: 16, border: `2px solid ${sev.color}30`, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>Incident Details</h2>
-          <button onClick={onClose} style={{ background: '#3A3B3C', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer' }}>
-            <X size={18} color="#B0B3B8" />
+          <button onClick={onClose} style={{ background: '#2A4560', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer' }}>
+            <X size={18} color="#BDD0E2" />
           </button>
         </div>
 
@@ -274,7 +274,7 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
             <span style={{ background: `${sev.color}15`, color: sev.color, border: `1px solid ${sev.color}30`, padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
               {incident.severity?.toUpperCase()}
             </span>
-            <span style={{ background: '#3A3B3C', color: '#B0B3B8', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+            <span style={{ background: '#2A4560', color: '#BDD0E2', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
               {typeInfo.label}
             </span>
             {incident.resolved && (
@@ -285,7 +285,7 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
           </div>
 
           {/* Info grid */}
-          <div style={{ background: '#18191A', borderRadius: 10, padding: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ background: '#040D18', borderRadius: 10, padding: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>When</div>
               <div style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>{new Date(incident.created_at).toLocaleString()}</div>
@@ -311,25 +311,25 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
           {/* Description */}
           <div>
             <div style={{ fontSize: 10, color: '#65676B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Description</div>
-            <div style={{ fontSize: 14, color: '#E4E6EB', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{incident.description}</div>
+            <div style={{ fontSize: 14, color: '#F2F7FF', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{incident.description}</div>
           </div>
 
           {/* Resolution */}
           {incident.resolved ? (
             <div style={{ background: '#31A24C10', border: '1px solid #31A24C20', borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: 10, color: '#31A24C', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Resolution</div>
-              <div style={{ fontSize: 14, color: '#E4E6EB', lineHeight: 1.5 }}>{incident.resolution}</div>
+              <div style={{ fontSize: 14, color: '#F2F7FF', lineHeight: 1.5 }}>{incident.resolution}</div>
               <div style={{ fontSize: 11, color: '#65676B', marginTop: 8 }}>
                 Resolved {new Date(incident.resolved_at).toLocaleString()}
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#B0B3B8' }}>Resolution</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#BDD0E2' }}>Resolution</label>
               <textarea value={resolution} onChange={(e) => setResolution(e.target.value)}
                 placeholder="Describe How This Incident Was Resolved..."
                 rows={3}
-                style={{ width: '100%', padding: '10px 12px', background: '#18191A', border: '2px solid #3A3B3C', borderRadius: 8, color: 'white', fontSize: 14, resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                style={{ width: '100%', padding: '10px 12px', background: '#040D18', border: '2px solid #2A4560', borderRadius: 8, color: 'white', fontSize: 14, resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
               <button onClick={handleResolve} disabled={loading || !resolution}
                 style={{ width: '100%', height: 44, background: '#31A24C', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: (loading || !resolution) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16} /> Mark As Resolved</>}
@@ -338,7 +338,7 @@ function IncidentDetailModal({ incident, onResolve, onClose }) {
           )}
 
           <button onClick={onClose}
-            style={{ width: '100%', height: 44, background: '#3A3B3C', color: '#B0B3B8', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ width: '100%', height: 44, background: '#2A4560', color: '#BDD0E2', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
             Close
           </button>
         </div>
@@ -501,8 +501,8 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
   if (!staff) {
     return (
       <CommanderLayout title="Incidents" backHref="/commander/dashboard?card=staff">
-        <div style={{ minHeight: '100vh', background: '#18191A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader2 size={28} className="animate-spin" color="#1877F2" />
+        <div style={{ minHeight: '100vh', background: '#040D18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader2 size={28} className="animate-spin" color="#1981EC" />
         </div>
       </CommanderLayout>
     );
@@ -511,14 +511,14 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
   return (
     <CommanderLayout title="Incidents" backHref="/commander/dashboard?card=staff">
       <SEOHead title="Commander - Incidents" description="Incident Management." noindex={true} />
-      <div style={{ minHeight: '100vh', background: '#18191A', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#040D18', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
         {/* Header: Report on the left, page help top right */}
         <PageBar
           title="Incident Log"
           summary="Track Disputes, Violations, And Safety Issues."
           steps={INCIDENT_STEPS}
-          style={{ background: '#242526', borderBottom: '2px solid #3A3B3C', padding: '6px 16px' }}
+          style={{ background: '#0A1829', borderBottom: '2px solid #2A4560', padding: '6px 16px' }}
         >
           <button onClick={() => setShowCreateModal(true)} data-tour="inc-report"
             style={{ background: '#EF4444', color: 'white', border: 'none', borderRadius: 10, padding: '0 16px', minHeight: 44, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -530,17 +530,17 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
 
           {/* Stats Dashboard */}
           <div data-tour="inc-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
-            <div style={{ background: '#242526', borderRadius: 10, padding: 12, textAlign: 'center', border: openCount > 0 ? '1px solid #EF444430' : '1px solid #3A3B3C' }}>
+            <div style={{ background: '#0A1829', borderRadius: 10, padding: 12, textAlign: 'center', border: openCount > 0 ? '1px solid #EF444430' : '1px solid #2A4560' }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: openCount > 0 ? '#EF4444' : '#65676B' }}>{openCount}</div>
-              <div style={{ fontSize: 10, color: '#B0B3B8', fontWeight: 600 }}>Open</div>
+              <div style={{ fontSize: 10, color: '#BDD0E2', fontWeight: 600 }}>Open</div>
             </div>
-            <div style={{ background: '#242526', borderRadius: 10, padding: 12, textAlign: 'center', border: criticalCount > 0 ? '1px solid #7C3AED30' : '1px solid #3A3B3C' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: criticalCount > 0 ? '#7C3AED' : '#65676B' }}>{criticalCount}</div>
-              <div style={{ fontSize: 10, color: '#B0B3B8', fontWeight: 600 }}>High / Critical</div>
+            <div style={{ background: '#0A1829', borderRadius: 10, padding: 12, textAlign: 'center', border: criticalCount > 0 ? '1px solid #3B82F630' : '1px solid #2A4560' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: criticalCount > 0 ? '#3B82F6' : '#65676B' }}>{criticalCount}</div>
+              <div style={{ fontSize: 10, color: '#BDD0E2', fontWeight: 600 }}>High / Critical</div>
             </div>
-            <div style={{ background: '#242526', borderRadius: 10, padding: 12, textAlign: 'center', border: '1px solid #3A3B3C' }}>
+            <div style={{ background: '#0A1829', borderRadius: 10, padding: 12, textAlign: 'center', border: '1px solid #2A4560' }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: resolvedCount > 0 ? '#31A24C' : '#65676B' }}>{resolvedCount}</div>
-              <div style={{ fontSize: 10, color: '#B0B3B8', fontWeight: 600 }}>Resolved</div>
+              <div style={{ fontSize: 10, color: '#BDD0E2', fontWeight: 600 }}>Resolved</div>
             </div>
           </div>
 
@@ -551,7 +551,7 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
               <input type="text" value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search Incidents..."
-                style={{ width: '100%', height: 40, paddingLeft: 36, paddingRight: 12, background: '#242526', border: '2px solid #3A3B3C', borderRadius: 10, color: 'white', fontSize: 13, boxSizing: 'border-box' }} />
+                style={{ width: '100%', height: 40, paddingLeft: 36, paddingRight: 12, background: '#0A1829', border: '2px solid #2A4560', borderRadius: 10, color: 'white', fontSize: 13, boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {[
@@ -564,8 +564,8 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
                     padding: '6px 14px',
                     borderRadius: 8,
                     border: 'none',
-                    background: filter === f.value ? '#1877F2' : '#242526',
-                    color: filter === f.value ? 'white' : '#B0B3B8',
+                    background: filter === f.value ? '#1981EC' : '#0A1829',
+                    color: filter === f.value ? 'white' : '#BDD0E2',
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: 'pointer' }}>
@@ -578,7 +578,7 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
           {/* Incidents List */}
           {loading ? (
             <div style={{ textAlign: 'center', padding: 48 }}>
-              <Loader2 size={28} className="animate-spin" color="#1877F2" style={{ margin: '0 auto' }} />
+              <Loader2 size={28} className="animate-spin" color="#1981EC" style={{ margin: '0 auto' }} />
             </div>
           ) : filteredIncidents.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -587,8 +587,8 @@ const res = await commanderFetch(`/api/commander/incidents/${incidentId}/resolve
               ))}
             </div>
           ) : (
-            <div style={{ background: '#242526', borderRadius: 12, padding: 48, textAlign: 'center', border: '2px solid #3A3B3C' }}>
-              <Shield size={36} color="#3A3B3C" style={{ margin: '0 auto 8px' }} />
+            <div style={{ background: '#0A1829', borderRadius: 12, padding: 48, textAlign: 'center', border: '2px solid #2A4560' }}>
+              <Shield size={36} color="#2A4560" style={{ margin: '0 auto 8px' }} />
               <p style={{ color: '#65676B', fontSize: 14 }}>
                 {searchQuery ? 'No Incidents Match Your Search' : 'No Incidents Reported. All Clear'}
               </p>

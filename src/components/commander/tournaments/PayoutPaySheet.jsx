@@ -126,20 +126,20 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
       role="presentation"
     >
       <div
-        className="w-full max-w-md bg-[#242526] border-t border-[#3A3B3C] rounded-t-2xl max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-md bg-[#0A1829] border-t border-[#445E77] rounded-t-2xl max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#3A3B3C] sticky top-0 bg-[#242526]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#445E77] sticky top-0 bg-[#0A1829]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isPaid ? 'bg-[#31A24C]/20' : 'bg-[#1877F2]/20'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isPaid ? 'bg-[#31A24C]/20' : 'bg-[#0C55C0]/20'}`}>
               {isPaid
                 ? <CheckCircle2 className="w-5 h-5 text-[#31A24C]" />
-                : <DollarSign className="w-5 h-5 text-[#1877F2]" />}
+                : <DollarSign className="w-5 h-5 text-[#86DAFF]" />}
             </div>
             <div className="min-w-0">
               <h3 className="text-base font-bold text-white truncate">{row.player_name || 'Player'}</h3>
-              <p className="text-xs text-[#B0B3B8]">
+              <p className="text-xs text-[#BDD0E2]">
                 {row.position ? `Place ${row.position}, ` : ''}{formatMoney(owed)} Recorded
               </p>
             </div>
@@ -147,7 +147,7 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
           <button
             onClick={onClose}
             aria-label="Close"
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-[#B0B3B8] active:bg-[#3A3B3C] flex-shrink-0"
+            className="w-11 h-11 rounded-xl flex items-center justify-center text-[#BDD0E2] active:bg-[#132A42] flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -158,13 +158,13 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
             <>
               <div className="rounded-xl border border-[#31A24C]/30 bg-[#31A24C]/10 px-4 py-3">
                 <p className="text-sm font-semibold text-[#31A24C]">Already Paid</p>
-                <p className="text-xs text-[#E4E6EB] mt-1">
+                <p className="text-xs text-[#F2F7FF] mt-1">
                   {formatMoney(owed)} Handed Over On {formatWhen(row.paid_at)}.
                 </p>
               </div>
 
               <div>
-                <label htmlFor="payout-void-reason" className="text-xs text-[#B0B3B8] mb-1 block">
+                <label htmlFor="payout-void-reason" className="text-xs text-[#BDD0E2] mb-1 block">
                   Reason (Optional)
                 </label>
                 <input
@@ -173,7 +173,7 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Wrong Player, Wrong Amount, Mis-Tap"
-                  className="w-full h-12 px-4 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-sm focus:outline-none focus:border-[#1877F2]"
+                  className="w-full h-12 px-4 rounded-xl bg-[#132A42] border border-[#5A7590] text-[#F2F7FF] text-sm focus:outline-none focus:border-[#1981EC]"
                 />
               </div>
 
@@ -188,20 +188,20 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
                 <button
                   onClick={() => setConfirmVoid(true)}
                   disabled={busy}
-                  className="w-full h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#4A4B4C] disabled:opacity-50"
+                  className="w-full h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold flex items-center justify-center gap-2 active:bg-[#1B3753] disabled:opacity-50"
                 >
                   <Undo2 className="w-5 h-5" /> Void This Payment
                 </button>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs text-[#E4E6EB]">
+                  <p className="text-xs text-[#F2F7FF]">
                     Void {formatMoney(owed)} To {row.player_name}? The Cash Row Is Reversed And This Place Goes Back On The Unpaid List.
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setConfirmVoid(false)}
                       disabled={busy}
-                      className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50"
+                      className="flex-1 h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:bg-[#1B3753] disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -220,17 +220,17 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
           ) : (
             <>
               <div>
-                <label htmlFor="payout-amount" className="text-xs text-[#B0B3B8] mb-1 block">Amount Handed Over</label>
+                <label htmlFor="payout-amount" className="text-xs text-[#BDD0E2] mb-1 block">Amount Handed Over</label>
                 <input
                   id="payout-amount"
                   type="number"
                   inputMode="numeric"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full h-14 px-4 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-white text-2xl font-bold text-center focus:outline-none focus:border-[#1877F2]"
+                  className="w-full h-14 px-4 rounded-xl bg-[#132A42] border border-[#5A7590] text-white text-2xl font-bold text-center focus:outline-none focus:border-[#1981EC]"
                 />
                 {variance !== 0 && (
-                  <p className="text-xs text-[#F59E0B] mt-1.5">
+                  <p className="text-xs text-[#22D3EE] mt-1.5">
                     {variance > 0
                       ? `${formatMoney(variance)} More Than The Recorded Payout. The Drawer Will Read Over By That Much.`
                       : `${formatMoney(Math.abs(variance))} Less Than The Recorded Payout. The Drawer Will Read Short By That Much.`}
@@ -239,15 +239,15 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
               </div>
 
               <div>
-                <p className="text-xs text-[#B0B3B8] mb-2">Paid By</p>
+                <p className="text-xs text-[#BDD0E2] mb-2">Paid By</p>
                 <div className="grid grid-cols-4 gap-2">
                   {PAYOUT_PAYMENT_METHODS.map(m => (
                     <button
                       key={m.value}
                       onClick={() => setMethod(m.value)}
                       className={`h-11 rounded-xl text-xs font-semibold ${method === m.value
-                        ? 'bg-[#1877F2] text-white'
-                        : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'}`}
+                        ? 'bg-[#0C55C0] text-white'
+                        : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'}`}
                     >
                       {m.label}
                     </button>
@@ -256,14 +256,14 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
               </div>
 
               <div>
-                <label htmlFor="payout-note" className="text-xs text-[#B0B3B8] mb-1 block">Note (Optional)</label>
+                <label htmlFor="payout-note" className="text-xs text-[#BDD0E2] mb-1 block">Note (Optional)</label>
                 <input
                   id="payout-note"
                   type="text"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Anything The Drawer Count Should Know"
-                  className="w-full h-12 px-4 rounded-xl bg-[#3A3B3C] border border-[#4A4B4C] text-[#E4E6EB] text-sm focus:outline-none focus:border-[#1877F2]"
+                  className="w-full h-12 px-4 rounded-xl bg-[#132A42] border border-[#5A7590] text-[#F2F7FF] text-sm focus:outline-none focus:border-[#1981EC]"
                 />
               </div>
 
@@ -284,7 +284,7 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
                     {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <DollarSign className="w-5 h-5" />}
                     Void The Old Payment And Re-Pay {formatMoney(entered)}
                   </button>
-                  <p className="text-[11px] text-[#B0B3B8]">
+                  <p className="text-[11px] text-[#BDD0E2]">
                     The Previous Cash Row Is Voided First, So The Drawer Never Shows Two Live Payments For One Place.
                   </p>
                 </div>
@@ -299,7 +299,7 @@ export default function PayoutPaySheet({ tournamentId, row, onClose, onDone, set
                 </button>
               )}
 
-              <p className="text-[11px] text-[#B0B3B8]">
+              <p className="text-[11px] text-[#BDD0E2]">
                 This Records Money Leaving The Drawer. A Matching Cash Out Row Is Written Against This Tournament And Shows Up On The Reconciliation Report.
               </p>
             </>

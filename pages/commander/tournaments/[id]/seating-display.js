@@ -93,7 +93,7 @@ export default function SeatingDisplay() {
         className="h-screen bg-black text-white font-['Inter'] select-none flex flex-col">
 
         {/* Header */}
-        <div className="bg-[#1877F2] px-8 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#0C55C0] px-8 py-3 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-2xl font-bold">{tournament?.name || 'Tournament'} - Seating Chart</h1>
             <p className="text-sm opacity-80">{active.length} Players, {tableNumbers.filter(t => t !== 'Unassigned').length} Tables</p>
@@ -115,10 +115,10 @@ export default function SeatingDisplay() {
 
               return (
                 <div key={tableNum}
-                  className={`rounded-xl p-4 border ${isUnassigned ? 'bg-[#F59E0B]/5 border-[#F59E0B]/30' : 'bg-white/3 border-white/10'
+                  className={`rounded-xl p-4 border ${isUnassigned ? 'bg-[#22D3EE]/5 border-[#22D3EE]/30' : 'bg-white/3 border-white/10'
                     }`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className={`text-lg font-bold ${isUnassigned ? 'text-[#F59E0B]' : 'text-[#1877F2]'}`}>
+                    <h3 className={`text-lg font-bold ${isUnassigned ? 'text-[#22D3EE]' : 'text-[#86DAFF]'}`}>
                       {isUnassigned ? 'Unassigned' : `Table ${tableNum}`}
                     </h3>
                     <span className="text-sm text-white/40">{players.length} Players</span>
@@ -144,7 +144,7 @@ export default function SeatingDisplay() {
 
         {/* Dealer Push/Break + Promo Ticker */}
         <DealerTicker
-          accentColor="#1877F2"
+          accentColor="#1981EC"
           bgColor="#000"
           fontSize={16}
           borderColor="rgba(255,255,255,0.1)"

@@ -122,40 +122,40 @@ export default function CagePayoutsCard({ tournamentId, rows, onRefresh, setToas
   };
 
   return (
-    <div className="bg-[#242526] rounded-xl border border-[#3A3B3C] overflow-hidden">
-      <div className="px-4 py-2 border-b border-[#3A3B3C] flex items-center justify-between">
+    <div className="bg-[#0A1829] rounded-xl border border-[#445E77] overflow-hidden">
+      <div className="px-4 py-2 border-b border-[#445E77] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-[#31A24C]" />
-          <h3 className="text-xs font-bold text-[#B0B3B8] uppercase tracking-wider">{title}</h3>
+          <h3 className="text-xs font-bold text-[#BDD0E2] uppercase tracking-wider">{title}</h3>
         </div>
-        <span className="text-[10px] text-[#B0B3B8]">
+        <span className="text-[10px] text-[#BDD0E2]">
           {summary.paidCount} Of {summary.paidCount + summary.unpaidCount} Paid
         </span>
       </div>
 
       {/* Running totals */}
-      <div className="grid grid-cols-2 divide-x divide-[#3A3B3C] border-b border-[#3A3B3C]">
+      <div className="grid grid-cols-2 divide-x divide-[#445E77] border-b border-[#445E77]">
         <div className="px-4 py-3 text-center">
-          <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Paid Out</p>
+          <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Paid Out</p>
           <p className="text-lg font-bold text-[#31A24C]">{formatMoney(summary.paidTotal)}</p>
         </div>
         <div className="px-4 py-3 text-center">
-          <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider">Still Owed</p>
-          <p className={`text-lg font-bold ${summary.unpaidTotal > 0 ? 'text-[#F59E0B]' : 'text-[#B0B3B8]'}`}>
+          <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider">Still Owed</p>
+          <p className={`text-lg font-bold ${summary.unpaidTotal > 0 ? 'text-[#22D3EE]' : 'text-[#BDD0E2]'}`}>
             {formatMoney(summary.unpaidTotal)}
           </p>
         </div>
       </div>
 
-      <div className="divide-y divide-[#3A3B3C]">
+      <div className="divide-y divide-[#445E77]">
         {owedRows.map(r => (
           <div key={`pay-${r.position || 'x'}-${r.entry_id || r.player_name}`} className="px-4 py-3 flex items-center gap-3">
-            <span className="w-9 text-xs font-bold text-[#B0B3B8] flex-shrink-0">
+            <span className="w-9 text-xs font-bold text-[#BDD0E2] flex-shrink-0">
               {r.position ? ordinal(r.position) : '--'}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-[#E4E6EB] truncate">{r.player_name || 'Player'}</p>
-              <p className="text-[10px] text-[#B0B3B8]">
+              <p className="text-sm text-[#F2F7FF] truncate">{r.player_name || 'Player'}</p>
+              <p className="text-[10px] text-[#BDD0E2]">
                 {r.is_seat ? 'Seat, ' : ''}{formatMoney(r.amount)}
                 {r.paid && r.paid_at ? `, Paid ${formatWhen(r.paid_at)}` : ''}
                 {!r.paid && r.payout_status === 'voided' ? ', Previous Payment Voided' : ''}
@@ -171,14 +171,14 @@ export default function CagePayoutsCard({ tournamentId, rows, onRefresh, setToas
                 <CheckCircle2 className="w-4 h-4" /> Paid
               </button>
             ) : (r.projected || !r.entry_id) ? (
-              <span className="h-11 px-3 rounded-xl bg-[#3A3B3C] text-[#B0B3B8] text-xs font-medium flex items-center flex-shrink-0">
+              <span className="h-11 px-3 rounded-xl bg-[#132A42] text-[#BDD0E2] text-xs font-medium flex items-center flex-shrink-0">
                 Not Final
               </span>
             ) : (
               <button
                 onClick={() => setPaySheetRow(r)}
                 disabled={busy}
-                className="h-11 px-4 rounded-xl bg-[#1877F2] text-white text-xs font-bold flex items-center gap-1.5 flex-shrink-0 active:opacity-90 disabled:opacity-50"
+                className="h-11 px-4 rounded-xl bg-[#0C55C0] text-white text-xs font-bold flex items-center gap-1.5 flex-shrink-0 active:opacity-90 disabled:opacity-50"
               >
                 <DollarSign className="w-4 h-4" /> Pay
               </button>
@@ -188,7 +188,7 @@ export default function CagePayoutsCard({ tournamentId, rows, onRefresh, setToas
       </div>
 
       {remaining.length > 0 && (
-        <div className="px-4 py-3 border-t border-[#3A3B3C] bg-[#1C1D1E] space-y-2">
+        <div className="px-4 py-3 border-t border-[#445E77] bg-[#1C1D1E] space-y-2">
           {!confirmPayAll ? (
             <button
               onClick={() => setConfirmPayAll(true)}
@@ -200,12 +200,12 @@ export default function CagePayoutsCard({ tournamentId, rows, onRefresh, setToas
             </button>
           ) : (
             <>
-              <p className="text-xs text-[#E4E6EB]">
+              <p className="text-xs text-[#F2F7FF]">
                 Pay {remaining.length} Finisher{remaining.length === 1 ? '' : 's'} A Total Of {formatMoney(remainingTotal)} In Cash?
                 Each One Gets Its Own Cash Out Row. Pay Anyone Being Paid Another Way Individually First.
               </p>
               {progress && (
-                <p className="text-[11px] text-[#1877F2]">
+                <p className="text-[11px] text-[#86DAFF]">
                   Paying {progress.player_name} ({progress.index + 1} Of {progress.total})
                 </p>
               )}
@@ -213,7 +213,7 @@ export default function CagePayoutsCard({ tournamentId, rows, onRefresh, setToas
                 <button
                   onClick={() => setConfirmPayAll(false)}
                   disabled={busy}
-                  className="flex-1 h-12 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] text-sm font-bold active:bg-[#4A4B4C] disabled:opacity-50"
+                  className="flex-1 h-12 rounded-xl bg-[#132A42] text-[#F2F7FF] text-sm font-bold active:bg-[#1B3753] disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -232,7 +232,7 @@ export default function CagePayoutsCard({ tournamentId, rows, onRefresh, setToas
       )}
 
       {summary.unpaidCount === 0 && summary.paidCount > 0 && (
-        <div className="px-4 py-3 border-t border-[#3A3B3C] flex items-center gap-2">
+        <div className="px-4 py-3 border-t border-[#445E77] flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-[#31A24C] flex-shrink-0" />
           <p className="text-xs text-[#31A24C] font-medium">
             Every Finisher Has Been Paid. The Drawer Reconciliation Will Balance On Payouts.

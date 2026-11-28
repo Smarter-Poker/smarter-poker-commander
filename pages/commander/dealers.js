@@ -28,12 +28,12 @@ function DealerCard({ dealer, onEdit, onRotate }) {
     <div className="cmd-panel p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-[#1877F2]/10 rounded-full flex items-center justify-center">
-            <Users className="w-6 h-6 text-[#1877F2]" />
+          <div className="w-12 h-12 bg-[#0C55C0]/10 rounded-full flex items-center justify-center">
+            <Users className="w-6 h-6 text-[#86DAFF]" />
           </div>
           <div>
             <h3 className="font-semibold text-white">{dealer.name}</h3>
-            <p className="text-sm text-[#B0B3B8]">ID: {dealer.employee_id || 'N/A'}</p>
+            <p className="text-sm text-[#BDD0E2]">ID: {dealer.employee_id || 'N/A'}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -41,8 +41,8 @@ function DealerCard({ dealer, onEdit, onRotate }) {
             <Star
               key={level}
               className={`w-4 h-4 ${level <= (dealer.skill_level || 3)
-                ? 'text-[#F59E0B] fill-[#F59E0B]'
-                : 'text-[#3A3B3C]'
+                ? 'text-[#22D3EE] fill-[#22D3EE]'
+                : 'text-[#7F97B0]'
                 }`}
             />
           ))}
@@ -61,11 +61,11 @@ function DealerCard({ dealer, onEdit, onRotate }) {
       </div>
 
       {dealer.current_table && (
-        <div className="bg-[#1877F2]/5 rounded-lg p-2 mb-3">
-          <p className="text-sm text-[#1877F2] font-medium">
+        <div className="bg-[#0C55C0]/5 rounded-lg p-2 mb-3">
+          <p className="text-sm text-[#86DAFF] font-medium">
             Currently At Table {dealer.current_table}
           </p>
-          <p className="text-xs text-[#B0B3B8]">
+          <p className="text-xs text-[#BDD0E2]">
             Since {new Date(dealer.rotation_started).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
           </p>
         </div>
@@ -126,9 +126,9 @@ function AddDealerModal({ onSubmit, onClose, dealer = null }) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#3A3B3C] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#132A42] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
@@ -171,8 +171,8 @@ function AddDealerModal({ onSubmit, onClose, dealer = null }) {
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, skill_level: level }))}
                   className={`flex-1 py-3 rounded-lg border text-sm font-medium transition-colors ${formData.skill_level === level
-                    ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-[#F59E0B]'
-                    : 'border-[#3A3B3C] text-[#B0B3B8]'
+                    ? 'border-[#22D3EE] bg-[#22D3EE]/10 text-[#22D3EE]'
+                    : 'border-[#445E77] text-[#BDD0E2]'
                     }`}
                 >
                   {level}
@@ -193,7 +193,7 @@ function AddDealerModal({ onSubmit, onClose, dealer = null }) {
                   onClick={() => toggleCertification(cert.value)}
                   className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${formData.certified_games.includes(cert.value)
                     ? 'border-[#31A24C] bg-[#31A24C]/10 text-[#31A24C]'
-                    : 'border-[#3A3B3C] text-[#B0B3B8]'
+                    : 'border-[#445E77] text-[#BDD0E2]'
                     }`}
                 >
                   {cert.label}
@@ -242,16 +242,16 @@ function RotateModal({ dealer, tables, onSubmit, onClose }) {
           <h2 className="text-xl font-bold text-white">Rotate Dealer</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#3A3B3C] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#132A42] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-[#B0B3B8]" />
+            <X className="w-5 h-5 text-[#BDD0E2]" />
           </button>
         </div>
 
         <div className="mb-4">
-          <p className="text-[#B0B3B8]">Moving: <strong className="text-white">{dealer.name}</strong></p>
+          <p className="text-[#BDD0E2]">Moving: <strong className="text-white">{dealer.name}</strong></p>
           {dealer.current_table && (
-            <p className="text-sm text-[#3A3B3C]">From Table {dealer.current_table}</p>
+            <p className="text-sm text-[#7F97B0]">From Table {dealer.current_table}</p>
           )}
         </div>
 
@@ -264,17 +264,17 @@ function RotateModal({ dealer, tables, onSubmit, onClose }) {
               key={table.id}
               onClick={() => setSelectedTable(table.id)}
               className={`w-full p-3 rounded-lg border text-left transition-colors ${selectedTable === table.id
-                ? 'border-[#1877F2] bg-[#1877F2]/5'
-                : 'border-[#3A3B3C] hover:border-[#1877F2]'
+                ? 'border-[#1981EC] bg-[#0C55C0]/5'
+                : 'border-[#445E77] hover:border-[#1981EC]'
                 }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-white">Table {table.table_number}</p>
-                  <p className="text-sm text-[#B0B3B8]">{table.current_game || 'No Game'}</p>
+                  <p className="text-sm text-[#BDD0E2]">{table.current_game || 'No Game'}</p>
                 </div>
                 {selectedTable === table.id && (
-                  <Check className="w-5 h-5 text-[#1877F2]" />
+                  <Check className="w-5 h-5 text-[#86DAFF]" />
                 )}
               </div>
             </button>
@@ -498,7 +498,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
   if (!staff) {
     return (
       <div className="cmd-page flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
       </div>
     );
   }
@@ -525,12 +525,12 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
         </PageBar>
 
         {/* Tabs */}
-        <div className="max-w-4xl mx-auto px-4 flex gap-1 border-b border-[#3A3B3C]">
+        <div className="max-w-4xl mx-auto px-4 flex gap-1 border-b border-[#445E77]">
           <button
             onClick={() => setActiveTab('dealers')}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'dealers'
-              ? 'border-[#1877F2] text-[#1877F2]'
-              : 'border-transparent text-[#B0B3B8] hover:text-white'
+              ? 'border-[#1981EC] text-[#86DAFF]'
+              : 'border-transparent text-[#BDD0E2] hover:text-white'
               }`}
           >
             <Users className="w-4 h-4 inline-block mr-2" />
@@ -540,7 +540,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
             onClick={() => setActiveTab('rotations')}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'rotations'
               ? 'border-[#31A24C] text-[#31A24C]'
-              : 'border-transparent text-[#B0B3B8] hover:text-white'
+              : 'border-transparent text-[#BDD0E2] hover:text-white'
               }`}
           >
             <History className="w-4 h-4 inline-block mr-2" />
@@ -553,7 +553,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
             <>
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3B3C]" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7F97B0]" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -565,7 +565,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
 
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#1877F2]" />
+                  <Loader2 className="w-8 h-8 animate-spin text-[#86DAFF]" />
                 </div>
               ) : (
                 <>
@@ -610,8 +610,8 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
 
                   {filteredDealers.length === 0 && (
                     <div className="cmd-panel p-8 text-center">
-                      <Users className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                      <p className="text-[#B0B3B8]">No Dealers Found</p>
+                      <Users className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                      <p className="text-[#BDD0E2]">No Dealers Found</p>
                       <button
                         onClick={() => setShowAddModal(true)}
                         className="mt-4 px-6 py-2 cmd-btn cmd-btn-primary"
@@ -627,21 +627,21 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
             <>
               {/* Rotation History */}
               <div className="cmd-panel">
-                <div className="p-4 border-b border-[#3A3B3C] flex items-center justify-between">
+                <div className="p-4 border-b border-[#445E77] flex items-center justify-between">
                   <h2 className="font-semibold text-white">Recent Rotations</h2>
-                  <span className="text-sm text-[#B0B3B8]">{rotations.length} Total</span>
+                  <span className="text-sm text-[#BDD0E2]">{rotations.length} Total</span>
                 </div>
 
                 {rotations.length === 0 ? (
                   <div className="p-8 text-center">
-                    <RotateCw className="w-12 h-12 text-[#3A3B3C] mx-auto mb-3" />
-                    <p className="text-[#B0B3B8]">No Rotation History Yet</p>
-                    <p className="text-sm text-[#3A3B3C] mt-1">
+                    <RotateCw className="w-12 h-12 text-[#7F97B0] mx-auto mb-3" />
+                    <p className="text-[#BDD0E2]">No Rotation History Yet</p>
+                    <p className="text-sm text-[#7F97B0] mt-1">
                       Rotations Will Appear Here When Dealers Are Moved Between Tables
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#3A3B3C]">
+                  <div className="divide-y divide-[#445E77]">
                     {rotations.map((rotation) => {
                       const dealer = dealers.find(d => d.id === rotation.dealer_id);
                       // Rotation rows store table_number/table_id (no from/to columns)
@@ -660,7 +660,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
                             <p className="font-medium text-white">
                               {dealer?.name || rotation.dealer_name || 'Unknown Dealer'}
                             </p>
-                            <div className="flex items-center gap-2 text-sm text-[#B0B3B8]">
+                            <div className="flex items-center gap-2 text-sm text-[#BDD0E2]">
                               <span>
                                 {fromTable ? `Table ${fromTable.table_number}` : rotation.from_table_id ? 'Previous Table' : 'Off'}
                               </span>
@@ -678,7 +678,7 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
                                 minute: '2-digit'
                               })}
                             </p>
-                            <p className="text-xs text-[#B0B3B8]">
+                            <p className="text-xs text-[#BDD0E2]">
                               {new Date(rotation.started_at || rotation.rotated_at || rotation.created_at).toLocaleDateString()}
                             </p>
                           </div>
@@ -690,11 +690,11 @@ const res = await commanderFetch('/api/commander/dealers/rotations', {
               </div>
 
               {/* Rotation Tips */}
-              <div className="bg-[#1877F2]/10 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-[#1877F2] flex-shrink-0 mt-0.5" />
+              <div className="bg-[#0C55C0]/10 rounded-xl p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-[#86DAFF] flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-[#1877F2]">Rotation Best Practices</p>
-                  <ul className="text-sm text-[#B0B3B8] mt-1 space-y-1">
+                  <p className="font-medium text-[#86DAFF]">Rotation Best Practices</p>
+                  <ul className="text-sm text-[#BDD0E2] mt-1 space-y-1">
                     <li>Rotate Dealers Every 30 Minutes To Keep Games Fresh</li>
                     <li>Match Dealer Certifications To Game Types</li>
                     <li>Track Down-Time To Ensure Fair Distribution</li>

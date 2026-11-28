@@ -40,12 +40,12 @@ function formatClock(seconds) {
 // break call.
 const FLOOR_ANNOUNCEMENTS = [
   {
-    key: 'break', label: 'Break Time', icon: Coffee, color: '#F59E0B',
+    key: 'break', label: 'Break Time', icon: Coffee, color: '#22D3EE',
     message: 'Break Time', messageType: 'announcement', durationSeconds: 300,
     notifyType: 'break'
   },
   {
-    key: 'break_ending', label: 'Break Ending, Two Minutes', icon: Timer, color: '#F59E0B',
+    key: 'break_ending', label: 'Break Ending, Two Minutes', icon: Timer, color: '#22D3EE',
     message: 'Break Ending, Two Minutes', messageType: 'alert', durationSeconds: 120,
     notifyType: 'break_ending'
   },
@@ -56,7 +56,7 @@ const FLOOR_ANNOUNCEMENTS = [
     notifyMessage: 'Registration Is Closing. This Is The Last Call To Enter Or Re-Enter.'
   },
   {
-    key: 'final_table', label: 'Final Table', icon: Star, color: '#1877F2',
+    key: 'final_table', label: 'Final Table', icon: Star, color: '#1981EC',
     message: 'Final Table', messageType: 'announcement', durationSeconds: 300,
     notifyType: 'final_table'
   },
@@ -377,7 +377,7 @@ export default function TDClock() {
 
   const navigateTo = (path) => router.push(`/commander/td/${tournamentId}${path}`);
 
-  if (loading) return <div className="min-h-screen bg-[#18191A] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#1877F2] animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen bg-[#040D18] flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#86DAFF] animate-spin" /></div>;
 
   const clock = floor?.clock || {};
   const stats = floor?.stats || {};
@@ -405,7 +405,7 @@ export default function TDClock() {
         description="Club Commander Poker Room Management Tool."
         noindex={true}
       />
-      <div ref={containerRef} className={`min-h-screen bg-[#18191A] text-[#E4E6EB] font-['Inter'] flex flex-col ${isFullscreen ? '' : 'pb-20'}`}>
+      <div ref={containerRef} className={`min-h-screen bg-[#040D18] text-[#F2F7FF] font-['Inter'] flex flex-col ${isFullscreen ? '' : 'pb-20'}`}>
 
         {/* Fullscreen header bar */}
         {!isFullscreen && (
@@ -413,14 +413,14 @@ export default function TDClock() {
             title="Clock Control"
             summary="Run The Tournament Clock. The Mirror Shows Exactly What The TV Clock Shows. Pause, Resume, Move Levels And Add Or Remove Time Below. Fullscreen Puts The Mirror On The Whole Screen."
             status={tournament.name}
-            className="bg-[#242526] border-b border-[#3A3B3C] px-4 py-1.5"
+            className="bg-[#0A1829] border-b border-[#445E77] px-4 py-1.5"
           >
             <div className="flex gap-2 ml-auto">
-              <button onClick={toggleFullscreen} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Fullscreen">
-                <Maximize className="w-5 h-5 text-[#B0B3B8]" />
+              <button onClick={toggleFullscreen} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Fullscreen">
+                <Maximize className="w-5 h-5 text-[#BDD0E2]" />
               </button>
-              <button onClick={fetchFloor} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#3A3B3C]" aria-label="Refresh">
-                <RefreshCw className="w-5 h-5 text-[#B0B3B8]" />
+              <button onClick={fetchFloor} className="w-11 h-11 rounded-lg flex items-center justify-center active:bg-[#132A42]" aria-label="Refresh">
+                <RefreshCw className="w-5 h-5 text-[#BDD0E2]" />
               </button>
             </div>
           </PageBar>
@@ -456,7 +456,7 @@ export default function TDClock() {
                 <div className="mb-4 px-4 py-2 rounded-xl bg-[#31A24C]/10 border border-[#31A24C]/30 text-center">
                   <p className="text-xs font-bold text-[#31A24C] uppercase tracking-wider">Late Reg Open</p>
                   {closeAt && (
-                    <p className="text-[11px] text-[#B0B3B8] mt-0.5">
+                    <p className="text-[11px] text-[#BDD0E2] mt-0.5">
                       Late Reg Closes ~{closeAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </p>
                   )}
@@ -465,14 +465,14 @@ export default function TDClock() {
             })()}
             {/* ON BREAK state, with the scheduled-break countdown */}
             {onBreak && (
-              <div className="w-full max-w-lg mb-5 p-4 rounded-2xl bg-[#F59E0B]/10 border-2 border-[#F59E0B]/40">
+              <div className="w-full max-w-lg mb-5 p-4 rounded-2xl bg-[#22D3EE]/10 border-2 border-[#22D3EE]/40">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-[#F59E0B]/20 flex items-center justify-center flex-shrink-0">
-                    <Coffee className="w-6 h-6 text-[#F59E0B]" />
+                  <div className="w-11 h-11 rounded-full bg-[#22D3EE]/20 flex items-center justify-center flex-shrink-0">
+                    <Coffee className="w-6 h-6 text-[#22D3EE]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-base font-bold text-[#F59E0B] uppercase tracking-wider">On Break</h2>
-                    <p className="text-xs text-[#B0B3B8] truncate">
+                    <h2 className="text-base font-bold text-[#22D3EE] uppercase tracking-wider">On Break</h2>
+                    <p className="text-xs text-[#BDD0E2] truncate">
                       {rowIsBreak
                         ? `${currentRow?.label || 'Scheduled Break'}${breakRowMinutes > 0 ? `, ${breakRowMinutes} Min` : ''}`
                         : 'Manual Break, Clock Paused'}
@@ -483,7 +483,7 @@ export default function TDClock() {
                       <p className="text-3xl font-bold text-white tabular-nums leading-none">
                         {formatClock(breakSecondsLeft)}
                       </p>
-                      <p className="text-[10px] text-[#B0B3B8] uppercase tracking-wider mt-1">Break Remaining</p>
+                      <p className="text-[10px] text-[#BDD0E2] uppercase tracking-wider mt-1">Break Remaining</p>
                     </div>
                   )}
                 </div>
@@ -493,7 +493,7 @@ export default function TDClock() {
                     <button
                       onClick={() => clockAction('break')}
                       disabled={!!actionLoading}
-                      className="flex-1 h-12 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+                      className="flex-1 h-12 rounded-xl bg-[#22D3EE] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#0EA5C6] disabled:opacity-50"
                     >
                       {actionLoading === 'break'
                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Ending Break...</>
@@ -505,7 +505,7 @@ export default function TDClock() {
                     <button
                       onClick={() => clockAction('next_level')}
                       disabled={!!actionLoading}
-                      className="flex-1 h-12 rounded-xl bg-[#F59E0B] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#D97706] disabled:opacity-50"
+                      className="flex-1 h-12 rounded-xl bg-[#22D3EE] text-black text-sm font-bold flex items-center justify-center gap-2 active:bg-[#0EA5C6] disabled:opacity-50"
                     >
                       {actionLoading === 'next_level'
                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting Level...</>
@@ -520,18 +520,18 @@ export default function TDClock() {
             {/* Controls */}
             <div className="flex items-center gap-3 mb-6">
               <button onClick={() => clockAction('prev_level')} disabled={!!actionLoading}
-                className="w-14 h-14 rounded-xl bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50">
-                <SkipBack className="w-6 h-6 text-[#E4E6EB]" />
+                className="w-14 h-14 rounded-xl bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] disabled:opacity-50">
+                <SkipBack className="w-6 h-6 text-[#F2F7FF]" />
               </button>
 
               <button onClick={() => clockAction('subtract_time')} disabled={!!actionLoading}
-                className="w-14 h-14 rounded-xl bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50">
-                <Minus className="w-6 h-6 text-[#E4E6EB]" />
+                className="w-14 h-14 rounded-xl bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] disabled:opacity-50">
+                <Minus className="w-6 h-6 text-[#F2F7FF]" />
               </button>
 
               {isRunning ? (
                 <button onClick={() => clockAction('pause')} disabled={!!actionLoading}
-                  className="w-24 h-24 rounded-3xl bg-[#F59E0B] flex items-center justify-center active:bg-[#D97706] disabled:opacity-50 shadow-lg shadow-[#F59E0B]/20">
+                  className="w-24 h-24 rounded-3xl bg-[#22D3EE] flex items-center justify-center active:bg-[#0EA5C6] disabled:opacity-50 shadow-lg shadow-[#22D3EE]/20">
                   {actionLoading === 'pause' ? <Loader2 className="w-10 h-10 text-white animate-spin" /> : <Pause className="w-10 h-10 text-white" />}
                 </button>
               ) : (
@@ -544,24 +544,24 @@ export default function TDClock() {
               )}
 
               <button onClick={() => clockAction('add_time')} disabled={!!actionLoading}
-                className="w-14 h-14 rounded-xl bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50">
-                <Plus className="w-6 h-6 text-[#E4E6EB]" />
+                className="w-14 h-14 rounded-xl bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] disabled:opacity-50">
+                <Plus className="w-6 h-6 text-[#F2F7FF]" />
               </button>
 
               <button onClick={() => clockAction('next_level')} disabled={!!actionLoading}
-                className="w-14 h-14 rounded-xl bg-[#3A3B3C] flex items-center justify-center active:bg-[#4A4B4C] disabled:opacity-50">
-                <SkipForward className="w-6 h-6 text-[#E4E6EB]" />
+                className="w-14 h-14 rounded-xl bg-[#132A42] flex items-center justify-center active:bg-[#1B3753] disabled:opacity-50">
+                <SkipForward className="w-6 h-6 text-[#F2F7FF]" />
               </button>
             </div>
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2 justify-center max-w-lg">
               <ActionChip icon={Coffee} label="Break" onClick={() => clockAction('break')}
-                active={alerts.on_break} activeColor="#F59E0B" />
+                active={alerts.on_break} activeColor="#22D3EE" />
               <ActionChip icon={Hand} label={alerts.hand_for_hand ? 'End H4H' : 'H4H'}
                 onClick={toggleH4H} active={alerts.hand_for_hand} activeColor="#EF4444" />
               <ActionChip icon={Star} label="Final" onClick={triggerFinalTable}
-                active={floor?.tournament?.status === 'final_table'} activeColor="#1877F2"
+                active={floor?.tournament?.status === 'final_table'} activeColor="#1981EC"
                 disabled={stats.players_remaining > 10} />
               <ActionChip icon={Volume2} label="Announce" onClick={() => setShowMessage(true)} />
               <ActionChip icon={Maximize} label="Fullscreen" onClick={toggleFullscreen} />
@@ -572,12 +572,12 @@ export default function TDClock() {
             {/* ===== FLOOR ANNOUNCEMENTS (single tap: banner + push) ===== */}
             <div className="w-full max-w-lg mt-6">
               <div className="flex items-center gap-2 mb-2">
-                <Megaphone className="w-4 h-4 text-[#1877F2]" />
-                <h2 className="text-sm font-semibold text-[#B0B3B8] uppercase tracking-wider">
+                <Megaphone className="w-4 h-4 text-[#86DAFF]" />
+                <h2 className="text-sm font-semibold text-[#BDD0E2] uppercase tracking-wider">
                   Floor Announcements
                 </h2>
               </div>
-              <p className="text-xs text-[#B0B3B8] mb-3">
+              <p className="text-xs text-[#BDD0E2] mb-3">
                 Each One Sets The Banner On Every Clock Display And Pushes To Every Registered Player.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -589,7 +589,7 @@ export default function TDClock() {
                       key={item.key}
                       onClick={() => sendFloorAnnouncement(item)}
                       disabled={!!announcing}
-                      className="h-14 px-4 rounded-xl bg-[#242526] border border-[#3A3B3C] text-[#E4E6EB] text-sm font-semibold flex items-center gap-3 text-left active:bg-[#3A3B3C] transition-colors disabled:opacity-50"
+                      className="h-14 px-4 rounded-xl bg-[#0A1829] border border-[#445E77] text-[#F2F7FF] text-sm font-semibold flex items-center gap-3 text-left active:bg-[#132A42] transition-colors disabled:opacity-50"
                     >
                       {busy
                         ? <Loader2 className="w-5 h-5 animate-spin flex-shrink-0" style={{ color: item.color }} />
@@ -607,24 +607,24 @@ export default function TDClock() {
         {showMessage && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-4"
             onClick={() => setShowMessage(false)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-white">Broadcast To Displays</h3>
               <textarea value={messageText} onChange={e => setMessageText(e.target.value)}
                 placeholder="Message To Show On Clock Displays..."
                 rows={2}
-                className="w-full bg-[#3A3B3C] border border-[#4A4B4C] rounded-xl px-4 py-3 text-[#E4E6EB] text-base placeholder-[#B0B3B8]/50 focus:outline-none focus:border-[#1877F2] resize-none"
+                className="w-full bg-[#132A42] border border-[#5A7590] rounded-xl px-4 py-3 text-[#F2F7FF] text-base placeholder-[#BDD0E2]/50 focus:outline-none focus:border-[#1981EC] resize-none"
                 autoFocus />
               <div className="flex gap-2 flex-wrap">
                 {['Color Up', 'Break Time', 'Last Hand', 'Seats Open', 'Registration Closed'].map(q => (
                   <button key={q} onClick={() => setMessageText(q)}
-                    className="px-3 py-2 rounded-lg bg-[#3A3B3C] text-[#B0B3B8] text-xs active:bg-[#4A4B4C]">{q}</button>
+                    className="px-3 py-2 rounded-lg bg-[#132A42] text-[#BDD0E2] text-xs active:bg-[#1B3753]">{q}</button>
                 ))}
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowMessage(false)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={sendMessage} disabled={!messageText.trim()}
-                  className="flex-1 py-3 rounded-xl bg-[#1877F2] text-white font-medium active:bg-[#1565D8] disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 py-3 rounded-xl bg-[#0C55C0] text-white font-medium active:bg-[#0A4AA8] disabled:opacity-50 flex items-center justify-center gap-2">
                   <Volume2 className="w-4 h-4" /> Broadcast
                 </button>
               </div>
@@ -636,17 +636,17 @@ export default function TDClock() {
         {showEndConfirm && (
           <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4"
             onClick={() => setShowEndConfirm(false)}>
-            <div className="bg-[#242526] rounded-2xl w-full max-w-sm p-6 border border-[#3A3B3C]" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0A1829] rounded-2xl w-full max-w-sm p-6 border border-[#445E77]" onClick={e => e.stopPropagation()}>
               <div className="text-center mb-4">
                 <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: '#EF444420' }}>
                   <Square className="w-7 h-7 text-[#EF4444]" />
                 </div>
                 <h3 className="text-lg font-bold text-white">End Tournament?</h3>
-                <p className="text-sm text-[#B0B3B8] mt-1">This Marks The Tournament Completed And Stops The Clock. This Cannot Be Undone.</p>
+                <p className="text-sm text-[#BDD0E2] mt-1">This Marks The Tournament Completed And Stops The Clock. This Cannot Be Undone.</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setShowEndConfirm(false)}
-                  className="flex-1 py-3 rounded-xl bg-[#3A3B3C] text-[#E4E6EB] font-medium active:bg-[#4A4B4C]">Cancel</button>
+                  className="flex-1 py-3 rounded-xl bg-[#132A42] text-[#F2F7FF] font-medium active:bg-[#1B3753]">Cancel</button>
                 <button onClick={async () => { setShowEndConfirm(false); await clockAction('end'); }}
                   disabled={actionLoading === 'end'}
                   className="flex-1 py-3 rounded-xl bg-[#EF4444] text-white font-bold active:opacity-80 disabled:opacity-50">
@@ -659,14 +659,14 @@ export default function TDClock() {
 
         {/* Bottom Nav (hidden in fullscreen) */}
         {!isFullscreen && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-[#242526] border-t border-[#3A3B3C] z-40">
+          <nav className="fixed bottom-0 left-0 right-0 bg-[#0A1829] border-t border-[#445E77] z-40">
             <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
               {NAV_ITEMS.map(item => {
                 const Icon = NAV_ICONS[item.key];
                 const isActive = item.key === 'clock';
                 return (
                   <button key={item.key} onClick={() => navigateTo(item.path)}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#1877F2]' : 'text-[#B0B3B8] active:text-[#E4E6EB]'
+                    className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-lg ${isActive ? 'text-[#86DAFF]' : 'text-[#BDD0E2] active:text-[#F2F7FF]'
                       }`}>
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] font-medium capitalize">{item.key}</span>
@@ -706,7 +706,7 @@ function ActionChip({ icon: Icon, label, onClick, active, activeColor, disabled 
     <button onClick={onClick} disabled={disabled}
       className={`px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 active:scale-[0.97] transition-transform disabled:opacity-40 ${active
         ? `text-white`
-        : 'bg-[#3A3B3C] text-[#B0B3B8] active:bg-[#4A4B4C]'
+        : 'bg-[#132A42] text-[#BDD0E2] active:bg-[#1B3753]'
         }`}
       style={active ? { backgroundColor: activeColor } : undefined}>
       <Icon className="w-4 h-4" />
