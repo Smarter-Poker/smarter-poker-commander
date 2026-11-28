@@ -1,41 +1,35 @@
-// API route to serve Club Commander desktop downloads
+/**
+ * GET /api/download?platform=<key>  (also /api/commander/download via the
+ * rewrite in next.config.js)
+ *
+ * Redirects to the matching file in the LATEST published Club Commander
+ * Desktop release. Until 2026-11-28 this route pinned tag v1.0.6 and the 1.0.5
+ * file names, so it could only ever serve that build. Keys are unchanged for
+ * existing links: win-setup, win-portable, mac-dmg, mac-zip, linux-appimage,
+ * linux-deb. When GitHub cannot be read, or the release has no such file, it
+ * redirects to the releases page instead of a dead link.
+ * Changelog: docs/changelog/2026-11-28-desktop-downloads-follow-the-release.md
+ */
 import { applyRateLimit, LIMITS } from '../../src/lib/apiRateLimit';
 import { reportApiError } from '../../src/lib/apiErrorHandler';
-// Redirects to GitHub release assets so users download from smarter.poker
+import { getLatestDesktopRelease } from '../../src/lib/commander/desktopReleaseSource';
+import { LEGACY_PLATFORM_KEYS, RELEASES_PAGE_URL, pickDownload } from '../../src/lib/commander/desktopRelease';
 
-const GITHUB_BASE = 'https://github.com/Smarter-Poker/club-commander-desktop/releases/download';
-const TAG = 'v1.0.6';
-const VERSION = '1.0.5';
-
-const DOWNLOADS = {
-    // Windows
-    'win-setup': `${GITHUB_BASE}/${TAG}/Club.Commander.Setup.${VERSION}.exe`,
-    'win-portable': `${GITHUB_BASE}/${TAG}/Club.Commander.${VERSION}.exe`,
-    // macOS
-    'mac-dmg': `${GITHUB_BASE}/${TAG}/Club.Commander-${VERSION}-arm64.dmg`,
-    'mac-zip': `${GITHUB_BASE}/${TAG}/Club.Commander-${VERSION}-arm64-mac.zip`,
-    // Linux
-    'linux-appimage': `${GITHUB_BASE}/${TAG}/Club.Commander-${VERSION}.AppImage`,
-    'linux-deb': `${GITHUB_BASE}/${TAG}/club-commander_${VERSION}_amd64.deb`,
-};
-
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
     const { platform } = req.query;
-
-    if (!platform || !DOWNLOADS[platform]) {
-        return res.status(400).json({
-            error: 'Invalid platform',
-            valid: Object.keys(DOWNLOADS || {})
-        });
+    if (!platform || !LEGACY_PLATFORM_KEYS.includes(platform)) {
+      return res.status(400).json({ error: 'Invalid platform', valid: LEGACY_PLATFORM_KEYS });
     }
 
-    // Redirect to GitHub release asset
-    res.redirect(302, DOWNLOADS[platform]);
+    const { catalog } = await getLatestDesktopRelease();
+    const pick = pickDownload(catalog, platform);
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=3600');
+    return res.redirect(302, pick ? pick.url : RELEASES_PAGE_URL);
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
-    if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
+    if (!res.headersSent) return res.redirect(302, RELEASES_PAGE_URL);
   }
 }
