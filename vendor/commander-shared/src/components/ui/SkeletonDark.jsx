@@ -160,7 +160,7 @@ function DealerRotationSkeleton() {
 export default function SkeletonDark({ variant = 'table-rows', rows = 5, count = 4 }) {
     return (
         <>
-            <style>{CSS}</style>
+            <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             {variant === 'table-rows' && (
                 <div style={{ background: '#0A1829', borderRadius: 12, border: '1px solid #2A4560', overflow: 'hidden' }}>
