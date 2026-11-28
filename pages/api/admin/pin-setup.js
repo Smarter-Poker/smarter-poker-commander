@@ -32,19 +32,19 @@ async function sha256Hex(input) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authorization required' });
+    return res.status(401).json({ error: 'Authorization Required' });
   }
   const token = authHeader.slice(7).trim();
 
   const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
   const user = authData?.user;
   if (authError || !user) {
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Invalid Token' });
   }
 
   const { pin } = req.body || {};
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
   }
 
   if (!isAdmin) {
-    return res.status(403).json({ error: 'Admin role required' });
+    return res.status(403).json({ error: 'Admin Role Required' });
   }
 
   const pinHash = await sha256Hex(`${user.id}:${pin}`);

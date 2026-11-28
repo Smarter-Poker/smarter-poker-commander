@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // Auth guard
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (venueErr || !venue) {
-              return res.status(404).json({ success: false, error: 'Venue not found' });
+              return res.status(404).json({ success: false, error: 'Venue Not Found' });
           }
 
           // 2. Get existing tables
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
           if (tablesToInsert.length === 0) {
               return res.status(200).json({
                   success: true,
-                  message: `All ${count} tables already exist for ${venue.name}`,
+                  message: `All ${count} Tables Already Exist For ${venue.name}`,
                   created: 0,
                   existing: existingNumbers.size,
               });
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
 
           if (insertErr) {
               console.warn('Table provision insert error:', insertErr);
-              return res.status(500).json({ success: false, error: 'Failed to create tables: ' + insertErr.message });
+              return res.status(500).json({ success: false, error: 'Failed To Create Tables: ' + insertErr.message });
           }
 
           // 4. Update poker_venues.poker_tables count
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
 
           return res.status(200).json({
               success: true,
-              message: `Provisioned ${tablesToInsert.length} tables for ${venue.name}`,
+              message: `Provisioned ${tablesToInsert.length} Tables For ${venue.name}`,
               created: tablesToInsert.length,
               existing: existingNumbers.size,
               total: existingNumbers.size + tablesToInsert.length,
@@ -129,12 +129,12 @@ export default async function handler(req, res) {
 
       } catch (err) {
           console.warn('Provision tables error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

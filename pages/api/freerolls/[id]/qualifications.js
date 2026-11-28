@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       if (!freerollId) {
           return res.status(400).json({
               success: false,
-              error: { code: 'MISSING_ID', message: 'Freeroll ID required' }
+              error: { code: 'MISSING_ID', message: 'Freeroll ID Required' }
           });
       }
 
@@ -51,13 +51,13 @@ export default async function handler(req, res) {
           if (!freerollRow) {
               return res.status(404).json({
                   success: false,
-                  error: { code: 'NOT_FOUND', message: 'Freeroll not found' }
+                  error: { code: 'NOT_FOUND', message: 'Freeroll Not Found' }
               });
           }
           if (freerollRow.venue_id && String(freerollRow.venue_id) !== String(guard.venue_id)) {
               return res.status(403).json({
                   success: false,
-                  error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+                  error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
               });
           }
       }
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -118,7 +118,7 @@ async function listQualifications(req, res, freerollId) {
         console.warn('Qualifications fetch error:', error);
         return res.status(500).json({
             success: false,
-            error: { code: 'SERVER_ERROR', message: 'Failed to fetch qualifications' }
+            error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Qualifications' }
         });
     }
 }
@@ -209,7 +209,7 @@ async function upsertQualification(req, res, freerollId) {
         console.warn('Upsert qualification error:', error);
         return res.status(500).json({
             success: false,
-            error: { code: 'SERVER_ERROR', message: 'Internal server error' }
+            error: { code: 'SERVER_ERROR', message: 'Internal Server Error' }
         });
     }
 }
@@ -239,7 +239,7 @@ async function removeQualification(req, res, freerollId) {
         console.warn('Remove qualification error:', error);
         return res.status(500).json({
             success: false,
-            error: { code: 'SERVER_ERROR', message: 'Internal server error' }
+            error: { code: 'SERVER_ERROR', message: 'Internal Server Error' }
         });
     }
 }

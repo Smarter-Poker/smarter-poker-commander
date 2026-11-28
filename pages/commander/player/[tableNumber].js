@@ -463,7 +463,7 @@ export default function PlayerTableDisplay() {
           venue_id: table?.venue_id
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
 
       if (json.success) {
@@ -497,7 +497,7 @@ export default function PlayerTableDisplay() {
           venue_id: table?.venue_id
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
 
       if (json.success) {
@@ -529,7 +529,7 @@ export default function PlayerTableDisplay() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: player.session_id, venue_id: table?.venue_id })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
 
       if (json.success) {

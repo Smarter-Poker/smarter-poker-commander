@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   try {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
@@ -28,6 +28,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ available: true, stale, releasesUrl: RELEASES_PAGE_URL, release: catalog });
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
-    if (!res.headersSent) return res.status(500).json({ available: false, releasesUrl: RELEASES_PAGE_URL, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ available: false, releasesUrl: RELEASES_PAGE_URL, error: 'Internal Server Error' });
   }
 }

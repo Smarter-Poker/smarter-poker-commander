@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     if (!include_inactive) query = query.eq('is_active', true);
 
     const { data, error } = await query;
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
 
     // Auto-seed default interval plans for new venues
     if (!data || data.length === 0) {
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
       .select()
       .maybeSingle();
 
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true, data: { plan: data } });
   }
 
@@ -178,7 +178,7 @@ export default async function handler(req, res) {
       .select()
       .maybeSingle();
 
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true, data: { plan: data } });
   }
 
@@ -194,14 +194,14 @@ export default async function handler(req, res) {
       .select()
       .maybeSingle();
 
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true, data: { plan: data } });
   }
 
-  return res.status(405).json({ success: false, error: 'Method not allowed' });
+  return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[pages/api/commander/membership-plans.js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

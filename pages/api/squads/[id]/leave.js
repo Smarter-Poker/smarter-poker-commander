@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       if (!authHeader?.startsWith('Bearer ')) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
         });
       }
 
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Or Expired Token' }
         });
       }
 
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       if (squadError || !squad) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Squad not found' }
+          error: { code: 'NOT_FOUND', message: 'Squad Not Found' }
         });
       }
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
       if (squad.leader_id === user.id) {
         return res.status(400).json({
           success: false,
-          error: { code: 'LEADER_CANNOT_LEAVE', message: 'Leader cannot leave. Disband the squad instead.' }
+          error: { code: 'LEADER_CANNOT_LEAVE', message: 'Leader Cannot Leave. Disband The Squad Instead.' }
         });
       }
 
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       if (squad.status !== 'forming') {
         return res.status(400).json({
           success: false,
-          error: { code: 'CANNOT_LEAVE', message: 'Cannot leave squad after joining waitlist' }
+          error: { code: 'CANNOT_LEAVE', message: 'Cannot Leave Squad After Joining Waitlist' }
         });
       }
 
@@ -98,19 +98,19 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
-        data: { message: 'Left squad successfully' }
+        data: { message: 'Left Squad Successfully' }
       });
     } catch (error) {
       console.warn('Leave squad error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to leave squad' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Leave Squad' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

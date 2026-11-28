@@ -17,83 +17,83 @@ const TROUBLESHOOTING_SECTIONS = [
     icon: Wifi,
     issues: [
       {
-        title: 'Dashboard not loading or shows blank page',
+        title: 'Dashboard Not Loading Or Shows Blank Page',
         severity: 'high',
-        symptoms: ['Page stays blank', 'Loading spinner never finishes', 'Error message displayed'],
-        causes: ['Network connectivity issue', 'Browser cache corruption', 'Server outage'],
+        symptoms: ['Page Stays Blank', 'Loading Spinner Never Finishes', 'Error Message Displayed'],
+        causes: ['Network Connectivity Issue', 'Browser Cache Corruption', 'Server Outage'],
         solutions: [
           {
-            step: 'Check internet connection',
-            details: 'Verify WiFi is connected and has internet access. Try loading another website.',
+            step: 'Check Internet Connection',
+            details: 'Verify WiFi Is Connected And Has Internet Access. Try Loading Another Website.',
           },
           {
-            step: 'Force refresh the page',
-            details: 'Press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to bypass cache.',
+            step: 'Force Refresh The Page',
+            details: 'Press Ctrl+Shift+R (Windows) Or Cmd+Shift+R (Mac) To Bypass Cache.',
           },
           {
-            step: 'Clear browser cache',
+            step: 'Clear Browser Cache',
             details:
               'Go to browser settings > Privacy > Clear browsing data. Select cached images and files.',
           },
           {
-            step: 'Try a different browser',
-            details: 'If using Chrome, try Firefox or Edge to rule out browser-specific issues.',
+            step: 'Try A Different Browser',
+            details: 'If Using Chrome, Try Firefox Or Edge To Rule Out Browser-Specific Issues.',
           },
           {
-            step: 'Check system status',
-            details: 'Visit status.smarter.poker to check for any service outages.',
+            step: 'Check System Status',
+            details: 'Visit status.smarter.poker To Check For Any Service Outages.',
           },
         ],
       },
       {
-        title: 'Real-time updates not working',
+        title: 'Real-Time Updates Not Working',
         severity: 'medium',
         symptoms: [
-          'Waitlist not updating automatically',
-          'Need to refresh to see changes',
-          'Tournament clock frozen',
+          'Waitlist Not Updating Automatically',
+          'Need To Refresh To See Changes',
+          'Tournament Clock Frozen',
         ],
-        causes: ['WebSocket connection lost', 'Firewall blocking', 'Network instability'],
+        causes: ['WebSocket Connection Lost', 'Firewall Blocking', 'Network Instability'],
         solutions: [
           {
-            step: 'Refresh the page',
-            details: 'This re-establishes the WebSocket connection.',
+            step: 'Refresh The Page',
+            details: 'This Re-Establishes The WebSocket Connection.',
           },
           {
-            step: 'Check for connection indicator',
-            details: 'Look for connection status icon in the header. Red = disconnected.',
+            step: 'Check For Connection Indicator',
+            details: 'Look For Connection Status Icon In The Header. Red = Disconnected.',
           },
           {
-            step: 'Disable VPN or proxy',
+            step: 'Disable VPN Or Proxy',
             details: 'VPNs can interfere with WebSocket connections. Try disabling temporarily.',
           },
           {
-            step: 'Check firewall settings',
-            details: 'Ensure WebSocket connections to supabase.co are not blocked.',
+            step: 'Check Firewall Settings',
+            details: 'Ensure WebSocket Connections To Supabase.co Are Not Blocked.',
           },
         ],
       },
       {
-        title: 'Slow performance',
+        title: 'Slow Performance',
         severity: 'low',
-        symptoms: ['Pages take long to load', 'Actions feel sluggish', 'Timeouts occurring'],
-        causes: ['Poor network connection', 'Device overload', 'Large data volume'],
+        symptoms: ['Pages Take Long To Load', 'Actions Feel Sluggish', 'Timeouts Occurring'],
+        causes: ['Poor Network Connection', 'Device Overload', 'Large Data Volume'],
         solutions: [
           {
-            step: 'Test network speed',
-            details: 'Run a speed test. Minimum recommended: 5 Mbps download.',
+            step: 'Test Network Speed',
+            details: 'Run A Speed Test. Minimum Recommended: 5 Mbps Download.',
           },
           {
-            step: 'Close unnecessary browser tabs',
-            details: 'Too many open tabs consume memory and slow down performance.',
+            step: 'Close Unnecessary Browser Tabs',
+            details: 'Too Many Open Tabs Consume Memory And Slow Down Performance.',
           },
           {
-            step: 'Restart the browser',
-            details: 'This clears memory and resets connections.',
+            step: 'Restart The Browser',
+            details: 'This Clears Memory And Resets Connections.',
           },
           {
-            step: 'Reduce display devices',
-            details: 'If running multiple displays, reduce the number of concurrent connections.',
+            step: 'Reduce Display Devices',
+            details: 'If Running Multiple Displays, Reduce The Number Of Concurrent Connections.',
           },
         ],
       },
@@ -108,84 +108,84 @@ const TROUBLESHOOTING_SECTIONS = [
         title: 'SMS notifications not being delivered',
         severity: 'high',
         symptoms: [
-          'Players not receiving seat calls',
-          'Tournament reminders not arriving',
-          'Notification shows as sent but not received',
+          'Players Not Receiving Seat Calls',
+          'Tournament Reminders Not Arriving',
+          'Notification Shows As Sent But Not Received',
         ],
         causes: [
-          'Incorrect phone number',
-          'Carrier blocking',
-          'Twilio configuration issue',
-          'Player opted out',
+          'Incorrect Phone Number',
+          'Carrier Blocking',
+          'Twilio Configuration Issue',
+          'Player Opted Out',
         ],
         solutions: [
           {
-            step: 'Verify phone number format',
-            details: 'Ensure number includes country code and is in E.164 format (+1XXXXXXXXXX).',
+            step: 'Verify Phone Number Format',
+            details: 'Ensure Number Includes Country Code And Is In E.164 Format (+1XXXXXXXXXX).',
           },
           {
-            step: 'Check notification history',
+            step: 'Check Notification History',
             details:
               'Go to player profile > Notification History to see delivery status and any errors.',
           },
           {
-            step: 'Test with a different number',
+            step: 'Test With A Different Number',
             details: 'Send a test notification to your own phone to verify the system is working.',
           },
           {
-            step: 'Check Twilio dashboard',
-            details: 'Log into Twilio to view message logs and identify delivery failures.',
+            step: 'Check Twilio Dashboard',
+            details: 'Log Into Twilio To View Message Logs And Identify Delivery Failures.',
           },
           {
-            step: 'Verify player preferences',
-            details: "Ensure the player hasn't disabled SMS notifications in their settings.",
+            step: 'Verify Player Preferences',
+            details: "Ensure The Player Hasn't Disabled SMS Notifications In Their Settings.",
           },
         ],
       },
       {
-        title: 'Push notifications not appearing',
+        title: 'Push Notifications Not Appearing',
         severity: 'medium',
-        symptoms: ['App notifications not showing', 'Works on some devices but not others'],
-        causes: ['App permissions denied', 'Do Not Disturb enabled', 'App not installed'],
+        symptoms: ['App Notifications Not Showing', 'Works On Some Devices But Not Others'],
+        causes: ['App Permissions Denied', 'Do Not Disturb Enabled', 'App Not Installed'],
         solutions: [
           {
-            step: 'Check app permissions',
-            details: "Go to phone settings > Apps > Smarter.Poker > Notifications. Ensure they're enabled.",
+            step: 'Check App Permissions',
+            details: "Go To Phone Settings > Apps > Smarter.Poker > Notifications. Ensure They're Enabled.",
           },
           {
             step: 'Disable Do Not Disturb',
-            details: 'Check that DND is not blocking notifications.',
+            details: 'Check That DND Is Not Blocking Notifications.',
           },
           {
-            step: 'Re-enable push subscription',
-            details: 'In the app, go to Settings > Notifications > Reset Push Notifications.',
+            step: 'Re-Enable Push Subscription',
+            details: 'In The App, Go To Settings > Notifications > Reset Push Notifications.',
           },
           {
-            step: 'Reinstall the app',
-            details: 'Uninstall and reinstall to reset notification permissions.',
+            step: 'Reinstall The App',
+            details: 'Uninstall And Reinstall To Reset Notification Permissions.',
           },
         ],
       },
       {
-        title: 'Duplicate notifications being sent',
+        title: 'Duplicate Notifications Being Sent',
         severity: 'low',
         symptoms: [
-          'Players receiving multiple identical messages',
-          'Same notification appearing twice',
+          'Players Receiving Multiple Identical Messages',
+          'Same Notification Appearing Twice',
         ],
-        causes: ['API called multiple times', 'System retry on timeout'],
+        causes: ['API called multiple times', 'System Retry On Timeout'],
         solutions: [
           {
-            step: 'Check notification logs',
-            details: 'Review audit logs for duplicate send attempts.',
+            step: 'Check Notification Logs',
+            details: 'Review Audit Logs For Duplicate Send Attempts.',
           },
           {
-            step: 'Verify cooldown settings',
-            details: 'Ensure notification cooldown is configured (default: 5 minutes).',
+            step: 'Verify Cooldown Settings',
+            details: 'Ensure Notification Cooldown Is Configured (Default: 5 Minutes).',
           },
           {
-            step: 'Contact support',
-            details: 'If duplicates persist, report to support with specific timestamps.',
+            step: 'Contact Support',
+            details: 'If Duplicates Persist, Report To Support With Specific Timestamps.',
           },
         ],
       },
@@ -197,73 +197,73 @@ const TROUBLESHOOTING_SECTIONS = [
     icon: Shield,
     issues: [
       {
-        title: 'Staff cannot log in',
+        title: 'Staff Cannot Log In',
         severity: 'high',
-        symptoms: ['Login fails with error', 'Redirected back to login page'],
-        causes: ['Wrong credentials', 'Account deactivated', 'Session expired'],
+        symptoms: ['Login Fails With Error', 'Redirected Back To Login Page'],
+        causes: ['Wrong Credentials', 'Account Deactivated', 'Session Expired'],
         solutions: [
           {
-            step: 'Verify email address',
-            details: 'Ensure the correct email is being used. Check for typos.',
+            step: 'Verify Email Address',
+            details: 'Ensure The Correct Email Is Being Used. Check For Typos.',
           },
           {
             step: 'Reset PIN',
             details: 'Manager can reset PIN from Staff page. New PIN sent to staff email.',
           },
           {
-            step: 'Check account status',
-            details: 'Verify the staff account has not been deactivated.',
+            step: 'Check Account Status',
+            details: 'Verify The Staff Account Has Not Been Deactivated.',
           },
           {
-            step: 'Clear browser cookies',
-            details: 'Clear cookies for the site and try logging in again.',
+            step: 'Clear Browser Cookies',
+            details: 'Clear Cookies For The Site And Try Logging In Again.',
           },
           {
-            step: 'Try password reset',
-            details: 'Use "Forgot Password" to reset account credentials.',
+            step: 'Try Password Reset',
+            details: 'Use "Forgot Password" To Reset Account Credentials.',
           },
         ],
       },
       {
-        title: 'Session keeps expiring',
+        title: 'Session Keeps Expiring',
         severity: 'medium',
-        symptoms: ['Frequently logged out', 'Need to re-authenticate often'],
-        causes: ['Session timeout settings', 'Cookie issues', 'Multiple tabs'],
+        symptoms: ['Frequently Logged Out', 'Need To Re-Authenticate Often'],
+        causes: ['Session Timeout Settings', 'Cookie Issues', 'Multiple Tabs'],
         solutions: [
           {
-            step: 'Check session timeout setting',
-            details: 'Default is 8 hours. Manager can adjust in Settings > Security.',
+            step: 'Check Session Timeout Setting',
+            details: 'Default Is 8 Hours. Manager Can Adjust In Settings > Security.',
           },
           {
-            step: 'Ensure cookies are enabled',
-            details: 'Browser must accept cookies from smarter.poker domain.',
+            step: 'Ensure Cookies Are Enabled',
+            details: 'Browser Must Accept Cookies From smarter.poker Domain.',
           },
           {
-            step: 'Use a single tab',
-            details: 'Multiple tabs can sometimes cause session conflicts.',
+            step: 'Use A Single Tab',
+            details: 'Multiple Tabs Can Sometimes Cause Session Conflicts.',
           },
         ],
       },
       {
-        title: 'Access denied errors',
+        title: 'Access Denied Errors',
         severity: 'medium',
         symptoms: [
           'FORBIDDEN error when accessing pages',
-          'Features not visible that should be',
+          'Features Not Visible That Should Be',
         ],
-        causes: ['Insufficient permissions', 'Role not assigned correctly', 'Venue mismatch'],
+        causes: ['Insufficient Permissions', 'Role Not Assigned Correctly', 'Venue Mismatch'],
         solutions: [
           {
-            step: 'Verify role assignment',
+            step: 'Verify Role Assignment',
             details:
               'Check Staff page to confirm correct role is assigned (Owner, Manager, Floor, etc.).',
           },
           {
-            step: 'Check venue association',
-            details: 'Ensure staff is associated with the correct venue.',
+            step: 'Check Venue Association',
+            details: 'Ensure Staff Is Associated With The Correct Venue.',
           },
           {
-            step: 'Review role permissions',
+            step: 'Review Role Permissions',
             details:
               'See Manager Guide for role permission details. Some actions require Manager or Owner role.',
           },
@@ -277,77 +277,77 @@ const TROUBLESHOOTING_SECTIONS = [
     icon: Server,
     issues: [
       {
-        title: 'Waitlist data not saving',
+        title: 'Waitlist Data Not Saving',
         severity: 'high',
-        symptoms: ['Added players disappear', 'Changes not persisting', 'Data reverts to old state'],
-        causes: ['Network interruption', 'Concurrent editing conflict', 'Database timeout'],
+        symptoms: ['Added Players Disappear', 'Changes Not Persisting', 'Data Reverts To Old State'],
+        causes: ['Network Interruption', 'Concurrent Editing Conflict', 'Database Timeout'],
         solutions: [
           {
-            step: 'Check for error messages',
-            details: 'Look for any error toasts or console errors when saving.',
+            step: 'Check For Error Messages',
+            details: 'Look For Any Error Toasts Or Console Errors When Saving.',
           },
           {
-            step: 'Verify network connection',
-            details: 'Ensure stable internet connection during data entry.',
+            step: 'Verify Network Connection',
+            details: 'Ensure Stable Internet Connection During Data Entry.',
           },
           {
-            step: 'Refresh and retry',
-            details: 'Refresh the page and try the operation again.',
+            step: 'Refresh And Retry',
+            details: 'Refresh The Page And Try The Operation Again.',
           },
           {
-            step: 'Check audit log',
-            details: 'Review audit log to see if the action was recorded.',
+            step: 'Check Audit Log',
+            details: 'Review Audit Log To See If The Action Was Recorded.',
           },
         ],
       },
       {
-        title: 'Incorrect player counts',
+        title: 'Incorrect Player Counts',
         severity: 'medium',
         symptoms: [
-          'Table shows wrong player count',
-          'Waitlist count doesn\'t match display',
+          'Table Shows Wrong Player Count',
+          'Waitlist Count Doesn\'t Match Display',
         ],
-        causes: ['Sync issue', 'Cache stale', 'Race condition'],
+        causes: ['Sync Issue', 'Cache Stale', 'Race Condition'],
         solutions: [
           {
-            step: 'Refresh the page',
-            details: 'Force refresh with Ctrl+Shift+R to get latest data.',
+            step: 'Refresh The Page',
+            details: 'Force Refresh With Ctrl+Shift+R To Get Latest Data.',
           },
           {
-            step: 'Verify individual entries',
-            details: 'Click into the table/waitlist to see actual entries.',
+            step: 'Verify Individual Entries',
+            details: 'Click Into The Table/Waitlist To See Actual Entries.',
           },
           {
-            step: 'Check for stuck entries',
-            details: 'Look for entries that should have been removed but weren\'t.',
+            step: 'Check For Stuck Entries',
+            details: 'Look For Entries That Should Have Been Removed But Weren\'t.',
           },
           {
-            step: 'Report to support',
-            details: 'If count consistently wrong, report with specific table/waitlist ID.',
+            step: 'Report To Support',
+            details: 'If Count Consistently Wrong, Report With Specific Table/Waitlist ID.',
           },
         ],
       },
       {
-        title: 'Export failing or incomplete',
+        title: 'Export Failing Or Incomplete',
         severity: 'low',
-        symptoms: ['Export times out', 'Downloaded file is empty', 'Missing data in export'],
-        causes: ['Large data volume', 'Network timeout', 'Filter misconfiguration'],
+        symptoms: ['Export Times Out', 'Downloaded File Is Empty', 'Missing Data In Export'],
+        causes: ['Large Data Volume', 'Network Timeout', 'Filter Misconfiguration'],
         solutions: [
           {
-            step: 'Reduce date range',
-            details: 'Export smaller time periods if dealing with large amounts of data.',
+            step: 'Reduce Date Range',
+            details: 'Export Smaller Time Periods If Dealing With Large Amounts Of Data.',
           },
           {
-            step: 'Check filter settings',
-            details: 'Verify filters aren\'t excluding the data you need.',
+            step: 'Check Filter Settings',
+            details: 'Verify Filters Aren\'t Excluding The Data You Need.',
           },
           {
-            step: 'Try a different format',
+            step: 'Try A Different Format',
             details: 'CSV is fastest. Excel (XLSX) may be slower for large datasets.',
           },
           {
-            step: 'Wait for background processing',
-            details: 'Large exports are processed in background. Check export status page.',
+            step: 'Wait For Background Processing',
+            details: 'Large Exports Are Processed In Background. Check Export Status Page.',
           },
         ],
       },
@@ -359,50 +359,50 @@ const TROUBLESHOOTING_SECTIONS = [
     icon: Smartphone,
     issues: [
       {
-        title: 'Display device showing wrong content',
+        title: 'Display Device Showing Wrong Content',
         severity: 'medium',
-        symptoms: ['Wrong venue displayed', 'Outdated information shown', 'Rotation not working'],
-        causes: ['Device misconfigured', 'Cache issue', 'Configuration changed'],
+        symptoms: ['Wrong Venue Displayed', 'Outdated Information Shown', 'Rotation Not Working'],
+        causes: ['Device Misconfigured', 'Cache Issue', 'Configuration Changed'],
         solutions: [
           {
-            step: 'Check device configuration',
-            details: 'Go to Displays > Select device > Verify settings are correct.',
+            step: 'Check Device Configuration',
+            details: 'Go To Displays > Select Device > Verify Settings Are Correct.',
           },
           {
-            step: 'Force refresh display',
-            details: 'Click "Refresh" in device management to push new configuration.',
+            step: 'Force Refresh Display',
+            details: 'Click "Refresh" In Device Management To Push New Configuration.',
           },
           {
-            step: 'Restart the display app',
-            details: 'Close and reopen the display app on the device.',
+            step: 'Restart The Display App',
+            details: 'Close And Reopen The Display App On The Device.',
           },
           {
-            step: 'Re-register device',
-            details: 'Delete and re-add the device if issues persist.',
+            step: 'Re-Register Device',
+            details: 'Delete And Re-Add The Device If Issues Persist.',
           },
         ],
       },
       {
-        title: 'Device showing offline',
+        title: 'Device Showing Offline',
         severity: 'medium',
-        symptoms: ['Device status shows offline', 'Last seen timestamp old'],
-        causes: ['Network disconnection', 'App crashed', 'Device powered off'],
+        symptoms: ['Device Status Shows Offline', 'Last Seen Timestamp Old'],
+        causes: ['Network Disconnection', 'App Crashed', 'Device Powered Off'],
         solutions: [
           {
-            step: 'Check physical device',
-            details: 'Verify the device is powered on and connected to WiFi.',
+            step: 'Check Physical Device',
+            details: 'Verify The Device Is Powered On And Connected To WiFi.',
           },
           {
-            step: 'Restart the app',
-            details: 'Force close and reopen the display application.',
+            step: 'Restart The App',
+            details: 'Force Close And Reopen The Display Application.',
           },
           {
-            step: 'Check WiFi connection',
-            details: 'Verify device can reach the internet (try opening a webpage).',
+            step: 'Check WiFi Connection',
+            details: 'Verify Device Can Reach The Internet (Try Opening A Webpage).',
           },
           {
-            step: 'Restart device',
-            details: 'Full device restart if app restart doesn\'t help.',
+            step: 'Restart Device',
+            details: 'Full Device Restart If App Restart Doesn\'t Help.',
           },
         ],
       },
@@ -414,50 +414,50 @@ const TROUBLESHOOTING_SECTIONS = [
     icon: Clock,
     issues: [
       {
-        title: 'Tournament clock not syncing',
+        title: 'Tournament Clock Not Syncing',
         severity: 'high',
-        symptoms: ['Different devices show different times', 'Clock jumps around'],
-        causes: ['Network latency', 'Server time sync issue', 'Local time zone mismatch'],
+        symptoms: ['Different Devices Show Different Times', 'Clock Jumps Around'],
+        causes: ['Network Latency', 'Server Time Sync Issue', 'Local Time Zone Mismatch'],
         solutions: [
           {
-            step: 'Refresh all displays',
-            details: 'Refresh the tournament clock on all devices simultaneously.',
+            step: 'Refresh All Displays',
+            details: 'Refresh The Tournament Clock On All Devices Simultaneously.',
           },
           {
-            step: 'Use official clock only',
-            details: 'Designate one device as the official clock source.',
+            step: 'Use Official Clock Only',
+            details: 'Designate One Device As The Official Clock Source.',
           },
           {
-            step: 'Check network latency',
-            details: 'High latency causes sync issues. Ensure good WiFi connectivity.',
+            step: 'Check Network Latency',
+            details: 'High Latency Causes Sync Issues. Ensure Good WiFi Connectivity.',
           },
           {
-            step: 'Verify time zone',
-            details: 'Ensure all devices are set to the correct time zone.',
+            step: 'Verify Time Zone',
+            details: 'Ensure All Devices Are Set To The Correct Time Zone.',
           },
         ],
       },
       {
-        title: 'Cannot register players',
+        title: 'Cannot Register Players',
         severity: 'high',
-        symptoms: ['Registration button disabled', 'Error when registering'],
-        causes: ['Registration closed', 'Tournament full', 'Player already registered'],
+        symptoms: ['Registration Button Disabled', 'Error When Registering'],
+        causes: ['Registration Closed', 'Tournament Full', 'Player Already Registered'],
         solutions: [
           {
-            step: 'Check tournament status',
-            details: 'Verify registration is still open (check scheduled times).',
+            step: 'Check Tournament Status',
+            details: 'Verify Registration Is Still Open (Check Scheduled Times).',
           },
           {
-            step: 'Check capacity',
-            details: 'Confirm tournament hasn\'t reached max entries.',
+            step: 'Check Capacity',
+            details: 'Confirm Tournament Hasn\'t Reached Max Entries.',
           },
           {
-            step: 'Search for existing entry',
-            details: 'Player may already be registered. Search in entry list.',
+            step: 'Search For Existing Entry',
+            details: 'Player May Already Be Registered. Search In Entry List.',
           },
           {
-            step: 'Check for exclusion',
-            details: 'Player may be self-excluded from the venue.',
+            step: 'Check For Exclusion',
+            details: 'Player May Be Self-Excluded From The Venue.',
           },
         ],
       },
@@ -568,7 +568,7 @@ export default function TroubleshootingPage() {
                 <div className="space-y-4">
                   <p className="text-[#BDD0E2] mb-4">
                     Found{' '}
-                    {filteredSections.reduce((sum, s) => sum + s.issues.length, 0)} issues matching
+                    {filteredSections.reduce((sum, s) => sum + s.issues.length, 0)} Issues Matching
                     "{searchTerm}"
                   </p>
                   {filteredSections.flatMap((section) =>
@@ -621,7 +621,7 @@ export default function TroubleshootingPage() {
                   Emergency Support
                 </h3>
                 <p className="text-[#A9BDD1] mb-4">
-                  For critical issues affecting active games or tournaments:
+                  For Critical Issues Affecting Active Games Or Tournaments:
                 </p>
                 <div className="space-y-2">
                   <p className="text-white">

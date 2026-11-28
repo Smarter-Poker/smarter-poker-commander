@@ -145,7 +145,7 @@ export default function TournamentSettingsPage() {
                     'Content-Type': 'application/json' || '' },
                 body: JSON.stringify(payload) });
 
-            if (!res.ok) throw new Error('Failed to create tournament');
+            if (!res.ok) throw new Error('Failed To Create Tournament');
             const data = await res.json();
             if (data.success) {
                 setCreateSuccess(template.name);

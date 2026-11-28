@@ -37,15 +37,15 @@ export default async function handler(req, res) {
         .select()
         .maybeSingle();
       if (error) return res.status(500).json({ success: false, error: error.message });
-      if (!data) return res.status(500).json({ success: false, error: 'Failed to update settings' });
+      if (!data) return res.status(500).json({ success: false, error: 'Failed To Update Settings' });
       return res.json({ success: true, data: { settings: data } });
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
   }
 }

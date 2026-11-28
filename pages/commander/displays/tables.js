@@ -159,7 +159,7 @@ const headers = { };
             const tNum = t.table_number || t.number;
             try {
               const sRes = await commanderFetch(`/api/commander/dealer/sessions?table=${tNum}`, { headers });
-              if (!sRes.ok) throw new Error(`Request failed (${sRes.status})`);
+              if (!sRes.ok) throw new Error(`Request Failed (${sRes.status})`);
               const sJson = await sRes.json();
               if (sJson.success) sessionsByTable[tNum] = sJson.data || [];
             } catch { /* non-fatal */ }
@@ -244,7 +244,7 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
   };
 
   const handleUnlockAttempt = async () => {
-    if (!pinValue || pinValue.length !== 4) { setPinError('Enter your 4-digit PIN'); return; }
+    if (!pinValue || pinValue.length !== 4) { setPinError('Enter Your 4-Digit PIN'); return; }
     setPinLoading(true);
     setPinError('');
     try {
@@ -252,7 +252,7 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
         method: 'POST',
         headers: { 'Content-Type': 'application/json' || '' },
         body: JSON.stringify({ pin_code: pinValue, venue_id: venueId }) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success && json.data?.staff) {
         const role = json.data.staff.role;
@@ -262,13 +262,13 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
           setPinValue('');
           localStorage.removeItem('display_locked_table');
         } else {
-          setPinError('Owner or Manager PIN required');
+          setPinError('Owner Or Manager PIN Required');
         }
       } else {
         setPinError(json.error || 'Invalid PIN');
       }
     } catch {
-      setPinError('Network error - try again');
+      setPinError('Network Error - Try Again');
     }
     setPinLoading(false);
   };
@@ -310,7 +310,7 @@ const json = await commanderFetchJSON(`/api/commander/dealers/rotations?venue_id
           setTimeout(scanLoop, 500);
         }
       } catch {
-        setToast({ type: 'error', text: 'Camera access denied or unavailable' });
+        setToast({ type: 'error', text: 'Camera Access Denied Or Unavailable' });
         closeScanner();
       }
     }, 200);
@@ -334,7 +334,7 @@ const headers = { 'Content-Type': 'application/json' };
         const res = await commanderFetch('/api/commander/dealer/scan-in', {
           method: 'POST', headers,
           body: JSON.stringify({ venue_id: venueId, qr_code: qrData, table_number: lockedTableNum }) });
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        if (!res.ok) throw new Error(`Request Failed (${res.status})`);
         const json = await res.json();
         if (json.success) {
           const dealerName = json.data?.dealer?.name || json.data?.dealer_name || 'Dealer';
@@ -342,25 +342,25 @@ const headers = { 'Content-Type': 'application/json' };
           fetchData(); fetchDealers();
           broadcastChange('dealers');
         } else {
-          setToast({ type: 'error', text: json.error || 'Dealer not found' });
+          setToast({ type: 'error', text: json.error || 'Dealer Not Found' });
         }
-      } catch { setToast({ type: 'error', text: 'Network error' }); }
+      } catch { setToast({ type: 'error', text: 'Network Error' }); }
     } else if (type === 'seat') {
       // Seat a player - single call to unauthenticated player-scan-in
       try {
         const seatRes = await commanderFetch('/api/commander/dealer/player-scan-in', {
           method: 'POST', headers,
           body: JSON.stringify({ qr_code: qrData, table_number: lockedTableNum, seat_number: seatNumber, venue_id: venueId }) });
-        if (!seatRes.ok) throw new Error('Request failed');
+        if (!seatRes.ok) throw new Error('Request Failed');
         const seatJson = await seatRes.json();
         if (seatJson.success) {
           setToast({ type: 'success', text: `✓ ${seatJson.data.player_name} seated at S${seatNumber}` });
           fetchData();
           broadcastChange('tables');
         } else {
-          setToast({ type: 'error', text: seatJson.error || 'Could not seat player' });
+          setToast({ type: 'error', text: seatJson.error || 'Could Not Seat Player' });
         }
-      } catch { setToast({ type: 'error', text: 'Network error' }); }
+      } catch { setToast({ type: 'error', text: 'Network Error' }); }
     }
   };
 
@@ -373,14 +373,14 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ table_number: lockedTableNum, seat_number: seat.number, venue_id: venueId, action, ...extra }) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       setPlayerActionLoading(false);
       if (json.success) broadcastChange('tables');
       return json;
     } catch {
       setPlayerActionLoading(false);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: 'Network Error' };
     }
   };
 
@@ -391,24 +391,24 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ table_number: lockedTableNum, seat_number: seat.number, venue_id: venueId }) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
-        setToast({ type: 'success', text: `${json.data.player_name} removed · ${json.data.unused_minutes_returned}m returned` });
+        setToast({ type: 'success', text: `${json.data.player_name} Removed · ${json.data.unused_minutes_returned}m Returned` });
         setShowPlayerMenu(null);
         fetchData();
         broadcastChange('tables');
       } else {
-        setToast({ type: 'error', text: json.error || 'Failed to remove player' });
+        setToast({ type: 'error', text: json.error || 'Failed To Remove Player' });
       }
-    } catch { setToast({ type: 'error', text: 'Network error' }); }
+    } catch { setToast({ type: 'error', text: 'Network Error' }); }
     setPlayerActionLoading(false);
   };
 
   const startMovePlayer = (seat) => {
     setMovingPlayer({ seat, player_name: seat.player?.player_name || 'Player' });
     setShowPlayerMenu(null);
-    setToast({ type: 'success', text: `Tap an empty seat to move ${seat.player?.player_name || 'player'}` });
+    setToast({ type: 'success', text: `Tap An Empty Seat To Move ${seat.player?.player_name || 'player'}` });
   };
 
   const completeMove = async (targetSeatNumber) => {
@@ -418,7 +418,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
       setToast({ type: 'success', text: `✓ ${json.data.player_name} moved S${json.data.from_seat} → S${json.data.to_seat}` });
       fetchData();
     } else {
-      setToast({ type: 'error', text: json.error || 'Move failed' });
+      setToast({ type: 'error', text: json.error || 'Move Failed' });
     }
     setMovingPlayer(null);
   };
@@ -428,7 +428,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
     if (json.success) {
       setToast({ type: 'success', text: `30-Min Meal Break Started For ${json.data.player_name}` });
     } else {
-      setToast({ type: 'error', text: json.error || 'Failed to set meal break' });
+      setToast({ type: 'error', text: json.error || 'Failed To Set Meal Break' });
     }
     setShowPlayerMenu(null);
     fetchData();
@@ -443,11 +443,11 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
         setToast({ type: 'error', text: `${json.data.player_name} Removed - 3 Missed Blinds` });
         await removePlayer(seat);
       } else {
-        setToast({ type: 'success', text: `Missed blind #${count} for ${json.data.player_name}` });
+        setToast({ type: 'success', text: `Missed Blind #${count} For ${json.data.player_name}` });
       }
       fetchData();
     } else {
-      setToast({ type: 'error', text: json.error || 'Failed to log missed blind' });
+      setToast({ type: 'error', text: json.error || 'Failed To Log Missed Blind' });
     }
     setShowPlayerMenu(null);
   };
@@ -457,7 +457,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
     if (json.success) {
       setToast({ type: 'success', text: `Timer Paused For ${json.data.player_name}` });
     } else {
-      setToast({ type: 'error', text: json.error || 'Failed to pause' });
+      setToast({ type: 'error', text: json.error || 'Failed To Pause' });
     }
     setShowPlayerMenu(null);
     fetchData();
@@ -587,7 +587,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               background: 'rgba(25, 129, 236,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
               <Armchair size={16} aria-hidden="true" /> Moving {movingPlayer.player_name} - Tap An Empty Seat
-              <button onClick={() => { setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
+              <button onClick={() => { setMovingPlayer(null); setToast({ type: 'success', text: 'Move Cancelled' }); }}
                 style={{
                   padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)',
                   background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
@@ -686,7 +686,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                           className={seatClass(leftPct)}
                           onClick={() => {
                             if (movingPlayer && !isOccupied) { completeMove(seat.number); return; }
-                            if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied - pick an empty seat' }); return; }
+                            if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat Occupied - Pick An Empty Seat' }); return; }
                             if (isOccupied) setShowPlayerMenu(seat);
                             else openScanner('seat', seat.number);
                           }}
@@ -796,7 +796,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                     { label: 'Move Player', color: '#1981EC', action: () => startMovePlayer(showPlayerMenu) },
                     { label: 'Remove Player', color: '#EF4444', action: () => removePlayer(showPlayerMenu) },
                     ...(showPlayerMenu.player?.session_status === 'paused' || showPlayerMenu.player?.session_status === 'meal_break'
-                      ? [{ label: 'Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `${json.data.player_name} Resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchData(); } }]
+                      ? [{ label: 'Resume Timer', color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu, 'resume'); if (json.success) { setToast({ type: 'success', text: `${json.data.player_name} Resumed` }); } else { setToast({ type: 'error', text: json.error || 'Resume Failed' }); } setShowPlayerMenu(null); fetchData(); } }]
                       : [{ label: 'Pause Timer', color: '#22D3EE', action: () => pausePlayer(showPlayerMenu) }]
                     ),
                     { label: 'Missed Blinds', color: '#F97316', action: () => markMissedBlinds(showPlayerMenu) },
@@ -833,10 +833,10 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                   {showScanner.type === 'dealer' ? <ScanLine size={36} aria-hidden="true" /> : <Camera size={36} aria-hidden="true" />}
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>
-                  {showScanner.type === 'dealer' ? 'Scan Dealer QR Code' : `Scan Player for Seat ${showScanner.seatNumber}`}
+                  {showScanner.type === 'dealer' ? 'Scan Dealer QR Code' : `Scan Player For Seat ${showScanner.seatNumber}`}
                 </h3>
                 <p style={{ fontSize: 13, color: '#9FB3C8', margin: '6px 0 0' }}>
-                  Hold QR code in front of camera
+                  Hold QR Code In Front Of Camera
                 </p>
               </div>
               <div style={{
@@ -850,7 +850,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
               {/* Manual QR Entry */}
               <form onSubmit={(e) => { e.preventDefault(); const val = e.target.elements.qr.value.trim(); if (val) handleScan(val, showScanner.type, showScanner.seatNumber); }}
                 style={{ display: 'flex', gap: 8, marginTop: 16, width: '90%', maxWidth: 400 }}>
-                <input name="qr" type="text" placeholder="Or enter QR code manually..."
+                <input name="qr" type="text" placeholder="Or Enter QR Code Manually..."
                   style={{
                     flex: 1, padding: '12px 16px', borderRadius: 12, border: '2px solid #2A4560',
                     background: '#040D18', color: '#F2F7FF', fontSize: 14, outline: 'none' }} autoComplete="off" />
@@ -877,7 +877,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
                   <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><Lock size={40} color="#F2F7FF" aria-hidden="true" /></div>
                   <h3 style={{ fontSize: 18, fontWeight: 700, color: '#F2F7FF', margin: 0 }}>Manager Unlock</h3>
-                  <p style={{ fontSize: 13, color: '#9FB3C8', marginTop: 6 }}>Enter owner or manager PIN</p>
+                  <p style={{ fontSize: 13, color: '#9FB3C8', marginTop: 6 }}>Enter Owner Or Manager PIN</p>
                 </div>
                 <div style={{
                   background: '#040D18', border: '2px solid #2A4560', borderRadius: 14,
@@ -957,7 +957,7 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <p className="text-sm text-white/60">Tap a table to lock display</p>
+            <p className="text-sm text-white/60">Tap A Table To Lock Display</p>
             <p className="text-3xl font-mono font-bold tabular-nums">
               {formatClientTime(now, { hour: 'numeric', minute: '2-digit' })}
             </p>

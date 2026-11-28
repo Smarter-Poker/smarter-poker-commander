@@ -33,13 +33,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -98,7 +98,7 @@ async function handleCreate(req, res) {
     console.warn('Create exclusion error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to create exclusion' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Create Exclusion' }
     });
   }
 }
@@ -129,7 +129,7 @@ async function handleRemove(req, res) {
     if (!exclusion) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Exclusion not found' }
+        error: { code: 'NOT_FOUND', message: 'Exclusion Not Found' }
       });
     }
 
@@ -137,7 +137,7 @@ async function handleRemove(req, res) {
     if (exclusion.lifted_at) {
       return res.status(400).json({
         success: false,
-        error: { code: 'ALREADY_LIFTED', message: 'Exclusion already lifted' }
+        error: { code: 'ALREADY_LIFTED', message: 'Exclusion Already Lifted' }
       });
     }
 
@@ -153,7 +153,7 @@ async function handleRemove(req, res) {
         success: false,
         error: {
           code: 'COOLING_PERIOD',
-          message: `Cannot remove exclusion for ${minCoolingDays - daysSinceStart} more days`
+          message: `Cannot Remove Exclusion For ${minCoolingDays - daysSinceStart} More Days`
         }
       });
     }
@@ -173,14 +173,14 @@ async function handleRemove(req, res) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Exclusion lifted' }
+      data: { message: 'Exclusion Lifted' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Remove exclusion error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to remove exclusion' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Remove Exclusion' }
     });
   }
 }

@@ -32,7 +32,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
               <span className="w-3 h-3 bg-[#EF4444] rounded-full animate-pulse" />
               LIVE
             </div>
-            <p className="text-white text-sm">{stream.viewer_count || 0} viewers</p>
+            <p className="text-white text-sm">{stream.viewer_count || 0} Viewers</p>
           </div>
         ) : (
           <Video className="w-12 h-12 text-[#7F97B0]" />
@@ -43,7 +43,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="font-semibold text-white">Table {stream.table_number}</h3>
-            <p className="text-sm text-[#BDD0E2]">{stream.game_info || 'No game'}</p>
+            <p className="text-sm text-[#BDD0E2]">{stream.game_info || 'No Game'}</p>
           </div>
           {isLive && (
             <span className="px-2 py-1 bg-[#EF4444]/10 text-[#EF4444] text-xs font-medium rounded flex items-center gap-1">
@@ -82,7 +82,7 @@ function StreamCard({ stream, onStart, onStop, onConfigure }) {
         {/* Duration */}
         {isLive && stream.started_at && (
           <p className="text-sm text-[#BDD0E2] mb-3">
-            Streaming for {Math.round((Date.now() - new Date(stream.started_at).getTime()) / 60000)} minutes
+            Streaming For {Math.round((Date.now() - new Date(stream.started_at).getTime()) / 60000)} Minutes
           </p>
         )}
 
@@ -193,7 +193,7 @@ function ConfigureModal({ stream, onSave, onClose }) {
           {/* Delay */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              Stream Delay (minutes)
+              Stream Delay (Minutes)
             </label>
             <div className="flex gap-2">
               {[5, 10, 15, 30].map(mins => (
@@ -308,7 +308,7 @@ export default function StreamingPage() {
     setLoading(true);
     try {
 const res = await commanderFetch(`/api/commander/streaming?venue_id=${venueId}`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       if (data.success) {
         setStreams(data.data?.streams || []);
@@ -346,7 +346,7 @@ const res = await commanderFetch(`/api/commander/streaming/${tableId}/start`, {
     } catch (err) {
       setLoading(false);
       console.warn('Start stream failed:', err);
-      setToast({ type: 'error', text: 'Failed to start stream. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Start Stream. Please Try Again.' });
     }
   }
 
@@ -363,7 +363,7 @@ const res = await commanderFetch(`/api/commander/streaming/${tableId}/stop`, {
       }
     } catch (err) {
       console.warn('Stop stream failed:', err);
-      setToast({ type: 'error', text: 'Failed to stop stream. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Stop Stream. Please Try Again.' });
     }
   }
 
@@ -381,7 +381,7 @@ const res = await commanderFetch(`/api/commander/streaming/${tableId}/config`, {
       }
     } catch (err) {
       console.warn('Save config failed:', err);
-      setToast({ type: 'error', text: 'Failed to save streaming config. Please try again.' });
+      setToast({ type: 'error', text: 'Failed To Save Streaming Config. Please Try Again.' });
     }
   }
 

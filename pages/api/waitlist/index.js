@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
         if (error) {
           console.warn('Commander waitlist GET error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         // 2026-08-20 audit fix: was a shared CDN cache (s-maxage) on a response
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data: data || [] });
       } catch (error) {
         captureException(error, { action: 'waitlist_get', endpoint: '/api/commander/waitlist' });
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
     }
 
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Either player_id or player_name is required'
+            message: 'Either player_id Or player_name Is Required'
           }
         });
       }
@@ -146,14 +146,14 @@ export default async function handler(req, res) {
       if (venueError || !venue) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Venue not found' }
+          error: { code: 'NOT_FOUND', message: 'Venue Not Found' }
         });
       }
 
       if (!venue.commander_enabled) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VENUE_NOT_COMMANDER', message: 'Venue is not using Commander' }
+          error: { code: 'VENUE_NOT_COMMANDER', message: 'Venue Is Not Using Commander' }
         });
       }
 
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
         if (existing) {
           return res.status(400).json({
             success: false,
-            error: { code: 'ALREADY_ON_WAITLIST', message: 'Player already on this waitlist' }
+            error: { code: 'ALREADY_ON_WAITLIST', message: 'Player Already On This Waitlist' }
           });
         }
 
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
             success: false,
             error: {
               code: 'SELF_EXCLUDED',
-              message: 'You have an active self-exclusion and cannot join at this time.',
+              message: 'You Have An Active Self-Exclusion And Cannot Join At This Time.',
               exclusion_type: exclusion.exclusion_type,
               expires_at: exclusion.expires_at
             }
@@ -270,7 +270,7 @@ export default async function handler(req, res) {
         console.warn('Commander waitlist insert error:', insertError);
         return res.status(500).json({
           success: false,
-          error: { code: 'DATABASE_ERROR', message: 'Failed to join waitlist' }
+          error: { code: 'DATABASE_ERROR', message: 'Failed To Join Waitlist' }
         });
       }
 
@@ -335,13 +335,13 @@ export default async function handler(req, res) {
       captureException(error, { action: 'waitlist_join', endpoint: '/api/commander/waitlist', venue_id: req.body?.venue_id });
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

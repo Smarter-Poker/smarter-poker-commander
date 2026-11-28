@@ -31,11 +31,11 @@ export default async function handler(req, res) {
 
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     if (!stripe) {
-      return res.status(503).json({ error: 'Stripe is not configured on this server.' });
+      return res.status(503).json({ error: 'Stripe Is Not Configured On This Server.' });
     }
 
     // Must be Owner or Manager.
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       return res.status(authReq.error.status || 401).json({ error: authReq.error.message });
     }
     if (!['owner', 'manager'].includes(authReq.staff.role)) {
-      return res.status(403).json({ error: 'Owner or Manager role required to manage billing.' });
+      return res.status(403).json({ error: 'Owner Or Manager Role Required To Manage Billing.' });
     }
     const venue_id = authReq.staff.venue_id;
     const user_id = authReq.staff.linked_user_id || authReq.staff.user_id || authReq.staff.id;
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (!sub) {
-      return res.status(404).json({ error: 'Commander subscription not found for this venue.' });
+      return res.status(404).json({ error: 'Commander Subscription Not Found For This Venue.' });
     }
     
     // Ensure only the billing owner (or a manager with billing permission)
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ url: portalSession.url });
         } catch (err) {
             console.warn('Failed to create billing portal:', err);
-            return res.status(500).json({ error: 'Failed to access billing portal.' });
+            return res.status(500).json({ error: 'Failed To Access Billing Portal.' });
         }
     } 
 
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     // Create a Checkout Session for them to enter a card and subscribe to their tier.
     const priceId = TIER_PRICES[sub.tier]?.priceId;
     if (!priceId || ['price_home_game', 'price_charity', 'price_club'].includes(priceId)) {
-        return res.status(500).json({ error: 'Invalid or missing Stripe price ID configuration.' });
+        return res.status(500).json({ error: 'Invalid Or Missing Stripe Price ID Configuration.' });
     }
 
     try {
@@ -132,12 +132,12 @@ export default async function handler(req, res) {
         return res.status(200).json({ url: checkoutSession.url });
     } catch (err) {
         console.warn('Failed to create checkout session:', err);
-        return res.status(500).json({ error: 'Failed to create payment session.' });
+        return res.status(500).json({ error: 'Failed To Create Payment Session.' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[Billing API API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

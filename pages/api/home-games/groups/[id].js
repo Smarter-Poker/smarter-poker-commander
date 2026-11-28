@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     let { id } = req.query;
 
     if (!id || typeof id !== 'string') {
-      return res.status(400).json({ success: false, error: 'Group ID required' });
+      return res.status(400).json({ success: false, error: 'Group ID Required' });
     }
 
     // Resolve slug → UUID via social_pages (if not already a UUID or invite code)
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
         .eq('slug', id)
         .maybeSingle();
       if (socialPageError) throw socialPageError;
-      if (!sp) return res.status(404).json({ success: false, error: 'Group not found' });
+      if (!sp) return res.status(404).json({ success: false, error: 'Group Not Found' });
       id = sp.linked_entity_id;
     } else if (isInviteCode && req.method !== 'GET') {
       const { data: inviteGroup, error: inviteGroupError } = await getSupabase()
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         .eq('invite_code', id.toUpperCase())
         .maybeSingle();
       if (inviteGroupError) throw inviteGroupError;
-      if (!inviteGroup) return res.status(404).json({ success: false, error: 'Group not found' });
+      if (!inviteGroup) return res.status(404).json({ success: false, error: 'Group Not Found' });
       id = inviteGroup.id;
     }
 
@@ -84,12 +84,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'PUT', 'PATCH', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -116,7 +116,7 @@ async function getGroup(req, res, id) {
     const { data: group, error } = await query.maybeSingle();
 
     if (error || !group) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     let userMembership = null;
@@ -138,7 +138,7 @@ async function getGroup(req, res, id) {
       viaInviteCode: isInviteCode,
     });
     if (!access.allowed) {
-      return res.status(403).json({ success: false, error: 'This is a private group' });
+      return res.status(403).json({ success: false, error: 'This Is A Private Group' });
     }
 
     if (access.isPreview) {
@@ -158,7 +158,7 @@ async function getGroup(req, res, id) {
         .maybeSingle();
       if (staffGroupError) throw staffGroupError;
       if (!staffGroup) {
-        return res.status(404).json({ success: false, error: 'Group not found' });
+        return res.status(404).json({ success: false, error: 'Group Not Found' });
       }
       responseGroup = toStaffGroup(staffGroup);
     }
@@ -204,7 +204,7 @@ async function getGroup(req, res, id) {
     });
   } catch (error) {
     console.warn('Get group error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -212,7 +212,7 @@ async function updateGroup(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -220,7 +220,7 @@ async function updateGroup(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     // Check if user is owner or admin
@@ -232,7 +232,7 @@ async function updateGroup(req, res, id) {
     if (groupError) throw groupError;
 
     if (!group) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     const { data: membership, error: membershipError } = await getSupabase()
@@ -249,7 +249,7 @@ async function updateGroup(req, res, id) {
       membership?.role === 'admin';
 
     if (!canEdit) {
-      return res.status(403).json({ success: false, error: 'Only owners and admins can update the group' });
+      return res.status(403).json({ success: false, error: 'Only Owners And Admins Can Update The Group' });
     }
 
     // Explicit ALLOW-LIST instead of the prior strip-list. Prior code took the
@@ -281,13 +281,13 @@ async function updateGroup(req, res, id) {
 
     if (error) throw error;
     if (!updated) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     return res.status(200).json({ success: true, group: toStaffGroup(updated) });
   } catch (error) {
     console.warn('Update group error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -295,7 +295,7 @@ async function deleteGroup(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -303,7 +303,7 @@ async function deleteGroup(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     // Only owner can delete
@@ -315,11 +315,11 @@ async function deleteGroup(req, res, id) {
     if (groupError) throw groupError;
 
     if (!group) {
-      return res.status(404).json({ success: false, error: 'Group not found' });
+      return res.status(404).json({ success: false, error: 'Group Not Found' });
     }
 
     if (group.owner_id !== user.id) {
-      return res.status(403).json({ success: false, error: 'Only the owner can delete this group' });
+      return res.status(403).json({ success: false, error: 'Only The Owner Can Delete This Group' });
     }
 
     const { error } = await getSupabase()
@@ -329,10 +329,10 @@ async function deleteGroup(req, res, id) {
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, message: 'Group deleted' });
+    return res.status(200).json({ success: true, message: 'Group Deleted' });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Delete group error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

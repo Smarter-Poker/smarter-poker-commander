@@ -31,11 +31,11 @@ export default async function handler(req, res) {
 
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
+      if (!user) return res.status(401).json({ success: false, error: 'Invalid Token' });
 
       // MULTI-CLUB FIX (2026-08-20): the ACTIVE venue comes from the
       // HMAC-verified staff session guardManager already validated (_g) —
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
           if (sub) staff = { venue_id: sub.venue_id, role: 'owner', name: 'Owner' };
         }
       }
-      if (!staff?.venue_id) return res.status(403).json({ success: false, error: 'Staff access required' });
+      if (!staff?.venue_id) return res.status(403).json({ success: false, error: 'Staff Access Required' });
 
       const venueId = staff.venue_id;
 
@@ -91,21 +91,21 @@ export default async function handler(req, res) {
         }
 
         const { data, error } = await query;
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
         return res.status(200).json({ success: true, data: data || [] });
       }
 
       // POST - Create new game type
       if (req.method === 'POST') {
         if (!['owner', 'manager'].includes(staff.role)) {
-          return res.status(403).json({ success: false, error: 'Manager access required' });
+          return res.status(403).json({ success: false, error: 'Manager Access Required' });
         }
 
         const { name, short_code, stakes, min_buyin, max_buyin, max_players,
           rake_type, rake_percent, rake_cap, time_rate, color, notes, sort_order } = req.body;
 
         if (!name || !short_code || !stakes) {
-          return res.status(400).json({ success: false, error: 'Name, short code, and stakes are required' });
+          return res.status(400).json({ success: false, error: 'Name, Short Code, And Stakes Are Required' });
         }
 
         const { data, error } = await getSupabase()
@@ -127,8 +127,8 @@ export default async function handler(req, res) {
           .select()
           .maybeSingle();
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
-        if (!data) return res.status(500).json({ success: false, error: 'Failed to create game type' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
+        if (!data) return res.status(500).json({ success: false, error: 'Failed To Create Game Type' });
 
         // Log
         await getSupabase().from('commander_system_log').insert({
@@ -145,11 +145,11 @@ export default async function handler(req, res) {
       // PUT - Update game type
       if (req.method === 'PUT') {
         if (!['owner', 'manager'].includes(staff.role)) {
-          return res.status(403).json({ success: false, error: 'Manager access required' });
+          return res.status(403).json({ success: false, error: 'Manager Access Required' });
         }
 
         const id = req.query.id;
-        if (!id) return res.status(400).json({ success: false, error: 'Game type ID required' });
+        if (!id) return res.status(400).json({ success: false, error: 'Game Type ID Required' });
 
         const updates = {};
         const allowed = ['name', 'short_code', 'stakes', 'min_buyin', 'max_buyin', 'max_players',
@@ -172,19 +172,19 @@ export default async function handler(req, res) {
           .select()
           .maybeSingle();
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
-        if (!data) return res.status(404).json({ success: false, error: 'Game type not found' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
+        if (!data) return res.status(404).json({ success: false, error: 'Game Type Not Found' });
         return res.status(200).json({ success: true, data });
       }
 
       // DELETE - Soft delete (deactivate)
       if (req.method === 'DELETE') {
         if (!['owner', 'manager'].includes(staff.role)) {
-          return res.status(403).json({ success: false, error: 'Manager access required' });
+          return res.status(403).json({ success: false, error: 'Manager Access Required' });
         }
 
         const id = req.query.id;
-        if (!id) return res.status(400).json({ success: false, error: 'Game type ID required' });
+        if (!id) return res.status(400).json({ success: false, error: 'Game Type ID Required' });
 
         const { data, error } = await getSupabase()
           .from('commander_game_types')
@@ -194,20 +194,20 @@ export default async function handler(req, res) {
           .select()
           .maybeSingle();
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
-        if (!data) return res.status(404).json({ success: false, error: 'Game type not found' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
+        if (!data) return res.status(404).json({ success: false, error: 'Game Type Not Found' });
         return res.status(200).json({ success: true, data });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Game types API error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

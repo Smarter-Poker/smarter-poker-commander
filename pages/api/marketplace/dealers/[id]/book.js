@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       if (dealerError || !dealer) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Dealer not found or unavailable' }
+          error: { code: 'NOT_FOUND', message: 'Dealer Not Found Or Unavailable' }
         });
       }
 
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
         console.warn('Dealer booking error:', bookingError);
         return res.status(500).json({
           success: false,
-          error: { code: 'SERVER_ERROR', message: 'Failed to send booking request' }
+          error: { code: 'SERVER_ERROR', message: 'Failed To Send Booking Request' }
         });
       }
 
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
         success: true,
         data: {
           booking: booking || null,
-          message: 'Booking request sent to dealer',
+          message: 'Booking Request Sent To Dealer',
           dealer_name: dealer.name,
           hours: bookedHours,
           estimated_cost: total
@@ -133,13 +133,13 @@ export default async function handler(req, res) {
       console.warn('Book dealer error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to send booking request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Send Booking Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

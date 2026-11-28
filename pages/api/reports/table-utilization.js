@@ -33,15 +33,15 @@ export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Auth required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Auth Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
+      if (!user) return res.status(401).json({ success: false, error: 'Invalid Token' });
 
       const { venue_id, range = 'week' } = req.query;
       if (!venue_id) return res.status(400).json({ success: false, error: 'venue_id required' });
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
-      if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
+      if (!staff) return res.status(403).json({ success: false, error: 'Staff Access Required' });
 
       const { start, end } = getDateRange(range, await fetchVenueTimeZone(getSupabase(), venue_id));
       const rangeDays = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)));
@@ -184,12 +184,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Table utilization error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -79,25 +79,25 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         if (error) {
-          return res.status(500).json({ success: false, error: 'Failed to upsert settings' });
+          return res.status(500).json({ success: false, error: 'Failed To Upsert Settings' });
         }
 
         if (!data) {
-          return res.status(500).json({ success: false, error: 'Failed to upsert settings' });
+          return res.status(500).json({ success: false, error: 'Failed To Upsert Settings' });
         }
 
         return res.status(200).json({ success: true, data });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Settings error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

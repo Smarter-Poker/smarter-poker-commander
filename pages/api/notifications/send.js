@@ -40,12 +40,12 @@ export default async function handler(req, res) {
     const fwd = req.headers["x-forwarded-for"];
     const ip = fwd ? fwd.split(",")[0].trim() : req.socket?.remoteAddress || "0";
     const rl = checkMemoryRateLimit(`notif:${ip}`, 20, 60000);
-    if (!rl.allowed) { return res.status(429).json({ success: false, error: { code: "RATE_LIMITED", message: `Rate limited. Retry in ${rl.retryAfter}s.` } }); }
+    if (!rl.allowed) { return res.status(429).json({ success: false, error: { code: "RATE_LIMITED", message: `Rate Limited. Retry In ${rl.retryAfter}s.` } }); }
 
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       if (bodyVenueId && String(bodyVenueId) !== String(staff.venue_id)) {
         return res.status(403).json({
           success: false,
-          error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+          error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
         });
       }
       const venue_id = staff.venue_id;
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: `Invalid type. Must be one of: ${VALID_TYPES.join(', ')}`
+            message: `Invalid Type. Must Be One Of: ${VALID_TYPES.join(', ')}`
           }
         });
       }
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
             success: false,
             error: {
               code: 'VALIDATION_ERROR',
-              message: `Invalid target. Must be one of: ${VALID_TARGETS.join(', ')}`
+              message: `Invalid Target. Must Be One Of: ${VALID_TARGETS.join(', ')}`
             }
           });
         }
@@ -202,7 +202,7 @@ export default async function handler(req, res) {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Either player_id or phone is required'
+            message: 'Either player_id Or Phone Is Required'
           }
         });
       }
@@ -213,7 +213,7 @@ export default async function handler(req, res) {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: `Invalid channels: ${invalidChannels.join(', ')}. Must be one of: ${VALID_CHANNELS.join(', ')}`
+            message: `Invalid Channels: ${invalidChannels.join(', ')}. Must Be One Of: ${VALID_CHANNELS.join(', ')}`
           }
         });
       }
@@ -263,14 +263,14 @@ export default async function handler(req, res) {
       console.warn('Commander send notification error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -363,7 +363,7 @@ async function sendSmsNotification(notification, phone) {
       .from('commander_notifications')
       .update({
         status: 'failed',
-        metadata: { ...notification.metadata, error: 'No phone number available' }
+        metadata: { ...notification.metadata, error: 'No Phone Number Available' }
       })
       .eq('id', notification.id);
     return;
@@ -377,7 +377,7 @@ async function sendSmsNotification(notification, phone) {
         .from('commander_notifications')
         .update({
           status: 'failed',
-          metadata: { ...notification.metadata, error: 'Invalid phone number format' }
+          metadata: { ...notification.metadata, error: 'Invalid Phone Number Format' }
         })
         .eq('id', notification.id);
       return;
@@ -447,7 +447,7 @@ async function sendEmailNotification(notification) {
       .from('commander_notifications')
       .update({
         status: 'failed',
-        metadata: { ...notification.metadata, error: 'No email address available' }
+        metadata: { ...notification.metadata, error: 'No Email Address Available' }
       })
       .eq('id', notification.id);
     return;
@@ -498,7 +498,7 @@ async function sendEmailNotification(notification) {
         .from('commander_notifications')
         .update({
           status: 'failed',
-          metadata: { ...notification.metadata, error: result.message || 'Email send failed' }
+          metadata: { ...notification.metadata, error: result.message || 'Email Send Failed' }
         })
         .eq('id', notification.id);
     }
@@ -574,7 +574,7 @@ async function sendPushNotification(notification) {
           .from('commander_notifications')
           .update({
             status: 'failed',
-            metadata: { ...notification.metadata, error: result.errors?.[0] || 'No recipients' }
+            metadata: { ...notification.metadata, error: result.errors?.[0] || 'No Recipients' }
           })
           .eq('id', notification.id);
       }

@@ -130,7 +130,7 @@ const headers = { };
     let tablesArr = [];
     try {
       const tablesRes = await commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { headers, signal });
-      if (!tablesRes.ok) throw new Error(`Tables fetch failed (${tablesRes.status})`);
+      if (!tablesRes.ok) throw new Error(`Tables Fetch Failed (${tablesRes.status})`);
       const tablesData = await tablesRes.json();
       if (tablesData.success) {
         tablesArr = Array.isArray(tablesData.data) ? tablesData.data
@@ -138,12 +138,12 @@ const headers = { };
             : [];
         setTables(tablesArr);
       }
-    } catch (err) { console.warn('Failed to fetch tables:', err); setLoadError('Failed to load tables. Tap to retry.'); }
+    } catch (err) { console.warn('Failed to fetch tables:', err); setLoadError('Failed To Load Tables. Tap To Retry.'); }
 
     // Fetch games
     try {
       const gamesRes = await commanderFetch(`/api/commander/games/venue/${venueId}`, { headers, signal });
-      if (!gamesRes.ok) throw new Error(`Games fetch failed (${gamesRes.status})`);
+      if (!gamesRes.ok) throw new Error(`Games Fetch Failed (${gamesRes.status})`);
       const gamesData = await gamesRes.json();
       if (gamesData.success) {
         const gamesArr = Array.isArray(gamesData.data?.games) ? gamesData.data.games
@@ -173,7 +173,7 @@ const headers = { };
     // Fetch active dealer rotations - maps table_number to dealer_name
     try {
       const rotRes = await commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers });
-      if (!rotRes.ok) throw new Error(`Rotation fetch failed (${rotRes.status})`);
+      if (!rotRes.ok) throw new Error(`Rotation Fetch Failed (${rotRes.status})`);
       const rotData = await rotRes.json();
       if (rotData.success) {
         const rots = rotData.data?.rotations || rotData.data || [];
@@ -230,7 +230,7 @@ const res = await commanderFetch('/api/commander/games', {
           max_players: newMaxPlayers, status: 'waiting'
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success || data.data) {
         const res = await commanderFetch(`/api/commander/tables/${selectedTable.id}`, {
@@ -238,18 +238,18 @@ const res = await commanderFetch('/api/commander/games', {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'in_use', game_type: newGameType, stakes: newStakes, mode: 'cash', table_purpose: 'cash_game' })
         });
-        if (!res.ok) throw new Error('Request failed');
+        if (!res.ok) throw new Error('Request Failed');
         setShowStartGame(false);
         await fetchTables();
         broadcastChange('games');
         busEmit.celebration('confetti');
       }
-    } catch (err) { console.warn('Start game error:', err); setToast({ type: 'error', text: 'Action failed: Start game. Please try again.' }); }
+    } catch (err) { console.warn('Start game error:', err); setToast({ type: 'error', text: 'Action Failed: Start Game. Please Try Again.' }); }
     finally { setActionLoading(false); }
   };
 
   const handleCloseGame = async (gameId) => {
-    requestConfirm('Close this game? Players will be unseated.', async () => {
+    requestConfirm('Close This Game? Players Will Be Unseated.', async () => {
       setActionLoading(true);
       try {
         // 2026-08-04 audit fix: use DELETE - it closes the game AND clears the
@@ -257,18 +257,18 @@ const res = await commanderFetch('/api/commander/games', {
         // set, so the follow-up table PATCH to 'available' always failed 400.
         const res1 = await commanderFetch(`/api/commander/games/${gameId}`, {
           method: 'DELETE' });
-        if (!res1.ok) throw new Error('Failed to close game');
+        if (!res1.ok) throw new Error('Failed To Close Game');
         if (selectedTable) {
           const res2 = await commanderFetch(`/api/commander/tables/${selectedTable.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'available', game_type: null, stakes: null, mode: 'inactive' })
           });
-          if (!res2.ok) throw new Error('Failed to update table status');
+          if (!res2.ok) throw new Error('Failed To Update Table Status');
         }
         await fetchTables();
         broadcastChange('games');
-      } catch (err) { console.warn('Close game error:', err); setToast({ type: 'error', text: 'Action failed: Close game. Please try again.' }); }
+      } catch (err) { console.warn('Close game error:', err); setToast({ type: 'error', text: 'Action Failed: Close Game. Please Try Again.' }); }
       finally { setActionLoading(false); }
     }, { confirmLabel: 'Close Game', variant: 'danger' });
   };
@@ -291,13 +291,13 @@ const updates = { status };
         await fetchTables();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn('Set status error:', err); setToast({ type: 'error', text: 'Action failed: Set status. Please try again.' }); }
+    } catch (err) { console.warn('Set status error:', err); setToast({ type: 'error', text: 'Action Failed: Set Status. Please Try Again.' }); }
     finally { setActionLoading(false); }
   };
 
   const handleDeleteTable = async () => {
     if (!selectedTable) return;
-    requestConfirm(`Delete Table ${selectedTable.table_number}? This cannot be undone.`, async () => {
+    requestConfirm(`Delete Table ${selectedTable.table_number}? This Cannot Be Undone.`, async () => {
       setActionLoading(true);
       try {
         const res = await commanderFetch(`/api/commander/tables/${selectedTable.id}`, {
@@ -307,7 +307,7 @@ const updates = { status };
           await fetchTables();
           broadcastChange('tables');
         }
-      } catch (err) { console.warn('Delete table error:', err); setToast({ type: 'error', text: 'Action failed: Delete table. Please try again.' }); }
+      } catch (err) { console.warn('Delete table error:', err); setToast({ type: 'error', text: 'Action Failed: Delete Table. Please Try Again.' }); }
       finally { setActionLoading(false); }
     }, { confirmLabel: 'Delete Table', variant: 'danger' });
   };
@@ -319,14 +319,14 @@ const res = await commanderFetch('/api/commander/tables', {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...tableData, venue_id: venueId })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         setShowAddModal(false);
         await fetchTables();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn('Add table error:', err); setToast({ type: 'error', text: 'Action failed: Add table. Please try again.' }); }
+    } catch (err) { console.warn('Add table error:', err); setToast({ type: 'error', text: 'Action Failed: Add Table. Please Try Again.' }); }
   setActionLoading(false);
   };
 
@@ -346,7 +346,7 @@ const res = await commanderFetch('/api/commander/tables', {
         await fetchTables();
         broadcastChange('tables');
       }
-    } catch (err) { console.warn('Set purpose error:', err); setToast({ type: 'error', text: 'Action failed: Set purpose. Please try again.' }); }
+    } catch (err) { console.warn('Set purpose error:', err); setToast({ type: 'error', text: 'Action Failed: Set Purpose. Please Try Again.' }); }
     finally { setActionLoading(false); }
   };
 
@@ -407,7 +407,7 @@ const res = await commanderFetch('/api/commander/tables', {
               <div style={{ background: '#0A1829', border: '1px solid #2A4560', borderRadius: '12px', padding: '48px', textAlign: 'center' }}>
                 <Table2 size={48} color="#2A4560" style={{ margin: '0 auto 16px' }} />
                 <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>No Tables Yet</h2>
-                <p style={{ color: '#BDD0E2', marginBottom: '16px' }}>Add tables to start managing your poker room</p>
+                <p style={{ color: '#BDD0E2', marginBottom: '16px' }}>Add Tables To Start Managing Your Poker Room</p>
                 <button
                   onClick={() => setShowAddModal(true)}
                   style={{ padding: '10px 24px', background: '#1981EC', color: '#fff', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer' }}
@@ -753,7 +753,7 @@ const res = await commanderFetch('/api/commander/tables', {
                               </span>
                             </div>
                             <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ color: '#BDD0E2', fontSize: '12px' }}>{table.max_seats || 9} seats</span>
+                              <span style={{ color: '#BDD0E2', fontSize: '12px' }}>{table.max_seats || 9} Seats</span>
                               {(() => {
                                 const tableMode = table.mode || table.table_purpose || 'cash';
                                 const isTournament = tableMode === 'tournament';
@@ -802,7 +802,7 @@ const res = await commanderFetch('/api/commander/tables', {
                                   fontWeight: 600, fontSize: '14px', borderRadius: '8px', border: '1px solid #31A24C40',
                                   cursor: 'pointer', marginBottom: '16px' }}
                               >
-                                <Play size={16} /> Start Game on Table {selectedTable.table_number}
+                                <Play size={16} /> Start Game On Table {selectedTable.table_number}
                               </button>
                             ) : (
                               <div style={{
@@ -1013,7 +1013,7 @@ function AddTableModal({ existingCount, onClose, onSubmit }) {
           </div>
           <div>
             <label style={{ display: 'block', color: '#BDD0E2', fontSize: '12px', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase' }}>
-              {bulkCount > 1 ? `Starting Table Number (${bulkCount} tables: ${tableNumber} - ${tableNumber + bulkCount - 1})` : 'Table Number'}
+              {bulkCount > 1 ? `Starting Table Number (${bulkCount} Tables: ${tableNumber} - ${tableNumber + bulkCount - 1})` : 'Table Number'}
             </label>
             <input type="number" value={tableNumber} onChange={e => setTableNumber(parseInt(e.target.value) || 1)} min="1" required
               style={{ width: '100%', height: '44px', padding: '0 12px', background: '#040D18', border: '1px solid #2A4560', borderRadius: '8px', color: '#F2F7FF', fontSize: '14px', outline: 'none' }} />

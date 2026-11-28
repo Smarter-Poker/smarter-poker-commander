@@ -107,7 +107,7 @@ export async function checkFeatureAccess(userId, featureKey) {
         } catch (fallbackErr) {
             console.warn('[FeatureGate] Server-side VIP fallback also failed:', fallbackErr.message);
         }
-        return { hasAccess: false, isVip: false, expiresAt: null, diamonds: 0, error: 'Profile fetch failed' };
+        return { hasAccess: false, isVip: false, expiresAt: null, diamonds: 0, error: 'Profile Fetch Failed' };
     }
 
     console.debug('[FeatureGate] Profile loaded - diamonds:', profile.diamonds, '| is_vip:', profile.is_vip);
@@ -209,7 +209,7 @@ export async function purchaseFeatureAccess(userId, featureKey, cost, durationHo
     if (currentBalance < cost) {
         return {
             success: false,
-            error: 'Insufficient diamonds',
+            error: 'Insufficient Diamonds',
             required: cost,
             balance: currentBalance
         };
@@ -235,19 +235,19 @@ export async function purchaseFeatureAccess(userId, featureKey, cost, durationHo
                 p_user_id: userId,
                 p_amount: -cost,
                 p_type: 'feature_unlock',
-                p_description: description || `${featureKey} - ${durationHours} Hour Access (fallback)`,
+                p_description: description || `${featureKey} - ${durationHours} Hour Access (Fallback)`,
                 p_reference_id: null
             });
             if (directError) {
-                return { success: false, error: 'Failed to deduct diamonds' };
+                return { success: false, error: 'Failed To Deduct Diamonds' };
             }
         } else {
-            return { success: false, error: rpcError.message || 'Failed to deduct diamonds' };
+            return { success: false, error: rpcError.message || 'Failed To Deduct Diamonds' };
         }
     } else if (rpcResult) {
         // RPC succeeded - use authoritative balance from DB
         if (rpcResult.success === false) {
-            return { success: false, error: rpcResult.error || 'Insufficient diamonds', balance: rpcResult.balance };
+            return { success: false, error: rpcResult.error || 'Insufficient Diamonds', balance: rpcResult.balance };
         }
         newBalance = rpcResult.balance ?? newBalance;
     }
@@ -282,7 +282,7 @@ export async function purchaseFeatureAccess(userId, featureKey, cost, durationHo
             p_source: 'feature_unlock_refund',
             p_metadata: { feature_key: featureKey, reason: 'access_grant_failed' }
         }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
-        return { success: false, error: 'Failed to grant access' };
+        return { success: false, error: 'Failed To Grant Access' };
     }
 
     // 🚌 BUS EVENT: Notify the EventBus of diamond spend + feature access change
@@ -321,7 +321,7 @@ export const VIP_DIAMOND_COST = 1999;
  * @returns {Promise<{success: boolean, expiresAt?: Date, newBalance?: number, error?: string}>}
  */
 export async function purchaseVipWithDiamonds(userId) {
-    if (!userId) return { success: false, error: 'Not logged in' };
+    if (!userId) return { success: false, error: 'Not Logged In' };
 
     // Check current status + balance
     const { data: profile } = await supabase
@@ -330,14 +330,14 @@ export async function purchaseVipWithDiamonds(userId) {
         .eq('id', userId)
         .maybeSingle();
 
-    if (!profile) return { success: false, error: 'Profile not found' };
-    if (profile.is_vip) return { success: false, error: 'Already a VIP member' };
+    if (!profile) return { success: false, error: 'Profile Not Found' };
+    if (profile.is_vip) return { success: false, error: 'Already A VIP Member' };
 
     const currentBalance = profile.diamonds || 0;
     if (currentBalance < VIP_DIAMOND_COST) {
         return {
             success: false,
-            error: 'Insufficient diamonds',
+            error: 'Insufficient Diamonds',
             required: VIP_DIAMOND_COST,
             balance: currentBalance
         };
@@ -366,13 +366,13 @@ export async function purchaseVipWithDiamonds(userId) {
                 p_description: 'VIP Membership - 30 Day Diamond Purchase (fallback)',
                 p_reference_id: null
             });
-            if (directError) return { success: false, error: 'Failed to deduct diamonds' };
+            if (directError) return { success: false, error: 'Failed To Deduct Diamonds' };
         } else {
-            return { success: false, error: rpcError.message || 'Failed to deduct diamonds' };
+            return { success: false, error: rpcError.message || 'Failed To Deduct Diamonds' };
         }
     } else if (rpcResult) {
         if (rpcResult.success === false) {
-            return { success: false, error: rpcResult.error || 'Insufficient diamonds', balance: rpcResult.balance };
+            return { success: false, error: rpcResult.error || 'Insufficient Diamonds', balance: rpcResult.balance };
         }
         newBalance = rpcResult.balance ?? newBalance;
     }
@@ -416,7 +416,7 @@ export async function purchaseVipWithDiamonds(userId) {
                 p_reference_id: null
             }).catch(e => console.warn('[App] Handled promise rejection:', e?.message || e));
         });
-        return { success: false, error: 'Failed to activate VIP' };
+        return { success: false, error: 'Failed To Activate VIP' };
     }
 
     // Record in vip_subscriptions (non-critical, ignore errors)

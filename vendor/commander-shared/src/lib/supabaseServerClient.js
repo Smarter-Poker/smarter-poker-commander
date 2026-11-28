@@ -173,7 +173,7 @@ export function createClient(url, key, options) {
 
     return {
       data: { user: null },
-      error: { message: 'Token verification failed (both GoTrue and local decode)' },
+      error: { message: 'Token Verification Failed (Both GoTrue And Local Decode)' },
     };
   };
 

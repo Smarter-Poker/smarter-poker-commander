@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // Auth guard - require staff authentication
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
       // identifiers - check the env vars getSupabase() actually uses.
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL ||
           !(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-          return res.status(500).json({ success: false, error: 'Server configuration error' });
+          return res.status(500).json({ success: false, error: 'Server Configuration Error' });
       }
 
       
@@ -213,7 +213,7 @@ export default async function handler(req, res) {
       } catch (err) {
           console.warn('Tournament Club Page sync error:', err);
           return res.status(500).json({
-              success: false, error: 'Failed to sync tournament to Club Page',
+              success: false, error: 'Failed To Sync Tournament To Club Page',
               details: err.message,
           });
       }
@@ -221,6 +221,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

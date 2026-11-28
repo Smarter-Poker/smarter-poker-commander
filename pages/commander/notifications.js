@@ -95,7 +95,7 @@ export default function NotificationCenter() {
     try {
       const params = filter === 'unread' ? '&unread_only=true' : '';
       const res = await commanderFetch(`/api/commander/notifications/my?limit=100${params}`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setNotifications(json.data?.notifications || []);
@@ -228,7 +228,7 @@ export default function NotificationCenter() {
             expires_at: expiresAtIso,
             starts_at: startsAtIso })
         });
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        if (!res.ok) throw new Error(`Request Failed (${res.status})`);
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
       } else {
@@ -245,7 +245,7 @@ export default function NotificationCenter() {
             expires_at: expiresAtIso,
             starts_at: startsAtIso })
         });
-        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+        if (!res.ok) throw new Error(`Request Failed (${res.status})`);
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
       }
@@ -277,7 +277,7 @@ export default function NotificationCenter() {
     const d = new Date(ts);
     const now = new Date();
     const diffMin = Math.floor((now - d) / 60000);
-    if (diffMin < 1) return 'Just now';
+    if (diffMin < 1) return 'Just Now';
     if (diffMin < 60) return `${diffMin}m ago`;
     if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h ago`;
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

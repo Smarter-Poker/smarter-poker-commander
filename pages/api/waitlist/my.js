@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       if (!token) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
         });
       }
       const { data: authData, error: authErr } = await getSupabase().auth.getUser(token);
@@ -42,14 +42,14 @@ export default async function handler(req, res) {
       if (authErr || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Invalid token' }
+          error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' }
         });
       }
 
       if (!user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
         });
       }
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         console.warn('Commander my waitlists query error:', error);
         return res.status(500).json({
           success: false,
-          error: { code: 'DATABASE_ERROR', message: 'Failed to fetch waitlists' }
+          error: { code: 'DATABASE_ERROR', message: 'Failed To Fetch Waitlists' }
         });
       }
 
@@ -131,13 +131,13 @@ export default async function handler(req, res) {
       console.warn('Commander my waitlists API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

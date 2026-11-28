@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Game ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Game ID Required' }
       });
     }
 
@@ -43,14 +43,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -84,21 +84,21 @@ async function handlePost(req, res, gameId) {
     if (mmError || !mustMoveGame) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Game not found' }
+        error: { code: 'NOT_FOUND', message: 'Game Not Found' }
       });
     }
 
     if (!['waiting', 'running'].includes(mustMoveGame.status)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'GAME_CLOSED', message: 'Cannot link closed games' }
+        error: { code: 'GAME_CLOSED', message: 'Cannot Link Closed Games' }
       });
     }
 
     if (mustMoveGame.is_must_move && mustMoveGame.parent_game_id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'ALREADY_LINKED', message: 'This game is already a must-move game' }
+        error: { code: 'ALREADY_LINKED', message: 'This Game Is Already A Must-Move Game' }
       });
     }
 
@@ -112,7 +112,7 @@ async function handlePost(req, res, gameId) {
     if (mainError || !mainGame) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Parent game not found' }
+        error: { code: 'NOT_FOUND', message: 'Parent Game Not Found' }
       });
     }
 
@@ -120,21 +120,21 @@ async function handlePost(req, res, gameId) {
     if (mainGame.venue_id !== mustMoveGame.venue_id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'INCOMPATIBLE', message: 'Games must be at the same venue' }
+        error: { code: 'INCOMPATIBLE', message: 'Games Must Be At The Same Venue' }
       });
     }
 
     if (mainGame.game_type !== mustMoveGame.game_type || mainGame.stakes !== mustMoveGame.stakes) {
       return res.status(400).json({
         success: false,
-        error: { code: 'INCOMPATIBLE', message: 'Games must have same type and stakes' }
+        error: { code: 'INCOMPATIBLE', message: 'Games Must Have Same Type And Stakes' }
       });
     }
 
     if (!['waiting', 'running'].includes(mainGame.status)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'GAME_CLOSED', message: 'Parent game is not active' }
+        error: { code: 'GAME_CLOSED', message: 'Parent Game Is Not Active' }
       });
     }
 
@@ -149,7 +149,7 @@ async function handlePost(req, res, gameId) {
         if (visited.has(currentId)) {
           return res.status(400).json({
             success: false,
-            error: { code: 'CIRCULAR_CHAIN', message: 'This would create a circular must-move chain' }
+            error: { code: 'CIRCULAR_CHAIN', message: 'This Would Create A Circular Must-Move Chain' }
           });
         }
         visited.add(currentId);
@@ -178,7 +178,7 @@ async function handlePost(req, res, gameId) {
       console.warn('Must-move link error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to link games' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Link Games' }
       });
     }
 
@@ -186,14 +186,14 @@ async function handlePost(req, res, gameId) {
       success: true,
       data: {
         game: updated,
-        message: 'Game set as must-move successfully'
+        message: 'Game Set As Must-Move Successfully'
       }
     });
   } catch (error) {
     console.warn('Must-move POST error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -219,14 +219,14 @@ async function handleDelete(req, res, gameId) {
     if (fetchError || !game) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Game not found' }
+        error: { code: 'NOT_FOUND', message: 'Game Not Found' }
       });
     }
 
     if (!game.is_must_move || !game.parent_game_id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'NOT_LINKED', message: 'Game is not a must-move game' }
+        error: { code: 'NOT_LINKED', message: 'Game Is Not A Must-Move Game' }
       });
     }
 
@@ -245,7 +245,7 @@ async function handleDelete(req, res, gameId) {
       console.warn('Must-move unlink error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to unlink games' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Unlink Games' }
       });
     }
 
@@ -253,7 +253,7 @@ async function handleDelete(req, res, gameId) {
       success: true,
       data: {
         game: updated,
-        message: 'Must-move link removed successfully'
+        message: 'Must-Move Link Removed Successfully'
       }
     });
   } catch (error) {
@@ -261,7 +261,7 @@ async function handleDelete(req, res, gameId) {
     console.warn('Must-move DELETE error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

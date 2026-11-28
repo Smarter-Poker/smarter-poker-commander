@@ -150,7 +150,7 @@ export default function CommanderSettingsPage() {
       const staffSession = getStaffSession() || '';
 
       if (!staffSession) {
-        setError('Authentication required. Please log in again.');
+        setError('Authentication Required. Please Log In Again.');
         setSaving(false);
         return;
       }
@@ -175,7 +175,7 @@ export default function CommanderSettingsPage() {
           security_gate_enabled: settings.security_gate_enabled
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
       if (data.success) {
@@ -183,14 +183,14 @@ export default function CommanderSettingsPage() {
         busEmit.celebration('confetti');
         // Store security gate state for CommanderLayout to read
         localStorage.setItem('commander_security_gate', settings.security_gate_enabled === false ? 'off' : 'on');
-        setSuccess('Settings saved successfully');
+        setSuccess('Settings Saved Successfully');
         setIsDirty(false);
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(typeof data.error === 'string' ? data.error : (data.error?.message || 'Failed to save settings'));
+        setError(typeof data.error === 'string' ? data.error : (data.error?.message || 'Failed To Save Settings'));
       }
     } catch (err) {
-      setError('Failed to save settings');
+      setError('Failed To Save Settings');
     } finally {
       setSaving(false);
     }
@@ -208,7 +208,7 @@ export default function CommanderSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: newValue })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         broadcastChange('settings');
@@ -218,14 +218,14 @@ export default function CommanderSettingsPage() {
       } else {
         // Rollback on server error
         setSettings(prev => ({ ...prev, [key]: !newValue }));
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save toggle');
+        setError(typeof data.error === 'string' ? data.error : 'Failed To Save Toggle');
         setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
       console.warn('Failed to auto-save toggle', err);
       // Rollback on network error
       setSettings(prev => ({ ...prev, [key]: !newValue }));
-      setError('Network error saving toggle');
+      setError('Network Error Saving Toggle');
       setTimeout(() => setError(null), 3000);
     }
   }
@@ -267,7 +267,7 @@ export default function CommanderSettingsPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 boxShadow: '0 4px 20px rgba(25, 129, 236,0.4)',
                 animation: 'slideDown 0.2s ease-out' }}>
-                <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>You have unsaved changes</p>
+                <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>You Have Unsaved Changes</p>
                 <button
                   onClick={handleSave}
                   disabled={saving}
@@ -304,7 +304,7 @@ export default function CommanderSettingsPage() {
             {!canManageSettings && (
               <div className="p-4 bg-[#22D3EE]/10 rounded-xl">
                 <p className="text-sm text-[#22D3EE]">
-                  You don't have permission to modify settings. Contact a manager.
+                  You Don't Have Permission To Modify Settings. Contact A Manager.
                 </p>
               </div>
             )}
@@ -343,7 +343,7 @@ export default function CommanderSettingsPage() {
                   {!settings.security_gate_enabled && (
                     <div className="px-4 py-3 bg-[#22D3EE]/5">
                       <p className="text-xs text-[#22D3EE] flex items-center gap-1.5">
-                        Security gate is OFF - restricted pages are accessible without PIN verification
+                        Security Gate Is OFF - Restricted Pages Are Accessible Without PIN Verification
                       </p>
                     </div>
                   )}
@@ -360,7 +360,7 @@ export default function CommanderSettingsPage() {
                   </div>
                   <div>
                     <h2 className="font-semibold text-white">Club Branding</h2>
-                    <p className="text-xs text-[#BDD0E2]">Logo appears on all TV displays and menus</p>
+                    <p className="text-xs text-[#BDD0E2]">Logo Appears On All TV Displays And Menus</p>
                   </div>
                 </div>
               </div>
@@ -401,7 +401,7 @@ export default function CommanderSettingsPage() {
                             const file = e.target.files?.[0];
                             if (!file) return;
                             if (file.size > 5 * 1024 * 1024) {
-                              setError('File too large. Maximum 5MB.');
+                              setError('File Too Large. Maximum 5MB.');
                               return;
                             }
                             setLogoUploading(true);
@@ -426,19 +426,19 @@ export default function CommanderSettingsPage() {
                                   contentType: file.type
                                 })
                               });
-                              if (!res.ok) throw new Error(`Request failed (${res.status})`);
+                              if (!res.ok) throw new Error(`Request Failed (${res.status})`);
                               const json = await res.json();
                               if (json.success) {
                                 setLogoUrl(json.data.club_logo_url);
                                 localStorage.removeItem('commander_branding');
                                 broadcastChange('settings');
-                                setSuccess('Logo uploaded successfully!');
+                                setSuccess('Logo Uploaded Successfully!');
                                 setTimeout(() => setSuccess(null), 3000);
                               } else {
-                                const errMsg = typeof json.error === 'string' ? json.error : (json.error?.message || 'Upload failed');
+                                const errMsg = typeof json.error === 'string' ? json.error : (json.error?.message || 'Upload Failed');
                                 setError(errMsg);
                               }
-                            } catch (err) { setError('Upload failed: ' + (err.message || 'Network error')); }
+                            } catch (err) { setError('Upload Failed: ' + (err.message || 'Network Error')); }
                             setLogoUploading(false);
                             e.target.value = '';
                           }}
@@ -454,10 +454,10 @@ export default function CommanderSettingsPage() {
                               setLogoUrl(null);
                               localStorage.removeItem('commander_branding');
                               broadcastChange('settings');
-                              setSuccess('Logo removed');
+                              setSuccess('Logo Removed');
                               setTimeout(() => setSuccess(null), 3000);
                             }
-                          } catch { setError('Failed to remove logo'); }
+                          } catch { setError('Failed To Remove Logo'); }
                         }}
                           className="flex items-center gap-1 px-3 py-2.5 rounded-lg text-sm font-medium text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
                         >
@@ -512,7 +512,7 @@ export default function CommanderSettingsPage() {
               </div>
               <div className="divide-y divide-[#445E77]">
                 <SettingNumber
-                  label="Call Timeout (minutes)"
+                  label="Call Timeout (Minutes)"
                   description="Time Player Has To Respond After Being Called"
                   value={settings.call_timeout_minutes}
                   onChange={(v) => handleChange('call_timeout_minutes', v)}
@@ -530,7 +530,7 @@ export default function CommanderSettingsPage() {
                   disabled={!canManageSettings}
                 />
                 <SettingNumber
-                  label="Est. Wait Per Player (min)"
+                  label="Est. Wait Per Player (Min)"
                   description="Used To Calculate Wait Times"
                   value={settings.default_wait_time_per_player}
                   onChange={(v) => handleChange('default_wait_time_per_player', v)}
@@ -560,7 +560,7 @@ export default function CommanderSettingsPage() {
                   disabled={!canManageSettings}
                 />
                 <SettingNumber
-                  label="Auto-Refresh Interval (sec)"
+                  label="Auto-Refresh Interval (Sec)"
                   description="How Often To Refresh Data"
                   value={settings.auto_refresh_interval}
                   onChange={(v) => handleChange('auto_refresh_interval', v)}
@@ -598,7 +598,7 @@ export default function CommanderSettingsPage() {
                   </div>
                 </div>
                 <SettingNumber
-                  label="Time Rate ($/hour)"
+                  label="Time Rate ($/Hour)"
                   description="Hourly Rate Charged For Table Time"
                   value={settings.time_billing_rate}
                   onChange={(v) => handleChange('time_billing_rate', v)}
@@ -607,7 +607,7 @@ export default function CommanderSettingsPage() {
                   disabled={!canManageSettings || settings.venue_type !== 'texas'}
                 />
                 <SettingNumber
-                  label="Auto-Comp Rate ($/hour)"
+                  label="Auto-Comp Rate ($/Hour)"
                   description="Comps Earned Per Hour Of Play"
                   value={settings.auto_comp_rate}
                   onChange={(v) => handleChange('auto_comp_rate', v)}
@@ -628,7 +628,7 @@ export default function CommanderSettingsPage() {
                   </div>
                   <div className="flex-1">
                     <h2 className="font-semibold text-white">Bulk Time Packages</h2>
-                    <p className="text-xs text-[#BDD0E2]">Deals for players who buy time in bulk</p>
+                    <p className="text-xs text-[#BDD0E2]">Deals For Players Who Buy Time In Bulk</p>
                   </div>
                   {canManageSettings && (
                     <button onClick={() => {
@@ -644,8 +644,8 @@ export default function CommanderSettingsPage() {
               <div className="divide-y divide-[#445E77]">
                 {(!settings.bulk_time_packages || settings.bulk_time_packages.length === 0) ? (
                   <div className="p-6 text-center">
-                    <p className="text-sm text-[#BDD0E2]">No bulk packages configured</p>
-                    <p className="text-xs text-[#9FB3C8] mt-1">Add packages for discounted bulk time purchases</p>
+                    <p className="text-sm text-[#BDD0E2]">No Bulk Packages Configured</p>
+                    <p className="text-xs text-[#9FB3C8] mt-1">Add Packages For Discounted Bulk Time Purchases</p>
                   </div>
                 ) : (
                   settings.bulk_time_packages.map((pkg, idx) => (
@@ -720,13 +720,13 @@ export default function CommanderSettingsPage() {
                       if (json.url) {
                         window.location.href = json.url;
                       } else {
-                        setError(json.error || 'Failed to open billing portal');
+                        setError(json.error || 'Failed To Open Billing Portal');
                         setTimeout(() => setError(null), 3000);
                         btn.disabled = false;
                         btn.style.opacity = '1';
                       }
                     } catch (err) {
-                      setError('Network error opening billing portal');
+                      setError('Network Error Opening Billing Portal');
                       setTimeout(() => setError(null), 3000);
                       btn.disabled = false;
                       btn.style.opacity = '1';
@@ -736,7 +736,7 @@ export default function CommanderSettingsPage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0C55C0]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <div className="relative">
                     <span className="font-bold text-[#86DAFF]">Manage Subscription & Billing</span>
-                    <p className="text-xs text-[#BDD0E2]">View invoices, update card, cancel, or manage Commander tier</p>
+                    <p className="text-xs text-[#BDD0E2]">View Invoices, Update Card, Cancel, Or Manage Commander Tier</p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-[#86DAFF] relative" />
                 </button>

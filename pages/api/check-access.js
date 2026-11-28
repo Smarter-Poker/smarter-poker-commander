@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
       if (req.method !== 'GET') {
-          return res.status(405).json({ error: 'Method not allowed' });
+          return res.status(405).json({ error: 'Method Not Allowed' });
       }
 
       try {
@@ -37,14 +37,14 @@ export default async function handler(req, res) {
           // definitive "no access". Callers already treat any non-OK status as
           // no access.
           if (!authHeader || !authHeader.startsWith('Bearer ')) {
-              return res.status(401).json({ hasAccess: false, error: 'Authentication required' });
+              return res.status(401).json({ hasAccess: false, error: 'Authentication Required' });
           }
           const token = authHeader.replace('Bearer ', '');
           const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
           const user = authData?.user;
 
           if (authError || !user) {
-              return res.status(401).json({ hasAccess: false, error: 'Invalid or expired session' });
+              return res.status(401).json({ hasAccess: false, error: 'Invalid Or Expired Session' });
           }
 
           // Check 1: commander_staff table (staff members: owner, manager, floor, etc.)
@@ -103,6 +103,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

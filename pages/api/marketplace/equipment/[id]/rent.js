@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       if (!startDate || !endDate) {
         return res.status(400).json({
           success: false,
-          error: { code: 'MISSING_FIELDS', message: 'Start and end dates required' }
+          error: { code: 'MISSING_FIELDS', message: 'Start And End Dates Required' }
         });
       }
 
@@ -65,14 +65,14 @@ export default async function handler(req, res) {
       if (equipError || !equipment) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Equipment not found' }
+          error: { code: 'NOT_FOUND', message: 'Equipment Not Found' }
         });
       }
 
       if (!equipment.available) {
         return res.status(400).json({
           success: false,
-          error: { code: 'NOT_AVAILABLE', message: 'Equipment is not currently available' }
+          error: { code: 'NOT_AVAILABLE', message: 'Equipment Is Not Currently Available' }
         });
       }
 
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
         console.warn('Rental order error:', orderError);
         return res.status(500).json({
           success: false,
-          error: { code: 'SERVER_ERROR', message: 'Failed to send rental request' }
+          error: { code: 'SERVER_ERROR', message: 'Failed To Send Rental Request' }
         });
       }
 
@@ -160,7 +160,7 @@ export default async function handler(req, res) {
         success: true,
         data: {
           order: order || null,
-          message: 'Rental request sent successfully',
+          message: 'Rental Request Sent Successfully',
           equipment_name: equipment.name,
           estimated_days: days,
           estimated_cost: total,
@@ -171,13 +171,13 @@ export default async function handler(req, res) {
       console.warn('Rent equipment error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to send rental request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Send Rental Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

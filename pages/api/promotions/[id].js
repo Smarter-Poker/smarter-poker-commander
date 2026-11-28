@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     if (!id) {
-      return res.status(400).json({ success: false, error: 'Promotion ID required' });
+      return res.status(400).json({ success: false, error: 'Promotion ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -51,12 +51,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'PUT', 'PATCH', 'DELETE']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -72,7 +72,7 @@ async function getPromotion(req, res, id, staff) {
       .maybeSingle();
 
     if (error || !promotion) {
-      return res.status(404).json({ success: false, error: 'Promotion not found' });
+      return res.status(404).json({ success: false, error: 'Promotion Not Found' });
     }
 
     if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
@@ -103,7 +103,7 @@ async function getPromotion(req, res, id, staff) {
     });
   } catch (error) {
     console.warn('Get promotion error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -111,7 +111,7 @@ async function updatePromotion(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -119,7 +119,7 @@ async function updatePromotion(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     // Get promotion to check venue
@@ -130,7 +130,7 @@ async function updatePromotion(req, res, id) {
       .maybeSingle();
 
     if (!existing) {
-      return res.status(404).json({ success: false, error: 'Promotion not found' });
+      return res.status(404).json({ success: false, error: 'Promotion Not Found' });
     }
 
     // Check if user is staff at this venue
@@ -143,7 +143,7 @@ async function updatePromotion(req, res, id) {
       .maybeSingle();
 
     if (!staff) {
-      return res.status(403).json({ success: false, error: 'You are not authorized to update this promotion' });
+      return res.status(403).json({ success: false, error: 'You Are Not Authorized To Update This Promotion' });
     }
 
     const updates = {};
@@ -163,7 +163,7 @@ async function updatePromotion(req, res, id) {
     });
 
     if (Object.keys(updates || {}).length === 0) {
-      return res.status(400).json({ success: false, error: 'No updates provided' });
+      return res.status(400).json({ success: false, error: 'No Updates Provided' });
     }
 
     updates.updated_at = new Date().toISOString();
@@ -183,7 +183,7 @@ async function updatePromotion(req, res, id) {
     return res.status(200).json({ success: true, data: { promotion } });
   } catch (error) {
     console.warn('Update promotion error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -191,7 +191,7 @@ async function deletePromotion(req, res, id) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -199,7 +199,7 @@ async function deletePromotion(req, res, id) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     // Get promotion to check venue
@@ -210,7 +210,7 @@ async function deletePromotion(req, res, id) {
       .maybeSingle();
 
     if (!existing) {
-      return res.status(404).json({ success: false, error: 'Promotion not found' });
+      return res.status(404).json({ success: false, error: 'Promotion Not Found' });
     }
 
     // Check if user is owner/manager at this venue
@@ -224,7 +224,7 @@ async function deletePromotion(req, res, id) {
       .maybeSingle();
 
     if (!staff) {
-      return res.status(403).json({ success: false, error: 'Only owners and managers can delete promotions' });
+      return res.status(403).json({ success: false, error: 'Only Owners And Managers Can Delete Promotions' });
     }
 
     const { error } = await getSupabase()
@@ -234,10 +234,10 @@ async function deletePromotion(req, res, id) {
 
     if (error) throw error;
 
-    return res.status(200).json({ success: true, message: 'Promotion deleted' });
+    return res.status(200).json({ success: true, message: 'Promotion Deleted' });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Delete promotion error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

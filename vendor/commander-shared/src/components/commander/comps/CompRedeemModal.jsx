@@ -132,7 +132,7 @@ export default function CompRedeemModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-[#9FB3C8] mb-1">Description (optional)</label>
+            <label className="block text-sm text-[#9FB3C8] mb-1">Description (Optional)</label>
             <input
               type="text"
               value={description}
@@ -145,7 +145,7 @@ export default function CompRedeemModal({
           {/* Error for insufficient balance */}
           {parseFloat(amount) > currentBalance && (
             <div className="text-red-400 text-sm text-center">
-              Insufficient balance. Maximum: ${currentBalance.toFixed(2)}
+              Insufficient Balance. Maximum: ${currentBalance.toFixed(2)}
             </div>
           )}
 

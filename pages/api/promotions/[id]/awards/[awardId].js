@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const { id: promotionId, awardId } = req.query;
 
     if (!promotionId || !awardId) {
-      return res.status(400).json({ error: 'Promotion ID and Award ID required' });
+      return res.status(400).json({ error: 'Promotion ID And Award ID Required' });
     }
 
     if (req.method === 'PUT') {
@@ -38,12 +38,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['PUT']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -51,7 +51,7 @@ async function updateAward(req, res, promotionId, awardId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -59,7 +59,7 @@ async function updateAward(req, res, promotionId, awardId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     // Get award
@@ -71,7 +71,7 @@ async function updateAward(req, res, promotionId, awardId) {
       .maybeSingle();
 
     if (!award) {
-      return res.status(404).json({ error: 'Award not found' });
+      return res.status(404).json({ error: 'Award Not Found' });
     }
 
     // Check if user is staff at this venue
@@ -84,27 +84,27 @@ async function updateAward(req, res, promotionId, awardId) {
       .maybeSingle();
 
     if (!staff) {
-      return res.status(403).json({ error: 'You are not authorized to update awards' });
+      return res.status(403).json({ error: 'You Are Not Authorized To Update Awards' });
     }
 
     const { action, notes } = req.body;
 
     if (!action || !['approve', 'pay', 'void'].includes(action)) {
-      return res.status(400).json({ error: 'Valid action required: approve, pay, or void' });
+      return res.status(400).json({ error: 'Valid Action Required: Approve, Pay, Or Void' });
     }
 
     const updates = { metadata: { updated_by: user.id } };
 
     if (action === 'approve') {
       if (award.status !== 'pending') {
-        return res.status(400).json({ error: 'Can only approve pending awards' });
+        return res.status(400).json({ error: 'Can Only Approve Pending Awards' });
       }
       updates.status = 'approved';
       updates.approved_by = staff.id;
       updates.approved_at = new Date().toISOString();
     } else if (action === 'pay') {
       if (award.status !== 'approved') {
-        return res.status(400).json({ error: 'Can only pay approved awards' });
+        return res.status(400).json({ error: 'Can Only Pay Approved Awards' });
       }
       updates.status = 'paid';
       updates.paid_at = new Date().toISOString();
@@ -136,6 +136,6 @@ async function updateAward(req, res, promotionId, awardId) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Update award error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

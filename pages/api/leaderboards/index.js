@@ -46,12 +46,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -92,7 +92,7 @@ async function listLeaderboards(req, res, staff) {
     return res.status(200).json({ leaderboards: data || [] });
   } catch (error) {
     console.warn('List leaderboards error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -108,12 +108,12 @@ async function createLeaderboard(req, res) {
     const { venue_id } = req.body;
 
     if (!venue_id) {
-      return res.status(400).json({ error: 'Venue ID required' });
+      return res.status(400).json({ error: 'Venue ID Required' });
     }
 
     // Verify staff is authorized for this venue
     if (staff.venue_id && staff.venue_id !== parseInt(venue_id)) {
-      return res.status(403).json({ error: 'Not authorized for this venue' });
+      return res.status(403).json({ error: 'Not Authorized For This Venue' });
     }
 
     const {
@@ -133,7 +133,7 @@ async function createLeaderboard(req, res) {
     } = req.body;
 
     if (!name || !leaderboard_type || !start_date || !end_date) {
-      return res.status(400).json({ error: 'Name, type, start date, and end date are required' });
+      return res.status(400).json({ error: 'Name, Type, Start Date, And End Date Are Required' });
     }
 
     const { data: leaderboard, error } = await getSupabase()
@@ -162,12 +162,12 @@ async function createLeaderboard(req, res) {
 
     if (error) throw error;
 
-    if (!leaderboard) return res.status(500).json({ error: 'Failed to create leaderboard' });
+    if (!leaderboard) return res.status(500).json({ error: 'Failed To Create Leaderboard' });
 
     return res.status(201).json({ leaderboard });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create leaderboard error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

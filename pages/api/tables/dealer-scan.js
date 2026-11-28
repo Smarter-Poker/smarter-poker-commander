@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       try {
@@ -73,11 +73,11 @@ export default async function handler(req, res) {
           }
 
           if (!staff) {
-              return res.status(404).json({ success: false, error: 'Staff member not found for this QR code' });
+              return res.status(404).json({ success: false, error: 'Staff Member Not Found For This QR Code' });
           }
 
           if (!['dealer', 'floor', 'manager', 'owner'].includes(staff.role)) {
-              return res.status(400).json({ success: false, error: `${staff.display_name} is a ${staff.role}, not a dealer` });
+              return res.status(400).json({ success: false, error: `${staff.display_name} Is A ${staff.role}, Not A Dealer` });
           }
 
           // Find the game to assign dealer to
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
                   .eq('table_number', parseInt(table_number))
                   .maybeSingle();
               if (!tableRow) {
-                  return res.status(404).json({ success: false, error: 'Table not found at this venue' });
+                  return res.status(404).json({ success: false, error: 'Table Not Found At This Venue' });
               }
               gameQuery = gameQuery.eq('table_id', tableRow.id);
           } else {
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
           const game = games?.[0];
 
           if (!game) {
-              return res.status(404).json({ success: false, error: 'No active game found at this table' });
+              return res.status(404).json({ success: false, error: 'No Active Game Found At This Table' });
           }
 
           // Assign dealer to game
@@ -144,12 +144,12 @@ export default async function handler(req, res) {
           });
       } catch (err) {
           console.warn('Dealer scan error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

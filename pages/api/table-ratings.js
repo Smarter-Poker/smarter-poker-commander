@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -55,7 +55,7 @@ async function submitRating(req, res, user) {
   // Validate ranges
   for (const [name, val] of [['action_level', action_level], ['friendliness', friendliness], ['pace', pace]]) {
     if (val < 1 || val > 5) {
-      return res.status(400).json({ success: false, error: { code: 'INVALID_RANGE', message: `${name} must be 1-5` } });
+      return res.status(400).json({ success: false, error: { code: 'INVALID_RANGE', message: `${name} Must Be 1-5` } });
     }
   }
 
@@ -85,7 +85,7 @@ async function submitRating(req, res, user) {
     return res.status(201).json({ success: true, data: { rating } });
   } catch (error) {
     console.warn('Submit rating error:', error);
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }
 
@@ -180,6 +180,6 @@ async function getVibes(req, res) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Get vibes error:', error);
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Internal Server Error' } });
   }
 }

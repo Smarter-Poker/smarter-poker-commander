@@ -90,7 +90,7 @@ export default function GroupCard({
             }}
             className="cmd-btn cmd-btn-primary px-3 py-1 text-sm"
           >
-            {group.is_private ? 'Request to Join' : 'Join'}
+            {group.is_private ? 'Request To Join' : 'Join'}
           </button>
         )}
 

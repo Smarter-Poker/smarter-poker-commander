@@ -595,9 +595,9 @@ function reconciliationSheetFragment(receipt) {
   <div class="d"></div>
   <div class="sec">Cash In</div>
   <div class="rw3"><span class="lbl b">Bucket</span><span class="n b">Exp</span><span class="n b">Act</span><span class="n b">Diff</span></div>
-  ${reconRow(`Buy-Ins x${Number(expIn.buyins?.count) || 0}`, expIn.buyins?.amount, actIn.by_type?.buyin?.amount)}
-  ${reconRow(`Rebuys x${Number(expIn.rebuys?.count) || 0}`, expIn.rebuys?.amount, actIn.by_type?.rebuy?.amount)}
-  ${reconRow(`Add-Ons x${Number(expIn.addons?.count) || 0}`, expIn.addons?.amount, actIn.by_type?.addon?.amount)}
+  ${reconRow(`Buy-Ins X${Number(expIn.buyins?.count) || 0}`, expIn.buyins?.amount, actIn.by_type?.buyin?.amount)}
+  ${reconRow(`Rebuys X${Number(expIn.rebuys?.count) || 0}`, expIn.rebuys?.amount, actIn.by_type?.rebuy?.amount)}
+  ${reconRow(`Add-Ons X${Number(expIn.addons?.count) || 0}`, expIn.addons?.amount, actIn.by_type?.addon?.amount)}
   <div class="d"></div>
   ${reconRow('Total In', expIn.total, actIn.total)}
   ${methodRows ? `<div class="d"></div><div class="sec">By Payment Method</div>${methodRows}` : ''}

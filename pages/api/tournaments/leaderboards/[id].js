@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -136,7 +136,7 @@ async function getLeaderboard(req, res, id, staff) {
         return res.status(200).json({ success: true, data: { leaderboard: lb, standings } });
     } catch (error) {
         console.warn('Get leaderboard error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
     }
 }
 
@@ -185,7 +185,7 @@ async function updateLeaderboard(req, res, id, staff) {
         return res.status(200).json({ success: true, data: { leaderboard: data } });
     } catch (error) {
         console.warn('Update leaderboard error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
     }
 }
 
@@ -208,6 +208,6 @@ async function deactivateLeaderboard(req, res, id, staff) {
     } catch (error) {
         try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
         console.warn('Deactivate leaderboard error:', error);
-        return res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+        return res.status(500).json({ success: false, error: { message: 'Internal Server Error' } });
     }
 }

@@ -24,11 +24,11 @@ export default async function handler(req, res) {
 
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
+      if (!user) return res.status(401).json({ success: false, error: 'Invalid Token' });
 
       // MULTI-CLUB FIX (2026-08-20): active venue from the HMAC-verified
       // staff session first; the old unscoped .maybeSingle() errored for
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
           .maybeSingle();
         staff = staffRow || null;
       }
-      if (!staff) return res.status(403).json({ success: false, error: 'Staff access required' });
+      if (!staff) return res.status(403).json({ success: false, error: 'Staff Access Required' });
 
       const { tableNumber } = req.query;
 
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
           .eq('table_number', parseInt(tableNumber))
           .maybeSingle();
 
-        if (!table) return res.status(404).json({ success: false, error: 'Table not found' });
+        if (!table) return res.status(404).json({ success: false, error: 'Table Not Found' });
 
         // Get seats
         const { data: seats } = await getSupabase()
@@ -108,15 +108,15 @@ export default async function handler(req, res) {
         });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Table detail error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

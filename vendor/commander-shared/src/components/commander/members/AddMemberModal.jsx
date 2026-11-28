@@ -38,10 +38,10 @@ const FIELD_DEFAULTS = {
 };
 
 const TIERS = [
-    { value: 'daily', label: 'Daily', desc: 'Single-day access pass', color: '#3B82F6' },
+    { value: 'daily', label: 'Daily', desc: 'Single-Day Access Pass', color: '#3B82F6' },
     { value: 'weekly', label: 'Weekly', desc: '7-day membership', color: '#22D3EE' },
     { value: 'monthly', label: 'Monthly', desc: '30-day membership', color: '#10B981' },
-    { value: 'yearly', label: 'Yearly', desc: 'Full year membership', color: '#5AA9FF' },
+    { value: 'yearly', label: 'Yearly', desc: 'Full Year Membership', color: '#5AA9FF' },
 ];
 
 export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
@@ -94,7 +94,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
             setShowCamera(true);
         } catch (err) {
             console.warn('Camera error:', err);
-            setError('Camera access denied. Please enter information manually.');
+            setError('Camera Access Denied. Please Enter Information Manually.');
         }
     }, []);
 
@@ -194,7 +194,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
     const validateStep = (s) => {
         if (s === 1) {
             if (!form.first_name.trim() || !form.last_name.trim()) {
-                setError('First and last name are required');
+                setError('First And Last Name Are Required');
                 return false;
             }
         }
@@ -243,12 +243,12 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                     notes: form.notes.trim() || null,
                 }),
             });
-            if (!res.ok) throw new Error('Request failed');
+            if (!res.ok) throw new Error('Request Failed');
 
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-                throw new Error(data.error || 'Failed to create member');
+                throw new Error(data.error || 'Failed To Create Member');
             }
 
             onSubmit(data.data.member);
@@ -293,7 +293,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-[#F2F7FF]">New Club Member</h2>
-                            <p className="text-xs text-[#BDD0E2]">Step {step} of 4</p>
+                            <p className="text-xs text-[#BDD0E2]">Step {step} Of 4</p>
                         </div>
                     </div>
                     <button onClick={handleClose} className="p-2 hover:bg-[#132A42] rounded-lg">
@@ -434,7 +434,7 @@ export default function AddMemberModal({ isOpen, onClose, onSubmit, venueId }) {
                             {/* DOB */}
                             <div>
                                 <label className="block text-xs text-[#BDD0E2] mb-1 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> Date of Birth
+                                    <Calendar className="w-3 h-3" /> Date Of Birth
                                 </label>
                                 <input type="date" value={form.date_of_birth} onChange={e => updateForm('date_of_birth', e.target.value)}
                                     className="w-full px-3 py-2.5 bg-[#132A42] border border-[#5A7590] rounded-lg text-[#F2F7FF] text-sm focus:border-[#1981EC] focus:outline-none" />

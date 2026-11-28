@@ -89,7 +89,7 @@ export function normalizeHomeGroupRoster(
     normalized.push(canonicalMember({
       user_id: null,
       username: null,
-      display_name: membership.display_name || 'Roster player',
+      display_name: membership.display_name || 'Roster Player',
       avatar_url: null,
       relationship: 'member',
       member_role: membership.role,

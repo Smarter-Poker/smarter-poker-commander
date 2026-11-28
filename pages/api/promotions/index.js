@@ -43,12 +43,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -153,7 +153,7 @@ async function listPromotions(req, res, staff) {
     console.warn('List promotions error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Internal server error' }
+      error: { code: 'SERVER_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -162,7 +162,7 @@ async function createPromotion(req, res) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ success: false, error: 'Authorization required' });
+      return res.status(401).json({ success: false, error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -170,13 +170,13 @@ async function createPromotion(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ success: false, error: 'Invalid Token' });
     }
 
     const { venue_id } = req.body;
 
     if (!venue_id) {
-      return res.status(400).json({ success: false, error: 'Venue ID required' });
+      return res.status(400).json({ success: false, error: 'Venue ID Required' });
     }
 
     // Check if user is staff at this venue
@@ -206,11 +206,11 @@ async function createPromotion(req, res) {
     }
 
     if (!staff) {
-      return res.status(403).json({ success: false, error: 'You are not authorized to create promotions for this venue' });
+      return res.status(403).json({ success: false, error: 'You Are Not Authorized To Create Promotions For This Venue' });
     }
 
     if (!['owner', 'manager'].includes(staff.role)) {
-      return res.status(403).json({ success: false, error: 'Owner or Manager role required to create promotions' });
+      return res.status(403).json({ success: false, error: 'Owner Or Manager Role Required To Create Promotions' });
     }
 
     const {
@@ -239,7 +239,7 @@ async function createPromotion(req, res) {
     } = req.body;
 
     if (!name || !promotion_type) {
-      return res.status(400).json({ success: false, error: 'Name and promotion type are required' });
+      return res.status(400).json({ success: false, error: 'Name And Promotion Type Are Required' });
     }
 
     const { data: promotion, error } = await getSupabase()
@@ -295,6 +295,6 @@ async function createPromotion(req, res) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create promotion error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

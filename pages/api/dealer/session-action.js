@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // 2026-07-29 (decision A): dealer tablets (Commander "Table Tablets" and the
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
                       .maybeSingle();
                   if (tErr) throw tErr;
                   if (!tourney) {
-                      return res.status(404).json({ success: false, error: 'Tournament not found' });
+                      return res.status(404).json({ success: false, error: 'Tournament Not Found' });
                   }
               }
 
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
           const session = sessions?.[0];
 
           if (!session) {
-              return res.status(404).json({ success: false, error: 'No active session at this seat' });
+              return res.status(404).json({ success: false, error: 'No Active Session At This Seat' });
           }
 
           // TOURNAMENT GUARD: Block timer-based actions for tournament sessions
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
                       return res.status(200).json({ success: true, data: { action: 'pause', player_name: session.player_name, session_id: session.id, note: 'Already paused' } });
                   }
                   if (session.status === 'meal_break') {
-                      return res.status(400).json({ success: false, error: `${session.player_name} is on meal break - resume first` });
+                      return res.status(400).json({ success: false, error: `${session.player_name} Is On Meal Break - Resume First` });
                   }
                   // Stamp paused_at so billing freezes. Preserve an existing stamp if
                   // one somehow survives, so we never restart an in-progress span.
@@ -299,7 +299,7 @@ export default async function handler(req, res) {
                   if (occupied?.length > 0) {
                       return res.status(400).json({
                           success: false,
-                          error: `Seat ${targetSeatNum} is occupied by ${occupied[0].player_name}`
+                          error: `Seat ${targetSeatNum} Is Occupied By ${occupied[0].player_name}`
                       });
                   }
 
@@ -353,7 +353,7 @@ export default async function handler(req, res) {
               }
 
               default:
-                  return res.status(400).json({ success: false, error: `Unknown action: ${action}` });
+                  return res.status(400).json({ success: false, error: `Unknown Action: ${action}` });
           }
       } catch (err) {
           console.warn('Session action error:', err);
@@ -363,6 +363,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

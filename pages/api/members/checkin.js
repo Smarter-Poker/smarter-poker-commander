@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const _authResult = await guardWriteStaff(req, res);
     if (!_authResult) return;
 
-    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const { member_id } = req.body;
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       // 2026-07-25 audit fix: if the update matched no row the member doesn't exist -
       // previously fell through and returned member_name 'undefined undefined'.
       if (memberError || !member) {
-        return res.status(404).json({ success: false, error: 'Member not found' });
+        return res.status(404).json({ success: false, error: 'Member Not Found' });
       }
 
       // Also log the check-in event
@@ -96,12 +96,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Check-in error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

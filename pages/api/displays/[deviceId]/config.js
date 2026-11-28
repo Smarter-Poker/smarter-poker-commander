@@ -43,13 +43,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -71,7 +71,7 @@ async function handleGet(req, res, deviceId) {
     if (error || !display) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Display not found' }
+        error: { code: 'NOT_FOUND', message: 'Display Not Found' }
       });
     }
 
@@ -83,7 +83,7 @@ async function handleGet(req, res, deviceId) {
     console.warn('Get config error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to get config' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Get Config' }
     });
   }
 }
@@ -111,13 +111,13 @@ async function handlePatch(req, res, deviceId, staff) {
     if (loadError || !existing) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Display not found' }
+        error: { code: 'NOT_FOUND', message: 'Display Not Found' }
       });
     }
     if (String(existing.venue_id) !== String(staff.venue_id)) {
       return res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+        error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
       });
     }
 
@@ -136,7 +136,7 @@ async function handlePatch(req, res, deviceId, staff) {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Fields To Update' }
       });
     }
 
@@ -150,7 +150,7 @@ async function handlePatch(req, res, deviceId, staff) {
     if (error || !display) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Display not found' }
+        error: { code: 'NOT_FOUND', message: 'Display Not Found' }
       });
     }
 
@@ -162,7 +162,7 @@ async function handlePatch(req, res, deviceId, staff) {
     console.warn('Update config error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to update config' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Update Config' }
     });
   }
 }
@@ -179,13 +179,13 @@ async function handleDelete(req, res, deviceId, staff) {
     if (loadError || !existing) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Display not found' }
+        error: { code: 'NOT_FOUND', message: 'Display Not Found' }
       });
     }
     if (String(existing.venue_id) !== String(staff.venue_id)) {
       return res.status(403).json({
         success: false,
-        error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+        error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
       });
     }
 
@@ -198,14 +198,14 @@ async function handleDelete(req, res, deviceId, staff) {
 
     return res.status(200).json({
       success: true,
-      data: { message: 'Display removed' }
+      data: { message: 'Display Removed' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Delete display error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to remove display' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Remove Display' }
     });
   }
 }

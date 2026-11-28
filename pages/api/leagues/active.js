@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
     if (req.method !== 'GET') {
       res.setHeader('Allow', 'GET');
-      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET allowed' } });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET Allowed' } });
     }
 
     const venueId = typeof req.query.venue_id === 'string' ? req.query.venue_id : null;
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
     if (error) {
       console.warn('[leagues/active] fetch failed:', error.message);
-      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed to fetch leagues' } });
+      return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Leagues' } });
     }
 
     const leagues = (data || []).filter((l) => leagueInVenue(l, venueId));
@@ -78,6 +78,6 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

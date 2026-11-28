@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       res.setHeader('Allow', ['GET']);
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET Allowed' }
       });
     }
 
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
       });
     }
 
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Or Expired Token' }
         });
       }
 
@@ -154,14 +154,14 @@ export default async function handler(req, res) {
       console.warn('Matchmaker error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Matchmaker failed' }
+        error: { code: 'SERVER_ERROR', message: 'Matchmaker Failed' }
       });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 

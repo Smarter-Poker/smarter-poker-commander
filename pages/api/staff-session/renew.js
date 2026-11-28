@@ -22,16 +22,16 @@ export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
     const auth = req.headers.authorization || '';
     const m = /^Bearer\s+(.+)$/i.exec(auth);
-    if (!m) return res.status(401).json({ error: 'Authentication required' });
+    if (!m) return res.status(401).json({ error: 'Authentication Required' });
 
     const payload = await verifySupabaseJwt(m[1].trim());
-    if (!payload?.sub) return res.status(401).json({ error: 'Invalid token' });
+    if (!payload?.sub) return res.status(401).json({ error: 'Invalid Token' });
 
     const session = req.body?.session;
     const renewed = renewOwnerSession(session, payload.sub);
@@ -42,6 +42,6 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_e) { /* ignore */ }
     console.warn('[staff-session/renew]', err?.message || err);
-    if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

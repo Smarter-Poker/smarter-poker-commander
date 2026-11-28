@@ -66,8 +66,8 @@ test('both Commander owners use the approved row, a live avatar, and eight wired
     assert.doesNotMatch(source, /user_metadata\?\.avatar_url/);
     for (const label of [
       'Open Menu',
-      'Go back',
-      'Go to the Hub',
+      'Go Back',
+      'Go To The Hub',
       'My Profile',
       'Diamond Wallet',
       'VIP',

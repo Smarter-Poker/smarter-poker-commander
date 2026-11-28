@@ -106,7 +106,7 @@ export default function CommanderStaffPage() {
     try {
       const token = getToken();
 const res = await commanderFetch(`/api/commander/staff/venue/${venueId}`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       if (data.success) {
         setStaffList(data.data.staff || []);
@@ -133,7 +133,7 @@ const res = await commanderFetch('/api/commander/staff', {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...staffData, venue_id: venueId })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         fetchStaff();
@@ -147,10 +147,10 @@ const res = await commanderFetch('/api/commander/staff', {
         }
         return { success: true };
       }
-      return { success: false, error: data.error?.message || 'Failed to add staff' };
+      return { success: false, error: data.error?.message || 'Failed To Add Staff' };
     } catch (err) {
       console.warn('Failed to add staff:', err);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: 'Network Error' };
     }
   }
 
@@ -246,7 +246,7 @@ const res = await commanderFetch(`/api/commander/staff/${staffId}`, {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(staffData)
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         fetchStaff();
@@ -254,10 +254,10 @@ const res = await commanderFetch(`/api/commander/staff/${staffId}`, {
         setEditingStaff(null);
         return { success: true };
       }
-      return { success: false, error: data.error?.message || 'Failed to update staff' };
+      return { success: false, error: data.error?.message || 'Failed To Update Staff' };
     } catch (err) {
       console.warn('Failed to update staff:', err);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: 'Network Error' };
     }
   }
 
@@ -279,7 +279,7 @@ const data = await commanderFetchJSON(`/api/commander/staff/${staffId}`, {
       }
     } catch (err) {
       console.warn('Failed to delete staff:', err);
-      setError('Failed to delete staff member. Please try again.');
+      setError('Failed To Delete Staff Member. Please Try Again.');
     }
   }
 
@@ -311,15 +311,15 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ venue_id: venueId, staff_id: staffId }) });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         setLinkCodeData({ staffId, token: data.data.token, url: data.data.claim_url });
       } else {
-        setToast({ type: 'error', text: data.error || 'Failed to generate code' });
+        setToast({ type: 'error', text: data.error || 'Failed To Generate Code' });
       }
     } catch (e) {
-      setError('Network error');
+      setError('Network Error');
     }
     setLinkCodeLoading(null);
   }
@@ -364,7 +364,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
           {!canManageStaff && (
             <div className="mb-6 p-4 bg-[#22D3EE]/10 rounded-xl">
               <p className="text-sm text-[#22D3EE]">
-                You don't have permission to manage staff.
+                You Don't Have Permission To Manage Staff.
               </p>
             </div>
           )}
@@ -390,7 +390,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#BDD0E2]" />
                 <input
                   type="text"
-                  placeholder="Search staff by name or role..."
+                  placeholder="Search Staff By Name Or Role..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="cmd-input w-full pl-10 h-10"
@@ -399,7 +399,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
 
               <div className="cmd-panel divide-y divide-[#445E77]">
                 {paginatedStaff.length === 0 ? (
-                  <div className="p-8 text-center text-[#BDD0E2]">No staff matched your search</div>
+                  <div className="p-8 text-center text-[#BDD0E2]">No Staff Matched Your Search</div>
                 ) : (
                   paginatedStaff.map((staff) => {
                     const role = ROLES.find(r => r.value === staff.role) || ROLES[4];
@@ -451,7 +451,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-[#65676B] rounded-full bg-[#132A42]/50">
-                                Not linked
+                                Not Linked
                               </span>
                             )}
                           </div>
@@ -466,7 +466,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                                   <button
                                     onClick={() => { navigator.clipboard.writeText(linkCodeData.url); }}
                                     className="p-1 text-[#86DAFF] hover:bg-[#0C55C0]/20 rounded transition-colors"
-                                    title="Copy claim URL"
+                                    title="Copy Claim URL"
                                   >
                                     <Copy className="w-3.5 h-3.5" />
                                   </button>
@@ -476,7 +476,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                                   onClick={() => handleGenerateLinkCode(staff.id)}
                                   disabled={linkCodeLoading === staff.id}
                                   className="p-2 text-[#86DAFF] hover:bg-[#0C55C0]/10 rounded-lg transition-colors"
-                                  title="Generate link code for employee"
+                                  title="Generate Link Code For Employee"
                                 >
                                   <Link2 className="w-4 h-4" />
                                 </button>
@@ -499,7 +499,7 @@ const res = await commanderFetch('/api/commander/staff/generate-claim', {
                               <button
                                 onClick={() => handleDeleteStaff(staff.id)}
                                 className="p-2 text-[#EF4444] hover:bg-[#EF4444]/10 rounded-lg transition-colors"
-                                title="Remove staff member"
+                                title="Remove Staff Member"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -601,7 +601,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
     e.preventDefault();
     setError('');
     if (!isEditing && !displayName.trim()) {
-      setError('Employee name is required');
+      setError('Employee Name Is Required');
       return;
     }
     if (!pinCode || pinCode.length !== 4) {
@@ -626,7 +626,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
       id_expiry: idExpiry || null,
       date_of_birth: dateOfBirth || null });
     if (result && !result.success) {
-      setError(result.error || 'Failed to save');
+      setError(result.error || 'Failed To Save');
     }
     setSubmitting(false);
   }
@@ -798,7 +798,7 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
               inputMode="numeric"
               value={pinCode}
               onChange={(e) => { setPinCode(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
-              placeholder="Enter 4-digit PIN"
+              placeholder="Enter 4-Digit PIN"
               maxLength={4}
               required
               className="w-full h-12 px-3 cmd-input text-center text-2xl tracking-[0.5em] font-mono"
@@ -806,16 +806,16 @@ function StaffModal({ staff, existingStaff = [], onClose, onSubmit }) {
             {isDuplicatePin && (
               <div className="flex items-center gap-1.5 mt-1.5 p-2 rounded-lg bg-[#EF4444]/10">
                 <AlertTriangle className="w-3.5 h-3.5 text-[#EF4444] flex-shrink-0" />
-                <span className="text-xs text-[#EF4444] font-medium">This PIN is already in use by another employee</span>
+                <span className="text-xs text-[#EF4444] font-medium">This PIN Is Already In Use By Another Employee</span>
               </div>
             )}
             {!isDuplicatePin && pinCode.length === 4 && (
               <p className="text-xs text-[#31A24C] mt-1">✓ PIN available</p>
             )}
             {pinCode.length > 0 && pinCode.length < 4 && (
-              <p className="text-xs text-[#BDD0E2] mt-1">Enter {4 - pinCode.length} more digit{4 - pinCode.length > 1 ? 's' : ''}</p>
+              <p className="text-xs text-[#BDD0E2] mt-1">Enter {4 - pinCode.length} More Digit{4 - pinCode.length > 1 ? 's' : ''}</p>
             )}
-            <p className="text-xs text-[#22D3EE] mt-1">🔒 Required for all financial transactions</p>
+            <p className="text-xs text-[#22D3EE] mt-1">🔒 Required For All Financial Transactions</p>
           </div>
 
           {/* Active Toggle */}

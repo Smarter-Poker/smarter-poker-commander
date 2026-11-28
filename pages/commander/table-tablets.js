@@ -56,9 +56,9 @@ async function parseApiResponse(res) {
     try { json = await res.json(); } catch (e) { /* empty or non-JSON body */ }
     if (!res.ok) {
         const msg = (json && (json.error?.message || (typeof json.error === 'string' ? json.error : null) || json.message))
-            || (res.status === 401 ? 'Session expired - sign in again'
-            :  res.status === 403 ? 'Not permitted for this venue'
-            :  `Request failed (${res.status})`);
+            || (res.status === 401 ? 'Session Expired - Sign In Again'
+            :  res.status === 403 ? 'Not Permitted For This Venue'
+            :  `Request Failed (${res.status})`);
         return { ...(json || {}), success: false, error: msg, httpStatus: res.status };
     }
     return { ...(json || {}), httpStatus: res.status };
@@ -374,7 +374,7 @@ export default function TableTabletsPage() {
 
     // Unlock with PIN
     const handleUnlockAttempt = async () => {
-        if (!pinValue || pinValue.length !== 4) { setPinError('Enter your 4-digit PIN'); return; }
+        if (!pinValue || pinValue.length !== 4) { setPinError('Enter Your 4-Digit PIN'); return; }
         setPinLoading(true);
         setPinError('');
         try {
@@ -393,13 +393,13 @@ export default function TableTabletsPage() {
                     setPinValue('');
                     localStorage.removeItem('tablet_locked_table');
                 } else {
-                    setPinError('Owner or Manager PIN required');
+                    setPinError('Owner Or Manager PIN Required');
                 }
             } else {
                 setPinError(json.error || 'Invalid PIN');
             }
         } catch {
-            setPinError('Network error - try again');
+            setPinError('Network Error - Try Again');
         }
         setPinLoading(false);
     };
@@ -430,7 +430,7 @@ const headers = { };
                     if (cashTableNums.length > 0) {
                         try {
                             const batchRes = await commanderFetch(`/api/commander/dealer/sessions-batch?tables=${cashTableNums.join(',')}&venue_id=${venueId}`, { headers });
-                            if (!batchRes.ok) throw new Error(`Request failed (${batchRes.status})`);
+                            if (!batchRes.ok) throw new Error(`Request Failed (${batchRes.status})`);
                             const batchJson = await batchRes.json();
                             if (batchJson.success && batchJson.data) {
                                 Object.entries(batchJson.data || {}).forEach(([tNum, sessions]) => {
@@ -452,7 +452,7 @@ const headers = { };
                                 `/api/commander/tournaments/${tid}/floor-view?include=tournament,tables,stats`,
                                 { headers }
                             );
-                            if (!fRes.ok) throw new Error(`Request failed (${fRes.status})`);
+                            if (!fRes.ok) throw new Error(`Request Failed (${fRes.status})`);
                             const fJson = await fRes.json();
                             if (fJson.success && fJson.data?.tables) {
                                 fJson.data.tables.forEach(ft => {
@@ -524,7 +524,7 @@ const headers = { };
         // Fetch active dealer rotations - maps table_number to dealer_name
         try {
             const rotRes = await commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}`, { headers });
-            if (!rotRes.ok) throw new Error(`Request failed (${rotRes.status})`);
+            if (!rotRes.ok) throw new Error(`Request Failed (${rotRes.status})`);
             const rotData = await rotRes.json();
             if (rotData.success) {
                 const rots = rotData.data?.rotations || rotData.data || [];
@@ -758,7 +758,7 @@ const json = await commanderFetchJSON(`/api/commander/displays/status?venue_id=$
             waitForVideo();
         } catch {
             setScanCameraActive(false);
-            setScanError('Camera access denied. Please check permissions.');
+            setScanError('Camera Access Denied. Please Check Permissions.');
         }
     };
 
@@ -787,10 +787,10 @@ const res = await commanderFetch('/api/commander/dealer/scan-in', {
                 broadcastChange('tables'); // <== NEW FIX: ensuring other clients know the dealer changed
                 setTimeout(() => closeDealerScan(), 3000);
             } else {
-                setScanError(data.error || 'Failed to assign dealer');
+                setScanError(data.error || 'Failed To Assign Dealer');
             }
         } catch {
-            setScanError('Network error');
+            setScanError('Network Error');
         }
     };
 
@@ -815,7 +815,7 @@ const res = await commanderFetch('/api/commander/dealer/session-action', {
             return json;
         } catch {
             setPlayerActionLoading(false);
-            return { success: false, error: 'Network error' };
+            return { success: false, error: 'Network Error' };
         }
     };
 
@@ -833,14 +833,14 @@ const res = await commanderFetch('/api/commander/dealer/player-unseat', {
                 body: JSON.stringify({ table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `${json.data.player_name} removed · ${json.data.unused_minutes_returned}m returned` });
+                setToast({ type: 'success', text: `${json.data.player_name} Removed · ${json.data.unused_minutes_returned}m Returned` });
                 setShowPlayerMenu(null);
                 broadcastChange('tables');
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Failed to remove player' });
+                setToast({ type: 'error', text: json.error || 'Failed To Remove Player' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         unseatSubmitRef.current = false;
         setPlayerActionLoading(false);
     };
@@ -862,7 +862,7 @@ const headers = { 'Content-Type': 'application/json' };
                 const d = json.data || {};
                 const pos = d.finishPosition ? ` - finished ${d.finishPosition}${['st', 'nd', 'rd'][d.finishPosition - 1] || 'th'}` : '';
                 const payout = d.payoutAmount ? ` · $${d.payoutAmount.toLocaleString()}` : '';
-                setToast({ type: 'success', text: `${playerName} eliminated${pos}${payout}` });
+                setToast({ type: 'success', text: `${playerName} Eliminated${pos}${payout}` });
                 setLastBustedEntry({ tournament_id: tournamentId, entry_id: entryId, player_name: playerName });
                 const noticeLines = [];
                 if (d.promoted_alternate) {
@@ -886,7 +886,7 @@ const headers = { 'Content-Type': 'application/json' };
                 const tStats = menuTable?._tournamentStats;
                 if (tData && tStats?.late_reg_open) {
                     broadcastChange('cashier');
-                    setToast({ type: 'success', text: `${playerName} eliminated - seat available for resale (late reg open)` });
+                    setToast({ type: 'success', text: `${playerName} Eliminated - Seat Available For Resale (Late Reg Open)` });
                 } else if (tData?.allows_rebuys) {
                     const currentLevel = tData.settings?.clock_state?.currentLevel || 0;
                     const rebuyEndLevel = tData.rebuy_end_level || 99;
@@ -896,9 +896,9 @@ const headers = { 'Content-Type': 'application/json' };
                 }
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Failed to bust player' });
+                setToast({ type: 'error', text: json.error || 'Failed To Bust Player' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         setPlayerActionLoading(false);
     };
 
@@ -911,15 +911,15 @@ const headers = { 'Content-Type': 'application/json' };
             const json = await parseApiResponse(res);
             if (json.success) {
                 const d = json.data || {};
-                setToast({ type: 'success', text: `Rebuy ${Number(d.rebuy_number || 1).toLocaleString()} for ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} chips` });
+                setToast({ type: 'success', text: `Rebuy ${Number(d.rebuy_number || 1).toLocaleString()} For ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} Chips` });
                 setShowPlayerMenu(null);
                 broadcastChange('tables');
                 broadcastChange('cashier');
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Rebuy failed' });
+                setToast({ type: 'error', text: json.error || 'Rebuy Failed' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         setPlayerActionLoading(false);
     };
 
@@ -932,15 +932,15 @@ const headers = { 'Content-Type': 'application/json' };
             const json = await parseApiResponse(res);
             if (json.success) {
                 const d = json.data || {};
-                setToast({ type: 'success', text: `Add-on for ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} chips` });
+                setToast({ type: 'success', text: `Add-On For ${playerName} · ${Number(d.total_chips || 0).toLocaleString()} Chips` });
                 setShowPlayerMenu(null);
                 broadcastChange('tables');
                 broadcastChange('cashier');
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Add-on failed' });
+                setToast({ type: 'error', text: json.error || 'Add-On Failed' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         setPlayerActionLoading(false);
     };
 
@@ -967,7 +967,7 @@ const headers = { 'Content-Type': 'application/json' };
                 return;
             }
             if (!res.ok || raw?.success === false) {
-                setToast({ type: 'error', text: errMsg || 'Undo bust failed' });
+                setToast({ type: 'error', text: errMsg || 'Undo Bust Failed' });
                 setPlayerActionLoading(false);
                 return;
             }
@@ -979,7 +979,7 @@ const headers = { 'Content-Type': 'application/json' };
                 lines: [raw?.data?.message || 'Elimination Undone.'] });
             broadcastChange('tables');
             fetchAll();
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         setPlayerActionLoading(false);
     };
 
@@ -993,13 +993,13 @@ const headers = { 'Content-Type': 'application/json' };
             const json = await parseApiResponse(res);
             if (json.success) {
                 const move = json.data?.move;
-                setToast({ type: 'success', text: `${playerName} moved T${move?.from_table}S${move?.from_seat} → T${move?.to_table}S${move?.to_seat}` });
+                setToast({ type: 'success', text: `${playerName} Moved T${move?.from_table}S${move?.from_seat} → T${move?.to_table}S${move?.to_seat}` });
                 broadcastChange('tables');
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Move failed' });
+                setToast({ type: 'error', text: json.error || 'Move Failed' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         setPlayerActionLoading(false);
     };
 
@@ -1018,13 +1018,13 @@ const headers = { 'Content-Type': 'application/json' };
                     venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `Chip count updated: ${chipCount.toLocaleString()} - ${playerName}` });
+                setToast({ type: 'success', text: `Chip Count Updated: ${chipCount.toLocaleString()} - ${playerName}` });
                 broadcastChange('tables');
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Failed to update chips' });
+                setToast({ type: 'error', text: json.error || 'Failed To Update Chips' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         setPlayerActionLoading(false);
     };
 
@@ -1041,13 +1041,13 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 body: JSON.stringify({ qr_code: qrData, table_number: tableNumber, seat_number: seatNumber, venue_id: venueId }) });
             const json = await parseApiResponse(res);
             if (json.success) {
-                setToast({ type: 'success', text: `${json.data.player_name} seated at S${seatNumber}` });
+                setToast({ type: 'success', text: `${json.data.player_name} Seated At S${seatNumber}` });
                 broadcastChange('tables'); // <== NEW FIX: Realtime sync across the floor
                 fetchAll();
             } else {
-                setToast({ type: 'error', text: json.error || 'Could not seat player' });
+                setToast({ type: 'error', text: json.error || 'Could Not Seat Player' });
             }
-        } catch { setToast({ type: 'error', text: 'Network error' }); }
+        } catch { setToast({ type: 'error', text: 'Network Error' }); }
         // Release the scan guard so a declined/failed scan can be retried.
         seatSubmitRef.current = false;
     setPlayerActionLoading(false);
@@ -1096,7 +1096,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 };
                 waitForVideo();
             } catch {
-                setToast({ type: 'error', text: 'Camera access denied - check permissions' });
+                setToast({ type: 'error', text: 'Camera Access Denied - Check Permissions' });
             }
         }, 300);
     };
@@ -1285,20 +1285,20 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                             } else if (!isTournMove) {
                                                 const json = await callSessionAction(movingPlayer.tableNumber, movingPlayer.seat.number, 'move', { target_seat: seat.number });
                                                 if (json.success) {
-                                                    setToast({ type: 'success', text: `${json.data.player_name} moved S${json.data.from_seat} → S${json.data.to_seat}` });
+                                                    setToast({ type: 'success', text: `${json.data.player_name} Moved S${json.data.from_seat} → S${json.data.to_seat}` });
                                                     broadcastChange('tables');
                                                     fetchAll();
                                                 } else {
-                                                    setToast({ type: 'error', text: json.error || 'Move failed' });
+                                                    setToast({ type: 'error', text: json.error || 'Move Failed' });
                                                 }
                                             } else {
-                                                setToast({ type: 'error', text: 'Missing entry data - try refreshing' });
+                                                setToast({ type: 'error', text: 'Missing Entry Data - Try Refreshing' });
                                             }
                                             setMovingPlayer(null);
                                         })();
                                         return;
                                     }
-                                    if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat occupied - pick an empty seat' }); return; }
+                                    if (movingPlayer && isOccupied) { setToast({ type: 'error', text: 'Seat Occupied - Pick An Empty Seat' }); return; }
                                     if (isOccupied) setShowPlayerMenu({ ...seat, tableNumber: tNum });
                                     else openSeatScanner(tNum, seat.number);
                                 } : undefined}
@@ -1461,7 +1461,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                         background: 'rgba(25, 129, 236,0.1)', border: '1px solid rgba(25, 129, 236,0.3)',
                                                         color: '#1981EC', textDecoration: 'none',
                                                         display: 'flex', alignItems: 'center' }}
-                                                    title="Preview in new tab"
+                                                    title="Preview In New Tab"
                                                 >
                                                     <ExternalLink size={12} />
                                                 </a>
@@ -1480,10 +1480,10 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                     ) : tables.length === 0 ? (
                         <div style={{ background: '#0A1829', border: '1px solid #2A4560', borderRadius: 16, padding: 40, textAlign: 'center' }}>
                             <Monitor size={48} color="#445E77" style={{ margin: '0 auto 12px' }} />
-                            <p style={{ color: '#9FB3C8', marginBottom: 16 }}>No tables configured</p>
+                            <p style={{ color: '#9FB3C8', marginBottom: 16 }}>No Tables Configured</p>
                             <button onClick={() => router.push('/commander/tables')}
                                 style={{ padding: '10px 20px', background: '#1981EC', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}>
-                                Go to Tables & Floor
+                                Go To Tables & Floor
                             </button>
                         </div>
                     ) : (
@@ -1587,7 +1587,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                                                     borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
                                                                     display: 'flex', alignItems: 'center', gap: 4,
                                                                     fontSize: 10, fontWeight: 700, color: '#fff' }}
-                                                                title="Scan dealer QR code"
+                                                                title="Scan Dealer QR Code"
                                                             >
                                                                 <ScanLine size={12} /> Dealer
                                                             </button>
@@ -1700,7 +1700,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     borderRadius: 10, padding: '6px 14px', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: 6,
                                     fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}
-                                title="Unlock - requires manager PIN"
+                                title="Unlock - Requires Manager PIN"
                             >
                                 <Lock size={12} /> Unlock
                             </button>
@@ -1718,7 +1718,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                         {/* BOTTOM-LEFT: Call Floor */}
                         {(() => {
                             const isA = callFloorSent; const _ss = getStaffSession() || ''; const _tk = getToken(); return (
-                                <button disabled={callFloorSending} onClick={!isA ? async () => { haptic('heavy'); setCallFloorSending(true); try { const n = fullscreenTable.table_number || fullscreenTable.number; const r = await commanderFetch('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venue_id: venueId, table_number: n, table_name: fullscreenTable.table_name || `Table ${n}` }) }).then(r => { if (!r.ok) throw new Error('fail'); return r; }); const j = await r.json(); if (j.success) { setCallFloorSent(true); setCallFloorId(j.data?.id || null); setToast({ type: 'success', text: `Floor called - Table ${n}` }); broadcastChange('floor_calls'); } else { setToast({ type: 'error', text: j.error || 'Floor call failed' }); } } catch { setToast({ type: 'error', text: 'Network error' }); } setCallFloorSending(false); } : async () => { haptic(); if (callFloorId) { try { const j = await commanderFetchJSON('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', call_id: callFloorId }) }); if (j.success) { setToast({ type: 'success', text: 'Floor call cancelled' }); broadcastChange('floor_calls'); setCallFloorSent(false); setCallFloorId(null); } else { setToast({ type: 'error', text: j.error || 'Cancel failed' }); } } catch (e) { console.warn("[table-tablets.js]", e); setToast({ type: 'error', text: 'Network error' }); } } }}
+                                <button disabled={callFloorSending} onClick={!isA ? async () => { haptic('heavy'); setCallFloorSending(true); try { const n = fullscreenTable.table_number || fullscreenTable.number; const r = await commanderFetch('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venue_id: venueId, table_number: n, table_name: fullscreenTable.table_name || `Table ${n}` }) }).then(r => { if (!r.ok) throw new Error('fail'); return r; }); const j = await r.json(); if (j.success) { setCallFloorSent(true); setCallFloorId(j.data?.id || null); setToast({ type: 'success', text: `Floor Called - Table ${n}` }); broadcastChange('floor_calls'); } else { setToast({ type: 'error', text: j.error || 'Floor Call Failed' }); } } catch { setToast({ type: 'error', text: 'Network Error' }); } setCallFloorSending(false); } : async () => { haptic(); if (callFloorId) { try { const j = await commanderFetchJSON('/api/commander/floor-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', call_id: callFloorId }) }); if (j.success) { setToast({ type: 'success', text: 'Floor Call Cancelled' }); broadcastChange('floor_calls'); setCallFloorSent(false); setCallFloorId(null); } else { setToast({ type: 'error', text: j.error || 'Cancel Failed' }); } } catch (e) { console.warn("[table-tablets.js]", e); setToast({ type: 'error', text: 'Network Error' }); } } }}
                                     style={{ position: 'fixed', bottom: 4, left: 4, zIndex: 60, height: '20.25vh', width: '27vh', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, opacity: callFloorSending ? 0.5 : 1, transition: 'opacity 0.2s, transform 0.1s', filter: isA ? 'hue-rotate(320deg) saturate(1.5)' : 'none' }}>
 
                                     <img src='/assets/tablet-buttons/call-floor.png' alt="" style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} loading="lazy" />
@@ -1997,8 +1997,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             padding: '10px 20px', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 12,
                             background: 'rgba(25, 129, 236,0.95)', color: '#fff', fontSize: 14, fontWeight: 700,
                             boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                            Moving {movingPlayer.player_name} - tap an empty seat
-                            <button onClick={() => { haptic(); setMovingPlayer(null); setToast({ type: 'success', text: 'Move cancelled' }); }}
+                            Moving {movingPlayer.player_name} - Tap An Empty Seat
+                            <button onClick={() => { haptic(); setMovingPlayer(null); setToast({ type: 'success', text: 'Move Cancelled' }); }}
                                 style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >Cancel</button>
                         </div>
@@ -2027,24 +2027,24 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 const pName = showPlayerMenu.taken?.player_name || 'Player';
                                 const iconSize = 16;
                                 const actions = isTournMenu ? [
-                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
-                                    { label: 'Bust Player', icon: React.createElement(Skull, { size: iconSize }), color: '#EF4444', action: async () => { if (!confirm('Bust ' + pName + '?')) return; if (entryId && tournId) { await bustTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
+                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap An Empty Seat To Move ' + pName }); } },
+                                    { label: 'Bust Player', icon: React.createElement(Skull, { size: iconSize }), color: '#EF4444', action: async () => { if (!confirm('Bust ' + pName + '?')) return; if (entryId && tournId) { await bustTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing Entry Data - Try Refreshing' }); } } },
                                     { label: 'Update Chip Count', icon: React.createElement(Coins, { size: iconSize }), color: '#22D3EE', action: () => { setChipCountInput(''); } },
-                                    { label: 'Rebuy', icon: React.createElement(Coins, { size: iconSize }), color: '#31A24C', action: async () => { if (entryId && tournId) { await rebuyTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
-                                    { label: 'Add-On', icon: React.createElement(Coins, { size: iconSize }), color: '#22c55e', action: async () => { if (entryId && tournId) { await addonTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing entry data - try refreshing' }); } } },
+                                    { label: 'Rebuy', icon: React.createElement(Coins, { size: iconSize }), color: '#31A24C', action: async () => { if (entryId && tournId) { await rebuyTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing Entry Data - Try Refreshing' }); } } },
+                                    { label: 'Add-On', icon: React.createElement(Coins, { size: iconSize }), color: '#22c55e', action: async () => { if (entryId && tournId) { await addonTournamentPlayer(tournId, entryId, pName); } else { setToast({ type: 'error', text: 'Missing Entry Data - Try Refreshing' }); } } },
                                     ...(lastBustedEntry && lastBustedEntry.tournament_id === tournId
                                         ? [{ label: `Undo Bust, ${lastBustedEntry.player_name}`, icon: React.createElement(Clock, { size: iconSize }), color: '#9FB3C8', action: async () => { await restoreTournamentEntry(lastBustedEntry.tournament_id, lastBustedEntry.entry_id, lastBustedEntry.player_name); } }]
                                         : []),
                                 ] : [
-                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap an empty seat to move ' + pName }); } },
+                                    { label: 'Move Player', icon: React.createElement(ArrowRightLeft, { size: iconSize }), color: '#1981EC', action: () => { setMovingPlayer({ seat: showPlayerMenu, player_name: pName, tableNumber: showPlayerMenu.tableNumber }); setShowPlayerMenu(null); setToast({ type: 'success', text: 'Tap An Empty Seat To Move ' + pName }); } },
                                     { label: 'Remove Player', icon: React.createElement(XCircle, { size: iconSize }), color: '#EF4444', action: () => removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number) },
                                     ...(showPlayerMenu.taken?.session_status === 'paused' || showPlayerMenu.taken?.session_status === 'meal_break'
-                                        ? [{ label: 'Resume Timer', icon: React.createElement(Clock, { size: iconSize }), color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'resume'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' resumed' }); } else { setToast({ type: 'error', text: json.error || 'Resume failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
-                                        : [{ label: 'Pause Timer', icon: React.createElement(Timer, { size: iconSize }), color: '#22D3EE', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'pause'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' paused' }); } else { setToast({ type: 'error', text: json.error || 'Pause failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
+                                        ? [{ label: 'Resume Timer', icon: React.createElement(Clock, { size: iconSize }), color: '#22c55e', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'resume'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' resumed' }); } else { setToast({ type: 'error', text: json.error || 'Resume Failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
+                                        : [{ label: 'Pause Timer', icon: React.createElement(Timer, { size: iconSize }), color: '#22D3EE', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'pause'); if (json.success) { setToast({ type: 'success', text: json.data.player_name + ' paused' }); } else { setToast({ type: 'error', text: json.error || 'Pause Failed' }); } setShowPlayerMenu(null); fetchAll(); } }]
                                     ),
-                                    { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = json.data.missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: json.data.player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed blind #' + count + ' for ' + json.data.player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
+                                    { label: 'Missed Blinds', icon: React.createElement(AlertTriangle, { size: iconSize }), color: '#F97316', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'missed_blinds'); if (json.success) { const count = json.data.missed_blinds_count; if (count >= 3) { setToast({ type: 'error', text: json.data.player_name + ' removed - 3 missed blinds' }); await removePlayer(showPlayerMenu.tableNumber, showPlayerMenu.number); } else { setToast({ type: 'success', text: 'Missed Blind #' + count + ' for ' + json.data.player_name }); } fetchAll(); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); } },
                                     { label: '30-Min Meal Break', icon: React.createElement(Clock, { size: iconSize }), color: '#5AA9FF', action: async () => { const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'meal_break'); if (json.success) { setToast({ type: 'success', text: '30-min meal break for ' + json.data.player_name }); } else { setToast({ type: 'error', text: json.error || 'Failed' }); } setShowPlayerMenu(null); fetchAll(); } },
-                                    { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes to add for ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (json.data.player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed to add time' }); } setShowPlayerMenu(null); fetchAll(); } },
+                                    { label: 'Add Time', icon: React.createElement(Clock, { size: iconSize }), color: '#0EA5E9', action: async () => { const raw = window.prompt('Minutes To Add For ' + pName + '?', '60'); const mins = parseInt(raw, 10); if (!mins || isNaN(mins) || mins <= 0) { setShowPlayerMenu(null); return; } const json = await callSessionAction(showPlayerMenu.tableNumber, showPlayerMenu.number, 'add_time', { minutes: mins }); if (json.success) { setToast({ type: 'success', text: 'Added ' + mins + 'm for ' + (json.data.player_name || pName) }); } else { setToast({ type: 'error', text: json.error || 'Failed To Add Time' }); } setShowPlayerMenu(null); fetchAll(); } },
                                 ];
                                 return actions.map((btn, i) => (
                                     React.createElement('button', {
@@ -2065,7 +2065,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                     {/* Chip count display */}
                                     <div style={{ padding: '14px 16px', borderRadius: 12, border: '2px solid #22D3EE', background: '#040D18', marginBottom: 10, textAlign: 'center', minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <span style={{ fontSize: chipCountInput ? 28 : 16, fontWeight: 800, color: chipCountInput ? '#22D3EE' : '#555', letterSpacing: 2, fontVariantNumeric: 'tabular-nums' }}>
-                                            {chipCountInput || 'Enter chip count'}
+                                            {chipCountInput || 'Enter Chip Count'}
                                         </span>
                                     </div>
                                     {/* Keypad grid */}
@@ -2087,12 +2087,12 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         if (eId && tId) {
                                             await updateTournamentChipCount(tId, eId, rawVal, pN);
                                         } else {
-                                            setToast({ type: 'error', text: 'Missing entry data - try refreshing' });
+                                            setToast({ type: 'error', text: 'Missing Entry Data - Try Refreshing' });
                                         }
                                         setChipCountInput(null);
                                         setShowPlayerMenu(null);
                                     }} style={{ width: '100%', marginTop: 10, padding: '14px', borderRadius: 12, background: (!rawVal || isNaN(rawVal)) ? '#2A4560' : '#22D3EE', border: 'none', color: (!rawVal || isNaN(rawVal)) ? '#666' : '#000', fontSize: 16, fontWeight: 800, cursor: (!rawVal || isNaN(rawVal)) ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
-                                        {playerActionLoading ? 'Saving...' : `Save - ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} chips`}
+                                        {playerActionLoading ? 'Saving...' : `Save - ${rawVal && !isNaN(rawVal) ? rawVal.toLocaleString() : '0'} Chips`}
                                     </button>
                                 </div>
                             );
@@ -2160,8 +2160,8 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 10003, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ textAlign: 'center', marginBottom: 20 }}>
                         <div style={{ fontSize: 36, marginBottom: 8 }}><ScanLine size={36} color="#10B981" /></div>
-                        <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Scan Player for Seat {seatScanner.seatNumber}</h3>
-                        <p style={{ fontSize: 13, color: '#9FB3C8', margin: '6px 0 0' }}>Hold QR code in front of camera</p>
+                        <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Scan Player For Seat {seatScanner.seatNumber}</h3>
+                        <p style={{ fontSize: 13, color: '#9FB3C8', margin: '6px 0 0' }}>Hold QR Code In Front Of Camera</p>
                     </div>
                     <div style={{ width: '90%', maxWidth: 400, aspectRatio: '4/3', borderRadius: 16, overflow: 'hidden', border: '3px solid #1981EC', position: 'relative' }}>
                         <video ref={seatScannerVideoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
@@ -2194,7 +2194,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                 <CheckCircle size={48} color="#10B981" style={{ margin: '0 auto 12px' }} />
                                 <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>{scanResult.dealer_name}</p>
                                 <p style={{ fontSize: 13, color: '#10B981', fontWeight: 600, margin: 0 }}>
-                                    Assigned to Table {scanResult.table_number}
+                                    Assigned To Table {scanResult.table_number}
                                 </p>
                             </div>
                         ) : (
@@ -2222,7 +2222,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                                         <div style={{ width: 64, height: 64, background: 'rgba(16,185,129,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                                             <ScanLine size={32} color="#10B981" />
                                         </div>
-                                        <p style={{ fontSize: 13, color: '#BDD0E2', marginBottom: 16 }}>Scan dealer QR code to assign</p>
+                                        <p style={{ fontSize: 13, color: '#BDD0E2', marginBottom: 16 }}>Scan Dealer QR Code To Assign</p>
                                         <button onClick={startDealerCamera}
                                             style={{ padding: '10px 24px', background: '#10B981', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                                             <Camera size={16} /> Open Scanner
@@ -2255,7 +2255,7 @@ const res = await commanderFetch('/api/commander/dealer/player-scan-in', {
                             </div>
                             <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#fff' }}>Unlock Tablet</h3>
                             <p style={{ margin: '6px 0 0', fontSize: 13, color: '#9FB3C8' }}>
-                                Enter manager or owner PIN to unlock
+                                Enter Manager Or Owner PIN To Unlock
                             </p>
                         </div>
 

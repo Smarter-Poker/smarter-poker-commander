@@ -18,9 +18,9 @@ const GAME_TYPES = [
 ];
 
 const VISIBILITY_OPTIONS = [
-  { value: 'public', label: 'Public', icon: Globe, description: 'Anyone Can See and Request to Join' },
+  { value: 'public', label: 'Public', icon: Globe, description: 'Anyone Can See And Request To Join' },
   { value: 'friends', label: 'Friends Only', icon: Users, description: 'Only Your Friends Can See This Game' },
-  { value: 'private', label: 'Private', icon: Lock, description: 'Invite Code Required to Join' }
+  { value: 'private', label: 'Private', icon: Lock, description: 'Invite Code Required To Join' }
 ];
 
 export default function CreateGameForm({
@@ -63,16 +63,16 @@ export default function CreateGameForm({
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.game_type) newErrors.game_type = 'Game type is required';
-    if (!formData.stakes.trim()) newErrors.stakes = 'Stakes are required';
-    if (!formData.event_date) newErrors.event_date = 'Date is required';
-    if (!formData.start_time) newErrors.start_time = 'Start time is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
+    if (!formData.title.trim()) newErrors.title = 'Title Is Required';
+    if (!formData.game_type) newErrors.game_type = 'Game Type Is Required';
+    if (!formData.stakes.trim()) newErrors.stakes = 'Stakes Are Required';
+    if (!formData.event_date) newErrors.event_date = 'Date Is Required';
+    if (!formData.start_time) newErrors.start_time = 'Start Time Is Required';
+    if (!formData.address.trim()) newErrors.address = 'Address Is Required';
+    if (!formData.city.trim()) newErrors.city = 'City Is Required';
+    if (!formData.state.trim()) newErrors.state = 'State Is Required';
     if (formData.max_players < 2 || formData.max_players > 20) {
-      newErrors.max_players = 'Must be between 2 and 20';
+      newErrors.max_players = 'Must Be Between 2 And 20';
     }
     setErrors(newErrors);
     return Object.keys(newErrors || {}).length === 0;
@@ -141,8 +141,8 @@ export default function CreateGameForm({
             {renderField('Stakes', 'stakes', 'text', { placeholder: '1/2 NL', required: true })}
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {renderField('Min Buy-in ($)', 'buy_in_min', 'number', { placeholder: '100', min: 0 })}
-            {renderField('Max Buy-in ($)', 'buy_in_max', 'number', { placeholder: '500', min: 0 })}
+            {renderField('Min Buy-In ($)', 'buy_in_min', 'number', { placeholder: '100', min: 0 })}
+            {renderField('Max Buy-In ($)', 'buy_in_max', 'number', { placeholder: '500', min: 0 })}
             {renderField('Max Players', 'max_players', 'number', { min: 2, max: 20, required: true })}
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function CreateGameForm({
         <div className="grid grid-cols-3 gap-4">
           {renderField('Date', 'event_date', 'date', { required: true })}
           {renderField('Start Time', 'start_time', 'time', { required: true })}
-          {renderField('End Time (est.)', 'end_time', 'time')}
+          {renderField('End Time (Est.)', 'end_time', 'time')}
         </div>
       </div>
 
@@ -173,7 +173,7 @@ export default function CreateGameForm({
             {renderField('ZIP', 'zip', 'text', { placeholder: '78701' })}
           </div>
           <p className="text-xs text-[#8FA6BE]">
-            Address is only shown to approved players
+            Address Is Only Shown To Approved Players
           </p>
         </div>
       </div>

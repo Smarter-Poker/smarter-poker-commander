@@ -37,12 +37,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST', 'PATCH']);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -55,7 +55,7 @@ async function awardComp(req, res, staffAuth) {
     // ── ROLE CHECK: Only owner, manager, dualrate can issue comps ──
     const compRoles = ['owner', 'manager', 'dualrate'];
     if (staffRecord && staffRecord !== true && staffRecord.role && !compRoles.includes(staffRecord.role)) {
-      return res.status(403).json({ success: false, error: `Comp issuance requires Owner, Manager, or Dual Rate role. Current role: ${staffRecord.role}` });
+      return res.status(403).json({ success: false, error: `Comp Issuance Requires Owner, Manager, Or Dual Rate Role. Current Role: ${staffRecord.role}` });
     }
 
     const { member_id, amount, reason, type, authorized_by, authorized_pin, comp_category, notes, membership_days } = req.body;
@@ -142,7 +142,7 @@ async function awardComp(req, res, staffAuth) {
       }
     }
 
-    if (!member) return res.status(404).json({ success: false, error: 'Member not found' });
+    if (!member) return res.status(404).json({ success: false, error: 'Member Not Found' });
 
     // Check membership status - provide specific messaging
     // BYPASS for free_membership comps: the whole point is to renew/activate membership
@@ -163,7 +163,7 @@ async function awardComp(req, res, staffAuth) {
 
     // Verify staff is at the same venue as the member
     if (String(staffRecord.venue_id) !== String(member.venue_id)) {
-      return res.status(403).json({ success: false, error: 'Staff not authorized for this venue' });
+      return res.status(403).json({ success: false, error: 'Staff Not Authorized For This Venue' });
     }
 
     // ═══ MEMBERSHIP COMP: Extend membership_expires ═══
@@ -281,7 +281,7 @@ async function awardComp(req, res, staffAuth) {
     // ═══ DOLLAR COMP: Update comp_balance ═══
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      return res.status(400).json({ success: false, error: 'Amount must be a positive number' });
+      return res.status(400).json({ success: false, error: 'Amount Must Be A Positive Number' });
     }
     // 2026-07-28 audit fix: this was the ONE write path in this file that
     // guarded itself, with an optimistic lock (.eq('comp_balance', <value read
@@ -314,7 +314,7 @@ async function awardComp(req, res, staffAuth) {
     if (updateErr) {
       // P0001 is the balance-would-go-negative guard inside the function.
       if (updateErr.code === 'P0001') {
-        return res.status(400).json({ success: false, error: updateErr.message || 'Comp rejected' });
+        return res.status(400).json({ success: false, error: updateErr.message || 'Comp Rejected' });
       }
       throw updateErr;
     }
@@ -331,7 +331,7 @@ async function awardComp(req, res, staffAuth) {
     });
   } catch (error) {
     console.warn('Award comp error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -406,11 +406,11 @@ async function getBalances(req, res) {
 
     if (!userId) {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Authorization Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (authError || !user) return res.status(401).json({ success: false, error: 'Session expired - please refresh the page' });
+      if (authError || !user) return res.status(401).json({ success: false, error: 'Session Expired - Please Refresh The Page' });
       userId = user.id;
     }
 
@@ -531,7 +531,7 @@ async function getBalances(req, res) {
     });
   } catch (error) {
     console.warn('Get comp balances error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -546,7 +546,7 @@ async function voidComp(req, res, staffAuth) {
     // ── ROLE CHECK: Only owner, manager, dualrate can void comps ──
     const compRoles = ['owner', 'manager', 'dualrate'];
     if (staffAuth && staffAuth !== true && staffAuth.role && !compRoles.includes(staffAuth.role)) {
-      return res.status(403).json({ success: false, error: `Void/revoke requires Owner, Manager, or Dual Rate role. Current role: ${staffAuth.role}` });
+      return res.status(403).json({ success: false, error: `Void/Revoke Requires Owner, Manager, Or Dual Rate Role. Current Role: ${staffAuth.role}` });
     }
 
     // 1. Fetch the original comp log entry
@@ -556,10 +556,10 @@ async function voidComp(req, res, staffAuth) {
       .eq('id', comp_log_id)
       .maybeSingle();
 
-    if (logErr || !logEntry) return res.status(404).json({ success: false, error: 'Comp log entry not found' });
+    if (logErr || !logEntry) return res.status(404).json({ success: false, error: 'Comp Log Entry Not Found' });
 
     // 2. Check if already voided (prevent double-void)
-    if (logEntry.type === 'void') return res.status(400).json({ success: false, error: 'This is already a void entry' });
+    if (logEntry.type === 'void') return res.status(400).json({ success: false, error: 'This Is Already A Void Entry' });
 
     // Check if there's already a void entry referencing this one
     const { data: existingVoid } = await getSupabase()
@@ -571,7 +571,7 @@ async function voidComp(req, res, staffAuth) {
       .like('notes', `VOID-REF:${comp_log_id} |%`)
       .maybeSingle();
 
-    if (existingVoid) return res.status(400).json({ success: false, error: 'This comp has already been voided' });
+    if (existingVoid) return res.status(400).json({ success: false, error: 'This Comp Has Already Been Voided' });
 
     // 3. Fetch the member
     const { data: member, error: memberErr } = await getSupabase()
@@ -580,11 +580,11 @@ async function voidComp(req, res, staffAuth) {
       .eq('id', logEntry.member_id)
       .maybeSingle();
 
-    if (memberErr || !member) return res.status(404).json({ success: false, error: 'Member not found' });
+    if (memberErr || !member) return res.status(404).json({ success: false, error: 'Member Not Found' });
 
     // 4. Verify staff has access to this venue
     if (String(staffAuth.venue_id) !== String(logEntry.venue_id)) {
-      return res.status(403).json({ success: false, error: 'Staff not authorized for this venue' });
+      return res.status(403).json({ success: false, error: 'Staff Not Authorized For This Venue' });
     }
 
     const compCategory = logEntry.comp_category || 'cash_bonus';
@@ -664,13 +664,13 @@ async function voidComp(req, res, staffAuth) {
 
     if (voidErr) {
       if (voidErr.code === 'P0001') {
-        return res.status(400).json({ success: false, error: voidErr.message || 'Void rejected' });
+        return res.status(400).json({ success: false, error: voidErr.message || 'Void Rejected' });
       }
       throw voidErr;
     }
 
     if (voidResult?.replayed === true) {
-      return res.status(400).json({ success: false, error: 'This comp has already been voided' });
+      return res.status(400).json({ success: false, error: 'This Comp Has Already Been Voided' });
     }
 
     // Response shape unchanged.
@@ -688,6 +688,6 @@ async function voidComp(req, res, staffAuth) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Void comp error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

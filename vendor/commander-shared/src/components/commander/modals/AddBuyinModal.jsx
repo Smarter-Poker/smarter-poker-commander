@@ -46,7 +46,7 @@ export default function AddBuyinModal({
           amount: buyinAmount
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
 

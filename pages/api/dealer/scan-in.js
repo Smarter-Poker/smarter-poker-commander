@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // 2026-07-29 (decision A): dealer scan-in assigns a dealer to a table from
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
           if (!member) {
               return res.status(404).json({
                   success: false,
-                  error: 'Employee not found. QR code not recognized.'
+                  error: 'Employee Not Found. QR Code Not Recognized.'
               });
           }
 
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
           if (member.membership_status === 'suspended' || member.membership_status === 'banned') {
               return res.status(403).json({
                   success: false,
-                  error: 'Employee account is suspended or banned.'
+                  error: 'Employee Account Is Suspended Or Banned.'
               });
           }
 
@@ -159,13 +159,13 @@ export default async function handler(req, res) {
                   // through the authenticated dealers API.
                   return res.status(404).json({
                       success: false,
-                      error: 'Employee not found. QR code not recognized.'
+                      error: 'Employee Not Found. QR Code Not Recognized.'
                   });
               }
           }
 
           if (!dealerId) {
-              return res.status(500).json({ success: false, error: 'Could not resolve dealer record' });
+              return res.status(500).json({ success: false, error: 'Could Not Resolve Dealer Record' });
           }
 
           // End any current dealer rotation for this table
@@ -224,17 +224,17 @@ export default async function handler(req, res) {
                   rotation_id: rotation.id,
                   table_number: tableNum,
                   started_at: rotation.started_at,
-                  message: `${dealerName} is now dealing at Table ${tableNum}`
+                  message: `${dealerName} Is Now Dealing At Table ${tableNum}`
               }
           });
       } catch (err) {
           console.warn('Dealer scan-in error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

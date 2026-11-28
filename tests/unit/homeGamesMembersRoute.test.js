@@ -133,7 +133,7 @@ describe('home-game member invitations', () => {
         username: 'invited-player',
         profiles: { display_name: 'Invited Player', username: 'invited-player' },
       },
-      message: 'User invited successfully',
+      message: 'User Invited Successfully',
     });
     expect(res.body.member).not.toHaveProperty('invited_by');
   });
@@ -208,7 +208,7 @@ describe('home-game member invitations', () => {
     expect(res.body).toEqual({
       success: false,
       code: 'ALREADY_MEMBER',
-      error: 'This player is already a member of the group',
+      error: 'This Player Is Already A Member Of The Group',
     });
   });
 });

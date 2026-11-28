@@ -169,7 +169,7 @@ const venueId = getVenueId();
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin_code: pin, venue_id: venueId })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success && json.data?.valid && json.data?.staff) {
         const staff = json.data.staff;
@@ -192,7 +192,7 @@ const venueId = getVenueId();
         });
         const saveJson = await saveRes.json().catch(() => ({}));
         if (!saveRes.ok || !saveJson.success) {
-          throw new Error(saveJson?.error?.message || `Save failed (${saveRes.status})`);
+          throw new Error(saveJson?.error?.message || `Save Failed (${saveRes.status})`);
         }
         if (saveJson.data?.close) setLastClose(saveJson.data.close);
         // Saved - advance to the confirmation step and celebrate.

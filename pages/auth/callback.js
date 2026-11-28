@@ -14,7 +14,7 @@ import { supabase } from '../../src/lib/supabase';
 
 export default function AuthCallback() {
   const router = useRouter();
-  const [message, setMessage] = useState('Completing sign-in...');
+  const [message, setMessage] = useState('Completing Sign-In...');
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +36,7 @@ export default function AuthCallback() {
           await new Promise((r) => setTimeout(r, 250));
         }
         if (!cancelled) {
-          setMessage('Sign-in could not be completed. Redirecting to login...');
+          setMessage('Sign-In Could Not Be Completed. Redirecting To Login...');
           setTimeout(() => window.location.replace('/commander/login'), 1500);
         }
       } catch (err) {

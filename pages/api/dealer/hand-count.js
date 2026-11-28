@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       try {
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
               .maybeSingle();
 
           if (tblErr || !table) {
-              return res.status(404).json({ success: false, error: 'Table not found' });
+              return res.status(404).json({ success: false, error: 'Table Not Found' });
           }
 
           let newCount;
@@ -140,6 +140,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

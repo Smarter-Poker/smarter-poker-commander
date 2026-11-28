@@ -65,7 +65,7 @@ export default function TDDealers() {
         `/api/commander/tournaments/${tournamentId}/dealers`,
         { ...(signal ? { signal } : {}) }
       );
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setData(json.data);

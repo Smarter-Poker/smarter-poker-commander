@@ -134,7 +134,7 @@ export default async function handler(req, res) {
           .maybeSingle();
         if (loadError) throw loadError;
         if (!existing) {
-          return res.status(404).json({ success: false, error: 'Announcement not found' });
+          return res.status(404).json({ success: false, error: 'Announcement Not Found' });
         }
         if (String(existing.venue_id) !== String(staff.venue_id)) {
           return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
@@ -150,7 +150,7 @@ export default async function handler(req, res) {
         updates.updated_at = new Date().toISOString();
 
         if (Object.keys(updates || {}).length <= 1) {
-          return res.status(400).json({ success: false, error: 'No updates provided' });
+          return res.status(400).json({ success: false, error: 'No Updates Provided' });
         }
 
         const { data, error } = await getSupabase()
@@ -182,7 +182,7 @@ export default async function handler(req, res) {
           .maybeSingle();
         if (loadError) throw loadError;
         if (!existing) {
-          return res.status(404).json({ success: false, error: 'Announcement not found' });
+          return res.status(404).json({ success: false, error: 'Announcement Not Found' });
         }
         if (String(existing.venue_id) !== String(staff.venue_id)) {
           return res.status(403).json({ success: false, error: 'You Are Not Staff At This Venue' });
@@ -200,11 +200,11 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

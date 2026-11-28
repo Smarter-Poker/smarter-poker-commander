@@ -103,7 +103,7 @@ export default function RsvpForm({
       {willBeWaitlisted && (
         <div className="p-3 bg-[#22D3EE]/10 border border-[#22D3EE] rounded-lg">
           <p className="text-sm text-[#0EA5C6]">
-            This event is full. You will be added to the waitlist.
+            This Event Is Full. You Will Be Added To The Waitlist.
           </p>
         </div>
       )}
@@ -128,7 +128,7 @@ export default function RsvpForm({
               ))}
             </select>
             <span className="text-sm text-[#9FB3C8]">
-              Max {maxGuests} guest{maxGuests === 1 ? '' : 's'} allowed
+              Max {maxGuests} Guest{maxGuests === 1 ? '' : 's'} Allowed
             </span>
           </div>
 
@@ -137,7 +137,7 @@ export default function RsvpForm({
               type="text"
               value={guestNames}
               onChange={(e) => setGuestNames(e.target.value)}
-              placeholder="Guest Names (comma Separated)"
+              placeholder="Guest Names (Comma Separated)"
               className="cmd-input mt-2 w-full px-3 py-2"
             />
           )}
@@ -147,7 +147,7 @@ export default function RsvpForm({
       {/* Message to host */}
       <div>
         <label className="block text-sm font-medium text-white mb-2">
-          Message to Host (optional)
+          Message To Host (Optional)
         </label>
         <textarea
           value={message}
@@ -249,7 +249,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
                         onClick={() => onManage?.(rsvp, 'move_from_waitlist')}
                         className="text-xs text-[#22D3EE] hover:underline"
                       >
-                        Add to Game
+                        Add To Game
                       </button>
                     )}
                   </div>
@@ -262,7 +262,7 @@ export function RsvpList({ rsvps, isHost = false, onManage }) {
 
       {Object.values(rsvps || {}).every(arr => arr.length === 0) && (
         <p className="text-center text-[#9FB3C8] py-4">
-          No RSVPs yet
+          No RSVPs Yet
         </p>
       )}
     </div>

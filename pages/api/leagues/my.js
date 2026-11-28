@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     try {
     const _u = await guardUser(req, res); if (!_u) return;
 
-    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     const { data: standings, error } = await getSupabase()
       .from('commander_league_standings')
@@ -29,16 +29,16 @@ export default async function handler(req, res) {
       .order('updated_at', { ascending: false })
           .limit(100);
 
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true, data: { leagues: standings } });
     } catch (err) {
       console.warn('[pages/api/commander/leagues/my.js]', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

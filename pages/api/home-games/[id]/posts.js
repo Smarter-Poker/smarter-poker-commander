@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       if (!id || typeof id !== 'string' || !UUID_RE.test(id)) {
         return res.status(400).json({
           success: false,
-          error: { code: 'INVALID_GROUP_ID', message: 'Invalid group id' }
+          error: { code: 'INVALID_GROUP_ID', message: 'Invalid Group Id' }
         });
       }
 
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       if (!authHeader) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' }
         });
       }
 
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Token' }
         });
       }
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
       if (memberError || !membership) {
         return res.status(403).json({
           success: false,
-          error: { code: 'FORBIDDEN', message: 'Must be a member to access posts' }
+          error: { code: 'FORBIDDEN', message: 'Must Be A Member To Access Posts' }
         });
       }
 
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
           .select('is_active').eq('id', id).maybeSingle();
         if (groupRead.error) throw groupRead.error;
         if (groupRead.data?.is_active !== true) {
-          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Home game unavailable' } });
+          return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Home Game Unavailable' } });
         }
         const safeP = (v) => Array.isArray(v) ? v[0] : v;
         const limit = Math.max(1, Math.min(parseInt(safeP(req.query.limit)) || 20, 100));
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
         if (!content || typeof content !== 'string') {
           return res.status(400).json({
             success: false,
-            error: { code: 'MISSING_CONTENT', message: 'Post content required' }
+            error: { code: 'MISSING_CONTENT', message: 'Post Content Required' }
           });
         }
         // Mirror DB CHECK: chk_home_posts_content_length (max 10000)
@@ -190,7 +190,7 @@ export default async function handler(req, res) {
         if (is_pinned && !['owner', 'admin'].includes(membership.role)) {
           return res.status(403).json({
             success: false,
-            error: { code: 'FORBIDDEN', message: 'Only owner/admin can pin posts' }
+            error: { code: 'FORBIDDEN', message: 'Only Owner/Admin Can Pin Posts' }
           });
         }
 
@@ -223,19 +223,19 @@ export default async function handler(req, res) {
 
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET and POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET And POST Allowed' }
       });
     } catch (error) {
       console.warn('Home game posts API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to process request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Process Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

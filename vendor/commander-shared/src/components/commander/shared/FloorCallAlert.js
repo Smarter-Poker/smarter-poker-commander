@@ -35,7 +35,7 @@ export default function FloorCallAlert({ venueId }) {
         setActiveCall({
             id: call.id,
             table_number: call.table_number,
-            description: call.description || `Table ${call.table_number} needs floor`,
+            description: call.description || `Table ${call.table_number} Needs Floor`,
             created_at: call.created_at,
         });
         // Auto-dismiss after 30 seconds
@@ -135,7 +135,7 @@ export default function FloorCallAlert({ venueId }) {
             </button>
 
             <div style={{ position: 'absolute', bottom: 24, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-                Auto-dismisses in 30 seconds · Tap anywhere to dismiss
+                Auto-Dismisses In 30 Seconds · Tap Anywhere To Dismiss
             </div>
 
             <style dangerouslySetInnerHTML={{ __html: `

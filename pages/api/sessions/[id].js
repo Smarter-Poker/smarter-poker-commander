@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Session ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Session ID Required' }
       });
     }
 
@@ -71,14 +71,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -100,7 +100,7 @@ async function handleGet(req, res, sessionId) {
     if (error || !session) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Session not found' }
+        error: { code: 'NOT_FOUND', message: 'Session Not Found' }
       });
     }
 
@@ -112,7 +112,7 @@ async function handleGet(req, res, sessionId) {
     console.warn('Commander session GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -131,7 +131,7 @@ async function handlePatch(req, res, sessionId) {
     if (fetchError || !session) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Session not found' }
+        error: { code: 'NOT_FOUND', message: 'Session Not Found' }
       });
     }
 
@@ -142,7 +142,7 @@ async function handlePatch(req, res, sessionId) {
       if (session.check_out_at) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Session already checked out' }
+          error: { code: 'VALIDATION_ERROR', message: 'Session Already Checked Out' }
         });
       }
 
@@ -184,7 +184,7 @@ async function handlePatch(req, res, sessionId) {
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No valid fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Valid Fields To Update' }
       });
     }
 
@@ -199,7 +199,7 @@ async function handlePatch(req, res, sessionId) {
       console.warn('Commander session PATCH error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update session' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Session' }
       });
     }
 
@@ -212,7 +212,7 @@ async function handlePatch(req, res, sessionId) {
     console.warn('Commander session PATCH error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

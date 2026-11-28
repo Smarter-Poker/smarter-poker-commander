@@ -88,9 +88,9 @@ const staffData = getStaffData();
         commanderFetch(`/api/commander/tables?venue_id=${vid}`, opts).catch(() => ({ ok: false })),
         commanderFetch(`/api/commander/waitlist?venue_id=${vid}`, opts).catch(() => ({ ok: false }))
       ]);
-      if (!tabRes.ok) throw new Error(`Request failed (${tabRes.status})`);
+      if (!tabRes.ok) throw new Error(`Request Failed (${tabRes.status})`);
       const tabJson = await tabRes.json();
-      if (!wlRes.ok) throw new Error(`Request failed (${wlRes.status})`);
+      if (!wlRes.ok) throw new Error(`Request Failed (${wlRes.status})`);
       const wlJson = await wlRes.json();
       if (tabJson.success) setTables(tabJson.data?.tables || tabJson.data || []);
       if (wlJson.success) {
@@ -204,7 +204,7 @@ const staffData = getStaffData();
   const tickerParts = [];
   if (breakTables.length > 0) tickerParts.push(`BREAK ${breakTables.join('--')}`);
   if (custom.tickerMessage) tickerParts.push(custom.tickerMessage);
-  else tickerParts.push('Download the Smarter Poker App for live waitlist updates');
+  else tickerParts.push('Download The Smarter Poker App For Live Waitlist Updates');
   tickerParts.push(`${totalWaiting} players currently waiting`);
   const tickerMessage = tickerParts.join('   \u00A0\u00A0\u00A0-\u00A0\u00A0\u00A0   ');
 

@@ -58,7 +58,7 @@ export default function MustMoveManager() {
     setLoading(true);
     try {
       const res = await commanderFetch(`/api/commander/games/must-move-status?venue_id=${venueId}`, { ...(signal instanceof AbortSignal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) setData(json.data);
     } catch (err) { console.warn(err); }
@@ -104,7 +104,7 @@ export default function MustMoveManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ must_move_game_id: mustMoveGameId, target_game_id: targetGameId })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (json.success) {
         setMessage({ type: 'success', text: json.data.message });

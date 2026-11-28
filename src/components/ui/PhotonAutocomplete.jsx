@@ -253,11 +253,11 @@ export default function PhotonAutocomplete({ onPlaceSelected, defaultValue, onCh
             })
           ) : query.length >= 3 && !isLoading ? (
             <li style={{ padding: '12px 16px', color: '#9FB3C8', fontSize: '14px', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-              No matching addresses found.
+              No Matching Addresses Found.
             </li>
           ) : query.length > 0 && query.length < 3 ? (
             <li style={{ padding: '12px 16px', color: '#9FB3C8', fontSize: '14px', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-              Type at least 3 characters to search...
+              Type At Least 3 Characters To Search...
             </li>
           ) : null}
         </ul>

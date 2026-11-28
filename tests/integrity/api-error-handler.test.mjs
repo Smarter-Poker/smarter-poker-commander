@@ -33,7 +33,7 @@ test('production exceptions keep generic 500 and local diagnostics without reque
     body: { password: 'private' }, headers: { authorization: 'private' },
   }, res);
   assert.equal(res.code, 500);
-  assert.deepEqual(res.body, { success: false, error: 'Internal server error' });
+  assert.deepEqual(res.body, { success: false, error: 'Internal Server Error' });
   assert.equal(log.mock.callCount(), 1);
   assert.deepEqual(log.mock.calls[0].arguments[1], {
     route: '/api/example', method: 'POST', name: 'Error', message: 'database unavailable',

@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     const { id: eventId } = req.query;
 
     if (!isHomeGamesUuid(eventId)) {
-      return res.status(400).json({ error: 'Valid event ID required' });
+      return res.status(400).json({ error: 'Valid Event ID Required' });
     }
 
     if (req.method === 'GET') {
@@ -73,12 +73,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST', 'PUT']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -86,7 +86,7 @@ async function getRsvps(req, res, eventId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -94,7 +94,7 @@ async function getRsvps(req, res, eventId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     // Only the event host, canonical group owner, or an approved group admin
@@ -107,7 +107,7 @@ async function getRsvps(req, res, eventId) {
     if (eventError) throw eventError;
 
     if (!event) {
-      return res.status(404).json({ error: 'Event not found' });
+      return res.status(404).json({ error: 'Event Not Found' });
     }
 
     const [groupResult, membershipResult] = await Promise.all([
@@ -126,7 +126,7 @@ async function getRsvps(req, res, eventId) {
     if (groupResult.error) throw groupResult.error;
     if (membershipResult.error) throw membershipResult.error;
     if (!groupResult.data) {
-      return res.status(404).json({ error: 'Group not found' });
+      return res.status(404).json({ error: 'Group Not Found' });
     }
 
     const access = resolveGroupMembershipAccess({
@@ -136,7 +136,7 @@ async function getRsvps(req, res, eventId) {
     });
     const mayManageRsvps = event.host_id === user.id || access.isManager;
     if (!mayManageRsvps) {
-      return res.status(403).json({ error: 'Only the event host or group managers can view RSVPs' });
+      return res.status(403).json({ error: 'Only The Event Host Or Group Managers Can View RSVPs' });
     }
 
     const { data: rsvps, error } = await getSupabase()
@@ -164,7 +164,7 @@ async function getRsvps(req, res, eventId) {
     });
   } catch (error) {
     console.warn('Get RSVPs error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -172,7 +172,7 @@ async function submitRsvp(req, res, eventId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -180,13 +180,13 @@ async function submitRsvp(req, res, eventId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const { response, bringing_guests, guest_names, message } = req.body || {};
 
     if (!response || !['yes', 'maybe', 'no'].includes(response)) {
-      return res.status(400).json({ error: 'Valid response required (yes, maybe, no)' });
+      return res.status(400).json({ error: 'Valid Response Required (Yes, Maybe, No)' });
     }
 
     // Get event
@@ -198,7 +198,7 @@ async function submitRsvp(req, res, eventId) {
 
     if (eventError) throw eventError;
     if (!event) {
-      return res.status(404).json({ error: 'Event not found' });
+      return res.status(404).json({ error: 'Event Not Found' });
     }
 
     // phase40: time-window enforcement. Only 'scheduled' and 'confirmed' states
@@ -206,10 +206,10 @@ async function submitRsvp(req, res, eventId) {
     // past the point of RSVP. Belt + suspenders on cancelled_at in case status
     // ever drifts from cancelled_at.
     if (event.status !== 'scheduled' && event.status !== 'confirmed') {
-      return res.status(400).json({ error: 'This event is no longer accepting RSVPs' });
+      return res.status(400).json({ error: 'This Event Is No Longer Accepting RSVPs' });
     }
     if (event.cancelled_at) {
-      return res.status(400).json({ error: 'This event has been cancelled' });
+      return res.status(400).json({ error: 'This Event Has Been Cancelled' });
     }
     if (event.rsvps_closed) {
       return res.status(400).json({ error: 'RSVPs are closed for this event' });
@@ -234,10 +234,10 @@ async function submitRsvp(req, res, eventId) {
     if (groupResult.error) throw groupResult.error;
     if (membershipResult.error) throw membershipResult.error;
     if (!groupResult.data) {
-      return res.status(404).json({ error: 'Group not found' });
+      return res.status(404).json({ error: 'Group Not Found' });
     }
     if (groupResult.data.is_active === false) {
-      return res.status(409).json({ error: 'This group is not accepting RSVPs' });
+      return res.status(409).json({ error: 'This Group Is Not Accepting RSVPs' });
     }
     // Belt-and-suspenders: even if status wasn't flipped by the status cron,
     // reject RSVPs to past-date events. scheduled_date is a DATE column in the
@@ -250,7 +250,7 @@ async function submitRsvp(req, res, eventId) {
         state: groupResult.data.state,
       }));
       if (String(event.scheduled_date).slice(0, 10) < gameToday) {
-        return res.status(400).json({ error: 'This event has already happened' });
+        return res.status(400).json({ error: 'This Event Has Already Happened' });
       }
     }
 
@@ -260,7 +260,7 @@ async function submitRsvp(req, res, eventId) {
       membership: membershipResult.data,
     });
     if (event.host_id !== user.id && !access.isMember) {
-      return res.status(403).json({ error: 'You are not a member of this group' });
+      return res.status(403).json({ error: 'You Are Not A Member Of This Group' });
     }
 
     const parsedGuestCount = Number(bringing_guests ?? 0);
@@ -269,10 +269,10 @@ async function submitRsvp(req, res, eventId) {
     }
     const totalGuests = response === 'yes' ? parsedGuestCount : 0;
     if (totalGuests > 0 && !event.allow_guests) {
-      return res.status(400).json({ error: 'Guests are not allowed at this event' });
+      return res.status(400).json({ error: 'Guests Are Not Allowed At This Event' });
     }
     if (totalGuests > 0 && event.guest_limit != null && totalGuests > event.guest_limit) {
-      return res.status(400).json({ error: `Maximum ${event.guest_limit} guest(s) allowed` });
+      return res.status(400).json({ error: `Maximum ${event.guest_limit} Guest(s) Allowed` });
     }
     if (guest_names != null && !Array.isArray(guest_names)) {
       return res.status(400).json({ error: 'guest_names must be an array' });
@@ -372,12 +372,12 @@ async function submitRsvp(req, res, eventId) {
     return res.status(200).json({
       rsvp: normalizedRsvp,
       message: normalizedRsvp.response === 'waitlist'
-        ? 'Added to waitlist - the event is currently full'
+        ? 'Added To Waitlist - The Event Is Currently Full'
         : 'RSVP submitted'
     });
   } catch (error) {
     console.warn('Submit RSVP error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -385,7 +385,7 @@ async function updateRsvp(req, res, eventId) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -393,7 +393,7 @@ async function updateRsvp(req, res, eventId) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const { rsvp_id, action, seat_number } = req.body || {};
@@ -435,7 +435,7 @@ async function updateRsvp(req, res, eventId) {
       if (groupResult.error) throw groupResult.error;
       if (membershipResult.error) throw membershipResult.error;
       if (!groupResult.data) {
-        return res.status(404).json({ error: 'Group not found' });
+        return res.status(404).json({ error: 'Group Not Found' });
       }
       const access = resolveGroupMembershipAccess({
         ownerId: groupResult.data.owner_id,
@@ -443,7 +443,7 @@ async function updateRsvp(req, res, eventId) {
         membership: membershipResult.data,
       });
       if (!access.isManager) {
-        return res.status(403).json({ error: 'Only the host or admins can manage RSVPs' });
+        return res.status(403).json({ error: 'Only The Host Or Admins Can Manage RSVPs' });
       }
     }
 
@@ -476,7 +476,7 @@ async function updateRsvp(req, res, eventId) {
       case 'move_from_waitlist':
         // Check capacity
         if (event.rsvp_yes >= event.max_players) {
-          return res.status(400).json({ error: 'Event is at capacity' });
+          return res.status(400).json({ error: 'Event Is At Capacity' });
         }
         updates = { response: 'yes' };
         break;
@@ -490,7 +490,7 @@ async function updateRsvp(req, res, eventId) {
         break;
 
       default:
-        return res.status(400).json({ error: 'Invalid action' });
+        return res.status(400).json({ error: 'Invalid Action' });
     }
 
     updates.updated_at = new Date().toISOString();
@@ -516,6 +516,6 @@ async function updateRsvp(req, res, eventId) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Update RSVP error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

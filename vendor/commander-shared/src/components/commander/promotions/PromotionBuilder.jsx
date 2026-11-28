@@ -11,11 +11,11 @@ import {
 
 const PROMOTION_TYPES = [
   { value: 'high_hand', label: 'High Hand', description: 'Award Best Hand Each Period', color: '#22C55E', icon: Star },
-  { value: 'bad_beat', label: 'Bad Beat', description: 'Jackpot for Qualifying Bad Beats', color: '#EF4444', icon: Zap },
+  { value: 'bad_beat', label: 'Bad Beat', description: 'Jackpot For Qualifying Bad Beats', color: '#EF4444', icon: Zap },
   { value: 'splash_pot', label: 'Splash Pot', description: 'Random Pot Bonuses', color: '#3B82F6', icon: DollarSign },
-  { value: 'happy_hour', label: 'Happy Hour', description: 'Time-based Bonus Rewards', color: '#22D3EE', icon: Clock },
-  { value: 'new_player', label: 'New Player', description: 'First-time Player Bonus', color: '#5AA9FF', icon: Gift },
-  { value: 'referral', label: 'Referral', description: 'Refer a Friend Rewards', color: '#38BDF8', icon: Gift },
+  { value: 'happy_hour', label: 'Happy Hour', description: 'Time-Based Bonus Rewards', color: '#22D3EE', icon: Clock },
+  { value: 'new_player', label: 'New Player', description: 'First-Time Player Bonus', color: '#5AA9FF', icon: Gift },
+  { value: 'referral', label: 'Referral', description: 'Refer A Friend Rewards', color: '#38BDF8', icon: Gift },
   { value: 'loyalty', label: 'Loyalty', description: 'Reward Returning Players', color: '#22D3EE', icon: Star },
   { value: 'drawing', label: 'Drawing', description: 'Raffle / Drawing Entry', color: '#F97316', icon: Gift },
   { value: 'custom', label: 'Custom', description: 'Define Your Own Promotion', color: '#6B7280', icon: Settings }
@@ -48,14 +48,14 @@ const STEPS = [
 
 /** Pre-built templates with sensible defaults per type */
 const TEMPLATE_DEFAULTS = {
-  high_hand: { name: 'High Hand Bonus', description: 'Win a bonus for the highest hand of the hour! Quads or better qualify.', prize_type: 'cash', prize_amount: '500', qualifying_hand: 'Quads or Better', game_types: ['all'], max_winners: 1 },
+  high_hand: { name: 'High Hand Bonus', description: 'Win a bonus for the highest hand of the hour! Quads or better qualify.', prize_type: 'cash', prize_amount: '500', qualifying_hand: 'Quads Or Better', game_types: ['all'], max_winners: 1 },
   bad_beat: { name: 'Bad Beat Jackpot', description: 'Lose with quad Jacks or better to win the progressive bad beat jackpot!', prize_type: 'cash', prize_amount: '25000', qualifying_hand: 'Quad Jacks Beaten', game_types: ['all'], max_winners: 3 },
-  splash_pot: { name: 'Splash Pot', description: 'Every 30 minutes, a random pot gets a cash bonus added!', prize_type: 'cash', prize_amount: '100', game_types: ['all'], max_winners: 1 },
-  happy_hour: { name: 'Happy Hour', description: 'Double comp points during happy hour! 4 PM - 7 PM daily.', prize_type: 'points', prize_amount: '50', start_time: '16:00', end_time: '19:00', game_types: ['all'], max_winners: 99 },
-  new_player: { name: 'New Player Freeroll', description: 'First-time players receive a free tournament entry worth $1,000!', prize_type: 'freeroll', prize_amount: '1000', game_types: ['all'], max_winners: 1 },
-  referral: { name: 'Bring a Friend Bonus', description: 'Refer a friend and both of you receive a cash bonus when they play their first session!', prize_type: 'cash', prize_amount: '50', game_types: ['all'], max_winners: 99 },
-  loyalty: { name: 'Loyalty Double Points', description: 'Earn double comp points all weekend long - Friday through Sunday.', prize_type: 'points', prize_amount: '', prize_description: '2x points', is_recurring: true, recurring_days: [5, 6, 0], game_types: ['all'], max_winners: 99 },
-  drawing: { name: 'Prize Drawing', description: 'Earn 1 raffle ticket every hour of play. Drawing held at closing!', prize_type: 'cash', prize_amount: '500', game_types: ['all'], max_winners: 1 },
+  splash_pot: { name: 'Splash Pot', description: 'Every 30 Minutes, A Random Pot Gets A Cash Bonus Added!', prize_type: 'cash', prize_amount: '100', game_types: ['all'], max_winners: 1 },
+  happy_hour: { name: 'Happy Hour', description: 'Double Comp Points During Happy Hour! 4 PM - 7 PM Daily.', prize_type: 'points', prize_amount: '50', start_time: '16:00', end_time: '19:00', game_types: ['all'], max_winners: 99 },
+  new_player: { name: 'New Player Freeroll', description: 'First-Time Players Receive A Free Tournament Entry Worth $1,000!', prize_type: 'freeroll', prize_amount: '1000', game_types: ['all'], max_winners: 1 },
+  referral: { name: 'Bring A Friend Bonus', description: 'Refer a friend and both of you receive a cash bonus when they play their first session!', prize_type: 'cash', prize_amount: '50', game_types: ['all'], max_winners: 99 },
+  loyalty: { name: 'Loyalty Double Points', description: 'Earn Double Comp Points All Weekend Long - Friday Through Sunday.', prize_type: 'points', prize_amount: '', prize_description: '2x points', is_recurring: true, recurring_days: [5, 6, 0], game_types: ['all'], max_winners: 99 },
+  drawing: { name: 'Prize Drawing', description: 'Earn 1 Raffle Ticket Every Hour Of Play. Drawing Held At Closing!', prize_type: 'cash', prize_amount: '500', game_types: ['all'], max_winners: 1 },
   custom: { name: '', description: '', prize_type: 'cash', prize_amount: '', game_types: ['all'], max_winners: 1 }
 };
 
@@ -263,7 +263,7 @@ export default function PromotionBuilder({
                 type="text"
                 value={formData.name}
                 onChange={(e) => updateField('name', e.target.value)}
-                placeholder={selectedType ? `${selectedType.label} Promotion` : 'Promotion name'}
+                placeholder={selectedType ? `${selectedType.label} Promotion` : 'Promotion Name'}
                 className="w-full cmd-input"
               />
             </div>
@@ -322,7 +322,7 @@ export default function PromotionBuilder({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Image URL (optional)</label>
+              <label className="block text-sm font-medium text-[#A9BDD1] mb-1.5">Image URL (Optional)</label>
               <div className="flex gap-2">
                 <input
                   type="url"
@@ -412,7 +412,7 @@ export default function PromotionBuilder({
                 onChange={(e) => updateField('is_featured', e.target.checked)}
                 className="w-5 h-5 rounded border-[#445E77]"
               />
-              <span className="text-sm text-[#A9BDD1]">Feature This Promotion (shown Prominently)</span>
+              <span className="text-sm text-[#A9BDD1]">Feature This Promotion (Shown Prominently)</span>
             </label>
           </div>
         )}

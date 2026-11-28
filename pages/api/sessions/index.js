@@ -49,14 +49,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -99,7 +99,7 @@ async function handleGet(req, res, staff, user) {
       console.warn('Commander sessions query error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to fetch sessions' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Fetch Sessions' }
       });
     }
 
@@ -111,7 +111,7 @@ async function handleGet(req, res, staff, user) {
     captureException(error, { action: 'sessions_list', endpoint: '/api/commander/sessions', venue_id: req.query?.venue_id });
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -144,7 +144,7 @@ async function handlePost(req, res, staff, user) {
       if (!venue) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Venue not found' }
+          error: { code: 'NOT_FOUND', message: 'Venue Not Found' }
         });
       }
     }
@@ -152,7 +152,7 @@ async function handlePost(req, res, staff, user) {
     if (!player_id && !player_name) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Either player_id or player_name is required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Either player_id Or player_name Is Required' }
       });
     }
 
@@ -169,7 +169,7 @@ async function handlePost(req, res, staff, user) {
       if (existing) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Player already has an active session' }
+          error: { code: 'VALIDATION_ERROR', message: 'Player Already Has An Active Session' }
         });
       }
     }
@@ -196,7 +196,7 @@ async function handlePost(req, res, staff, user) {
       console.warn('Commander session create error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to create session' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Create Session' }
       });
     }
 
@@ -209,7 +209,7 @@ async function handlePost(req, res, staff, user) {
     captureException(error, { action: 'session_checkin', endpoint: '/api/commander/sessions', venue_id: req.body?.venue_id });
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

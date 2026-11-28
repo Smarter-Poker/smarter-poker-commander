@@ -64,22 +64,22 @@ export default async function handler(req, res) {
       if (status) updates.status = status;
       if (notes !== undefined) updates.notes = notes;
       if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ success: false, error: 'No updates provided' });
+        return res.status(400).json({ success: false, error: 'No Updates Provided' });
       }
       const { data, error } = await getSupabase().from(table).update(updates).eq('id', id).select().maybeSingle();
-      if (error || !data) return res.status(404).json({ success: false, error: 'Lead not found' });
+      if (error || !data) return res.status(404).json({ success: false, error: 'Lead Not Found' });
       return res.json({ success: true, data: { lead: data } });
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('[pages/api/commander/admin/leads.js]', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
   }
 }

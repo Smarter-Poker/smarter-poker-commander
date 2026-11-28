@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const { code } = req.query;
 
     if (!code) {
-      return res.status(400).json({ error: 'Club code required' });
+      return res.status(400).json({ error: 'Club Code Required' });
     }
 
     if (req.method === 'GET') {
@@ -51,12 +51,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -64,7 +64,7 @@ async function getClubByCode(req, res, code) {
   try {
     const upperCode = String(code).toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (!upperCode || upperCode.length > 64) {
-      return res.status(400).json({ error: 'Invalid club code format' });
+      return res.status(400).json({ error: 'Invalid Club Code Format' });
     }
 
     // Try club_code first (6 chars), then invite_code (8 chars)
@@ -96,7 +96,7 @@ async function getClubByCode(req, res, code) {
       .maybeSingle();
 
     if (error || !group) {
-      return res.status(404).json({ error: 'Club not found. Check the code and try again.' });
+      return res.status(404).json({ error: 'Club Not Found. Check The Code And Try Again.' });
     }
 
     // Check if user is already a member (if logged in)
@@ -125,7 +125,7 @@ async function getClubByCode(req, res, code) {
     });
   } catch (error) {
     console.warn('Get club by code error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
@@ -133,7 +133,7 @@ async function joinClubByCode(req, res, code) {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Please log in to join a club' });
+      return res.status(401).json({ error: 'Please Log In To Join A Club' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -141,12 +141,12 @@ async function joinClubByCode(req, res, code) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const upperCode = String(code).toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (!upperCode || upperCode.length > 64) {
-      return res.status(400).json({ error: 'Invalid club code format' });
+      return res.status(400).json({ error: 'Invalid Club Code Format' });
     }
 
     // Find group
@@ -158,7 +158,7 @@ async function joinClubByCode(req, res, code) {
       .maybeSingle();
 
     if (groupError || !group) {
-      return res.status(404).json({ error: 'Club not found. Check the code and try again.' });
+      return res.status(404).json({ error: 'Club Not Found. Check The Code And Try Again.' });
     }
 
     // Use the RPC for Phase 40. CRITICAL: join_home_group internally does
@@ -184,19 +184,19 @@ async function joinClubByCode(req, res, code) {
       // Soft failures mapped to friendly messages
       switch (result?.error) {
         case 'INVALID_INVITE_CODE':
-          return res.status(403).json({ error: 'Invite code is incorrect' });
+          return res.status(403).json({ error: 'Invite Code Is Incorrect' });
         case 'RATE_LIMITED':
-          return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
+          return res.status(429).json({ error: 'Too Many Attempts. Try Again In A Few Minutes.' });
         case 'BANNED':
-          return res.status(403).json({ error: "You're banned from this group" });
+          return res.status(403).json({ error: "You're Banned From This Group" });
         case 'DECLINED':
-          return res.status(403).json({ error: 'The host has declined this membership request' });
+          return res.status(403).json({ error: 'The Host Has Declined This Membership Request' });
         case 'ALREADY_MEMBER':
-          return res.status(400).json({ error: 'You are already a member of this club' });
+          return res.status(400).json({ error: 'You Are Already A Member Of This Club' });
         case 'PENDING_APPROVAL':
-          return res.status(400).json({ error: 'Your membership request is pending approval' });
+          return res.status(400).json({ error: 'Your Membership Request Is Pending Approval' });
         default:
-          return res.status(400).json({ error: result?.error || 'Failed to join group' });
+          return res.status(400).json({ error: result?.error || 'Failed To Join Group' });
       }
     }
 
@@ -206,7 +206,7 @@ async function joinClubByCode(req, res, code) {
     // was displayed as immediate membership.
     const normalized = normalizeJoinResult(result);
     if (!normalized) {
-      return res.status(502).json({ error: 'Join service returned an invalid membership state' });
+      return res.status(502).json({ error: 'Join Service Returned An Invalid Membership State' });
     }
 
     const { status, membership } = normalized;
@@ -215,12 +215,12 @@ async function joinClubByCode(req, res, code) {
       membership,
       group: { id: group.id, name: group.name },
       message: status === 'approved'
-        ? `Welcome to ${group.name}!`
-        : `Your request to join ${group.name} is pending approval`
+        ? `Welcome To ${group.name}!`
+        : `Your Request To Join ${group.name} Is Pending Approval`
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Join club by code error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

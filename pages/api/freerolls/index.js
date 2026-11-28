@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -130,7 +130,7 @@ async function listFreerolls(req, res, staff) {
         console.warn('Freerolls error:', error);
         return res.status(500).json({
             success: false,
-            error: { code: 'SERVER_ERROR', message: 'Failed to fetch freerolls' }
+            error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Freerolls' }
         });
     }
 }
@@ -154,7 +154,7 @@ async function createFreeroll(req, res, guard) {
     if (!name) {
         return res.status(400).json({
             success: false,
-            error: { code: 'MISSING_FIELDS', message: 'Freeroll name required' }
+            error: { code: 'MISSING_FIELDS', message: 'Freeroll Name Required' }
         });
     }
 
@@ -189,7 +189,7 @@ async function createFreeroll(req, res, guard) {
         console.warn('Create freeroll error:', error);
         return res.status(500).json({
             success: false,
-            error: { code: 'SERVER_ERROR', message: 'Internal server error' }
+            error: { code: 'SERVER_ERROR', message: 'Internal Server Error' }
         });
     }
 }

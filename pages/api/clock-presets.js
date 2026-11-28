@@ -65,10 +65,10 @@ export default async function handler(req, res) {
 
       if (req.method === 'POST') {
           try {
-              if (!venueId) return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff auth required' } });
+              if (!venueId) return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff Auth Required' } });
 
               const { name, theme, display_options, is_default } = req.body;
-              if (!name) return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Name is required' } });
+              if (!name) return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Name Is Required' } });
 
               // If setting as default, unset other defaults for this venue
               if (is_default) {
@@ -100,10 +100,10 @@ export default async function handler(req, res) {
 
       if (req.method === 'PUT') {
           try {
-              if (!venueId) return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff auth required' } });
+              if (!venueId) return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff Auth Required' } });
 
               const presetId = req.query.id || req.body.id;
-              if (!presetId) return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Preset ID required' } });
+              if (!presetId) return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Preset ID Required' } });
 
               const { name, theme, display_options, is_default } = req.body;
 
@@ -140,10 +140,10 @@ export default async function handler(req, res) {
 
       if (req.method === 'DELETE') {
           try {
-              if (!venueId) return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff auth required' } });
+              if (!venueId) return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Staff Auth Required' } });
 
               const presetId = req.query.id;
-              if (!presetId) return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Preset ID required' } });
+              if (!presetId) return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'Preset ID Required' } });
 
               const { error } = await getSupabase()
                   .from('commander_clock_presets')
@@ -159,11 +159,11 @@ export default async function handler(req, res) {
       }
 
       res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } });
+      return res.status(405).json({ success: false, error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' } });
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

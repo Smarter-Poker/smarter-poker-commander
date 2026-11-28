@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
     const { platform } = req.query;
     if (!platform || !LEGACY_PLATFORM_KEYS.includes(platform)) {
-      return res.status(400).json({ error: 'Invalid platform', valid: LEGACY_PLATFORM_KEYS });
+      return res.status(400).json({ error: 'Invalid Platform', valid: LEGACY_PLATFORM_KEYS });
     }
 
     const { catalog } = await getLatestDesktopRelease();

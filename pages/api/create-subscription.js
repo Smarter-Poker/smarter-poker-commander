@@ -118,14 +118,14 @@ export default async function handler(req, res) {
 
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     // Rate limit: 3 subscription attempts per minute per IP
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
     const rl = checkMemoryRateLimit(`sub:${ip}`, 3, 60000);
-    if (!rl.allowed) { return res.status(429).json({ error: 'Too many requests. Please try again shortly.' }); }
+    if (!rl.allowed) { return res.status(429).json({ error: 'Too Many Requests. Please Try Again Shortly.' }); }
 
     const { paymentMethodId, selectedTier, clubInfo, ownerInfo, existingAccount } = req.body;
     // Defense-in-depth: while COMMANDER_FREE_MODE is on, billing is waived
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
     const tier = selectedTier || req.body.tier;
 
     if (!tier || !TIER_PRICES[tier]) {
-      return res.status(400).json({ error: 'Invalid subscription tier' });
+      return res.status(400).json({ error: 'Invalid Subscription Tier' });
     }
 
     let userId = null;
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
     try {
       const email = ownerInfo.email?.toLowerCase().trim();
       if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
+        return res.status(400).json({ error: 'Email Is Required' });
       }
 
       // ─── Duplicate prevention: check if this email already has an active Commander subscription ──
@@ -220,14 +220,14 @@ export default async function handler(req, res) {
         const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
         if (!bearer) {
           return res.status(401).json({
-            error: 'Please sign in to your Smarter.Poker account first, then complete Commander registration.',
+            error: 'Please Sign In To Your Smarter.Poker Account First, Then Complete Commander Registration.',
             code: 'AUTH_REQUIRED'
           });
         }
         const { data: authData, error: authErr } = await getSupabase().auth.getUser(bearer);
         const authedUser = authData?.user;
         if (authErr || !authedUser) {
-          return res.status(401).json({ error: 'Your session has expired. Please sign in again.', code: 'AUTH_REQUIRED' });
+          return res.status(401).json({ error: 'Your Session Has Expired. Please Sign In Again.', code: 'AUTH_REQUIRED' });
         }
         if ((authedUser.email || '').toLowerCase().trim() !== email) {
           return res.status(403).json({
@@ -287,7 +287,7 @@ export default async function handler(req, res) {
           // Unexpected error
           console.warn('createUser error:', authError?.message);
           return res.status(400).json({
-            error: `Registration issue: ${authError?.message || 'Unknown error'}. Please contact support at admin@smarter.poker.`
+            error: `Registration Issue: ${authError?.message || 'Unknown Error'}. Please Contact Support At admin@smarter.poker.`
           });
         }
       }
@@ -368,12 +368,12 @@ export default async function handler(req, res) {
         if (venueError) {
           console.warn('Venue creation error:', venueError);
           await doRollback();
-          return res.status(400).json({ error: 'Failed to create venue: ' + venueError.message });
+          return res.status(400).json({ error: 'Failed To Create Venue: ' + venueError.message });
         }
 
         if (!newVenue) {
           await doRollback();
-          return res.status(500).json({ error: 'Venue creation returned no data' });
+          return res.status(500).json({ error: 'Venue Creation Returned No Data' });
         }
 
         venueId = newVenue.id;
@@ -505,11 +505,11 @@ export default async function handler(req, res) {
         if (subError) {
           console.warn('Subscription creation error:', subError);
           await doRollback();
-          return res.status(500).json({ error: 'Failed to create subscription' });
+          return res.status(500).json({ error: 'Failed To Create Subscription' });
         }
         if (!newSub) {
           await doRollback();
-          return res.status(500).json({ error: 'Subscription creation returned no data' });
+          return res.status(500).json({ error: 'Subscription Creation Returned No Data' });
         }
         subscriptionData = newSub;
       }
@@ -643,12 +643,12 @@ export default async function handler(req, res) {
         await doRollback();
       }
       
-      return res.status(500).json({ error: error.message || 'Registration failed' });
+      return res.status(500).json({ error: error.message || 'Registration Failed' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

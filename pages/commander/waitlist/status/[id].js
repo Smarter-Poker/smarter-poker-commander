@@ -36,12 +36,12 @@ export default function WaitlistStatus() {
       const res = await commanderFetch(`/api/commander/waitlist/${id}`);
       // HIGH FIX #2b: Add response.ok check before .json()
       if (!res.ok) {
-        const errorText = await res.text().catch(() => 'Unknown error');
+        const errorText = await res.text().catch(() => 'Unknown Error');
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
       const json = await res.json();
       if (!json.success) {
-        setError('Entry not found');
+        setError('Entry Not Found');
         setLoading(false);
         return;
       }
@@ -54,7 +54,7 @@ export default function WaitlistStatus() {
       // computes queue_position server-side instead.
       setPosition(typeof json.queue_position === 'number' ? json.queue_position : null);
     } catch (err) {
-      setError('Failed to load status');
+      setError('Failed To Load Status');
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ export default function WaitlistStatus() {
               <h2 className="text-3xl font-bold text-white mb-2">YOUR SEAT IS READY</h2>
               <p className="text-white/80">Please Report To The Front Desk Immediately</p>
               <p className="text-white/60 text-sm mt-3">
-                You have {entry?.call_timeout || 5} minutes to respond
+                You Have {entry?.call_timeout || 5} Minutes To Respond
               </p>
             </div>
           )}
@@ -178,7 +178,7 @@ export default function WaitlistStatus() {
                 <p className="text-sm text-[#BDD0E2] mb-2">Your Position</p>
                 <p className="text-7xl font-bold text-[#86DAFF]">{position || '-'}</p>
                 <p className="text-sm text-[#BDD0E2] mt-2">
-                  {position === 1 ? "You're next!" : position ? `${position - 1} ahead of you` : 'Calculating...'}
+                  {position === 1 ? "You're Next!" : position ? `${position - 1} Ahead Of You` : 'Calculating...'}
                 </p>
               </div>
 
@@ -208,8 +208,8 @@ export default function WaitlistStatus() {
               </h2>
               <p className="text-[#BDD0E2] mt-2">
                 {status === 'passed'
-                  ? 'Your seat was passed. Visit the desk to rejoin.'
-                  : 'Your waitlist entry is no longer active.'}
+                  ? 'Your Seat Was Passed. Visit The Desk To Rejoin.'
+                  : 'Your Waitlist Entry Is No Longer Active.'}
               </p>
             </div>
           )}
@@ -217,7 +217,7 @@ export default function WaitlistStatus() {
           {/* Join time */}
           {entry?.created_at && (
             <p className="text-center text-xs text-[#BDD0E2]">
-              Joined at {new Date(entry.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              Joined At {new Date(entry.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </p>
           )}
 

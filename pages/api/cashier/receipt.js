@@ -22,15 +22,15 @@ export default async function handler(req, res) {
   try {
     if (!applyRateLimit(req, res, LIMITS.read)) return;
 
-    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ success: false, error: 'Auth required' });
+      if (!authHeader) return res.status(401).json({ success: false, error: 'Auth Required' });
       const token = authHeader.replace('Bearer ', '');
       const { data: authData } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
-      if (!user) return res.status(401).json({ success: false, error: 'Invalid token' });
+      if (!user) return res.status(401).json({ success: false, error: 'Invalid Token' });
 
       const { transaction_id, session_id } = req.query;
 
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
           .eq('id', transaction_id)
           .maybeSingle();
 
-        if (!tx) return res.status(404).json({ success: false, error: 'Transaction not found' });
+        if (!tx) return res.status(404).json({ success: false, error: 'Transaction Not Found' });
 
         // Get venue name
         let venueName = 'Poker Room';
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
           .eq('id', session_id)
           .maybeSingle();
 
-        if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+        if (!session) return res.status(404).json({ success: false, error: 'Session Not Found' });
 
         const { data: txns } = await getSupabase()
           .from('commander_cash_transactions')
@@ -135,12 +135,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'transaction_id or session_id required' });
     } catch (err) {
       console.warn('Receipt error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

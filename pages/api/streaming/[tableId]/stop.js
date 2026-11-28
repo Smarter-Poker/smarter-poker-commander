@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         if (error.code === 'PGRST116') {
           return res.status(404).json({
             success: false,
-            error: { code: 'NOT_FOUND', message: 'No active stream found' }
+            error: { code: 'NOT_FOUND', message: 'No Active Stream Found' }
           });
         }
         throw error;
@@ -67,13 +67,13 @@ export default async function handler(req, res) {
       console.warn('Stop stream error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to stop stream' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Stop Stream' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

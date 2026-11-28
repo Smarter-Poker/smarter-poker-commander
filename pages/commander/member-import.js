@@ -142,7 +142,7 @@ const res = await commanderFetch('/api/commander/members', {
         const json = await res.json();
         if (json.success) imported++;
         else {
-          if (json.error?.includes('duplicate') || json.error?.includes('already exists')) skipped++;
+          if (json.duplicate || /duplicate|already exists/i.test(json.error || json.message || '')) skipped++;
           else errors.push(`Row ${i + 1}: ${json.error || 'Unknown Error'}`);
         }
       } catch (err) {

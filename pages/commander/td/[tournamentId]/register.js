@@ -79,7 +79,7 @@ export default function TDRegisterPlayer() {
                 `/api/commander/tournaments/${tournamentId}/floor-view?include=tournament${reentry ? ',entries' : ''}`,
                 { ...(signal ? { signal } : {}) }
             );
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             if (json.success) {
                 setTournament(json.data.tournament);
@@ -105,7 +105,7 @@ export default function TDRegisterPlayer() {
         setSearchLoading(true);
         try {
             const res = await commanderFetch(`/api/commander/members/search?q=${encodeURIComponent(query)}&venue_id=${vid}&limit=8`);
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             setSearchResults(json.data || []);
         } catch { setSearchResults([]); }
@@ -329,7 +329,7 @@ export default function TDRegisterPlayer() {
         setWaitlistLoading(true);
         try {
             const res = await commanderFetch(`/api/commander/waitlist?venue_id=${vid}`);
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             setWaitlist(Array.isArray(json?.data) ? json.data : []);
         } catch (err) {
@@ -518,7 +518,7 @@ export default function TDRegisterPlayer() {
                                     type="text"
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Search by Name or Phone..."
+                                    placeholder="Search By Name Or Phone..."
                                     style={{
                                         width: '100%', background: '#2A4560', border: '1px solid #3A5873', borderRadius: 10,
                                         padding: '10px 12px 10px 38px', color: '#F2F7FF', fontSize: 14, fontWeight: 500,

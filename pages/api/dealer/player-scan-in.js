@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       const { qr_code, table_number, seat_number, venue_id } = req.body;
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
           const member = members?.[0];
           if (!member) {
-              return res.status(404).json({ success: false, error: 'Member not found. QR code not recognized.' });
+              return res.status(404).json({ success: false, error: 'Member Not Found. QR Code Not Recognized.' });
           }
 
           // ── 2. Get venue settings to determine mode ──
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
               if (!membershipActive || isExpiredByDate) {
                   return res.status(400).json({
                       success: false,
-                      error: 'Membership is not active or has expired.',
+                      error: 'Membership Is Not Active Or Has Expired.',
                       member_name: `${member.first_name} ${member.last_name}`.trim()
                   });
               }
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
               if (timeBalance <= 0) {
                   return res.status(400).json({
                       success: false,
-                      error: 'No time remaining. Player must purchase time first.',
+                      error: 'No Time Remaining. Player Must Purchase Time First.',
                       error_code: 'NO_TIME',
                       member_name: `${member.first_name} ${member.last_name}`.trim(),
                       member_id: member.id
@@ -176,7 +176,7 @@ export default async function handler(req, res) {
               if (existing?.length > 0) {
                   return res.status(400).json({
                       success: false,
-                      error: `Already seated at Table ${existing[0].table_number} Seat ${existing[0].seat_number}`,
+                      error: `Already Seated At Table ${existing[0].table_number} Seat ${existing[0].seat_number}`,
                       error_code: 'ALREADY_SEATED',
                       member_name: `${member.first_name} ${member.last_name}`.trim()
                   });
@@ -217,7 +217,7 @@ export default async function handler(req, res) {
               }
 
               if (!seatNum) {
-                  return res.status(400).json({ success: false, error: 'Table is full - no seats available.' });
+                  return res.status(400).json({ success: false, error: 'Table Is Full - No Seats Available.' });
               }
           } else {
               // Check if requested seat is occupied
@@ -233,7 +233,7 @@ export default async function handler(req, res) {
                   if (seatTaken?.length > 0) {
                       return res.status(400).json({
                           success: false,
-                          error: `Seat ${seatNum} is occupied by ${seatTaken[0].player_name}`
+                          error: `Seat ${seatNum} Is Occupied By ${seatTaken[0].player_name}`
                       });
                   }
               } catch (e) { console.warn('[App] Handled exception:', e?.message || e); }
@@ -259,13 +259,13 @@ export default async function handler(req, res) {
 
               if (claimError) {
                   console.warn('Time claim error:', claimError);
-                  return res.status(500).json({ success: false, error: 'Failed to reserve time from card' });
+                  return res.status(500).json({ success: false, error: 'Failed To Reserve Time From Card' });
               }
               if (!claimedMinutes || claimedMinutes <= 0) {
                   // Another request claimed the balance since the check above.
                   return res.status(400).json({
                       success: false,
-                      error: 'No time remaining. Player must purchase time first.',
+                      error: 'No Time Remaining. Player Must Purchase Time First.',
                       error_code: 'NO_TIME',
                       member_name: playerName,
                       member_id: member.id
@@ -376,12 +376,12 @@ export default async function handler(req, res) {
           });
       } catch (err) {
           console.warn('Player scan-in error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

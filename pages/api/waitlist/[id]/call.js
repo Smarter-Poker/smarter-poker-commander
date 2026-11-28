@@ -93,7 +93,7 @@ async function sendOneSignalPush(userId, title, message, data = {}) {
       return { success: true, id: result.id };
     } else {
       console.warn('OneSignal error:', result);
-      return { success: false, error: result.errors?.[0] || 'Push failed' };
+      return { success: false, error: result.errors?.[0] || 'Push Failed' };
     }
   } catch (error) {
     console.warn('OneSignal push error:', error);
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Waitlist entry ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Waitlist Entry ID Required' }
       });
     }
 
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
       if (fetchError || !entry) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Waitlist entry not found' }
+          error: { code: 'NOT_FOUND', message: 'Waitlist Entry Not Found' }
         });
       }
 
@@ -156,14 +156,14 @@ export default async function handler(req, res) {
       if (staff.venue_id !== entry.venue_id) {
         return res.status(403).json({
           success: false,
-          error: { code: 'FORBIDDEN', message: 'Staff is not authorized for this venue' }
+          error: { code: 'FORBIDDEN', message: 'Staff Is Not Authorized For This Venue' }
         });
       }
 
       if (entry.status !== 'waiting') {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Entry is not in waiting status' }
+          error: { code: 'VALIDATION_ERROR', message: 'Entry Is Not In Waiting Status' }
         });
       }
 
@@ -183,7 +183,7 @@ export default async function handler(req, res) {
         console.warn('Commander waitlist call update error:', updateError);
         return res.status(500).json({
           success: false,
-          error: { code: 'DATABASE_ERROR', message: 'Failed to update entry' }
+          error: { code: 'DATABASE_ERROR', message: 'Failed To Update Entry' }
         });
       }
 
@@ -324,13 +324,13 @@ export default async function handler(req, res) {
       console.warn('Commander waitlist call API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

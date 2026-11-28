@@ -50,11 +50,11 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST' && req.method !== 'GET') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   }
 
   if (!stripe) {
-    return res.status(503).json({ success: false, error: 'Stripe is not configured on this server.' });
+    return res.status(503).json({ success: false, error: 'Stripe Is Not Configured On This Server.' });
   }
 
   try {
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
       success: true,
       products: results,
       envVars: envVars,
-      message: 'Add these to your .env file',
+      message: 'Add These To Your .env File',
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }

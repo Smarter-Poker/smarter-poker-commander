@@ -29,18 +29,18 @@ function getAdminClient() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { token, uid } = req.body || {};
 
   if (!token || !uid || typeof token !== 'string' || typeof uid !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid token/uid' });
+    return res.status(400).json({ error: 'Missing Or Invalid Token/Uid' });
   }
 
   // Sanity check token length (64 hex chars = 32 bytes)
   if (!/^[0-9a-f]{64}$/.test(token)) {
-    return res.status(400).json({ error: 'Invalid token format' });
+    return res.status(400).json({ error: 'Invalid Token Format' });
   }
 
   try {
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (lookupError || !row) {
-      return res.status(401).json({ error: 'Invalid or expired SSO token' });
+      return res.status(401).json({ error: 'Invalid Or Expired SSO Token' });
     }
 
     // Reject if already used (replay protection)
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
 
     // Reject if uid doesn't match (prevents token-uid substitution attacks)
     if (row.user_id !== uid) {
-      return res.status(401).json({ error: 'Token/user mismatch' });
+      return res.status(401).json({ error: 'Token/User Mismatch' });
     }
 
     // Mark token as used immediately (consumed-once, prevents replay in race)
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
       // Fallback: use the Supabase admin.getUserById + custom token approach
       const { data: userData, error: userErr } = await admin.auth.admin.getUserById(uid);
       if (userErr || !userData?.user) {
-        return res.status(500).json({ error: 'Could not retrieve user data' });
+        return res.status(500).json({ error: 'Could Not Retrieve User Data' });
       }
 
       const email = userData.user.email;
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
       });
 
       if (link2Err || !link2) {
-        return res.status(500).json({ error: 'Could not generate session token' });
+        return res.status(500).json({ error: 'Could Not Generate Session Token' });
       }
 
       // Extract hashed_token and type from the link
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
       const tokenType = url.searchParams.get('type');
 
       if (!hashed_token) {
-        return res.status(500).json({ error: 'Could not extract token from magic link' });
+        return res.status(500).json({ error: 'Could Not Extract Token From Magic Link' });
       }
 
       // Return hashed_token + type for the client to call verifyOtp
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
     const email = linkData.user?.email;
 
     if (!hashed_token || !email) {
-      return res.status(500).json({ error: 'Could not extract token from magic link' });
+      return res.status(500).json({ error: 'Could Not Extract Token From Magic Link' });
     }
 
     return res.status(200).json({
@@ -149,6 +149,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('[sso-exchange] Unexpected error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

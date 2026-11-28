@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (!squad || squad.leader_id !== _u.id) {
-        return res.status(403).json({ success: false, error: 'Only squad leader can remove members' });
+        return res.status(403).json({ success: false, error: 'Only Squad Leader Can Remove Members' });
       }
 
       const { error } = await getSupabase()
@@ -41,15 +41,15 @@ export default async function handler(req, res) {
         .eq('group_id', id)
         .eq('id', memberId);
 
-      if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+      if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
       return res.json({ success: true });
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

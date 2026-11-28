@@ -209,7 +209,7 @@ export default function ArenaLedger({ clubId, help = null }) {
             </div>
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-20 text-[#9FB3C8]">
-              No matching records found.
+              No Matching Records Found.
             </div>
           ) : (
             <div className="divide-y divide-[#334155]/50">

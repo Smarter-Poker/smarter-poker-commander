@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         } catch (e) { console.warn('[App] Handled exception:', e); }
       }
 
-      if (!venueId) return res.status(403).json({ success: false, error: 'Could not determine venue' });
+      if (!venueId) return res.status(403).json({ success: false, error: 'Could Not Determine Venue' });
 
       // 2026-08-20 audit fix: role/name/identity came from the RAW header and
       // defaulted to 'owner' when it failed to parse. They now come from the
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
           .order('name', { ascending: true })
               .limit(100);
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
         return res.status(200).json({ success: true, data: (data || []).map(normalizePreset) });
       }
 
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
             .maybeSingle();
 
           if (fetchErr || !rawPreset) {
-            return res.status(404).json({ success: false, error: 'Preset not found' });
+            return res.status(404).json({ success: false, error: 'Preset Not Found' });
           }
 
           const preset = normalizePreset(rawPreset);
@@ -252,12 +252,12 @@ export default async function handler(req, res) {
         // CREATE NEW PRESET
         // ═══════════════════════════════════════════════════════════════
         if (!['owner', 'manager'].includes(staffRole)) {
-          return res.status(403).json({ success: false, error: 'Manager access required' });
+          return res.status(403).json({ success: false, error: 'Manager Access Required' });
         }
 
         const { name, description, tables: tableConfigs, promotions, tournaments,
           is_default, start_time, day_of_week } = req.body;
-        if (!name) return res.status(400).json({ success: false, error: 'Preset name required' });
+        if (!name) return res.status(400).json({ success: false, error: 'Preset Name Required' });
 
         // Pack tables, promotions, tournaments into single JSONB `tables` column
         const tablesJsonb = {
@@ -282,18 +282,18 @@ export default async function handler(req, res) {
           .select()
           .maybeSingle();
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
         return res.status(201).json({ success: true, data: normalizePreset(data) });
       }
 
       // PUT - Update preset
       if (req.method === 'PUT') {
         if (!['owner', 'manager'].includes(staffRole)) {
-          return res.status(403).json({ success: false, error: 'Manager access required' });
+          return res.status(403).json({ success: false, error: 'Manager Access Required' });
         }
 
         const id = req.query.id;
-        if (!id) return res.status(400).json({ success: false, error: 'Preset ID required' });
+        if (!id) return res.status(400).json({ success: false, error: 'Preset ID Required' });
 
         const updates = {};
         // Simple scalar fields
@@ -326,18 +326,18 @@ export default async function handler(req, res) {
           .select()
           .maybeSingle();
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
         return res.status(200).json({ success: true, data: normalizePreset(data) });
       }
 
       // DELETE
       if (req.method === 'DELETE') {
         if (!['owner', 'manager'].includes(staffRole)) {
-          return res.status(403).json({ success: false, error: 'Manager access required' });
+          return res.status(403).json({ success: false, error: 'Manager Access Required' });
         }
 
         const id = req.query.id;
-        if (!id) return res.status(400).json({ success: false, error: 'Preset ID required' });
+        if (!id) return res.status(400).json({ success: false, error: 'Preset ID Required' });
 
         const { error } = await getSupabase()
           .from('commander_room_presets')
@@ -345,19 +345,19 @@ export default async function handler(req, res) {
           .eq('id', id)
           .eq('venue_id', venueId);
 
-        if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+        if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
         return res.status(200).json({ success: true });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Daily presets API error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

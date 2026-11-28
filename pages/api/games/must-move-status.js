@@ -38,12 +38,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') return handleGet(req, res, _g);
     if (req.method === 'POST') return handlePost(req, res, _g);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -222,7 +222,7 @@ async function handleGet(req, res, staff) {
     });
   } catch (err) {
     console.warn('Must-move status error:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -261,7 +261,7 @@ async function handlePost(req, res, staff) {
       .limit(1);
 
     if (!seats || seats.length === 0) {
-      return res.status(400).json({ success: false, error: 'No players at must-move table' });
+      return res.status(400).json({ success: false, error: 'No Players At Must-Move Table' });
     }
 
     const playerToMove = seats[0];
@@ -273,7 +273,7 @@ async function handlePost(req, res, staff) {
       .eq('id', actualTargetId)
       .maybeSingle();
 
-    if (!targetGame) return res.status(404).json({ success: false, error: 'Target game not found' });
+    if (!targetGame) return res.status(404).json({ success: false, error: 'Target Game Not Found' });
 
     const { data: targetTable } = await getSupabase()
       .from('commander_tables')
@@ -281,7 +281,7 @@ async function handlePost(req, res, staff) {
       .eq('id', targetGame.table_id)
       .maybeSingle();
 
-    if (!targetTable) return res.status(404).json({ success: false, error: 'Target table not found' });
+    if (!targetTable) return res.status(404).json({ success: false, error: 'Target Table Not Found' });
 
     // Find an open seat at the target game
     const { data: targetSeats } = await getSupabase()
@@ -298,7 +298,7 @@ async function handlePost(req, res, staff) {
     }
 
     if (openSeat === null) {
-      return res.status(400).json({ success: false, error: 'No open seats at target table' });
+      return res.status(400).json({ success: false, error: 'No Open Seats At Target Table' });
     }
 
     // Get source game info for the response
@@ -327,7 +327,7 @@ async function handlePost(req, res, staff) {
 
     if (insertError) {
       console.warn('Must-move insert error:', insertError);
-      return res.status(500).json({ success: false, error: 'Failed to seat player at target table' });
+      return res.status(500).json({ success: false, error: 'Failed To Seat Player At Target Table' });
     }
 
     // 2. Delete their seat at the must-move table (safe - player already seated at target)
@@ -366,12 +366,12 @@ async function handlePost(req, res, staff) {
         from_table: fromTable,
         to_table: toTable,
         to_seat: openSeat,
-        message: `${playerToMove.player_name} moved from Table ${fromTable} → Table ${toTable} Seat ${openSeat}`
+        message: `${playerToMove.player_name} Moved From Table ${fromTable} → Table ${toTable} Seat ${openSeat}`
       }
     });
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Must-move transfer error:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -104,7 +104,7 @@ export default function LeaderboardBuilder() {
             // 2026-08-04 audit fix: without venue_id the list API returns every
             // venue's leaderboards - scope the builder to this venue's boards.
             const res = await commanderFetch(`/api/commander/leaderboards?status=all${venueId ? `&venue_id=${encodeURIComponent(venueId)}` : ''}`, { ...(signal ? { signal } : {}) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             setBoards(json?.leaderboards || json?.data || []);
         } catch (err) { console.warn(err); }
@@ -154,7 +154,7 @@ export default function LeaderboardBuilder() {
                     prizes: newBoard.prizes ? [{ description: newBoard.prizes }] : [],
                     rules_description: newBoard.rules_description || null,
                     status: newBoard.status }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             if (res.ok) {
                 flash('success', `Board "${newBoard.name}" Created!`);
@@ -165,7 +165,7 @@ export default function LeaderboardBuilder() {
             } else {
                 flash('error', json.error || 'Failed To Create Board');
             }
-        } catch (err) { flash('error', 'Network error'); }
+        } catch (err) { flash('error', 'Network Error'); }
     };
 
     // ── Add entry to board ──
@@ -219,7 +219,7 @@ const res = await commanderFetch(`/api/commander/leaderboards/${boardId}/entries
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'calculate' }) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json().catch(() => ({}));
             if (res.ok) {
                 flash('success', `Calculated ${json.entries_updated || 0} Entries`);

@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       .select('*')
       .eq('venue_id', venue_id)
       .order('name')
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true, data: { dealers: data } });
   }
 
@@ -60,14 +60,14 @@ export default async function handler(req, res) {
       .insert({ venue_id: vid, name: dealerName, employee_id, skill_level, certified_games })
       .select()
       .maybeSingle();
-    if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
     return res.json({ success: true, data: { dealer: data } });
   }
 
-  return res.status(405).json({ success: false, error: 'Method not allowed' });
+  return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[pages/api/commander/dealers/index.js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

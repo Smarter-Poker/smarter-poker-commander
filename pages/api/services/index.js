@@ -42,14 +42,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -127,7 +127,7 @@ async function handleGet(req, res, staff) {
       console.warn('Commander services query error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to fetch service requests' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Fetch Service Requests' }
       });
     }
 
@@ -139,7 +139,7 @@ async function handleGet(req, res, staff) {
     console.warn('Commander services GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -167,7 +167,7 @@ async function handlePost(req, res, staff) {
     if (!VALID_REQUEST_TYPES.includes(request_type)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: `Invalid request_type. Must be: ${VALID_REQUEST_TYPES.join(', ')}` }
+        error: { code: 'VALIDATION_ERROR', message: `Invalid request_type. Must Be: ${VALID_REQUEST_TYPES.join(', ')}` }
       });
     }
 
@@ -199,7 +199,7 @@ async function handlePost(req, res, staff) {
       console.warn('Commander service create error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to create service request' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Create Service Request' }
       });
     }
 
@@ -212,7 +212,7 @@ async function handlePost(req, res, staff) {
     console.warn('Commander services POST error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

@@ -53,11 +53,11 @@ const DEFAULT_DISPLAY_OPTIONS = {
     background_image_url: '' };
 
 const SOUND_PACKS = [
-    { value: 'classic', label: 'Classic', desc: 'Single clean tones' },
-    { value: 'chime', label: 'Chime', desc: 'Ascending arpeggio' },
-    { value: 'bell', label: 'Bell', desc: 'Long resonant ring' },
-    { value: 'arcade', label: 'Arcade', desc: 'Sweep effects' },
-    { value: 'voice', label: 'Voice (Chime)', desc: 'Chime fallback' },
+    { value: 'classic', label: 'Classic', desc: 'Single Clean Tones' },
+    { value: 'chime', label: 'Chime', desc: 'Ascending Arpeggio' },
+    { value: 'bell', label: 'Bell', desc: 'Long Resonant Ring' },
+    { value: 'arcade', label: 'Arcade', desc: 'Sweep Effects' },
+    { value: 'voice', label: 'Voice (Chime)', desc: 'Chime Fallback' },
 ];
 
 // Every starter colour is an SD_SWATCHES colour (src/lib/commander/sdPalette.js).
@@ -211,7 +211,7 @@ export default function ClockSetup() {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body) });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const json = await res.json();
             if (res.ok && json.success) {
                 setSaved(true);

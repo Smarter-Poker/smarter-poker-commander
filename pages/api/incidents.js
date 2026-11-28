@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         const { data, error } = await query;
         if (error) {
           console.warn('[Incidents] Query error:', error.message);
-          return res.status(500).json({ success: false, error: 'Failed to fetch incidents' });
+          return res.status(500).json({ success: false, error: 'Failed To Fetch Incidents' });
         }
 
         // 2026-07-25 audit fix: derive the convenience fields the page renders
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         const { incident_type, severity = 'medium', players_involved, table_number, description } = req.body || {};
 
         if (!description) {
-          return res.status(400).json({ success: false, error: 'Description is required' });
+          return res.status(400).json({ success: false, error: 'Description Is Required' });
         }
 
         const fullDescription = table_number
@@ -101,20 +101,20 @@ export default async function handler(req, res) {
 
         if (error) {
           console.warn('Incident create error:', error);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
         return res.status(201).json({ success: true, data });
       }
 
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     } catch (err) {
       console.warn('Incidents error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

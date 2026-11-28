@@ -58,7 +58,7 @@ export default async function handler(req, res) {
             .maybeSingle();
 
         if (error) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         return res.status(200).json({ success: true, scan: data });
@@ -83,17 +83,17 @@ export default async function handler(req, res) {
             .limit(100);
 
         if (error) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(500).json({ success: false, error: 'Internal Server Error' });
         }
 
         return res.status(200).json({ success: true, scans: data, total: count });
     }
 
     res.setHeader('Allow', 'GET, POST');
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[pages/api/commander/qr-scan.js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

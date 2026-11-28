@@ -86,7 +86,7 @@ const res = await commanderFetch('/api/commander/admin/leads', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: leadId, status: newStatus, source: lead?.source }) });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         setLeads((prev) =>

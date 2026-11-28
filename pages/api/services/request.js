@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       if (!validTypes.includes(request_type)) {
         return res.status(400).json({
           success: false,
-          error: { code: 'INVALID_TYPE', message: 'Invalid request type' }
+          error: { code: 'INVALID_TYPE', message: 'Invalid Request Type' }
         });
       }
 
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       if (existingRequest) {
         return res.status(400).json({
           success: false,
-          error: { code: 'DUPLICATE_REQUEST', message: 'You already have a pending request of this type' }
+          error: { code: 'DUPLICATE_REQUEST', message: 'You Already Have A Pending Request Of This Type' }
         });
       }
 
@@ -114,13 +114,13 @@ export default async function handler(req, res) {
       console.warn('Create service request error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to create service request' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Create Service Request' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

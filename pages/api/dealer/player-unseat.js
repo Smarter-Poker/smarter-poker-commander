@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       }
 
       // 2026-07-29 (decision A): dealer tablets (Commander "Table Tablets" and the
@@ -154,7 +154,7 @@ export default async function handler(req, res) {
                       console.warn('Fallback seat clear failed:', e.message);
                   }
               }
-              return res.status(404).json({ success: false, error: 'No active session found' });
+              return res.status(404).json({ success: false, error: 'No Active Session Found' });
           }
 
           const now = new Date();
@@ -323,6 +323,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

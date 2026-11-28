@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -61,13 +61,13 @@ export default async function handler(req, res) {
       if (!existing) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Incident not found' }
+          error: { code: 'NOT_FOUND', message: 'Incident Not Found' }
         });
       }
       if (String(existing.venue_id) !== String(_staff.venue_id)) {
         return res.status(403).json({
           success: false,
-          error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+          error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
         });
       }
 
@@ -94,13 +94,13 @@ export default async function handler(req, res) {
       console.warn('Resolve incident error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to resolve incident' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Resolve Incident' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

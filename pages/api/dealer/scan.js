@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     if (!_staff) return;
 
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     const { qr_code, table_number } = req.body;
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
       const member = members?.[0];
       if (!member) {
-        return res.status(404).json({ success: false, error: 'Member not found. QR code not recognized.' });
+        return res.status(404).json({ success: false, error: 'Member Not Found. QR Code Not Recognized.' });
       }
 
       // Check membership status
@@ -122,6 +122,6 @@ export default async function handler(req, res) {
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

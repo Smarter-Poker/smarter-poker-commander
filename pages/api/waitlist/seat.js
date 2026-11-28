@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
     const _g = await guardWriteStaff(req, res); if (!_g) return;
 
-    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const staff = _g; // from guardWriteStaff
@@ -44,11 +44,11 @@ export default async function handler(req, res) {
         .eq('id', waitlist_id)
         .maybeSingle();
 
-      if (!entry) return res.status(404).json({ success: false, error: 'Waitlist entry not found' });
+      if (!entry) return res.status(404).json({ success: false, error: 'Waitlist Entry Not Found' });
 
       // 2026-07-25 audit fix: acting staff must belong to the entry's venue
       if (String(staff.venue_id) !== String(entry.venue_id)) {
-        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' } });
+        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' } });
       }
 
       // 2026-07-25 audit fix: resolve the target game server-side when the
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       if (existingSeat && existingSeat.status === 'occupied') {
         return res.status(409).json({
           success: false,
-          error: { code: 'SEAT_TAKEN', message: `Seat ${seat_number} is already occupied` }
+          error: { code: 'SEAT_TAKEN', message: `Seat ${seat_number} Is Already Occupied` }
         });
       }
 
@@ -150,12 +150,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Waitlist seat error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -48,7 +48,7 @@ export default function SessionTracker({
           </div>
           <div className="cmd-panel p-4 text-center">
             <p className="text-2xl font-bold text-[#10B981]">${summary.totalBuyin}</p>
-            <p className="text-sm text-[#9FB3C8]">Total Buy-in</p>
+            <p className="text-sm text-[#9FB3C8]">Total Buy-In</p>
           </div>
         </div>
       )}
@@ -106,7 +106,7 @@ function SessionRow({ session, onCheckout, onView }) {
               {formatDuration(duration)}
             </span>
             {session.games_played > 0 && (
-              <span>{session.games_played} games</span>
+              <span>{session.games_played} Games</span>
             )}
             {session.total_buyin > 0 && (
               <span className="flex items-center gap-1">

@@ -135,7 +135,7 @@ const json = await commanderFetchJSON('/api/commander/system-info');
                         {!['database', 'api'].includes(key) && <Shield className="w-5 h-5 text-[#BDD0E2]" />}
                         <div>
                           <p className="font-medium text-white capitalize">{key.replace(/_/g, ' ')}</p>
-                          {check.latency_ms > 0 && <p className="text-xs text-[#BDD0E2]">{check.latency_ms}ms latency</p>}
+                          {check.latency_ms > 0 && <p className="text-xs text-[#BDD0E2]">{check.latency_ms}ms Latency</p>}
                           {check.error && <p className="text-xs text-[#EF4444]">{check.error}</p>}
                         </div>
                       </div>

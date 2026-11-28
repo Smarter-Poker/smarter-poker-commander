@@ -69,7 +69,7 @@ function LogEntry({ log }) {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return 'Just Now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -227,7 +227,7 @@ export default function AuditLogViewer({
       <div className="p-4 border-b border-[#445E77] flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-white">Audit Logs</h3>
-          <p className="text-xs text-[#8FA6BE]">{total.toLocaleString()} total entries</p>
+          <p className="text-xs text-[#8FA6BE]">{total.toLocaleString()} Total Entries</p>
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -308,7 +308,7 @@ export default function AuditLogViewer({
             disabled={isLoading}
             className="w-full py-2 text-center text-sm text-[#22D3EE] hover:bg-[#132240] rounded-lg transition-colors"
           >
-            {isLoading ? 'Loading...' : 'Load more logs'}
+            {isLoading ? 'Loading...' : 'Load More Logs'}
           </button>
         </div>
       )}

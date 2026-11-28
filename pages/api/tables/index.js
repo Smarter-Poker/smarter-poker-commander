@@ -64,14 +64,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -212,7 +212,7 @@ async function handleGet(req, res, staff) {
       console.warn('Commander tables query error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to fetch tables' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Fetch Tables' }
       });
     }
 
@@ -224,7 +224,7 @@ async function handleGet(req, res, staff) {
     console.warn('Commander tables GET error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -271,7 +271,7 @@ async function handlePost(req, res, _authResult) {
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Table number already exists at this venue' }
+        error: { code: 'VALIDATION_ERROR', message: 'Table Number Already Exists At This Venue' }
       });
     }
 
@@ -298,11 +298,11 @@ async function handlePost(req, res, _authResult) {
       console.warn('Commander table create error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to create table' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Create Table' }
       });
     }
 
-    if (!table) return res.status(500).json({ success: false, error: 'Failed to create table' });
+    if (!table) return res.status(500).json({ success: false, error: 'Failed To Create Table' });
 
     // Audit log
     if (_authResult && _authResult.id) {
@@ -326,7 +326,7 @@ async function handlePost(req, res, _authResult) {
     console.warn('Commander tables POST error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

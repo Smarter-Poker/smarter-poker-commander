@@ -27,13 +27,13 @@ function getSupabase() {
 async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization required' });
+      return res.status(401).json({ error: 'Authorization Required' });
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -41,13 +41,13 @@ async function handler(req, res) {
     const user = authData?.user;
 
     if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid Token' });
     }
 
     const { tournament_id, format = 'csv' } = req.query;
 
     if (!tournament_id) {
-      return res.status(400).json({ error: 'Tournament ID required' });
+      return res.status(400).json({ error: 'Tournament ID Required' });
     }
 
     // Get tournament details
@@ -61,7 +61,7 @@ async function handler(req, res) {
       .maybeSingle();
 
     if (tournamentError || !tournament) {
-      return res.status(404).json({ error: 'Tournament not found' });
+      return res.status(404).json({ error: 'Tournament Not Found' });
     }
 
     // Check if staff
@@ -74,7 +74,7 @@ async function handler(req, res) {
       .maybeSingle();
 
     if (!staff || !['owner', 'manager'].includes(staff.role)) {
-      return res.status(403).json({ error: 'Manager access required to export' });
+      return res.status(403).json({ error: 'Manager Access Required To Export' });
     }
 
     // Get tournament entries with results
@@ -117,7 +117,7 @@ async function handler(req, res) {
   } catch (error) {
     try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Hendon Mob export error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 

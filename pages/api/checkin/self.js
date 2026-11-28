@@ -30,14 +30,14 @@ const CHECKIN_DEDUP_MS = 6 * 60 * 60 * 1000; // 6 hours
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     // Rate limit: 15 requests per minute per IP (page polls every 30s)
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
     const rl = checkMemoryRateLimit(`selfcheckin:${ip}`, 15, 60000);
-    if (!rl.allowed) { return res.status(429).json({ success: false, error: 'Too many requests' }); }
+    if (!rl.allowed) { return res.status(429).json({ success: false, error: 'Too Many Requests' }); }
 
     const { code } = req.body || {};
     if (!code || typeof code !== 'string') {
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
     const member = members?.[0];
     if (!member) {
-      return res.status(404).json({ success: false, error: 'Member not found. QR code not recognized.' });
+      return res.status(404).json({ success: false, error: 'Member Not Found. QR Code Not Recognized.' });
     }
 
     // Membership status (same rules as dealer/scan.js)
@@ -182,6 +182,6 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[api/checkin/self]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

@@ -366,7 +366,7 @@ export default function DealersPage() {
     setLoading(true);
     try {
 const res = await commanderFetch(`/api/commander/dealers?venue_id=${venueId}`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Dealers fetch failed (${res.status})`);
+      if (!res.ok) throw new Error(`Dealers Fetch Failed (${res.status})`);
       const data = await res.json();
       if (data.success) {
         setDealers(Array.isArray(data.data) ? data.data : data.data?.dealers || []);
@@ -382,7 +382,7 @@ const res = await commanderFetch(`/api/commander/dealers?venue_id=${venueId}`, {
   async function fetchTables(signal) {
     try {
 const res = await commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Tables fetch failed (${res.status})`);
+      if (!res.ok) throw new Error(`Tables Fetch Failed (${res.status})`);
       const data = await res.json();
       if (data.success) {
         setTables(Array.isArray(data.data) ? data.data : data.data?.tables || []);
@@ -397,7 +397,7 @@ const res = await commanderFetch(`/api/commander/tables?venue_id=${venueId}`, { 
   async function fetchRotations(signal) {
     try {
 const res = await commanderFetch(`/api/commander/dealers/rotations?venue_id=${venueId}&limit=50`, { ...(signal ? { signal } : {}) });
-      if (!res.ok) throw new Error(`Rotations fetch failed (${res.status})`);
+      if (!res.ok) throw new Error(`Rotations Fetch Failed (${res.status})`);
       const data = await res.json();
       if (data.success) {
         setRotations(Array.isArray(data.data) ? data.data : data.data?.rotations || []);

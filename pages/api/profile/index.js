@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
       });
     }
 
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     if (authError || !user) {
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
+        error: { code: 'INVALID_TOKEN', message: 'Invalid Or Expired Token' }
       });
     }
 
@@ -54,13 +54,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -76,7 +76,7 @@ async function getProfile(req, res, user) {
     if (profileError || !profile) {
       return res.status(404).json({
         success: false,
-        error: { code: 'PROFILE_NOT_FOUND', message: 'Profile not found' }
+        error: { code: 'PROFILE_NOT_FOUND', message: 'Profile Not Found' }
       });
     }
 
@@ -135,7 +135,7 @@ async function getProfile(req, res, user) {
     console.warn('Get profile error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch profile' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Profile' }
     });
   }
 }
@@ -178,7 +178,7 @@ async function updateProfile(req, res, user) {
     console.warn('Update profile error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to update profile' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Update Profile' }
     });
   }
 }

@@ -42,13 +42,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -123,7 +123,7 @@ async function listDealers(req, res) {
     console.warn('List dealers error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to list dealers' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To List Dealers' }
     });
   }
 }
@@ -134,7 +134,7 @@ async function registerDealer(req, res) {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' }
       });
     }
 
@@ -145,7 +145,7 @@ async function registerDealer(req, res) {
     if (authError || !user) {
       return res.status(401).json({
         success: false,
-        error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+        error: { code: 'INVALID_TOKEN', message: 'Invalid Token' }
       });
     }
 
@@ -178,7 +178,7 @@ async function registerDealer(req, res) {
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: { code: 'ALREADY_REGISTERED', message: 'You are already registered as a dealer' }
+        error: { code: 'ALREADY_REGISTERED', message: 'You Are Already Registered As A Dealer' }
       });
     }
 
@@ -215,7 +215,7 @@ async function registerDealer(req, res) {
     console.warn('Register dealer error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to register dealer' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Register Dealer' }
     });
   }
 }

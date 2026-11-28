@@ -36,28 +36,28 @@ export default async function handler(req, res) {
     const fwd = req.headers['x-forwarded-for'];
     const ip = fwd ? fwd.split(',')[0].trim() : req.socket?.remoteAddress || '0';
     const rl = checkMemoryRateLimit(`chksub:${ip}`, 40, 60000);
-    if (!rl.allowed) { return res.status(429).json({ error: 'Too many requests' }); }
+    if (!rl.allowed) { return res.status(429).json({ error: 'Too Many Requests' }); }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ error: 'Method not allowed' });
+          return res.status(405).json({ error: 'Method Not Allowed' });
       }
 
       // BUG #260 FIX: Require JWT auth - previously accepted arbitrary userId from body,
       // allowing anyone to look up any user's subscription details and venue info.
       const token = req.headers.authorization?.replace('Bearer ', '');
       if (!token) {
-          return res.status(401).json({ error: 'Authentication required' });
+          return res.status(401).json({ error: 'Authentication Required' });
       }
 
       // Per-identity limit: one user cannot burn the whole IP budget, and a
       // stolen token cannot be used to enumerate quickly.
       const tokenRl = checkMemoryRateLimit(`chksub:tok:${token.slice(-32)}`, 12, 60000);
-      if (!tokenRl.allowed) { return res.status(429).json({ error: 'Too many requests' }); }
+      if (!tokenRl.allowed) { return res.status(429).json({ error: 'Too Many Requests' }); }
 
       const { data: authData, error: authErr } = await getSupabase().auth.getUser(token);
       const user = authData?.user;
       if (authErr || !user) {
-          return res.status(401).json({ error: 'Invalid token' });
+          return res.status(401).json({ error: 'Invalid Token' });
       }
 
       // Always use the authenticated user's ID, ignore body.userId
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
 
           if (error) {
               console.warn('Subscription check error:', error.message);
-              return res.status(500).json({ error: 'Failed to check subscription' });
+              return res.status(500).json({ error: 'Failed To Check Subscription' });
           }
 
           // Preferred venue no longer valid (sub canceled, etc.) - fall back
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
                   .limit(1);
               if (fallback.error) {
                   console.warn('Subscription check error:', fallback.error.message);
-                  return res.status(500).json({ error: 'Failed to check subscription' });
+                  return res.status(500).json({ error: 'Failed To Check Subscription' });
               }
               subs = fallback.data;
           }
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
           const subscription = subs?.[0] || null;
 
           if (!subscription) {
-              return res.status(404).json({ error: 'No active subscription found' });
+              return res.status(404).json({ error: 'No Active Subscription Found' });
           }
 
           // 2026-07-25 audit fix: issue the HMAC-signed owner staff session
@@ -123,12 +123,12 @@ export default async function handler(req, res) {
           return res.status(200).json({ subscription, staff_session });
       } catch (err) {
           console.warn('check-subscription error:', err);
-          return res.status(500).json({ error: 'Internal server error' });
+          return res.status(500).json({ error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

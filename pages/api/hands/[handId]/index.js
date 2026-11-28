@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET Allowed' }
       });
     }
 
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: { code: 'AUTH_REQUIRED', message: 'Authentication required' }
+        error: { code: 'AUTH_REQUIRED', message: 'Authentication Required' }
       });
     }
 
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Invalid token' }
+          error: { code: 'AUTH_REQUIRED', message: 'Invalid Token' }
         });
       }
 
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       if (error || !hand) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Hand not found' }
+          error: { code: 'NOT_FOUND', message: 'Hand Not Found' }
         });
       }
 
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         if (!seatCount) {
           return res.status(403).json({
             success: false,
-            error: { code: 'FORBIDDEN', message: 'You did not play in this game' }
+            error: { code: 'FORBIDDEN', message: 'You Did Not Play In This Game' }
           });
         }
       }
@@ -162,13 +162,13 @@ export default async function handler(req, res) {
       console.warn('Hand detail API error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to fetch hand' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Hand' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

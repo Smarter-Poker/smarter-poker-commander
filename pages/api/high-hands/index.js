@@ -44,11 +44,11 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
 
   } catch (err) {
     console.warn('[high-hands API Error]', err?.message || err, err?.code || '', err?.details || '', err?.hint || '');
-    if (!res.headersSent) return res.status(500).json({ success: false, error: err?.message || 'Internal server error', details: err?.details || null, hint: err?.hint || null });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: err?.message || 'Internal Server Error', details: err?.details || null, hint: err?.hint || null });
   }
 }
 
@@ -65,7 +65,7 @@ async function listHighHands(req, res, staff) {
     const offset = parseInt(rawOffset) || 0;
 
     if (!venue_id) {
-      return res.status(400).json({ error: 'Venue ID required' });
+      return res.status(400).json({ error: 'Venue ID Required' });
     }
 
     if (staff && staff !== true && staff.venue_id !== undefined && staff.venue_id !== null
@@ -119,7 +119,7 @@ async function listHighHands(req, res, staff) {
     });
   } catch (error) {
     console.warn('List high hands error:', error?.message || error, error?.code || '', error?.details || '', error?.hint || '');
-    return res.status(500).json({ error: error?.message || 'Internal server error', details: error?.details || null, hint: error?.hint || null });
+    return res.status(500).json({ error: error?.message || 'Internal Server Error', details: error?.details || null, hint: error?.hint || null });
   }
 }
 
@@ -154,7 +154,7 @@ async function createHighHand(req, res, staff) {
     // 2026-07-25 audit fix: venue scoping - session staff must belong to the
     // venue this high hand is being recorded for.
     if (!staff || String(staff.venue_id) !== String(venue_id)) {
-      return res.status(403).json({ error: 'You are not authorized to record high hands for this venue' });
+      return res.status(403).json({ error: 'You Are Not Authorized To Record High Hands For This Venue' });
     }
 
     const insertData = {
@@ -190,6 +190,6 @@ async function createHighHand(req, res, staff) {
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create high hand error:', error?.message || error, error?.code || '', error?.details || '');
-    return res.status(500).json({ error: error?.message || 'Internal server error' });
+    return res.status(500).json({ error: error?.message || 'Internal Server Error' });
   }
 }

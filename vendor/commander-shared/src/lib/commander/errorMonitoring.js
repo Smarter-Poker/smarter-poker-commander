@@ -97,7 +97,7 @@ export function withErrorHandling(handler) {
       // Don't expose internal errors to clients
       const statusCode = error.statusCode || 500;
       const message = statusCode === 500
-        ? 'An unexpected error occurred'
+        ? 'An Unexpected Error Occurred'
         : error.message;
 
       return res.status(statusCode).json({

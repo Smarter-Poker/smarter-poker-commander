@@ -43,11 +43,11 @@ const headers = { };
           commanderFetch(`/api/commander/cashier?venue_id=${venueId}&date=${date}&limit=100`, { headers }).catch(() => ({ ok: false })),
         ]);
 
-        if (!summaryRes.ok) throw new Error(`Request failed (${summaryRes.status})`);
+        if (!summaryRes.ok) throw new Error(`Request Failed (${summaryRes.status})`);
         const summaryJson = await summaryRes.json();
         if (summaryJson.success) setData(summaryJson.data);
 
-        if (!cashierRes.ok) throw new Error(`Request failed (${cashierRes.status})`);
+        if (!cashierRes.ok) throw new Error(`Request Failed (${cashierRes.status})`);
         const cashierJson = await cashierRes.json();
         if (cashierJson.success) {
           const txns = cashierJson.data || [];

@@ -57,7 +57,7 @@ export default function MustMoveModal({
           must_move_to: selectedGameId
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
 
@@ -67,10 +67,10 @@ export default function MustMoveModal({
         broadcastChange('games');
         broadcastChange('tables');
       } else {
-        setError(data.error?.message || 'Failed to link games');
+        setError(data.error?.message || 'Failed To Link Games');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +84,7 @@ export default function MustMoveModal({
       const res = await fetch(`/api/commander/games/${game.id}/must-move`, {
         method: 'DELETE'
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
 
@@ -94,10 +94,10 @@ export default function MustMoveModal({
         broadcastChange('games');
         broadcastChange('tables');
       } else {
-        setError(data.error?.message || 'Failed to unlink games');
+        setError(data.error?.message || 'Failed To Unlink Games');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection Error. Please Try Again.');
     } finally {
       setSubmitting(false);
     }
@@ -193,7 +193,7 @@ export default function MustMoveModal({
                   <Users className="w-12 h-12 text-[#8FA6BE] mx-auto mb-2" />
                   <p className="text-[#9FB3C8]">No Compatible Games Available</p>
                   <p className="text-sm text-[#8FA6BE] mt-1">
-                    Open another {game.stakes} {game.game_type?.toUpperCase()} game first
+                    Open Another {game.stakes} {game.game_type?.toUpperCase()} Game First
                   </p>
                 </div>
               ) : (
@@ -243,7 +243,7 @@ export default function MustMoveModal({
                     ) : (
                       <>
                         <Link2 className="w-5 h-5" />
-                        Link as Must-Move
+                        Link As Must-Move
                       </>
                     )}
                   </button>

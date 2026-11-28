@@ -75,7 +75,7 @@ export default async function handler(req, res) {
                       updated_by: staff.id
                   }, { onConflict: 'venue_id' });
 
-              if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+              if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
               return res.status(200).json({ success: true, data: { club_logo_url: null } });
           }
 
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
               // Validate content type
               const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'];
               if (!allowedTypes.includes(contentType)) {
-                  return res.status(400).json({ success: false, error: 'Invalid file type. Use PNG, JPG, WebP, SVG, or GIF.' });
+                  return res.status(400).json({ success: false, error: 'Invalid File Type. Use PNG, JPG, WebP, SVG, Or GIF.' });
               }
 
               // Decode base64 to buffer
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
 
               // Max 5MB
               if (buffer.length > 5 * 1024 * 1024) {
-                  return res.status(400).json({ success: false, error: 'File too large. Maximum 5MB.' });
+                  return res.status(400).json({ success: false, error: 'File Too Large. Maximum 5MB.' });
               }
 
               // Ensure bucket exists
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
 
               if (uploadError) {
                   console.warn('Logo upload error:', uploadError);
-                  return res.status(500).json({ success: false, error: `Upload failed: ${uploadError.message}` });
+                  return res.status(500).json({ success: false, error: `Upload Failed: ${uploadError.message}` });
               }
 
               // Get public URL
@@ -162,15 +162,15 @@ export default async function handler(req, res) {
               });
           }
 
-          return res.status(405).json({ success: false, error: 'Method not allowed' });
+          return res.status(405).json({ success: false, error: 'Method Not Allowed' });
       } catch (err) {
           console.warn('Logo API error:', err);
-          return res.status(500).json({ success: false, error: 'Internal server error' });
+          return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

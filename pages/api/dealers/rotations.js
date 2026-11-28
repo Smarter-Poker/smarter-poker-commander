@@ -37,13 +37,13 @@ export default async function handler(req, res) {
     res.setHeader('Allow', ['GET', 'POST']);
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -131,7 +131,7 @@ async function getRotations(req, res) {
     console.warn('Get rotations error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to get rotations' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Get Rotations' }
     });
   }
 }
@@ -155,7 +155,7 @@ async function createRotation(req, res) {
   if (String(staff.venue_id) !== String(venue_id)) {
     return res.status(403).json({
       success: false,
-      error: { code: 'FORBIDDEN', message: 'Not authorized for this venue' }
+      error: { code: 'FORBIDDEN', message: 'Not Authorized For This Venue' }
     });
   }
 
@@ -183,7 +183,7 @@ async function createRotation(req, res) {
     if (dealerError || !dealer) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Dealer not found' }
+        error: { code: 'NOT_FOUND', message: 'Dealer Not Found' }
       });
     }
 
@@ -215,13 +215,13 @@ async function createRotation(req, res) {
 
         return res.status(201).json({
           success: true,
-          data: { assignment, message: `${dealer.name} pushed to table ${table_id}` }
+          data: { assignment, message: `${dealer.name} Pushed To Table ${table_id}` }
         });
       }
 
       return res.status(200).json({
         success: true,
-        data: { message: `${dealer.name} pushed off table` }
+        data: { message: `${dealer.name} Pushed Off Table` }
       });
     }
 
@@ -243,7 +243,7 @@ async function createRotation(req, res) {
 
       return res.status(200).json({
         success: true,
-        data: { message: `${dealer.name} is now on break` }
+        data: { message: `${dealer.name} Is Now On Break` }
       });
     }
 
@@ -259,7 +259,7 @@ async function createRotation(req, res) {
 
       return res.status(200).json({
         success: true,
-        data: { message: `${dealer.name} returned from break` }
+        data: { message: `${dealer.name} Returned From Break` }
       });
     }
 
@@ -303,14 +303,14 @@ async function createRotation(req, res) {
 
     return res.status(201).json({
       success: true,
-      data: { assignment, message: `${dealer.name} assigned to table` }
+      data: { assignment, message: `${dealer.name} Assigned To Table` }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Create rotation error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to create rotation' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Create Rotation' }
     });
   }
 }

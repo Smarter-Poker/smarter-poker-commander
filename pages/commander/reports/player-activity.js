@@ -35,7 +35,7 @@ const headers = { };
         commanderFetch(`/api/commander/members?sort=${sortBy}&limit=100`, { headers }).catch(() => ({ ok: false })),
         commanderFetch('/api/commander/time-billing/sessions?limit=200&status=all', { headers }).catch(() => ({ ok: false }))
       ]);
-      if (!membersRes.ok) throw new Error(`Request failed (${membersRes.status})`);
+      if (!membersRes.ok) throw new Error(`Request Failed (${membersRes.status})`);
       const [membersJson, sessionsJson] = await Promise.all([membersRes.json(), sessionsRes.json()]);
       // Members API nests under data.members - data itself is an object
       if (membersJson.success) setPlayers(membersJson.data?.members || (Array.isArray(membersJson.data) ? membersJson.data : []));

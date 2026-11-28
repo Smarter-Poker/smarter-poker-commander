@@ -33,7 +33,7 @@ export const SIGNUP_NETWORK_REFUSED = {
 };
 
 export const SIGNUP_NETWORK_UNCHECKED = {
-  error: 'Sign up is temporarily unavailable. Please try again shortly.',
+  error: 'Sign Up Is Temporarily Unavailable. Please Try Again Shortly.',
   code: 'SIGNUP_NETWORK_UNCHECKED',
 };
 

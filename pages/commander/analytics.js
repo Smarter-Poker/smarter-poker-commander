@@ -264,9 +264,9 @@ const headers = { };
         commanderFetch(`/api/commander/analytics/players?venue_id=${venueId}&limit=10`, { headers }).catch(() => ({ ok: false }))
       ]);
 
-      if (!dailyRes || !dailyRes.ok) throw new Error(`Daily analytics failed (${dailyRes?.status || 'network error'})`);
+      if (!dailyRes || !dailyRes.ok) throw new Error(`Daily Analytics Failed (${dailyRes?.status || 'network error'})`);
       const dailyData = await dailyRes.json();
-      if (!playersRes || !playersRes.ok) throw new Error(`Players analytics failed (${playersRes?.status || 'network error'})`);
+      if (!playersRes || !playersRes.ok) throw new Error(`Players Analytics Failed (${playersRes?.status || 'network error'})`);
       const playersData = await playersRes.json();
 
       // API returns { analytics: [...], summary, period } and { players: [...], total, ... }

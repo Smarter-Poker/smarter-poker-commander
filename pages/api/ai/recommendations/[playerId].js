@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET Allowed' }
       });
     }
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
       if ((sessions || []).length === 0 && (waitlistHistory || []).length === 0) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'No player activity at this venue' }
+          error: { code: 'NOT_FOUND', message: 'No Player Activity At This Venue' }
         });
       }
 
@@ -245,13 +245,13 @@ export default async function handler(req, res) {
       console.warn('AI recommendations error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to generate recommendations' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Generate Recommendations' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

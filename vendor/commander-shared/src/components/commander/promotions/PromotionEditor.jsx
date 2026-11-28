@@ -377,7 +377,7 @@ export default function PromotionEditor({
               </div>
 
               <div>
-                <label className="block text-sm text-[#9FB3C8] mb-1">Min Buy-in</label>
+                <label className="block text-sm text-[#9FB3C8] mb-1">Min Buy-In</label>
                 <input
                   type="number"
                   value={formData.min_buyin}
@@ -430,7 +430,7 @@ export default function PromotionEditor({
                 onChange={(e) => handleChange('is_featured', e.target.checked)}
                 className="w-4 h-4 rounded text-[#22D3EE] focus:ring-[#22D3EE] border-[#445E77]"
               />
-              <span className="text-sm text-gray-300">Featured Promotion (highlighted)</span>
+              <span className="text-sm text-gray-300">Featured Promotion (Highlighted)</span>
             </label>
 
             <div>
@@ -445,7 +445,7 @@ export default function PromotionEditor({
             </div>
 
             <div>
-              <label className="block text-sm text-[#9FB3C8] mb-1">Image URL (optional)</label>
+              <label className="block text-sm text-[#9FB3C8] mb-1">Image URL (Optional)</label>
               <div className="flex gap-2">
                 <input
                   type="url"

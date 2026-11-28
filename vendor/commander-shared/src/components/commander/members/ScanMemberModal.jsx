@@ -29,7 +29,7 @@ export default function ScanMemberModal({ isOpen, onClose, venueId, onMemberFoun
             if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
             setScanning(true);
             detectQR();
-        } catch { setError('Camera access denied. Use manual entry below.'); }
+        } catch { setError('Camera Access Denied. Use Manual Entry Below.'); }
     }, []);
 
     const stopScanning = useCallback(() => {
@@ -58,9 +58,9 @@ export default function ScanMemberModal({ isOpen, onClose, venueId, onMemberFoun
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ qr_code: qrCode, venue_id: venueId }),
             });
-            if (!res.ok) throw new Error(`Request failed (${res.status})`);
+            if (!res.ok) throw new Error(`Request Failed (${res.status})`);
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Member not found');
+            if (!res.ok || !data.success) throw new Error(data.error || 'Member Not Found');
             setMember(data.data.member);
             broadcastChange('members'); // Push check-in event dynamically
             if (onMemberFound) onMemberFound(data.data.member);
@@ -106,7 +106,7 @@ export default function ScanMemberModal({ isOpen, onClose, venueId, onMemberFoun
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div className="flex items-center gap-1.5 text-[#BDD0E2]"><Clock className="w-3.5 h-3.5" /><span>{member.total_visits || 0} visits</span></div>
+                                <div className="flex items-center gap-1.5 text-[#BDD0E2]"><Clock className="w-3.5 h-3.5" /><span>{member.total_visits || 0} Visits</span></div>
                                 <div className="flex items-center gap-1.5 text-[#BDD0E2]"><Star className="w-3.5 h-3.5" /><span>{member.membership_status}</span></div>
                             </div>
                             <div className="grid grid-cols-2 gap-2 pt-2">

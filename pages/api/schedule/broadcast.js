@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     }
 
       if (req.method !== 'POST') {
-          return res.status(405).json({ success: false, error: { message: 'Method not allowed' } });
+          return res.status(405).json({ success: false, error: { message: 'Method Not Allowed' } });
       }
 
       const { venue_id, week_start, channel = 'sms' } = req.body;
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
           if (!shifts || shifts.length === 0) {
               return res.status(400).json({
                   success: false,
-                  error: { message: 'No shifts scheduled for this week' }
+                  error: { message: 'No Shifts Scheduled For This Week' }
               });
           }
 
@@ -227,14 +227,14 @@ export default async function handler(req, res) {
           console.warn('[Schedule Broadcast] Error:', err);
           return res.status(500).json({
               success: false,
-              error: { message: 'Failed to broadcast schedule' }
+              error: { message: 'Failed To Broadcast Schedule' }
           });
       }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 

@@ -79,7 +79,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
     // Verify PIN and save
     const verifyPinAndSave = async () => {
         if (!pinValue || pinValue.length < 4) {
-            setPinError('Enter your PIN');
+            setPinError('Enter Your PIN');
             return;
         }
         setPinLoading(true);
@@ -95,7 +95,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ venue_id: venueId, pin_code: pinValue }),
             });
-            if (!pinRes.ok) throw new Error('Request failed');
+            if (!pinRes.ok) throw new Error('Request Failed');
             const pinJson = await pinRes.json();
 
             if (!pinJson.success || !pinJson.data?.valid) {
@@ -108,7 +108,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
             const staffRole = pinJson.data.staff?.role;
             const allowedRoles = ['floor', 'manager', 'dualrate', 'owner'];
             if (!allowedRoles.includes(staffRole)) {
-                setPinError('Insufficient permissions - floor manager or above required');
+                setPinError('Insufficient Permissions - Floor Manager Or Above Required');
                 setPinLoading(false);
                 return;
             }
@@ -143,14 +143,14 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                 },
                 body: JSON.stringify(payload),
             });
-            if (!res.ok) throw new Error('Request failed');
+            if (!res.ok) throw new Error('Request Failed');
             const data = await res.json();
             if (data.success && onUpdate) onUpdate(data.data.member);
             setEditing(false);
             setShowPinModal(false);
         } catch (err) {
             console.warn('Update error:', err);
-            setPinError('Network error - try again');
+            setPinError('Network Error - Try Again');
         } finally {
             setPinLoading(false);
         }
@@ -239,7 +239,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                                         <input type="text" value={editForm.last_name} onChange={e => setEditForm(p => ({ ...p, last_name: e.target.value }))} className={inputClass} />
                                     </Field>
                                 </div>
-                                <Field label="Date of Birth">
+                                <Field label="Date Of Birth">
                                     <input type="date" value={editForm.date_of_birth} onChange={e => setEditForm(p => ({ ...p, date_of_birth: e.target.value }))} className={inputClass} />
                                 </Field>
                             </div>
@@ -332,14 +332,14 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                             {/* Notes */}
                             <div className="bg-[#040D18] rounded-xl p-4 space-y-3">
                                 <h4 className="text-xs font-bold text-[#9FB3C8] uppercase tracking-wider">Notes</h4>
-                                <textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} className={inputClass + " resize-none"} rows={3} placeholder="Internal notes about this member..." />
+                                <textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} className={inputClass + " resize-none"} rows={3} placeholder="Internal Notes About This Member..." />
                             </div>
 
                             {/* Save / Cancel */}
                             <div className="flex gap-2">
                                 <button onClick={() => setEditing(false)} className="flex-1 py-2.5 bg-[#132A42] text-[#BDD0E2] rounded-lg text-sm font-medium hover:bg-[#1B3753] transition-colors">Cancel</button>
                                 <button onClick={requestSave} disabled={saving} className="flex-1 py-2.5 bg-[#0C55C0] text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#0A4AA8] transition-colors">
-                                    <Lock className="w-3.5 h-3.5" /> Save with PIN
+                                    <Lock className="w-3.5 h-3.5" /> Save With PIN
                                 </button>
                             </div>
                         </div>
@@ -348,16 +348,16 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                             {/* Contact Info */}
                             <div className="bg-[#040D18] rounded-xl p-4 space-y-2.5 text-sm">
                                 <h4 className="text-xs font-bold text-[#9FB3C8] uppercase tracking-wider mb-2">Contact Information</h4>
-                                <div className="flex items-center gap-3 text-[#BDD0E2]"><Mail className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.email || 'No email on file'}</span></div>
-                                <div className="flex items-center gap-3 text-[#BDD0E2]"><Phone className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.phone || 'No phone on file'}</span></div>
-                                <div className="flex items-center gap-3 text-[#BDD0E2]"><MapPin className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{fullAddress || 'No address on file'}</span></div>
+                                <div className="flex items-center gap-3 text-[#BDD0E2]"><Mail className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.email || 'No Email On File'}</span></div>
+                                <div className="flex items-center gap-3 text-[#BDD0E2]"><Phone className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.phone || 'No Phone On File'}</span></div>
+                                <div className="flex items-center gap-3 text-[#BDD0E2]"><MapPin className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{fullAddress || 'No Address On File'}</span></div>
                             </div>
 
                             {/* Personal Info */}
                             <div className="bg-[#040D18] rounded-xl p-4 space-y-2.5 text-sm">
                                 <h4 className="text-xs font-bold text-[#9FB3C8] uppercase tracking-wider mb-2">Personal Details</h4>
-                                <div className="flex items-center gap-3 text-[#BDD0E2]"><Calendar className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.date_of_birth ? new Date(member.date_of_birth + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No DOB on file'}</span></div>
-                                <div className="flex items-center gap-3 text-[#BDD0E2]"><CreditCard className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.id_number ? `${(member.id_type || 'ID').replace('_', ' ')} - ${member.id_number}${member.id_state ? ` (${member.id_state})` : ''}` : 'No ID on file'}</span></div>
+                                <div className="flex items-center gap-3 text-[#BDD0E2]"><Calendar className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.date_of_birth ? new Date(member.date_of_birth + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No DOB On File'}</span></div>
+                                <div className="flex items-center gap-3 text-[#BDD0E2]"><CreditCard className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">{member.id_number ? `${(member.id_type || 'ID').replace('_', ' ')} - ${member.id_number}${member.id_state ? ` (${member.id_state})` : ''}` : 'No ID On File'}</span></div>
                                 {member.notes && <div className="flex items-start gap-3 text-[#BDD0E2]"><FileText className="w-4 h-4 flex-shrink-0 mt-0.5" /><span className="text-[#F2F7FF]">{member.notes}</span></div>}
                                 <div className="flex items-center gap-3 text-[#BDD0E2]"><Clock className="w-4 h-4 flex-shrink-0" /><span className="text-[#F2F7FF]">Joined {new Date(member.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span></div>
                             </div>
@@ -416,7 +416,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                             {/* Audit Trail */}
                             {member.last_edited_by && (
                                 <div className="text-xs text-[#9FB3C8] text-center px-4">
-                                    Last edited by <span className="text-[#BDD0E2] font-medium">{member.last_edited_by}</span>
+                                    Last Edited By <span className="text-[#BDD0E2] font-medium">{member.last_edited_by}</span>
                                     {member.last_edited_at && <> on {new Date(member.last_edited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(member.last_edited_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</>}
                                 </div>
                             )}
@@ -446,7 +446,7 @@ export default function MemberDetailPanel({ member, venueName, onClose, onUpdate
                             <Lock className="w-7 h-7 text-[#86DAFF]" />
                         </div>
                         <h3 className="text-lg font-bold text-[#F2F7FF] mb-1">Manager PIN Required</h3>
-                        <p className="text-xs text-[#9FB3C8] mb-4">Floor manager or above to save changes</p>
+                        <p className="text-xs text-[#9FB3C8] mb-4">Floor Manager Or Above To Save Changes</p>
 
                         <input
                             ref={pinInputRef}

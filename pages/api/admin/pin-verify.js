@@ -40,20 +40,20 @@ async function sha256Hex(input) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   // Verify Supabase user via Bearer token
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authorization required' });
+    return res.status(401).json({ error: 'Authorization Required' });
   }
   const token = authHeader.slice(7).trim();
 
   const { data: authData, error: authError } = await getSupabase().auth.getUser(token);
   const user = authData?.user;
   if (authError || !user) {
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Invalid Token' });
   }
 
   const { pin } = req.body || {};
@@ -74,15 +74,15 @@ export default async function handler(req, res) {
 
   if (rpcErr) {
     console.warn('[pin-verify] RPC error:', rpcErr.message);
-    return res.status(500).json({ error: 'Verification failed' });
+    return res.status(500).json({ error: 'Verification Failed' });
   }
 
   if (!verified?.pin_set) {
     // No PIN enrolled yet - tell the client so pin-entry can offer setup.
-    return res.status(409).json({ error: 'No admin PIN set for this account', code: 'PIN_NOT_SET' });
+    return res.status(409).json({ error: 'No Admin PIN Set For This Account', code: 'PIN_NOT_SET' });
   }
   if (verified?.locked) {
-    return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.', code: 'LOCKED' });
+    return res.status(429).json({ error: 'Too Many Attempts. Try Again In A Few Minutes.', code: 'LOCKED' });
   }
   if (!verified?.valid) {
     return res.status(401).json({ error: 'PIN incorrect', code: 'PIN_INCORRECT' });
@@ -95,6 +95,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, ttlSec: 30 * 60 });
   } catch (err) {
     console.warn('[pin-verify] session create failed:', err.message);
-    return res.status(500).json({ error: 'Session create failed' });
+    return res.status(500).json({ error: 'Session Create Failed' });
   }
 }

@@ -102,7 +102,7 @@ const res = await commanderFetch('/api/commander/exports', {
           format
         })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const json = await res.json();
       if (res.ok && json.export) {
         setMessage({ type: 'success', text: 'Export Created!' });

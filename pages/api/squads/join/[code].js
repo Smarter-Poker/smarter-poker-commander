@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     if (!rl.allowed) {
       return res.status(429).json({
         success: false,
-        error: { code: 'RATE_LIMITED', message: 'Too many requests' }
+        error: { code: 'RATE_LIMITED', message: 'Too Many Requests' }
       });
     }
 
@@ -69,13 +69,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -86,7 +86,7 @@ async function handleLookup(req, res, code) {
     if (!squad || CLOSED_STATUSES.includes(squad.group_status)) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Invite link is invalid or expired' }
+        error: { code: 'NOT_FOUND', message: 'Invite Link Is Invalid Or Expired' }
       });
     }
 
@@ -114,7 +114,7 @@ async function handleLookup(req, res, code) {
     console.warn('Squad invite lookup error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to look up invite' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Look Up Invite' }
     });
   }
 }
@@ -130,7 +130,7 @@ async function handleJoin(req, res, code) {
     if (!squad || CLOSED_STATUSES.includes(squad.group_status)) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Invite link is invalid or expired' }
+        error: { code: 'NOT_FOUND', message: 'Invite Link Is Invalid Or Expired' }
       });
     }
 
@@ -154,7 +154,7 @@ async function handleJoin(req, res, code) {
       }
       return res.status(400).json({
         success: false,
-        error: { code: 'ALREADY_MEMBER', message: 'Already in this squad' }
+        error: { code: 'ALREADY_MEMBER', message: 'Already In This Squad' }
       });
     }
 
@@ -165,7 +165,7 @@ async function handleJoin(req, res, code) {
     if (squad.max_size && activeCount >= squad.max_size) {
       return res.status(400).json({
         success: false,
-        error: { code: 'SQUAD_FULL', message: 'Squad is full' }
+        error: { code: 'SQUAD_FULL', message: 'Squad Is Full' }
       });
     }
 
@@ -188,7 +188,7 @@ async function handleJoin(req, res, code) {
     console.warn('Squad invite join error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to join squad' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Join Squad' }
     });
   }
 }

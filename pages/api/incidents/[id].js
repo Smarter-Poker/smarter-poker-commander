@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Incident ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Incident ID Required' }
       });
     }
 
@@ -41,13 +41,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -62,7 +62,7 @@ async function handleGet(req, res, id) {
     if (error || !incident) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Incident not found' }
+        error: { code: 'NOT_FOUND', message: 'Incident Not Found' }
       });
     }
 
@@ -78,7 +78,7 @@ async function handleGet(req, res, id) {
     console.warn('Get incident error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch incident' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Incident' }
     });
   }
 }
@@ -95,7 +95,7 @@ async function handlePatch(req, res, id) {
     if (fetchError || !existing) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Incident not found' }
+        error: { code: 'NOT_FOUND', message: 'Incident Not Found' }
       });
     }
 
@@ -135,7 +135,7 @@ async function handlePatch(req, res, id) {
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No valid fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Valid Fields To Update' }
       });
     }
 
@@ -150,7 +150,7 @@ async function handlePatch(req, res, id) {
       console.warn('Update incident error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update incident' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Incident' }
       });
     }
 
@@ -163,7 +163,7 @@ async function handlePatch(req, res, id) {
     console.warn('Patch incident error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to update incident' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Update Incident' }
     });
   }
 }

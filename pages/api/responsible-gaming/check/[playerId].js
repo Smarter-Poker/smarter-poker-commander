@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET Allowed' }
       });
     }
 
@@ -114,13 +114,13 @@ export default async function handler(req, res) {
       console.warn('Check exclusion error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to check status' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Check Status' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

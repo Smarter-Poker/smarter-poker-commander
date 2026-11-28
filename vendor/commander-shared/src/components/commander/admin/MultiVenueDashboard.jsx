@@ -73,8 +73,8 @@ function VenueCard({ venue, onSelect, isSelected }) {
       <div className="border-t border-[#445E77] pt-3">
         <div className="text-xs text-[#8FA6BE] mb-2">Today</div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#9FB3C8]">{stats.today?.sessions || 0} sessions</span>
-          <span className="text-[#9FB3C8]">{stats.today?.players || 0} players</span>
+          <span className="text-[#9FB3C8]">{stats.today?.sessions || 0} Sessions</span>
+          <span className="text-[#9FB3C8]">{stats.today?.players || 0} Players</span>
           <span className="text-green-400">${(stats.today?.buyin || 0).toLocaleString()}</span>
         </div>
       </div>
@@ -181,7 +181,7 @@ export default function MultiVenueDashboard({
           />
           <SummaryCard
             icon={DollarSign}
-            label="Today's Buy-ins"
+            label="Today's Buy-Ins"
             value={`$${(summary.today?.buyin || 0).toLocaleString()}`}
             color="#22D3EE"
           />
@@ -207,7 +207,7 @@ export default function MultiVenueDashboard({
             </div>
             <div>
               <div className="text-2xl font-bold text-green-400">${(summary.week.buyin || 0).toLocaleString()}</div>
-              <div className="text-sm text-[#9FB3C8]">Total Buy-ins</div>
+              <div className="text-sm text-[#9FB3C8]">Total Buy-Ins</div>
             </div>
           </div>
         </div>

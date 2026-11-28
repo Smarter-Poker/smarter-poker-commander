@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -130,7 +130,7 @@ async function listLeagues(req, res, staff) {
     console.warn('Leagues error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch leagues' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Leagues' }
     });
   }
 }
@@ -141,7 +141,7 @@ async function createLeague(req, res, staff) {
   if (!name) {
     return res.status(400).json({
       success: false,
-      error: { code: 'MISSING_FIELDS', message: 'League name required' }
+      error: { code: 'MISSING_FIELDS', message: 'League Name Required' }
     });
   }
 

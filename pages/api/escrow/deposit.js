@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST Allowed' }
       });
     }
 
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       if (!authHeader) {
         return res.status(401).json({
           success: false,
-          error: { code: 'AUTH_REQUIRED', message: 'Authorization required' }
+          error: { code: 'AUTH_REQUIRED', message: 'Authorization Required' }
         });
       }
 
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       if (authError || !user) {
         return res.status(401).json({
           success: false,
-          error: { code: 'INVALID_TOKEN', message: 'Invalid token' }
+          error: { code: 'INVALID_TOKEN', message: 'Invalid Token' }
         });
       }
 
@@ -72,14 +72,14 @@ export default async function handler(req, res) {
       if (gameError || !game) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Home game not found' }
+          error: { code: 'NOT_FOUND', message: 'Home Game Not Found' }
         });
       }
 
       if (game.status === 'cancelled' || game.status === 'completed') {
         return res.status(400).json({
           success: false,
-          error: { code: 'GAME_CLOSED', message: 'This game is no longer accepting deposits' }
+          error: { code: 'GAME_CLOSED', message: 'This Game Is No Longer Accepting Deposits' }
         });
       }
 
@@ -87,14 +87,14 @@ export default async function handler(req, res) {
       if (game.buyin_min && amount < game.buyin_min) {
         return res.status(400).json({
           success: false,
-          error: { code: 'AMOUNT_TOO_LOW', message: `Minimum buy-in is $${game.buyin_min}` }
+          error: { code: 'AMOUNT_TOO_LOW', message: `Minimum Buy-In Is $${game.buyin_min}` }
         });
       }
 
       if (game.buyin_max && amount > game.buyin_max) {
         return res.status(400).json({
           success: false,
-          error: { code: 'AMOUNT_TOO_HIGH', message: `Maximum buy-in is $${game.buyin_max}` }
+          error: { code: 'AMOUNT_TOO_HIGH', message: `Maximum Buy-In Is $${game.buyin_max}` }
         });
       }
 
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
       if (existing) {
         return res.status(400).json({
           success: false,
-          error: { code: 'EXISTING_DEPOSIT', message: 'You already have a pending deposit for this game' }
+          error: { code: 'EXISTING_DEPOSIT', message: 'You Already Have A Pending Deposit For This Game' }
         });
       }
 
@@ -138,13 +138,13 @@ export default async function handler(req, res) {
       console.warn('Escrow deposit error:', error);
       return res.status(500).json({
         success: false,
-        error: { code: 'SERVER_ERROR', message: 'Failed to create deposit' }
+        error: { code: 'SERVER_ERROR', message: 'Failed To Create Deposit' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

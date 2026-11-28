@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Staff ID required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Staff ID Required' }
       });
     }
 
@@ -44,14 +44,14 @@ export default async function handler(req, res) {
       default:
         return res.status(405).json({
           success: false,
-          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+          error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
         });
     }
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -67,7 +67,7 @@ async function handlePatch(req, res, id) {
     if (fetchError || !target) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Staff member not found' }
+        error: { code: 'NOT_FOUND', message: 'Staff Member Not Found' }
       });
     }
 
@@ -88,7 +88,7 @@ async function handlePatch(req, res, id) {
     if (role && !VALID_ROLES.includes(role)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` }
+        error: { code: 'VALIDATION_ERROR', message: `Invalid Role. Must Be One Of: ${VALID_ROLES.join(', ')}` }
       });
     }
 
@@ -120,7 +120,7 @@ async function handlePatch(req, res, id) {
         if (pinTaken) {
           return res.status(400).json({
             success: false,
-            error: { code: 'DUPLICATE_PIN', message: 'This PIN is already in use by another employee at this venue' }
+            error: { code: 'DUPLICATE_PIN', message: 'This PIN Is Already In Use By Another Employee At This Venue' }
           });
         }
       }
@@ -131,7 +131,7 @@ async function handlePatch(req, res, id) {
     if (Object.keys(updates || {}).length === 0) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'No valid fields to update' }
+        error: { code: 'VALIDATION_ERROR', message: 'No Valid Fields To Update' }
       });
     }
 
@@ -153,7 +153,7 @@ async function handlePatch(req, res, id) {
       console.warn('Commander staff update error:', updateError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to update staff member' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Update Staff Member' }
       });
     }
 
@@ -179,7 +179,7 @@ async function handlePatch(req, res, id) {
     console.warn('Commander staff PATCH error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }
@@ -196,7 +196,7 @@ async function handleDelete(req, res, id) {
     if (fetchError || !target) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Staff member not found' }
+        error: { code: 'NOT_FOUND', message: 'Staff Member Not Found' }
       });
     }
 
@@ -214,7 +214,7 @@ async function handleDelete(req, res, id) {
     if (String(authResult.staff.id) === String(id)) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'You cannot deactivate your own staff account' }
+        error: { code: 'VALIDATION_ERROR', message: 'You Cannot Deactivate Your Own Staff Account' }
       });
     }
 
@@ -230,7 +230,7 @@ async function handleDelete(req, res, id) {
       console.warn('Commander staff delete error:', deleteError);
       return res.status(500).json({
         success: false,
-        error: { code: 'DATABASE_ERROR', message: 'Failed to remove staff member' }
+        error: { code: 'DATABASE_ERROR', message: 'Failed To Remove Staff Member' }
       });
     }
 
@@ -249,14 +249,14 @@ async function handleDelete(req, res, id) {
 
     return res.status(200).json({
       success: true,
-      data: { staff, message: 'Staff member deactivated' }
+      data: { staff, message: 'Staff Member Deactivated' }
     });
   } catch (error) {
       try { reportApiError(error, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('Commander staff DELETE error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+      error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
     });
   }
 }

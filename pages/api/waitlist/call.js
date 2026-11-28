@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
     const _g = await guardWriteStaff(req, res); if (!_g) return;
 
-    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
 
     try {
       const staff = _g; // from guardWriteStaff
@@ -45,9 +45,9 @@ export default async function handler(req, res) {
         .eq('id', waitlist_id)
         .maybeSingle();
 
-      if (!entry) return res.status(404).json({ success: false, error: 'Waitlist entry not found' });
+      if (!entry) return res.status(404).json({ success: false, error: 'Waitlist Entry Not Found' });
       if (entry.status !== 'waiting') {
-        return res.status(400).json({ success: false, error: `Player already ${entry.status}` });
+        return res.status(400).json({ success: false, error: `Player Already ${entry.status}` });
       }
 
       // Update status to called
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
         .select()
         .maybeSingle();
 
-      if (error) return res.status(500).json({ success: false, error: 'Internal server error' });
+      if (error) return res.status(500).json({ success: false, error: 'Internal Server Error' });
 
       // Resolve venue name + game label ONCE - both the SMS and the push use them.
       // (These used to live inside the phone-only branch, so the push path below
@@ -136,12 +136,12 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.warn('Waitlist call error:', err);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

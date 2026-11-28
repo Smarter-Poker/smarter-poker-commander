@@ -21,7 +21,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange, clas
                 Previous
             </button>
             <span className="text-sm font-medium text-[#BDD0E2]">
-                Page {currentPage} of {totalPages}
+                Page {currentPage} Of {totalPages}
             </span>
             <button
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}

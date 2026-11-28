@@ -38,13 +38,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({
       success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
     });
 
   } catch (err) {
     try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
 
@@ -122,7 +122,7 @@ async function handleCreate(req, res, user) {
     console.warn('Create squad error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to create squad' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Create Squad' }
     });
   }
 }
@@ -182,7 +182,7 @@ async function handleList(req, res) {
     console.warn('List squads error:', error);
     return res.status(500).json({
       success: false,
-      error: { code: 'SERVER_ERROR', message: 'Failed to fetch squads' }
+      error: { code: 'SERVER_ERROR', message: 'Failed To Fetch Squads' }
     });
   }
 }

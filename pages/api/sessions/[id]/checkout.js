@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({
         success: false,
-        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' }
+        error: { code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' }
       });
     }
 
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     if (!id) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Session ID is required' }
+        error: { code: 'VALIDATION_ERROR', message: 'Session ID Is Required' }
       });
     }
 
@@ -57,14 +57,14 @@ export default async function handler(req, res) {
       if (fetchError || !session) {
         return res.status(404).json({
           success: false,
-          error: { code: 'NOT_FOUND', message: 'Session not found' }
+          error: { code: 'NOT_FOUND', message: 'Session Not Found' }
         });
       }
 
       if (session.status !== 'active') {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Session is not active' }
+          error: { code: 'VALIDATION_ERROR', message: 'Session Is Not Active' }
         });
       }
 
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         console.warn('Commander session checkout error:', updateError);
         return res.status(500).json({
           success: false,
-          error: { code: 'DATABASE_ERROR', message: 'Failed to checkout session' }
+          error: { code: 'DATABASE_ERROR', message: 'Failed To Checkout Session' }
         });
       }
 
@@ -122,13 +122,13 @@ export default async function handler(req, res) {
       });
       return res.status(500).json({
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
+        error: { code: 'INTERNAL_ERROR', message: 'Internal Server Error' }
       });
     }
 
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[API Error]', err);
-    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal server error' });
+    if (!res.headersSent) return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

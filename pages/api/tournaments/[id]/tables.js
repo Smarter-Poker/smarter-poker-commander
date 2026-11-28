@@ -239,7 +239,7 @@ async function handleAssign(req, res, tournament, venueId, staff) {
   if (!rawNumbers && (rawCount === undefined || rawCount === null)) {
     return res.status(400).json({
       success: false,
-      error: { code: 'VALIDATION_ERROR', message: 'Provide Either table_numbers Or count' }
+      error: { code: 'VALIDATION_ERROR', message: 'Provide Either table_numbers Or Count' }
     });
   }
 

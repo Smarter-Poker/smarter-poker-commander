@@ -35,7 +35,7 @@ const TIERS = {
     tables: 15,
     staff: 10,
     sms: 500,
-    features: ['Everything in Home Game', 'Floor View & Map', 'Dealer Rotation', 'Player Kiosk & Displays', 'Staff Accounts & Scheduling', 'Promotions Engine', 'Advanced Analytics & Reports'],
+    features: ['Everything In Home Game', 'Floor View & Map', 'Dealer Rotation', 'Player Kiosk & Displays', 'Staff Accounts & Scheduling', 'Promotions Engine', 'Advanced Analytics & Reports'],
     popular: true
   },
   club: {
@@ -44,7 +44,7 @@ const TIERS = {
     tables: 'Unlimited',
     staff: 'Unlimited',
     sms: 'Unlimited',
-    features: ['Everything in Charity', 'Paid Memberships (Fees)', 'Time-Based Seat Billing', 'Unlimited SMS', 'Priority Support']
+    features: ['Everything In Charity', 'Paid Memberships (Fees)', 'Time-Based Seat Billing', 'Unlimited SMS', 'Priority Support']
   }
 };
 
@@ -319,20 +319,20 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code.trim() })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       if (res.ok && data.valid) {
         setPromoStatus('valid');
-        setPromoMessage(data.description || 'Promo code accepted!');
+        setPromoMessage(data.description || 'Promo Code Accepted!');
         setPromoData(data);
       } else {
         setPromoStatus('invalid');
-        setPromoMessage(data.error || 'Invalid promo code');
+        setPromoMessage(data.error || 'Invalid Promo Code');
         setPromoData(null);
       }
     } catch {
       setPromoStatus('invalid');
-      setPromoMessage('Could not validate code');
+      setPromoMessage('Could Not Validate Code');
       setPromoData(null);
     }
   };
@@ -422,7 +422,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
       
       // Honeypot check
       if (honeypot) {
-        setError('Suspicious activity detected.');
+        setError('Suspicious Activity Detected.');
         return false;
       }
       
@@ -500,10 +500,10 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
           } else if (data.hash) {
             setPhoneVerificationHash(data.hash);
           } else {
-            setError(data.error || 'Failed to send SMS code.');
+            setError(data.error || 'Failed To Send SMS Code.');
           }
         } catch (err) {
-          setError('Network error sending SMS.');
+          setError('Network Error Sending SMS.');
         }
         setIsVerifyingPhone(false);
       }
@@ -535,7 +535,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleVerifyCode = async () => {
     if (!phoneVerificationCode || phoneVerificationCode.length < 6) {
-      setError('Please enter the 6-digit code.');
+      setError('Please Enter The 6-Digit Code.');
       return;
     }
     setIsVerifyingPhone(true);
@@ -556,10 +556,10 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
         setPhoneVerified(true);
         setStep(2);
       } else {
-        setError(data.error || 'Invalid code. Please try again.');
+        setError(data.error || 'Invalid Code. Please Try Again.');
       }
     } catch (err) {
-      setError('Network error verifying code.');
+      setError('Network Error Verifying Code.');
     }
     setIsVerifyingPhone(false);
   };
@@ -628,7 +628,7 @@ const [agreedToTerms, setAgreedToTerms] = useState(false);
       // descriptive errors (duplicate account, address in use, sign-in
       // required) reach the user instead of a generic "Request failed".
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data.error || 'Registration failed');
+      if (!res.ok || !data.success) throw new Error(data.error || 'Registration Failed');
 
       // Redeem promo code if one was validated
       if (promoCode.trim() && promoStatus === 'valid' && data.userId) {
@@ -769,7 +769,7 @@ const CalibrationPanel = () => {
           onClick={() => {
             setCalib(liveCalib.current);
             navigator.clipboard.writeText(JSON.stringify(liveCalib.current, null, 2));
-            alert("Settings copied to clipboard! Paste them to the AI.");
+            alert("Settings Copied To Clipboard! Paste Them To The AI.");
           }}
           style={{marginTop: 10, width: '100%', padding: '10px', background: '#1981EC', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
         >
@@ -1031,7 +1031,7 @@ const CalibrationPanel = () => {
                   cursor: 'pointer',
                   zIndex: 10
                 }}
-                title="Continue to Venue Details"
+                title="Continue To Venue Details"
                 disabled={isVerifyingPhone}
               />
             </form>
@@ -1053,7 +1053,7 @@ const CalibrationPanel = () => {
                 }}>
                   <h2 style={{ color: '#00F0FF', fontSize: '24px', marginBottom: '16px', fontWeight: 'bold' }}>Verify Phone</h2>
                   <p style={{ color: '#AAA', marginBottom: '24px' }}>
-                    We sent a 6-digit code to <strong>{ownerPhone}</strong>.
+                    We Sent A 6-Digit Code To <strong>{ownerPhone}</strong>.
                   </p>
                   <input
                     type="text"
@@ -1088,13 +1088,13 @@ const CalibrationPanel = () => {
                           const data = await res.json();
                           if (data.hash) {
                             setPhoneVerificationHash(data.hash);
-                            setError('New code sent successfully.');
+                            setError('New Code Sent Successfully.');
                             setTimeout(() => setError(''), 3000);
                           } else {
-                            setError(data.error || 'Failed to resend SMS.');
+                            setError(data.error || 'Failed To Resend SMS.');
                           }
                         } catch (err) {
-                          setError('Network error resending SMS.');
+                          setError('Network Error Resending SMS.');
                         }
                         setIsVerifyingPhone(false);
                       }}
@@ -1988,7 +1988,7 @@ const CalibrationPanel = () => {
                   onPlaceSelected={handlePlaceSelected}
                   defaultValue={clubInfo.address || clubInfo.city}
                   onChange={e => setClubInfo({ ...clubInfo, address: e.target.value })}
-                  placeholder="Start typing your address or city..."
+                  placeholder="Start Typing Your Address Or City..."
                   className={inputClass}
                   style={{ position: 'relative', width: '100%', zIndex: 20 }}
                 />
@@ -2032,8 +2032,8 @@ const CalibrationPanel = () => {
                         </div>
                         <div className="text-[#BDD0E2] text-xs">
                           {COMMANDER_FREE_MODE
-                            ? 'All Commander features are free while in beta. No credit card required.'
-                            : 'No credit card required. You can upgrade anytime.'}
+                            ? 'All Commander Features Are Free While In Beta. No Credit Card Required.'
+                            : 'No Credit Card Required. You Can Upgrade Anytime.'}
                         </div>
                       </div>
                       <div className="text-right whitespace-nowrap">
@@ -2068,7 +2068,7 @@ const CalibrationPanel = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedTier === key ? 'border-[#1981EC] bg-[#0C55C0]' : 'border-[#9FB3C8]'}`}>{selectedTier === key && <span className="text-white text-xs">✓</span>}</div>
-                        <div><div className="font-semibold text-[#F2F7FF]">{tier.name}</div><div className="text-sm text-[#BDD0E2]">{tier.tables} tables, {tier.staff} staff</div></div>
+                        <div><div className="font-semibold text-[#F2F7FF]">{tier.name}</div><div className="text-sm text-[#BDD0E2]">{tier.tables} Tables, {tier.staff} Staff</div></div>
                       </div>
                       <div className="text-right">
                         <span className="text-2xl font-bold text-[#F2F7FF]">{displayTierPrice(key)}</span>
@@ -2099,14 +2099,14 @@ const CalibrationPanel = () => {
                   ? 'Your Home Games Host Account Is Active. Let’s Create Your First Home Game.'
                   : (COMMANDER_FREE_MODE
                       ? `Your Account Has Been Created. ${COMMANDER_FREE_TAGLINE} - All Features Unlocked.`
-                      : 'Your Account Has Been Created. Your 14-day Trial Starts Now.')}
+                      : 'Your Account Has Been Created. Your 14-Day Trial Starts Now.')}
               </p>
               <div className="bg-[#0C55C0]/10 border border-[#1981EC]/30 rounded-xl p-4 text-left">
                 <p className="text-sm text-[#BDD0E2] mb-1">Login Email:</p>
                 <p className="text-[#F2F7FF] font-semibold">{ownerEmail}</p>
                 <p className="text-xs text-[#9FB3C8] mt-2">
                   {existingAccount
-                    ? 'Sign in using Google or your existing Smarter.Poker password.'
+                    ? 'Sign In Using Google Or Your Existing Smarter.Poker Password.'
                     : 'Use this email and your password to sign in at the login page.'}
                 </p>
               </div>

@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     if (!['PATCH', 'DELETE'].includes(req.method)) {
-      return res.status(405).json({ success: false, error: 'Method not allowed' });
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     // 2026-07-25 audit fix: accept a Bearer user OR a verified staff session
@@ -55,10 +55,10 @@ export default async function handler(req, res) {
 
     if (loadError) {
       console.warn('Notification load error:', loadError);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
     if (!notification) {
-      return res.status(404).json({ success: false, error: 'Notification not found' });
+      return res.status(404).json({ success: false, error: 'Notification Not Found' });
     }
 
     const ownedByUser = user && notification.player_id && String(notification.player_id) === String(user.id);
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
       if (error) {
         console.warn('Mark read error:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
       return res.status(200).json({ success: true, data: { notification: data } });
@@ -97,16 +97,16 @@ export default async function handler(req, res) {
 
       if (error) {
         console.warn('Delete error:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
       }
 
       return res.status(200).json({ success: true });
     }
 
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   } catch (err) {
       try { reportApiError(err, req); } catch (_loggingErr) { console.warn('[App] Handled exception:', _loggingErr?.message || _loggingErr); }
     console.warn('[pages/api/commander/notifications/[id].js]', err);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }

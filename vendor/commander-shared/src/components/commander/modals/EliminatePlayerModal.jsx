@@ -55,7 +55,7 @@ export default function EliminatePlayerModal({
           finish_position: activeEntries.length
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
 

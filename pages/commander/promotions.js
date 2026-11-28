@@ -78,7 +78,7 @@ const res = await commanderFetch('/api/commander/high-hands', {
           auto_verify: formData.auto_verify
         })
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
 
       const data = await res.json();
       if (res.ok && data.high_hand) {
@@ -396,7 +396,7 @@ const data = await commanderFetchJSON(`/api/commander/high-hands?venue_id=${venu
 const res = await fetch('/api/promo/admin-promo-codes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       setPromoCodes(data.codes || []);
     } catch (err) { console.warn('Fetch promo codes error:', err); }
@@ -411,7 +411,7 @@ const res = await fetch('/api/promo/seed-premade', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const data = await res.json();
       if (data.success) {
         // 2026-07-25 audit fix: success message was shown with error styling
@@ -466,7 +466,7 @@ const res = await fetch('/api/promo/admin-promo-codes', {
           description: editCodeForm.description,
           max_uses: editCodeForm.max_uses === '' ? null : parseInt(editCodeForm.max_uses) })
       });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      if (!res.ok) throw new Error(`Request Failed (${res.status})`);
       const data = await res.json();
       if (res.ok && data.success) {
         setEditingPromoCode(null);
@@ -712,7 +712,7 @@ const cloneData = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cloneData)
       });
-      if (!res.ok) throw new Error('Request failed');
+      if (!res.ok) throw new Error('Request Failed');
       const result = await res.json();
       if (result.promotion || result.success) {
         broadcastChange('settings');
@@ -1460,7 +1460,7 @@ const res = await commanderFetch('/api/commander/promotions', {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                       });
-                      if (!res.ok) throw new Error('Request failed');
+                      if (!res.ok) throw new Error('Request Failed');
                       const result = await res.json();
                       if (result.promotion || result.success) {
                         broadcastChange('settings');
@@ -1490,7 +1490,7 @@ const res = await commanderFetch('/api/commander/promotions', {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                   });
-                  if (!res.ok) throw new Error('Request failed');
+                  if (!res.ok) throw new Error('Request Failed');
                   const result = await res.json();
                   if (result.promotion || result.success) {
                     broadcastChange('settings');
@@ -1521,7 +1521,7 @@ const res = await commanderFetch(`/api/commander/promotions/${editingPromo.id}`,
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(data)
                 });
-                if (!res.ok) throw new Error('Request failed');
+                if (!res.ok) throw new Error('Request Failed');
                 const result = await res.json();
                 if (result.success || result.promotion) {
                   fetchPromotions();
